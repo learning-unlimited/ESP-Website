@@ -3,6 +3,7 @@
  <th colspan="2">Student Information</th> {{ form.errors }}
 </tr>
 
+{% if not form.allow_change_grade_level %}
 <tr>
 <td colspan="2"> 
 <div class="info">
@@ -25,6 +26,7 @@ detailed explanation of our age and grade level policy, please click
 </div>
 </td>
 </tr>
+{% endif %}
 
 <tr>
  <td><label for="id_dob">Date of Birth.:</label></td>
@@ -62,24 +64,24 @@ detailed explanation of our age and grade level policy, please click
 
 {% if form.fields.studentrep %}<tr>
  <td>
-<label for="id_studentrep">I want to be a <a href="/getinvolved/studentreps.html">Student Rep</a>:</label></td>
+<label for="id_studentrep">I want to be a <a href="/getinvolved/studentreps.html" target="_blank">Student Rep</a>:</label></td>
  <td>
    {{ form.studentrep }} 
 {% if form.studentrep.errors %}
    <br /><span class="form_error">{{ form.studentrep.errors|join:", " }}</span>
    {% endif %}
 </td></tr>
-<tr><td><i>For new student reps:</i></td>
+{% if form.fields.studentrep_expl %}<tr><td><i>For new student reps:</i></td>
 <td>Please enter a short explanation of why you would <br />
 like to be a student representative and any ideas you <br />
-may have for ESP.  Our membership coordinator will <br />
+may have for us.  Our membership coordinator will <br />
 contact you soon! <br />
 {{ form.studentrep_expl }}
 {% if form.studentrep_expl.errors %}
    <br /><span class="form_error">{{ form.studentrep_expl.errors|join:", " }}</span>
 {% endif %}
  </td>
-</tr>{% endif %}
+</tr>{% endif %}{% endif %}
 
 {% if form.food_preference %}
 <tr>
@@ -113,7 +115,9 @@ contact you soon! <br />
    {% endif %}
  </td>
 </tr>
+{% endif %}
 
+{% if form.post_hs %}
 <tr>
  <td><label for="id_post_hs">What are your plans after you graduate from high school?</label></td>
  <td>{{ form.post_hs }} {% if form.post_hs.errors %}
@@ -121,7 +125,9 @@ contact you soon! <br />
    {% endif %}
  </td>
 </tr>
+{% endif %}
 
+{% if form.transportation %}
 <tr>
  <td><label for="id_transportation">How do you plan to get to/from the program?</label></td>
  <td>{{ form.transportation }} {% if form.transportation.errors %}

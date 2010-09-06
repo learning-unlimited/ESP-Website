@@ -95,15 +95,20 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
 
     def __init__(self, *args, **kwargs):
         super(UserContactForm, self).__init__(*args, **kwargs)
+        if Tag.getTag('request_student_phonenum', default='True') == 'False':
+            del self.fields['phone_day']
         if not Tag.getTag('text_messages_to_students'):
             del self.fields['receive_txt_message']
 
-    def clean_phone_cell(self):
-        if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
-            raise forms.ValidationError("Please provide either a day phone or cell phone.")
-        if self.cleaned_data.get('receive_txt_message', False) and self.cleaned_data.get('phone_cell','') == '':
-            raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages")
-        return self.cleaned_data['phone_cell']
+    def clean(self):
+        super(UserContactForm, self).clean()
+        if Tag.getTag('request_student_phonenum', default='True') != 'False':
+            if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
+                raise forms.ValidationError("Please provide either a day phone or cell phone.")
+        if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell','') == '':
+            raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages.")
+        return self.cleaned_data
+        
 UserContactForm.base_fields['e_mail'].widget.attrs['size'] = 25
 
 class TeacherContactForm(UserContactForm):
@@ -127,15 +132,46 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_address_zip = SizedCharField(length=5, max_length=5)
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
+    def clean(self):
+        super(EmergContactForm, self).clean()
+        if self.cleaned_data.get('emerg_phone_day','') == '' and self.cleaned_data.get('emerg_phone_cell','') == '':
+            raise forms.ValidationError("Please provide either a day phone or cell phone for your emergency contact.")
+        return self.cleaned_data
+
 
 class GuardContactForm(FormUnrestrictedOtherUser):
     """ Contact form for guardians """
 
     guard_first_name = SizedCharField(length=25, max_length=64)
     guard_last_name = SizedCharField(length=30, max_length=64)
+    guard_no_e_mail = forms.BooleanField(required=False)
     guard_e_mail = forms.EmailField(required=False)
     guard_phone_day = PhoneNumberField()
     guard_phone_cell = PhoneNumberField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(GuardContactForm, self).__init__(*args, **kwargs)
+    
+        if not Tag.getTag('allow_guardian_no_email'):
+            if Tag.getTag('require_guardian_email'):
+                self.fields['guard_e_mail'].required = True
+            del self.fields['guard_no_e_mail']
+
+    def clean_guard_e_mail(self):
+        if 'guard_e_mail' not in self.cleaned_data or len(self.cleaned_data['guard_e_mail']) < 3:
+            if Tag.getTag('require_guardian_email') and not self.cleaned_data['guard_no_e_mail']:
+                if Tag.getTag('allow_guardian_no_email'):
+                    raise forms.ValidationError("Please enter the e-mail address of your parent/guardian.  If they do not have access to e-mail, check the appropriate box.")
+                else:
+                    raise forms.ValidationError("Please enter the e-mail address of your parent/guardian.")
+        else:
+            return self.cleaned_data['guard_e_mail']
+
+    def clean(self):
+        super(GuardContactForm, self).clean()
+        if self.cleaned_data.get('guard_phone_day','') == '' and self.cleaned_data.get('guard_phone_cell','') == '':
+            raise forms.ValidationError("Please provide either a day phone or cell phone for your parent/guardian.")
+        return self.cleaned_data
 
 HeardAboutESPChoices = (
     'Other...',
@@ -164,6 +200,7 @@ WhatToDoAfterHS = (
 
 HowToGetToProgram = (
     'Other...',
+    'My school has already arranged for a bus',
     'I will ask my teachers and counselors to arrange for a bus for me and my peers',
     'My parent/guardian will drive me',
     'I will take mass transit (bus, train/subway, etc)',
@@ -196,11 +233,15 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     def __init__(self, user=None, *args, **kwargs):
         super(StudentInfoForm, self).__init__(user, *args, **kwargs)
 
+        self.allow_change_grade_level = Tag.getTag('allow_change_grade_level')
+
         ## All of these Tags may someday want to be made per-program somehow.
         ## We don't know the current program right now, though...
-        if not Tag.getTag('show_studentrep_application'):
+        show_studentrep_application = Tag.getTag('show_studentrep_application')
+        if not show_studentrep_application:
             ## Only enable the Student Rep form optionally.
             del self.fields['studentrep']
+        if (not show_studentrep_application) or show_studentrep_application == "no_expl":
             del self.fields['studentrep_expl']
 
         if not Tag.getTag('show_student_tshirt_size_options'):
@@ -210,7 +251,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if not Tag.getTag('show_student_vegetarianism_options'):
             del self.fields['food_preference']
 
-        if not Tag.getTag('show_student_graduation_years_not_grades', default=True):
+        if not Tag.getTag('show_student_graduation_years_not_grades', default=True):            
             current_grad_year = self.ESPUser.current_schoolyear()
             self.fields['graduation_year'].widget.choices = [(str(12 - (x - current_grad_year)), "%d (%dth grade)" % (x, 12 - (x - current_grad_year))) for x in xrange(current_grad_year, current_grad_year + 6)]
 
@@ -220,25 +261,19 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if not Tag.getTag('ask_student_about_transportation_to_program'):
             del self.fields['transportation']
 
-        if kwargs.has_key('initial'):
-            initial_data = kwargs['initial']
+        if not Tag.getTag('allow_change_grade_level'):
+            if kwargs.has_key('initial'):
+                initial_data = kwargs['initial']
 
-            # Disable the age and grade fields if they already exist.
-            if initial_data.has_key('graduation_year') and initial_data.has_key('dob'):
-                self.fields['graduation_year'].widget.attrs['disabled'] = "true"
-                self.fields['dob'].widget.attrs['disabled'] = "true"
+                # Disable the age and grade fields if they already exist.
+                if initial_data.has_key('graduation_year') and initial_data.has_key('dob'):
+                    self.fields['graduation_year'].widget.attrs['disabled'] = "true"
+                    self.fields['dob'].widget.attrs['disabled'] = "true"
 
         self._user = user
 
-
     def repress_studentrep_expl_error(self):
         self.studentrep_error = False
-
-    def clean_studentrep_expl(self):
-        expl = self.cleaned_data['studentrep_expl'].strip()
-        if self.studentrep_error and self.cleaned_data['studentrep'] and expl == '':
-            raise forms.ValidationError("Please enter an explanation above.")
-        return expl
 
     def clean_graduation_year(self):
         gy = self.cleaned_data['graduation_year'].strip()
@@ -252,27 +287,53 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     def clean_heard_about(self):
         if self.cleaned_data['heard_about'] == 'Other...:':
             raise forms.ValidationError("If 'Other...', please provide details")
+        return self.cleaned_data['heard_about']
+
+    def clean_post_hs(self):
+        if self.cleaned_data['post_hs'] == 'Other...:':
+            raise forms.ValidationError("If 'Other...', please provide details")
+        return self.cleaned_data['post_hs']
+
+    def clean_transportation(self):
+        if self.cleaned_data['transportation'] == 'Other...:':
+            raise forms.ValidationError("If 'Other...', please provide details")
+        return self.cleaned_data['transportation']
 
     def clean(self):
+        super(StudentInfoForm, self).clean()
+
         cleaned_data = self.cleaned_data
-        user = self._user
 
-        orig_prof = RegistrationProfile.getLastProfile(user)
+        show_studentrep_application = Tag.getTag('show_studentrep_application')
+        if show_studentrep_application and show_studentrep_application != "no_expl":
+            expl = self.cleaned_data['studentrep_expl'].strip()
+            if self.studentrep_error and self.cleaned_data['studentrep'] and expl == '':
+                raise forms.ValidationError("Please enter an explanation if you would like to become a student rep.")
 
-        # If graduation year and dob were disabled, get old data.
-        if (orig_prof.id is not None) and (orig_prof.student_info is not None):
+        if not Tag.getTag('allow_change_grade_level'):
+            user = self._user
 
-            if not cleaned_data.has_key('graduation_year'):
-                # Get rid of the error saying this is missing
-                del self.errors['graduation_year']
+            orig_prof = RegistrationProfile.getLastProfile(user)
 
-            if not cleaned_data.has_key('dob'):
-                del self.errors['dob']
+            # If graduation year and dob were disabled, get old data.
+            if (orig_prof.id is not None) and (orig_prof.student_info is not None):
 
-            # Always use the old birthdate if it exists, so that people can't
-            # use something like Firebug to change their age/grade
-            cleaned_data['graduation_year'] = orig_prof.student_info.graduation_year
-            cleaned_data['dob'] = orig_prof.student_info.dob
+                if not cleaned_data.has_key('graduation_year'):
+                    # Get rid of the error saying this is missing
+                    del self.errors['graduation_year']
+
+                if not cleaned_data.has_key('dob'):
+                    del self.errors['dob']
+
+                # Always use the old birthdate if it exists, so that people can't
+                # use something like Firebug to change their age/grade
+                cleaned_data['graduation_year'] = orig_prof.student_info.graduation_year
+                cleaned_data['dob'] = orig_prof.student_info.dob
+
+        
+        if Tag.getTag('require_school_field'):
+            if not cleaned_data['k12school'] and (not cleaned_data['school'] or cleaned_data['school'] == 'None'):
+                raise forms.ValidationError("Please enter your school.  If you see the name of your school come up as you're typing, please click on it.  Otherwise, simply type the full name of your school.")
 
         return cleaned_data
         
@@ -304,6 +365,7 @@ class TeacherInfoForm(FormWithRequiredCss):
     mail_reimbursement = forms.ChoiceField(choices=reimbursement_choices, widget=forms.RadioSelect(), required=False)
 
     def clean(self):
+        super(TeacherInfoForm, self).clean()
         cleaned_data = self.cleaned_data
 
         # If teacher is not from MIT, make sure they've filled in the next box
@@ -381,7 +443,7 @@ class UofCProfileForm(MinimalUserInfo, FormWithTagInitialValues):
                 gy = 'N/A'
         return gy
     
-class AlumProfileForm(MinimalUserInfo):
+class AlumProfileForm(MinimalUserInfo, FormWithTagInitialValues):
     """ This is the visiting-teacher contact form as used by UChicago's Ripple program """
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
@@ -395,9 +457,9 @@ class AlumProfileForm(MinimalUserInfo):
                 gy = 'N/A'
         return gy
 
-class UofCProfForm(MinimalUserInfo):
+class UofCProfForm(MinimalUserInfo, FormWithTagInitialValues):
     major = SizedCharField(length=30, max_length=32, label="Department", required=False)
 
-class VisitingGenericUserProfileForm(MinimalUserInfo):
+class VisitingGenericUserProfileForm(MinimalUserInfo, FormWithTagInitialValues):
     """ This is a form for a generic visitor user """
     major = SizedCharField(length=30, max_length=32, label="Profession", required=False)

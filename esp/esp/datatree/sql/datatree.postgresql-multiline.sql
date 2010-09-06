@@ -351,7 +351,7 @@ BEGIN
          "users_userbit__qsc"."rangestart" <= qsc_rec.rangestart AND
          "users_userbit"."recursive" = True)
         OR
-        ("users_userbit"."verb_id" = verb_id AND "users_userbit"."qsc_id" = in_qsc_id)
+        ("users_userbit"."verb_id" = in_verb_id AND "users_userbit"."qsc_id" = in_qsc_id)
       )
     ) LOOP
     RETURN NEXT output;
@@ -408,7 +408,7 @@ BEGIN
          "users_userbit__qsc"."rangestart" <= qsc_rec.rangestart AND
          "users_userbit"."recursive" = True)
         OR
-        ("users_userbit"."verb_id" = verb_id AND "users_userbit"."qsc_id" = qsc_id)
+        ("users_userbit"."verb_id" = in_verb_id AND "users_userbit"."qsc_id" = qsc_id)
       )
     ) LOOP
     RETURN NEXT output;

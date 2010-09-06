@@ -103,7 +103,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
         
         super(TeacherClassRegForm, self).__init__(*args, **kwargs)
         
-        prog = module.program
+        prog = module.get_program()
         
         section_numbers = module.allowed_sections_actual
         section_numbers = zip(section_numbers, section_numbers)

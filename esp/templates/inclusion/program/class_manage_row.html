@@ -24,12 +24,14 @@
 
 
     <td class="clsmiddle">
-       <form method="post" action="/manage/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">{% csrf_token %}
+       <form method="post" action="/manage/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
+	 <input id="csrf_token_delete_{{ cls.id }}" type="hidden" name="csrfmiddlewaretoken" />
          <input class="button" type="submit" value="Delete" />
        </form>
     </td>
     <td class="clsmiddle">
-       <form method="post" action="/teach/{{ program.url }}/editclass/{{cls.id }}">{% csrf_token %}
+       <form method="post" action="/teach/{{ program.url }}/editclass/{{cls.id }}">
+	 <input id="csrf_token_edit_{{ cls.id }}" type="hidden" name="csrfmiddlewaretoken" />
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
          <input class="button" type="submit" value="Edit">
        </form>

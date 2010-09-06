@@ -21,12 +21,24 @@
 </tr>
 
 <tr>
- <td><label for="id_guard_e_mail">Email:</label></td>
+ <td><label for="id_guard_e_mail">E-mail address:</label></td>
  <td>{{ form.guard_e_mail }} {% if form.guard_e_mail.errors %}
    <br /><span class="form_error">{{ form.guard_e_mail.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
+
+{% if form.guard_no_e_mail %}
+<tr>
+ <td></td>
+ <td>{{ form.guard_no_e_mail }} 
+ <br />Check this box if your parent/guardian does not have access to e-mail.
+    {% if form.guard_e_mail.errors %}
+   <br /><span class="form_error">{{ form.guard_e_mail.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+{% endif %}
 
 <tr>
  <td><label>Phone numbers:</label></td>

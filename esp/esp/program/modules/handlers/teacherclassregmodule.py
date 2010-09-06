@@ -133,67 +133,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         tmpModule = ProgramModuleObj()
         tmpModule.__dict__ = self.__dict__
-        return tmpModule.deadline_met('/Classes/Create')
+        return tmpModule.deadline_met('/Classes/Create') or tmpModule.deadline_met('/Classes/Edit')
     
     def clslist(self):
         return [cls for cls in self.user.getTaughtClasses()
                 if cls.parent_program.id == self.program.id ]
-
-    def getClassSizes(self):
-        #   Default values
-        min_size = 0
-        max_size = 30
-        size_step = 1
-        other_sizes = range(40, 210, 10)
-
-        if self.class_max_size:
-            max_size = self.class_max_size
-            other_sizes = []
-        if self.class_size_step:
-            size_step = self.class_size_step
-            other_sizes = []
-        if self.class_min_cap:
-            min_size = self.class_min_cap
-            other_sizes = []
-        if self.class_other_sizes and len(self.class_other_sizes) > 0:
-            other_sizes = [int(x) for x in self.class_other_sizes.split(',')]
-
-        ret_range = sorted(range(min_size, max_size + 1, size_step) + other_sizes)
-
-        return ret_range
-
-    def getClassGrades(self):
-        min_grade, max_grade = (6, 12)
-        if self.program.grade_min:
-            min_grade = self.program.grade_min
-        if self.program.grade_max:
-            max_grade = self.program.grade_max
-
-        return range(min_grade, max_grade+1)
-
-    def getTimes(self):
-        times = self.program.getTimeSlots()
-        return [(str(x.id),x.short_description) for x in times]
-
-    def getDurations(self):
-        return self.program.getDurations()
-
-    def getResources(self):
-        resources = self.program.getResources()
-        return [(str(x.id), x.name) for x in resources]
-   
-    def getResourceTypes(self, is_global=None):
-        #   Get a list of all resource types, excluding the fundamental ones.
-        base_types = self.program.getResourceTypes().filter(priority_default__gt=0)
-        
-        if is_global is True:
-            res_types = base_types.filter(program__isnull=True)
-        elif is_global is False:
-            res_types = base_types.filter(program__isnull=False)
-        else:
-            res_types = base_types
-            
-        return [(str(x.id), x.name) for x in res_types]
 
     @aux_call
     @needs_teacher
@@ -604,12 +548,15 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
 
-        return self.makeaclass(request, tl, one, two, module, extra, prog, cls)
+        return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls)
 
     @aux_call
     @meets_deadline('/Classes/Create')
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
+        return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None)
+
+    def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None):
         do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
 
         do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
@@ -618,9 +565,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context = {'module': self}
         
         if request.method == 'POST' and request.POST.has_key('class_reg_page'):
-            add_list_member("%s_%s-teachers" % (prog.anchor.parent.name, prog.anchor.name), request.user)
             if not self.deadline_met():
                 return self.goToCore(tl)
+
+            add_list_member("%s_%s-teachers" % (prog.anchor.parent.name, prog.anchor.name), request.user)
+                        
             
             reg_form = TeacherClassRegForm(self, request.POST)
             resource_formset = ResourceRequestFormSet(request.POST, prefix='request')

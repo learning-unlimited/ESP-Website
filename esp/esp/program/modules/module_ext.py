@@ -206,33 +206,36 @@ class ClassRegModuleInfo(models.Model):
 
     def allowed_sections_ints_set(self, value):
         self.allowed_sections = ",".join([ str(n) for n in value ])
+
+    def get_program(self):
+        # Unfortunately, it turns out the ProgramModule system does obscene
+        # things with __dict__, so the class specification up there is a
+        # blatant lie. Why the designer didn't think of giving two
+        # different fields different names is a mystery sane people have no
+        # hope of fathoming. (Seriously, these models are INTENDED to be
+        # subclassed together with ProgramModuleObj! What were you
+        # thinking!?)
+        #
+        # see ProgramModuleObj.module, ClassRegModuleInfo.module, and
+        # ProgramModuleObj.fixExtensions
+        #
+        # TODO: Look into renaming the silly field and make sure no black
+        # magic depends on it
+        if hasattr(self, 'program'):
+            program = self.program
+        elif isinstance(self.module, ProgramModuleObj):
+            # Sadly, this probably never happens, but this function is
+            # going to work when called by a sane person, dammit!
+            program = self.module.program
+        else:
+            raise ESPError("Can't find program from ClassRegModuleInfo")
+        return program
     
     def allowed_sections_actual_get(self):
         if self.allowed_sections:
             return self.allowed_sections_ints_get()
         else:
-            # Unfortunately, it turns out the ProgramModule system does obscene
-            # things with __dict__, so the class specification up there is a
-            # blatant lie. Why the designer didn't think of giving two
-            # different fields different names is a mystery sane people have no
-            # hope of fathoming. (Seriously, these models are INTENDED to be
-            # subclassed together with ProgramModuleObj! What were you
-            # thinking!?)
-            #
-            # see ProgramModuleObj.module, ClassRegModuleInfo.module, and
-            # ProgramModuleObj.fixExtensions
-            #
-            # TODO: Look into renaming the silly field and make sure no black
-            # magic depends on it
-            if hasattr(self, 'program'):
-                program = self.program
-            elif isinstance(self.module, ProgramModuleObj):
-                # Sadly, this probably never happens, but this function is
-                # going to work when called by a sane person, dammit!
-                program = self.module.program
-            else:
-                raise ESPError("Can't find program from ClassRegModuleInfo")
-            return range( 1, program.getTimeSlots().count()+1 )
+            return range( 1, self.get_program().getTimeSlots().count()+1 )
 
     # TODO: rename allowed_sections to... something and this to allowed_sections
     allowed_sections_actual = property( allowed_sections_actual_get, allowed_sections_ints_set )
@@ -244,6 +247,64 @@ class ClassRegModuleInfo(models.Model):
         self.session_counts = ",".join([ str(n) for n in value ])
     
     session_counts_ints = property( session_counts_ints_get, session_counts_ints_set )
+
+    def getClassSizes(self):
+        #   Default values
+        min_size = 0
+        max_size = 30
+        size_step = 1
+        other_sizes = range(40, 210, 10)
+
+        if self.class_max_size:
+            max_size = self.class_max_size
+            other_sizes = []
+        if self.class_size_step:
+            size_step = self.class_size_step
+            other_sizes = []
+        if self.class_min_cap:
+            min_size = self.class_min_cap
+            other_sizes = []
+        if self.class_other_sizes and len(self.class_other_sizes) > 0:
+            other_sizes = [int(x) for x in self.class_other_sizes.split(',')]
+
+        ret_range = sorted(range(min_size, max_size + 1, size_step) + other_sizes)
+
+        return ret_range
+
+    def getClassGrades(self):
+        min_grade, max_grade = (6, 12)
+        if self.get_program().grade_min:
+            min_grade = self.get_program().grade_min
+        if self.get_program().grade_max:
+            max_grade = self.get_program().grade_max
+
+        return range(min_grade, max_grade+1)
+
+    def getTimes(self):
+        times = self.get_program().getTimeSlots()
+        return [(str(x.id),x.short_description) for x in times]
+
+    def getDurations(self):
+        return self.get_program().getDurations()
+
+    def getResources(self):
+        resources = self.get_program().getResources()
+        return [(str(x.id), x.name) for x in resources]
+   
+    def getResourceTypes(self, is_global=None):
+        #   Get a list of all resource types, excluding the fundamental ones.
+        base_types = self.get_program().getResourceTypes().filter(priority_default__gt=0)
+        
+        if is_global is True:
+            res_types = base_types.filter(program__isnull=True)
+        elif is_global is False:
+            res_types = base_types.filter(program__isnull=False)
+        else:
+            res_types = base_types
+            
+        return [(str(x.id), x.name) for x in res_types]
+
+    
     def __unicode__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
     

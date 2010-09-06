@@ -807,7 +807,7 @@ class ESPUser(User, AnonymousUser):
 
         # email subject
         domainname = Site.objects.get_current().domain
-        subject = '[ESP] Your Password Recovery For '+domainname
+        subject = '[%s] Your Password Recovery For %s ' % (ORGANIZATION_SHORT_NAME, domainname)
 
         # generate the email text
         t = loader.get_template('email/password_recover')
@@ -1014,7 +1014,11 @@ class StudentInfo(models.Model):
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
         form_dict['graduation_year'] = self.graduation_year
-        form_dict['k12school']       = self.k12school_id
+        #   Display data from school field in the k12school box if there's no k12school data.
+        if self.k12school:
+            form_dict['k12school']       = self.k12school_id
+        else:
+            form_dict['k12school']   = self.school
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
         if Tag.getTag('studentinfo_shirt_options'):
@@ -1034,9 +1038,6 @@ class StudentInfo(models.Model):
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a StudentInfo record """
-
-        print new_data
-        
         STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
         STUDREP_QSC  = GetNode('Q')
 
@@ -1050,9 +1051,9 @@ class StudentInfo(models.Model):
         try:
             studentInfo.k12school       = K12School.objects.get(id=int(new_data['k12school']))
         except K12School.DoesNotExist:
-            pass
+            studentInfo.k12school = None
         except TypeError:
-            pass
+            studentInfo.k12school = None
         studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
         studentInfo.dob             = new_data['dob']
         
@@ -1501,6 +1502,12 @@ class ContactInfo(models.Model):
         for key, val in newkey.items():
             if val and key != 'id':
                 form_data[prepend+key] = val
+        #   Hack: If the 'no guardian e-mail' Tag is on, check the box for 
+        #   "my parent/guardian doesn't have e-mail" if the e-mail field is blank.
+        if Tag.getTag('allow_guardian_no_email') and prepend == 'guard_':
+            print 'Testing: %s' % self.e_mail
+            if not self.e_mail or len(self.e_mail) < 3:
+                form_data['guard_no_e_mail'] = True
         return form_data
 
     def save(self, *args, **kwargs):

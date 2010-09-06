@@ -18,19 +18,19 @@ parents' contact information into this form, or give contact information for som
 </tr>
 
 <script language="JavaScript">
-if (document.getElementById("id_phone_day") && document.getElementById("id_guard_phone_day")) {
+if (document.getElementById("id_phone_cell") && document.getElementById("id_guard_phone_cell")) {
   document.getElementById("id_copy_parent_info").style.display = '';
 }
 function copy_parent_info() {
   document.getElementById("id_emerg_first_name").value = document.getElementById("id_guard_first_name").value;
   document.getElementById("id_emerg_last_name").value = document.getElementById("id_guard_last_name").value;
   document.getElementById("id_emerg_e_mail").value = document.getElementById("id_guard_e_mail").value;
-  document.getElementById("id_emerg_phone_day").value = document.getElementById("id_guard_phone_day").value;
   document.getElementById("id_emerg_phone_cell").value = document.getElementById("id_guard_phone_cell").value;
   document.getElementById("id_emerg_address_street").value = document.getElementById("id_address_street").value;
   document.getElementById("id_emerg_address_city").value = document.getElementById("id_address_city").value;
   document.getElementById("id_emerg_address_state").value = document.getElementById("id_address_state").value;
   document.getElementById("id_emerg_address_zip").value = document.getElementById("id_address_zip").value;
+  document.getElementById("id_emerg_phone_day").value = document.getElementById("id_guard_phone_day").value;
 }
 </script>
 

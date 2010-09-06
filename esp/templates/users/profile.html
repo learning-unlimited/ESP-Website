@@ -31,8 +31,14 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 
 <p>E-mail addresses have a tendency to change regularly, so we are asking that you re-enter your e-mail address each time you visit this form.  Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
 {% end_inline_qsd_block %}
+
 {% if form.errors %}
-<h2 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.</h2><br />
+<h3 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.</h3>
+<ul>
+{% for error in form.errors.items %}
+<li>{{ error.1 }}</li>
+{% endfor %}
+</ul>
 {% endif %}
 
 <div id="program_form">
