@@ -34,6 +34,7 @@ from esp.datatree.models import *
 from esp.program.models import Program, ProgramModule
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.utils.widgets import DateTimeWidget
+from esp.users.models import ESPUser
 from django.db.models import Q
 from django import forms
 
@@ -64,7 +65,7 @@ class ProgramCreationForm(forms.ModelForm):
         """ Used to update ChoiceFields with the current admins and modules. """
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
         ub_list = UserBit.objects.bits_get_users(GetNode('Q'), GetNode('V/Flags/UserRole/Administrator'))
-        self.fields['admins'].choices = make_id_tuple([ub.user for ub in ub_list])
+        self.fields['admins'].choices = make_id_tuple(ESPUser.objects.filter(id__in=[u.user_id for u in ub_list]).distinct().order_by('username'))
         self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
 
     def load_program(self, program):
