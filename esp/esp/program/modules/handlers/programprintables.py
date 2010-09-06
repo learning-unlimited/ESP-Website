@@ -43,6 +43,7 @@ from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
 from django.template.loader import select_template
+from django.utils.encoding import smart_str
 
 from decimal import Decimal
 import simplejson as json
@@ -1404,7 +1405,7 @@ Student schedule for %s:
         response = HttpResponse(mimetype="text/csv")
         write_cvs = csv.writer(response)
 
-#        write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Msg for Directors", "Prereqs", "Directors Notes", "Times", "Rooms"))
+        write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Msg for Directors", "Prereqs", "Directors Notes", "Assigned Times", "Assigned Rooms"))
         for cls in ClassSubject.objects.filter(parent_program=prog):
             write_cvs.writerow(
                 (cls.id,
@@ -1424,6 +1425,7 @@ Student schedule for %s:
                  ", ".join(cls.prettyrooms()),
                  ))
 
+        response['Content-Disposition'] = 'attachment; filename=all_classes.csv'
         return response
 
     @aux_call
@@ -1444,7 +1446,7 @@ Student schedule for %s:
         write_csv = csv.writer(response)
 
         # get the list of all the sections, and all the times for this program.
-        sections = prog.sections()
+        sections = prog.sections().order_by('-parent_class__class_size_max')
 
         # get only the unscheduled sections, rather than all of them
         # also, only approved classes in the spreadsheet; can be changed
@@ -1469,23 +1471,37 @@ Student schedule for %s:
             else:
                 return ' '
 
+        if Tag.getTag('oktimes_collapse'):
+            time_headers = ['Feasible Start Times']
+        else:
+            time_headers = [str(time) for time in times]
+
         # header row, naming each column
-        write_csv.writerow([''] + ['Teachers'] + ['Projector?'] + \
-                           ['Computer Lab?'] + ['Optimal Size'] + \
+        write_csv.writerow(['ID', 'Code', 'Title', 'Duration'] + ['Teachers'] + ['Projector?'] + \
+                           ['Computer Lab?'] + ['Resource Requests'] + ['Optimal Size'] + \
                            ['Max Size'] + \
                            ['Grade Levels'] + ['Comments to Director'] + \
-                           [str(time) for time in times])
+                           ['Assigned Time'] + ['Assigned Room'] + \
+                           time_headers)
 
         # this writes each row associated with a section, for the columns determined above.
         for section, timeslist in sections_possible_times:
-            write_csv.writerow([str(section) + ' (' + section.prettyDuration() + ')'] + \
+            if Tag.getTag('oktimes_collapse'):
+                time_values = [', '.join([e.start.strftime('%a %I:%M %p') for e in section.viable_times()])]
+            else:
+                time_values = [time_possible(time, timeslist) for time in times]    
+        
+            write_csv.writerow([section.id, section.emailcode(), smart_str(section.title()), section.prettyDuration()] + \
                                [section.parent_class.pretty_teachers()] + \
                                [needs_resource('LCD Projector', section)] + \
                                [needs_resource('Computer Lab', section)] + \
+                               [', '.join(['%s: %s' % (r.res_type.name, r.desired_value) for r in section.getResourceRequests()])] + \
                                [section.parent_class.class_size_optimal] + \
                                [section.parent_class.class_size_max] + \
                                ['%d--%d' %(section.parent_class.grade_min, section.parent_class.grade_max)] +\
                                [section.parent_class.message_for_directors] + \
-                               [time_possible(time, timeslist) for time in times])
-        
+                               [", ".join(section.friendly_times())] + [", ".join(section.prettyrooms())] + \
+                               time_values)
+                               
+        response['Content-Disposition'] = 'attachment; filename=ok_times.csv'
         return response
