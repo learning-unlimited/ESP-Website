@@ -364,6 +364,13 @@ class TeacherInfoForm(FormWithRequiredCss):
     student_id = SizedCharField(length=24, max_length=128, required=False)
     mail_reimbursement = forms.ChoiceField(choices=reimbursement_choices, widget=forms.RadioSelect(), required=False)
 
+    def __init__(self, *args, **kwargs):
+        super(TeacherInfoForm, self).__init__(*args, **kwargs)
+        if not Tag.getTag('teacherinfo_reimbursement_options', default=False):
+            reimbursement_fields = ['full_legal_name', 'university_email', 'student_id', 'mail_reimbursement']
+            for field_name in reimbursement_fields:
+                del self.fields[field_name]
+
     def clean(self):
         super(TeacherInfoForm, self).clean()
         cleaned_data = self.cleaned_data
