@@ -558,8 +558,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
     def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None):
         do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
-
-        do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
         
         new_data = MultiValueDict()
         context = {'module': self}
