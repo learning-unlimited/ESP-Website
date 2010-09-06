@@ -43,6 +43,8 @@ from django.core.mail import mail_admins
 from django.core.cache import cache
 from django.views.decorators.csrf import csrf_exempt
 from django.template.loader import render_to_string
+from django.http import HttpResponse
+from django import forms
 
 from esp.datatree.sql.query_utils import QTree
 from esp.program.models import Program, TeacherBio
@@ -56,6 +58,7 @@ from esp.settings import SITE_INFO
 
 import pickle
 import operator
+import simplejson as json
 
 def find_user(userstr):
     """
@@ -498,14 +501,46 @@ def flushcache(request):
 @admin_required
 def statistics(request, program=None):
 
+    def get_field_ids(form):
+        field_ids = []
+        #   Hack to make sure radio buttons are re-parsed correctly by Dojo
+        for field_name in form.fields:
+            if isinstance(form.fields[field_name].widget, forms.RadioSelect):
+                for i in range(len(form.fields[field_name].choices)):
+                    field_ids.append('%s_%d' % (field_name, i))
+            else:
+                field_ids.append(field_name)
+        return field_ids
+                    
     if request.method == 'POST':
-        form = StatisticsQueryForm(request.POST, program=program)
+        #   Hack for proper behavior when multiselect fields are hidden
+        #   (they contain '' instead of simply being absent like they should)
+        post_data = request.POST.copy()
+        multiselect_fields = StatisticsQueryForm.get_multiselect_fields()
+        for field_name in multiselect_fields:
+            if field_name in post_data and post_data[field_name] == '':
+                del post_data[field_name]
+        
+        form = StatisticsQueryForm(post_data, program=program)
+
+        #   Handle case where all we want is a new form
+        if 'update_form' in request.GET:
+            form.hide_unwanted_fields()
+            
+            #   Return result
+            context = {'form': form}
+            context['field_ids'] = get_field_ids(form)
+            result = {}
+            result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
+            result['script'] = render_to_string('program/statistics/script.js', context)
+            return HttpResponse(json.dumps(result), mimetype='application/json')
+            
         if form.is_valid():
             #   A dictionary for template rendering the results of this query
             result_dict = {}
             #   A dictionary for template rendering the final response
             context = {}
-            
+
             #   Get list of programs the query applies to
             programs = Program.objects.all()
             if not form.cleaned_data['program_type_all']:
@@ -556,15 +591,34 @@ def statistics(request, program=None):
                 context['result'] = 'Unsupported query'
                 
             #   Generate response
-            if request.is_ajax():
-                return HttpResponse(json.dumps(context), mimetype='application/json')
-            else:
-                context['form'] = form
-                return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
+            form.hide_unwanted_fields()
+            context['form'] = form
+            context['field_ids'] = get_field_ids(form)
             
-    else:
-        form = StatisticsQueryForm(program=program)
+            if request.is_ajax():
+                result = {}
+                result['result_html'] = context['result']
+                result['script'] = render_to_string('program/statistics/script.js', context)
+                return HttpResponse(json.dumps(result), mimetype='application/json')
+            else:
+                return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
+        else:
+            #   Form was submitted but there are problems with it
+            print form.errors
+            form.hide_unwanted_fields()
+            context = {'form': form}
+            context['field_ids'] = get_field_ids(form)
+            if request.is_ajax():
+                return HttpResponse(json.dumps(result), mimetype='application/json')
+            else:
+                return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
+
+    #   First request, form not yet submitted
+    form = StatisticsQueryForm(program=program)
+    form.hide_unwanted_fields()
     context = {'form': form}
+    context['field_ids'] = get_field_ids(form)
+
     if request.is_ajax():
         return HttpResponse(json.dumps(context), mimetype='application/json')
     else:

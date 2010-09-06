@@ -306,7 +306,8 @@ def hours(form, programs, students, profiles, result_dict={}):
     for stats_dict in stats_list:
         hours = stats_dict.keys()
         hours.sort(key=lambda x: -x)
-        hours.remove(0)
+        if 0 in hours:
+            hours.remove(0)
         counts = [stats_dict[key] for key in hours]
         stats_flat.append(zip(hours, counts))
     for timeslots_dict in timeslots_list:
