@@ -119,8 +119,11 @@ class ResourceType(models.Model):
         super(ResourceType, self).save(*args, **kwargs)
 
     @staticmethod
-    def get_or_create(label):
-        current_type = ResourceType.objects.filter(name__icontains=label)
+    def get_or_create(label, program=None):
+        if program:
+            current_type = ResourceType.objects.filter(name__icontains=label)
+        else:
+            current_type = ResourceType.objects.filter(name__icontains=label, program=program)
         if len(current_type) != 0:
             return current_type[0]
         else:

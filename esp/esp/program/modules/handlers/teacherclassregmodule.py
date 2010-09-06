@@ -34,6 +34,7 @@ from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion
 from esp.datatree.models import *
+from esp.tagdict.models          import Tag
 from esp.web.util                import render_to_response
 from django.template.loader      import render_to_string
 from esp.middleware              import ESPError
@@ -568,7 +569,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
             add_list_member("%s_%s-teachers" % (prog.anchor.parent.name, prog.anchor.name), request.user)
                         
-            
             reg_form = TeacherClassRegForm(self, request.POST)
             resource_formset = ResourceRequestFormSet(request.POST, prefix='request')
             restype_formset = ResourceTypeFormSet(request.POST, prefix='restype')
@@ -856,9 +856,16 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
             else:
                 reg_form = TeacherClassRegForm(self)
-                type_labels = ['Classroom', 'A/V']
+                request_program = self.program
+                if Tag.getTag('default_restypes'):
+                    type_labels = json.loads(Tag.getTag('default_restypes'))
+                else:
+                    type_labels = ['Classroom', 'A/V']
+                if Tag.getTag('allow_global_restypes'):
+                    request_program = None
+
                 #   Provide initial forms: a request for each provided type, but no requests for new types.
-                resource_formset = ResourceRequestFormSet(initial=[{} for x in type_labels], resource_type=[ResourceType.get_or_create(x) for x in type_labels], prefix='request')
+                resource_formset = ResourceRequestFormSet(resource_type=[ResourceType.get_or_create(x, request_program) for x in type_labels], prefix='request')
                 restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
         context['one'] = one
@@ -866,6 +873,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['form'] = reg_form
         context['formset'] = resource_formset
         context['restype_formset'] = restype_formset
+        context['allow_restype_creation'] = Tag.getTag('allow_restype_creation')
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         
         if newclass is None:
