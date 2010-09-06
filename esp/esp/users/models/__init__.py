@@ -242,6 +242,7 @@ class ESPUser(User, AnonymousUser):
 
     def switch_to_user(self, request, user, retUrl, retTitle, onsite = False):
         user_morph = {'olduser_id' : self.id,
+                      'olduser_name': self.name(),
                       'retUrl'  : retUrl,
                       'retTitle': retTitle,
                       'onsite'  : onsite}
