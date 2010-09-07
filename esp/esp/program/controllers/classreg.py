@@ -92,10 +92,11 @@ class ClassCreationController(object):
             
         cls.category = ClassCategories.objects.get(id=reg_form.cleaned_data['category'])
 
+        cls.save()
+
         if cls.anchor.friendly_name != cls.title:
             self.update_class_anchorname(cls)
-
-        cls.save()
+            cls.save()
 
     def update_class_sections(self, cls, num_sections):
         #   Give the class the appropriate number of sections as specified by the teacher.
