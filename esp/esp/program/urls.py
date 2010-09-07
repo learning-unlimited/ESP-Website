@@ -10,4 +10,5 @@ urlpatterns = patterns('',
                        (r'^manage/usersearch/?$', 'esp.program.views.usersearch'),                       
                        (r'^manage/flushcache/?$', 'esp.program.views.flushcache'),
                        (r'^manage/statistics/?$', 'esp.program.views.statistics'),
+                       (r'^manage/mergeaccounts/?$', 'esp.users.views.merge.merge_accounts'),
                        )

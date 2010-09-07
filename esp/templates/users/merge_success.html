@@ -1,0 +1,24 @@
+{% extends "main.html" %}
+
+{% block title %}Merge successful{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{{ MEDIA_URL }}admin/base.css" type="text/css" />
+{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Merge successful"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block content %}
+<h1>Merge successful</h1>
+
+<p>The account <b>{{ old_user.username }}</b>
+(<a href="mailto:{{ old_user.email }}">{{ old_user.email }}</a>)
+was successfully merged into
+<b><a href="/manage/userview?username={{ new_user.username}}">{{ new_user.username }}</a></b>
+(<a href="mailto:{{ new_user.email }}">{{ new_user.email }}</a>).</p>
+
+{% endblock %}
