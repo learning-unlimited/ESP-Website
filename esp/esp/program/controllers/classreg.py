@@ -117,7 +117,7 @@ class ClassCreationController(object):
         cls.anchor = self.program.classes_node()
 
     def update_class_anchorname(self, cls):
-        nodestring = cls.category.symbol + str(cls.id)
+        nodestring = cls.emailcode()
         cls.anchor = self.program.classes_node().tree_create([nodestring])
         cls.anchor.tree_create(['TeacherEmail'])  ## Just to make sure it's there
         cls.anchor.friendly_name = cls.title
