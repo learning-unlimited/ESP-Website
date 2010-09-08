@@ -1253,6 +1253,8 @@ class ClassSubject(models.Model):
     allow_lateness = models.BooleanField(default=False)
     message_for_directors = models.TextField(blank=True)
     class_size_optimal = models.IntegerField(blank=True, null=True)
+    optimal_class_size_range = models.ForeignKey(ClassSizeRange, blank=True, null=True)
+    allowable_class_size_ranges = models.ManyToManyField(ClassSizeRange, related_name='classsubject_allowedsizes', blank=True, null=True)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     class_size_min = models.IntegerField(blank=True, null=True)
