@@ -37,7 +37,7 @@ from esp.program.models import TeacherBio, FinancialAidRequest, SplashInfo
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
-from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories
+from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
 
 
@@ -140,6 +140,7 @@ class SubjectAdmin(admin.ModelAdmin):
 admin.site.register(ClassSubject, SubjectAdmin)
 
 admin.site.register(ClassCategories)
+admin.site.register(ClassSizeRange)
 
 ## app_.py
 
