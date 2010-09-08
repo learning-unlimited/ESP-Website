@@ -230,6 +230,10 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # Return cleaned data
         return cleaned_data
 
+    def _get_total_time_requested(self):
+        """ Get total time requested. Do not call before validation. """
+        return float(self.cleaned_data['duration']) * int(self.cleaned_data['num_sections'])
+
 
 class TeacherEventSignupForm(FormWithRequiredCss):
     """ Form for teachers to pick interview and teacher training times. """
