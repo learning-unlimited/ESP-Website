@@ -32,7 +32,8 @@ from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_d
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm
-from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion
+from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule
+from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError
 from esp.datatree.models import *
 from esp.tagdict.models          import Tag
 from esp.web.util                import render_to_response
@@ -549,7 +550,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
 
-        return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls)
+        return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls, 'edit')
 
     @aux_call
     @meets_deadline('/Classes/Create')
@@ -557,272 +558,32 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None)
 
-    def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None):
-        do_question = bool(ProgramModuleObj.objects.filter(program=prog, module__handler="TeacherReviewApps"))
-        
-        new_data = MultiValueDict()
+    def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None, action = 'create'):
         context = {'module': self}
         
         if request.method == 'POST' and request.POST.has_key('class_reg_page'):
             if not self.deadline_met():
                 return self.goToCore(tl)
 
-            add_list_member("%s_%s-teachers" % (prog.anchor.parent.name, prog.anchor.name), request.user)
-                        
-            reg_form = TeacherClassRegForm(self, request.POST)
-            resource_formset = ResourceRequestFormSet(request.POST, prefix='request')
-            restype_formset = ResourceTypeFormSet(request.POST, prefix='restype')
-            # Silently drop errors from section wizard when we're not using it
-            if reg_form.is_valid() and resource_formset.is_valid() and restype_formset.is_valid():
-                new_data = reg_form.cleaned_data
-                
-                # Some defaults
-                newclass_isnew = False
-                newclass_newmessage = True
-                newclass_oldtime = timedelta() # Remember the old class duration so that we can sanity-check things later.
+            ccc = ClassCreationController(self.program)
 
-                if newclass is None:
-                    newclass_isnew = True
-                    newclass = ClassSubject()
-                else:
-                    if new_data['message_for_directors'] == newclass.message_for_directors:
-                        newclass_newmessage = False
-                    newclass_oldtime = timedelta(hours=float(newclass.default_section().duration))
+            try:
+                if action == 'create':
+                    newclass = ccc.makeaclass(request.user, request.POST)
+                elif action == 'edit':
+                    newclass = ccc.editclass(request.user, request.POST, extra)
 
-                for k, v in new_data.items():
-                    if k not in ('category', 'resources', 'viable_times') and k[:8] is not 'section_':
-                        newclass.__dict__[k] = v
-                
-                newclass.category = ClassCategories.objects.get(id=new_data['category'])
-
-                #   Allow for no selected duration (directors will assign one to default value)
-                if new_data['duration'] == '':
-                    new_duration = 0.0
-                else:
-                    try:
-                        new_duration = float(new_data['duration'])
-                    except:
-                        new_duration = 0.0
-
-                # Makes sure the program has time for this class
-                # If the time you're already teaching plus the time of the class you propose exceeds the program's total time, fail.
-                # The newclass_oldtime term balances things out if this isn't actually a new class.
-                self.user = ESPUser(self.user)
-                if self.user.getTaughtTime(prog, include_scheduled=True) + timedelta(hours=new_duration) > self.program.total_duration() + newclass_oldtime:
-                    raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
-
-                #   If the teacher has not filled out any availability yet, make them always-available by default
-                #   (this is what the availability page shows, but the data isn't there yet)
-                if self.user.getAvailableTimes(self.program).count() == 0:
-                    for ts in self.program.getTimeSlots():
-                        self.user.addAvailableTime(self.program, ts)
-
-                # datatree maintenance
-                if newclass_isnew:
-                    newclass.parent_program = self.program
-                    newclass.anchor = self.program.classes_node()
-                    newclass.save()
-                
-                    nodestring = newclass.category.symbol + str(newclass.id)
-                    newclass.anchor = newclass.anchor.tree_create([nodestring])
-                    newclass.anchor.tree_create(['TeacherEmail'])
-                    
-                newclass.anchor.friendly_name = newclass.title
-                newclass.anchor.save()
-                newclass.save()
-                
-                #   Give the class the appropriate number of sections as specified by the teacher.
-                num_sections = int(new_data['num_sections'])
-                section_list = list( newclass.sections.all() )
-                for i in range(newclass.sections.count(), num_sections):
-                    section_list.append(newclass.add_section(duration=new_duration))
-
-                # If the teacher wants to decrease the number of sections that they're teaching
-                if num_sections < len(section_list):
-                    for class_section in section_list[num_sections:]:
-                        class_section.delete()
-                        
-                # Set duration of sections
-                for section in newclass.sections.all():
-                    section.duration = newclass.duration
-                    section.save()
-
-                # create classes in subprograms -- the work for this should probably be farmed out to another function
-                if newclass_isnew:
-                    if prog.getSubprograms().count() > 0:
-                        # copy class information to section data
-                        section_data = {}
-                        for k, v in new_data.items():
-                            if k not in ('category', 'resources', 'viable_times') and k[:8] is not 'section_':
-                                section_data[k] = v
-                        
-                        # prepare a ClassImplication, to be ready for student reg
-                        newclassimplication = ClassImplication()
-                        newclassimplication.cls = newclass
-                        newclassimplication.operation = 'OR'
-                        implied_id_ints = []
-                        
-                        for subprogram in prog.getSubprograms():
-                            # prepare some information 
-                            subprogram_string = subprogram.niceName().replace(' ', '_')
-                            try:
-                                subprogram_module = ProgramModuleObj.getFromProgModule(subprogram, self.module)
-                                subprogram_classreginfo = ClassRegModuleInfo.objects.get(module__program=subprogram)
-                            except:
-                                continue
-                            
-                            # modify data as appropriate to subprogram
-                            if new_data['section_duration_' + subprogram_string] == '':
-                                section_data['duration'] = 0.0
-                            else:
-                                try:
-                                    section_data['duration'] = float(new_data['section_duration_' + subprogram_string])
-                                except:
-                                    section_data['duration'] = 0.0
-                                    
-                            section_count = 1
-                            try:
-                                section_count = int(new_data['section_count_' + subprogram_string])
-                            except:
-                                pass
-                                    
-                            # If the time of the proposed sections plus the time you're already teaching for this program exceed the program's total time, fail.
-                            if timedelta(hours = section_data['duration'] * section_count) + self.user.getTaughtTime(subprogram, include_scheduled=True) > subprogram.total_duration():
-                                # Delete new class--prevent teacherless classes from showing up when we throw an error right here.
-                                # If there's more than one subprogram, this won't avoid orphaned sections and classimplications.
-                                newclass.delete()
-                                raise ESPError(False), 'We love you too!  However, you attempted to create too many sections of your class.  There is not enough time in the program to support those sections.  Please go back to the class editing page and reduce the length or quantity of sections.'
-                                    
-                            section_data['parent_program_id'] = subprogram.id
-                            
-                            # make a new class and copy the section data into it
-                            section = ClassSubject()
-                            for k, v in section_data.items():
-                                section.__dict__[k] = v
-                            section.category = ClassCategories.objects.get(id=new_data['category'])
-                            
-                            # get an id
-                            section.anchor = self.program_anchor_cached().tree_create(['DummyClass'])
-                            section.anchor.save()
-                            section.save()
-                            section.anchor.delete(True)
-                            
-                            # set up the class's actual location on the data tree
-                            nodestring = section.category.symbol + str(section.id)
-                            section.anchor = subprogram.classes_node().tree_create([nodestring])
-                            section.anchor.tree_create(['TeacherEmail'])
-                            section.anchor.friendly_name = section.title
-                            section.anchor.save()
-                            section.save()
-                            
-                            # create the userbits for the section
-                            section.makeTeacher(self.user)
-                            section.makeAdmin(self.user, subprogram_classreginfo.teacher_class_noedit)
-                            section.subscribe(self.user)
-                            subprogram.teacherSubscribe(self.user)
-                            section.propose()
-
-                            # update class implication list
-                            implied_id_ints.append( section.id )
-                            
-                            section.update_cache()
-                            for i in range(0, section_count):
-                                subsection = section.add_section(duration=section_data['duration'])
-                                #   Create resource requests for each section
-                                #   Create new resource types (with one request per type) if desired
-                                for resform in resource_formset.forms:
-                                    rr = ResourceRequest()
-                                    rr.target = subsection
-                                    rr.res_type = resform.cleaned_data['resource_type']
-                                    rr.desired_value = resform.cleaned_data['desired_value']
-                                    rr.save()
-                                for resform in restype_formset.forms:
-                                    #   Save new types; handle imperfect validation
-                                    if len(resform.cleaned_data['name']) > 0:
-                                        rt = ResourceType.get_or_create(resform.cleaned_data['name'])
-                                        rt.choices = ['Yes']
-                                        rt.save()
-                                        rr = ResourceRequest()
-                                        rr.target = subsection
-                                        rr.res_type = rt
-                                        rr.desired_value = 'Yes'
-                                        rr.save()
-                        
-                        newclassimplication.member_id_ints = implied_id_ints
-                        newclassimplication.save()
-
-                #   Save resource requests (currently we do not treat global and specialized requests differently)
-                #   Note that resource requests now belong to the sections
-                for sec in newclass.sections.all():
-                    sec.clearResourceRequests()
-                    for resform in resource_formset.forms:
-                        rr = ResourceRequest()
-                        rr.target = sec
-                        rr.res_type = resform.cleaned_data['resource_type']
-                        rr.desired_value = resform.cleaned_data['desired_value']
-                        rr.save()
-                    for resform in restype_formset.forms:
-                        #   Save new types; handle imperfect validation
-                        if len(resform.cleaned_data['name']) > 0:
-                            rt = ResourceType.get_or_create(resform.cleaned_data['name'])
-                            rt.choices = ['Yes']
-                            rt.save()
-                            rr = ResourceRequest()
-                            rr.target = sec
-                            rr.res_type = rt
-                            rr.desired_value = 'Yes'
-                            rr.save()
-
-                
-                mail_ctxt = dict(new_data) # context for email sent to directors
-
-                # Make some of the fields in new_data nicer for viewing.
-                mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category']).category
-                mail_ctxt['global_resources'] = ResourceType.objects.filter(id__in=new_data['global_resources'])
-
-                # Provide information about whether or not teacher's from MIT.
-                last_profile = self.user.getLastProfile()
-                if last_profile.teacher_info != None:
-                    mail_ctxt['from_here'] = last_profile.teacher_info.from_here
-                    mail_ctxt['college'] = last_profile.teacher_info.college
-                else: # This teacher never filled out their teacher profile!
-                    mail_ctxt['from_here'] = "[Teacher hasn't filled out teacher profile!]"
-                    mail_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
-
-                # Get a list of the programs this person has taught for in the past, if any.
-                taught_programs = Program.objects.filter(anchor__child_set__child_set__userbit_qsc__user=self.user, \
-                                                         anchor__child_set__child_set__userbit_qsc__verb=GetNode('V/Flags/Registration/Teacher'), \
-                                                         anchor__child_set__child_set__userbit_qsc__qsc__classsubject__status=10).distinct().exclude(id=self.program.id)
-                mail_ctxt['taught_programs'] = taught_programs
-                    
-                # send mail to directors
-                if newclass_newmessage and self.program.director_email:
-                    send_mail('['+self.program.niceName()+"] Comments for " + newclass.emailcode() + ': ' + new_data.get('title'), \
-                              render_to_string(self.baseDir() + 'classreg_email', mail_ctxt) , \
-                              ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
-                              [self.program.director_email], True)
-
-                # add userbits
-                if newclass_isnew:
-                    newclass.makeTeacher(self.user)
-                    newclass.makeAdmin(self.user, self.teacher_class_noedit)
-                    newclass.subscribe(self.user)
-                    self.program.teacherSubscribe(self.user)
-                    newclass.propose()
-                else:
-                    if self.user.isAdmin(self.program):
-
-                        newclass.update_cache()
-                        return self.goToCore('manage')
-
-                #cache this result
-                newclass.update_cache()                
-                #   This line is for testing only. -Michael P
-                #   return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
+                do_question = bool(ProgramModule.objects.filter(handler="TeacherReviewApps", program=self.program))
 
                 if do_question:
                     return HttpResponseRedirect(newclass.parent_program.get_teach_url() + "app_questions")
                 return self.goToCore(tl)
+
+            except ClassCreationValidationError, e:
+                reg_form = e.reg_form
+                resource_formset = e.resource_formset
+                restype_formset = e.restype_formset
+
         else:
             errors = {}
             if newclass is not None:
@@ -878,14 +639,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         
         if newclass is None:
             context['addoredit'] = 'Add'
-            if prog.getSubprograms().count() > 0:
-                context['subprograms'] = []
-                for subprogram in prog.getSubprograms():
-                    subprogram_string = subprogram.niceName().replace(' ', '_')
-                    context['subprograms'].append({ 'name': subprogram.niceName(), \
-                                                    'id_string': subprogram_string, \
-                                                    'section_count_field': context['form']['section_count_' + subprogram_string], \
-                                                    'section_duration_field': context['form']['section_duration_' + subprogram_string]})
         else:
             context['addoredit'] = 'Edit'
 
