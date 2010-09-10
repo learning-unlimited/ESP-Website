@@ -1,5 +1,5 @@
 from esp.mailman import add_list_member
-from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories
+from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
 from esp.middleware import ESPError
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm
 from esp.resources.forms import ResourceRequestFormSet, ResourceTypeFormSet
@@ -84,13 +84,16 @@ class ClassCreationController(object):
 
     def set_class_data(self, cls, reg_form):
         for k, v in reg_form.cleaned_data.items():
-            if k not in ('category', 'resources', 'viable_times') and k[:8] is not 'section_':
+            if k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges') and k[:8] is not 'section_':
                 cls.__dict__[k] = v
 
         if hasattr(cls, 'duration'):
             cls.duration = Decimal(cls.duration)
             
         cls.category = ClassCategories.objects.get(id=reg_form.cleaned_data['category'])
+
+        cls.optimal_class_size_range = ClassSizeRange.objects.get(id=reg_form.cleaned_data['optimal_class_size_range'])
+        cls.allowable_class_size_ranges = ClassSizeRange.objects.filter(id__in=reg_form.cleaned_data['allowable_class_size_ranges'])
 
         if cls.anchor.friendly_name != cls.title:
             self.update_class_anchorname(cls)

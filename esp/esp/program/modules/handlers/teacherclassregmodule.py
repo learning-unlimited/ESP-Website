@@ -606,6 +606,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 current_data['allow_lateness'] = newclass.allow_lateness
                 current_data['title'] = newclass.anchor.friendly_name
                 current_data['url']   = newclass.anchor.name
+                if newclass.optimal_class_size_range:
+                    current_data['optimal_class_size_range'] = newclass.optimal_class_size_range.id
+                if newclass.allowable_class_size_ranges.all():
+                    current_data['allowable_class_size_ranges'] = list(newclass.allowable_class_size_ranges.all().values_list('id', flat=True))
                 context['class'] = newclass
                 reg_form = TeacherClassRegForm(self, current_data)
                 
