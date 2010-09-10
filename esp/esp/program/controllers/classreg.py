@@ -93,11 +93,12 @@ class ClassCreationController(object):
         cls.category = ClassCategories.objects.get(id=reg_form.cleaned_data['category'])
 
         cls.optimal_class_size_range = ClassSizeRange.objects.get(id=reg_form.cleaned_data['optimal_class_size_range'])
-        cls.allowable_class_size_ranges = ClassSizeRange.objects.filter(id__in=reg_form.cleaned_data['allowable_class_size_ranges'])
 
         if cls.anchor.friendly_name != cls.title:
             self.update_class_anchorname(cls)
 
+        cls.save()
+        cls.allowable_class_size_ranges = ClassSizeRange.objects.filter(id__in=reg_form.cleaned_data['allowable_class_size_ranges'])
         cls.save()
 
     def update_class_sections(self, cls, num_sections):

@@ -69,9 +69,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
     class_size_max = forms.ChoiceField( label='Maximum Number of Students', choices=[(0, 0)], widget=BlankSelectWidget(),
                                         help_text='The above class-size and grade-range values are absolute, not the "optimum" nor "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
-    class_size_optimal = forms.IntegerField( label='Optimal Number of Students', required=False, help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
-    optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', choices=[(0, 0)], required=False, widget=BlankSelectWidget() )
-    allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], required=False, widget=forms.CheckboxSelectMultiple(), 
+    class_size_optimal = forms.IntegerField( label='Optimal Number of Students', help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
+    optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', choices=[(0, 0)], widget=BlankSelectWidget() )
+    allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], widget=forms.CheckboxSelectMultiple(), 
                                                              help_text="Please select all class size ranges you are comfortable teaching." )
     hardness_rating = forms.ChoiceField( label='Hardness',choices=hardness_choices, initial="Normal")
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
