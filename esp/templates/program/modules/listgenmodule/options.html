@@ -15,14 +15,26 @@
 <h1>Generate Lists for {{program.niceName}}</h1>
 
 <p style="text-align: center">
-You can use this to get a list of users for a specific purpose.<br />
-Please select which format you would like this list:
+You can use this to get a list of users for a specific purpose.
 </p>
 
-<li><a href="{{request.path}}?type=html&filterid={{filterid}}" title="Normal HTML">Normal HTML</a></li>
-<li><a href="{{request.path}}?type=csv&filterid={{filterid}}" title="CSV">CSV (for spreadsheet programs)</a></li>
+<form action="{{ request.path }}?filterid={{ filterid }}" method="POST">{% csrf_token %}
+<center>
+<table width="400" cellpadding="5">
 
-</ul>
+<tr>
+    <th colspan="2">Options</th>
+</tr>
+
+{{ form }}
+
+<tr>
+    <td colspan="2"><input type="Submit" value="Go"/></td>
+</tr>
+
+</table>
+</center>
+</form>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
