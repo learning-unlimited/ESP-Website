@@ -105,7 +105,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
         if Tag.getTag('request_student_phonenum', default='True') != 'False':
             if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
                 raise forms.ValidationError("Please provide either a day phone or cell phone.")
-        if self.cleaned_data.get('receive_txt_message', False) and self.cleaned_data.get('phone_cell','') == '':
+        if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages.")
         return self.cleaned_data
         
@@ -200,6 +200,7 @@ WhatToDoAfterHS = (
 
 HowToGetToProgram = (
     'Other...',
+    'My school has already arranged for a bus',
     'I will ask my teachers and counselors to arrange for a bus for me and my peers',
     'My parent/guardian will drive me',
     'I will take mass transit (bus, train/subway, etc)',
@@ -231,6 +232,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     def __init__(self, user=None, *args, **kwargs):
         super(StudentInfoForm, self).__init__(user, *args, **kwargs)
+
+        self.allow_change_grade_level = Tag.getTag('allow_change_grade_level')
 
         ## All of these Tags may someday want to be made per-program somehow.
         ## We don't know the current program right now, though...
@@ -285,6 +288,16 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if self.cleaned_data['heard_about'] == 'Other...:':
             raise forms.ValidationError("If 'Other...', please provide details")
         return self.cleaned_data['heard_about']
+
+    def clean_post_hs(self):
+        if self.cleaned_data['post_hs'] == 'Other...:':
+            raise forms.ValidationError("If 'Other...', please provide details")
+        return self.cleaned_data['post_hs']
+
+    def clean_transportation(self):
+        if self.cleaned_data['transportation'] == 'Other...:':
+            raise forms.ValidationError("If 'Other...', please provide details")
+        return self.cleaned_data['transportation']
 
     def clean(self):
         super(StudentInfoForm, self).clean()
