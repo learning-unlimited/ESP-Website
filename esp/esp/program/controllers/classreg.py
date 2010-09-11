@@ -92,14 +92,17 @@ class ClassCreationController(object):
             
         cls.category = ClassCategories.objects.get(id=reg_form.cleaned_data['category'])
 
-        cls.optimal_class_size_range = ClassSizeRange.objects.get(id=reg_form.cleaned_data['optimal_class_size_range'])
+        if reg_form.cleaned_data['optimal_class_size_range']:
+            cls.optimal_class_size_range = ClassSizeRange.objects.get(id=reg_form.cleaned_data['optimal_class_size_range'])
 
         if cls.anchor.friendly_name != cls.title:
             self.update_class_anchorname(cls)
 
         cls.save()
-        cls.allowable_class_size_ranges = ClassSizeRange.objects.filter(id__in=reg_form.cleaned_data['allowable_class_size_ranges'])
-        cls.save()
+
+        if reg_form.cleaned_data['allowable_class_size_ranges']:
+            cls.allowable_class_size_ranges = ClassSizeRange.objects.filter(id__in=reg_form.cleaned_data['allowable_class_size_ranges'])
+            cls.save()
 
     def update_class_sections(self, cls, num_sections):
         #   Give the class the appropriate number of sections as specified by the teacher.
