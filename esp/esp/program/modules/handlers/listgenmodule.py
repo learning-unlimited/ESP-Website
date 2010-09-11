@@ -30,7 +30,9 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.web.util        import render_to_response
-from esp.users.models   import ESPUser, User
+from esp.users.models   import ESPUser, User, UserBit
+from esp.datatree.models import *
+from esp.datatree.sql.query_utils import QTree
 from django.db.models.query      import Q
 from django import forms
 
@@ -73,11 +75,15 @@ class UserAttributeGetter(object):
                     '05_firstname': 'First Name',
                     '06_email': 'E-mail',
                     '07_accountdate': 'Created Date',
-                    '08_cellphone': 'Cell Phone',
-                    '09_textmsg': 'Text Msg?',
-                    '10_classhours': 'Num Class Hrs',
-                    '11_school': 'School',
-                    '12_heard_about': 'Heard about Splash from',
+                    '08_regdate': 'Registration Date',
+                    '09_cellphone': 'Cell Phone',
+                    '10_textmsg': 'Text Msg?',
+                    '11_classhours': 'Num Class Hrs',
+                    '12_gradyear': 'Grad Year',
+                    '13_school': 'School',
+                    '14_heard_about': 'Heard about Splash from',
+                    '15_transportation': 'Plan to Get to Splash',
+                    '16_post_hs': 'Post-HS plans',
                  }
         result = {}
         for item in dir(UserAttributeGetter):
@@ -123,6 +129,13 @@ class UserAttributeGetter(object):
     def get_accountdate(self):
         return self.user.date_joined.strftime("%m/%d/%Y")
         
+    def get_regdate(self):
+        reg_verb = GetNode('V/Flags/Registration/Enrolled')
+        reg_node_parent = self.program.anchor['Classes']
+        bits = UserBit.valid_objects().filter(user=self.user, verb=reg_verb).filter(QTree(qsc__below=reg_node_parent))
+        if bits.exists():
+            return bits.order_by('-startdate').values_list('startdate', flat=True)[0].strftime("%Y-%m-%d %H:%M:%S")
+            
     def get_cellphone(self):
         if self.profile.contact_user:
             return self.profile.contact_user.phone_cell
@@ -144,6 +157,18 @@ class UserAttributeGetter(object):
     def get_heard_about(self):
         if self.profile.student_info:
             return self.profile.student_info.heard_about
+            
+    def get_gradyear(self):
+        if self.profile.student_info:
+            return self.profile.student_info.graduation_year
+            
+    def get_transportation(self):
+        if self.profile.student_info:
+            return self.profile.student_info.transportation
+            
+    def get_post_hs(self):
+        if self.profile.student_info:
+            return self.profile.student_info.post_hs
             
 class ListGenForm(forms.Form):
     attr_choices = choices=UserAttributeGetter.getFunctions().items()
