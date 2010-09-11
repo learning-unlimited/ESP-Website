@@ -1,0 +1,122 @@
+{% extends "main.html" %}
+
+{% block title %}
+    Statistics Queries
+{% endblock %}
+
+{% block stylesheets %}
+<link href="{{ MEDIA_URL }}styles/main.css" rel="stylesheet" type="text/css">
+<link href="{{ MEDIA_URL }}styles/stanford.css" rel="stylesheet" type="text/css">
+<style type="text/css">
+    @import url("http://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css");
+</style>
+<style type="text/css">
+#statistics_form_contents ul
+{
+    list-style-type: none;
+    padding-left: 0px;
+}
+#statistics_form_contents select[multiple]
+{
+    border: 1px solid #999999;
+    font-size: 0.9em;
+}
+#statistics_form_contents input[type=submit]
+{
+    border: 1px solid #999999;
+    background-color: #99CCFF;
+    font-size: 1.5em;
+    padding: 3px 15px 3px 15px;
+}
+#statistics_form_contents input[type=submit]:hover
+{
+    background-color: #999999;
+}
+</style>
+{% endblock %}
+
+{% block javascript %}
+{{ block.super }}
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/dojo/1.5/dojo/dojo.xd.js" djConfig="parseOnLoad: false"></script>
+<!-- <script type="text/javascript" src="/media/scripts/dojo-release-1.5.0/dojo/dojo.js"></script> -->
+<script type="text/javascript" src="/media/scripts/ajax_tools.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<h2>
+    Common Statistics Queries
+</h2>
+
+{% comment %}
+The default form rendering takes care of this, but the below might be a starting point if the template gets customized.
+{% if form.errors %}
+<p>
+    We need more information to answer your query:
+    {{ form.errors }}
+</p>
+{% endif %}
+{% endcomment %}
+
+<form dojoType="dijit.form.Form" id="statistics_form" method="POST" action="/manage/statistics/">
+{% csrf_token %}
+<div id="statistics_form_contents">
+{% include "program/statistics/form.html" %}
+</div>
+</form>
+
+<script type="text/javascript">
+
+dojo.require("dijit.dijit");
+dojo.require("dojo.parser");
+
+dojo.require("dijit.form.Form");
+dojo.require("dijit.form.Button");
+dojo.require("dijit.form.RadioButton");
+dojo.require("dijit.form.CheckBox");
+dojo.require("dijit.form.Select");
+dojo.require("dijit.form.MultiSelect");
+dojo.require("dijit.form.TextBox");
+dojo.require("dijit.form.NumberTextBox");
+
+function clear_widget(field_name)
+{
+    if (dijit.byId)
+        if (dijit.byId("id_" + field_name)) 
+            dijit.byId("id_" + field_name).destroy();
+}
+
+function setup_update(field_name)
+{
+    if (handles[field_name])
+        dojo.disconnect(handles[field_name]);
+        
+    handles[field_name] = dojo.connect(dojo.byId("id_" + field_name), "onchange", function () {
+        xhrArgs={
+            url:'/manage/statistics/?update_form',
+            handleAs:'json',
+            load: apply_fragment_changes,
+            form: 'statistics_form',
+		};
+        var deferred=dojo.xhrPost(xhrArgs);
+        //  console.log(field_name + " changed");
+    });
+}
+
+var handles = {};
+
+function setup_callbacks()
+{
+    {% include "program/statistics/script.js" %}
+}
+
+dojo.addOnLoad(setup_callbacks);
+</script>
+
+<p>
+<div id="result">
+    {{ result }}
+</div>
+</p>
+
+{% endblock %}

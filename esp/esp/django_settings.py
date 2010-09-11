@@ -98,6 +98,8 @@ DEFAULT_EMAIL_ADDRESSES = {
     'membership': 'info@learningu.org',
     'default': 'info@learningu.org',
 }
+# The name of your host institution.
+INSTITUTION_NAME = 'MIT'
 # A 'slug' used in e-mail titles, like 'ESP' or 'Splash'
 ORGANIZATION_SHORT_NAME = 'ESP'
 # The host for ESP site-supported e-mail lists.

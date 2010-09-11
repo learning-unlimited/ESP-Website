@@ -222,7 +222,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 
 ESP.declare('ESP.Scheduling.Widgets.GarbageBin', Class.create({
 	    initialize: function(){
-		this.el = $j('<div/>').addClass('garbage');
+		this.el = $j('<div>Drag here to unschedule</div>').addClass('garbage');
 		var target = this.el;
 		var activeClass = 'dd-highlight';
 		var options = $j.extend({

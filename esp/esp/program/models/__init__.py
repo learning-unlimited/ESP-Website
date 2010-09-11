@@ -670,7 +670,7 @@ class Program(models.Model):
         else:
             return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
 
-    def getResourceTypes(self, include_classroom=False):
+    def getResourceTypes(self, include_classroom=False, include_global=None):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
         from esp.resources.models import ResourceType
         
@@ -679,7 +679,13 @@ class Program(models.Model):
         else:
             exclude_types = [ResourceType.get_or_create('Classroom')]
         
-        Q_filters = Q(program=self) | Q(program__isnull=True)
+        if include_global is None:
+            include_global = Tag.getTag('allow_global_restypes')
+
+        if include_global:
+            Q_filters = Q(program=self) | Q(program__isnull=True)
+        else:
+            Q_filters = Q(program=self)
         
         #   Inherit resource types from parent programs.
         parent_program = self.getParentProgram()

@@ -1,0 +1,7 @@
+<h2>Zip Code Info</h2>
+<p>Of {{ num_students }} students, {{ invalid }} had invalid Zip codes.</p>
+<ul>
+{% for pair in zip_data %}
+    <li>Zip code {{ pair.0 }}: {{ pair.1 }} students
+{% endfor %}
+</ul>

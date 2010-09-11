@@ -64,7 +64,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             "link_title": "Program Dashboard",
             "module_type": "manage",
             "main_call": "dashboard",
-            "aux_calls": "deadlines",
+            "aux_calls": "main,deadlines,deadline_management",
             "seq": -9999
             }
 

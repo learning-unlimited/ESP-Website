@@ -1,0 +1,24 @@
+<h2>Registration Timing Info</h2>
+<p>The distribution of first class registration and final confirmation dates are shown below for each program.</p>
+<ul>
+{% for trip in program_data %}
+    <li>{{ trip.0 }}
+        <ul>
+        <li>Start of registration (first class entered)
+            <ul>
+                {% for pair in trip.1 %}
+                <li>{{ pair.0|date:"D d M Y" }}: {{ pair.1 }} students</li>
+                {% endfor %}
+            </ul>
+        </li>
+        <li>End of registration (confirmation)
+            <ul>
+                {% for pair in trip.2 %}
+                <li>{{ pair.0|date:"D d M Y" }}: {{ pair.1 }} students</li>
+                {% endfor %}
+            </ul>
+        </li>
+        </ul>
+    </li>
+{% endfor %}
+</ul>

@@ -1,0 +1,29 @@
+{% extends "main.html" %}
+
+{% block title %}Merge accounts{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{{ MEDIA_URL }}admin/base.css" type="text/css" />
+{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Merge accounts"|subsection }}{% endautoescape %}
+{% endblock %}
+
+{% block content %}
+<h1>Merge accounts</h1>
+
+
+<form action="{{ request.path }}" method="post">
+{% csrf_token %}
+<div id="program_form">
+  Please select two accounts to merge:
+  <table width="550">
+  {{ form.as_table }}
+  <tr><td colspan="2"><input type="submit" value="Merge!" name="submit" onclick="return confirm('Account merges cannot be undone. Proceed?');" /></td></tr>
+  </table>
+</div></form>
+
+{% endblock %}

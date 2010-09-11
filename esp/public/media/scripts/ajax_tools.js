@@ -85,11 +85,6 @@ var apply_fragment_changes = function(data)
     // Parse the keys
     for (var key in data)
     {
-        if (key == 'script')
-        {
-            //  console.log("Evaluating: " + data[key]);
-            eval(data[key]);
-        }
         //  Check for FOO_html ending, which means "replace HTML content of DOM node FOO"
         var re_match = key.match("([A-Za-z0-9_]*)_html");
         if (re_match)
@@ -98,11 +93,16 @@ var apply_fragment_changes = function(data)
             matching_node = dojo.byId(re_match[1])
             if (matching_node)
             {
-                // console.log("Rewriting HTML for element: " + re_match[1])
+                //  console.log("Rewriting HTML for element: " + re_match[1])
                 matching_node.innerHTML = data[key];
             }
         }
         
+        if (key == 'script')
+        {
+            //  console.log("Evaluating: " + data[key]);
+            eval(data[key]);
+        }
     }
 }
 

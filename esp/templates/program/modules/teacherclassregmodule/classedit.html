@@ -57,7 +57,7 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
             <noscript>(Note: Please enable Javascript.)</noscript>
         </td>
         <td>
-            {% for rt in resource_types %}<a id="add_request_{{ rt.id }}" href="/teach/{{ program.getUrlBase }}/makeaclass">{{ rt.name }}</a>{% if not forloop.last %} | {% endif %}{% endfor %} | <a id="add_restype" href="/teach/{{ program.getUrlBase }}/makeaclass">Other</a>
+            {% for rt in resource_types %}<a id="add_request_{{ rt.id }}" href="/teach/{{ program.getUrlBase }}/makeaclass">{{ rt.name }}</a>{% if not forloop.last %} | {% endif %}{% endfor %}{% if allow_restype_creation %} | <a id="add_restype" href="/teach/{{ program.getUrlBase }}/makeaclass">Other</a>{% endif %}
         </td>
     </tr>
 </table>

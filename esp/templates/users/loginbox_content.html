@@ -1,4 +1,4 @@
-<div id="loginbox">
+<div id="loginbox" >
 <table align="center" class="loginform" cellspacing="0" cellpadding="5">
 <tr><td>
 
@@ -21,7 +21,7 @@
         <a href="/manage/programs/">Manage Programs</a> <br />
     {% endif %}
     {% if request.user.other_user %}
-        <a href="/myesp/switchback/">Go back to {{ request.session.user_morph.retTitle }}</a> <br />
+        <br /><a href="/myesp/switchback/">Unmorph to {{ request.session.user_morph.olduser_name }}</a> <br />({{ request.session.user_morph.retTitle }})<br /><br />
     {% endif %}
     <a href="/myesp/signout/">Logout</a>
   </p>

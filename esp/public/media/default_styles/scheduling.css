@@ -194,11 +194,16 @@ margin-bottom: 20px;
 }
 
 .garbage {
-width: 30px;
-height: 30px;
+width: 100px;
+height: 40px;
 background: grey;
 border: 1px solid black;
 margin-right: 200px;
+color: white;
+font-family: Arial, Helvetica, sans-serif;
+font-size: 0.8em;
+vertical-align: center;
+text-align: center;
 }
 
 .garbage.dd-highlight {
