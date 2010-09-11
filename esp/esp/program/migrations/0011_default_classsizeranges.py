@@ -1,27 +1,30 @@
 # encoding: utf-8
 import datetime
 from south.db import db
-from south.v2 import SchemaMigration
+from south.v2 import DataMigration
 from django.db import models
 
-from esp.program.models import ClassSubject
+from esp.datatree.models import GetNode
+from esp.program.models import ClassSizeRange, Program
 
-class Migration(SchemaMigration):
+class Migration(DataMigration):
 
     def forwards(self, orm):
-        # Changing field 'ClassSubject.class_size_max'
-        db.alter_column('program_class', 'class_size_max', self.gf('django.db.models.fields.IntegerField')(null=True))
-
-        # Change any class subjects that may have been previously set with a large class size max back to none.
-        ClassSubject.objects.filter(class_size_max=9998).update(class_size_max=None)
+        dummy_prog = Program.objects.get(anchor=GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
+        ClassSizeRange.objects.get_or_create(range_min=4, range_max=10, program=dummy_prog)
+        ClassSizeRange.objects.get_or_create(range_min=10, range_max=15, program=dummy_prog)
+        ClassSizeRange.objects.get_or_create(range_min=15, range_max=22, program=dummy_prog)
+        ClassSizeRange.objects.get_or_create(range_min=22, range_max=27, program=dummy_prog)
+        ClassSizeRange.objects.get_or_create(range_min=27, range_max=35, program=dummy_prog)
+        ClassSizeRange.objects.get_or_create(range_min=35, range_max=45, program=dummy_prog)
+        ClassSizeRange.objects.get_or_create(range_min=45, range_max=60, program=dummy_prog)
+        ClassSizeRange.objects.get_or_create(range_min=60, range_max=200, program=dummy_prog)
 
 
     def backwards(self, orm):
-        # Update any problematic rows (ones with null class size max) so they have a number.
-        ClassSubject.objects.filter(class_size_max=None).update(class_size_max=9998)
-
-        # Changing field 'ClassSubject.class_size_max'
-        db.alter_column('program_class', 'class_size_max', self.gf('django.db.models.fields.IntegerField')())
+        dummy_prog = Program.objects.get(anchor=GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
+        dummy_ranges = ClassSizeRange.objects.filter(program=dummy_prog)
+        dummy_ranges.delete()
 
 
     models = {
@@ -169,7 +172,7 @@ class Migration(SchemaMigration):
             'category': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'cls'", 'to': "orm['program.ClassCategories']"}),
             'checklist_progress': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ProgramCheckItem']", 'symmetrical': 'False', 'blank': 'True'}),
             'class_info': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            'class_size_max': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'class_size_max': ('django.db.models.fields.IntegerField', [], {}),
             'class_size_min': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
             'class_size_optimal': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
             'directors_notes': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
@@ -249,7 +252,7 @@ class Migration(SchemaMigration):
             'emailverifycode': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'guardian_info': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'as_guardian'", 'null': 'True', 'to': "orm['users.GuardianInfo']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'last_ts': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2010, 9, 10, 12, 44, 37, 75947)'}),
+            'last_ts': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2010, 9, 10, 12, 4, 30, 37297)'}),
             'most_recent_profile': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'old_text_reminder': ('django.db.models.fields.NullBooleanField', [], {'null': 'True', 'db_column': "'text_reminder'", 'blank': 'True'}),
             'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']", 'null': 'True'}),
