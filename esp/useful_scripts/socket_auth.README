@@ -1,0 +1,2 @@
+To start socket_auth, run:
+rm socket_auth/socket_auth.sock; (umask 002 && ./socket_auth.py socket_auth/socket_auth.sock)

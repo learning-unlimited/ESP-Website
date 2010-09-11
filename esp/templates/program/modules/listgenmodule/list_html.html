@@ -38,6 +38,7 @@ body { font-family: georgia; }
 <tr>
    <th>#</th>
    <th>ID#</th>
+   <th>Username</th>
    <th>Name</th>
    <th>Address</th>
    <th>Email</th>
@@ -53,6 +54,7 @@ body { font-family: georgia; }
 <tr>{% with user.getLastProfile as profile %}
    <td>{{forloop.counter}}</td>
    <td><strong>{{user.id}}</strong></td>
+   <td>{{ user.username }}</td>
    <td>{{ user.name }}</td>
    <td>{% if profile.contact_user.address %}{{ profile.contact_user.address}}{% else %}N/A{% endif %}</td>
    <td>{{ user.email }}</td>
