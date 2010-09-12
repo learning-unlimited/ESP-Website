@@ -1,0 +1,73 @@
+{% extends "main.html" %}
+
+{% block title %}Manage Volunteers{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="/media/calendar/calendar-blue.css" />
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/calendar/calendar.js"></script>
+    <script type="text/javascript" src="/media/calendar/lang/calendar-en.js"></script>
+    <script type="text/javascript" src="/media/calendar/calendar-setup.js"></script>
+{% endblock %}
+
+{% block content %}
+
+{% load render_qsd %}
+{% inline_qsd_block program.anchor volunteer_requests request.user %}
+<p>
+You may request groups of volunteers for your program here.  At the <a href="/volunteer/{{ program.getUrlBase }}/signup">volunteer sign-up page</a>, people will be able to choose from any subset of this list.
+</p>
+{% end_inline_qsd_block %}
+
+<div id="program_form">
+<center>
+<table style="border: 1px solid #cccccc;">
+<tr>
+<th colspan="3" align="center">Current Volunteer Shifts and Offers</th>
+</tr>
+{% if requests|length_is:0 %}
+    <td colspan="3">No requests at this time.  Please add some using the form below.</td>
+{% else %}
+    {% for vr in requests %}
+    <tr>
+    <td>{{ vr.timeslot.pretty_time }}</td>
+    <td>{{ vr.timeslot.description }}: {{ vr.num_offers }} / {{ vr.num_volunteers }} volunteers <br />
+        <div id="offers" style="color: blue; font-size: 0.9em;">{% for offer in vr.get_offers %}
+        {{ offer.name }}, {{ offer.email }}, {{ offer.phone }} <br />
+        {% endfor %}
+        </div>
+    </td>
+    <td>
+        <a href="{{ request.path }}?op=delete&id={{ vr.id }}">[Delete]</a>
+        <a href="{{ request.path }}?op=edit&id={{ vr.id }}">[Edit]</a>
+    </td>
+    </tr>
+    {% endfor %}
+{% endif %}
+</table>
+</center>
+
+<br />
+
+<form method="POST" action="{{ request.path }}">{% csrf_token %}
+<center>
+<table width="400">
+<tr>
+    <th colspan="2">Request Volunteer Shift</th>
+</tr>
+    {{ form }}
+<tr>   
+    <td colspan="2" align="center"><input type="submit" value="Submit" /></td>
+</tr>
+</table>
+</center>
+</form>
+</div>
+
+
+{% endblock %}

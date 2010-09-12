@@ -887,6 +887,9 @@ class ESPUser(User, AnonymousUser):
         from esp.miniblog.models import Entry
         return UserBit.find_by_anchor_perms(Entry, self, GetNode('V/Subscribe')).order_by('-timestamp')
 
+    def getVolunteerOffers(self, program):
+        return self.volunteeroffer_set.filter(request__program=program)
+
     @staticmethod
     def isUserNameTaken(username):
         return len(User.objects.filter(username=username.lower()).values('id')[:1]) > 0
