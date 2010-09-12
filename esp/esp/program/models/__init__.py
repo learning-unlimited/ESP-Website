@@ -633,7 +633,7 @@ class Program(models.Model):
     def sections(self, use_cache=True):
         return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
 
-    def getTimeSlots(self, exclude_types=['Compulsory']):
+    def getTimeSlots(self, exclude_types=['Compulsory','Volunteer']):
         """ Get the time slots for a program. 
             A flag, exclude_types, allows you to restrict which types of timeslots
             are grabbed.  The default excludes 'compulsory' events, which are
