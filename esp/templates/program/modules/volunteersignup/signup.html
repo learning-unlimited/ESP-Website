@@ -1,0 +1,54 @@
+{% extends "main.html" %}
+
+{% block title %}Sign up to volunteer{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+{% endblock %}    
+
+{% block content %}
+
+{% load render_qsd %}
+{% inline_qsd_block program.anchor volunteer_signup request.user %}
+<p>
+</p>
+{% end_inline_qsd_block %}
+
+{% if complete %}
+<h3>Thanks!</h3>
+<p>
+Thank you, {{ complete_name }}, for volunteering! You will receive reminder emails on {{ complete_email }} as the program nears. (And, we have your phone number, {{ complete_phone }}, in case there are any emergencies or we need to contact you ugrently.)
+</p>
+<p>If you would like to change your volunteer commitments, please fill out the form below again.</p>
+{% load render_qsd %}
+{% inline_qsd_block program.anchor volunteer_complete request.user %}
+<p>
+</p>
+{% end_inline_qsd_block %}
+{% endif %}
+
+<div id="program_form">
+<form method="POST" action="{{ request.path }}">{% csrf_token %}
+<center>
+<table width="500">
+<tr>
+    <th colspan="2">Volunteer for {{ program.niceName }}</th>
+</tr>
+<tr>
+    <td colspan="2">{% if request.user.email %}Since you are logged in, your information is pre-filled but you can change it for the purposes of contacting you about volunteering.{% else %}If you have an account, please <a href="/myesp/login?next={{ request.path }}">click here</a> to log in and return to this page.{% endif %}</td>
+</tr>
+{% if form.errors %}
+<tr>
+    <td colspan="2"><span style="color: red;">Please correct the errors in the form.</span></td>
+</tr>
+{% endif %}
+    {{ form }}
+<tr>   
+    <td colspan="2" align="center"><input type="submit" value="Submit" /></td>
+</tr>
+</table>
+</center>
+</form>
+</div>
+{% endblock %}
