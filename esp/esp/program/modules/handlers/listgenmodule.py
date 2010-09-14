@@ -36,34 +36,6 @@ from esp.datatree.sql.query_utils import QTree
 from django.db.models.query      import Q
 from django import forms
 
-"""
-
-   <th>#</th>
-   <th>ID#</th>
-   <th>Name</th>
-   <th>Address</th>
-   <th>Email</th>
-   <th>Account Date</th>
-   <th>Cell Phone</th>
-   <th>Text Msg?</th>
-   <th># of class hours</th>
-   <th>School</th>
-   <th>School (if no match)</th>
-   <th>Found out about Splash from...</th>
-
-   <td><strong>{{user.id}}</strong></td>
-   <td>{{ user.name }}</td>
-   <td>{% if user.getLastProfile.contact_user.address %}{{ user.getLastProfile.contact_user.address}}{% else %}N/A{% endif %}</td>
-   <td>{{ user.email }}</td>
-   <td>{{ user.date_joined|date:"m/d/Y" }}</td>
-   <td>{% if user.getLastProfile.contact_user.phone_cell %}{{ user.getLastProfile.contact_user.phone_cell}}{% else %}N/A{% endif %}</td>
-   <td>{% if user.getLastProfile.text_reminder %}<b>Yes</b>{% else %}No{% endif %}</td>
-   <td>{{ user.class_count }}</td>
-   <td>{% if user.getLastProfile.student_info.k12school %}{{ user.getLastProfile.student_info.k12school.name }}{% else %}N/A{% endif %}</td>
-   <td>{% if user.getLastProfile.student_info.school %}{{ user.getLastProfile.student_info.school }}{% else %}N/A{% endif %}</td>
-   <td>{% if user.getLastProfile.student_info.heardofesp %}{{ user.getLastProfile.student_info.heardofesp }}{% else %}N/A{% endif %}</td>
-   """
-
 class UserAttributeGetter(object):
     @staticmethod
     def getFunctions():
@@ -78,12 +50,13 @@ class UserAttributeGetter(object):
                     '08_regdate': 'Registration Date',
                     '09_cellphone': 'Cell Phone',
                     '10_textmsg': 'Text Msg?',
-                    '11_classhours': 'Num Class Hrs',
-                    '12_gradyear': 'Grad Year',
-                    '13_school': 'School',
-                    '14_heard_about': 'Heard about Splash from',
-                    '15_transportation': 'Plan to Get to Splash',
-                    '16_post_hs': 'Post-HS plans',
+                    '11_studentrep': 'Student Rep?',
+                    '12_classhours': 'Num Class Hrs',
+                    '13_gradyear': 'Grad Year',
+                    '14_school': 'School',
+                    '15_heard_about': 'Heard about Splash from',
+                    '16_transportation': 'Plan to Get to Splash',
+                    '17_post_hs': 'Post-HS plans',
                  }
         result = {}
         for item in dir(UserAttributeGetter):
@@ -105,7 +78,12 @@ class UserAttributeGetter(object):
         if result is None:
             return 'N/A'
         else:
-            return result
+            if result is True:
+                return 'Yes'
+            elif result is False:
+                return 'No'
+            else:
+                return result
         
     def get_id(self):
         return self.user.id
@@ -144,6 +122,10 @@ class UserAttributeGetter(object):
         if self.profile.contact_user:
             return self.profile.contact_user.receive_txt_message
             
+    def get_studentrep(self):
+        if self.profile.student_info:
+            return self.profile.student_info.studentrep
+
     def get_classhours(self):
         return sum([x.meeting_times.count() for x in self.user.getEnrolledSections(self.program)])
         
