@@ -92,7 +92,7 @@ class VolunteerOfferForm(forms.Form):
     
     requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text='Sign up for one or more shifts; remember to avoid conflicts with your classes if you\'re teaching!', widget=forms.CheckboxSelectMultiple)
     
-    confirm = forms.BooleanField(help_text='<span style="color: red; font-weight: bold;">I agree to show up at the time(s) selected above.</span>')
+    confirm = forms.BooleanField(help_text='<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>')
     
     def __init__(self, *args, **kwargs):
         if 'program' in kwargs:

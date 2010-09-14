@@ -65,6 +65,12 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         if hasattr(self.user, 'email'):
             form.load(self.user)
         
-        context['form'] = form
+        #   Override default appearance; template doesn't mind taking a string instead
+        context['form'] = form._html_output(
+            normal_row = u'<tr%(html_class_attr)s><th>%(label)s</th><td>%(errors)s%(field)s%(help_text)s</td></tr>',
+            error_row = u'<tr><td colspan="2">%s</td></tr>',
+            row_ender = u'</td></tr>',
+            help_text_html = u'%s',
+            errors_on_separate_row = False)
         
         return render_to_response('program/modules/volunteersignup/signup.html', request, (prog, tl), context)
