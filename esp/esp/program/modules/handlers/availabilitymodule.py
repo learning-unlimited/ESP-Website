@@ -148,5 +148,6 @@ class AvailabilityModule(ProgramModuleObj):
 
             context = {'groups': [{'selections': [{'checked': (t in available_slots), 'slot': t} for t in group]} for group in time_groups]}
             context['prog'] = self.program
+            context['is_overbooked'] = (not self.isCompleted() and (self.user.getTaughtTime(self.program) > timedelta(0)))
             
             return render_to_response(self.baseDir()+'availability_form.html', request, (prog, tl), context)

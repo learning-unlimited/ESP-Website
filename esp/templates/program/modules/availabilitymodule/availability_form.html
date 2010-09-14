@@ -20,10 +20,15 @@ Before you can register classes in {{ prog.niceName }}, please let us know which
 You must include enough times (in contiguous blocks) for all of the classes that you would like to teach.
 </p>
 
-
 <p>
 <b>Checked checkboxes mean that you are available at the indicated time.</b>
 </p>
+
+{% if is_overbooked %}
+<p style="color: red;">
+We have detected that you are currently signed up to teach more hours of class than you have hours of availability.  This makes it impossible to schedule your classes.  Please add to your available times in order to continue with registration.
+</p>
+{% endif %}
 
 <br />
 
