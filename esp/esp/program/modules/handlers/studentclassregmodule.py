@@ -432,7 +432,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         #   Desired priority level is 1 above current max
         if section.preregister_student(self.user, self.user.onsite_local, False, priority, prereg_verb = prereg_verb):
             bits = UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now())
-            if bits.count() == 0:
+            if bits.count() == 0 and Tag.getTag('confirm_on_addclass'):
                 bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
             return True
         else:

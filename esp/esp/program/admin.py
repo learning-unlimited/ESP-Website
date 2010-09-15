@@ -34,6 +34,7 @@ from django.db.models import ManyToManyField
 from esp.program.models import ProgramModule, ArchiveClass, Program, BusSchedule
 from esp.program.models import TeacherParticipationProfile, SATPrepRegInfo, RegistrationProfile
 from esp.program.models import TeacherBio, FinancialAidRequest, SplashInfo
+from esp.program.models import VolunteerRequest, VolunteerOffer
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
@@ -118,6 +119,9 @@ admin.site.register(ScheduleTestCategory, ScheduleTestCategoryAdmin)
 class ScheduleTestSectionListAdmin(admin.ModelAdmin):
     list_display = ('timeblock', 'section_ids', 'expr', 'seq', subclass_instance_type, 'text')
 admin.site.register(ScheduleTestSectionList, ScheduleTestSectionListAdmin)
+
+admin.site.register(VolunteerRequest)
+admin.site.register(VolunteerOffer)
 
 ## class_.py
 

@@ -623,3 +623,16 @@ def statistics(request, program=None):
         return HttpResponse(json.dumps(context), mimetype='application/json')
     else:
         return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
+
+@admin_required
+def template_preview(request):
+
+    if 'template' in request.GET:
+        template = request.GET['template']
+    else:
+        template = 'main.html'
+        
+    context = {}
+
+    return render_to_response(template, request, DataTree.get_by_uri('Q/Web'), context)
+    

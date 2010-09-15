@@ -14,7 +14,10 @@
                     {% endfor %}
                 {% endif %}
                 {% if field.errors %}{{ field.errors }}<br />{% endif %}
-                {{ field }} <a id="remove_request_{{ forloop.parentloop.counter0 }}" href="/teach/{{ program.getUrlBase }}/makeaclass">Remove</a>
+                {{ field }} 
+                {% if not static_resource_requests %}
+                <a id="remove_request_{{ forloop.parentloop.counter0 }}" href="/teach/{{ program.getUrlBase }}/makeaclass">Remove</a>
+                {% endif %}
             </td>
         </tr>
         {% endfor %}

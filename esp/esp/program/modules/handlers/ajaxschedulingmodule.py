@@ -196,7 +196,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @cache_function
     def ajax_times_cached(self, prog):
-        times = list( [ dict(e) for e in Event.objects.filter(anchor=self.program_anchor_cached()).values('id', 'short_description', 'description', 'start', 'end') ] )
+        times = list( [ dict(e) for e in prog.getTimeSlots().values('id', 'short_description', 'description', 'start', 'end') ] )
 
         for t in times:
             t['start'] = t['start'].timetuple()[:6]

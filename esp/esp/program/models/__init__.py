@@ -38,6 +38,7 @@ from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, Edu
 from datetime import datetime, timedelta
 from django.core.cache import cache
 from django.db.models import Q
+from django.contrib.localflavor.us.models import PhoneNumberField
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError, AjaxError
 from esp.cache import cache_function
@@ -632,7 +633,7 @@ class Program(models.Model):
     def sections(self, use_cache=True):
         return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
 
-    def getTimeSlots(self, exclude_types=['Compulsory']):
+    def getTimeSlots(self, exclude_types=['Compulsory','Volunteer']):
         """ Get the time slots for a program. 
             A flag, exclude_types, allows you to restrict which types of timeslots
             are grabbed.  The default excludes 'compulsory' events, which are
@@ -902,6 +903,9 @@ class Program(models.Model):
         """
         options = self.getModuleExtension('StudentClassRegModuleInfo')
         return options.visible_enrollments
+        
+    def getVolunteerRequests(self):
+        return VolunteerRequest.objects.filter(timeslot__anchor=self.anchor)
     
     def archive(self):
         archived_classes = []
@@ -1669,6 +1673,30 @@ class ScheduleTestSectionList(ScheduleTestTimeblock):
 def schedule_constraint_test(prog):
     sc = ScheduleConstraint(program=prog)
     return True
+    
+
+class VolunteerRequest(models.Model):
+    program = models.ForeignKey(Program)
+    timeslot = models.ForeignKey('cal.Event')
+    num_volunteers = models.PositiveIntegerField()
+    
+    def num_offers(self):
+        return self.volunteeroffer_set.count()
+        
+    def get_offers(self):
+        return self.volunteeroffer_set.all()
+    
+class VolunteerOffer(models.Model):
+    request = models.ForeignKey(VolunteerRequest)
+    confirmed = models.BooleanField()
+
+    #   Fill out this if you're logged in...
+    user = AjaxForeignKey(User, blank=True, null=True)
+    
+    #   ...or this if you haven't.
+    email = models.EmailField(blank=True, null=True)
+    name = models.CharField(max_length=80, blank=True, null=True)
+    phone = PhoneNumberField(blank=True, null=True)
     
     
 from esp.program.models.class_ import *

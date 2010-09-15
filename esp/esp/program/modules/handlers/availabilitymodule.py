@@ -35,6 +35,7 @@ from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from django                      import forms
 from esp.cal.models              import Event
+from esp.tagdict.models          import Tag
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, Resource
@@ -64,6 +65,12 @@ class AvailabilityModule(ProgramModuleObj):
         """ Make sure that they have indicated sufficient availability for all classes they have signed up to teach. """
         self.user = ESPUser(self.user)
         available_slots = self.user.getAvailableTimes(self.program, ignore_classes=False)
+        
+        #   Check number of timeslots against Tag-specified minimum
+        if Tag.getTag('min_available_timeslots'):
+            min_ts_count = int(Tag.getTag('min_available_timeslots'))
+            if len(available_slots) < min_ts_count:
+                return False
         
         # Round durations of both classes and timeslots to nearest 30 minutes
         total_time = self.user.getTaughtTime(self.program, include_scheduled=True, round_to=0.5)
@@ -141,5 +148,6 @@ class AvailabilityModule(ProgramModuleObj):
 
             context = {'groups': [{'selections': [{'checked': (t in available_slots), 'slot': t} for t in group]} for group in time_groups]}
             context['prog'] = self.program
+            context['is_overbooked'] = (not self.isCompleted() and (self.user.getTaughtTime(self.program) > timedelta(0)))
             
             return render_to_response(self.baseDir()+'availability_form.html', request, (prog, tl), context)
