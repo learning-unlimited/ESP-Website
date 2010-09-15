@@ -206,6 +206,9 @@ class ClassRegModuleInfo(models.Model):
     # Enable teachers to specify all allowable class size ranges.
     use_allowable_class_size_ranges = models.BooleanField(blank=True, default=False)
 
+    # Have an additional registration option to register for an "open class".
+    open_class_registration = models.BooleanField(blank=True, default=False,
+         help_text = 'If true, teachers will be presented with an option to register for an "open class".')
     
     #   Choose which appears on teacher reg for the modules: checkbox list, progress bar, or nothing
     #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))
