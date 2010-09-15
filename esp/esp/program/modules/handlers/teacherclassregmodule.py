@@ -586,6 +586,15 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         else:
             errors = {}
+            
+            if Tag.getTag('default_restypes'):
+                resource_type_labels = json.loads(Tag.getTag('default_restypes'))
+            else:
+                resource_type_labels = ['Classroom', 'A/V']
+            request_program = self.program
+            if Tag.getTag('allow_global_restypes'):
+                request_program = None
+            
             if newclass is not None:
                 current_data = newclass.__dict__
                 # Duration can end up with rounding errors. Pick the closest.
@@ -612,21 +621,28 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 #   Todo...
                 ds = newclass.default_section()
                 class_requests = ResourceRequest.objects.filter(target=ds)
-                resource_formset = ResourceRequestFormSet(initial=[{'resource_type': x.res_type, 'desired_value': x.desired_value} for x in class_requests], resource_type=[x.res_type for x in class_requests], prefix='request')
+                if Tag.getTag('static_resource_requests'):
+                    #   Program the multiple-checkbox forms if static requests are used.
+                    resource_formset = ResourceRequestFormSet(resource_type=[ResourceType.get_or_create(x, request_program) for x in resource_type_labels], prefix='request')
+                    initial_requests = {}
+                    for x in class_requests:
+                        if x.res_type.name not in initial_requests:
+                            initial_requests[x.res_type.name]  = []
+                        initial_requests[x.res_type.name].append(x.desired_value)
+                    for form in resource_formset.forms:
+                        if form.fields['desired_value'].label in initial_requests:
+                            form.fields['desired_value'].initial = initial_requests[form.fields['desired_value'].label]
+                else:
+                    #   With dynamic requests each form uses radio buttons, so there's a one-to-one correspondence
+                    #   between forms and requests.
+                    resource_formset = ResourceRequestFormSet(initial=[{'resource_type': x.res_type, 'desired_value': x.desired_value} for x in class_requests], resource_type=[x.res_type for x in class_requests], prefix='request')
                 restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
             else:
                 reg_form = TeacherClassRegForm(self)
-                request_program = self.program
-                if Tag.getTag('default_restypes'):
-                    type_labels = json.loads(Tag.getTag('default_restypes'))
-                else:
-                    type_labels = ['Classroom', 'A/V']
-                if Tag.getTag('allow_global_restypes'):
-                    request_program = None
 
                 #   Provide initial forms: a request for each provided type, but no requests for new types.
-                resource_formset = ResourceRequestFormSet(resource_type=[ResourceType.get_or_create(x, request_program) for x in type_labels], prefix='request')
+                resource_formset = ResourceRequestFormSet(resource_type=[ResourceType.get_or_create(x, request_program) for x in resource_type_labels], prefix='request')
                 restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
         context['one'] = one
@@ -635,13 +651,14 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['formset'] = resource_formset
         context['restype_formset'] = restype_formset
         context['allow_restype_creation'] = Tag.getTag('allow_restype_creation')
+        context['static_resource_requests'] = Tag.getTag('static_resource_requests')
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         
         if newclass is None:
             context['addoredit'] = 'Add'
         else:
             context['addoredit'] = 'Edit'
-
+            
         return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
 
 
