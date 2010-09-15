@@ -26,9 +26,9 @@ class ClassCreationController(object):
         self.crmi = prog.getModuleExtension('ClassRegModuleInfo')
 
     @transaction.commit_on_success
-    def makeaclass(self, user, reg_data):
+    def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):
 
-        reg_form, resource_formset, restype_formset = self.get_forms(reg_data)
+        reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
 
         cls = ClassSubject()
         self.attach_class_to_program(cls)
@@ -43,9 +43,9 @@ class ClassCreationController(object):
         return cls
 
     @transaction.commit_on_success
-    def editclass(self, user, reg_data, clsid):
+    def editclass(self, user, reg_data, clsid, form_class=TeacherClassRegForm):
         
-        reg_form, resource_formset, restype_formset = self.get_forms(reg_data)
+        reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
 
         try:
             cls = ClassSubject.objects.get(id=int(clsid))
@@ -63,8 +63,8 @@ class ClassCreationController(object):
         return cls
         
 
-    def get_forms(self, reg_data):
-        reg_form = TeacherClassRegForm(self.crmi, reg_data)
+    def get_forms(self, reg_data, form_class=TeacherClassRegForm):
+        reg_form = form_class(self.crmi, reg_data)
         resource_formset = ResourceRequestFormSet(reg_data, prefix='request')
         restype_formset = ResourceTypeFormSet(reg_data, prefix='restype')
 

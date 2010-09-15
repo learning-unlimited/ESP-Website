@@ -253,6 +253,38 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # Return cleaned data
         return cleaned_data
 
+class TeacherOpenClassRegForm(TeacherClassRegForm):
+
+    def __init__(self, module, *args, **kwargs):
+        """ Initialize the teacher class reg form, and then remove irrelevant fields. """
+        def hide_field(field, default=None):
+            field.widget = forms.HiddenInput()
+            if default is not None:
+                field.initial = default
+                
+        super(TeacherOpenClassRegForm, self).__init__(module, *args, **kwargs)
+        open_class_category = ClassCategories.objects.get_or_create(category='Open Classes', symbol='O', seq=0)[0]
+        self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
+
+        # Re-enable the requested special resources field as a space needs .
+        self.fields['requested_special_resources'].widget = forms.Textarea()
+        self.fields['requested_special_resources'].label = "Space Needs"
+        self.fields['requested_special_resources'].help_text = "Please describe what kind of space needs you will have for this open class (such as walls, chairs, open floor space, etc)."
+
+        # Modify some help texts to be form-specific.
+        self.fields['duration'].help_text = "For how long are you willing to teach this class?"
+
+        fields = [('category', open_class_category.id), 
+                  ('prereqs', ''), ('viable_times', ''), ('session_count', 1), ('grade_min', 7), ('grade_max', 12), 
+                  ('class_size_max', 300), ('class_size_optimal', ''), ('optimal_class_size_range', ''), 
+                  ('allowable_class_size_ranges', ''), ('hardness_rating', 'Normal'), ('allow_lateness', True), 
+                  ('has_own_space', False), ('requested_room', ''), ('global_resources', ''),
+                  ('resources', '')]
+        for field, default in fields:
+            if field in self.fields:
+                self.fields[field].required = False
+                hide_field(self.fields[field], default)
+
 
 class TeacherEventSignupForm(FormWithRequiredCss):
     """ Form for teachers to pick interview and teacher training times. """

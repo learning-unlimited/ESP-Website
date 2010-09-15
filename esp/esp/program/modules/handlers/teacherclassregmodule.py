@@ -31,7 +31,7 @@ Email: web@esp.mit.edu
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
-from esp.program.modules.forms.teacherreg   import TeacherClassRegForm
+from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError
 from esp.datatree.models import *
@@ -550,13 +550,26 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
 
-        return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls, 'edit')
+        # Dirty hack to special-case the new "open classes".  Feel free to make more general/elegant. --rye
+        if cls.category.category == "Open Classes":
+            action = 'editopenclass'
+        else:
+            action = 'edit'
+
+        return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls, action)
 
     @aux_call
     @meets_deadline('/Classes/Create')
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None)
+
+    @aux_call
+    @meets_deadline('/Classes/Create')
+    @needs_teacher
+    def makeopenclass(self, request, tl, one, two, module, extra, prog, newclass = None):
+        return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None, action = 'createopenclass')
+
 
     def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None, action = 'create'):
         context = {'module': self}
@@ -570,8 +583,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             try:
                 if action == 'create':
                     newclass = ccc.makeaclass(request.user, request.POST)
+                elif action == 'createopenclass':
+                    newclass = ccc.makeaclass(request.user, request.POST, form_class=TeacherOpenClassRegForm)
                 elif action == 'edit':
                     newclass = ccc.editclass(request.user, request.POST, extra)
+                elif action == 'editopenclass':
+                    newclass = ccc.editclass(request.user, request.POST, extra, form_class=TeacherOpenClassRegForm)
 
                 do_question = bool(ProgramModule.objects.filter(handler="TeacherReviewApps", program=self.program))
 
@@ -611,7 +628,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 if newclass.allowable_class_size_ranges.all():
                     current_data['allowable_class_size_ranges'] = list(newclass.allowable_class_size_ranges.all().values_list('id', flat=True))
                 context['class'] = newclass
-                reg_form = TeacherClassRegForm(self, current_data)
+                if action=='edit':
+                    reg_form = TeacherClassRegForm(self, current_data)
+                elif action=='editopenclass':
+                    reg_form = TeacherOpenClassRegForm(self, current_data)
                 
                 #   Todo...
                 ds = newclass.default_section()
@@ -620,7 +640,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
             else:
-                reg_form = TeacherClassRegForm(self)
+                if action=='create':
+                    reg_form = TeacherClassRegForm(self)
+                elif action=='createopenclass':
+                    reg_form = TeacherOpenClassRegForm(self)
                 request_program = self.program
                 if Tag.getTag('default_restypes'):
                     type_labels = json.loads(Tag.getTag('default_restypes'))
@@ -646,7 +669,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         else:
             context['addoredit'] = 'Edit'
 
-        return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
+        if action == 'create' or action == 'edit':
+            template_name = 'classedit.html'
+        elif action == 'createopenclass' or action == 'editopenclass':
+            template_name = 'openclassedit.html'
+
+        return render_to_response(self.baseDir() + template_name, request, (prog, tl), context)
 
 
     @aux_call
