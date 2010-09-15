@@ -7,6 +7,7 @@ from esp.resources.models import ResourceType, ResourceRequest
 from esp.datatree.models import GetNode
 
 from django.core.mail import send_mail
+from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from django.db import transaction
 
@@ -65,10 +66,18 @@ class ClassCreationController(object):
 
     def get_forms(self, reg_data):
         reg_form = TeacherClassRegForm(self.crmi, reg_data)
-        resource_formset = ResourceRequestFormSet(reg_data, prefix='request')
-        restype_formset = ResourceTypeFormSet(reg_data, prefix='restype')
 
-        if not reg_form.is_valid() or not resource_formset.is_valid() or not restype_formset.is_valid():
+        try:
+            resource_formset = ResourceRequestFormSet(reg_data, prefix='request')
+        except ValidationError:
+            resource_formset = None
+
+        try:
+            restype_formset = ResourceTypeFormSet(reg_data, prefix='restype')
+        except ValidationError:
+            restype_formset = None
+            
+        if not reg_form.is_valid() or (resource_formset and not resource_formset.is_valid()) or (restype_formset and not restype_formset.is_valid()):
             print "classreg get_forms", reg_form.errors, "\n", resource_formset.errors, "\n", restype_formset.errors
             raise ClassCreationValidationError, (reg_form, resource_formset, restype_formset, "Invalid form data.  Please make sure you are using the official registration form, on esp.mit.edu.  If you are, please let us know how you got this error.")
 
@@ -149,12 +158,14 @@ class ClassCreationController(object):
     def add_rsrc_requests_to_class(self, cls, resource_formset, restype_formset):
         for sec in cls.get_sections():
             sec.clearResourceRequests()
-            for resform in resource_formset.forms:
-                self.import_resource_formset(sec, resform)
-            for resform in restype_formset.forms:
-                #   Save new types; handle imperfect validation
-                if len(resform.cleaned_data['name']) > 0:
-                    self.import_restype_formset(self, sec, resform)
+            if resource_formset:
+                for resform in resource_formset.forms:
+                    self.import_resource_formset(sec, resform)
+            if restype_formset:
+                for resform in restype_formset.forms:
+                    #   Save new types; handle imperfect validation
+                    if len(resform.cleaned_data['name']) > 0:
+                        self.import_restype_formset(self, sec, resform)
                     
     def import_resource_formset(self, sec, resform):
         rr = ResourceRequest()
