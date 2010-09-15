@@ -157,11 +157,19 @@ class ClassCreationController(object):
                     self.import_restype_formset(self, sec, resform)
                     
     def import_resource_formset(self, sec, resform):
-        rr = ResourceRequest()
-        rr.target = sec
-        rr.res_type = resform.cleaned_data['resource_type']
-        rr.desired_value = resform.cleaned_data['desired_value']
-        rr.save()
+        if isinstance(resform.cleaned_data['desired_value'], list):
+            for val in resform.cleaned_data['desired_value']:
+                rr = ResourceRequest()
+                rr.target = sec
+                rr.res_type = resform.cleaned_data['resource_type']
+                rr.desired_value = val
+                rr.save()
+        else:
+            rr = ResourceRequest()
+            rr.target = sec
+            rr.res_type = resform.cleaned_data['resource_type']
+            rr.desired_value = resform.cleaned_data['desired_value']
+            rr.save()
         return rr
 
     def import_restype_formset(self, sec, resform):

@@ -51,6 +51,7 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
         <td colspan="2">Please specify your classroom needs by building a list of requests.  You may submit more than one request per category (for example, you would need separate A/V requests for both DVD player and speakers).  If you are providing your own space for this class, please remove all requests.</td>
     </tr>
     -->
+{% if not static_resource_requests %}
     <tr>
         <td width="30%">
             <b>Click to add requests:</b>
@@ -70,6 +71,7 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
     register_link({id: "add_restype", url: "/teach/{{ program.getUrlBase }}/ajax_restypes", content: {action: "add"}, post_form: "clsform"});
 -->
 </script>
+{% endif %}
 <div id="request_forms">
 {% include "program/modules/teacherclassregmodule/requests_form_fragment.html" %}
 </div>
