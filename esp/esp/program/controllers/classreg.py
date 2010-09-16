@@ -101,7 +101,7 @@ class ClassCreationController(object):
             
         cls.category = ClassCategories.objects.get(id=reg_form.cleaned_data['category'])
 
-        if reg_form.cleaned_data['optimal_class_size_range']:
+        if 'optimal_class_size_range' in reg_form.cleaned_data and reg_form.cleaned_data['optimal_class_size_range']:
             cls.optimal_class_size_range = ClassSizeRange.objects.get(id=reg_form.cleaned_data['optimal_class_size_range'])
 
         if cls.anchor.friendly_name != cls.title:
@@ -109,7 +109,7 @@ class ClassCreationController(object):
 
         cls.save()
 
-        if reg_form.cleaned_data['allowable_class_size_ranges']:
+        if 'allowable_class_size_ranges' in reg_form.cleaned_data and reg_form.cleaned_data['allowable_class_size_ranges']:
             cls.allowable_class_size_ranges = ClassSizeRange.objects.filter(id__in=reg_form.cleaned_data['allowable_class_size_ranges'])
             cls.save()
 
