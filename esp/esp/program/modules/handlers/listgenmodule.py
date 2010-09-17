@@ -58,6 +58,11 @@ class UserAttributeGetter(object):
                     '16_transportation': 'Plan to Get to Splash',
                     '17_post_hs': 'Post-HS plans',
                  }
+
+        last_label_index = len(labels)
+        for i in range(3):#replace 3 with call to get_max_applications + fix that method    
+            key = str(last_label_index + i + 1) + '_class_application_' + str(i+1)
+            labels[key] = 'Class Application ' + str(i+1)
         result = {}
         for item in dir(UserAttributeGetter):
             label_map = {}
@@ -65,6 +70,7 @@ class UserAttributeGetter(object):
                 label_map[x[3:]] = x
             if item.startswith('get_') and item[4:] in label_map:
                 result[label_map[item[4:]]] = labels[label_map[item[4:]]]
+            
         return result
     
     def __init__(self, user, program):
@@ -74,6 +80,8 @@ class UserAttributeGetter(object):
         
     def get(self, attr):
         attr = attr.lstrip('0123456789_')
+        #if attr = 'classapplication':
+            
         result = getattr(self, 'get_' + attr)()
         if result is None:
             return 'N/A'
@@ -84,7 +92,7 @@ class UserAttributeGetter(object):
                 return 'No'
             else:
                 return result
-        
+
     def get_id(self):
         return self.user.id
         
@@ -151,6 +159,31 @@ class UserAttributeGetter(object):
     def get_post_hs(self):
         if self.profile.student_info:
             return self.profile.student_info.post_hs
+
+    #Replace this with something based on presence and number of application questions for a particular program 
+    def get_max_applications(self):
+        return 3
+
+    def get_class_application_1(self):
+        responses = self.user.listAppResponses(self.program)
+        if len(responses) > 0:
+            return str(responses[0].question.subject) + ':  ' + str(responses[0])   
+        else:
+            return None
+
+    def get_class_application_2(self):
+        responses = self.user.listAppResponses(self.program)
+        if len(responses) > 1:
+            return str(responses[1].question.subject) + ':  ' + str(responses[0])   
+        else:
+            return None
+    def get_class_application_3(self):
+        responses = self.user.listAppResponses(self.program)
+        if len(responses) > 2:
+            return str(responses[2].question.subject) + ':  ' + str(responses[0])   
+        else:
+            return None
+
             
 class ListGenForm(forms.Form):
     attr_choices = choices=UserAttributeGetter.getFunctions().items()
@@ -190,8 +223,10 @@ class ListGenModule(ProgramModuleObj):
         if request.method == 'POST' and 'fields' in request.POST:
             form = ListGenForm(request.POST)
             if form.is_valid():
+
                 labels_dict = UserAttributeGetter.getFunctions()
                 fields = [labels_dict[f] for f in form.cleaned_data['fields']]
+                fields.append('Class Application 1')
                 output_type = form.cleaned_data['output_type']
             
                 users = list(ESPUser.objects.filter(filterObj.get_Q()).filter(is_active=True).distinct())
