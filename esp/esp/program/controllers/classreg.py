@@ -31,13 +31,13 @@ class ClassCreationController(object):
 
         reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
 
+        self.require_teacher_has_time(user, reg_form._get_total_time_requested())
+
         cls = ClassSubject()
         self.attach_class_to_program(cls)
         self.make_class_happen(cls, user, reg_form, resource_formset, restype_formset)
         
         self.force_availability(user)  ## So the default DB state reflects the default form state of "all times work"
-
-        self.require_teacher_has_time_for_class(user, cls)
 
         self.send_class_mail_to_directors(cls, user)
 
@@ -52,12 +52,13 @@ class ClassCreationController(object):
             cls = ClassSubject.objects.get(id=int(clsid))
         except (TypeError, ClassSubject.DoesNotExist):
             raise ESPError(False), "The class you're trying to edit (ID %s) does not exist!" % (repr(clsid))
-        
+
+        extra_time = reg_form._get_total_time_requested() - cls.sections.count() * float(cls.duration)
+        self.require_teacher_has_time(user, extra_time)
+
         self.make_class_happen(cls, user, reg_form, resource_formset, restype_formset)
         
         self.force_availability(user)  ## So the default DB state reflects the default form state of "all times work"
-
-        self.require_teacher_has_time_for_class(user, cls)
 
         self.send_class_mail_to_directors(cls, user)
 
@@ -106,8 +107,7 @@ class ClassCreationController(object):
 
         if cls.anchor.friendly_name != cls.title:
             self.update_class_anchorname(cls)
-
-        cls.save()
+            cls.save()
 
         if 'allowable_class_size_ranges' in reg_form.cleaned_data and reg_form.cleaned_data['allowable_class_size_ranges']:
             cls.allowable_class_size_ranges = ClassSizeRange.objects.filter(id__in=reg_form.cleaned_data['allowable_class_size_ranges'])
@@ -132,7 +132,7 @@ class ClassCreationController(object):
         cls.anchor = self.program.classes_node()
 
     def update_class_anchorname(self, cls):
-        nodestring = cls.category.symbol + str(cls.id)
+        nodestring = cls.emailcode()
         cls.anchor = self.program.classes_node().tree_create([nodestring])
         cls.anchor.tree_create(['TeacherEmail'])  ## Just to make sure it's there
         cls.anchor.friendly_name = cls.title
@@ -151,12 +151,12 @@ class ClassCreationController(object):
             for ts in self.program.getTimeSlots():
                 user.addAvailableTime(self.program, ts)
 
-    def teacher_has_time_for_class(self, user, cls, cls_old_time = timedelta(0)):
-        return (user.getTaughtTime(self.program, include_scheduled=True) + timedelta(hours=float(cls.duration)) \
-                <= self.program.total_duration() + cls_old_time)
+    def teacher_has_time(self, user, hours):
+        return (user.getTaughtTime(self.program, include_scheduled=True) + timedelta(hours=hours) \
+                <= self.program.total_duration())
 
-    def require_teacher_has_time_for_class(self, user, cls, cls_old_time = timedelta(0)):
-        if not self.teacher_has_time_for_class(user, cls, cls_old_time):
+    def require_teacher_has_time(self, user, hours):
+        if not self.teacher_has_time(user, hours):
             raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
 
     def add_teacher_to_program_mailinglist(self, user):
