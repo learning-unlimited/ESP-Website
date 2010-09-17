@@ -35,7 +35,7 @@ from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
 from esp.datatree.models import DataTree, GetNode
 from esp.users.models import UserBit
-from esp.program.models import ClassCategories, ClassSubject, ClassSection
+from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from esp.settings import INSTITUTION_NAME
@@ -69,7 +69,10 @@ class TeacherClassRegForm(FormWithRequiredCss):
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
     class_size_max = forms.ChoiceField( label='Maximum Number of Students', choices=[(0, 0)], widget=BlankSelectWidget(),
                                         help_text='The above class-size and grade-range values are absolute, not the "optimum" nor "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
-    class_size_optimal = forms.ChoiceField( label='Optimal Number of Students', choices=[(0, 0)], required=False, widget=BlankSelectWidget(), help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
+    class_size_optimal = forms.IntegerField( label='Optimal Number of Students', help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
+    optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', choices=[(0, 0)], widget=BlankSelectWidget() )
+    allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], widget=forms.CheckboxSelectMultiple(), 
+                                                             help_text="Please select all class size ranges you are comfortable teaching." )
     hardness_rating = forms.ChoiceField( label='Hardness',choices=hardness_choices, initial="Normal")
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
     
@@ -114,6 +117,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
         
         class_grades = module.getClassGrades()
         class_grades = zip(class_grades, class_grades)
+
+        class_ranges = ClassSizeRange.get_ranges_for_program(prog)
+        class_ranges = [(range.id, range.range_str()) for range in class_ranges]
         
         # num_sections: section_list; hide if useless
         self.fields['num_sections'].choices = section_numbers
@@ -123,13 +129,29 @@ class TeacherClassRegForm(FormWithRequiredCss):
         # grade_min, grade_max: module.getClassGrades
         self.fields['grade_min'].choices = class_grades
         self.fields['grade_max'].choices = class_grades
-        # class_size_max: module.getClassSizes
-        self.fields['class_size_max'].choices = class_sizes
+        if module.use_class_size_max:
+            # class_size_max: module.getClassSizes
+            self.fields['class_size_max'].choices = class_sizes
+        else:
+            del self.fields['class_size_max']
 
         if Tag.getTag('use_class_size_optimal', default=False):
-            self.fields['class_size_optimal'].choices = class_sizes
+            if not module.use_class_size_optimal:
+                del self.fields['class_size_optimal']
+
+            if module.use_optimal_class_size_range:
+                self.fields['optimal_class_size_range'].choices = class_ranges
+            else:
+                del self.fields['optimal_class_size_range']
+
+            if module.use_allowable_class_size_ranges:
+                self.fields['allowable_class_size_ranges'].choices = class_ranges
+            else:
+                del self.fields['allowable_class_size_ranges']
         else:
             del self.fields['class_size_optimal']
+            del self.fields['optimal_class_size_range']
+            del self.fields['allowable_class_size_ranges']
             
         # global_resources: module.getResourceTypes(is_global=True)
         self.fields['global_resources'].choices = module.getResourceTypes(is_global=True)
@@ -230,6 +252,38 @@ class TeacherClassRegForm(FormWithRequiredCss):
         
         # Return cleaned data
         return cleaned_data
+
+class TeacherOpenClassRegForm(TeacherClassRegForm):
+
+    def __init__(self, module, *args, **kwargs):
+        """ Initialize the teacher class reg form, and then remove irrelevant fields. """
+        def hide_field(field, default=None):
+            field.widget = forms.HiddenInput()
+            if default is not None:
+                field.initial = default
+                
+        super(TeacherOpenClassRegForm, self).__init__(module, *args, **kwargs)
+        open_class_category = ClassCategories.objects.get_or_create(category='Open Classes', symbol='O', seq=0)[0]
+        self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
+
+        # Re-enable the requested special resources field as a space needs .
+        self.fields['requested_special_resources'].widget = forms.Textarea()
+        self.fields['requested_special_resources'].label = "Space Needs"
+        self.fields['requested_special_resources'].help_text = "Please describe what kind of space needs you will have for this open class (such as walls, chairs, open floor space, etc)."
+
+        # Modify some help texts to be form-specific.
+        self.fields['duration'].help_text = "For how long are you willing to teach this class?"
+
+        fields = [('category', open_class_category.id), 
+                  ('prereqs', ''), ('viable_times', ''), ('session_count', 1), ('grade_min', 7), ('grade_max', 12), 
+                  ('class_size_max', 300), ('class_size_optimal', ''), ('optimal_class_size_range', ''), 
+                  ('allowable_class_size_ranges', ''), ('hardness_rating', 'Normal'), ('allow_lateness', True), 
+                  ('has_own_space', False), ('requested_room', ''), ('global_resources', ''),
+                  ('resources', '')]
+        for field, default in fields:
+            if field in self.fields:
+                self.fields[field].required = False
+                hide_field(self.fields[field], default)
 
 
 class TeacherEventSignupForm(FormWithRequiredCss):

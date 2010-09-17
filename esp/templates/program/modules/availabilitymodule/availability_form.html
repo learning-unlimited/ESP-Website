@@ -6,12 +6,15 @@
 
 {% block content %}
 
+{% load render_qsd %}
+
 <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 
 <h1>Your Availability for {{ prog.niceName }}</h1>
 
 <div id="program_form">
 
+{% inline_qsd_block program.anchor availability_instructions request.user %}
 <p>
 Before you can register classes in {{ prog.niceName }}, please let us know which time blocks you are available for.  If you are co-teaching your classes with someone else, please ensure that they are also available to teach at these times and that they fill in those times on their own availability form.  We're trying to reduce the likelihood of scheduling mistakes.
 </p>
@@ -20,10 +23,18 @@ Before you can register classes in {{ prog.niceName }}, please let us know which
 You must include enough times (in contiguous blocks) for all of the classes that you would like to teach.
 </p>
 
-
 <p>
 <b>Checked checkboxes mean that you are available at the indicated time.</b>
 </p>
+{% end_inline_qsd_block %}
+
+{% if is_overbooked %}
+{% inline_qsd_block program.anchor teacher_overbooked request.user %}
+<p style="color: red;">
+We have detected that you are currently signed up to teach more hours of class than you have hours of availability.  This makes it impossible to schedule your classes.  Please add to your available times in order to continue with registration.
+</p>
+{% end_inline_qsd_block %}
+{% endif %}
 
 <br />
 

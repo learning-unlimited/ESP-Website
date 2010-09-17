@@ -1,5 +1,5 @@
 from esp.mailman import add_list_member
-from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories
+from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
 from esp.middleware import ESPError
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm
 from esp.resources.forms import ResourceRequestFormSet, ResourceTypeFormSet
@@ -7,6 +7,7 @@ from esp.resources.models import ResourceType, ResourceRequest
 from esp.datatree.models import GetNode
 
 from django.core.mail import send_mail
+from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from django.db import transaction
 
@@ -26,9 +27,9 @@ class ClassCreationController(object):
         self.crmi = prog.getModuleExtension('ClassRegModuleInfo')
 
     @transaction.commit_on_success
-    def makeaclass(self, user, reg_data):
+    def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):
 
-        reg_form, resource_formset, restype_formset = self.get_forms(reg_data)
+        reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
 
         cls = ClassSubject()
         self.attach_class_to_program(cls)
@@ -43,9 +44,9 @@ class ClassCreationController(object):
         return cls
 
     @transaction.commit_on_success
-    def editclass(self, user, reg_data, clsid):
+    def editclass(self, user, reg_data, clsid, form_class=TeacherClassRegForm):
         
-        reg_form, resource_formset, restype_formset = self.get_forms(reg_data)
+        reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
 
         try:
             cls = ClassSubject.objects.get(id=int(clsid))
@@ -63,12 +64,20 @@ class ClassCreationController(object):
         return cls
         
 
-    def get_forms(self, reg_data):
-        reg_form = TeacherClassRegForm(self.crmi, reg_data)
-        resource_formset = ResourceRequestFormSet(reg_data, prefix='request')
-        restype_formset = ResourceTypeFormSet(reg_data, prefix='restype')
+    def get_forms(self, reg_data, form_class=TeacherClassRegForm):
+        reg_form = form_class(self.crmi, reg_data)
 
-        if not reg_form.is_valid() or not resource_formset.is_valid() or not restype_formset.is_valid():
+        try:
+            resource_formset = ResourceRequestFormSet(reg_data, prefix='request')
+        except ValidationError:
+            resource_formset = None
+
+        try:
+            restype_formset = ResourceTypeFormSet(reg_data, prefix='restype')
+        except ValidationError:
+            restype_formset = None
+            
+        if not reg_form.is_valid() or (resource_formset and not resource_formset.is_valid()) or (restype_formset and not restype_formset.is_valid()):
             print "classreg get_forms", reg_form.errors, "\n", resource_formset.errors, "\n", restype_formset.errors
             raise ClassCreationValidationError, (reg_form, resource_formset, restype_formset, "Invalid form data.  Please make sure you are using the official registration form, on esp.mit.edu.  If you are, please let us know how you got this error.")
 
@@ -84,7 +93,7 @@ class ClassCreationController(object):
 
     def set_class_data(self, cls, reg_form):
         for k, v in reg_form.cleaned_data.items():
-            if k not in ('category', 'resources', 'viable_times') and k[:8] is not 'section_':
+            if k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges') and k[:8] is not 'section_':
                 cls.__dict__[k] = v
 
         if hasattr(cls, 'duration'):
@@ -92,10 +101,17 @@ class ClassCreationController(object):
             
         cls.category = ClassCategories.objects.get(id=reg_form.cleaned_data['category'])
 
+        if 'optimal_class_size_range' in reg_form.cleaned_data and reg_form.cleaned_data['optimal_class_size_range']:
+            cls.optimal_class_size_range = ClassSizeRange.objects.get(id=reg_form.cleaned_data['optimal_class_size_range'])
+
         if cls.anchor.friendly_name != cls.title:
             self.update_class_anchorname(cls)
 
         cls.save()
+
+        if 'allowable_class_size_ranges' in reg_form.cleaned_data and reg_form.cleaned_data['allowable_class_size_ranges']:
+            cls.allowable_class_size_ranges = ClassSizeRange.objects.filter(id__in=reg_form.cleaned_data['allowable_class_size_ranges'])
+            cls.save()
 
     def update_class_sections(self, cls, num_sections):
         #   Give the class the appropriate number of sections as specified by the teacher.
@@ -149,19 +165,29 @@ class ClassCreationController(object):
     def add_rsrc_requests_to_class(self, cls, resource_formset, restype_formset):
         for sec in cls.get_sections():
             sec.clearResourceRequests()
-            for resform in resource_formset.forms:
-                self.import_resource_formset(sec, resform)
-            for resform in restype_formset.forms:
-                #   Save new types; handle imperfect validation
-                if len(resform.cleaned_data['name']) > 0:
-                    self.import_restype_formset(self, sec, resform)
+            if resource_formset:
+                for resform in resource_formset.forms:
+                    self.import_resource_formset(sec, resform)
+            if restype_formset:
+                for resform in restype_formset.forms:
+                    #   Save new types; handle imperfect validation
+                    if len(resform.cleaned_data['name']) > 0:
+                        self.import_restype_formset(self, sec, resform)
                     
     def import_resource_formset(self, sec, resform):
-        rr = ResourceRequest()
-        rr.target = sec
-        rr.res_type = resform.cleaned_data['resource_type']
-        rr.desired_value = resform.cleaned_data['desired_value']
-        rr.save()
+        if isinstance(resform.cleaned_data['desired_value'], list):
+            for val in resform.cleaned_data['desired_value']:
+                rr = ResourceRequest()
+                rr.target = sec
+                rr.res_type = resform.cleaned_data['resource_type']
+                rr.desired_value = val
+                rr.save()
+        else:
+            rr = ResourceRequest()
+            rr.target = sec
+            rr.res_type = resform.cleaned_data['resource_type']
+            rr.desired_value = resform.cleaned_data['desired_value']
+            rr.save()
         return rr
 
     def import_restype_formset(self, sec, resform):
