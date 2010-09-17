@@ -2,6 +2,7 @@ from django.contrib import admin
 from django import forms
 from django.db import models
 from esp.users.models.userbits import UserBit, UserBitImplication
+from esp.users.models.forwarder import UserForwarder
 from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School
 
 
@@ -15,6 +16,8 @@ class UserBitImplicationAdmin(admin.ModelAdmin):
     exclude = ('created_bits',)
 
 admin.site.register(UserBitImplication, UserBitImplicationAdmin)
+
+admin.site.register(UserForwarder)
 
 admin.site.register(TeacherInfo)
 admin.site.register(GuardianInfo)

@@ -25,7 +25,7 @@ body { font-family: georgia; }
                       border-top: 0;}
 #pagebreak {page-break-after: always; }
 </style>
-<script language="JavaScript" src="/media/scripts/sorttable.js" />
+<script src="/media/scripts/sorttable.js"></script>
 </head>
 <body>
 <div class="title" style="text-align: center;">
@@ -34,40 +34,23 @@ body { font-family: georgia; }
 </div>
 <br />
 <br />
+<center>
 <table class="pretty sortable" cellspacing="0">
 <tr>
-   <th>#</th>
-   <th>ID#</th>
-   <th>Username</th>
-   <th>Name</th>
-   <th>Address</th>
-   <th>Email</th>
-   <th>Account Date</th>
-   <th>Cell Phone</th>
-   <th>Text Msg?</th>
-   <th># of class hours</th>
-   <th>School</th>
-   <th>School (if no match)</th>
-   <th>Found out about Splash from...</th>
+<td>#</td>
+{% for field in fields %}
+    <th>{{ field }}</th>
+{% endfor %}
 </tr>
 {% for user in users %}
-<tr>{% with user.getLastProfile as profile %}
-   <td>{{forloop.counter}}</td>
-   <td><strong>{{user.id}}</strong></td>
-   <td>{{ user.username }}</td>
-   <td>{{ user.name }}</td>
-   <td>{% if profile.contact_user.address %}{{ profile.contact_user.address}}{% else %}N/A{% endif %}</td>
-   <td>{{ user.email }}</td>
-   <td>{{ user.date_joined|date:"m/d/Y" }}</td>
-   <td>{% if profile.contact_user.phone_cell %}{{ profile.contact_user.phone_cell}}{% else %}N/A{% endif %}</td>
-   <td>{% if profile.text_reminder %}<b>Yes</b>{% else %}No{% endif %}</td>
-   <td>{{ user.class_count }}</td>
-   <td>{% if profile.student_info.k12school %}{{ profile.student_info.k12school.name }}{% else %}N/A{% endif %}</td>
-   <td>{% if profile.student_info.school %}{{ profile.student_info.school }}{% else %}N/A{% endif %}</td>
-   <td>{% if profile.student_info.heardofesp %}{{
-     profile.student_info.heardofesp }}{% else %}N/A{% endif %}</td>
-</tr>{% endwith %}
- {% endfor %}
+    <tr>
+    <td>{{ forloop.counter }}</td>
+    {% for field in user.fields %}
+        <td>{{ field }}</td>
+    {% endfor %}
+    </tr>
+{% endfor %}
 </table>
+</center>
 </body>
 </html>

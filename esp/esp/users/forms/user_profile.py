@@ -7,6 +7,7 @@ from esp.users.models import K12School, StudentInfo
 from esp.utils.defaultclass import defaultclass
 from datetime import datetime
 from esp.program.models import RegistrationProfile
+from esp.settings import INSTITUTION_NAME
 import re
 
 # SRC: esp/program/manipulators.py
@@ -354,7 +355,7 @@ class TeacherInfoForm(FormWithRequiredCss):
 
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
     is_graduate_student = forms.BooleanField(required=False, label='Graduate student?')
-    from_here = forms.ChoiceField(choices=from_here_answers, widget = forms.RadioSelect(), label='Are you currently enrolled at the university running this program?')
+    from_here = forms.ChoiceField(choices=from_here_answers, widget = forms.RadioSelect(), label='Are you currently enrolled at %s?' % INSTITUTION_NAME)
     school = SizedCharField(length=24, max_length=128, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
@@ -363,6 +364,13 @@ class TeacherInfoForm(FormWithRequiredCss):
     university_email = forms.EmailField(required=False)
     student_id = SizedCharField(length=24, max_length=128, required=False)
     mail_reimbursement = forms.ChoiceField(choices=reimbursement_choices, widget=forms.RadioSelect(), required=False)
+
+    def __init__(self, *args, **kwargs):
+        super(TeacherInfoForm, self).__init__(*args, **kwargs)
+        if not Tag.getTag('teacherinfo_reimbursement_options', default=False):
+            reimbursement_fields = ['full_legal_name', 'university_email', 'student_id', 'mail_reimbursement']
+            for field_name in reimbursement_fields:
+                del self.fields[field_name]
 
     def clean(self):
         super(TeacherInfoForm, self).clean()
@@ -373,7 +381,7 @@ class TeacherInfoForm(FormWithRequiredCss):
         school = cleaned_data.get('school')
 
         if from_here == "False" and school == "":
-            msg = u'Please enter your affiliation if you are not from MIT.'
+            msg = u'Please enter your affiliation if you are not from %s.' % INSTITUTION_NAME
             self._errors['school'] = forms.util.ErrorList([msg])
             del cleaned_data['from_here']
             del cleaned_data['school']

@@ -5,7 +5,7 @@
 </tr>
 
 <tr>
-<td><label for="id_from_here">Are you currently an undergraduate, graduate student, faculty, or staff at the university sponsoring this program?</label></td>
+<td><label for="id_from_here">{{ form.from_here.label }}</label></td>
 <td>{{ form.from_here }} {% if form.from_here.errors %}
   <br /><span class="form_error">{{ form.from_here.errors|join:", " }}</span>
   {% endif %}

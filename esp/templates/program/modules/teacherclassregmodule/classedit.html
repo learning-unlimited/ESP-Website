@@ -51,13 +51,14 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
         <td colspan="2">Please specify your classroom needs by building a list of requests.  You may submit more than one request per category (for example, you would need separate A/V requests for both DVD player and speakers).  If you are providing your own space for this class, please remove all requests.</td>
     </tr>
     -->
+{% if not static_resource_requests %}
     <tr>
         <td width="30%">
             <b>Click to add requests:</b>
             <noscript>(Note: Please enable Javascript.)</noscript>
         </td>
         <td>
-            {% for rt in resource_types %}<a id="add_request_{{ rt.id }}" href="/teach/{{ program.getUrlBase }}/makeaclass">{{ rt.name }}</a>{% if not forloop.last %} | {% endif %}{% endfor %} | <a id="add_restype" href="/teach/{{ program.getUrlBase }}/makeaclass">Other</a>
+            {% for rt in resource_types %}<a id="add_request_{{ rt.id }}" href="/teach/{{ program.getUrlBase }}/makeaclass">{{ rt.name }}</a>{% if not forloop.last %} | {% endif %}{% endfor %}{% if allow_restype_creation %} | <a id="add_restype" href="/teach/{{ program.getUrlBase }}/makeaclass">Other</a>{% endif %}
         </td>
     </tr>
 </table>
@@ -70,6 +71,7 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
     register_link({id: "add_restype", url: "/teach/{{ program.getUrlBase }}/ajax_restypes", content: {action: "add"}, post_form: "clsform"});
 -->
 </script>
+{% endif %}
 <div id="request_forms">
 {% include "program/modules/teacherclassregmodule/requests_form_fragment.html" %}
 </div>
@@ -86,9 +88,9 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
         <th colspan="2">Submit</th>
     </tr>
     <tr>
-        <th colspan="2" class="smaller"><p>
+        <td colspan="2" class="smaller"><p>
         Please review the above information carefully, then click "Teach for {{ one }}!" to submit your class.  You will be contacted shortly by the directors about any special requests or concerns.  To return to the previous page, click "Cancel."
-        </p></th>
+        </p></td>
     </tr>
     <tr>
         <td align="center" colspan="2">

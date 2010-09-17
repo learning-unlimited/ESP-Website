@@ -34,7 +34,7 @@ from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect, Http404
 from django.core.mail import send_mail
-from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits, admin_required
+from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits, admin_required, ZipCode
 
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -42,9 +42,13 @@ from django.db.models.query import Q
 from django.core.mail import mail_admins
 from django.core.cache import cache
 from django.views.decorators.csrf import csrf_exempt
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from django import forms
 
+from esp.datatree.sql.query_utils import QTree
 from esp.program.models import Program, TeacherBio
-from esp.program.forms import ProgramCreationForm
+from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
@@ -54,6 +58,7 @@ from esp.settings import SITE_INFO
 
 import pickle
 import operator
+import simplejson as json
 
 def find_user(userstr):
     """
@@ -471,7 +476,7 @@ def manage_pages(request):
     qsd_list = list(QuasiStaticData.objects.filter(id__in=qsd_ids))
     qsd_list.sort(key=lambda q: q.url())
     return render_to_response('qsd/list.html', request, DataTree.get_by_uri('Q/Web'), {'qsd_list': qsd_list})
-
+    
 @admin_required
 def flushcache(request):
     context = {}
@@ -492,3 +497,142 @@ def flushcache(request):
 
     return render_to_response('admin/cache_flush.html', request, DataTree.get_by_uri('Q/Web'), context)
                          
+
+@admin_required
+def statistics(request, program=None):
+
+    def get_field_ids(form):
+        field_ids = []
+        #   Hack to make sure radio buttons are re-parsed correctly by Dojo
+        for field_name in form.fields:
+            if isinstance(form.fields[field_name].widget, forms.RadioSelect):
+                for i in range(len(form.fields[field_name].choices)):
+                    field_ids.append('%s_%d' % (field_name, i))
+            else:
+                field_ids.append(field_name)
+        return field_ids
+                    
+    if request.method == 'POST':
+        #   Hack for proper behavior when multiselect fields are hidden
+        #   (they contain '' instead of simply being absent like they should)
+        post_data = request.POST.copy()
+        multiselect_fields = StatisticsQueryForm.get_multiselect_fields()
+        for field_name in multiselect_fields:
+            if field_name in post_data and post_data[field_name] == '':
+                del post_data[field_name]
+        
+        form = StatisticsQueryForm(post_data, program=program)
+
+        #   Handle case where all we want is a new form
+        if 'update_form' in request.GET:
+            form.hide_unwanted_fields()
+            
+            #   Return result
+            context = {'form': form}
+            context['field_ids'] = get_field_ids(form)
+            result = {}
+            result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
+            result['script'] = render_to_string('program/statistics/script.js', context)
+            return HttpResponse(json.dumps(result), mimetype='application/json')
+            
+        if form.is_valid():
+            #   A dictionary for template rendering the results of this query
+            result_dict = {}
+            #   A dictionary for template rendering the final response
+            context = {}
+
+            #   Get list of programs the query applies to
+            programs = Program.objects.all()
+            if not form.cleaned_data['program_type_all']:
+                programs = programs.filter(anchor__parent__name=form.cleaned_data['program_type'])
+            if not form.cleaned_data['program_instance_all']:
+                programs = programs.filter(anchor__name__in=form.cleaned_data['program_instances'])
+            result_dict['programs'] = programs
+            
+            #   Get list of students the query applies to
+            students_q = Q()
+            for program in programs:
+                for reg_type in form.cleaned_data['reg_types']:
+                    students_q = students_q | program.students(QObjects=True)[reg_type]
+                    
+            #   Narrow down by school (perhaps not ideal results, but faster)
+            if form.cleaned_data['school_query_type'] == 'name':
+                students_q = students_q & (Q(studentinfo__school__icontains=form.cleaned_data['school_name']) | Q(studentinfo__k12school__name__icontains=form.cleaned_data['school_name']))
+            elif form.cleaned_data['school_query_type'] == 'list':
+                k12school_ids = []
+                school_names = []
+                for item in form.cleaned_data['school_multisel']:
+                    if item.startswith('K12:'):
+                        k12school_ids.append(int(item[4:]))
+                    elif item.startwith('Sch:'):
+                        school_names.append(item[4:])
+                students_q = students_q & (Q(studentinfo__school__in=school_names) | Q(studentinfo__k12school__id__in=k12school_ids))
+            
+            #   Narrow down by Zip code, simply using the latest profile
+            #   Note: it would be harder to track students better (i.e. zip code A in fall 2008, zip code B in fall 2009)
+            if form.cleaned_data['zip_query_type'] == 'exact':
+                students_q = students_q & Q(registrationprofile__contact_user__address_zip=form.cleaned_data['zip_code'], registrationprofile__most_recent_profile=True)
+            elif form.cleaned_data['zip_query_type'] == 'partial':
+                students_q = students_q & Q(registrationprofile__contact_user__address_zip__startswith=form.cleaned_data['zip_code_partial'], registrationprofile__most_recent_profile=True)
+            elif form.cleaned_data['zip_query_type'] == 'distance':
+                zipc = ZipCode.objects.get(zip_code=form.cleaned_data['zip_code'])
+                zipcodes = zipc.close_zipcodes(form.cleaned_data['zip_code_distance'])
+                students_q = students_q & Q(registrationprofile__contact_user__address_zip__in = zipcodes, registrationprofile__most_recent_profile=True)
+                
+            students = ESPUser.objects.filter(students_q).distinct()
+            result_dict['num_students'] = students.count()
+            profiles = [student.getLastProfile() for student in students]
+            
+            #   Accumulate desired information for selected query
+            from esp.program import statistics as statistics_functions
+            if hasattr(statistics_functions, form.cleaned_data['query']):
+                context['result'] = getattr(statistics_functions, form.cleaned_data['query'])(form, programs, students, profiles, result_dict)
+            else:
+                context['result'] = 'Unsupported query'
+                
+            #   Generate response
+            form.hide_unwanted_fields()
+            context['form'] = form
+            context['field_ids'] = get_field_ids(form)
+            
+            if request.is_ajax():
+                result = {}
+                result['result_html'] = context['result']
+                result['script'] = render_to_string('program/statistics/script.js', context)
+                return HttpResponse(json.dumps(result), mimetype='application/json')
+            else:
+                return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
+        else:
+            #   Form was submitted but there are problems with it
+            print form.errors
+            form.hide_unwanted_fields()
+            context = {'form': form}
+            context['field_ids'] = get_field_ids(form)
+            if request.is_ajax():
+                return HttpResponse(json.dumps(result), mimetype='application/json')
+            else:
+                return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
+
+    #   First request, form not yet submitted
+    form = StatisticsQueryForm(program=program)
+    form.hide_unwanted_fields()
+    context = {'form': form}
+    context['field_ids'] = get_field_ids(form)
+
+    if request.is_ajax():
+        return HttpResponse(json.dumps(context), mimetype='application/json')
+    else:
+        return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
+
+@admin_required
+def template_preview(request):
+
+    if 'template' in request.GET:
+        template = request.GET['template']
+    else:
+        template = 'main.html'
+        
+    context = {}
+
+    return render_to_response(template, request, DataTree.get_by_uri('Q/Web'), context)
+    

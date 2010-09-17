@@ -1,0 +1,8 @@
+<h2>Returning Student Info</h2>
+
+<p>Query captured {{ num_students }} students.  Results include all programs that the selected students registered for.</p>
+<ul>
+{% for pair in repeat_data %}
+    <li>{{ pair.0 }}: {{ pair.1 }} students
+{% endfor %}
+</ul>

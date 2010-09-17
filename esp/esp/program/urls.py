@@ -9,4 +9,7 @@ urlpatterns = patterns('',
                        (r'^manage/userview/?$', 'esp.program.views.userview'),
                        (r'^manage/usersearch/?$', 'esp.program.views.usersearch'),                       
                        (r'^manage/flushcache/?$', 'esp.program.views.flushcache'),
+                       (r'^manage/statistics/?$', 'esp.program.views.statistics'),
+                       (r'^manage/preview/?$', 'esp.program.views.template_preview'),
+                       (r'^manage/mergeaccounts/?$', 'esp.users.views.merge.merge_accounts'),
                        )

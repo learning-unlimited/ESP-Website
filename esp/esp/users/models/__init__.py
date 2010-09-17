@@ -242,6 +242,7 @@ class ESPUser(User, AnonymousUser):
 
     def switch_to_user(self, request, user, retUrl, retTitle, onsite = False):
         user_morph = {'olduser_id' : self.id,
+                      'olduser_name': self.name(),
                       'retUrl'  : retUrl,
                       'retTitle': retTitle,
                       'onsite'  : onsite}
@@ -885,6 +886,9 @@ class ESPUser(User, AnonymousUser):
         # Axiak 12/17
         from esp.miniblog.models import Entry
         return UserBit.find_by_anchor_perms(Entry, self, GetNode('V/Subscribe')).order_by('-timestamp')
+
+    def getVolunteerOffers(self, program):
+        return self.volunteeroffer_set.filter(request__program=program)
 
     @staticmethod
     def isUserNameTaken(username):
@@ -1906,6 +1910,7 @@ def install():
 
 # We can't import these earlier because of circular stuff...
 from esp.users.models.userbits import UserBit
+from esp.users.models.forwarder import UserForwarder
 from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, Program
 from esp.resources.models import Resource

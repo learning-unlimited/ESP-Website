@@ -1,0 +1,8 @@
+<h2>School Info</h2>
+
+<p>Of {{ num_students }} students, {{ num_k12school }} selected a school from existing options and {{ num_school }} typed one in manually.</p>
+<ul>
+{% for pair in school_data %}
+    <li>{{ pair.0 }}: {{ pair.1 }} students
+{% endfor %}
+</ul>
