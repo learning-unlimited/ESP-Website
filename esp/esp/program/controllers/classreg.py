@@ -105,7 +105,8 @@ class ClassCreationController(object):
         if 'optimal_class_size_range' in reg_form.cleaned_data and reg_form.cleaned_data['optimal_class_size_range']:
             cls.optimal_class_size_range = ClassSizeRange.objects.get(id=reg_form.cleaned_data['optimal_class_size_range'])
 
-        if cls.anchor.friendly_name != cls.title:
+        if cls.anchor.friendly_name != cls.title or cls.anchor.name != cls.emailcode or cls.id is None:
+            cls.save()
             self.update_class_anchorname(cls)
             cls.save()
 
