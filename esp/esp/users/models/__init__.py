@@ -517,6 +517,15 @@ class ESPUser(User, AnonymousUser):
         else:
             return apps[0]
 
+    def listAppResponses(self, program, create=True):
+        from esp.program.models.app_ import StudentApplication
+        
+        apps = StudentApplication.objects.filter(user=self, program=program)
+        if apps.count() == 0:
+            return None
+        else:
+            return apps[0].responses.all()
+
     def getClasses(self, program=None, verbs=None):
         from esp.program.models import ClassSubject
         csl = self.getSections(program, verbs)
