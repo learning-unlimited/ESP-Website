@@ -183,13 +183,14 @@ class ClassCreationController(object):
                 rr.res_type = resform.cleaned_data['resource_type']
                 rr.desired_value = val
                 rr.save()
+            return resform.cleaned_data['desired_value']
         else:
             rr = ResourceRequest()
             rr.target = sec
             rr.res_type = resform.cleaned_data['resource_type']
             rr.desired_value = resform.cleaned_data['desired_value']
             rr.save()
-        return rr
+            return rr
 
     def import_restype_formset(self, sec, resform):
         rt, created = ResourceType.get_or_create(resform.cleaned_data['name'])
