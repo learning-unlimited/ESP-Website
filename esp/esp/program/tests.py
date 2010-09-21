@@ -340,7 +340,8 @@ class ProgramHappenTest(TestCase):
         self.assertEqual( classes.count(), 1, 'Classes failing to show up in program' )
         self.classsubject = classes[0]
 
-        # check the title is good
+        # check the title and anchor are good
+        self.assertEqual( unicode(self.classsubject.anchor.name), unicode(self.classsubject.emailcode()), 'Anchor saved incorrectly as "%s".' % self.classsubject.anchor.uri )
         self.assertEqual( unicode(self.classsubject.title()), unicode(class_dict['title']), 'Failed to save title.' )
 
         # check getTaughtClasses
