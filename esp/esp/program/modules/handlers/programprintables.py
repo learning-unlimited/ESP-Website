@@ -1409,7 +1409,7 @@ Student schedule for %s:
         for cls in ClassSubject.objects.filter(parent_program=prog):
             write_cvs.writerow(
                 (cls.id,
-                 ", ".join([t.name() for t in cls.teachers()]),
+                 ", ".join([smart_str(t.name()) for t in cls.teachers()]),
                  smart_str(cls.title()),
                  cls.prettyDuration(),
                  cls.grade_min,
@@ -1418,9 +1418,9 @@ Student schedule for %s:
                  cls.class_size_max,
                  cls.category,
                  smart_str(cls.class_info),
-                 cls.message_for_directors,
-                 cls.prereqs,
-                 cls.directors_notes,
+                 smart_str(cls.message_for_directors),
+                 smart_str(cls.prereqs),
+                 smart_str(cls.directors_notes),
                  ", ".join(cls.friendly_times()),
                  ", ".join(cls.prettyrooms()),
                  ))
@@ -1499,7 +1499,7 @@ Student schedule for %s:
                                [section.parent_class.class_size_optimal] + \
                                [section.parent_class.class_size_max] + \
                                ['%d--%d' %(section.parent_class.grade_min, section.parent_class.grade_max)] +\
-                               [section.parent_class.message_for_directors] + \
+                               [smart_str(section.parent_class.message_for_directors)] + \
                                [", ".join(section.friendly_times())] + [", ".join(section.prettyrooms())] + \
                                time_values)
                                
