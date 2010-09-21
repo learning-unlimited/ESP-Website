@@ -196,6 +196,19 @@ class ClassRegModuleInfo(models.Model):
     #   Room requests
     ask_for_room         = models.BooleanField(blank=True, default=True,
         help_text = 'If true, teachers will be asked if they have a particular classroom in mind.')
+
+    # Use the maximum class size field.
+    use_class_size_max   = models.BooleanField(blank=True, default=True)
+    # Use the optimal class size field.
+    use_class_size_optimal = models.BooleanField(blank=True, default=False)
+    # Provide an option to pick an optimal class size range.
+    use_optimal_class_size_range = models.BooleanField(blank=True, default=False)
+    # Enable teachers to specify all allowable class size ranges.
+    use_allowable_class_size_ranges = models.BooleanField(blank=True, default=False)
+
+    # Have an additional registration option to register for an "open class".
+    open_class_registration = models.BooleanField(blank=True, default=False,
+         help_text = 'If true, teachers will be presented with an option to register for an "open class".')
     
     #   Choose which appears on teacher reg for the modules: checkbox list, progress bar, or nothing
     #   ((0, 'None'),(1, 'Checkboxes'), (2, 'Progress Bar'))

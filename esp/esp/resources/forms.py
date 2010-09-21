@@ -33,7 +33,7 @@ Email: web@esp.mit.edu
 from django import forms
 from django.forms.formsets import formset_factory
 from esp.resources.models import ResourceType, ResourceRequest
-
+from esp.tagdict.models import Tag
 
 class IDBasedModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
@@ -57,17 +57,24 @@ class ResourceRequestForm(forms.Form):
             key_name = self.add_prefix('resource_type')
             if key_name in data:
                 self.resource_type = ResourceType.objects.get(id=data[key_name])
-
+            
         if hasattr(self, 'resource_type'):
             self.fields['desired_value'].label = self.resource_type.name
-            #   Use radio buttons for 4 or fewer choices; select boxes above that to save space
-            if len(self.resource_type.choices) > 4:
-                self.fields['desired_value'].widget = forms.Select()
+            if Tag.getTag('static_resource_requests'):
+                #   If this is the only form to be displayed, show all options as checkboxes and let the user pick
+                #   any number (or none) with this form
+                self.fields['desired_value'] = forms.MultipleChoiceField(choices=(), widget=forms.CheckboxSelectMultiple, required=False)
+                self.fields['desired_value'].label = self.resource_type.name
+            else:
+                #   Use radio buttons for 4 or fewer choices; select boxes above that to save space
+                if len(self.resource_type.choices) > 4:
+                    self.fields['desired_value'].widget = forms.Select()
             #   Don't provide a blank default value
             #   self.fields['desired_value'].choices = zip(tuple(' ') + self.resource_type.choices, tuple(' ') + self.resource_type.choices)    
             self.fields['desired_value'].choices = zip(self.resource_type.choices, self.resource_type.choices)
             
             self.initial['resource_type'] = self.resource_type.id
+
         
 class ResourceRequestFormSet(formset_factory(ResourceRequestForm, extra=0)):
     """ Like a FormSet, but handles the list of resource_types for the forms to start out with. """

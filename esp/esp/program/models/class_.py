@@ -67,7 +67,38 @@ from django.core.cache import cache  ## Yep, we do have to do some raw cache-man
 
 from esp.middleware.threadlocalrequest import get_current_request
 
-__all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication']
+__all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication', 'ClassSizeRange']
+
+class ClassSizeRange(models.Model):
+    from esp.program.models import Program
+
+    range_min = models.IntegerField(null=False)
+    range_max = models.IntegerField(null=False)
+    program   = models.ForeignKey(Program)
+
+    @classmethod
+    def get_ranges_for_program(cls, prog):
+        ranges = cls.objects.filter(program=prog)
+        if ranges:
+            return ranges
+        else:
+            admin_only_prog = Program.objects.get(anchor=GetNode("Q/Programs/Dummy_Programs/Profile_Storage"))
+            for range in cls.objects.filter(program=admin_only_prog):
+                k = cls()
+                k.range_min = range.range_min
+                k.range_max = range.range_max
+                k.program = prog
+                k.save()
+            return cls.objects.filter(program=prog)
+
+    def range_str(self):
+        return "%d-%d" %(self.range_min, self.range_max)
+
+    def __unicode__(self):
+        return "Class Size Range: " + self.range_str()
+
+    class Meta:
+        app_label='program'
 
 class ProgramCheckItem(models.Model):
     from esp.program.models import Program
@@ -1222,11 +1253,13 @@ class ClassSubject(models.Model):
     allow_lateness = models.BooleanField(default=False)
     message_for_directors = models.TextField(blank=True)
     class_size_optimal = models.IntegerField(blank=True, null=True)
+    optimal_class_size_range = models.ForeignKey(ClassSizeRange, blank=True, null=True)
+    allowable_class_size_ranges = models.ManyToManyField(ClassSizeRange, related_name='classsubject_allowedsizes', blank=True, null=True)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     class_size_min = models.IntegerField(blank=True, null=True)
     hardness_rating = models.TextField()
-    class_size_max = models.IntegerField()
+    class_size_max = models.IntegerField(blank=True, null=True)
     schedule = models.TextField(blank=True)
     prereqs  = models.TextField(blank=True, null=True)
     requested_special_resources = models.TextField(blank=True, null=True)

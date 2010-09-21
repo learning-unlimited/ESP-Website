@@ -1,5 +1,5 @@
 from esp.mailman import add_list_member
-from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories
+from esp.program.models import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
 from esp.middleware import ESPError
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm
 from esp.resources.forms import ResourceRequestFormSet, ResourceTypeFormSet
@@ -7,6 +7,7 @@ from esp.resources.models import ResourceType, ResourceRequest
 from esp.datatree.models import GetNode
 
 from django.core.mail import send_mail
+from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from django.db import transaction
 
@@ -26,9 +27,11 @@ class ClassCreationController(object):
         self.crmi = prog.getModuleExtension('ClassRegModuleInfo')
 
     @transaction.commit_on_success
-    def makeaclass(self, user, reg_data):
+    def makeaclass(self, user, reg_data, form_class=TeacherClassRegForm):
 
-        reg_form, resource_formset, restype_formset = self.get_forms(reg_data)
+        reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
+
+        self.require_teacher_has_time(user, reg_form._get_total_time_requested())
 
         cls = ClassSubject()
         self.attach_class_to_program(cls)
@@ -36,39 +39,46 @@ class ClassCreationController(object):
         
         self.force_availability(user)  ## So the default DB state reflects the default form state of "all times work"
 
-        self.require_teacher_has_time_for_class(user, cls)
-
         self.send_class_mail_to_directors(cls, user)
 
         return cls
 
     @transaction.commit_on_success
-    def editclass(self, user, reg_data, clsid):
+    def editclass(self, user, reg_data, clsid, form_class=TeacherClassRegForm):
         
-        reg_form, resource_formset, restype_formset = self.get_forms(reg_data)
+        reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
 
         try:
             cls = ClassSubject.objects.get(id=int(clsid))
         except (TypeError, ClassSubject.DoesNotExist):
             raise ESPError(False), "The class you're trying to edit (ID %s) does not exist!" % (repr(clsid))
-        
+
+        extra_time = reg_form._get_total_time_requested() - cls.sections.count() * float(cls.duration)
+        self.require_teacher_has_time(user, extra_time)
+
         self.make_class_happen(cls, user, reg_form, resource_formset, restype_formset)
         
         self.force_availability(user)  ## So the default DB state reflects the default form state of "all times work"
-
-        self.require_teacher_has_time_for_class(user, cls)
 
         self.send_class_mail_to_directors(cls, user)
 
         return cls
         
 
-    def get_forms(self, reg_data):
-        reg_form = TeacherClassRegForm(self.crmi, reg_data)
-        resource_formset = ResourceRequestFormSet(reg_data, prefix='request')
-        restype_formset = ResourceTypeFormSet(reg_data, prefix='restype')
+    def get_forms(self, reg_data, form_class=TeacherClassRegForm):
+        reg_form = form_class(self.crmi, reg_data)
 
-        if not reg_form.is_valid() or not resource_formset.is_valid() or not restype_formset.is_valid():
+        try:
+            resource_formset = ResourceRequestFormSet(reg_data, prefix='request')
+        except ValidationError:
+            resource_formset = None
+
+        try:
+            restype_formset = ResourceTypeFormSet(reg_data, prefix='restype')
+        except ValidationError:
+            restype_formset = None
+            
+        if not reg_form.is_valid() or (resource_formset and not resource_formset.is_valid()) or (restype_formset and not restype_formset.is_valid()):
             print "classreg get_forms", reg_form.errors, "\n", resource_formset.errors, "\n", restype_formset.errors
             raise ClassCreationValidationError, (reg_form, resource_formset, restype_formset, "Invalid form data.  Please make sure you are using the official registration form, on esp.mit.edu.  If you are, please let us know how you got this error.")
 
@@ -84,7 +94,7 @@ class ClassCreationController(object):
 
     def set_class_data(self, cls, reg_form):
         for k, v in reg_form.cleaned_data.items():
-            if k not in ('category', 'resources', 'viable_times') and k[:8] is not 'section_':
+            if k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges') and k[:8] is not 'section_':
                 cls.__dict__[k] = v
 
         if hasattr(cls, 'duration'):
@@ -92,10 +102,17 @@ class ClassCreationController(object):
             
         cls.category = ClassCategories.objects.get(id=reg_form.cleaned_data['category'])
 
-        if cls.anchor.friendly_name != cls.title:
-            self.update_class_anchorname(cls)
+        if 'optimal_class_size_range' in reg_form.cleaned_data and reg_form.cleaned_data['optimal_class_size_range']:
+            cls.optimal_class_size_range = ClassSizeRange.objects.get(id=reg_form.cleaned_data['optimal_class_size_range'])
 
-        cls.save()
+        if cls.anchor.friendly_name != cls.title or cls.anchor.name != cls.emailcode or cls.id is None:
+            cls.save()
+            self.update_class_anchorname(cls)
+            cls.save()
+
+        if 'allowable_class_size_ranges' in reg_form.cleaned_data and reg_form.cleaned_data['allowable_class_size_ranges']:
+            cls.allowable_class_size_ranges = ClassSizeRange.objects.filter(id__in=reg_form.cleaned_data['allowable_class_size_ranges'])
+            cls.save()
 
     def update_class_sections(self, cls, num_sections):
         #   Give the class the appropriate number of sections as specified by the teacher.
@@ -116,7 +133,7 @@ class ClassCreationController(object):
         cls.anchor = self.program.classes_node()
 
     def update_class_anchorname(self, cls):
-        nodestring = cls.category.symbol + str(cls.id)
+        nodestring = cls.emailcode()
         cls.anchor = self.program.classes_node().tree_create([nodestring])
         cls.anchor.tree_create(['TeacherEmail'])  ## Just to make sure it's there
         cls.anchor.friendly_name = cls.title
@@ -135,12 +152,12 @@ class ClassCreationController(object):
             for ts in self.program.getTimeSlots():
                 user.addAvailableTime(self.program, ts)
 
-    def teacher_has_time_for_class(self, user, cls, cls_old_time = timedelta(0)):
-        return (user.getTaughtTime(self.program, include_scheduled=True) + timedelta(hours=float(cls.duration)) \
-                <= self.program.total_duration() + cls_old_time)
+    def teacher_has_time(self, user, hours):
+        return (user.getTaughtTime(self.program, include_scheduled=True) + timedelta(hours=hours) \
+                <= self.program.total_duration())
 
-    def require_teacher_has_time_for_class(self, user, cls, cls_old_time = timedelta(0)):
-        if not self.teacher_has_time_for_class(user, cls, cls_old_time):
+    def require_teacher_has_time(self, user, hours):
+        if not self.teacher_has_time(user, hours):
             raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
 
     def add_teacher_to_program_mailinglist(self, user):
@@ -149,20 +166,31 @@ class ClassCreationController(object):
     def add_rsrc_requests_to_class(self, cls, resource_formset, restype_formset):
         for sec in cls.get_sections():
             sec.clearResourceRequests()
-            for resform in resource_formset.forms:
-                self.import_resource_formset(sec, resform)
-            for resform in restype_formset.forms:
-                #   Save new types; handle imperfect validation
-                if len(resform.cleaned_data['name']) > 0:
-                    self.import_restype_formset(self, sec, resform)
+            if resource_formset:
+                for resform in resource_formset.forms:
+                    self.import_resource_formset(sec, resform)
+            if restype_formset:
+                for resform in restype_formset.forms:
+                    #   Save new types; handle imperfect validation
+                    if len(resform.cleaned_data['name']) > 0:
+                        self.import_restype_formset(self, sec, resform)
                     
     def import_resource_formset(self, sec, resform):
-        rr = ResourceRequest()
-        rr.target = sec
-        rr.res_type = resform.cleaned_data['resource_type']
-        rr.desired_value = resform.cleaned_data['desired_value']
-        rr.save()
-        return rr
+        if isinstance(resform.cleaned_data['desired_value'], list):
+            for val in resform.cleaned_data['desired_value']:
+                rr = ResourceRequest()
+                rr.target = sec
+                rr.res_type = resform.cleaned_data['resource_type']
+                rr.desired_value = val
+                rr.save()
+            return resform.cleaned_data['desired_value']
+        else:
+            rr = ResourceRequest()
+            rr.target = sec
+            rr.res_type = resform.cleaned_data['resource_type']
+            rr.desired_value = resform.cleaned_data['desired_value']
+            rr.save()
+            return rr
 
     def import_restype_formset(self, sec, resform):
         rt, created = ResourceType.get_or_create(resform.cleaned_data['name'])
