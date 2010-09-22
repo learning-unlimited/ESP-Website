@@ -168,8 +168,10 @@ class AdminVitals(ProgramModuleObj):
         chours = 0
         for section in self.program.sections():
             chours += math.ceil(section.duration)
-            shours += math.ceil(section.duration)*section.parent_class.class_size_max
-        
+            if section.parent_class.class_size_max !=0:
+                shours += math.ceil(section.duration)*section.parent_class.class_size_max
+            else: shours = 0
+       
         context['classhours'] = chours
         context['classpersonhours'] = shours
         
