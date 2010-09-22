@@ -1,5 +1,5 @@
 {% autoescape off %}
-Someone filled a form out on the web site:
+Someone filled a form out on {{ domain }}:
 
 Name: {{ form.cleaned_data.name }}
 I am a: {{ form.cleaned_data.person_type }}
