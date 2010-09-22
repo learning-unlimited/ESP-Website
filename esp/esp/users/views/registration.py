@@ -89,7 +89,7 @@ def user_registration(request):
             user.set_password(form.cleaned_data['password'])
             
             #   Append key to password and disable until activation if desired
-            if Tag.getTag('ask_about_duplicate_accounts', default='False') == 'True':
+            if Tag.getTag('require_email_validation', default='False') == 'True':
                 userkey = random.randint(0,2**31 - 1)
                 user.password += "_%d" % userkey
                 user.is_active = False

@@ -65,6 +65,7 @@ class ProgramModuleObj(models.Model):
     module   = models.ForeignKey(ProgramModule)
     seq      = models.IntegerField()
     required = models.BooleanField()
+    required_label = models.CharField(max_length=80, blank=True, null=True)
         
     def program_anchor_cached(self, parent=False):
         """ We reference "self.program.anchor" quite often.  Getting it requires two DB lookups.  So, cache it. """

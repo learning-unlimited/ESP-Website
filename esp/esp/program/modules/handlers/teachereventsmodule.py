@@ -45,8 +45,7 @@ class TeacherEventsModule(ProgramModuleObj):
     # Initialization
     def __init__(self, *args, **kwargs):
         super(TeacherEventsModule, self).__init__(*args, **kwargs)
-        self.reg_verb = GetNode('V/Flags/Registration/Teacher')
-    
+
     @property
     def qscs(self):
         if not hasattr(self, '_qscs'):
@@ -55,6 +54,12 @@ class TeacherEventsModule(ProgramModuleObj):
                 'training': GetNode( self.program_anchor_cached().get_uri() + '/TeacherEvents/Training' )
             }
         return self._qscs
+    
+    @property
+    def reg_verb(self):
+        if not hasattr(self, '_reg_verb'):
+            self._reg_verb = GetNode('V/Flags/Registration/Teacher')
+        return self._reg_verb
     
     # General Info functions
     @classmethod

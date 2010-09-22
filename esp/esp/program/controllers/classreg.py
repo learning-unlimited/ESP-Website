@@ -105,7 +105,8 @@ class ClassCreationController(object):
         if 'optimal_class_size_range' in reg_form.cleaned_data and reg_form.cleaned_data['optimal_class_size_range']:
             cls.optimal_class_size_range = ClassSizeRange.objects.get(id=reg_form.cleaned_data['optimal_class_size_range'])
 
-        if cls.anchor.friendly_name != cls.title:
+        if cls.anchor.friendly_name != cls.title or cls.anchor.name != cls.emailcode or cls.id is None:
+            cls.save()
             self.update_class_anchorname(cls)
             cls.save()
 
@@ -182,13 +183,14 @@ class ClassCreationController(object):
                 rr.res_type = resform.cleaned_data['resource_type']
                 rr.desired_value = val
                 rr.save()
+            return resform.cleaned_data['desired_value']
         else:
             rr = ResourceRequest()
             rr.target = sec
             rr.res_type = resform.cleaned_data['resource_type']
             rr.desired_value = resform.cleaned_data['desired_value']
             rr.save()
-        return rr
+            return rr
 
     def import_restype_formset(self, sec, resform):
         rt, created = ResourceType.get_or_create(resform.cleaned_data['name'])
