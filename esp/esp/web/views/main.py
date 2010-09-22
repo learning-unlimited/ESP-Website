@@ -196,7 +196,7 @@ def contact(request, section='esp'):
 	
 	if request.method == 'POST':
 		form = ContactForm(request.POST)
-		SUBJECT_PREPEND = '[webform] '
+		SUBJECT_PREPEND = '[webform]'
                 domain = Site.objects.get_current().domain
 		
 		if form.is_valid():
