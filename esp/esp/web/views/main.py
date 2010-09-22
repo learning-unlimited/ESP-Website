@@ -196,7 +196,8 @@ def contact(request, section='esp'):
 	
 	if request.method == 'POST':
 		form = ContactForm(request.POST)
-		SUBJECT_PREPEND = '[ %s web ]' % Site.objects.get_current().domain
+		SUBJECT_PREPEND = '[webform] '
+                domain = Site.objects.get_current().domain
 		
 		if form.is_valid():
 			
@@ -222,7 +223,7 @@ def contact(request, section='esp'):
 
 			t = loader.get_template('email/comment')
 
-			msgtext = t.render(Context({'form': form}))
+			msgtext = t.render(Context({'form': form, 'domain': domain}))
 				
 			send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
 				  msgtext,
