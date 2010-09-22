@@ -30,6 +30,7 @@ Email: web@esp.mit.edu
 """
 from esp.qsd.views import qsd
 from django.core.exceptions import PermissionDenied
+from django.contrib.sites.models import Site
 from esp.datatree.models import *
 from esp.users.models import GetNodeOrNoBits
 from django.http import Http404, HttpResponseRedirect
@@ -195,7 +196,7 @@ def contact(request, section='esp'):
 	
 	if request.method == 'POST':
 		form = ContactForm(request.POST)
-		SUBJECT_PREPEND = '[ ESP WEB ]'
+		SUBJECT_PREPEND = '[ %s web ]' % Site.objects.get_current().domain
 		
 		if form.is_valid():
 			
