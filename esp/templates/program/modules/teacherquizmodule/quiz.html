@@ -1,0 +1,87 @@
+{% extends "main.html" %}
+
+{% block title %}Teacher Logistics Quiz for {{ prog.niceName }}{% endblock %}
+
+{% block subsection_name %}Teacher Logistics Quiz{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+
+<h1>Teacher Logistics Quiz for {{ prog.niceName }}</h1>
+
+<div id="program_form">
+
+{% load render_qsd %}
+{% render_inline_qsd prog.anchor "teach:quizheader" request.user %}
+
+<form method="post" action="{{ request.path }}">
+<div>
+{% csrf_token %}
+<dl style="font-size:small;">
+<dt>1. What are the dates of Splash?</dt>
+<dd>
+<select name="prog_month">
+<option value="1">Jan</option>
+<option value="2">Feb</option>
+<option value="3">Mar</option>
+<option value="4">Apr</option>
+<option value="5">May</option>
+<option value="6">Jun</option>
+<option value="7">Jul</option>
+<option value="8">Aug</option>
+<option value="9">Sep</option>
+<option value="10">Oct</option>
+<option value="11">Nov</option>
+<option value="12">Dec</option>
+</select>
+<input type="text" name="prog_day" />
+</dd>
+<dt>2. Enter the number for the security hotline:</dt>
+<dd><input type="text" name="security_number" /></dd>
+<dt>3. Check all that apply: the security hotline should be your FIRST contact for:</dt>
+<dd>
+<ul style="list-style-type:none;">
+<li><input type="checkbox" name="sec1" />A locked or uncomfortably hot classroom</li>
+<li><input type="checkbox" name="sec2" />A student on the roster who does not show up</li>
+<li><input type="checkbox" name="sec3" />A student with a minor cut</li>
+<li><input type="checkbox" name="sec4" />A major medical emergency</li>
+<li><input type="checkbox" name="sec5" />A malfunctioning projector</li>
+<li><input type="checkbox" name="sec6" />If you are running late/unable to show up for your class</li>
+</ul>
+</dd>
+<dt>4. Check all that apply about reimbursements:</dt>
+<dd>
+<ul style="list-style-type:none;">
+<li><input type="checkbox" name="reimburse1" />You can be reimbursed for up to $30 of materials without asking for permission</li>
+<li><input type="checkbox" name="reimburse2" />You can keep all materials you buy for a class</li>
+<li><input type="checkbox" name="reimburse3" />MIT will reimburse for tax</li>
+<li><input type="checkbox" name="reimburse4" />Receipts can be turned in at teacher check-in</li>
+</ul>
+</dd>
+</dl>
+<h3>TRUE or FALSE</h3>
+<dl style="font-size:small;">
+<dt>5. There is a Splash photo is at 12:55pm on Saturday
+</dt>
+<dd><input type="radio" name="photo_exists" value="True" /> True <br /><input type="radio" name="photo_exists" value="False">False</option></select></dd>
+<dt>6. In the event of a major emergency, call 911
+</dt>
+<dd><input type="radio" name="call_911" value="True" /> True <br /><input type="radio" name="call_911" value="False">False</option></select></dd>
+<dt>7. All teachers can get lunch in the teacher lounge, which is in the Bush Room.
+</dt>
+<dd><input type="radio" name="teacher_lunch" value="True" /> True <br /><input type="radio" name="teacher_lunch" value="False">False</option></select></dd>
+<dt>8. You should check in at the Bush Room 20 minutes before your first class.
+</dt>
+<dd><input type="radio" name="check_in" value="True" /> True <br /><input type="radio" name="check_in" value="False">False</option></select></dd>
+</div>
+
+<div style="text-align: center;"><input type="submit" value="Done!" /></div>
+
+</form>
+
+<br />
+
+</div>
+
+{% endblock %}
