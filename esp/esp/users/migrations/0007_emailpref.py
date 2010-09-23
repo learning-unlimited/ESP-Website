@@ -3,22 +3,24 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
+from esp.utils.migration import db_table_exists
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
         # Adding model 'EmailPref'
-        db.create_table('users_emailpref', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('email', self.gf('django.db.models.fields.EmailField')(max_length=64, unique=True, null=True, blank=True)),
-            ('email_opt_in', self.gf('django.db.models.fields.BooleanField')(default=True, blank=True)),
-            ('first_name', self.gf('django.db.models.fields.CharField')(max_length=64)),
-            ('last_name', self.gf('django.db.models.fields.CharField')(max_length=64)),
-            ('sms_number', self.gf('django.contrib.localflavor.us.models.PhoneNumberField')(max_length=20, null=True, blank=True)),
-            ('sms_opt_in', self.gf('django.db.models.fields.BooleanField')(default=False, blank=True)),
-        ))
-        db.send_create_signal('users', ['EmailPref'])
+        if not db_table_exists('users_emailpref'):
+            db.create_table('users_emailpref', (
+                ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+                ('email', self.gf('django.db.models.fields.EmailField')(max_length=64, unique=True, null=True, blank=True)),
+                ('email_opt_in', self.gf('django.db.models.fields.BooleanField')(default=True, blank=True)),
+                ('first_name', self.gf('django.db.models.fields.CharField')(max_length=64)),
+                ('last_name', self.gf('django.db.models.fields.CharField')(max_length=64)),
+                ('sms_number', self.gf('django.contrib.localflavor.us.models.PhoneNumberField')(max_length=20, null=True, blank=True)),
+                ('sms_opt_in', self.gf('django.db.models.fields.BooleanField')(default=False, blank=True)),
+            ))
+            db.send_create_signal('users', ['EmailPref'])
 
 
     def backwards(self, orm):
