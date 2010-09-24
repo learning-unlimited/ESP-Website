@@ -3,23 +3,27 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
+from esp.utils.migration import db_table_exists
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
         # Adding model 'SplashInfo'
-        db.create_table('program_splashinfo', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('student', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
-            ('program', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['program.Program'], null=True)),
-            ('lunchsat', self.gf('django.db.models.fields.CharField')(max_length=32, null=True, blank=True)),
-            ('lunchsun', self.gf('django.db.models.fields.CharField')(max_length=32, null=True, blank=True)),
-            ('siblingdiscount', self.gf('django.db.models.fields.NullBooleanField')(default=False, null=True, blank=True)),
-            ('siblingname', self.gf('django.db.models.fields.CharField')(max_length=64, null=True, blank=True)),
-            ('submitted', self.gf('django.db.models.fields.NullBooleanField')(default=False, null=True, blank=True)),
-        ))
-        db.send_create_signal('program', ['SplashInfo'])
+        #   Check if the table already exists - it does if the database is created from scratch,
+        #   but doesn't in some of the existing site databases.
+        if not db_table_exists('program_splashinfo'):
+            db.create_table('program_splashinfo', (
+                ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+                ('student', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
+                ('program', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['program.Program'], null=True)),
+                ('lunchsat', self.gf('django.db.models.fields.CharField')(max_length=32, null=True, blank=True)),
+                ('lunchsun', self.gf('django.db.models.fields.CharField')(max_length=32, null=True, blank=True)),
+                ('siblingdiscount', self.gf('django.db.models.fields.NullBooleanField')(default=False, null=True, blank=True)),
+                ('siblingname', self.gf('django.db.models.fields.CharField')(max_length=64, null=True, blank=True)),
+                ('submitted', self.gf('django.db.models.fields.NullBooleanField')(default=False, null=True, blank=True)),
+            ))
+            db.send_create_signal('program', ['SplashInfo'])
 
 
     def backwards(self, orm):
