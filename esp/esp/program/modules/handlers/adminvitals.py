@@ -168,7 +168,7 @@ class AdminVitals(ProgramModuleObj):
         chours = 0
         for section in self.program.sections():
             chours += math.ceil(section.duration)
-            if section.parent_class.class_size_max !=0:
+            if type(section.parent_class.class_size_max) == int:
                 shours += math.ceil(section.duration)*section.parent_class.class_size_max
             else: shours = 0
        
