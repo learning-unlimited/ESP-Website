@@ -5,6 +5,10 @@ from esp.users.models import *
 
 class Migration:
     
+    depends_on = (
+        ("datatree", "0001_initial"),
+    )
+    
     def forwards(self, orm):
         
         # Adding model 'TeacherInfo'
@@ -41,9 +45,7 @@ class Migration:
         db.send_create_signal('users', ['ZipCode'])
         
         # Adding model 'ESPUser'
-        db.create_table('auth_user', (
-            
-        ))
+        #   Michael Price 9/22/2010: Don't do anything, the auth_user table already exists.
         db.send_create_signal('users', ['ESPUser'])
         
         # Adding model 'PersistentQueryFilter'
@@ -76,7 +78,7 @@ class Migration:
             ('position', orm['users.EducatorInfo:position']),
         ))
         db.send_create_signal('users', ['EducatorInfo'])
-        
+
         # Adding model 'EmailPref'
         db.create_table('users_emailpref', (
             ('id', orm['users.EmailPref:id']),

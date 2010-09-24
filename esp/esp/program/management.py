@@ -32,8 +32,10 @@ Email: web@esp.mit.edu
 
 from django.db.models import signals 
 from esp.program import models as program
+from esp.users import models as users
 from esp.program.models import class_ as class_models
 from esp.utils.custom_cache import custom_cache
+from esp.utils.migration import missing_db_table
 
 have_already_installed = False
 
@@ -41,6 +43,10 @@ def post_syncdb(sender, app, **kwargs):
     global have_already_installed
     if app == program and not have_already_installed:
         with custom_cache():
+            #   Check that required tables exist.
+            if missing_db_table(program.Program, users.ContactInfo):
+                return
+            #   Run installation
             have_already_installed = True
             print "Installing esp.program initial data..."
             program.install()

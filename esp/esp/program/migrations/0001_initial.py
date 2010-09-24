@@ -4,6 +4,10 @@ from django.db import models
 from esp.program.models import *
 
 class Migration:
+
+    depends_on = (
+        ("users", "0001_initial"),
+    )
     
     def forwards(self, orm):
         

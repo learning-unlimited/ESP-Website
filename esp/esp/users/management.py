@@ -34,6 +34,7 @@ Email: web@esp.mit.edu
 from django.db.models import signals 
 from esp.users import models as UsersModel
 from esp.utils.custom_cache import custom_cache
+from esp.utils.migration import missing_db_table
 
 have_already_installed = False
 
@@ -41,6 +42,10 @@ def post_syncdb(sender, app, **kwargs):
     global have_already_installed
     
     if (not have_already_installed) and app == UsersModel:
+        #   Check that required tables exist.
+        if missing_db_table(UsersModel.UserBit):
+            return
+        #   Run installation
         with custom_cache():
             have_already_installed = True
             print "Installing esp.users initial data..."

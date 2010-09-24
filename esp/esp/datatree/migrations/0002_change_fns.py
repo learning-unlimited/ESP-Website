@@ -6,15 +6,20 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
+    depends_on = (
+        ("program", "0001_initial"),
+    )
+    
+    #   Added IF EXISTS in case the initial data fixture was deferred and hasn't been loaded yet.
     del_fns_str = """
-DROP FUNCTION class__get_enrolled(integer, integer);
-DROP FUNCTION userbit__bits_get_qsc(integer, integer, timestamp with time zone, timestamp with time zone);
-DROP FUNCTION userbit__bits_get_qsc_root(integer, integer, timestamp with time zone, timestamp with time zone, integer);
-DROP FUNCTION userbit__bits_get_user(integer, integer, timestamp with time zone, timestamp with time zone);
-DROP FUNCTION userbit__bits_get_user_real(integer, integer, timestamp with time zone, timestamp with time zone);
-DROP FUNCTION userbit__bits_get_verb(integer, integer, timestamp with time zone, timestamp with time zone);
-DROP FUNCTION userbit__bits_get_verb_root(integer, integer, timestamp with time zone, timestamp with time zone, integer);
-DROP FUNCTION userbit__user_has_perms(integer, integer, integer, timestamp with time zone, boolean);
+DROP FUNCTION IF EXISTS class__get_enrolled(integer, integer);
+DROP FUNCTION IF EXISTS userbit__bits_get_qsc(integer, integer, timestamp with time zone, timestamp with time zone);
+DROP FUNCTION IF EXISTS userbit__bits_get_qsc_root(integer, integer, timestamp with time zone, timestamp with time zone, integer);
+DROP FUNCTION IF EXISTS userbit__bits_get_user(integer, integer, timestamp with time zone, timestamp with time zone);
+DROP FUNCTION IF EXISTS userbit__bits_get_user_real(integer, integer, timestamp with time zone, timestamp with time zone);
+DROP FUNCTION IF EXISTS userbit__bits_get_verb(integer, integer, timestamp with time zone, timestamp with time zone);
+DROP FUNCTION IF EXISTS userbit__bits_get_verb_root(integer, integer, timestamp with time zone, timestamp with time zone, integer);
+DROP FUNCTION IF EXISTS userbit__user_has_perms(integer, integer, integer, timestamp with time zone, boolean);
 """
 
     def forwards(self, orm):

@@ -6,10 +6,16 @@ from django.db import models
 
 from esp.program.models import ProgramModule
 
+from esp.program.modules import models as modules_models
+
 class Migration(DataMigration):
 
     def forwards(self, orm):
         """ Adds the makeopenclass aux call to the teacher class reg module."""
+        
+        #   Make sure ProgramModule initial data is there.
+        modules_models.install()
+        
         teacherclassregmodule = ProgramModule.objects.get(handler="TeacherClassRegModule")
         aux_calls = [x for x in teacherclassregmodule.aux_calls.split(",") if x.strip() not in ["", "makeopenclass"]]
         aux_calls += ["makeopenclass"]
