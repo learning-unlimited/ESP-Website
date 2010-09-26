@@ -300,6 +300,7 @@ def registration_redirect(request):
         return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
     else:
         if len(progs) > 0:
+            ctxt['progs'] = progs
             ctxt['prog'] = progs[0]
         ctxt['nextreg'] = list(nextreg)
         return render_to_response('users/profile_complete.html', request, GetNode('Q/Web'), ctxt)		    
