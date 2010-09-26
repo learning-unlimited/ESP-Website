@@ -28,7 +28,7 @@
 <!-- Future Webmins, in case you're wondering why not to use the Advanced Comm Panel to send e-mail:  First, that whole codepath has lots of issues that can cause it to produce a slightly different set of users than you're expecting, particularly for more-complex combination queries.  It turns out that relational logic is complicated and subtle...  Second, there's not only no Unsubscribe mechanism for Advanced Comm Panel e-mails; there's no reasonable way of making one. -->
 
 
-<form action="{{request.path}}" method="post" name="comm">
+<form action="{{request.path}}" method="post" name="comm">{% csrf_token %}
 
 <p>Click on a list to select it.  Ctrl-click to select multiple lists; your e-mail will be sent once to each user whose e-mail address is on any of the lists.</p>
 

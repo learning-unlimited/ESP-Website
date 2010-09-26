@@ -10,7 +10,9 @@
 {% else %}
     {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
 {% endif %}
-{% if not module.module.required %}{% if not module.hideNotRequired %} <em>(not required)</em> {% endif %}{% endif %}
+{% if module.required_label %}<em>{{ module.required_label }}</em>{% else %}
+    {% if not module.module.required %}{% if not module.hideNotRequired %} <em>(not required)</em> {% endif %}{% endif %}
+{% endif %}
 </td>
 <td>{% if not module.useTemplate %}
 <a href="{{ module.get_full_path }}">

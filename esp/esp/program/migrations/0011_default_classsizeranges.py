@@ -7,9 +7,14 @@ from django.db import models
 from esp.datatree.models import GetNode
 from esp.program.models import ClassSizeRange, Program
 
+from esp.program import models as program_models
+
 class Migration(DataMigration):
 
     def forwards(self, orm):
+        #   Make sure Program initial data is there.
+        program_models.install()
+    
         dummy_prog = Program.objects.get(anchor=GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
         ClassSizeRange.objects.get_or_create(range_min=4, range_max=10, program=dummy_prog)
         ClassSizeRange.objects.get_or_create(range_min=10, range_max=15, program=dummy_prog)

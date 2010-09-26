@@ -639,13 +639,14 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
                 #   The sections are all held in the same room by default.  This can be changed
                 #   in the scheduling module later.
                 for ts in timeslots:
-                    new_room = Resource.objects.get_or_create(name=room_num, res_type=ResourceType.get_or_create('Classroom'), event=ts)
+                    new_room, created = Resource.objects.get_or_create(name=room_num, res_type=ResourceType.get_or_create('Classroom'), event=ts)
                     new_room.num_students = room_capacity
                     new_room.save()
                     sec = newclass.add_section(duration=(ts.duration().seconds / 3600.0))
                     sec.meeting_times.add(ts)
                     sec.assign_room(new_room)
-                    sec.accept()
+                    sec.status = 10
+                    sec.save()
         
         #dummy_anchor.delete()
         return HttpResponseRedirect('/manage/%s/schedule_options' % self.program.getUrlBase())

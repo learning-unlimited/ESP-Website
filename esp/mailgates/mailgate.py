@@ -68,6 +68,7 @@ try:
                 message['Bcc'] = ARCHIVE
 
             send_mail(str(message))
+            continue
         
         del(message['to'])
         del(message['cc'])

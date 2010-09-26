@@ -3,13 +3,19 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
+from esp.utils.migration import db_has_column
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
         # Adding field 'TeacherInfo.graduation_year'
-        db.add_column('users_teacherinfo', 'graduation_year', self.gf('django.db.models.fields.CharField')(max_length=4, null=True, blank=True), keep_default=False)
+        #   Check if the field already exists - it does if the database is created from scratch,
+        #   but doesn't in some of the existing site databases.
+        if db_has_column('users_teacherinfo', 'graduation_year'):
+            db.alter_column('users_teacherinfo', 'graduation_year', self.gf('django.db.models.fields.CharField')(max_length=4, null=True, blank=True))
+        else:
+            db.add_column('users_teacherinfo', 'graduation_year', self.gf('django.db.models.fields.CharField')(max_length=4, null=True, blank=True))
 
         # Adding field 'TeacherInfo.is_graduate_student'
         db.add_column('users_teacherinfo', 'is_graduate_student', self.gf('django.db.models.fields.NullBooleanField')(null=True, blank=True), keep_default=False)

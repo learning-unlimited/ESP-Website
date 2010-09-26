@@ -215,6 +215,10 @@ class TeacherClassRegForm(FormWithRequiredCss):
             for field_name in tag_data.split(','):
                 hide_field(self.fields[field_name])
 
+        #   Rewrite purchase_requests help text if desired:
+        if Tag.getTag('purchase_requests_help_text'):
+            self.fields['purchase_requests'].help_text = Tag.getTag('purchase_requests_help_text')
+
         # plus subprogram section wizard
     
     def clean(self):
