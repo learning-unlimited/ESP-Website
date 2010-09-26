@@ -92,9 +92,9 @@ class RegProfileModule(ProgramModuleObj):
 
         # Make sure we are editing the right type of profile
         if role == 'teacher' and not request.user.isTeacher():
-            return needs_teacher(self.profile)(self, request)
+            return needs_teacher(self.profile)(self, request, tl, one, two, module, extra, prog)
         if role == 'student' and not request.user.isStudent():
-            return needs_student(self.profile)(self, request)
+            return needs_student(self.profile)(self, request, tl, one, two, module, extra, prog)
 
         #   Reset e-mail address for program registrations.
         if prog is None:
