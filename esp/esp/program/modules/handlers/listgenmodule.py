@@ -47,16 +47,17 @@ class UserAttributeGetter(object):
                     '05_firstname': 'First Name',
                     '06_email': 'E-mail',
                     '07_accountdate': 'Created Date',
-                    '08_regdate': 'Registration Date',
-                    '09_cellphone': 'Cell Phone',
-                    '10_textmsg': 'Text Msg?',
-                    '11_studentrep': 'Student Rep?',
-                    '12_classhours': 'Num Class Hrs',
-                    '13_gradyear': 'Grad Year',
-                    '14_school': 'School',
-                    '15_heard_about': 'Heard about Splash from',
-                    '16_transportation': 'Plan to Get to Splash',
-                    '17_post_hs': 'Post-HS plans',
+                    '08_first_regdate': 'Initial Registration Date',
+                    '09_last_regdate': 'Most Recent Registration Date',
+                    '10_cellphone': 'Cell Phone',
+                    '11_textmsg': 'Text Msg?',
+                    '12_studentrep': 'Student Rep?',
+                    '13_classhours': 'Num Class Hrs',
+                    '14_gradyear': 'Grad Year',
+                    '15_school': 'School',
+                    '16_heard_about': 'Heard about Splash from',
+                    '17_transportation': 'Plan to Get to Splash',
+                    '18_post_hs': 'Post-HS plans',
                  }
 
         last_label_index = len(labels)
@@ -115,13 +116,19 @@ class UserAttributeGetter(object):
     def get_accountdate(self):
         return self.user.date_joined.strftime("%m/%d/%Y")
         
-    def get_regdate(self):
+    def get_regdate(self, ordering='startdate'):
         reg_verb = GetNode('V/Flags/Registration/Enrolled')
         reg_node_parent = self.program.anchor['Classes']
         bits = UserBit.valid_objects().filter(user=self.user, verb=reg_verb).filter(QTree(qsc__below=reg_node_parent))
         if bits.exists():
-            return bits.order_by('-startdate').values_list('startdate', flat=True)[0].strftime("%Y-%m-%d %H:%M:%S")
-            
+            return bits.order_by(ordering).values_list('startdate', flat=True)[0].strftime("%Y-%m-%d %H:%M:%S")
+
+    def get_first_regdate(self):
+        return self.get_regdate(ordering='startdate')
+        
+    def get_last_regdate(self):
+        return self.get_regdate(ordering='-startdate')
+
     def get_cellphone(self):
         if self.profile.contact_user:
             return self.profile.contact_user.phone_cell
