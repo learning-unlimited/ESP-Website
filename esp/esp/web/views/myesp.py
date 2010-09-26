@@ -138,14 +138,16 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     #   Get the profile form from the user's type, although we need to handle 
     #   a couple of extra possibilities for the 'role' variable.
     user_types = ESPUser.getAllUserTypes()
-    additional_types = {'': {'label': 'Not specified', 'profile_form': 'UserContactForm'},
-                        'Administrator': {'label': 'Administrator', 'profile_form': 'UserContactForm'},
-                       }
+    additional_types = [['',  {'label': 'Not specified', 'profile_form': 'UserContactForm'}],
+                        ['Administrator', {'label': 'Administrator', 'profile_form': 'UserContactForm'}],
+                       ]
+    additional_type_labels = [x[0] for x in additional_types]
     #   Handle all-lowercase versions of role being passed in by calling title()
-    if role.title() in user_types:
-        target_type = user_types[role.title()]
+    user_type_labels = [x[0] for x in user_types]
+    if role.title() in user_type_labels:
+        target_type = user_types[user_type_labels.index(role.title())][1]
     else:
-        target_type = additional_types[role.title()]
+        target_type = additional_types[additional_type_labels.index(role.title())][1]
     mod = __import__('esp.users.forms.user_profile', (), (), target_type['profile_form'])
     FormClass = getattr(mod, target_type['profile_form'])
 
