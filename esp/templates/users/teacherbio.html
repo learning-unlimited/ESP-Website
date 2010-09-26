@@ -24,11 +24,11 @@ img.biophoto { border: 1px solid black; }
 
 {% block content %}
 <h1 style="font-size: 120%;">ESP Biography</h1>
-{% ifequal user.id request.user.id %}
+{% if biouser.id == request.user.id or request.user.isAdministrator %}
 <a href="{{ bio.edit_url }}" title="Edit this bio!">
   Edit this biography!
 </a>
-{% endifequal %}
+{% endif %}
 <br /><br />
 <h2>{{biouser.name|upper}}, {{bio.slugbio}}</h2>
 <hr />
