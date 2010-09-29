@@ -221,8 +221,11 @@ class ClassCreationController(object):
             mail_ctxt['optimal_class_size_range'] = str(opt_range.range_min) + "-" + str(opt_range.range_max)
         else:
             mail_ctxt['optimal_class_size_range'] = ''
-        if cls.allowable_class_size_ranges:
+        try:
             mail_ctxt['allowable_class_size_ranges'] = cls.allowable_class_size_ranges.all()
+        except:
+            # If the allowable_class_size_ranges field doesn't exist, just don't do anything.
+            pass
         
         # Provide information about whether or not teacher's from MIT.
         last_profile = user.getLastProfile()
