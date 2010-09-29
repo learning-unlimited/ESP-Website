@@ -27,6 +27,9 @@ Maximum class size: {{ class_size_max }}
 
 Optimal class size: {{ class_size_optimal }}
 
+{% if optimal_class_size_range %}Optimal class size range: {{ optimal_class_size_range }}{% endif %}
+{% if allowable_class_size_ranges %}Allowable class size ranges: {% for cls_size in allowable_class_size_ranges %}{{ cls_size.range_min }}-{{ cls_size.range_max }}, {% endfor %}{% endif %}
+
 Have own space? {{ has_own_space }}
 
 Room request: {{ requested_room }}
