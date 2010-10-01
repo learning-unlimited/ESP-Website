@@ -47,12 +47,16 @@ class ClassManageForm(ManagementForm):
             super(ClassManageForm, self).__init__(*args, **kwargs)
 
     def load_data(self, cls, prefix=''):
-        self.initial = {prefix+'status': cls.status,
+        if type(cls.class_size_max) == int:
+            csm = cls.class_size_max
+        else:  csm = 0
+        self.initial = {
+            prefix+'status': cls.status,
             prefix+'reg_status': None,
             prefix+'min_grade': cls.grade_min,
             prefix+'max_grade': cls.grade_max,
             prefix+'notes': cls.directors_notes,
-            prefix+'class_size': cls.class_size_max,
+            prefix+'class_size': csm ,
             prefix+'clsid': cls.id,
             prefix+'progress': [cm.id for cm in cls.checklist_progress.all()]}
         return self.initial
