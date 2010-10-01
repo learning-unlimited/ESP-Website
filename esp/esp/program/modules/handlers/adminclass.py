@@ -283,19 +283,15 @@ class AdminClass(ProgramModuleObj):
                 sf.is_bound = True
                 valid = (valid and sf.is_valid())
             
-            cls_alter = ClassSubject.objects.get(id=cls_form.cleaned_data['clsid'])
-            orig_cls_status = cls_alter.status
-            cls_form.save_data(cls_alter)
-
-            # Leave a loophole:  You can set a class to "Unreviewed" (ie., status = 0),
-            # then cancel it, and it won't kick all the students out
-            should_cancel_sections = (int(orig_cls_status) > 0 and int(cls_alter.status) < 0)
-
             if valid:
+                # Leave a loophole:  You can set a class to "Unreviewed" (ie., status = 0),
+                # then cancel it, and it won't kick all the students out
+                cls_alter = ClassSubject.objects.get(id=cls_form.cleaned_data['clsid'])
+                should_cancel_sections = (int(cls_alter.status) > 0 and int(cls_form.cleaned_data['status']) < 0)
+                
                 for sf in sec_forms:
                     sec_alter = ClassSection.objects.get(id=sf.cleaned_data['secid'])
                     orig_sec_status = sec_alter.status
-
                     sf.save_data(sec_alter)
                     
                     # If the parent class was canceled, cancel the sections
@@ -307,7 +303,12 @@ class AdminClass(ProgramModuleObj):
                     if int(sec_alter.status) < 0 and int(orig_sec_status) > 0:
                         for student in sec_alter.students():
                             sec_alter.unpreregister_student(student)
-
+                
+                #   Save class info after section info so that cls_form.save_data()
+                #   can override section information if it's supposed to.
+                #   This is needed for accepting/rejecting the sections of a 
+                #   class when the sections are unreviewed.
+                cls_form.save_data(cls_alter)
 
                 return HttpResponseRedirect('/manage/%s/%s/dashboard' % (one, two))            
             

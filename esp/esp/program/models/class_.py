@@ -2123,6 +2123,12 @@ class ClassCategories(models.Model):
     class Admin:
         pass
 
+@cache_function
+def sections_in_program_by_id(prog):
+    return [int(x) for x in ClassSection.objects.filter(parent_class__parent_program=prog).distinct().values_list('id', flat=True)]
+sections_in_program_by_id.depend_on_model(ClassSection)
+sections_in_program_by_id.depend_on_model(ClassSubject)
+
 def install():
     """ Initialize the default class categories. """
     category_dict = {
