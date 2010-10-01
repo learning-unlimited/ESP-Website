@@ -62,12 +62,12 @@ try:
 except ImportError:
     import pickle
 
-DEFAULT_USER_TYPES = {
-    'Student': {'label': 'Student (up through 12th grade)', 'profile_form': 'StudentProfileForm'},
-    'Teacher': {'label': 'Volunteer Teacher', 'profile_form': 'TeacherProfileForm'},
-    'Guardian': {'label': 'Guardian of Student', 'profile_form': 'GuardianProfileForm'},
-    'Educator': {'label': 'K-12 Educator', 'profile_form': 'EducatorProfileForm'},
-}
+DEFAULT_USER_TYPES = [
+    ['Student', {'label': 'Student (up through 12th grade)', 'profile_form': 'StudentProfileForm'}],
+    ['Teacher', {'label': 'Volunteer Teacher', 'profile_form': 'TeacherProfileForm'}],
+    ['Guardian', {'label': 'Guardian of Student', 'profile_form': 'GuardianProfileForm'}],
+    ['Educator', {'label': 'K-12 Educator', 'profile_form': 'EducatorProfileForm'}],
+]
 
 def user_get_key(user):
     """ Returns the key of the user, regardless of anything about the user object. """
@@ -846,8 +846,14 @@ class ESPUser(User, AnonymousUser):
     def getAllUserTypes():
         tag_data = Tag.getTag('user_types')
         result = DEFAULT_USER_TYPES
+        result_labels = [x[0] for x in result]
         if tag_data:
-            result.update(json.loads(tag_data))
+            json_data = json.loads(tag_data)
+            for entry in json_data:
+                if entry[0] not in result_labels:
+                    result.append(entry)
+                else:
+                    result[result_labels.index(entry[0])][1] = entry[1]
         return result
 
     def getUserTypes(self):

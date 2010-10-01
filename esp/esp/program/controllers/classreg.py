@@ -206,12 +206,26 @@ class ClassCreationController(object):
 
     def generate_director_mail_context(self, cls, user):
         new_data = cls.__dict__
+        print new_data;
         mail_ctxt = dict(new_data.iteritems())
+        print mail_ctxt;
 
         
         # Make some of the fields in new_data nicer for viewing.
         mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category_id']).category
         mail_ctxt['global_resources'] = ResourceType.objects.filter(id__in=new_data['global_resources'])
+
+        # Optimal and allowable class size ranges.
+        if new_data.has_key('optimal_class_size_range_id'):
+            opt_range = ClassSizeRange.objects.get(id=new_data['optimal_class_size_range_id'])
+            mail_ctxt['optimal_class_size_range'] = str(opt_range.range_min) + "-" + str(opt_range.range_max)
+        else:
+            mail_ctxt['optimal_class_size_range'] = ''
+        try:
+            mail_ctxt['allowable_class_size_ranges'] = cls.allowable_class_size_ranges.all()
+        except:
+            # If the allowable_class_size_ranges field doesn't exist, just don't do anything.
+            pass
         
         # Provide information about whether or not teacher's from MIT.
         last_profile = user.getLastProfile()
