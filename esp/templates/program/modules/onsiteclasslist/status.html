@@ -1,0 +1,120 @@
+<html>
+<head>
+<title>Live Registration Status</title>
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<style type="text/css">
+td {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+}
+
+p {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+}
+
+th {
+    background-color: #cccccc;
+    font-size: 10pt;
+    padding-bottom: 8px;
+}
+
+td.narrow {
+    padding: 0px;
+    margin: 0px;
+    height: 20px;
+    white-space: nowrap;
+//  overflow: hidden;
+    text-overflow:ellipsis; 
+}
+
+tr.narrow {
+    padding: 0px;
+    margin: 0px;
+    height: 20px;
+}
+
+table.bordered {
+    border: 1px solid #cccccc;
+}
+
+table.narrow {
+    margin: 0px;
+    padding: 0px;
+    border-spacing: 0em;
+    table-layout:fixed;
+}
+
+input.narrowbox {
+    width: 35px;
+    border: 1px solid #cccccc;
+    font-size: 0.8em;
+}
+
+input.smbutton {
+    font-size: 0.8em;
+    font-weight: normal;
+    padding: 1px;
+    border: 1px solid #999999;
+    background-color: #99ccff;
+}
+
+td .room {
+    color: #666666;
+}
+
+form {
+    margin: 0px;
+    padding: 0px;
+}
+</style>
+<link rel="stylesheet" type="text/css" href="/media/styles/tooltips.css" />
+</head>
+
+<body>
+
+<div id="messages_html">
+{% if not msgs|length_is:0 %}
+<p>
+<b>Updates:</b><br />
+{% for msg in msgs %}
+{{ msg }} <br />
+{% endfor %}
+</p>
+{% endif %}
+</div>
+
+<table class="narrow bordered">
+<tr>
+{% for timeslot in timeslots %}
+<td width="270px" valign="top">
+<table border="0" cellspacing="0" cellpadding="0">
+<tr><th>{{ timeslot.timeslot }}</th></tr>
+{% for section in timeslot.sections %}
+<tr class="narrow">
+<td class="narrow">
+<form method="POST" action="{{ request.path }}?op=add&sec_id={{ section.id }}">{% csrf_token %}
+<table bgcolor="#{{ section.color }}" border="0" cellspacing="0" cellpadding="0">
+<tr>
+<td> <!-- width="50px" -->
+    <a class="tooltip" href="#">
+    {{ section.emailcode }}
+    <span class="tooltip"><b>{{ section.title }}</b><br />{{ section.teachers }}</span>
+    </a>
+</td>
+<td width="105px" class="room narrow">{{ section.rooms }}</td>
+<td width="75px">{{ section.checkin_count }}/{{ section.reg_count }}/{{ section.capacity_count }}</td>
+<td width="40px"><input class="narrowbox" type="text" name="add_{{ section.id }}"/></td>
+</tr>
+</table>
+</form>
+</tr>
+</td>
+{% endfor %}
+</table>
+</td>
+{% endfor %}
+</tr>
+</table>
+
+</body>

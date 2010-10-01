@@ -391,6 +391,64 @@ class Program(models.Model):
                 students.update(tmpstudents)
         return students
 
+    @cache_function
+    def capacity_by_section_id(self):
+        capacities = {}
+        for sec in self.sections():
+            capacities[sec.id] = sec.capacity
+        return capacities
+    #   Clear this cache on any ClassSection capacity update... kind of brute force, but oh well.
+    #   WARNING: Not sure if this usage is correct, can someone check?
+    capacity_by_section_id.depend_on_cache(lambda: ClassSection._get_capacity, lambda **kwargs: {})
+
+    def checked_in_by_section_id(self):
+        from esp.program.models.class_ import sections_in_program_by_id
+        section_ids = sections_in_program_by_id(self)
+    
+        counts = {}
+        checked_in_ids = self.students()['attended'].values_list('id', flat=True)
+        qsc_map = {}
+        for sec in self.sections().values('id', 'anchor'):
+            qsc_map[sec['anchor']] = sec['id']
+    
+        reg_verb = GetNode('V/Flags/Registration/Enrolled')
+        bits = UserBit.valid_objects().filter().filter(QTree(qsc__below=self.anchor['Classes'])).filter(user__id__in=checked_in_ids, verb=reg_verb).values('user', 'qsc')
+        for bit in bits:
+            if bit['qsc'] in qsc_map:
+                secid = qsc_map[bit['qsc']]
+                if secid not in counts:
+                    counts[secid] = 0
+                counts[secid] += 1
+                
+        return counts
+                
+
+    def student_counts_by_section_id(self):
+        from esp.program.models.class_ import sections_in_program_by_id
+        section_ids = sections_in_program_by_id(self)
+        
+        class_cachekey = "class_size_counter_%d"
+        counts = cache.get_many([class_cachekey % x for x in section_ids])
+
+        clean_counts = {}
+        missing_secs = set()
+
+        for section_id in section_ids:
+            clean_count = counts.get(class_cachekey % section_id, None)
+            if not clean_count:
+                missing_secs.add(section_id)
+            clean_counts[section_id] = clean_count
+
+        if len(missing_secs) != 0:
+            initial_catalog_queryset = ClassSubject.objects.filter(sections__in=missing_secs)
+            catalog = ClassSubject.objects.catalog(self, initial_queryset = initial_catalog_queryset)
+            for subject in catalog:
+                for section in subject.get_sections():
+                    if int(section.id) in missing_secs:
+                        clean_counts[section.id] = section.num_students()  ## Also repopulates the cache.  Magic!
+
+        return clean_counts
+
     def getLists(self, QObjects=False):
         from esp.users.models import ESPUser
         
