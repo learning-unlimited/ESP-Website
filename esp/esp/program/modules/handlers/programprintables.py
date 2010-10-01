@@ -968,7 +968,7 @@ Student schedule for %s:
             student.classes = classes
             
         context['students'] = students
-        context['program'] = self.program
+        context['program'] = prog
         
         if extra:
             file_type = extra.strip()
@@ -977,12 +977,13 @@ Student schedule for %s:
 
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT
-            
+    
+        basedir = 'program/modules/programprintables/'
         if file_type == 'html':
-            return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
+            return render_to_response(basedir+'studentschedule.html', request, (prog, tl), context)
         else:  # elif format == 'pdf':
             from esp.web.util.latex import render_to_latex
-            schedule_template = select_template([self.baseDir()+'program_custom_schedules/%s_studentschedule.tex' %(self.program.id), self.baseDir()+'studentschedule.tex'])
+            schedule_template = select_template([basedir+'program_custom_schedules/%s_studentschedule.tex' %(prog.id), basedir+'studentschedule.tex'])
             return render_to_latex(schedule_template, context, file_type)
 
     @aux_call
