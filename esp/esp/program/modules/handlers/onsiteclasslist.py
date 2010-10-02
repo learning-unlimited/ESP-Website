@@ -70,7 +70,7 @@ class OnSiteClassList(ProgramModuleObj):
         sect['id'] = sec.id
         sect['emailcode'] = sec.emailcode()
         sect['title'] = sec.title()
-        sect['teachers'] = ', '.join([t.name() for t in sec.teachers.all()])
+        sect['teachers'] = ', '.join([t.name() for t in list(sec.teachers)])
         sect['rooms'] = (' ,'.join(sec.prettyrooms()))[:12]
         return sect
     section_data.depend_on_model(lambda: ResourceAssignment)
