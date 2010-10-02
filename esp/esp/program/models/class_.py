@@ -1064,7 +1064,7 @@ class ClassSection(models.Model):
             txtTimes = [ event.pretty_time() for event
                      in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
 
-        self.cache['friendly_times_%s % raw'] = txtTimes
+        self.cache['friendly_times_%s' % raw] = txtTimes
 
         return txtTimes
             
