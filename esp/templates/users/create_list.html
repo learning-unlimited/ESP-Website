@@ -110,7 +110,7 @@ function checkForNobody() {
 Please generate a list of users from the options below.
 
 
-<form action="{{request.path}}" onsubmit="return checkForNobody();" method="post" name="comm">{% csrf_token %}
+<form action="{{request.path}}?{{ request.GET.urlencode }}" onsubmit="return checkForNobody();" method="post" name="comm">{% csrf_token %}
 <p>
 <em>(If you feel there's a list omitted from this list or this interface is too hard to use, please email <tt>{{ DEFAULT_EMAIL_ADDRESSES.support }}</tt> with questions!)</em>
 <br />

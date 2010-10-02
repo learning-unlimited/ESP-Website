@@ -1190,7 +1190,22 @@ Student schedule for %s:
                 end_index = int((i + 1) * names_per_set)
                 context['name_groups'].append(students[start_index:end_index])
 
-        context['joint_groups'] = zip(context['colors'], context['name_groups'])
+        num_per_page = 12
+        student_tuples = []
+        #   Make an ordered list of all students
+        for i in range(len(context['name_groups'])):
+            color = context['colors'][i]
+            line_num = i + 1
+            for item in context['name_groups'][i]:
+                student_tuples.append((line_num, color, item))
+        num_students = len(student_tuples)
+        num_pages = (num_students - 1) / num_per_page + 1
+        pages = [[] for i in range(num_pages)]
+        #   Deal the list out into pages of [num_per_page] stacks
+        for i in range(num_students):
+            pages[i % num_pages].append(student_tuples[i])
+
+        context['pages'] = pages
 
         return render_to_response(self.baseDir()+'student_tickets.html', request, (prog, tl), context)
     
