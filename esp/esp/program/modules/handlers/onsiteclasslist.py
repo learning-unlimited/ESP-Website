@@ -151,7 +151,7 @@ class OnSiteClassList(ProgramModuleObj):
                     lightness = sect['checkin_count'] / float(sect['reg_count'])
                 else:
                     lightness = 0.0
-                sect['color'] = hsl_to_rgb(0.4 + 0.6 * hue_redness, 0.8, 0.9 - 0.5 * lightness)
+                sect['color'] = hsl_to_rgb(min(1.0, 0.4 + 0.6 * hue_redness), 0.8, 0.9 - 0.5 * lightness)
                 
                 item['sections'].append(sect)
             timeslots.append(item)
