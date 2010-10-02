@@ -965,6 +965,9 @@ Student schedule for %s:
         else:
             file_type = 'pdf'
 
+        if onsite and file_type == 'pdf':
+            file_type = 'png'
+
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT
     

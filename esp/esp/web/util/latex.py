@@ -138,10 +138,10 @@ def gen_latex(texcode, type='pdf', landscape=False):
             os.remove('%s.pdf' % file_base)
         
     elif type=='png':
-        mime = 'application/postscript'
+        mime = 'image/png'
         os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips -t letter %s.dvi' % (TEX_TEMP, file_base))
-        os.system('cd %s; convert %s.ps %s.png' % (TEX_TEMP, file_base, file_base))
+        os.system('cd %s; dvips %s %s.dvi' % (TEX_TEMP, dvips_options, file_base))
+        os.system('cd %s; convert -density 96 %s.ps %s.png' % (TEX_TEMP, file_base, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
             os.remove('%s.ps' % file_base)
