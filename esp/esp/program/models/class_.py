@@ -1022,7 +1022,10 @@ class ClassSection(models.Model):
     def isFull(self, ignore_changes=False, use_cache=True):
         return (self.num_students() >= self._get_capacity(ignore_changes))
 
-    def friendly_times(self, use_cache=False):
+    def time_blocks(self):
+        return self.friendly_times(raw=True)
+
+    def friendly_times(self, use_cache=False, raw=False):
         """ Return a friendlier, prettier format for the times.
 
         If the events of this class are next to each other (within 10-minute overlap,
@@ -1036,7 +1039,7 @@ class ClassSection(models.Model):
         from esp.cal.models import Event
         from esp.resources.models import ResourceAssignment, ResourceType, Resource
 
-        retVal = self.cache['friendly_times']
+        retVal = self.cache['friendly_times_%s' % raw]
 
         if retVal is not None and use_cache:
             return retVal
@@ -1055,10 +1058,13 @@ class ClassSection(models.Model):
         else:
             events = list(self.meeting_times.all())
 
-        txtTimes = [ event.pretty_time() for event
+        if raw:
+            txtTimes = Event.collapse(events, tol=datetime.timedelta(minutes=15))
+        else:
+            txtTimes = [ event.pretty_time() for event
                      in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
 
-        self.cache['friendly_times'] = txtTimes
+        self.cache['friendly_times_%s % raw'] = txtTimes
 
         return txtTimes
             
