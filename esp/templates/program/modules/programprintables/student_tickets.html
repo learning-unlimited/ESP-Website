@@ -7,20 +7,26 @@ body { font-family: georgia; margin: 0pt;}
 </style>
 </head>
 <body>
-{% for group in joint_groups %}
-    {% if not forloop.first %}
-        </table>
-        <div style="page-break-after: always;">&nbsp; </div>
+<table cellspacing="0" cellpadding="0" align="center">
+{% for student in pages.0 %}
+    {% if forloop.counter0|divisibleby:2 %}
+    <tr>
+      <td valign="middle">
+      <div class="label">Stack {{ forloop.counter }}</div>
+      </td>
+    {% else %}
+      <td valign="middle">
+      <div class="label">Stack {{ forloop.counter }}</div>
+      </td>
+      <td>&nbsp;</td>
+    </tr>
     {% endif %}
+{% endfor %}
+</table>
+<div style="page-break-after: always;">&nbsp; </div>
+{% for page in pages %}
     <table cellspacing="0" cellpadding="0" align="center">
-    {% for student in group.1 %}
-        {% if forloop.counter0|divisibleby:12 %}
-            {% if not forloop.first %}
-                </table>
-                <div style="page-break-after: always;"></div>
-                <table cellspacing="0" cellpadding="0" align="center">
-            {% endif %}
-        {% endif %}
+    {% for student in page %}
         {% if forloop.counter0|divisibleby:2 %}
         <tr>
           <td valign="middle">
@@ -34,6 +40,8 @@ body { font-family: georgia; margin: 0pt;}
         </tr>
         {% endif %}
     {% endfor %}
+    </table>
+    <div style="page-break-after: always;">&nbsp; </div>
 {% endfor %}
 </body>
 </html>
