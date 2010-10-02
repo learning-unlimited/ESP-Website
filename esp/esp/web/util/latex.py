@@ -100,12 +100,12 @@ def gen_latex(texcode, type='pdf', landscape=False):
     #   Set dvips options
     dvips_options = '-t letter'
     if landscape:
-        dvips_options += ' -t landscape'
+        dvips_options = ' -t letter,landscape'
 
     if type=='pdf':
         mime = 'application/pdf'
         os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips -t letter %s.dvi' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvips %s %s.dvi' % (TEX_TEMP, dvips_options, file_base))
         os.system('cd %s; ps2pdf %s.ps' % (TEX_TEMP, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
