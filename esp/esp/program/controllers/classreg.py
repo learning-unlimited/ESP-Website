@@ -216,7 +216,7 @@ class ClassCreationController(object):
         mail_ctxt['global_resources'] = ResourceType.objects.filter(id__in=new_data['global_resources'])
 
         # Optimal and allowable class size ranges.
-        if new_data.has_key('optimal_class_size_range_id'):
+        if new_data.has_key('optimal_class_size_range_id') and (new_data['optimal_class_size_range_id'] is not None):
             opt_range = ClassSizeRange.objects.get(id=new_data['optimal_class_size_range_id'])
             mail_ctxt['optimal_class_size_range'] = str(opt_range.range_min) + "-" + str(opt_range.range_max)
         else:
