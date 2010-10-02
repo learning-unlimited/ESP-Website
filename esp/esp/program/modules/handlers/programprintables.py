@@ -895,34 +895,23 @@ Student schedule for %s:
             student.updateOnsite(request)
             # get list of valid classes
             classes = [ cls for cls in student.getEnrolledSections()
-                                if cls.parent_program == prog and cls.isAccepted()                       ]
+                                if cls.parent_program == prog and cls.isAccepted() and cls.meeting_times.count() > 0]
             # now we sort them by time/title
             classes.sort()
-            
+
             if Tag.getTag('studentschedule_show_empty_blocks', target=prog):
-                # Insert an entry for every block that isn't taken by a class
-                all_class_events = []
+                #   If you want to show empty blocks, start with a list of blocks instead
+                #   and replace with classes where appropriate.
+                times = list(prog.getTimeSlots())
                 for cls in classes:
+                    time_indices = []
+                    index = 0
                     for t in cls.meeting_times.all():
-                        if t.id not in all_class_events:
-                            all_class_events.append(t.id)
-                ts = all_events.exclude(id__in=all_class_events)
-                for t in ts:
-                    after_end = True
-                    for i in range(0, len(classes)):
-                        if type(classes[i]) == ClassSection and classes[i].start_time().start >= t.end:
-                            classes.insert(i, t)
-                            after_end = False
-                            break
-                        if type(classes[i]) == ClassSection and classes[i].meeting_times.order_by('-end')[0].end > t.end:
-                            after_end = False
-                    if after_end:
-                        classes.append(t)
+                        index = times.index(t)
+                        times.remove(t)
+                    times.insert(index, cls)
+                classes = times
                 
-                print student
-                for c in classes:
-                    print c
-            
             # note whether student is in parent program
             student.in_parent_program = False
             if parent_program_students_classreg is not None:
