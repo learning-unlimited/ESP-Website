@@ -80,7 +80,8 @@ class OnsiteClassSchedule(ProgramModuleObj):
         module.user = self.user
         module.program = self.program
         
-        return module.studentschedules(request, *args, **kwargs)
+        #  onsite=False since we probably want a PDF
+        return ProgramPrintables.get_student_schedules(request, [self.user], self.program, onsite=False)
 
 
     @main_call
