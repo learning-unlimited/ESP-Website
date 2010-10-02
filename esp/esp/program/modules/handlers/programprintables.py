@@ -907,8 +907,9 @@ Student schedule for %s:
                     time_indices = []
                     index = 0
                     for t in cls.meeting_times.all():
-                        index = times.index(t)
-                        times.remove(t)
+                        if t in times:
+                            index = times.index(t)
+                            times.remove(t)
                     times.insert(index, cls)
                 classes = times
                 
