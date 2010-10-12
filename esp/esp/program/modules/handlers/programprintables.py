@@ -907,8 +907,9 @@ Student schedule for %s:
                     time_indices = []
                     index = 0
                     for t in cls.meeting_times.all():
-                        index = times.index(t)
-                        times.remove(t)
+                        if t in times:
+                            index = times.index(t)
+                            times.remove(t)
                     times.insert(index, cls)
                 classes = times
                 
@@ -963,6 +964,9 @@ Student schedule for %s:
             file_type = extra.strip()
         else:
             file_type = 'pdf'
+
+        if onsite and file_type == 'pdf':
+            file_type = 'png'
 
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT
