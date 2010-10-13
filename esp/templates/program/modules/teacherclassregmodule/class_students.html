@@ -42,11 +42,11 @@ Here are your class' students.  Only those who have enrolled will show up on you
 </tr>
 </thead>
 <tbody>
-{% for kv in cls.students_dict.flatten %}
+{% for kv in cls.students_dict.items %}
     <tr>
-        <th colspan="4" class="small">Registration status: {{ kv.key }}</th>
+        <th colspan="4" class="small">Registration status: {{ kv.0 }}</th>
     </tr>
-    {% for student in kv.value %}
+    {% for student in kv.1 %}
     <tr>
         <th class="small">{{ forloop.counter }}</th>
         <td>{{ student.name }}</td>

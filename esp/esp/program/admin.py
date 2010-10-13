@@ -38,6 +38,8 @@ from esp.program.models import VolunteerRequest, VolunteerOffer
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
+from esp.program.models import RegistrationType, StudentRegistration
+
 from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
 
@@ -128,6 +130,9 @@ admin.site.register(VolunteerOffer)
 class ProgramCheckItemAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'program')
 admin.site.register(ProgramCheckItem, ProgramCheckItemAdmin)
+
+admin.site.register(RegistrationType)
+admin.site.register(StudentRegistration)
 
 class SectionAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'friendly_times', 'status', 'duration')

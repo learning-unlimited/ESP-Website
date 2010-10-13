@@ -1757,6 +1757,65 @@ class VolunteerOffer(models.Model):
     phone = PhoneNumberField(blank=True, null=True)
     
     
+
+""" This class provides the information that was provided by the DataTree
+    anchor of each Userbit.  For example:
+        URI V/Flags/Registration/Enrolled (name = 'Enrolled') -> 'name'
+        Friendly name 'Student is enrolled in the class' -> 'description'
+    In general, intermediate models for many-to-many relationships can 
+    include a foreign key to this model unless it the relationships are
+    inherently unambiguous.  There are too many different ways
+    for students to be associated with a class for there to be a
+    separate relationship for each (i.e. 'enrolled_students' field,
+    'applied_students', etc.)
+    
+    Note: These models fit better in class_.py but cause validation errors
+    due to Django's import scheme if they are placed there.
+"""
+class RegistrationType(models.Model):
+    #   The 'key' (not really the primary key since we may want duplicate names)
+    name = models.CharField(max_length=32)
+    description = models.TextField(blank=True, null=True)
+    #   Purely for bookkeeping on the part of administrators 
+    #   without reading the whole description
+    category = models.CharField(max_length=32)
+
+    @cache_function
+    def get_map(include=None, category=None):
+        #   If 'include' is specified, make sure we have keys named in that list
+        if include:
+            if not isinstance(category, str):
+                raise ESPError(True), 'Need to supply category to RegistrationType.get_map() when passing include arguments'
+            for name in include:
+                type, created = RegistrationType.objects.get_or_create(name=name, category=category)
+        
+        #   Build a dictionary where names point to RegistrationType objects
+        result = {}
+        for item in RegistrationType.objects.all():
+            result[item.name] = item
+        return result
+    get_map.depend_on_model(lambda: RegistrationType)
+    get_map = staticmethod(get_map)
+
+    def __unicode__(self):
+        return self.name
+
+class StudentRegistration(models.Model):
+    section = models.ForeignKey('ClassSection')
+    #   section = models.ForeignKey(get_model('program', 'ClassSection'))
+    user = AjaxForeignKey(ESPUser)
+    
+    relationship = models.ForeignKey(RegistrationType)   #   Same as userbit verb after V/Flags/Registration/
+    start_date = models.DateTimeField(default=datetime.now)
+    end_date = models.DateTimeField(default=datetime(9999,1,1))    
+    
+    def expire(self):
+        self.end_date = datetime.now()
+        self.save()
+    
+    def __unicode__(self):
+        return u'%s %s in %s' % (self.user, self.relationship, self.section)
+    
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 

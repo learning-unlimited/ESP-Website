@@ -119,6 +119,10 @@ class UserAvailability(models.Model):
 class ESPUserManager(ProcedureManager):
     pass
 
+def get_studentreg_model():
+    from esp.program.models import StudentRegistration
+    return StudentRegistration
+
 class ESPUser(User, AnonymousUser):
     """ Create a user of the ESP Website
     This user extends the auth.User of django"""
@@ -538,7 +542,7 @@ class ESPUser(User, AnonymousUser):
             scrmi = program.getModuleExtension('StudentClassRegModuleInfo')
             verb_list = scrmi.reg_verbs(uris=True)
         else:
-            verb_list = ['/Applied']
+            verb_list = ['Applied']
             
         return self.getClasses(program, verbs=verb_list)
 
@@ -550,45 +554,30 @@ class ESPUser(User, AnonymousUser):
 
     @cache_function
     def getEnrolledClassesFromProgram(self, program):
-        return self.getClasses(program, verbs=['/Enrolled'])
-    getEnrolledClassesFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent.parent)},
-                                                 lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
+        return self.getClasses(program, verbs=['Enrolled'])
+    getEnrolledClassesFromProgram.depend_on_row(get_studentreg_model, lambda reg: {'self': reg.user, 'program': reg.section.parent_program})
 
     @cache_function
     def getEnrolledClassesAll(self):
-        return self.getClasses(None, verbs=['/Enrolled'])
-    getEnrolledClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user}, 
-                                         lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
-
+        return self.getClasses(None, verbs=['Enrolled'])
+    getEnrolledClassesAll.depend_on_row(get_studentreg_model, lambda reg: {'self': reg.user})
 
     def getSections(self, program=None, verbs=None):
         """ Since enrollment is not the only way to tie a student to a ClassSection,
         here's a slightly more general function for finding who belongs where. """
-        from esp.program.models import ClassSection
+        from esp.program.models import ClassSection, RegistrationType
         
-        if program:
-            qsc_base = program.anchor
+        now = datetime.now()
+        
+        if verbs:
+            rts = RegistrationType.objects.filter(name__in=verbs)
         else:
-            qsc_base = GetNode('Q')
-                
-        if not verbs:
-            verb_base = GetNode('V/Flags/Registration')
-                
-            csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base,
-                                                    anchor__userbit_qsc__verb__below=verb_base)
-                                              & Q( anchor__userbit_qsc__user=self,
-                                                   anchor__userbit_qsc__enddate__gte=datetime.now())).distinct()
+            rts = RegistrationType.objects.all()
 
-        else:            
-            verb_uris = ('V/Flags/Registration' + verb_str for verb_str in verbs)
-            
-            csl = ClassSection.objects.filter(QTree(anchor__below=qsc_base)
-                                              & Q(anchor__userbit_qsc__enddate__gte=datetime.now()),
-                                              Q(anchor__userbit_qsc__user=self,
-                                                anchor__userbit_qsc__verb__uri__in=verb_uris)
-                                              ).distinct()
-            
-        return csl
+        if program:
+            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(relationship__in=rts, start_date__lte=now, end_date__gte=now).values_list('section', flat=True)).filter(parent_class__parent_program=program)
+        else:
+            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(relationship__in=rts, start_date__lte=now, end_date__gte=now).values_list('section', flat=True))
 
     @cache_function
     def getSectionsFromProgram(self, program):
@@ -596,7 +585,7 @@ class ESPUser(User, AnonymousUser):
     #   Invalidate cache if bits are changed on either classes or sections.
     #   This should be less conservative but there's no easy way to filter the bits as they are saved
     #   (since we would need to check for all verbs under 'V/Flags/Registration')
-    getSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user})
+    getSectionsFromProgram.depend_on_row(get_studentreg_model, lambda reg: {'self': reg.user})
 
     def getEnrolledSections(self, program=None):
         if program is None:
@@ -606,13 +595,13 @@ class ESPUser(User, AnonymousUser):
 
     @cache_function
     def getEnrolledSectionsFromProgram(self, program):
-        return self.getSections(program, verbs=['/Enrolled'])
+        return self.getSections(program, verbs=['Enrolled'])
     getEnrolledSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent.parent)},
                                                  lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
 
     @cache_function
     def getEnrolledSectionsAll(self):
-        return self.getSections(None, verbs=['/Enrolled'])
+        return self.getSections(None, verbs=['Enrolled'])
     getEnrolledSectionsAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user}, 
                                          lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
 
@@ -648,9 +637,9 @@ class ESPUser(User, AnonymousUser):
             for t in smt:
                 if t.id in priority_dict:
                     for v in cv:
-                        if v.parent.name == 'Priority':
-                            priority_dict[t.id].append(int(v.name))
-                        elif v.name == 'Enrolled':
+                        if v.startswith('Priority'):
+                            priority_dict[t.id].append(int(v[9:]))
+                        elif v == 'Enrolled':
                             return 0
         #   Now priority_dict is a dictionary where the keys are timeslot IDs and the values
         #   are lists of taken priority levels.  Merge those and find the lowest positive
@@ -679,17 +668,11 @@ class ESPUser(User, AnonymousUser):
             result[id_order[i]] = self.getRegistrationPriority(prog, [events[i]])
         return result
         
-    #   Invalidate on any user bit change (due to difficulty of screening registration bits)
-    getRegistrationPriorities.depend_on_row(lambda: UserBit, lambda bit: {'self': bit.user})
+    #   Invalidate on any registration change (due to difficulty of screening registration bits)
+    getRegistrationPriorities.depend_on_row(get_studentreg_model, lambda reg: {'self': reg.user})
 
     def isEnrolledInClass(self, clsObj, request=None):
-        verb_str = 'V/Flags/Registration/Enrolled'
-        if request:
-            verb = request.get_node(verb_str)
-        else:
-            verb = GetNode(verb_str)
-
-        return UserBit.UserHasPerms(self, clsObj.anchor, verb)
+        return clsObj.students().filter(id=self.id).exists()
 
     def canAdminister(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))

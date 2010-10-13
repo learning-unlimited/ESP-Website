@@ -34,6 +34,7 @@ from collections import defaultdict
 
 # django Util
 from django.db import models
+from django.db.models import get_model
 from django.db.models.query import Q
 from django.core.cache import cache
 from django.utils.datastructures import SortedDict
@@ -313,7 +314,6 @@ def checklist_progress_base(class_name):
         return val
     return _progress
 
-
 class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
@@ -330,6 +330,8 @@ class ClassSection(models.Model):
     checklist_progress_all_cached = checklist_progress_base('ClassSection')
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections')
 
+    registrations = models.ManyToManyField(ESPUser, through='StudentRegistration')
+    
     @classmethod
     def prefetch_catalog_data(cls, queryset):
         """ Take a queryset of a set of ClassSubject's, and annotate each class in it with the '_count_students' and 'event_ids' fields (used internally when available by many functions to save on queries later) """
@@ -889,7 +891,7 @@ class ClassSection(models.Model):
 
 		return False
 
-    def students_dict(self):
+    def students_dict_old(self):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
         uri_start = len(verb_base.get_uri())
         result = defaultdict(list)
@@ -899,46 +901,38 @@ class ClassSection(models.Model):
             result[bit_str].append(ESPUser(u.user))
         return PropertyDict(result)
 
-    def students_prereg(self, use_cache=True):
-        verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.get_uri())
-        all_registration_verbs = verb_base.descendants()
-        verb_list = [dt.get_uri()[uri_start:] for dt in all_registration_verbs]
+    def students_dict(self):
+        from esp.program.models import RegistrationType
+        now = datetime.datetime.now()
         
-        return self.students(use_cache, verbs=verb_list)
+        rmap = RegistrationType.get_map()
+        result = {}
+        for key in rmap:
+            result[key] = self.registrations.filter(studentregistration__relationship=rmap[key], studentregistration__start_date__lte=now, studentregistration__end_date__gte=now).distinct()
+        return result
 
-    def students(self, use_cache=True, verbs = ['/Enrolled']):
-        if len(verbs) == 1 and verbs[0] == '/Enrolled':
-            defaults = True
-        else:
-            defaults = False
-            
-        if defaults:
-            retVal = self.cache['students']
-            if retVal is not None and use_cache:
-                return retVal
+    def students_prereg(self):
+        now = datetime.datetime.now()
+        return self.registrations.filter(studentregistration__start_date__lte=now, studentregistration__end_date__gte=now).distinct()
 
-        retVal = User.objects.none()
+    def students(self, verbs=['Enrolled']):
+        now = datetime.datetime.now()
+        result = ESPUser.objects.none()
         for verb_str in verbs:
-            v = DataTree.get_by_uri('V/Flags/Registration' + verb_str)
-            user_ids = UserBit.valid_objects().filter(verb=v, qsc=self.anchor).values_list('user', flat=True)
-            new_qs = User.objects.filter(id__in=user_ids).distinct()
-            retVal = retVal | new_qs
-            
-        retVal = [ESPUser(u) for u in retVal.distinct()]
-        retVal.sort(key=lambda x: x.last_name.lower())
+            result = result | self.registrations.filter(studentregistration__relationship__name=verb_str, studentregistration__start_date__lte=now, studentregistration__end_date__gte=now)
+        return result.distinct()
+    
+    def num_students_prereg(self):
+        return self.students_prereg().count()
 
-        if defaults:
-            self.cache['students'] = retVal
-            
-        return retVal
+    def num_students(self, verbs=['Enrolled']):
+        return self.students(verbs).count()
     
     def clearStudents(self):
-        """ Remove all of the students that enrolled in the section. """
-        reg_verb = DataTree.get_by_uri('V/Flags/Registration/Enrolled')
-        for u in self.anchor.userbit_qsc.filter(verb=reg_verb):
-            u.expire()
-    
+        from esp.program.models import StudentRegistration
+        now = datetime.datetime.now()
+        StudentRegistration.objects.filter(section=self, end_date__gte=now).update(end_date=now)
+
     @staticmethod
     def idcmp(one, other):
         return cmp(one.id, other.id)
@@ -967,59 +961,14 @@ class ClassSection(models.Model):
         else:
             return eventList[0]
 
-    def num_students_prereg(self, use_cache=True):
-        verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.get_uri())
-        all_registration_verbs = verb_base.descendants()
-        verb_list = [dt.get_uri()[uri_start:] for dt in all_registration_verbs]
-        
-        return self.num_students(use_cache, verbs=verb_list)
-
-    def num_students(self, use_cache=True, verbs=['/Enrolled']):
-        #   Only cache the result for the default setting.
-        if len(verbs) == 1 and verbs[0] == '/Enrolled':
-            defaults = True
-        else:
-            defaults = False
-            
-        if defaults:
-            # If we got this from a previous query, just return it
-            if hasattr(self, "_count_students"):
-                # Increment the students-registered counter for this class
-                class_cachekey = "class_size_counter_%d" % self.id
-                cache.set(class_cachekey, self._count_students, 1200)  ## Fully refresh every 20min
-                return self._count_students
-            
-            retVal = self.cache['num_students']
-            if retVal is not None and use_cache:
-                return retVal
-    
-            if use_cache:
-                retValCache = self.cache['students']
-                if retValCache != None:
-                    retVal = len(retValCache)
-                    self.cache['num_students'] = retVal
-                    self._count_students = retVal
-                    return retVal
-
-        v = [ DataTree.get_by_uri('V/Flags/Registration' + verb_str) for verb_str in verbs ]
-        qs = User.objects.filter(userbit__qsc=self.anchor, userbit__verb__in=v, userbit__enddate__gte=datetime.datetime.now()).distinct()
-        
-        retVal = qs.count()
-
-        if defaults:
-            self.cache['num_students'] = retVal
-
-        return retVal            
-
     def room_capacity(self):
         ir = self.initial_rooms()
         if ir.count() == 0:
             return 0
         else:
             return reduce(lambda x,y: x+y, [r.num_students for r in ir]) 
-
-    def isFull(self, ignore_changes=False, use_cache=True):
+            
+    def isFull(self, ignore_changes=False):
         return (self.num_students() >= self._get_capacity(ignore_changes))
 
     def time_blocks(self):
@@ -1115,30 +1064,34 @@ class ClassSection(models.Model):
         super(ClassSection, self).save(*args, **kwargs)
         self.update_cache()
 
-    def getRegBits(self, user):
-        return UserBit.objects.filter(QTree(qsc__below=self.anchor), enddate__gte=datetime.datetime.now(), user=user).order_by('verb__name')
+    def getRegistrations(self, user):
+        from esp.program.models import StudentRegistration
+        now = datetime.datetime.now()
+        return StudentRegistration.objects.filter(section=self, user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
     
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """
-        return [u.verb for u in self.getRegBits(user)]
+        return self.getRegistrations(user).values_list('relationship__name', flat=True)
 
     def unpreregister_student(self, user, prereg_verb = None):
-        from esp.program.models.app_ import StudentAppQuestion
-
-        prereg_verb_base = DataTree.get_by_uri('V/Flags/Registration')
-
-        for ub in UserBit.objects.filter(QTree(verb__below=prereg_verb_base), user=user, qsc=self.anchor_id).select_related('verb'):
-            if ((ub.enddate is None) or ub.enddate > datetime.datetime.now()) \
-                   and ((prereg_verb is None) or ub.verb == prereg_verb):
-                ub.expire()
-
-        # Increment the students-registered counter for this class
-        class_cachekey = "class_size_counter_%d" % self.id
-        try:
-            cache.decr(class_cachekey)
-        except:# CacheNotFound:
-            cache.set(class_cachekey, self.num_students(), 1200)  ## Fully refresh every 20min
+        #   New behavior: prereg_verb should be a string matching the name of
+        #   RegistrationType to match (if you want to use it)
         
+        from esp.program.models.app_ import StudentAppQuestion
+        from esp.program.models import StudentRegistration
+        
+        now = datetime.datetime.now()
+        
+        #   Stop all active or pending registrations
+        if prereg_verb:
+            qs = StudentRegistration.objects.filter(relationship__name=prereg_verb, section=self, user=user, end_date__gte=now)
+            qs.update(end_date=now)
+            #   print 'Expired %s' % qs
+        else:
+            qs = StudentRegistration.objects.filter(section=self, user=user, end_date__gte=now)
+            qs.update(end_date=now)
+            #   print 'Expired %s' % qs
+            
         #   If the student had blank application question responses for this class, remove them.
         app = ESPUser(user).getApplication(self.parent_program, create=False)
         if app:
@@ -1148,67 +1101,44 @@ class ClassSection(models.Model):
                 app.questions.remove(q)
             blank_responses.delete()
         
-        # update the students cache
-        students = [x for x in self.students() if x.id != user.id]
         # Remove the student from any existing class mailing lists
         list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
         for list_name in list_names:
             remove_list_member(list_name, user.email)
 
-
-        self.cache['students'] = students
-        self.update_cache_students()
-
-    def preregister_student(self, user, overridefull=False, automatic=False, priority=1, prereg_verb = None):
-        
-        scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+    def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None):
+        from esp.program.models import StudentRegistration, RegistrationType
     
-        prereg_verb_base = scrmi.signup_verb
-        
-        #   Override the registration verb if the class has application questions
-        #if self.parent_class.studentappquestion_set.count() > 0:
-        #    prereg_verb_base = GetNode('V/Flags/Registration/Applied')
+        scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
 
         if prereg_verb == None:
             if scrmi.use_priority:
-                prereg_verb = DataTree.get_by_uri(prereg_verb_base.get_uri() + '/%d' % priority, create=True)
+                prereg_verb = 'Priority/%d' % priority
             else:
-                prereg_verb = prereg_verb_base
-            
-        auto_verb = DataTree.get_by_uri(prereg_verb.get_uri() + '/Automatic', create=True)
-        
-        if overridefull or not self.isFull():
-            #    Then, create the userbit denoting preregistration for this class.
-            now = datetime.datetime.now()
-            if not UserBit.objects.UserHasPerms(user, self.anchor, prereg_verb):
-                UserBit.objects.get_or_create(user = user, qsc = self.anchor,
-                                              verb = prereg_verb, startdate = now, recursive = False)
+                prereg_verb = 'Enrolled'
 
-                # Increment the students-registered counter for this class
-                class_cachekey = "class_size_counter_%d" % self.id
-                try:
-                    cache.incr(class_cachekey)
-                except:# CacheNotFound:
-                    cache.set(class_cachekey, self.num_students(), 1200)  ## Fully refresh every 20min
-                    
+        if overridefull or not self.isFull():
+            #    Then, create the registration for this class.
+            now = datetime.datetime.now()
+            
+            qs = self.registrations.filter(id=user.id, studentregistration__start_date__lte=now, studentregistration__end_date__gte=now)
+            if not qs.exists():
+                rt, created = RegistrationType.objects.get_or_create(name=prereg_verb, category='student')
+                sr = StudentRegistration(user=user, section=self, relationship=rt)
+                sr.save()
+                #   print 'Created %s' % sr
+            
                 # If the registration was placed through OnSite Reg, annotate it as an OnSite registration
-                onsite_verb = GetNode("V/Flags/Registration/OnSite/ChangedClasses")
+                onsite_verb = 'OnSite/ChangedClasses'
                 request = get_current_request()
                 if request and request.user and isinstance(request.user, ESPUser) and request.user.is_morphed(request):
-                    UserBit.objects.get_or_create(user = user, qsc = self.anchor, verb = onsite_verb, defaults = { 'recursive': False, 'startdate': now })
-            
-            # Set a userbit for auto-registered classes (i.e. Spark sections of HSSP classes)
-            if automatic:
-                if not UserBit.objects.UserHasPerms(user, self.anchor, auto_verb):
-                    UserBit.objects.get_or_create(user = user, qsc = self.anchor,
-                                                  verb = auto_verb, startdate = datetime.datetime.now(), recursive = False)
-            
-            # update the students cache
-            if prereg_verb_base.name == 'Enrolled':
-                students = list(self.students())
-                students.append(ESPUser(user))
-                self.cache['students'] = students
-                self.update_cache_students()
+                    rt, created = RegistrationType.objects.get_or_create(name=onsite_verb, category='student')
+                    sr = StudentRegistration(user=user, section=self, relationship=rt)
+                    sr.save()
+                    #   print 'Created %s' % sr
+            else:
+                #   print 'Already in class: %s' % qs
+                pass
                 
             #   Clear completion bit on the student's application if the class has app questions.
             app = ESPUser(user).getApplication(self.parent_program, create=False)
@@ -1245,7 +1175,6 @@ class ClassSection(models.Model):
         db_table = 'program_classsection'
         app_label = 'program'
         ordering = ['anchor__name']
-
 
 class ClassSubject(models.Model):
     """ An ESP course.  The course includes one or more ClassSections which may be linked by ClassImplications. """
@@ -1456,34 +1385,23 @@ class ClassSubject(models.Model):
             result.merge(sec.students_dict())
         return result
         
-    def students(self, use_cache=True, verbs=['/Enrolled']):
-        result = []
+    def students(self, verbs=['Enrolled']):
+        result = ESPUser.objects.none()
         for sec in self.sections.all():
-            result += sec.students(use_cache=use_cache, verbs=verbs)
+            result = result | sec.students(verbs=verbs)
         return result
         
-    def num_students(self, use_cache=True, verbs=['/Enrolled']):
+    def num_students(self, verbs=['Enrolled']):
         result = 0
-        if hasattr(self, "_num_students"):
-            return self._num_students
         for sec in self.get_sections():
-            result += sec.num_students(use_cache, verbs)
-        self._num_students = result
+            result += sec.num_students(verbs)
         return result
 
-    def num_students_prereg(self, use_cache=True):
-        verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.get_uri())
-        all_registration_verbs = verb_base.descendants()
-        verb_list = [dt.get_uri()[uri_start:] for dt in all_registration_verbs]
-        return self.num_students(False, verb_list)
-
-    def num_students_prereg(self, use_cache=True):
-        verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.get_uri())
-        all_registration_verbs = verb_base.descendants()
-        verb_list = [dt.get_uri()[uri_start:] for dt in all_registration_verbs]
-        return self.num_students(False, verb_list)
+    def num_students_prereg(self):
+        result = 0
+        for sec in self.get_sections():
+            result += sec.num_students_prereg()
+        return result
         
     def max_students(self):
         return self.sections.count()*self.class_size_max
@@ -1609,14 +1527,14 @@ class ClassSubject(models.Model):
 
         return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.teachers() ])
         
-    def isFull(self, ignore_changes=False, timeslot=None, use_cache=True):
+    def isFull(self, ignore_changes=False, timeslot=None):
         """ A class subject is full if all of its sections are full. """
         if timeslot is not None:
             sections = [self.get_section(timeslot)]
         else:
             sections = self.get_sections()
         for s in sections:
-            if not s.isFull(ignore_changes=ignore_changes, use_cache=use_cache):
+            if not s.isFull(ignore_changes=ignore_changes):
                 return False
         return True
 
@@ -1643,7 +1561,7 @@ class ClassSubject(models.Model):
             teachers.append(name)
         return teachers
 
-    def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
+    def cannotAdd(self, user, checkFull=True, request=False):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent() and not Tag.getTag("allowed_student_types", target=self.parent_program):
             return 'You are not a student!'
@@ -1659,7 +1577,7 @@ class ClassSubject(models.Model):
         if checkFull and self.parent_program.isFull(use_cache=True) and not ESPUser(user).canRegToFullProgram(self.parent_program):
             return 'This program cannot accept any more students!  Please try again in its next session.'
 
-        if checkFull and self.isFull(use_cache=use_cache):
+        if checkFull and self.isFull():
             scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
             return scrmi.temporarily_full_text
 
@@ -1688,7 +1606,7 @@ class ClassSubject(models.Model):
         # check to see if there's a conflict with each section of the subject, or if the user
         # has already signed up for one of the sections of this class
         for section in self.sections.all():
-            res = section.cannotAdd(user, checkFull, request, use_cache)
+            res = section.cannotAdd(user, checkFull, request)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
 
@@ -1859,12 +1777,14 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             tmpnode = tmpnode.parent
         return "/".join(urllist)
 
-    def getRegBits(self, user):
-        return UserBit.objects.filter(QTree(qsc__below=self.anchor), user=user).filter(enddate__gte=datetime.datetime.now()).order_by('verb__name')
+    def getRegistrations(self, user):
+        from esp.program.models import StudentRegistration
+        now = datetime.datetime.now()
+        return StudentRegistration.objects.filter(section__in=self.sections.all(), user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
     
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """
-        return [u.verb for u in self.getRegBits(user)]
+        return self.getRegistrations(user).values_list('relationship__name', flat=True)
 
     def preregister_student(self, user, overridefull=False, automatic=False):
         """ Register the student for the least full section of the class

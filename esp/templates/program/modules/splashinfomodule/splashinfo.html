@@ -23,7 +23,7 @@
 <b>All meals come with chips or fruit and drink.</b>
 </p>
 
-<form action="{{request.path}}" method="post">
+<form action="{{ request.path }}" method="post">{% csrf_token %}
 <table cellpadding="1" align="center" border="0">
 <tr>
  <td>Would you like a catered lunch on SATURDAY?<br/>

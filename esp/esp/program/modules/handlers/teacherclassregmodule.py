@@ -32,7 +32,7 @@ from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_d
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
-from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule
+from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError
 from esp.datatree.models import *
 from esp.tagdict.models          import Tag
@@ -208,34 +208,30 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                         ignore = True
                         
                     if not ignore:
-                        verb = DataTree.get_by_uri('V/Flags/Registration/' + verb_name, create=True)
-                        other_bits = sec.getRegBits(student).filter(verb__name__in=['Enrolled', 'Rejected'])
+                        rel = RegistrationType.get_map(include=['Enrolled', 'Rejected'], category='student')[verb_name]
+                        other_regs = sec.getRegistrations(student).filter(relationship__name__in=['Enrolled', 'Rejected'])
                         found = False
-                        for bit in other_bits:
-                            if not found and bit.verb == verb:
+                        for reg in other_regs:
+                            if not found and reg.relationship == rel:
                                 found = True
                             else:
-                                bit.expire()
+                                reg.expire()
                             #   result_strs.append('Expired: %s' % bit)
                         if not found:
-                            new_bit = UserBit(user=student, verb=verb, qsc=sec.anchor)
-                            new_bit.save()
-                        #   result_strs.append('Created: %s' % new_bit)
+                            new_reg = StudentRegistration(user=student, relationship=rel, section=sec)
+                            new_reg.save()
                         
         #   Jazz up this information a little
         for student in students_list:
-            uri_base = 'V/Flags/Registration/'
-            uri_start = len(uri_base)
-            bits = sec.getRegBits(student)
-            student.bits = [bit.verb.get_uri()[uri_start:] for bit in bits]
+            student.bits = sec.getRegVerbs(student)
             student.app = student.getApplication(self.program, False)
-            student.other_classes = [(sec2, [bit.verb.get_uri()[uri_start:] for bit in sec2.getRegBits(student)]) for sec2 in student.getSections(self.program).exclude(id=sec.id)]
-            prereg_bits = bits.exclude(verb__name__in=['Enrolled', 'Rejected'])
-            if prereg_bits.count() != 0:
-               student.added_class = prereg_bits[0].startdate
-            if bits.filter(verb__name='Enrolled').count() > 0:
+            student.other_classes = [(sec2, sec2.getRegVerbs(student)) for sec2 in student.getSections(self.program).exclude(id=sec.id)]
+            preregs = sec.getRegistrations(student).exclude(relationship__name__in=['Enrolled', 'Rejected'])
+            if preregs.count() != 0:
+               student.added_class = preregs[0].start_date
+            if 'Enrolled' in student.bits:
                 student.enrolled = True
-            elif bits.filter(verb__name='Rejected').count() > 0:
+            elif 'Rejected' in student.bits:
                 student.rejected = True
 
         #   Detect if there is an application module

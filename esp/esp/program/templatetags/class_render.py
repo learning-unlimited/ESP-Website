@@ -72,7 +72,7 @@ def render_class_core(cls):
     if cls.studentappquestion_set.count():
         cls._sections = list(cls.get_sections())
         for sec in cls._sections:
-            sec.num_apps = sec.num_students(verbs=['/Applied'])
+            sec.num_apps = sec.num_students(verbs=['Applied'])
 
     return {'class': cls,
             'colorstring': colorstring,
@@ -99,13 +99,13 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
     prereg_url = cls.parent_program.get_learn_url() + 'addclass'
 
     if user and prereg_url and timeslot:
-        error1 = cls.cannotAdd(user, True, request=request)
+        error1 = cls.cannotAdd(user, request=request)
         # If we can't add the class at all, then we take that error message
         if error1:
             errormsg = error1
         else:  # there's some section for which we can add this class; does that hold for this one?
             if section:
-                errormsg = section.cannotAdd(user, True, request=request)
+                errormsg = section.cannotAdd(user, request=request)
         
     show_class =  (not filter) or (not errormsg)
     

@@ -74,7 +74,7 @@ you arrive.
         {% for cls in timeslot.1 %}
 	{% comment %}{% if use_priority %}{% endcomment %}
             {% if not cls.section.verbs|length_is:0 %}
-                <i>{% for v in cls.section.verbs %}<span class="{{ v.friendly_name }}">{{ v.friendly_name }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
+                <i>{% for v in cls.section.verbs %}<span class="{{ v }}">{{ v }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
             {% endif %}
 	{% comment %}{% endif %}{% endcomment %}
 	{{ cls.section.title }} 
