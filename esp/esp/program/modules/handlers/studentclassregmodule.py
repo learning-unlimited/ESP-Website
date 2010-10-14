@@ -136,43 +136,27 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
     def students(self, QObject = False):
         from django.db.models import Q
-        verb_base = DataTree.get_by_uri('V/Flags/Registration')
 
         now = datetime.now()
 
-        Par = Q(userbit__qsc__parent__parent=self.program.classes_node())
-        Reg = QTree(userbit__verb__below = verb_base)
-        Unexpired = Q(userbit__enddate__gte=now, userbit__startdate__lte=now) # Assumes that, for all still-valid reg userbits, we don't care about startdate, and enddate is null.
+        Par = Q(studentregistration__section__parent_class__parent_program=self.program)
+        Unexpired = Q(studentregistration__end_date__gte=now, studentregistration__start_date__lte=now) # Assumes that, for all still-valid registrations, we don't care about startdate, and enddate is null.
         
         if QObject:
-            retVal = {'classreg': self.getQForUser(Par & Unexpired & Reg)}
+            retVal = {'classreg': self.getQForUser(Par & Unexpired)}
         else:
-            retVal = {'classreg': User.objects.filter(Par & Unexpired & Reg).distinct()}
+            retVal = {'classreg': ESPUser.objects.filter(Par & Unexpired).distinct()}
 
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
             allowed_student_types = allowed_student_types.split(",")
             for stutype in allowed_student_types:
-                """ This code can't find registered students of the allowed types
-                    because the Q object needs to check for 2 different user 
-                    bits: the one that shows they're registered for classes and the 
-                    one that shows they have the right user role.
-                    As it is now, this selects all users of the allowed types;
-                    intersections with the 'classreg' students can be performed via
-                    the comm panel.
-                    Please change this if you have a preferred behavior and a way to
-                    implement it.           - Michael P, 4/14/2010
-                """
                 VerbParent = Q(userbit__verb__parent=GetNode("V/Flags/UserRole"))
                 VerbName = Q(userbit__verb__name=stutype)
-                          
                 if QObject:
-                    retVal[stutype] = self.getQForUser(Unexpired & VerbName & VerbParent)
-                    #   This would be nice, but unfortunately doesn't work:
-                    #   retVal[stutype] = self.getQForUser(Par & Unexpired & Reg & VerbName & VerbParent)
+                    retVal[stutype] = self.getQForUser(Par & Unexpired & Reg & VerbName & VerbParent)
                 else:
-                    #   retVal[stutype] = User.objects.filter(Unexpired & VerbName & VerbParent).distinct()
-                    retVal[stutype] = retVal['classreg'].filter(userbit__enddate__gte=now, userbit__startdate__lte=now, userbit__verb__parent=GetNode("V/Flags/UserRole"), userbit__verb__name=stutype).distinct() 
+                    retVal[stutype] = ESPUser.objects.filter(Par & Unexpired & Reg & VerbName & VerbParent).distinct()
 
         return retVal
 
