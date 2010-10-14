@@ -58,7 +58,7 @@ from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media as QSDMedia
 from esp.users.models import ESPUser, UserBit
 from esp.middleware              import ESPError
-from esp.program.models          import Program
+from esp.program.models          import Program, StudentRegistration, RegistrationType
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.resources.models        import ResourceType, Resource, ResourceRequest, ResourceAssignment
 from esp.cache                   import cache_function
@@ -171,7 +171,8 @@ class ClassManager(ProcedureManager):
         and the total # of media.
         """
         now = datetime.datetime.now()
-        enrolled_node=GetNode("V/Flags/Registration/Enrolled")
+        
+        enrolled_type = RegistrationType.get_map()['Enrolled']
         teaching_node=GetNode("V/Flags/Registration/Teacher")
 
         if initial_queryset:
@@ -191,13 +192,13 @@ class ClassManager(ProcedureManager):
         if ts is not None:
             classes = classes.filter(sections__meeting_times=ts)
         
-        select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "users_userbit"."user_id") FROM "users_userbit", "datatree_datatree" AS "foo" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "foo"."id" AND "foo"."parent_id" = "program_class"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
+        select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration", "program_classsection" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND "program_classsection"."parent_class_id" = "program_class"."id" AND "program_studentregistration"."start_date" <= %s AND "program_studentregistration"."end_date" >= %s)'),
                              ('teacher_ids', 'SELECT list(DISTINCT "users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
                              ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'),
                              ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')'),
                              ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
                              
-        select_params = [ enrolled_node.id,
+        select_params = [ enrolled_type.id,
                           now,
                           now,
                           teaching_node.id,
@@ -259,7 +260,6 @@ class ClassManager(ProcedureManager):
             sections_by_parent_id[s.parent_class_id].append(s)
         
         # We got classes.  Now get teachers...
-
         if program != None:
             teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
         else:
