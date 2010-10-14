@@ -1811,6 +1811,11 @@ class StudentRegistration(models.Model):
         self.end_date = datetime.now()
         self.save()
     
+    @staticmethod
+    def valid_objects():
+        now = datetime.now()
+        return StudentRegistration.objects.filter(start_date__lte=now, end_date__gte=now)
+    
     def __unicode__(self):
         return u'%s %s in %s' % (self.user, self.relationship, self.section)
     
