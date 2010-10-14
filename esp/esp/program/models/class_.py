@@ -336,12 +336,12 @@ class ClassSection(models.Model):
     def prefetch_catalog_data(cls, queryset):
         """ Take a queryset of a set of ClassSubject's, and annotate each class in it with the '_count_students' and 'event_ids' fields (used internally when available by many functions to save on queries later) """
         now = datetime.datetime.now()
-        enrolled_node=GetNode("V/Flags/Registration/Enrolled")
+        enrolled_type = RegistrationType.get_map()['Enrolled']
 
-        select = SortedDict([( '_count_students', 'SELECT COUNT(DISTINCT "users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_classsection"."anchor_id" AND "users_userbit"."startdate" <= %s AND "users_userbit"."enddate" >= %s)'),
+        select = SortedDict([( '_count_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND "program_studentregistration"."start_date" <= %s AND "program_studentregistration"."end_date" >= %s)'),
                              ('event_ids', 'SELECT list("cal_event"."id") FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id")')])
         
-        select_params = [ enrolled_node.id,
+        select_params = [ enrolled_type.id,
                           now,
                           now,
                          ]
