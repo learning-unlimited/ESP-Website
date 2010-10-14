@@ -411,18 +411,16 @@ class Program(models.Model):
         for sec in self.sections().values('id', 'anchor'):
             qsc_map[sec['anchor']] = sec['id']
     
-        reg_verb = GetNode('V/Flags/Registration/Enrolled')
-        bits = UserBit.valid_objects().filter().filter(QTree(qsc__below=self.anchor['Classes'])).filter(user__id__in=checked_in_ids, verb=reg_verb).values('user', 'qsc')
-        for bit in bits:
-            if bit['qsc'] in qsc_map:
-                secid = qsc_map[bit['qsc']]
-                if secid not in counts:
-                    counts[secid] = 0
-                counts[secid] += 1
+        reg_type = RegistrationType.get_map()['Enrolled']
+
+        regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self).filter(user__id__in=checked_in_ids, relationship=reg_type).values('user', 'section')
+        for reg in regs:
+            if reg['section'] not in counts:
+                counts[reg['section']] = 0
+            counts[reg['section']] += 1
                 
         return counts
-                
-
+        
     def student_counts_by_section_id(self):
         from esp.program.models.class_ import sections_in_program_by_id
         section_ids = sections_in_program_by_id(self)
