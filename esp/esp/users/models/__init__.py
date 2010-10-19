@@ -552,15 +552,11 @@ class ESPUser(User, AnonymousUser):
         else:
             return self.getEnrolledClassesFromProgram(program)
 
-    @cache_function
     def getEnrolledClassesFromProgram(self, program):
         return self.getClasses(program, verbs=['Enrolled'])
-    getEnrolledClassesFromProgram.depend_on_row(get_studentreg_model, lambda reg: {'self': reg.user, 'program': reg.section.parent_program})
 
-    @cache_function
     def getEnrolledClassesAll(self):
         return self.getClasses(None, verbs=['Enrolled'])
-    getEnrolledClassesAll.depend_on_row(get_studentreg_model, lambda reg: {'self': reg.user})
 
     def getSections(self, program=None, verbs=None):
         """ Since enrollment is not the only way to tie a student to a ClassSection,
@@ -588,17 +584,11 @@ class ESPUser(User, AnonymousUser):
         else:
             return self.getEnrolledSectionsFromProgram(program)
 
-    @cache_function
     def getEnrolledSectionsFromProgram(self, program):
         return self.getSections(program, verbs=['Enrolled'])
-    getEnrolledSectionsFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent.parent)},
-                                                 lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
 
-    @cache_function
     def getEnrolledSectionsAll(self):
         return self.getSections(None, verbs=['Enrolled'])
-    getEnrolledSectionsAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user}, 
-                                         lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Enrolled').id)
 
     @cache_function
     def getFirstClassTime(self, program):
@@ -652,7 +642,6 @@ class ESPUser(User, AnonymousUser):
     #   We often request the registration priority for all timeslots individually
     #   because our schedules display enrollment status on a per-timeslot (rather
     #   than per-class) basis.  This function is intended to speed that up.
-    @cache_function
     def getRegistrationPriorities(self, prog, timeslot_ids):
         num_slots = len(timeslot_ids)
         events = list(Event.objects.filter(id__in=timeslot_ids).order_by('id'))
@@ -662,9 +651,6 @@ class ESPUser(User, AnonymousUser):
         for i in range(num_slots):
             result[id_order[i]] = self.getRegistrationPriority(prog, [events[i]])
         return result
-        
-    #   Invalidate on any registration change (due to difficulty of screening registration bits)
-    getRegistrationPriorities.depend_on_row(get_studentreg_model, lambda reg: {'self': reg.user})
 
     def isEnrolledInClass(self, clsObj, request=None):
         return clsObj.students().filter(id=self.id).exists()
