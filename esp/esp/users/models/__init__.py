@@ -1221,6 +1221,8 @@ class TeacherInfo(models.Model):
 
     class Admin:
         search_fields = ['user__first_name','user__last_name','user__username']
+    class Meta:
+        app_label = 'users'
 
 
 class GuardianInfo(models.Model):
@@ -1898,6 +1900,8 @@ class EmailPref(models.Model):
     last_name = models.CharField(max_length=64)
     sms_number = PhoneNumberField(blank=True, null=True)
     sms_opt_in = models.BooleanField(default = False)
+    class Meta:
+        app_label = 'users'
 
 def install():
     """
