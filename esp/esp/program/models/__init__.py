@@ -1575,7 +1575,7 @@ class ScheduleMap:
         self.program = program
         self.user = user
         self.populate()
-    __init__.depend_on_row(lambda: UserBit, lambda bit: {'user': bit.user}, lambda bit: bit.verb.get_uri().startswith('V/Flags/Registration'))
+    __init__.depend_on_row(lambda: StudentRegistration, lambda reg: {'user': reg.user})
 
     @cache_function
     def populate(self):
@@ -1588,7 +1588,7 @@ class ScheduleMap:
                 result[m.id].append(s)
         self.map = result
         return self.map
-    populate.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.verb.get_uri().startswith('V/Flags/Registration'))
+    populate.depend_on_row(lambda: StudentRegistration, lambda reg: {'user': reg.user})
 
     def add_section(self, sec):
         for t in sec.meeting_times.all().values_list('id'):
