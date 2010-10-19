@@ -259,7 +259,7 @@ class ArgCache(WithDelayableMethods):
             # don't do anything if we already have an id
             return param
         if not self.param_dict.has_key(param):
-            raise ESPError(), '%s is not a valid argument' % param
+            raise ESPError(), 'Cache %s (params %s) error: %s is not a valid argument' % (self.name, self.param_dict, param)
         return self.param_dict[param]
 
     def delete_all(self):

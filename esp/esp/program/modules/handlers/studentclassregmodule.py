@@ -193,7 +193,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
         timeslots = self.program.getTimeSlotList(exclude_compulsory=False)
         classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes())
-        
+
         prevTimeSlot = None
         blockCount = 0
 
@@ -257,12 +257,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def ajax_schedule(self, request, tl, one, two, module, extra, prog):
         import simplejson as json
         from django.template.loader import render_to_string
-        user_sections = self.user.getSections(self.program)
         context = self.prepare({})
         context['prog'] = self.program
         context['one'] = one
         context['two'] = two
-        context['num_classes'] = user_sections.count()
+        #   This should be populated by self.prepare()
+        context['num_classes'] = len(context['timeslots'])
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
         script_str = render_to_string('users/student_schedule_inline.js', context)
         json_data = {'student_schedule_html': schedule_str, 'script': script_str}

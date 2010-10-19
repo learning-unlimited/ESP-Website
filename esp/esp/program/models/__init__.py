@@ -1588,7 +1588,7 @@ class ScheduleMap:
                 result[m.id].append(s)
         self.map = result
         return self.map
-    populate.depend_on_row(lambda: StudentRegistration, lambda reg: {'user': reg.user})
+    populate.depend_on_row(lambda: StudentRegistration, lambda reg: {})
 
     def add_section(self, sec):
         for t in sec.meeting_times.all().values_list('id'):

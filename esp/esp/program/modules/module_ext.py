@@ -129,7 +129,7 @@ class StudentClassRegModuleInfo(models.Model):
         
         #   Require that the /Applied bit is in the list, since students cannot enroll
         #   directly in classes with application questions.
-        applied_verb = RegistrationType.get_map()['Applied']
+        applied_verb = RegistrationType.get_map(include=['Applied'], category='student')['Applied']
         if applied_verb not in verb_list:
             verb_list.append(applied_verb)
         

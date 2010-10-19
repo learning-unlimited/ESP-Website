@@ -579,13 +579,8 @@ class ESPUser(User, AnonymousUser):
         else:
             return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(relationship__in=rts, start_date__lte=now, end_date__gte=now).values_list('section', flat=True))
 
-    @cache_function
     def getSectionsFromProgram(self, program):
         return self.getSections(program, verbs=None)
-    #   Invalidate cache if bits are changed on either classes or sections.
-    #   This should be less conservative but there's no easy way to filter the bits as they are saved
-    #   (since we would need to check for all verbs under 'V/Flags/Registration')
-    getSectionsFromProgram.depend_on_row(get_studentreg_model, lambda reg: {'self': reg.user})
 
     def getEnrolledSections(self, program=None):
         if program is None:
