@@ -34,6 +34,9 @@ Email: web@esp.mit.edu
 from django.db.models import signals 
 from esp.datatree import models as datatree
 from esp.utils.custom_cache import custom_cache
+from esp.utils.migration import missing_db_table
+from esp.program import models as program_models
+from esp.users import models as users_models
 
 have_already_installed = False
 
@@ -42,6 +45,10 @@ def post_syncdb(sender, app, **kwargs):
     if app == datatree and not have_already_installed:
         with custom_cache():
             have_already_installed = True
+
+            #   Check that required tables exist.
+            if missing_db_table(program_models.ClassSubject, users_models.UserBit):
+                return
 
             print "Installing esp.datatree initial data..."
             datatree.install()
