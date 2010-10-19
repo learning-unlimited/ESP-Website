@@ -33,7 +33,7 @@ from esp.datatree.models import *
 from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
 
-from esp.program.models import Program
+from esp.program.models import Program, RegistrationType
 
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """
@@ -76,7 +76,7 @@ class StudentClassRegModuleInfo(models.Model):
     #   represent other statuses ('Applied', 'Rejected', etc.)
     #   Note: When use_priority is True, sub-verbs with integer indices are used 
     #         (e.g. 'Priority/1', 'Priority/2', ...)
-    signup_verb          = AjaxForeignKey(DataTree, default=lambda:GetNode(REG_VERB_BASE + '/Enrolled'), help_text='Which verb to grant a student when they sign up for a class.')
+    signup_verb          = models.ForeignKey(RegistrationType, default=lambda: RegistrationType.get_map()['Enrolled'], help_text='Which verb to grant a student when they sign up for a class.', null=True)
     
     #   Whether to use priority
     use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration.')
@@ -118,38 +118,20 @@ class StudentClassRegModuleInfo(models.Model):
     #   (They still have to fill them out before confirming their registration, regardless of this setting)
     force_show_required_modules = models.BooleanField(default=True, help_text = "Check this box to require that users see and fill out \"required\" modules before they can see the main StudentReg page")
     
-    def __init__(self, *args, **kwargs):
-        #   Trying to fetch self.signup_verb directly throws a DoesNotExist for some reason.
-        super(StudentClassRegModuleInfo, self).__init__(*args, **kwargs)
-        if (not self.signup_verb_id) and ('signup_verb' not in kwargs.keys()):
-            self.signup_verb = GetNode(REG_VERB_BASE + '/Enrolled')
-    
-    def reg_verbs(self, uris=False):
-        if not self.signup_verb:
-            return []
-
+    def reg_verbs(self):
         if self.use_priority:
             verb_list = []
             for i in range(0, self.priority_limit):
-                if uris:
-                    verb_list.append(self.signup_verb.get_uri()[len(REG_VERB_BASE):] + '/%d' % (i + 1))
-                else:
-                    verb_list.append(DataTree.get_by_uri(self.signup_verb.get_uri() + '/%d' % (i + 1)))
+                name = self.signup_verb.name + '/%d' % (i + 1)
+                verb_list.append(RegistrationType.get_map(include=[name], category='student')[name])
         else:
-            if uris:
-                verb_list = [self.signup_verb.get_uri()[len(REG_VERB_BASE):]]
-            else:
-                verb_list = [self.signup_verb]
+            verb_list = [self.signup_verb]
         
         #   Require that the /Applied bit is in the list, since students cannot enroll
         #   directly in classes with application questions.
-        if uris:
-            if '/Applied' not in verb_list: 
-                verb_list.append('/Applied')
-        else:
-            applied_verb = GetNode(REG_VERB_BASE + '/Applied')
-            if applied_verb not in verb_list:
-                verb_list.append(applied_verb)
+        applied_verb = RegistrationType.get_map()['Applied']
+        if applied_verb not in verb_list:
+            verb_list.append(applied_verb)
         
         return verb_list
     

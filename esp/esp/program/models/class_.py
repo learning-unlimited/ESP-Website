@@ -847,9 +847,9 @@ class ClassSection(models.Model):
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         if scrmi.use_priority:
-            verbs = ['/Enrolled']
+            verbs = ['Enrolled']
         else:
-            verbs = ['/' + scrmi.signup_verb.name]
+            verbs = [scrmi.signup_verb.name]
         
         # Disallow joining a no-app class that conflicts with an app class
         # For HSSP Harvard Spring 2010
