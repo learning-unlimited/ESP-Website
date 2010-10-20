@@ -56,6 +56,9 @@ class StatsMiddleware(object):
         request._num_queries = len(connection.queries)
 
     def process_response(self, request, response):
+        # Hack to prevent processing of static files -- aseering 10/20/2010
+        if request.path.startswith("/media/"):
+            return response
 
         from django.conf import settings
         debug = settings.DEBUG
