@@ -79,7 +79,12 @@ class PrepCursorMixin(object):
         #   If we can't get a lock, give up and just execute the query.
         #   No point deadlocking over this.
         if not connection_cache_lock.acquire(0):
-            self._execute(cmd, args)
+            return self._execute(cmd, args)
+
+        #   Also don't bother preparing anything other than SELECTs.
+        if not cmd.startswith('SELECT'):
+            connection_cache_lock.release()
+            return self._execute(cmd, args)
             
         prepStmt = self.prepCache.get(cmd)
         if prepStmt is None:
@@ -93,7 +98,7 @@ class PrepCursorMixin(object):
         
         if DEBUG_PRINT: print '%d Using prepared statement %s...' % (self.conn_id, prepStmt[:30])
         
-        self._execute(prepStmt, args)
+        return self._execute(prepStmt, args)
 
     def prepareStatement(self, cmd, cmdId):
         '''
