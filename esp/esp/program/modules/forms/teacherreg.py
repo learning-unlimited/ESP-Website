@@ -272,7 +272,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
                 field.initial = default
                 
         super(TeacherOpenClassRegForm, self).__init__(module, *args, **kwargs)
-        open_class_category = ClassCategories.objects.get_or_create(category='Open Classes', symbol='O', seq=0)[0]
+        open_class_category = ClassCategories.objects.get_or_create(category='Walk-in Seminar', symbol='O', seq=0)[0]
         self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
 
         # Re-enable the requested special resources field as a space needs .
