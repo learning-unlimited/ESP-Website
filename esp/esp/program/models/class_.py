@@ -36,6 +36,7 @@ from collections import defaultdict
 from django.db import models
 from django.db.models import get_model
 from django.db.models.query import Q
+from django.db.models import signals
 from django.core.cache import cache
 from django.utils.datastructures import SortedDict
 
@@ -901,6 +902,9 @@ class ClassSection(models.Model):
             result[bit_str].append(ESPUser(u.user))
         return PropertyDict(result)
 
+    #   If the values returned by this function are ever needed in QuerySet form,
+    #   something will need to be changed.
+    @cache_function
     def students_dict(self):
         from esp.program.models import RegistrationType
         now = datetime.datetime.now()
@@ -908,9 +912,12 @@ class ClassSection(models.Model):
         rmap = RegistrationType.get_map()
         result = {}
         for key in rmap:
-            result[key] = self.registrations.filter(studentregistration__relationship=rmap[key], studentregistration__start_date__lte=now, studentregistration__end_date__gte=now).distinct()
+            result[key] = list(self.registrations.filter(studentregistration__relationship=rmap[key], studentregistration__start_date__lte=now, studentregistration__end_date__gte=now).distinct())
+            if len(result[key]) == 0:
+                del result[key]
         return result
-
+    students_dict.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
+    
     def students_prereg(self):
         now = datetime.datetime.now()
         return self.registrations.filter(studentregistration__start_date__lte=now, studentregistration__end_date__gte=now).distinct()
@@ -922,16 +929,24 @@ class ClassSection(models.Model):
             result = result | self.registrations.filter(studentregistration__relationship__name=verb_str, studentregistration__start_date__lte=now, studentregistration__end_date__gte=now)
         return result.distinct()
     
+    @cache_function
     def num_students_prereg(self):
         return self.students_prereg().count()
+    num_students_prereg.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
 
+    @cache_function
     def num_students(self, verbs=['Enrolled']):
         return self.students(verbs).count()
+    num_students.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
     
     def clearStudents(self):
         from esp.program.models import StudentRegistration
         now = datetime.datetime.now()
-        StudentRegistration.objects.filter(section=self, end_date__gte=now).update(end_date=now)
+        qs = StudentRegistration.objects.filter(section=self, end_date__gte=now)
+        qs.update(end_date=now)
+        #   Compensate for the lack of a signal on update().
+        for reg in qs:
+            signals.post_save.send(sender=StudentRegistration, instance=reg)
 
     @staticmethod
     def idcmp(one, other):
@@ -1091,6 +1106,11 @@ class ClassSection(models.Model):
             qs = StudentRegistration.objects.filter(section=self, user=user, end_date__gte=now)
             qs.update(end_date=now)
             #   print 'Expired %s' % qs
+            
+        #   Explicitly fire the signals for saving a StudentRegistration in order to update caches
+        #   since it doesn't get sent by update() above
+        if qs.exists():
+            signals.post_save.send(sender=StudentRegistration, instance=qs[0])
             
         #   If the student had blank application question responses for this class, remove them.
         app = ESPUser(user).getApplication(self.parent_program, create=False)
