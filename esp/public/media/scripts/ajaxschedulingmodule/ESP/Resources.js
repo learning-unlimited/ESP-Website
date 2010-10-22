@@ -136,12 +136,19 @@ ESP.declare('ESP.Scheduling.Resources',function(){
 		}
 	    });
 	
+	Resources.RoomResource = Class.create(RClass, {
+	        type: "RoomResource",
+	        __defaults__: {
+	            attributes: []
+	        }
+	    });
+	
 	Resources.Generic = Class.create(RClass, {
 		type: "Generic",
 		__defaults__: {
 		    // not implemented yet
 		}
 	    });
-	
+
 	return Resources;
     }());

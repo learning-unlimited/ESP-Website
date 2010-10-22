@@ -91,7 +91,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         rrequest_dict = defaultdict(list)
         for r in rrequests:
-            rrequest_dict[r.target_id].append(r.id)
+            rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
 
 
         teacher_bits = UserBit.objects.filter(verb=GetNode('V/Flags/Registration/Teacher'), qsc__in = (s.parent_class.anchor_id for s in sections), user__isnull=False).values("qsc_id", "user_id").distinct()
@@ -103,7 +103,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
         sections_dicts = [
             {   'id': s.id,
                 'class_id': s.parent_class_id,
-                'block_contents': render_to_string(self.baseDir() + 'section_block_label.html', {'sec': s}),
                 'emailcode': s.emailcode(),
                 'text': s.title(),
                 'category': s.category.category,
@@ -146,13 +145,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
         classrooms_dicts = [
             {   'uid': room_id,
                 'text': classrooms_grouped[room_id][0].name,
-                'block_contents': render_to_string(self.baseDir() + 'room_block_label.html', 
-                    {'room_name': classrooms_grouped[room_id][0].name, 
-                     'room_num_students': classrooms_grouped[room_id][0].num_students,
-                     'room_associated_resources': [ar.res_type.name for ar in classrooms_grouped[room_id][0].associated_resources()]
-                    }),
                 'availability': [ r.event_id for r in classrooms_grouped[room_id] ],
-                'associated_resources': [],
+                'associated_resources': [ar.res_type.id for ar in classrooms_grouped[room_id][0].associated_resources()],
                 'num_students': classrooms_grouped[room_id][0].num_students,
             } for room_id in classrooms_grouped.keys() ]
 
@@ -181,7 +175,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
         teacher_dicts = [
             {   'uid': t.id,
                 'text': t.name(),
-                'block_contents': render_to_string(self.baseDir() + 'teacher_block_label.html', {'first_name': t.first_name, 'last_name': t.last_name, 'available_times': [e.pretty_time() for e in Event.collapse(list(t.getAvailableTimes(prog)))]}),
                 'availability': resources_for_user[t.id]
             } for t in teachers ]
 
@@ -211,6 +204,34 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return response
     ajax_times_cached.get_or_create_token(('prog',))
     ajax_times_cached.depend_on_model(Event)
+
+
+    @aux_call
+    @needs_admin
+    def ajax_resourcetypes(self, request, tl, one, two, module, extra, prog):
+        return self.ajax_resourcetypes_cached(prog)
+
+    @cache_function
+    def ajax_resourcetypes_cached(self, prog):
+        resourcetypes = ResourceType.objects.filter(program=prog)
+        if len(resourcetypes) == 0:
+            resourcetypes = ResourceType.objects.filter(program__isnull=True)
+
+        resourcetypes_dicts = [
+            {
+                'uid': rt.id,
+                'name': rt.name,
+                'description': rt.description,
+                'attributes': rt.attributes_pickled.split("|"),  ## .attributes wasn't working properly; so just using this for now -- aseering 10/21/2010
+                }
+            for rt in resourcetypes ]
+
+
+        response = HttpResponse(content_type="application/json")
+        simplejson.dump(resourcetypes_dicts, response)
+        return response
+    ajax_times_cached.get_or_create_token(('prog',))
+    ajax_times_cached.depend_on_model(ResourceType)
 
     @aux_call
     @needs_admin

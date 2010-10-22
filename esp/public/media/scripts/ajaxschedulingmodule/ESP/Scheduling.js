@@ -7,6 +7,7 @@ ESP.Scheduling = function(){
 	ESP.Utilities.evm.unbind();
 	
 	var pd = this.data = process_data(test_data_set);
+	this.raw_data = test_data_set;
 	if (!this.status) {
 	    this._status = new ESP.Scheduling.Widgets.StatusBar('#statusbar');
 	    this.status = this._status.setStatus.bind(this._status);
@@ -76,12 +77,19 @@ ESP.Scheduling = function(){
 	    sections: [],
 	    block_index: {},
 	    teachers: [],
-	    schedule_assignments: []
+	    schedule_assignments: [],
 	};
 
 	processed_data.schedule_assignments = data.schedule_assignments;
 	
 	var Resources = ESP.Scheduling.Resources;
+
+	// resourcetypes
+	for (var i = 0; i < data.resourcetypes.length; i++) {
+	    var rt = data.resourcetypes[i];
+	    Resources.create('RoomResource', { uid: rt.uid, text: rt.name, description: rt.description, attributes: rt.attributes });
+	}
+
 	// times
 	for (var i = 0; i < data.times.length; i++) {
 	    var t = data.times[i];
@@ -107,7 +115,7 @@ ESP.Scheduling = function(){
 	    var r = data.rooms[i];
 	    var room;
 	    processed_data.rooms.push( room =
-		    Resources.create('Room',{ uid: r.uid, text: r.text, block_contents: r.block_contents})).uid;
+				       Resources.create('Room',{ uid: r.uid, text: r.text, block_contents: ESP.Utilities.genPopup(r.text, {'Size:': r.num_students.toString(), 'Resources:': r.associated_resources.map(function(x){ return Resources.get('RoomResource',x).text; })}, true)})).uid;
 	    var rid = room.uid
 	    processed_data.block_index[rid] = {};
 	    for (var j = 0; j < r.availability.length; j++) {
@@ -130,7 +138,7 @@ ESP.Scheduling = function(){
 	for (var i = 0; i < data.teachers.length; i++) {
 	    var t = data.teachers[i];
 	    processed_data.teachers.push(Resources.create('Teacher',{
-			uid: t.uid, text: t.text, block_contents: t.block_contents,
+		uid: t.uid, text: t.text, block_contents: ESP.Utilities.genPopup(t.text, {'Available Times:': t.availability.map(function(x){ return Resources.get('Time',x).text; }) }, true),
 			available_times: t.availability.map(function(x){ return Resources.get('Time',x); }),
 			sections: []
 		    }));
@@ -141,17 +149,20 @@ ESP.Scheduling = function(){
 	    var c = data.sections[i];
 	    var s;
 	    processed_data.sections.push(s = Resources.create('Section',{
-			uid: c.id,
-			class_id: c.class_id,
-            code: c.emailcode,
-            block_contents: c.block_contents,
-			category: c.category,
-			length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
-			length_hr: Math.round(c.length * 2) / 2,
-			id:c.id,
-			status:c.status,
-			text:c.text,
-			teachers:c.teachers.map(function(x){ return Resources.get('Teacher',x); }),
+		    uid: c.id,
+		    class_id: c.class_id,
+		    code: c.emailcode,
+		    block_contents: ESP.Utilities.genPopup(c.emailcode, {
+		      'Size:': c.max_class_capacity ? c.max_class_capacity : "(unspecified)",
+			  'Resources:': c.resource_requests.map(function(x){ return (Resources.get('RoomResource', x[0]) ? (Resources.get('RoomResource', x[0]).text + ": " + x[1]) : null); })
+			  }, true),
+		    category: c.category,
+		    length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
+		    length_hr: Math.round(c.length * 2) / 2,
+		    id:c.id,
+		    status:c.status,
+		    text:c.text,
+		    teachers:c.teachers.map(function(x){ return Resources.get('Teacher',x); }),
 		    }));
 	    s.teachers.map(function(x){ x.sections.push(s); });
 	}
@@ -248,7 +259,7 @@ $j(function(){
 
 	var data = {};
 	var success_count = 0;
-	var files = ['times','rooms','sections','resources','teachers','schedule_assignments'];
+	var files = ['times','rooms','sections','resources','resourcetypes','teachers','schedule_assignments'];
 	var ajax_verify = function(name) {
 	    return function(d, status) {
 		if (status != "success") {
