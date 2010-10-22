@@ -153,11 +153,15 @@ ESP.Scheduling = function(){
 		    class_id: c.class_id,
 		    code: c.emailcode,
 		    block_contents: ESP.Utilities.genPopup(c.emailcode, {
-		      'Size:': c.max_class_capacity ? c.max_class_capacity : "(unspecified)",
-		      'Resources:': c.resource_requests.map(function(x){ return (Resources.get('RoomResource', x[0]) ? (Resources.get('RoomResource', x[0]).text + ": " + x[1]) : null); }),
-		      'Optimal Size:': c.optimal_class_size ? c.optimal_class_size.toString() : "(unspecified)",
-		      'Optimal Range:': c.optimal_class_size_range,
-		      'Allowable Ranges:': c.allowable_class_size_ranges }, true),
+		          'Title:': c.text,
+			  'Teachers': c.teachers.map(function(x){ return Resources.get('Teacher', x).text; }),
+			  'Requests:': c.resource_requests.map(function(x){ return (Resources.get('RoomResource', x[0]) ? (Resources.get('RoomResource', x[0]).text + ": " + x[1]) : null); }),
+			  'Size:': (c.max_class_size ? c.max_class.size.toString() : "(n/a)") + "max, " + (c.optimal_class_size ? c.optimal_class_size.toString() : "(n/a)") + " opt (" + c.optimal_class_size_range + ")",
+			  'Allowable Class-Size Ranges:': c.allowable_class_size_ranges,
+			  'Grades:': c.grades[0] + "-" + c.grades[1],
+			  "Prereq's:": c.prereqs,
+			  'Comments:': c.comments,
+			  }, true),
 		    category: c.category,
 		    length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
 		    length_hr: Math.round(c.length * 2) / 2,
@@ -165,6 +169,7 @@ ESP.Scheduling = function(){
 		    status:c.status,
 		    text:c.text,
 		    teachers:c.teachers.map(function(x){ return Resources.get('Teacher',x); }),
+		    resource_requests:c.resource_requests.map(function(x){ return [Resources.get('RoomResource', x[0]), x[1]]; })
 		    }));
 	    s.teachers.map(function(x){ x.sections.push(s); });
 	}

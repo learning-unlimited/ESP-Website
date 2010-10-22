@@ -115,6 +115,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'allowable_class_size_ranges': [ cr.range_str() for cr in s.parent_class.get_allowable_class_size_ranges() ],
                 'status': s.status,
                 'parent_status': s.parent_class.status,
+                'grades': (s.parent_class.grade_min, s.parent_class.grade_max),
+                'prereqs': s.parent_class.prereqs,
+                'comments': s.parent_class.message_for_directors,
             } for s in sections ]
 
         response = HttpResponse(content_type="application/json")
