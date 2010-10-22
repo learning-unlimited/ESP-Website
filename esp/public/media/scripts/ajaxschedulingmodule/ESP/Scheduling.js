@@ -154,8 +154,10 @@ ESP.Scheduling = function(){
 		    code: c.emailcode,
 		    block_contents: ESP.Utilities.genPopup(c.emailcode, {
 		      'Size:': c.max_class_capacity ? c.max_class_capacity : "(unspecified)",
-			  'Resources:': c.resource_requests.map(function(x){ return (Resources.get('RoomResource', x[0]) ? (Resources.get('RoomResource', x[0]).text + ": " + x[1]) : null); })
-			  }, true),
+		      'Resources:': c.resource_requests.map(function(x){ return (Resources.get('RoomResource', x[0]) ? (Resources.get('RoomResource', x[0]).text + ": " + x[1]) : null); }),
+		      'Optimal Size:': c.optimal_class_size ? c.optimal_class_size.toString() : "(unspecified)",
+		      'Optimal Range:': c.optimal_class_size_range,
+		      'Allowable Ranges:': c.allowable_class_size_ranges }, true),
 		    category: c.category,
 		    length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
 		    length_hr: Math.round(c.length * 2) / 2,
