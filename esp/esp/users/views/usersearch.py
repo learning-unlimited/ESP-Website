@@ -396,7 +396,7 @@ def getQForUser(QRestriction):
     # Let's not do anything and say we did...
     #return QRestriction
     
-    from esp.users.models import User
+    from esp.users.models import ESPUser
     ids = [ x['id'] for x in ESPUser.objects.filter(QRestriction).values('id')]
     if len(ids) == 0:
         return Q(id = -1)
