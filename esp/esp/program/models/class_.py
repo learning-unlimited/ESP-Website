@@ -1289,6 +1289,11 @@ class ClassSubject(models.Model):
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
 
+    @cache_function
+    def get_allowable_class_size_ranges(self):
+        return self.allowable_class_size_ranges.all()
+    get_allowable_class_size_ranges.depend_on_m2m(lambda:ClassSubject, 'allowable_class_size_ranges', lambda subj, csr: {'self':subj })
+
     def get_sections(self):
         if not hasattr(self, "_sections") or self._sections is None:
             self._sections = self.sections.all()

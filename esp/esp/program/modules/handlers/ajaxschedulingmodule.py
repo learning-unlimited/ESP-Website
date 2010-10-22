@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules         import module_ext
-from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories
+from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, ClassSizeRange
 from esp.datatree.models         import *
 from esp.web.util                import render_to_response
 from django                      import forms
@@ -85,7 +85,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @cache_function
     def ajax_sections_cached(self, prog):
-        sections = prog.sections().select_related('category', 'parent_class')
+        sections = prog.sections().select_related('category', 'parent_class', 'optimal_class_size_range')
 
         rrequests = ResourceRequest.objects.filter(target__in = sections)
 
@@ -111,6 +111,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'teachers': teacher_dict[s.parent_class.anchor_id],
                 'resource_requests': rrequest_dict[s.id],
                 'max_class_capacity': s.max_class_capacity,
+                'optimal_class_size': s.parent_class.class_size_optimal,
+                'optimal_class_size_range': s.parent_class.optimal_class_size_range.range_str() if s.parent_class.optimal_class_size_range else None,
+                'allowable_class_size_ranges': [ cr.range_str() for cr in s.parent_class.get_allowable_class_size_ranges() ],
                 'status': s.status,
                 'parent_status': s.parent_class.status,
             } for s in sections ]
@@ -121,6 +124,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     ajax_sections_cached.get_or_create_token(('prog',))
     ajax_sections_cached.depend_on_model(lambda: ClassSubject)
     ajax_sections_cached.depend_on_model(lambda: ClassSection)
+    ajax_sections_cached.depend_on_model(lambda: ClassSizeRange)
     ajax_sections_cached.depend_on_model(lambda: ResourceRequest)
     ajax_sections_cached.depend_on_model(lambda: UserBit)
         
