@@ -56,7 +56,7 @@ class ClassCreationController(object):
         extra_time = reg_form._get_total_time_requested() - cls.sections.count() * float(cls.duration)
         self.require_teacher_has_time(user, extra_time)
 
-        self.make_class_happen(cls, user, reg_form, resource_formset, restype_formset)
+        self.make_class_happen(cls, user, reg_form, resource_formset, restype_formset, editing=True)
         
         self.force_availability(user)  ## So the default DB state reflects the default form state of "all times work"
 
@@ -84,10 +84,13 @@ class ClassCreationController(object):
 
         return reg_form, resource_formset, restype_formset
     
-    def make_class_happen(self, cls, user, reg_form, resource_formset, restype_formset):
+    def make_class_happen(self, cls, user, reg_form, resource_formset, restype_formset, editing=False):
         self.set_class_data(cls, reg_form)
         self.update_class_sections(cls, int(reg_form.cleaned_data['num_sections']))
-        self.associate_teacher_with_class(cls, user)
+        #   If someone is editing the class, we assume they don't want to be
+        #   added as a teacher if they aren't already one.
+        if not editing:
+            self.associate_teacher_with_class(cls, user)
         self.add_rsrc_requests_to_class(cls, resource_formset, restype_formset)
         cls.propose()
         cls.update_cache()
