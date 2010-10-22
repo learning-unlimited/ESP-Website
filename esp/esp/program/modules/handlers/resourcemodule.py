@@ -34,7 +34,7 @@ from django.contrib.auth.decorators import login_required
 from esp.web.util        import render_to_response
 
 from esp.cal.models import Event
-from esp.resources.models import ResourceType, Resource
+from esp.resources.models import ResourceType, Resource, ResourceAssignment
 from esp.program.models import ClassSubject, ClassSection, Program
 from esp.users.models import UserBit, ESPUser
 from esp.middleware import ESPError
@@ -144,6 +144,11 @@ class ResourceModule(ProgramModuleObj):
                 #   show delete confirmation page
                 context['prog'] = self.program
                 context['classroom'] = Resource.objects.get(id=request.GET['id'])
+                resources = self.program.getClassrooms().filter(name=context['classroom'].name)
+                context['timeslots'] = [r.event for r in resources]
+                sections = ClassSection.objects.filter(resourceassignment__resource__id__in=resources.values_list('id', flat=True)).distinct()
+                
+                context['sections'] = sections
                 return render_to_response(self.baseDir()+'classroom_delete.html', request, (prog, tl), context)
                 
             if request.method == 'POST':
@@ -152,7 +157,11 @@ class ResourceModule(ProgramModuleObj):
                 
                 if data['command'] == 'reallyremove':
                     #   delete classroom and associated resources
-                    raise ESPError(), 'Sorry, deletion of classrooms creates problems with the existing resources assignments, so it is not yet enabled.  Please contact the webmasters to delete a classroom.'
+                    target_resource = Resource.objects.get(id=data['id'])
+                    rooms = prog.getClassrooms().filter(name=target_resource.name)
+                    for room in rooms:
+                        room.associated_resources().delete()
+                    rooms.delete()
                     
                 elif data['command'] == 'addedit':
                     #   add/edit restype
