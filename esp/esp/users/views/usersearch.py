@@ -70,7 +70,7 @@ def get_user_list(request, listDict2, extra=''):
         filterObj = PersistentQueryFilter.getFilterFromQ(Q(id__in=[x.id for x in all_list_members]), User, 'Custom Mailman filter: ' + ", ".join(lists))
 
         if request.POST['submitform'] == 'I want to search within this list':
-            getUser, found = search_for_user(request, User.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
+            getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
             if found:
                 if type(getUser) == User or type(getUser) == ESPUser:
                     newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
@@ -81,7 +81,7 @@ def get_user_list(request, listDict2, extra=''):
                 return (getUser, False)
 
         elif request.POST['submitform'] == 'I want a subset of this list':
-            getUsers, found = get_user_checklist(request, User.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
+            getUsers, found = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
             if found:
                 newfilterObj = PersistentQueryFilter.getFilterFromQ(getUsers, User, 'Custom list')
                 return (newfilterObj, True)
@@ -96,7 +96,7 @@ def get_user_list(request, listDict2, extra=''):
 
         # If we're coming back after having checked off users from a checklist...
         filterObj = PersistentQueryFilter.getFilterFromID(request.POST['extra'], User)
-        getUsers, found = get_user_checklist(request, User.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
+        getUsers, found = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
         if found:
             # want to make a PersistentQueryFilter out of this returned query
             newfilterObj = PersistentQueryFilter.getFilterFromQ(getUsers, User, 'Custom list')
@@ -159,7 +159,7 @@ def get_user_list(request, listDict2, extra=''):
 
 
         if request.POST['submitform'] == 'I want to search within this list':
-            getUser, found = search_for_user(request, User.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
+            getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
             if found:
                 if type(getUser) == User or type(getUser) == ESPUser:
                     newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
@@ -170,7 +170,7 @@ def get_user_list(request, listDict2, extra=''):
                 return (getUser, False)
 
         elif request.POST['submitform'] == 'I want a subset of this list':
-            getUsers, found = get_user_checklist(request, User.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
+            getUsers, found = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
             if found:
                 newfilterObj = PersistentQueryFilter.getFilterFromQ(getUsers, User, 'Custom list')
                 return (newfilterObj, True)
@@ -183,7 +183,7 @@ def get_user_list(request, listDict2, extra=''):
     # if we found a single user:
     if request.method == 'GET' and request.GET.has_key('op') and request.GET['op'] == 'usersearch':
         filterObj = PersistentQueryFilter.getFilterFromID(request.GET['extra'], User)
-        getUser, found = search_for_user(request, User.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
+        getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
         if found:
             if type(getUser) == User or type(getUser) == ESPUser:
                 newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
@@ -397,7 +397,7 @@ def getQForUser(QRestriction):
     #return QRestriction
     
     from esp.users.models import User
-    ids = [ x['id'] for x in User.objects.filter(QRestriction).values('id')]
+    ids = [ x['id'] for x in ESPUser.objects.filter(QRestriction).values('id')]
     if len(ids) == 0:
         return Q(id = -1)
     else:

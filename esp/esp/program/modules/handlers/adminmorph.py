@@ -35,6 +35,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.web.util import render_to_response
 from django.contrib.auth.models import User
+from esp.users.models import ESPUser
 
 class AdminMorph(ProgramModuleObj):
     doc = """ User morphing allows the program director to morph into a constituent of their program. """
@@ -71,7 +72,7 @@ class AdminMorph(ProgramModuleObj):
         if extra in saved_queries:
             query = saved_queries[extra]
         
-        user, found = search_for_user(request, User.objects.filter(query))
+        user, found = search_for_user(request, ESPUser.objects.filter(query))
 
         if not found:
             return user
