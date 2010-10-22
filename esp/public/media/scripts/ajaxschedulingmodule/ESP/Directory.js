@@ -138,7 +138,16 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
 		this.directory = directory;
 		this.section = section;
 		this.el = $j('<tr/>').addClass('class-entry').data("controller",this);
-		
+		this.el.addClass('CLS_category_' + section.category);
+		this.el.addClass('CLS_id_' + section.id);
+		this.el.addClass('CLS_length_' + section.length_hr + '_hrs');
+		this.el.addClass('CLS_status_' + section.status);
+		for (var i = 0; i < section.resource_requests.length; i++) {
+		  if (section.resource_requests[i][0]) {
+		    this.el.addClass('CLS_rsrc_req_' + section.resource_requests[i][0].text.replace(/[^a-zA-Z]+/g, '-'));
+		  }
+		}
+
 		this.tds = {};
 		$j.each(this.directory.properties,function(index, prop){
 			var td = $j('<td style="' + (prop.css||'') + '">' + prop.get(section) + '</td>');

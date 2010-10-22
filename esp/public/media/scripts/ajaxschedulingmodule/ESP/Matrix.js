@@ -88,6 +88,17 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                 //  cell.td.text(data.section.class_id);
 			    cell.td.html(data.section.block_contents);
 			    cell.status(BlockStatus.RESERVED);
+
+			    var section = data.section;
+			    cell.td.addClass('CLS_category_' + section.category);
+			    cell.td.addClass('CLS_id_' + section.id);
+			    cell.td.addClass('CLS_length_' + section.length_hr + '_hrs');
+			    cell.td.addClass('CLS_status_' + section.status);
+			    for (var i = 0; i < section.resource_requests.length; i++) {
+			      if (section.resource_requests[i][0]) {
+				cell.td.addClass('CLS_rsrc_req_' + section.resource_requests[i][0].text.replace(/[^a-zA-Z]+/g, '-'));
+			      }
+			    }
 			}
 		    }.bind(this));
 		ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
@@ -115,6 +126,12 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			    var cell = this.block_cells[block.room.uid][block.time.uid];
 			    cell.td.text('');
 			    cell.status(BlockStatus.AVAILABLE);
+			    var css_cls = cell.td.attr('class').split(/\s+/);
+			    for (var i = 0; i < css_cls.length; i++) {
+			      if (css_cls[i].indexOf("CLS_") == 0) {
+				cell.td.removeClass(css_cls[i]);
+			      }
+			    }
 			}
 		    }.bind(this))
 		ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
