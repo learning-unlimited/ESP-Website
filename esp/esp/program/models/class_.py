@@ -207,7 +207,7 @@ class ClassManager(ProcedureManager):
         
         #   Allow customized orderings for the catalog.
         #   These are the default ordering fields in descending order of priority.
-        order_args = ['category__seq', '_num_students', 'id']
+        order_args = ['category__symbol', 'sections__meeting_times__start', '_num_students', 'id']
         #   First check if there is an ordering specified for the program.
         program_sort_fields = Tag.getTag('catalog_sort_fields', target=program)
         if program_sort_fields:
