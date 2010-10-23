@@ -1502,7 +1502,7 @@ Student schedule for %s:
                 time_values = [time_possible(time, timeslist) for time in times]    
         
             write_csv.writerow([section.id, section.emailcode(), smart_str(section.title()), section.prettyDuration()] + \
-                               [section.parent_class.pretty_teachers()] + \
+                               [smart_str(section.parent_class.pretty_teachers())] + \
                                [needs_resource('LCD Projector', section)] + \
                                [needs_resource('Computer Lab', section)] + \
                                [', '.join(['%s: %s' % (r.res_type.name, r.desired_value) for r in section.getResourceRequests()])] + \
