@@ -123,7 +123,7 @@ ESP.declare('ESP.Scheduling.Resources',function(){
 		type: "Teacher",
 		__defaults__: {
 		    sections: [],
-		    available_times: [],
+		    available_times: []
 		}
 	    });
 	

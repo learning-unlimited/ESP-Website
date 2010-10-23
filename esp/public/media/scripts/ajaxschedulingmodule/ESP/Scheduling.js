@@ -77,7 +77,7 @@ ESP.Scheduling = function(){
 	    sections: [],
 	    block_index: {},
 	    teachers: [],
-	    schedule_assignments: [],
+	    schedule_assignments: []
 	};
 
 	processed_data.schedule_assignments = data.schedule_assignments;
@@ -108,14 +108,25 @@ ESP.Scheduling = function(){
 	    var t2 = processed_data.times[i+1];
 	    t.seq = Resources.Time.sequential(t,t2) ? t2 : null;
 	}
-	
+
 	// rooms / blocks
 	var BlockStatus = Resources.BlockStatus;
 	for (var i = 0; i < data.rooms.length; i++) {
 	    var r = data.rooms[i];
 	    var room;
+	    var assd_resources =  r.associated_resources.map(function(x){
+		    var res = Resources.get('RoomResource',x);
+		    return (res ? res.text : "");
+		});
 	    processed_data.rooms.push( room =
-				       Resources.create('Room',{ uid: r.uid, text: r.text, block_contents: ESP.Utilities.genPopup(r.text, {'Size:': r.num_students.toString(), 'Resources:': r.associated_resources.map(function(x){ return Resources.get('RoomResource',x) ? Resources.get('RoomResource',x).text : "N/A"; })}, true)})).uid;
+				       Resources.create('Room',{
+					       uid: r.uid,
+					       text: r.text,
+					       block_contents: ESP.Utilities.genPopup(r.text, {
+						       'Size:': r.num_students.toString(), 
+						       'Resources:': assd_resources}, true),
+					       resources: assd_resources
+					   }));
 	    var rid = room.uid
 	    processed_data.block_index[rid] = {};
 	    for (var j = 0; j < r.availability.length; j++) {
@@ -138,7 +149,7 @@ ESP.Scheduling = function(){
 	for (var i = 0; i < data.teachers.length; i++) {
 	    var t = data.teachers[i];
 	    processed_data.teachers.push(Resources.create('Teacher',{
-			uid: t.uid, text: t.text, block_contents: ESP.Utilities.genPopup(t.text, {'Available Times:': t.availability.map(function(x){ return Resources.get('Time',x) ? Resources.get('Time', x).text : "N/A"; }) }, true),
+			uid: t.uid, text: t.text, block_contents: ESP.Utilities.genPopup(t.text, {'Available Times:': t.availability.map(function(x){ var res = Resources.get('Time',x); return res ? res.text : "N/A"; }) }, true),
 			available_times: t.availability.map(function(x){ return Resources.get('Time',x); }),
 			sections: []
 		    }));
@@ -155,12 +166,12 @@ ESP.Scheduling = function(){
 		    block_contents: ESP.Utilities.genPopup(c.emailcode, {
 		          'Title:': c.text,
 			  'Teachers': c.teachers.map(function(x){ return Resources.get('Teacher', x).text; }),
-			  'Requests:': c.resource_requests.map(function(x){ return (Resources.get('RoomResource', x[0]) ? (Resources.get('RoomResource', x[0]).text + ": " + x[1]) : null); }),
+			  'Requests:': c.resource_requests.map(function(x){ var res = Resources.get('RoomResource', x[0]); return (res ? (res.text + ": " + x[1]) : null); }),
 			  'Size:': (c.max_class_size ? c.max_class.size.toString() : "(n/a)") + "max, " + (c.optimal_class_size ? c.optimal_class_size.toString() : "(n/a)") + " opt (" + c.optimal_class_size_range + ")",
 			  'Allowable Class-Size Ranges:': c.allowable_class_size_ranges,
 			  'Grades:': c.grades ? (c.grades[0] + "-" + c.grades[1]) : "(n/a)",
 			  "Prereq's:": c.prereqs,
-			  'Comments:': c.comments,
+			  'Comments:': c.comments
 			  }, true),
 		    category: c.category,
 		    length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms

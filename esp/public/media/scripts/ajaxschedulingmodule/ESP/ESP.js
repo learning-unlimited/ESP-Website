@@ -20,7 +20,7 @@ if ( typeof console != 'object' ) {
 	    timeEnd: nop,
 	    profile: nop,
 	    profileEnd: nop,
-	    count: nop,
+	    count: nop
 	};
     }();
 }
