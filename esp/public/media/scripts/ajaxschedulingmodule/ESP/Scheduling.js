@@ -169,7 +169,10 @@ ESP.Scheduling = function(){
 		    status:c.status,
 		    text:c.text,
 		    teachers:c.teachers.map(function(x){ return Resources.get('Teacher',x); }),
-		    resource_requests:c.resource_requests.map(function(x){ return [Resources.get('RoomResource', x[0]), x[1]]; })
+		    resource_requests:c.resource_requests.map(function(x){ return [Resources.get('RoomResource', x[0]), x[1]]; }),
+		    grade_min: c.grades[0],
+		    grade_max: c.grades[1]
+		    
 		    }));
 	    s.teachers.map(function(x){ x.sections.push(s); });
 	}

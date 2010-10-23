@@ -142,6 +142,8 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
 		this.el.addClass('CLS_id_' + section.id);
 		this.el.addClass('CLS_length_' + section.length_hr + '_hrs');
 		this.el.addClass('CLS_status_' + section.status);
+		this.el.addClass('CLS_grade_min_' + section.grade_min);
+		this.el.addClass('CLS_grade_max_' + section.grade_max);
 		for (var i = 0; i < section.resource_requests.length; i++) {
 		  if (section.resource_requests[i][0]) {
 		    this.el.addClass('CLS_rsrc_req_' + section.resource_requests[i][0].text.replace(/[^a-zA-Z]+/g, '-'));

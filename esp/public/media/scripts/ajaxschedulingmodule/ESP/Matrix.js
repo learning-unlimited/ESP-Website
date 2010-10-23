@@ -94,7 +94,8 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			    cell.td.addClass('CLS_id_' + section.id);
 			    cell.td.addClass('CLS_length_' + section.length_hr + '_hrs');
 			    cell.td.addClass('CLS_status_' + section.status);
-			    for (var j = 0; j < section.resource_requests.length; j++) {
+			    cell.td.addClass('CLS_grade_min_' + section.grade_min);
+			    cell.td.addClass('CLS_grade_max_' + section.grade_max);			    for (var j = 0; j < section.resource_requests.length; j++) {
 			      if (section.resource_requests[j][0]) {
 				cell.td.addClass('CLS_rsrc_req_' + section.resource_requests[j][0].text.replace(/[^a-zA-Z]+/g, '-'));
 			      }
