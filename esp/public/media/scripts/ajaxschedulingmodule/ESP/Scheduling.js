@@ -115,7 +115,7 @@ ESP.Scheduling = function(){
 	    var r = data.rooms[i];
 	    var room;
 	    processed_data.rooms.push( room =
-				       Resources.create('Room',{ uid: r.uid, text: r.text, block_contents: ESP.Utilities.genPopup(r.text, {'Size:': r.num_students.toString(), 'Resources:': r.associated_resources.map(function(x){ return Resources.get('RoomResource',x).text; })}, true)})).uid;
+				       Resources.create('Room',{ uid: r.uid, text: r.text, block_contents: ESP.Utilities.genPopup(r.text, {'Size:': r.num_students.toString(), 'Resources:': r.associated_resources.map(function(x){ return Resources.get('RoomResource',x) ? Resources.get('RoomResource',x).text : "N/A"; })}, true)})).uid;
 	    var rid = room.uid
 	    processed_data.block_index[rid] = {};
 	    for (var j = 0; j < r.availability.length; j++) {
@@ -138,7 +138,7 @@ ESP.Scheduling = function(){
 	for (var i = 0; i < data.teachers.length; i++) {
 	    var t = data.teachers[i];
 	    processed_data.teachers.push(Resources.create('Teacher',{
-		uid: t.uid, text: t.text, block_contents: ESP.Utilities.genPopup(t.text, {'Available Times:': t.availability.map(function(x){ return Resources.get('Time',x).text; }) }, true),
+			uid: t.uid, text: t.text, block_contents: ESP.Utilities.genPopup(t.text, {'Available Times:': t.availability.map(function(x){ return Resources.get('Time',x) ? Resources.get('Time', x).text : "N/A"; }) }, true),
 			available_times: t.availability.map(function(x){ return Resources.get('Time',x); }),
 			sections: []
 		    }));
