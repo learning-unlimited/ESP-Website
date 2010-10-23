@@ -94,9 +94,9 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			    cell.td.addClass('CLS_id_' + section.id);
 			    cell.td.addClass('CLS_length_' + section.length_hr + '_hrs');
 			    cell.td.addClass('CLS_status_' + section.status);
-			    for (var i = 0; i < section.resource_requests.length; i++) {
-			      if (section.resource_requests[i][0]) {
-				cell.td.addClass('CLS_rsrc_req_' + section.resource_requests[i][0].text.replace(/[^a-zA-Z]+/g, '-'));
+			    for (var j = 0; j < section.resource_requests.length; j++) {
+			      if (section.resource_requests[j][0]) {
+				cell.td.addClass('CLS_rsrc_req_' + section.resource_requests[j][0].text.replace(/[^a-zA-Z]+/g, '-'));
 			      }
 			    }
 			}
