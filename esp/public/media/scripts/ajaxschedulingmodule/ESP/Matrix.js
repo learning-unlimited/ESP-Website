@@ -134,9 +134,9 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			    cell.td.text('');
 			    cell.status(BlockStatus.AVAILABLE);
 			    var css_cls = cell.td.attr('class').split(/\s+/);
-			    for (var i = 0; i < css_cls.length; i++) {
-			      if (css_cls[i].indexOf("CLS_") == 0) {
-				cell.td.removeClass(css_cls[i]);
+			    for (var j = 0; j < css_cls.length; j++) {
+			      if (css_cls[j].indexOf("CLS_") == 0) {
+				cell.td.removeClass(css_cls[j]);
 			      }
 			    }
 			}
