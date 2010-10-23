@@ -113,27 +113,31 @@ ESP.Scheduling = function(){
 	var BlockStatus = Resources.BlockStatus;
 	for (var i = 0; i < data.rooms.length; i++) {
 	    var r = data.rooms[i];
-	    var room;
 	    var assd_resources =  r.associated_resources.map(function(x){
 		    var res = Resources.get('RoomResource',x);
 		    return (res ? res.text : "");
 		});
-	    processed_data.rooms.push( room =
-				       Resources.create('Room',{
-					       uid: r.uid,
-					       text: r.text,
-					       block_contents: ESP.Utilities.genPopup(r.text, {
-						       'Size:': r.num_students.toString(), 
-						       'Resources:': assd_resources}, true),
-					       resources: assd_resources
-					   }));
+	    var room = Resources.create('Room',{
+		    uid: r.uid,
+		    text: r.text,
+		    block_contents: ESP.Utilities.genPopup(r.text, {
+			    'Size:': r.num_students.toString(), 
+			    'Resources:': assd_resources}, true),
+		    resources: assd_resources
+		})
+	    processed_data.rooms.push(room);
 	    var rid = room.uid
 	    processed_data.block_index[rid] = {};
 	    for (var j = 0; j < r.availability.length; j++) {
 		var t = Resources.get('Time', r.availability[j]);
 		var block;
 		processed_data.blocks.push(block = Resources.create(
-		    'Block', { time: t, room: r, status:BlockStatus.AVAILABLE, uid: [t.uid,r.uid] }));
+								    'Block', { 
+									time: t,
+									room: r,
+									processed_room: room,
+									status:BlockStatus.AVAILABLE,
+									uid: [t.uid,r.uid] }));
 		processed_data.block_index[rid][block.time.uid] = block;
 	    }
 	}

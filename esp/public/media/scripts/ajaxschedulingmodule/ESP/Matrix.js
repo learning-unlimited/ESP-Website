@@ -101,6 +101,11 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 				cell.td.addClass('CLS_rsrc_req_' + section.resource_requests[j][0].text.replace(/[^a-zA-Z]+/g, '-'));
 			      }
 			    }
+			    for (var j = 0; j < block.processed_room.resources.length; j++) {
+				if (block.processed_room.resources[j]) {
+				    cell.td.addClass('CLS_ROOM_rsrc_' + block.processed_room.resources[j].replace(/[^a-zA-Z]+/g, '-'));
+				}
+			    }
 			}
 		    }.bind(this));
 		ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
