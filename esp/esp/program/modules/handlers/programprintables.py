@@ -1414,7 +1414,7 @@ Student schedule for %s:
         response = HttpResponse(mimetype="text/csv")
         write_cvs = csv.writer(response)
 
-        write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Msg for Directors", "Prereqs", "Directors Notes", "Assigned Times", "Assigned Rooms"))
+        write_cvs.writerow(("ID", "Teachers", "Title", "Duration", "GradeMin", "GradeMax", "ClsSizeMin", "ClsSizeMax", "Category", "Class Info", "Requests", "Msg for Directors", "Prereqs", "Directors Notes", "Assigned Times", "Assigned Rooms"))
         for cls in ClassSubject.objects.filter(parent_program=prog):
             write_cvs.writerow(
                 (cls.id,
@@ -1427,6 +1427,7 @@ Student schedule for %s:
                  cls.class_size_max,
                  cls.category,
                  smart_str(cls.class_info),
+                 ", ".join(set(x.res_type.name for x in cls.getResourceRequests())),
                  smart_str(cls.message_for_directors),
                  smart_str(cls.prereqs),
                  smart_str(cls.directors_notes),
