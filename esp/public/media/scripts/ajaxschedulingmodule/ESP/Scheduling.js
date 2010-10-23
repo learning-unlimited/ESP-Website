@@ -158,7 +158,7 @@ ESP.Scheduling = function(){
 			  'Requests:': c.resource_requests.map(function(x){ return (Resources.get('RoomResource', x[0]) ? (Resources.get('RoomResource', x[0]).text + ": " + x[1]) : null); }),
 			  'Size:': (c.max_class_size ? c.max_class.size.toString() : "(n/a)") + "max, " + (c.optimal_class_size ? c.optimal_class_size.toString() : "(n/a)") + " opt (" + c.optimal_class_size_range + ")",
 			  'Allowable Class-Size Ranges:': c.allowable_class_size_ranges,
-			  'Grades:': c.grades[0] + "-" + c.grades[1],
+			  'Grades:': c.grades ? (c.grades[0] + "-" + c.grades[1]) : "(n/a)",
 			  "Prereq's:": c.prereqs,
 			  'Comments:': c.comments,
 			  }, true),
