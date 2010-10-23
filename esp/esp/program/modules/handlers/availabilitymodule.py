@@ -44,6 +44,12 @@ from datetime                    import timedelta
 class AvailabilityModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
 
+    @property
+    def teacher_role_node(self):
+        if not hasattr(self, '_teacher_role_node'):
+            self._teacher_role_node = GetNode('V/Flags/UserRole/Teacher')
+        return self._teacher_role_node
+
     @classmethod
     def module_properties(cls):
         return {
@@ -86,10 +92,11 @@ class AvailabilityModule(ProgramModuleObj):
     def teachers(self, QObject = False):
         """ Returns a list of teachers who have indicated at least one segment of teaching availability for this program. """
         
+        qf = Q(useravailability__event__anchor=self.program_anchor_cached(), useravailability__role=self.teacher_role_node)
         if QObject is True:
-            return {'availability': self.getQForUser(Q(resource__event__anchor = self.program_anchor_cached()))}
+            return {'availability': self.getQForUser(qf)}
         
-        teacher_list = Resource.objects.filter(event__anchor=self.program_anchor_cached(), user__isnull=False).values_list('user', flat=True).distinct()
+        teacher_list = User.objects.filter(qf).distinct()
         
         return {'availability': teacher_list }#[t['user'] for t in teacher_list]}
 
