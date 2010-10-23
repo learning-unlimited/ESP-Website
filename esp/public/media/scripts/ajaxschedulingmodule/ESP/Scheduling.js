@@ -36,9 +36,10 @@ ESP.Scheduling = function(){
 	ESP.Utilities.evm.bind('block_section_assignment_request', function(event, data){
 		//alert('[' + data.block.uid + '] : [' + data.section.uid + ']');
 
+		var block_status;
 		for (var i = 0; i < data.blocks.length; i++) {
-		    if (!ESP.Scheduling.validate_block_assignment(data.blocks[i], data.section)) {
-			console.log("Error:  Conflict when adding block " + data.blocks[i].room.text + " (" + data.blocks[i].time.text + ") to section " + data.section.code);
+		    if (!((block_status = ESP.Scheduling.validate_block_assignment(data.blocks[i], data.section, true)) == "OK")) {
+			console.log("Error:  Conflict when adding block " + data.blocks[i].room.text + " (" + data.blocks[i].time.text + ") to section " + data.section.code + ": [" + block_status + "]");
 		    }
 		}
 
@@ -223,7 +224,7 @@ ESP.Scheduling = function(){
 	}
     }
 
-    var validate_block_assignment = function(block, section) {
+    var validate_block_assignment = function(block, section, str_err) {
 	// check status
 	if (block.status != ESP.Scheduling.Resources.BlockStatus.AVAILABLE) {
 	    return false;
@@ -241,7 +242,7 @@ ESP.Scheduling = function(){
 		}
 	    }
 	    if (!valid)
-		return false;
+		return (str_err ? "Teacher '" + section.teachers[i].text + "' not available at time '" + time.text + "'" : false);
 	}
 
 	// check for teacher class conflicts
@@ -252,13 +253,13 @@ ESP.Scheduling = function(){
 		if (other_section == section) continue;
 		for (var k = 0; k < other_section.blocks.length; k++) {
 		    if (other_section.blocks[k].time == time) {
-			return false;
+			return (str_err ? ("Teacher '" + teacher.text + "' cannot teach classes '" + section.code + "' and '" + other_section.code + "' simultaneously ('" + time.text + "')") : false);
 		    }
 		}
 	    }
 	}
 
-	return true;
+	return (str_err ? "OK" : true);
     };
     
     var self = {
