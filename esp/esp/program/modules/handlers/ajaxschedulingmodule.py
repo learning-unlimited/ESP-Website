@@ -381,32 +381,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
     ajax_schedule_last_changed_cached.depend_on_model(lambda: ClassSubject)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: UserAvailability)
 
-    
-    @aux_call
-    @needs_admin
-    def force_availability(self, request, tl, one, two, module, extra, prog):
-        teacher_dict = prog.teachers(QObjects=True)
-        
-        if request.method == 'POST':
-            if request.POST.has_key('sure') and request.POST['sure'] == 'True':
-                
-                #   Find all teachers who have not indicated their availability and do it for them.
-                unavailable_teachers = User.objects.filter((teacher_dict['class_approved'] | teacher_dict['class_proposed']) & ~teacher_dict['availability']).distinct()
-                for t in unavailable_teachers:
-                    teacher = ESPUser(t)
-                    for ts in prog.getTimeSlots():
-                        teacher.addAvailableTime(self.program, ts)
-                        
-                return self.scheduling(request, tl, one, two, module, 'refresh', prog)
-            else:
-                return self.scheduling(request, tl, one, two, module, '', prog)
-                
-        #   Normally, though, return a page explaining the issue.
-        context = {'prog': self.program}
-        context['good_teacher_num'] = User.objects.filter(teacher_dict['class_approved']).filter(teacher_dict['availability']).distinct().count()
-        context['total_teacher_num'] = User.objects.filter(teacher_dict['class_approved']).distinct().count()
-
-        return render_to_response(self.baseDir()+'force_prompt.html', request, (prog, tl), context)
 
     @aux_call
     @needs_admin
