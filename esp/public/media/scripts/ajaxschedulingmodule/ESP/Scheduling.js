@@ -3,6 +3,7 @@
  */
 ESP.Scheduling = function(){
     function init(test_data_set){
+	$j('#body').hide()
 	// ensure event manager is empty before we begin setting up
 	ESP.Utilities.evm.unbind();
 	
@@ -67,6 +68,7 @@ ESP.Scheduling = function(){
 	ESP.Utilities.evm.bind('block_section_assignment_success', function(event, data){
 	    dir.filter();
 	});
+	$j('#body').show()
     };
     
     // process data

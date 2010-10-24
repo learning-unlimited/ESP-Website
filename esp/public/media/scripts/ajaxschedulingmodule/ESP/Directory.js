@@ -128,8 +128,10 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    
 	    // update directory entries
 	    update: function(){
-		this.tbody.children().remove();
+		this.tbody.hide();
+		this.tbody[0].innerHTML = "";//.children().remove();  // The 'right' way here is vastly slower, sadly.  -- aseering 10/23/2010
 		$j.each(this.active_rows, function (i,x){ this.tbody.append(x.update().el); x.draggable(); }.bind(this));
+		this.tbody.show();
 	}
 	}));
 
