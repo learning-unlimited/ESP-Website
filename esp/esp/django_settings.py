@@ -257,3 +257,40 @@ except ImportError:
     ## Django hasn't done its sys.path-hacking yet at this point
     from utils.sslauth_create_user import find_ssl_user
 SSLAUTH_CREATE_USERNAME_CALLBACK = find_ssl_user
+
+
+
+email_choices = (
+    ('esp','Unknown'),
+    ('general','General ESP'),
+    ('esp-web','Web Site Problems'),
+    ('satprep','SATPrep'),
+    ('splash','Splash!'),
+    ('hssp', 'HSSP'),
+    ('junction', 'Junction'),
+    ('delve',    'Delve'),
+    ('splashonwheels', 'Splash On Wheels'),
+    ('proveit',        'ProveIt'),
+    ('membership',     'Student Reps'),
+    ('relations',  'K-12 School Relations'),
+    ('mit',        'MIT Relations'),
+
+    )
+
+# corresponding email addresses                                                                                                                                                     
+email_addresses = {
+    'esp'     : 'esp@mit.edu',
+    'general'     : 'esp@mit.edu',
+    'esp-web' : 'web@esp.mit.edu',
+    'satprep' : 'satprep-director@mit.edu',
+    'splash'  : 'esp@mit.edu',
+    'hssp'    : 'hssp-director@mit.edu',
+    'junction': 'junction-director@mit.edu',
+    'splashonwheels': 'splash-on-wheels@mit.edu',
+    'proveit' : 'proveit-director@mit.edu',
+    'relations': 'esp@mit.edu',
+    'mit'      : 'esp-publicity@mit.edu',
+    'membership': 'esp-membership@mit.edu',
+    'delve'    : 'delve-director@mit.edu',
+
+    }

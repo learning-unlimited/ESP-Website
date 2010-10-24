@@ -32,40 +32,7 @@ Email: web@esp.mit.edu
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-email_choices = (
-    ('esp','Unknown'),
-    ('general','General ESP'),
-    ('esp-web','Web Site Problems'),
-    ('satprep','SATPrep'),
-    ('splash','Splash!'),
-    ('hssp', 'HSSP'),
-    ('junction', 'Junction'),
-    ('delve',    'Delve'),
-    ('splashonwheels', 'Splash On Wheels'),
-    ('proveit',        'ProveIt'),
-    ('membership',     'Student Reps'),
-    ('relations',  'K-12 School Relations'),
-    ('mit',        'MIT Relations'),    
-    
-    )
-
-# corresponding email addresses
-email_addresses = {
-    'esp'     : 'esp@mit.edu',
-    'general'     : 'esp@mit.edu',    
-    'esp-web' : 'web@esp.mit.edu',
-    'satprep' : 'satprep-director@mit.edu',
-    'splash'  : 'esp@mit.edu',
-    'hssp'    : 'hssp-director@mit.edu',
-    'junction': 'junction-director@mit.edu',
-    'splashonwheels': 'splash-on-wheels@mit.edu',
-    'proveit' : 'proveit-director@mit.edu',
-    'relations': 'esp@mit.edu',
-    'mit'      : 'esp-publicity@mit.edu',
-    'membership': 'esp-membership@mit.edu',
-    'delve'    : 'delve-director@mit.edu',
-
-    }
+from django.conf.settings import email_addresses, email_choices
 
 # if the picked email address isn't in the above, it will send to this.
 fallback_address = 'esp@mit.edu'
