@@ -12,12 +12,16 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         #   Save the original verb names
         original_verb_len = len('V/Flags/Registration/')
+        ## MIT-specific fix:  Make sure all SCRMI's actually have regg verbs
+
+        default_verb = GetNode("V/Flags/Registration/Enrolled")
+
         verb_map = {}
         name_map = {}
         for item in StudentClassRegModuleInfo.objects.all().values_list('id', 'signup_verb_id'):
-            verb_map[item[0]] = item[1]
-        for id in verb_map:
-            name_map[id] = DataTree.objects.get(id=verb_map[id]).get_uri()[original_verb_len:]
+            verb_map[item[0]] = item[1] if item[1] else default_verb.id
+        for key, val in verb_map.iteritems():
+            name_map[key] = DataTree.objects.get(id=val).get_uri()[original_verb_len:]
 
         #   Delete the verbs (need to allow null values)
         db.start_transaction()
