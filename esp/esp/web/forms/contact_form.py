@@ -32,7 +32,7 @@ Email: web@esp.mit.edu
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from django.conf.settings import email_addresses, email_choices
+from esp.settings import email_addresses, email_choices
 
 # if the picked email address isn't in the above, it will send to this.
 fallback_address = 'esp@mit.edu'
