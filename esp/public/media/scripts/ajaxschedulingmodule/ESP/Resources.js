@@ -123,7 +123,7 @@ ESP.declare('ESP.Scheduling.Resources',function(){
 		type: "Teacher",
 		__defaults__: {
 		    sections: [],
-		    available_times: [],
+		    available_times: []
 		}
 	    });
 	
@@ -136,12 +136,19 @@ ESP.declare('ESP.Scheduling.Resources',function(){
 		}
 	    });
 	
+	Resources.RoomResource = Class.create(RClass, {
+	        type: "RoomResource",
+	        __defaults__: {
+	            attributes: []
+	        }
+	    });
+	
 	Resources.Generic = Class.create(RClass, {
 		type: "Generic",
 		__defaults__: {
 		    // not implemented yet
 		}
 	    });
-	
+
 	return Resources;
     }());

@@ -258,7 +258,7 @@ def qsd(request, branch, name, section, action):
 
     
     # Operation Complete!
-    assert False, 'Unexpected QSD operation'
+    raise Http404('Unexpected QSD operation')
 
 def ajax_qsd(request):
     """ Ajax function for in-line QSD editing.  """

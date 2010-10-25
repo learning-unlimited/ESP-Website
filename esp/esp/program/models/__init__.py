@@ -854,36 +854,39 @@ class Program(models.Model):
                 li_types.append(li)
                 
         return li_types
-    
-    def getModules(self, user = None, tl = None):
+
+    @cache_function
+    def getModules_cached(self, tl = None):
         """ Gets a list of modules for this program. """
         from esp.program.modules import base
 
-        cache_key = "PROGRAMMODULES__%s__%s" % (self.id, tl)
-
-        retVal = cache.get(cache_key)
-
-        if not retVal:
-
-            def cmpModules(mod1, mod2):
-                """ comparator function for two modules """
-                try:
-                    return cmp(mod1.seq, mod2.seq)
-                except AttributeError:
-                    return 0
-            if tl:
-                modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
-                     for module in self.program_modules.filter(module_type = tl) ]
-            else:
-                modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
-                     for module in self.program_modules.all()]
-
-            modules.sort(cmpModules)
-
-            cache.set(cache_key, modules, 9999)
+        def cmpModules(mod1, mod2):
+            """ comparator function for two modules """
+            try:
+                return cmp(mod1.seq, mod2.seq)
+            except AttributeError:
+                return 0
+        if tl:
+            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
+                 for module in self.program_modules.filter(module_type = tl) ]
         else:
-            modules = retVal
-        
+            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
+                 for module in self.program_modules.all()]
+
+        modules.sort(cmpModules)
+        return modules
+    getModules_cached.depend_on_row(lambda: Program, lambda prog: {'self': prog})
+    getModules_cached.depend_on_model(lambda: ProgramModule)
+    getModules_cached.depend_on_row(lambda: ProgramModuleObj, lambda mod: {'self': mod.program})
+    # I've only included the module extensions we still seem to use.
+    # Feel free to adjust. -ageng 2010-10-23
+    getModules_cached.depend_on_row(lambda: ClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
+    getModules_cached.depend_on_row(lambda: StudentClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
+    getModules_cached.depend_on_row(lambda: SATPrepAdminModuleInfo, lambda modinfo: {'self': modinfo.module.program})
+
+    def getModules(self, user = None, tl = None):
+        """ Gets modules for this program, optionally attaching a user. """
+        modules = self.getModules_cached(tl)
         if user:
             for module in modules:
                 module.setUser(user)
@@ -1821,6 +1824,10 @@ class StudentRegistration(models.Model):
     
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
+
+# The following are only so that we can refer to them in caching Program.getModules.
+from esp.program.modules.base import ProgramModuleObj
+from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo
 
 def install():
     """ Setup for program. """

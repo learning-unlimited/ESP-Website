@@ -210,7 +210,7 @@ class ClassManager(ProcedureManager):
         
         #   Allow customized orderings for the catalog.
         #   These are the default ordering fields in descending order of priority.
-        order_args = ['category__seq', '_num_students', 'id']
+        order_args = ['category__symbol', 'sections__meeting_times__start', '_num_students', 'id']
         #   First check if there is an ordering specified for the program.
         program_sort_fields = Tag.getTag('catalog_sort_fields', target=program)
         if program_sort_fields:
@@ -413,6 +413,10 @@ class ClassSection(models.Model):
                     ans = self.parent_class.class_size_max
             else:
                 ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
+
+        #hacky fix for classes with no max size
+        if ans == None:
+            ans = 0
             
         #   Apply dynamic capacity rule
         if not ignore_changes:
@@ -1233,6 +1237,11 @@ class ClassSubject(models.Model):
     status = models.IntegerField(default=0)   
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
+
+    @cache_function
+    def get_allowable_class_size_ranges(self):
+        return self.allowable_class_size_ranges.all()
+    get_allowable_class_size_ranges.depend_on_m2m(lambda:ClassSubject, 'allowable_class_size_ranges', lambda subj, csr: {'self':subj })
 
     def get_sections(self):
         if not hasattr(self, "_sections") or self._sections is None:

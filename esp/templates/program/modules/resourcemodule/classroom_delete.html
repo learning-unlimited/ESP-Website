@@ -19,6 +19,8 @@
 You have chosen to delete the classroom: {{ classroom }}.  Please confirm this below.
 </p>
 
+<p>Pay special attention to the <b>classes that will be unscheduled</b> below.</p>
+
 <div id="program_form">
 <form method="post" action="{{ request.path }}">{% csrf_token %}
 <input type="hidden" name="command" value="reallyremove" />
@@ -30,7 +32,8 @@ You have chosen to delete the classroom: {{ classroom }}.  Please confirm this b
     <tr><th class="small">Name:</th><td>{{ classroom.name }}</td></tr>
     <tr><th class="small">Description:</th><td> {{ classroom.description }}</td></tr>
     <tr><th class="small">Furnishings:</th><td>{% for f in classroom.associated_resources %}{{ f.res_type.name }}<br />{% endfor %}</td></tr>
-    <tr><th class="small">Times Available:</th><td>{% for t in classroom.matching_times %}{{ t.short_description }}<br />{% endfor %}</td></tr>
+    <tr><th class="small">Times Available:</th><td>{% for t in timeslots %}{{ t.short_description }}<br />{% endfor %}</td></tr>
+    <tr><th class="small">Classes that will be unscheduled:</th><td><ul>{% for sec in sections %}<li>{{ sec.emailcode }}: {{ sec.title }}</li>{% endfor %}</ul></td></tr>
     <tr><th class="small">Options:</th>
         <td align="center"><a href="/manage/{{ prog.getUrlBase }}/resources">Return to resource editor</a>, or click here:
         <input class="fancybutton" value="Delete" type="submit" /></td>

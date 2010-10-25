@@ -203,7 +203,7 @@ class TeacherQuizModule(ProgramModuleObj):
         if request.method == 'POST':
             errors = self.controller.find_errors(request.POST)
             if not errors:
-                #self.controller.markCompleted(self.user)
+                self.controller.markCompleted(self.user)
                 return self.goToCore(tl)
             return render_to_response(self.baseDir()+'quiz_tryagain.html', request, (prog, tl), {'prog':prog, 'errors': errors})
         else:

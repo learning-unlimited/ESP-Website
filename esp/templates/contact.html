@@ -17,6 +17,8 @@
 {% block content %}
 <h1>Contact ESP</h1><br />
 
+{% load render_qsd %}
+{% inline_qsd_block Q/Web class_schedule_header_text request.user %}
 <p>
  Fill out this form to send a quick e-mail to the ESP office. We will get back to 
  you as soon as possible (usually within a day). 
@@ -34,6 +36,7 @@ We really do appreciate your interest, but we're an all-volunteer organization s
 <br />
 
 </p>
+{% end_inline_qsd_block %}
 
 <form action="{{ request.path }}" method="post">{% csrf_token %}
 <table class="contact">

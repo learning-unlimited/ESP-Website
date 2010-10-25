@@ -70,7 +70,7 @@ class OnSiteClassList(ProgramModuleObj):
         sect['id'] = sec.id
         sect['emailcode'] = sec.emailcode()
         sect['title'] = sec.title()
-        sect['teachers'] = ', '.join([t.name() for t in sec.teachers.all()])
+        sect['teachers'] = ', '.join([t.name() for t in list(sec.teachers)])
         sect['rooms'] = (' ,'.join(sec.prettyrooms()))[:12]
         return sect
     section_data.depend_on_model(lambda: ResourceAssignment)
@@ -151,7 +151,7 @@ class OnSiteClassList(ProgramModuleObj):
                     lightness = sect['checkin_count'] / float(sect['reg_count'])
                 else:
                     lightness = 0.0
-                sect['color'] = hsl_to_rgb(0.4 + 0.6 * hue_redness, 0.8, 0.9 - 0.5 * lightness)
+                sect['color'] = hsl_to_rgb(min(1.0, 0.4 + 0.6 * hue_redness), 0.8, 0.9 - 0.5 * lightness)
                 
                 item['sections'].append(sect)
             timeslots.append(item)

@@ -28,6 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+from django.http                 import Http404
 from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call
 from esp.middleware              import ESPError
 from esp.program.models          import ClassSubject, ClassSection
@@ -83,7 +84,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id=int(extra))
         except:
-            cls = None
+            raise Http404('The requested class could not be found.')
         return render_to_response(self.baseDir()+'catalogpreview.html', request, (prog, tl), {'class': cls})
     
     def get_handouts(self):

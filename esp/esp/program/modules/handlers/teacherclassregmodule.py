@@ -547,7 +547,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         cls = classes[0]
 
         # Dirty hack to special-case the new "open classes".  Feel free to make more general/elegant. --rye
-        if cls.category.category == "Open Classes":
+        if cls.category.category == "Walk-in Seminar":
             action = 'editopenclass'
         else:
             action = 'edit'

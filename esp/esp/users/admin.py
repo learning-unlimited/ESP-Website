@@ -19,9 +19,6 @@ admin.site.register(UserBitImplication, UserBitImplicationAdmin)
 
 admin.site.register(UserForwarder)
 
-admin.site.register(TeacherInfo)
-admin.site.register(GuardianInfo)
-admin.site.register(EducatorInfo)
 admin.site.register(ZipCode)
 admin.site.register(ZipCodeSearches)
 admin.site.register(UserAvailability)
@@ -31,10 +28,25 @@ class ContactInfoAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'user__first_name', 'user__last_name', 'e_mail']
 admin.site.register(ContactInfo, ContactInfoAdmin)
 
-class StudentInfoAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'graduation_year', 'k12school', 'school']
+class UserInfoAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__email']
+
+class StudentInfoAdmin(UserInfoAdmin):
+    list_display = ['id', 'user', 'graduation_year', 'k12school', 'school']
 admin.site.register(StudentInfo, StudentInfoAdmin)
+
+class TeacherInfoAdmin(UserInfoAdmin):
+    list_display = ['id', 'user', 'graduation_year', 'from_here', 'college']
+admin.site.register(TeacherInfo, TeacherInfoAdmin)
+
+class GuardianInfoAdmin(UserInfoAdmin):
+    list_display = ['id', 'user', 'year_finished', 'num_kids']
+admin.site.register(GuardianInfo, GuardianInfoAdmin)
+
+class EducatorInfoAdmin(UserInfoAdmin):
+    list_display = ['id', 'user', 'position', 'k12school', 'school']
+admin.site.register(EducatorInfo, EducatorInfoAdmin)
+
 
 class K12SchoolAdmin(admin.ModelAdmin):
     list_display = ['name', 'grades', 'contact_title', 'contact_name', 'school_type']
