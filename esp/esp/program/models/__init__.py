@@ -702,7 +702,7 @@ class Program(models.Model):
     @cache_function
     def getTimeSlotList(self, exclude_compulsory=True):
         if exclude_compulsory:
-            return list(self.getTimeSlots(exclude_types=['Compulsory']))
+            return list(self.getTimeSlots(exclude_types=['Compulsory','Volunteer']))
         else:
             return list(self.getTimeSlots(exclude_types=[]))
     getTimeSlotList.depend_on_model(lambda: Event)

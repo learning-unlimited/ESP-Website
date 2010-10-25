@@ -208,6 +208,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if not is_onsite and not user.getGrade() > 8:
             timeslots = [x for x in timeslots if x.start.hour < 19]
         
+        #   Filter out volunteer timeslots
+        timeslots = [x for x in timeslots if x.event_type.description != 'Volunteer']
+        
         schedule = []
         timeslot_dict = {}
         for sec in classList:
