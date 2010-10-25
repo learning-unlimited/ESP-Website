@@ -514,8 +514,8 @@ class ESPUser(User, AnonymousUser):
     def getApplication(self, program, create=True):
         from esp.program.models.app_ import StudentApplication
         
-        apps = StudentApplication.objects.filter(user=self, program=program)
-        if apps.count() == 0:
+        apps = list(StudentApplication.objects.filter(user=self, program=program)[:1])
+        if len(apps) == 0:
             if create:
                 app = StudentApplication(user=self, program=program)
                 app.save()
