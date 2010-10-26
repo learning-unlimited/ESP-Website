@@ -94,7 +94,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
 
 
-        teacher_bits = UserBit.objects.filter(verb=GetNode('V/Flags/Registration/Teacher'), qsc__in = (s.parent_class.anchor_id for s in sections), user__isnull=False).values("qsc_id", "user_id").distinct()
+        teacher_bits = UserBit.valid_objects().filter(verb=GetNode('V/Flags/Registration/Teacher'), qsc__in = (s.parent_class.anchor_id for s in sections), user__isnull=False).values("qsc_id", "user_id").distinct()
 
         teacher_dict = defaultdict(list)
         for b in teacher_bits:
@@ -115,7 +115,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'allowable_class_size_ranges': [ cr.range_str() for cr in s.parent_class.get_allowable_class_size_ranges() ],
                 'status': s.status,
                 'parent_status': s.parent_class.status,
-                'grades': (s.parent_class.grade_min, s.parent_class.grade_max),
+                'grades': [s.parent_class.grade_min, s.parent_class.grade_max],
                 'prereqs': s.parent_class.prereqs,
                 'comments': s.parent_class.message_for_directors,
             } for s in sections ]
@@ -381,32 +381,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
     ajax_schedule_last_changed_cached.depend_on_model(lambda: ClassSubject)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: UserAvailability)
 
-    
-    @aux_call
-    @needs_admin
-    def force_availability(self, request, tl, one, two, module, extra, prog):
-        teacher_dict = prog.teachers(QObjects=True)
-        
-        if request.method == 'POST':
-            if request.POST.has_key('sure') and request.POST['sure'] == 'True':
-                
-                #   Find all teachers who have not indicated their availability and do it for them.
-                unavailable_teachers = User.objects.filter(teacher_dict['class_approved'] | teacher_dict['class_proposed']).exclude(teacher_dict['availability']).distinct()
-                for t in unavailable_teachers:
-                    teacher = ESPUser(t)
-                    for ts in prog.getTimeSlots():
-                        teacher.addAvailableTime(self.program, ts)
-                        
-                return self.scheduling(request, tl, one, two, module, 'refresh', prog)
-            else:
-                return self.scheduling(request, tl, one, two, module, '', prog)
-                
-        #   Normally, though, return a page explaining the issue.
-        context = {'prog': self.program}
-        context['good_teacher_num'] = User.objects.filter(teacher_dict['class_approved']).filter(teacher_dict['availability']).distinct().count()
-        context['total_teacher_num'] = User.objects.filter(teacher_dict['class_approved']).distinct().count()
-
-        return render_to_response(self.baseDir()+'force_prompt.html', request, (prog, tl), context)
 
     @aux_call
     @needs_admin

@@ -79,7 +79,7 @@ ESP.Utilities = function(){
 		} else {
 		  span.appendChild( document.createTextNode("(none)") );
 		}
-  	        span.appendChild( document.createElement('br') );
+		//span.appendChild( document.createElement('br') );
 	    }
         }
 

@@ -3,6 +3,7 @@
  */
 ESP.Scheduling = function(){
     function init(test_data_set){
+	$j('#body').hide()
 	// ensure event manager is empty before we begin setting up
 	ESP.Utilities.evm.unbind();
 	
@@ -36,9 +37,10 @@ ESP.Scheduling = function(){
 	ESP.Utilities.evm.bind('block_section_assignment_request', function(event, data){
 		//alert('[' + data.block.uid + '] : [' + data.section.uid + ']');
 
+		var block_status;
 		for (var i = 0; i < data.blocks.length; i++) {
-		    if (!ESP.Scheduling.validate_block_assignment(data.blocks[i], data.section)) {
-			console.log("Error:  Conflict when adding block " + data.blocks[i].room.text + " (" + data.blocks[i].time.text + ") to section " + data.section.code);
+		    if (!((block_status = ESP.Scheduling.validate_block_assignment(data.blocks[i], data.section, true)) == "OK")) {
+			console.log("Error:  Conflict when adding block " + data.blocks[i].room.text + " (" + data.blocks[i].time.text + ") to section " + data.section.code + ": [" + block_status + "]");
 		    }
 		}
 
@@ -66,6 +68,7 @@ ESP.Scheduling = function(){
 	ESP.Utilities.evm.bind('block_section_assignment_success', function(event, data){
 	    dir.filter();
 	});
+	$j('#body').show()
     };
     
     // process data
@@ -77,7 +80,7 @@ ESP.Scheduling = function(){
 	    sections: [],
 	    block_index: {},
 	    teachers: [],
-	    schedule_assignments: [],
+	    schedule_assignments: []
 	};
 
 	processed_data.schedule_assignments = data.schedule_assignments;
@@ -108,21 +111,36 @@ ESP.Scheduling = function(){
 	    var t2 = processed_data.times[i+1];
 	    t.seq = Resources.Time.sequential(t,t2) ? t2 : null;
 	}
-	
+
 	// rooms / blocks
 	var BlockStatus = Resources.BlockStatus;
 	for (var i = 0; i < data.rooms.length; i++) {
 	    var r = data.rooms[i];
-	    var room;
-	    processed_data.rooms.push( room =
-				       Resources.create('Room',{ uid: r.uid, text: r.text, block_contents: ESP.Utilities.genPopup(r.text, {'Size:': r.num_students.toString(), 'Resources:': r.associated_resources.map(function(x){ return Resources.get('RoomResource',x).text; })}, true)})).uid;
+	    var assd_resources =  r.associated_resources.map(function(x){
+		    var res = Resources.get('RoomResource',x);
+		    return (res ? res.text : "");
+		});
+	    var room = Resources.create('Room',{
+		    uid: r.uid,
+		    text: r.text,
+		    block_contents: ESP.Utilities.genPopup(r.text, {
+			    'Size:': r.num_students.toString(), 
+			    'Resources:': assd_resources}, true),
+		    resources: assd_resources
+		})
+	    processed_data.rooms.push(room);
 	    var rid = room.uid
 	    processed_data.block_index[rid] = {};
 	    for (var j = 0; j < r.availability.length; j++) {
 		var t = Resources.get('Time', r.availability[j]);
 		var block;
 		processed_data.blocks.push(block = Resources.create(
-		    'Block', { time: t, room: r, status:BlockStatus.AVAILABLE, uid: [t.uid,r.uid] }));
+								    'Block', { 
+									time: t,
+									room: r,
+									processed_room: room,
+									status:BlockStatus.AVAILABLE,
+									uid: [t.uid,r.uid] }));
 		processed_data.block_index[rid][block.time.uid] = block;
 	    }
 	}
@@ -138,7 +156,7 @@ ESP.Scheduling = function(){
 	for (var i = 0; i < data.teachers.length; i++) {
 	    var t = data.teachers[i];
 	    processed_data.teachers.push(Resources.create('Teacher',{
-		uid: t.uid, text: t.text, block_contents: ESP.Utilities.genPopup(t.text, {'Available Times:': t.availability.map(function(x){ return Resources.get('Time',x).text; }) }, true),
+			uid: t.uid, text: t.text, block_contents: ESP.Utilities.genPopup(t.text, {'Available Times:': t.availability.map(function(x){ var res = Resources.get('Time',x); return res ? res.text : "N/A"; }) }, true),
 			available_times: t.availability.map(function(x){ return Resources.get('Time',x); }),
 			sections: []
 		    }));
@@ -155,12 +173,12 @@ ESP.Scheduling = function(){
 		    block_contents: ESP.Utilities.genPopup(c.emailcode, {
 		          'Title:': c.text,
 			  'Teachers': c.teachers.map(function(x){ return Resources.get('Teacher', x).text; }),
-			  'Requests:': c.resource_requests.map(function(x){ return (Resources.get('RoomResource', x[0]) ? (Resources.get('RoomResource', x[0]).text + ": " + x[1]) : null); }),
+			  'Requests:': c.resource_requests.map(function(x){ var res = Resources.get('RoomResource', x[0]); return (res ? (res.text + ": " + x[1]) : null); }),
 			  'Size:': (c.max_class_size ? c.max_class.size.toString() : "(n/a)") + "max, " + (c.optimal_class_size ? c.optimal_class_size.toString() : "(n/a)") + " opt (" + c.optimal_class_size_range + ")",
 			  'Allowable Class-Size Ranges:': c.allowable_class_size_ranges,
-			  'Grades:': c.grades[0] + "-" + c.grades[1],
+			  'Grades:': c.grades ? (c.grades[0] + "-" + c.grades[1]) : "(n/a)",
 			  "Prereq's:": c.prereqs,
-			  'Comments:': c.comments,
+			  'Comments:': c.comments
 			  }, true),
 		    category: c.category,
 		    length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
@@ -169,7 +187,10 @@ ESP.Scheduling = function(){
 		    status:c.status,
 		    text:c.text,
 		    teachers:c.teachers.map(function(x){ return Resources.get('Teacher',x); }),
-		    resource_requests:c.resource_requests.map(function(x){ return [Resources.get('RoomResource', x[0]), x[1]]; })
+		    resource_requests:c.resource_requests.map(function(x){ return [Resources.get('RoomResource', x[0]), x[1]]; }),
+		    grade_min: c.grades[0],
+		    grade_max: c.grades[1]
+		    
 		    }));
 	    s.teachers.map(function(x){ x.sections.push(s); });
 	}
@@ -205,7 +226,7 @@ ESP.Scheduling = function(){
 	}
     }
 
-    var validate_block_assignment = function(block, section) {
+    var validate_block_assignment = function(block, section, str_err) {
 	// check status
 	if (block.status != ESP.Scheduling.Resources.BlockStatus.AVAILABLE) {
 	    return false;
@@ -223,7 +244,7 @@ ESP.Scheduling = function(){
 		}
 	    }
 	    if (!valid)
-		return false;
+		return (str_err ? "Teacher '" + section.teachers[i].text + "' not available at time '" + time.text + "'" : false);
 	}
 
 	// check for teacher class conflicts
@@ -234,13 +255,13 @@ ESP.Scheduling = function(){
 		if (other_section == section) continue;
 		for (var k = 0; k < other_section.blocks.length; k++) {
 		    if (other_section.blocks[k].time == time) {
-			return false;
+			return (str_err ? ("Teacher '" + teacher.text + "' cannot teach classes '" + section.code + "' and '" + other_section.code + "' simultaneously ('" + time.text + "')") : false);
 		    }
 		}
 	    }
 	}
 
-	return true;
+	return (str_err ? "OK" : true);
     };
     
     var self = {

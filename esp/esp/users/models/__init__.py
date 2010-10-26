@@ -1129,9 +1129,6 @@ class StudentInfo(models.Model):
             username = self.user.username
         return 'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
-    class Admin:
-        search_fields = ['user__first_name','user__last_name','user__username']
-
 class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
     user = AjaxForeignKey(User, blank=True, null=True)
@@ -1219,8 +1216,8 @@ class TeacherInfo(models.Model):
             username = self.user.username
         return 'ESP Teacher Info (%s)' % username
 
-    class Admin:
-        search_fields = ['user__first_name','user__last_name','user__username']
+    class Meta:
+        app_label = 'users'
 
 
 class GuardianInfo(models.Model):
@@ -1284,9 +1281,6 @@ class GuardianInfo(models.Model):
         if self.user != None:
             username = self.user.username
         return 'ESP Guardian Info (%s)' % username
-
-    class Admin:
-        search_fields = ['user__first_name','user__last_name','user__username']
 
 
 class EducatorInfo(models.Model):
@@ -1357,9 +1351,6 @@ class EducatorInfo(models.Model):
         if self.user != None:
             username = self.user.username
         return 'ESP Educator Info (%s)' % username
-
-    class Admin:
-        search_fields = ['user__first_name','user__last_name','user__username']
 
 class ZipCode(models.Model):
     """ Zip Code information """
@@ -1898,6 +1889,8 @@ class EmailPref(models.Model):
     last_name = models.CharField(max_length=64)
     sms_number = PhoneNumberField(blank=True, null=True)
     sms_opt_in = models.BooleanField(default = False)
+    class Meta:
+        app_label = 'users'
 
 def install():
     """

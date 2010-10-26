@@ -94,10 +94,17 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			    cell.td.addClass('CLS_id_' + section.id);
 			    cell.td.addClass('CLS_length_' + section.length_hr + '_hrs');
 			    cell.td.addClass('CLS_status_' + section.status);
-			    for (var i = 0; i < section.resource_requests.length; i++) {
-			      if (section.resource_requests[i][0]) {
-				cell.td.addClass('CLS_rsrc_req_' + section.resource_requests[i][0].text.replace(/[^a-zA-Z]+/g, '-'));
+			    cell.td.addClass('CLS_grade_min_' + section.grade_min);
+			    cell.td.addClass('CLS_grade_max_' + section.grade_max);		       
+			    for (var j = 0; j < section.resource_requests.length; j++) {
+			      if (section.resource_requests[j][0]) {
+				cell.td.addClass('CLS_rsrc_req_' + section.resource_requests[j][0].text.replace(/[^a-zA-Z]+/g, '-'));
 			      }
+			    }
+			    for (var j = 0; j < block.processed_room.resources.length; j++) {
+				if (block.processed_room.resources[j]) {
+				    cell.td.addClass('CLS_ROOM_rsrc_' + block.processed_room.resources[j].replace(/[^a-zA-Z]+/g, '-'));
+				}
 			    }
 			}
 		    }.bind(this));
@@ -127,9 +134,9 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			    cell.td.text('');
 			    cell.status(BlockStatus.AVAILABLE);
 			    var css_cls = cell.td.attr('class').split(/\s+/);
-			    for (var i = 0; i < css_cls.length; i++) {
-			      if (css_cls[i].indexOf("CLS_") == 0) {
-				cell.td.removeClass(css_cls[i]);
+			    for (var j = 0; j < css_cls.length; j++) {
+			      if (css_cls[j].indexOf("CLS_") == 0) {
+				cell.td.removeClass(css_cls[j]);
 			      }
 			    }
 			}
@@ -197,6 +204,12 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			this.tr = $j('<tr/>').addClass('matrix-row-body');
 			this.td.html(room.block_contents);
 			this.td.addClass('matrix-row-header');
+			for (var j = 0; j < room.resources.length; j++) {
+			    if (room.resources[j]) {
+				this.td.addClass('ROOM_rsrc_' + room.resources[j].replace(/[^a-zA-Z]+/g, '-'));
+			    }
+			}
+			this.td.addClass('');
 			//this.tr.append(this.td);
 		}
 	});
