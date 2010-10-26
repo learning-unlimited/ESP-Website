@@ -40,6 +40,7 @@ from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, Resource
 from datetime                    import timedelta
+import sys
 
 class AvailabilityModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
@@ -70,6 +71,7 @@ class AvailabilityModule(ProgramModuleObj):
     def isCompleted(self):
         """ Make sure that they have indicated sufficient availability for all classes they have signed up to teach. """
         self.user = ESPUser(self.user)
+        yoog = sys.modules
         available_slots = self.user.getAvailableTimes(self.program, ignore_classes=False)
         
         #   Check number of timeslots against Tag-specified minimum
