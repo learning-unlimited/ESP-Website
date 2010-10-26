@@ -1,4 +1,4 @@
-# encoding: utf-8
+ # encoding: utf-8
 import datetime
 from south.db import db
 from south.v2 import SchemaMigration
@@ -11,9 +11,9 @@ def convert_student_reg(section):
     #   Get 'old' reg data
     sd = section.students_dict_old()
     for key in sd:
-        rt, created = RegistrationType.objects.get_or_create(name=key, category='student')
+        key_stripped = key.strip('/')
         for student in sd[key]:
-            section.preregister_student(student, prereg_verb=key.strip('/'))
+            section.preregister_student(student, prereg_verb=key_stripped, fast_force_create=True)
 
 class Migration(SchemaMigration):
 

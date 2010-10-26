@@ -1159,27 +1159,31 @@ class ClassSection(models.Model):
         for list_name in list_names:
             remove_list_member(list_name, user.email)
 
-    def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None):
-        from esp.program.models import StudentRegistration, RegistrationType
     
-        scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+    from esp.program.models import StudentRegistration, RegistrationType
+    def preregister_student(self, user, overridefull=False, priority=1, prereg_verb = None, fast_force_create=False):
+        StudentRegistration, RegistrationType = self.StudentRegistration, self.RegistrationType
 
         if prereg_verb == None:
+            scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
             if scrmi.use_priority:
                 prereg_verb = 'Priority/%d' % priority
             else:
                 prereg_verb = 'Enrolled'
 
-        if overridefull or not self.isFull():
+        if overridefull or fast_force_create or not self.isFull():
             #    Then, create the registration for this class.
             now = datetime.datetime.now()
             
             qs = self.registrations.filter(id=user.id, studentregistration__start_date__lte=now, studentregistration__end_date__gte=now)
-            if not qs.exists():
-                rt, created = RegistrationType.objects.get_or_create(name=prereg_verb, category='student')
+            if fast_force_create or not qs.exists():
+                rt = RegistrationType.get_cached(name=prereg_verb, category='student')
                 sr = StudentRegistration(user=user, section=self, relationship=rt)
                 sr.save()
                 #   print 'Created %s' % sr
+                if fast_force_create:
+                    ## That's the bare minimum to reg someone; we're done!
+                    return True
             
                 # If the registration was placed through OnSite Reg, annotate it as an OnSite registration
                 onsite_verb = 'OnSite/ChangedClasses'

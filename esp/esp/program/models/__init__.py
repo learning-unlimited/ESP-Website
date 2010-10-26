@@ -1784,6 +1784,13 @@ class RegistrationType(models.Model):
     category = models.CharField(max_length=32)
 
     @cache_function
+    def get_cached(name, category):
+        rt, created = RegistrationType.objects.get_or_create(name=name, category=category)
+        return rt
+    get_cached.depend_on_model(lambda: RegistrationType)
+    get_cached = staticmethod(get_cached)
+
+    @cache_function
     def get_map(include=None, category=None):
         #   If 'include' is specified, make sure we have keys named in that list
         if include:
