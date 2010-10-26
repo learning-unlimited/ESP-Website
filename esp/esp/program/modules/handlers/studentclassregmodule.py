@@ -36,7 +36,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.datatree.models import *
 from esp.datatree.sql.query_utils import QTree
-from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication
+from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
@@ -625,28 +625,21 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         simplejson.dump(clean_counts, resp)
         return resp
 
-    @cache_control(public=True, max_age=10)
+    @vary_on_cookie
+    @needs_student
     def catalog_registered_classes_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         now = datetime.now()
-        bits = UserBit.objects.filter(user=request.user, startdate__lte=now, enddate__gte=now).filter(QTree(verb__below=GetNode("V/Flags/Registration"), qsc__below=prog.anchor['Classes'])).distinct().select_related('qsc', 'verb')
-        sections = ClassSection.objects.filter(anchor__in=[b.qsc for b in bits]).distinct()
+        reg_bits = StudentRegistration.valid_objects().filter(user=request.user, section__parent_class__parent_program=prog).select_related()
 
-        status_dict = defaultdict(list)
-        sections_dict = {}
-
-        for b in bits:
-            status_dict[b.qsc.id].append(b.verb.get_uri().replace('V/Flags/Registration/', ''))
-
-        for sec in sections:
-            sections_dict[sec.anchor.id] = sec
-
-        section_statuses = {}
-
-        for sec_anchor in sections_dict.keys():
-            section_statuses[sec_anchor] = status_dict[sec_anchor]
+        reg_bits_data = [
+            { 'user': b.user.username,
+              'section_id': b.section_id,
+              'type': b.relationship.name
+              }
+            for b in reg_bits ]
         
         resp = HttpResponse(mimetype='application/json')
-        simplejson.dump(section_statuses, resp)
+        simplejson.dump(reg_bits_data, resp)
         return resp
     
     # This function exists only to apply the @meets_deadline decorator.
