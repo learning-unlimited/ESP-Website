@@ -37,7 +37,7 @@ from django.core.exceptions import PermissionDenied
 from django.contrib.sites.models import Site
 from esp.datatree.models import *
 from esp.users.models import GetNodeOrNoBits
-from django.http import Http404, HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
@@ -56,6 +56,14 @@ from esp.tagdict.models import Tag
 
 from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
+from django.core.mail import mail_admins
+
+from pprint import pprint
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 
 # get_callable might not actually be public API. Django's nice and well-documented like that.
@@ -308,3 +316,37 @@ def registration_redirect(request):
         ctxt['nextreg'] = list(nextreg)
         return render_to_response('users/profile_complete.html', request, GetNode('Q/Web'), ctxt)		    
     
+
+def error_reporter(request):
+    """ Grab an error submitted as a GET request """
+    cookies = StringIO()
+    get = StringIO()
+    meta = StringIO()
+
+    pprint(dict(request.COOKIES), cookies)
+    pprint(dict(request.GET), get)
+    pprint(dict(request.META), meta)
+
+    msg = request.GET.get('msg', "(no message)")
+
+    user_str = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
+    user_agent_str = request.META.get('HTTP_USER_AGENT', "(not specified")
+
+    err_txt = """A user reported an error!
+
+User: %s
+Path: %s
+UserAgent: %s
+GET:
+%s
+
+Cookies:
+%s
+
+META:
+%s
+""" % (user_str, request.path, user_agent_str, get.getvalue(), cookies.getvalue(), meta.getvalue())
+
+    mail_admins("[ESP] JS Error: %s" % msg[:100].replace("\n", "").replace("\r", ""), err_txt)
+
+    return HttpResponse('')  ## Return something, so we don't trigger an error

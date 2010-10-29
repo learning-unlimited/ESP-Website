@@ -52,3 +52,5 @@ def index(request, *args, **kwargs):
             return HttpResponseRedirect('/learn/index.html')
 
     return direct_to_template(request, *args, **kwargs)
+
+
