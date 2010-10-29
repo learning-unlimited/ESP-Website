@@ -1,2 +1,8 @@
 To start socket_auth, run:
 rm socket_auth/socket_auth.sock; (umask 002 && ./socket_auth.py socket_auth/socket_auth.sock)
+
+
+To fix connection issue:
+It seems likely to work to catch the exception, do a django.db.close(). I believe that Django will automatically reopen the connection when needed.
+
+Until the code change is made, just restart the server.
