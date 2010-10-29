@@ -48,7 +48,6 @@ def make_id_tuple(object_list):
 
 class ProgramCreationForm(forms.ModelForm):
     """ Massive form for creating a new instance of a program. """
-    anchor_choices = DataTree.objects.filter(Q(child_set__program__isnull=False) | Q(parent=GetNode("Q/Programs"))).exclude(parent__name="Subprograms").distinct()
     
     term = forms.CharField(label='Term or year, in URL form (i.e. "2007_Fall")', widget=forms.TextInput(attrs={'size': '40'}))
     term_friendly = forms.CharField(label='Term, in English (i.e. "Fall 07")', widget=forms.TextInput(attrs={'size': '40'}))
@@ -62,7 +61,7 @@ class ProgramCreationForm(forms.ModelForm):
     publish_end       = forms.DateTimeField(label = 'Program-Completely-Over Archive Date', widget = DateTimeWidget())
     base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
     finaid_cost       = forms.IntegerField( label = 'Cost to Students who receive Financial Aid $', min_value = 0 )
-    anchor            = forms.ModelChoiceField(anchor_choices, label = "Program Type")
+    anchor            = forms.ModelChoiceField([], label = "Program Type")
     program_modules   = forms.MultipleChoiceField(choices = [], label = 'Program Modules')
 
     def __init__(self, *args, **kwargs):
@@ -70,6 +69,7 @@ class ProgramCreationForm(forms.ModelForm):
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
         ub_list = UserBit.objects.bits_get_users(GetNode('Q'), GetNode('V/Flags/UserRole/Administrator'))
         self.fields['admins'].choices = make_id_tuple(ESPUser.objects.filter(id__in=[u.user_id for u in ub_list]).distinct().order_by('username'))
+        self.fields['anchor'].queryset = DataTree.objects.filter(Q(child_set__program__isnull=False) | Q(parent=GetNode("Q/Programs"))).exclude(parent__name="Subprograms").distinct()
         self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
 
     def load_program(self, program):
