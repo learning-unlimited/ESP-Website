@@ -34,7 +34,9 @@ var csrfmiddlewaretoken = "{{ csrf_token }}";
 </script>
 <script type="text/javascript">
 _uacct = "UA-1901567-1";
-urchinTracker();
+try {
+  urchinTracker();
+} catch(err) {}  // Apparently Google sometimes throws exceptions here, and apparently sometimes urchin.js fails to load; either way, let's not error out
 </script>
 <!-- End Web Reporting -->
 </div>
