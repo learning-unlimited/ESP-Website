@@ -39,12 +39,11 @@ function swap_visible(div_id) {
 
 var student_grade = esp_user.cur_grade;
 
-if ((student_grade != "") && (student_grade != null)) {
+if (student_grade != "" && student_grade != null) {
   student_grade = parseInt(student_grade);
 }
 
 if (document.getElementsByClassName == null) {
-alert("No document.getElementsByClassName!");
 // Alternate implementation from http://lawrence.ecorp.net/inet/samples/js-getelementsbyclassname.shtml
 document.getElementsByClassName = function(class_name) {
     var docList = this.all || this.getElementsByTagName('*');
