@@ -8,11 +8,8 @@
 <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
 <meta http-equiv="X-UA-Compatible" content="chrome=1">
 <!-- Copyright (C) 2005 Massachusetts Institute of Technology -->
-<script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
 <script type="text/javascript" src="/media/scripts/error_logger.js"> </script>
-<script language="JavaScript">
-vasdfjklas();
-</script>
+<script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
 {% block javascript %}
 {% endblock %}
 {% block stylesheets %}
