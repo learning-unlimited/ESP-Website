@@ -1,0 +1,25 @@
+tr.CLS_rsrc_req_LCD-projector {
+background: #98FB98;
+}
+
+tr.CLS_rsrc_req_Computer-lab {
+background: #B0E0E6;
+}
+
+tr.CLS_grade_min_7, tr.CLS_grade_min_8 {
+/*border: 5px solid black;*/
+font-weight: bold;
+}
+
+td.CLS_grade_min_7, td.CLS_grade_min_8 {
+font-weight: bold;
+}
+
+tr.CLS_grade_max_7, tr.CLS_grade_max_8, tr.CLS_grade_max_9 {
+text-decoration: underline;
+}
+
+td.CLS_grade_max_7, td.CLS_grade_max_8, td.CLS_grade_max_9 {
+text-decoration: underline;
+}
+

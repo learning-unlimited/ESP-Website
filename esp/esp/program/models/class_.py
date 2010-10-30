@@ -404,10 +404,10 @@ class ClassSection(models.Model):
     @cache_function
     def _get_capacity(self, ignore_changes=False):
         ans = None
+        rooms = self.initial_rooms()
         if self.max_class_capacity is not None:
             ans = self.max_class_capacity
         else:
-            rooms = self.initial_rooms()
             if len(rooms) == 0:
                 if not ans:
                     ans = self.parent_class.class_size_max
@@ -415,8 +415,15 @@ class ClassSection(models.Model):
                 ans = min(self.parent_class.class_size_max, self._get_room_capacity(rooms))
 
         #hacky fix for classes with no max size
-        if ans == None:
-            ans = 0
+        if ans == None or ans == 0:
+            if self.parent_class.class_size_optimal and len(rooms) != 0:
+                ans = min(self.parent_class.class_size_optimal, self._get_room_capacity(rooms))
+            elif self.parent_class.class_size_optimal:
+                ans = self.parent_class.class_size_optimal
+            elif len(rooms) != 0:
+                ans = self._get_room_capacity(rooms)
+            else: 
+                ans = 0
             
         #   Apply dynamic capacity rule
         if not ignore_changes:
