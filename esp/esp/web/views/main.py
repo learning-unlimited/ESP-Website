@@ -319,6 +319,12 @@ def registration_redirect(request):
 
 def error_reporter(request):
     """ Grab an error submitted as a GET request """
+    url = request.GET.get('url', "")
+    domain = Site.objects.get_current().domain
+    if url[:4] == 'http' and (domain not in (url[7:(7+len(domain))], url[8:(8+len(domain))])):
+        ## Punt responses not from us
+        return HttpResponse('')  ## Return something, so we don't trigger an error
+    
     cookies = StringIO()
     get = StringIO()
     meta = StringIO()
