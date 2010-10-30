@@ -473,7 +473,7 @@ class ESPUser(User, AnonymousUser):
             for lst in other_times:
                 valid_events = valid_events.exclude(id__in=lst)
 
-        return valid_events
+        return list(valid_events)
     getAvailableTimes.get_or_create_token(('self', 'program',))
     getAvailableTimes.depend_on_cache(getTaughtSectionsFromProgram,
             lambda self=wildcard, program=wildcard, **kwargs:

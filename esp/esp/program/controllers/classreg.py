@@ -151,7 +151,7 @@ class ClassCreationController(object):
         self.program.teacherSubscribe(user)
 
     def force_availability(self, user):
-        if user.getAvailableTimes(self.program).count() == 0:
+        if len(user.getAvailableTimes(self.program)) == 0:
             for ts in self.program.getTimeSlots():
                 user.addAvailableTime(self.program, ts)
 
