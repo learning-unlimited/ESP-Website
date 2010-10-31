@@ -4,7 +4,7 @@ __author__    = "$LastChangedBy$"
 __date__      = "$LastChangedDate$"
 __rev__       = "$LastChangedRevision$"
 __headurl__   = "$HeadURL$"
-__license__   = "GPL v2"
+__license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 Copyright (c) 2007 by the individual contributors
