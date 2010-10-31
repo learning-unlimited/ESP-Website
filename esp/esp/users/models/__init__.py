@@ -45,7 +45,7 @@ from django.db import models
 from django.db.models.base import ModelState
 from django.db.models.query import Q, QuerySet
 from django.http import HttpRequest
-from django.template import loader
+from django.template import loader, Context as DjangoContext
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
 from django.template.defaultfilters import urlencode
 
@@ -796,7 +796,7 @@ class ESPUser(User, AnonymousUser):
 
         # generate the email text
         t = loader.get_template('email/password_recover')
-        msgtext = t.render(Context({'user': self,
+        msgtext = t.render(DjangoContext({'user': self,
                                     'ticket': ticket,
                                     'domainname': domainname}))
 
