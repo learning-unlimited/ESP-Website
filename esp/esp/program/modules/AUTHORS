@@ -1,0 +1,15 @@
+Most program modules have many contributors.  This file documents the primary authors of modules, where such a distinction exists.
+
+Mike Axiak
+    Originator of most modules
+
+Tony Valderrama
+    AjaxSchedulingModule
+
+David Meyer
+    SplashInfoModule
+
+Michael Price
+    ResourceModule
+    SchedulingModule
+    VolunteerManage, VolunteerSignup
