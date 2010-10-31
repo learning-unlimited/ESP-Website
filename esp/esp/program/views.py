@@ -1,8 +1,8 @@
 
-__author__    = "MIT ESP"
+__author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
-__license__   = "GPL v.2"
+__license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
 copyright (c) 2007 MIT ESP
@@ -26,8 +26,7 @@ ESP Web Group
 MIT Educational Studies Program,
 84 Massachusetts Ave W20-467, Cambridge, MA 02139
 Phone: 617-253-4882
-Email: web@esp.mit.edu
-"""
+Email: web@esp.mit.edu"""
 
 from esp.web.util import render_to_response
 from esp.qsd.models import QuasiStaticData
