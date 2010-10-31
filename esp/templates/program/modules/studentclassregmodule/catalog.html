@@ -6,6 +6,8 @@
 {% block xtrajs %}
 {{ block.super }}
 <script language="javascript" src="/media/scripts/ajax_tools.js"></script>
+<!-- Include Prototype for its document.getElementsByClassName reimplementation; it's many times faster than the version below, at least on IE 6. -->
+<script language="javascript" src="/media/scripts/ajaxschedulingmodule/prototype.js"></script>
 
 <script language="javascript">
 <!--
@@ -42,6 +44,7 @@ if (student_grade != "" and student_grade != null) {
 }
 
 if (document.getElementsByClassName == null) {
+alert("No document.getElementsByClassName!");
 // Alternate implementation from http://lawrence.ecorp.net/inet/samples/js-getelementsbyclassname.shtml
 document.getElementsByClassName = function(class_name) {
     var docList = this.all || this.getElementsByTagName('*');
