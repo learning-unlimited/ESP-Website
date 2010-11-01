@@ -126,7 +126,9 @@ Viewing classes for: {{ timeslot.friendly_name }}
 
 <script language="javascript">
 <!--
-register_fragment({id: "student_schedule_html", url: "/learn/{{ program.getUrlBase }}/ajax_schedule"});
+if (document.getElementById("student_schedule_html")) {
+   register_fragment({id: "student_schedule_html", url: "/learn/{{ program.getUrlBase }}/ajax_schedule"});
+}
 -->
 </script>
 
