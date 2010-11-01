@@ -110,9 +110,10 @@ class ESPAuthMiddleware(object):
                           }
 
             for key, value in new_values.iteritems():
-                response.set_cookie(key, value, max_age=max_age, expires=expires,
-                                    domain=settings.SESSION_COOKIE_DOMAIN,
-                                    secure=settings.SESSION_COOKIE_SECURE or None)
+                if request.COOKIES.get(key, "") != str(value):
+                    response.set_cookie(key, value, max_age=max_age, expires=expires,
+                                        domain=settings.SESSION_COOKIE_DOMAIN,
+                                        secure=settings.SESSION_COOKIE_SECURE or None)
 
         else:
             map(response.delete_cookie, ('cur_username','cur_email',
