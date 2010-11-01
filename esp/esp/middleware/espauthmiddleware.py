@@ -119,11 +119,13 @@ class ESPAuthMiddleware(object):
                     modified_cookies = True
 
         else:
-            map(response.delete_cookie, [x for x in ('cur_username','cur_email',
+            cookies_to_delete = [x for x in ('cur_username','cur_email',
                                          'cur_first_name','cur_last_name',
                                          'cur_other_user','cur_retTitle',
-                                         'cur_admin') if request.COOKIES.get(x, False)])
-            modified_cookies = True
+                                         'cur_admin') if request.COOKIES.get(x, False)]
+
+            map(response.delete_cookie, cookies_to_delete)
+            modified_cookies = (len(cookies_to_delete) > 0)
 
         request.session.accessed = request.session.modified  ## Django only uses this for determining whether it refreshed the session cookie (and so needs to vary on cache), and its behavior is buggy; this works around it. -- aseering 11/1/2010
 
