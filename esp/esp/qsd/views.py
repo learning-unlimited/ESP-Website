@@ -109,7 +109,7 @@ def handle_ajax_mover(method):
 
 @handle_ajax_mover
 @branch_find
-@vary_on_cookie
+#@vary_on_cookie
 @cache_control(max_age=180)
 def qsd(request, branch, name, section, action):
 
@@ -180,12 +180,12 @@ def qsd(request, branch, name, section, action):
             'have_edit': have_edit,
             'edit_url': base_url + ".edit.html" })
 
-        patch_vary_headers(response, ['Cookie'])
-        if have_edit:
-            add_never_cache_headers(response)
-            patch_cache_control(response, no_cache=True, no_store=True)
-        else:
-            patch_cache_control(response, max_age=3600, public=True)
+#        patch_vary_headers(response, ['Cookie'])
+#        if have_edit:
+#            add_never_cache_headers(response)
+#            patch_cache_control(response, no_cache=True, no_store=True)
+#        else:
+        patch_cache_control(response, max_age=3600, public=True)
 
         return response
 

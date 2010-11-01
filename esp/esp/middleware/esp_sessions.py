@@ -90,7 +90,7 @@ class SessionMiddleware(object):
         except AttributeError:
             pass
         else:
-            if accessed:
+            if modified:
                 patch_vary_headers(response, ('Cookie',))
             if (modified or settings.SESSION_SAVE_EVERY_REQUEST) and \
                ((len(set(request.session.keys()) & MIN_COOKIE_KEYS) > 0) or \

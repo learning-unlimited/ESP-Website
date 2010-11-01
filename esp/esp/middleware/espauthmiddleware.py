@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 from django.conf import settings
 from django.contrib.auth.middleware import LazyUser, AuthenticationMiddleware
 from esp.utils.get_user import get_user
+from django.utils.cache import patch_vary_headers
 
 __all__ = ('ESPAuthMiddleware',)
 
@@ -76,6 +77,7 @@ class ESPAuthMiddleware(object):
 
     def process_response(self, request, response):
         from esp.users.models import ESPUser
+        modified_cookies = False
 
         user = getattr(request, '_cached_user', None)
             
@@ -110,16 +112,24 @@ class ESPAuthMiddleware(object):
                           }
 
             for key, value in new_values.iteritems():
-                if request.COOKIES.get(key, "") != str(value):
+                if request.COOKIES.get(key, "") != str(value if value else ""):
                     response.set_cookie(key, value, max_age=max_age, expires=expires,
                                         domain=settings.SESSION_COOKIE_DOMAIN,
                                         secure=settings.SESSION_COOKIE_SECURE or None)
+                    modified_cookies = True
 
         else:
-            map(response.delete_cookie, ('cur_username','cur_email',
+            map(response.delete_cookie, [x for x in ('cur_username','cur_email',
                                          'cur_first_name','cur_last_name',
                                          'cur_other_user','cur_retTitle',
-                                         'cur_admin'))
+                                         'cur_admin') if request.COOKIES.get(x, False)])
+            modified_cookies = True
+
+        request.session.accessed = request.session.modified  ## Django only uses this for determining whether it refreshed the session cookie (and so needs to vary on cache), and its behavior is buggy; this works around it. -- aseering 11/1/2010
+
+        if modified_cookies:
+            patch_vary_headers(response, ('Cookie',))
+
         return response
 
         

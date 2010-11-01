@@ -36,7 +36,6 @@ import re
 from operator import add
 from time import time
 from django.db import connection
-from django.views.decorators.vary import vary_on_headers
 import unicodedata
 
 try:
