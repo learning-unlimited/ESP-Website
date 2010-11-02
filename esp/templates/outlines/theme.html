@@ -103,18 +103,19 @@
 </style>
 
 <script language="JavaScript">
-$(document).ready(function() {
+$j = $.noConflict();
+$j(document).ready(function() {
   if (esp_user.cur_admin == "1") {
-    $(".admin").removeClass("admin_hidden");
+    $j(".admin").removeClass("admin_hidden");
   }
 
   if (esp_user.cur_username != null) {
-    $(".not_logged_in").addClass("not_logged_in_hidden");
-    $(".logged_in").removeClass("logged_in_hidden");
+    $j(".not_logged_in").addClass("not_logged_in_hidden");
+    $j(".logged_in").removeClass("logged_in_hidden");
   }
 
   if (esp_user.cur_other_user != 0) {
-    $(".morphed").removeClass("morphed_hidden");
+    $j(".morphed").removeClass("morphed_hidden");
   }
 });
 </script>
@@ -146,10 +147,10 @@ wrap(document.getElementById('login_user'),'Username');
 wrap(document.getElementById('login_pswd'),'Password');
 wrap(document.getElementById('search_field'),'Enter search term');
 
-/*$('#menu li').each(function(i, item) {
-  var item = $(item);
+/*$j('#menu li').each(function(i, item) {
+  var item = $j(item);
   item.bind('mouseover', function(){
-    $('#page').removeClass().addClass(item.attr('className'));
+    $j('#page').removeClass().addClass(item.attr('className'));
   });
 });*/
 
