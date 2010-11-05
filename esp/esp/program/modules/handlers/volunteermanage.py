@@ -37,6 +37,8 @@ from esp.program.models import VolunteerRequest
 from esp.program.modules.base import ProgramModuleObj, needs_admin
 from esp.program.modules.forms.volunteer import VolunteerRequestForm
 from esp.web.util        import render_to_response
+from django.http import HttpResponse
+import csv
 
 class VolunteerManage(ProgramModuleObj):
     @classmethod
@@ -60,6 +62,17 @@ class VolunteerManage(ProgramModuleObj):
     @needs_admin
     def volunteers(self, request, tl, one, two, module, extra, prog):
         context = {}
+        
+        if extra == 'csv':
+            response = HttpResponse(mimetype="text/csv")
+            requests = self.program.getVolunteerRequests()
+            write_csv = csv.writer(response)
+            write_csv.writerow(("Activity","Time","Name","Phone Number","E-mail Address"))
+            for request in requests:
+                for offer in request.get_offers():
+                    write_csv.writerow((request.timeslot.description, request.timeslot.pretty_time(), offer.name, offer.phone, offer.email))
+            response['Content-Disposition'] = 'attachment; filename=volunteers.csv'
+            return response
         
         if 'op' in request.GET:
             if request.GET['op'] == 'edit':
