@@ -1578,8 +1578,18 @@ class ClassSubject(models.Model):
                 return False
         return True
 
+    @staticmethod
+    def get_capacity_factor():
+        tag_val = Tag.getTag('nearly_full_threshold')
+        if tag_val:
+            capacity_factor = float(tag_val)
+        else:
+            capacity_factor = 0.75
+        return capacity_factor
+
     def is_nearly_full(self):
-        return len([x for x in self.get_sections() if x.num_students() > 0.75*x.capacity]) > 0
+        capacity_factor = ClassSubject.get_capacity_factor()
+        return len([x for x in self.get_sections() if x.num_students() > capacity_factor*x.capacity]) > 0
 
     def getTeacherNames(self):
         teachers = []
