@@ -1820,7 +1820,7 @@ class RegistrationType(models.Model):
         return self.name
 
 class StudentRegistration(models.Model):
-    section = models.ForeignKey('ClassSection')
+    section = AjaxForeignKey('ClassSection')
     #   section = models.ForeignKey(get_model('program', 'ClassSection'))
     user = AjaxForeignKey(ESPUser)
     

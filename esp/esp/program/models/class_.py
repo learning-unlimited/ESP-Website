@@ -336,6 +336,34 @@ class ClassSection(models.Model):
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections')
 
     registrations = models.ManyToManyField(ESPUser, through='StudentRegistration')
+
+    @classmethod
+    def ajax_autocomplete(cls, data):
+        clsname = data.strip().split(':')
+        id_ = clsname[0].split('s')
+        sec_index = ''.join(id_[1:])
+        id_ = id_[0]
+        
+        query_set = cls.objects.filter(parent_class__anchor__name__istartswith=id_.split('s')[0])
+
+        if len(clsname) > 1:
+            title  = ':'.join(clsname[1:])
+            if len(title.strip()) > 0:
+                query_set = query_set.filter(parent_class__anchor__friendly_name__istartswith = title.strip())
+
+        values_set = query_set.order_by('anchor__name').select_related()#.values('anchor__name', 'parent_class__anchor__friendly_name', 'id')
+        values = []
+        for v in values_set:
+            index = str(v.index())
+            if (not sec_index) or (sec_index == index):
+                values.append({'parent_class__anchor__name': v.parent_class.anchor.name,
+                               'parent_class__anchor__friendly_name': v.parent_class.anchor.friendly_name,
+                               'secnum': index,
+                               'id': str(v.id)})
+
+        for value in values:
+            value['ajax_str'] = '%ss%s: %s' % (value['parent_class__anchor__name'], value['secnum'], value['parent_class__anchor__friendly_name'])
+        return values
     
     @classmethod
     def prefetch_catalog_data(cls, queryset):
