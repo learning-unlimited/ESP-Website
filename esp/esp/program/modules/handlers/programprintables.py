@@ -46,6 +46,7 @@ from esp.accounting_core.models import LineItem, LineItemType, Transaction
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
+from esp import settings
 from django.template.loader import select_template
 from django.utils.encoding import smart_str
 
@@ -1049,6 +1050,9 @@ Student schedule for %s:
                 scheditems.append(val)
                 
         context['scheditems'] = scheditems
+        context['settings'] = settings
+        context['group_name'] = Tag.getTag('full_group_name')
+        context['phone_number'] = Tag.getTag('group_phone_number')
 
         return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
         
@@ -1245,6 +1249,7 @@ Student schedule for %s:
         teachers = self.program.teachers()
         teachers.sort()
         context['teachers'] = teachers
+        context['settings'] = settings
         return render_to_response(self.baseDir()+'teacherlabels.html', request, (prog, tl), context)
 
     @aux_call

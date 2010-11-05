@@ -46,7 +46,8 @@ td.newday { border-width: 2px 1px 0 1px;}
 <!-- Layout hack: table cells expand to contain stuff. -->
 <tr><td style="height:1em; padding:1em;">
 <p align="center" style="font-size: 10pt">
-    <b>MIT Educational Studies Program</b> (617) 253-4882<br />
+    <b>{% if group_name %}{{ group_name }}{% else %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}{% endif %}</b>
+       {% if phone_number %}{{ phone_number }}{% endif %}<br />
     <center><div class="box"><b>{{ program.niceName }}: {{ program.date_range }} </b><br />Do not remove until conclusion of program</div></center>
 </p>
 {% autoescape off %}
