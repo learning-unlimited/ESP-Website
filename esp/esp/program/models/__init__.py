@@ -1785,7 +1785,7 @@ class RegistrationType(models.Model):
 
     @cache_function
     def get_cached(name, category):
-        rt, created = RegistrationType.objects.get_or_create(name=name, category=category)
+        rt, created = RegistrationType.objects.get_or_create(name=name, defaults = {'category': category})
         return rt
     get_cached.depend_on_model(lambda: RegistrationType)
     get_cached = staticmethod(get_cached)

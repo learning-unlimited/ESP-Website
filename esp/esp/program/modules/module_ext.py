@@ -80,7 +80,7 @@ class StudentClassRegModuleInfo(models.Model):
     #   represent other statuses ('Applied', 'Rejected', etc.)
     #   Note: When use_priority is True, sub-verbs with integer indices are used 
     #         (e.g. 'Priority/1', 'Priority/2', ...)
-    signup_verb          = models.ForeignKey(RegistrationType, default=lambda: RegistrationType.get_map()['Enrolled'], help_text='Which verb to grant a student when they sign up for a class.', null=True)
+    signup_verb          = models.ForeignKey(RegistrationType, default=lambda: RegistrationType.get_map(include=['Enrolled'], category='student')['Enrolled'], help_text='Which verb to grant a student when they sign up for a class.', null=True)
     
     #   Whether to use priority
     use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration.')

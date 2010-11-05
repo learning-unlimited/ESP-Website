@@ -366,7 +366,7 @@ class ProgramHappenTest(TestCase):
     
     def studentreg(self):
         from esp.users.models import ContactInfo, StudentInfo, UserBit
-        from esp.program.models import RegistrationProfile
+        from esp.program.models import RegistrationProfile, StudentRegistration
         from datetime import datetime, timedelta
 
         # Check that you're in no classes
@@ -396,8 +396,12 @@ class ProgramHappenTest(TestCase):
         
         # Try signing up for a class.
         self.client.post('%saddclass' % self.prog.get_learn_url(), reg_dict)
-        self.assertTrue( UserBit.UserHasPerms(user=self.student, qsc=sec.anchor,
-            verb=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb), 'Registration failed.')
+
+        sr = StudentRegistration.objects.all()[0]
+        print "StudentRegTest", StudentRegistration.valid_objects().all(), self.student.id, sec.id, self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb.id, sr.user.id, sr.section.id, sr.relationship.id, StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb), StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count(), StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count() > 0
+
+        self.assertTrue( StudentRegistration.valid_objects().filter(user=self.student, section=sec,
+            relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count() > 0, 'Registration failed.')
 
         # Check that you're in it now
         self.assertEqual( self.student.getEnrolledClasses().count(), 1, "Student not enrolled in exactly one class" )
@@ -405,8 +409,8 @@ class ProgramHappenTest(TestCase):
         
         # Try dropping a class.
         self.client.get('%sclearslot/%s' % (self.prog.get_learn_url(), self.timeslot.id))
-        self.assertFalse( UserBit.UserHasPerms(user=self.student, qsc=sec.anchor,
-            verb=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb), 'Registration failed.')
+        self.assertFalse( StudentRegistration.valid_objects().filter(user=self.student, section=sec,
+            relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count() > 0, 'Registration failed.')
 
         # Check that you're in no classes
         self.assertEqual( self.student.getEnrolledClasses().count(), 0, "Student incorrectly enrolled in a class" )
