@@ -290,6 +290,15 @@ class Program(models.Model):
         db_table = 'program_program'
 
     @cache_function
+    def isUsingStudentApps(self):
+        from esp.program.models.app_ import StudentAppQuestion
+        return bool(StudentAppQuestion.objects.filter(program=self) | StudentAppQuestion.objects.filter(subject__parent_program=self))
+    def _SAQ():
+        from esp.program.models.app_ import StudentAppQuestion
+        return StudentAppQuestion
+    isUsingStudentApps.depend_on_model(_SAQ)
+
+    @cache_function
     def getDummy():
         try:
             return Program.objects.get(anchor = GetNode("Q/Programs/Dummy_Programs/Profile_Storage"))
