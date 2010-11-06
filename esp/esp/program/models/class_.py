@@ -869,13 +869,15 @@ class ClassSection(models.Model):
         # Test any scheduling constraints
         relevantConstraints = self.parent_program.getScheduleConstraints()
         #   relevantConstraints = ScheduleConstraint.objects.none()
-        # Set up a ScheduleMap; fake-insert this class into it
-        sm = ScheduleMap(user, self.parent_program)
-        sm.add_section(self)
-        
-        for exp in relevantConstraints:
-            if not exp.evaluate(sm):
-                return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title(), exp.requirement.label)
+
+        if relevantConstraints:
+            # Set up a ScheduleMap; fake-insert this class into it
+            sm = ScheduleMap(user, self.parent_program)
+            sm.add_section(self)
+
+            for exp in relevantConstraints:
+                if not exp.evaluate(sm):
+                    return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title(), exp.requirement.label)
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         if not scrmi.use_priority:
@@ -1200,14 +1202,15 @@ class ClassSection(models.Model):
             else:
                 #   print 'Already in class: %s' % qs
                 pass
-                
-            #   Clear completion bit on the student's application if the class has app questions.
-            app = ESPUser(user).getApplication(self.parent_program, create=False)
-            if app:
-                app.set_questions()
-                if app.questions.count() > 0:
-                    app.done = False
-                    app.save()
+
+            if self.parent_program.isUsingStudentApps():
+                #   Clear completion bit on the student's application if the class has app questions.
+                app = ESPUser(user).getApplication(self.parent_program, create=False)
+                if app:
+                    app.set_questions()
+                    if app.questions.count() > 0:
+                        app.done = False
+                        app.save()
 
             #   Add the student to the class mailing lists, if they exist
             list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
