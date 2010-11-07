@@ -138,8 +138,12 @@ admin.site.register(ProgramCheckItem, ProgramCheckItemAdmin)
 admin.site.register(RegistrationType)
 admin.site.register(StudentRegistration)
 
+def sec_classrooms(obj):
+    return list(set([(x.name, str(x.num_students) + " students") for x in obj.classrooms()]))
+def sec_teacher_optimal_capacity(obj):
+    return (obj.parent_class.class_size_max if obj.parent_class.class_size_max else obj.parent_class.class_size_optimal)
 class SectionAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'friendly_times', 'status', 'duration')
+    list_display = ('id', 'title', 'friendly_times', 'status', 'duration', 'max_class_capacity', sec_teacher_optimal_capacity, sec_classrooms)
     list_display_links = ('title',)
     list_filter = ['status']
     pass
