@@ -58,7 +58,7 @@
     {% endif %}
     </table>
     </div>
-    {% if ajax_prereg_url %}
+
     <script type="text/javascript">
     function initialize_prereg_{{ class.id }}() 
     {
@@ -84,8 +84,9 @@
             {% endfor %}
         {% endif %}
     }
-    initialize_prereg_{{ class.id }}();
+    if (document.getElementById("student_schedule")) {
+      setTimeout(initialize_prereg_{{ class.id }}, Math.random()*1000);
+    }
     </script>
-    {% endif %}
     
 {% endif %}
