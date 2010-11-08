@@ -24,7 +24,8 @@
             {% if section %}
                 {% if not section.isRegClosed %}
                {% if not section.friendly_times|length_is:0 %}
-               <form id="prereg_{{ section.id }}" name="prereg_{{ section.id }}" method="post" action="{{ prereg_url }}">{% csrf_token %}
+                <form id="prereg_{{ section.id }}" name="prereg_{{ section.id }}" method="post" action="{{ prereg_url }}">
+   	        <script language="JavaScript">csrftoken();</script>
                 <input type="hidden" name="class_id" value="{{ class.id }}" />
                       <input type="hidden" name="section_id" value="{{ section.id }}" />
                       {% if not section.isFull %}
@@ -39,7 +40,8 @@
             {% else %}
                 {% for sec in class.get_sections %}
                     {% if not sec.isRegClosed and sec.isAccepted and not sec.friendly_times|length_is:0 %}
-                    <form id="prereg_{{ sec.id }}" name="prereg_{{ sec.id }}" method="post" action="{{ prereg_url }}">{% csrf_token %}
+                      <form id="prereg_{{ sec.id }}" name="prereg_{{ sec.id }}" method="post" action="{{ prereg_url }}">
+                      <script language="JavaScript">csrftoken();</script>
                       <input type="hidden" name="class_id" value="{{ class.id }}" />
                       <input type="hidden" name="section_id" value="{{ sec.id }}" />
                       <div id="addbutton_catalog_sec{{ sec.id }}">
