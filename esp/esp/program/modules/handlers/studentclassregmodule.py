@@ -271,6 +271,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         context['two'] = two
         #   This should be populated by self.prepare()
         context['num_classes'] = len(context['timeslots'])
+        context['reg_open'] = bool(UserBit.UserHasPerms(request.user,
+                                                        prog.anchor_id,
+                                                        GetNode('V/Deadline/Registration/'+{'learn':'Student',
+                                                                                            'teach':'Teacher'}[tl]+"/Classes")))
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
         script_str = render_to_string('users/student_schedule_inline.js', context)
         json_data = {'student_schedule_html': schedule_str, 'script': script_str}
