@@ -851,7 +851,7 @@ class ClassSection(models.Model):
     @cache_function
     def timeslot_ids(self):
         return self.meeting_times.all().values_list('id', flat=True)
-    timeslot_ids.depend_on_m2m(lambda: ClassSection, meeting_times, lambda instance, object: {'self': instance})
+    timeslot_ids.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda instance, object: {'self': instance})
 
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
