@@ -588,8 +588,17 @@ class ESPUser(User, AnonymousUser):
         else:
             return self.getEnrolledSectionsFromProgram(program)
 
+    @cache_function
     def getEnrolledSectionsFromProgram(self, program):
-        return self.getSections(program, verbs=['Enrolled'])
+        result = list(self.getSections(program, verbs=['Enrolled']))
+        for sec in result:
+            sec._timeslot_ids = sec.timeslot_ids()
+        return result
+    def get_sr_model():
+        from esp.program.models import StudentRegistration
+        return StudentRegistration
+    getEnrolledSectionsFromProgram.depend_on_row(get_sr_model, lambda reg: {'self': reg.user})
+    #   TODO: Make this honor rescheduling of a class section (since we packed timeslot_ids in there)
 
     def getEnrolledSectionsAll(self):
         return self.getSections(None, verbs=['Enrolled'])

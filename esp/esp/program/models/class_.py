@@ -848,6 +848,11 @@ class ClassSection(models.Model):
             new_assignment.save()
             return True
 
+    @cache_function
+    def timeslot_ids(self):
+        return self.meeting_times.all().values_list('id', flat=True)
+    timeslot_ids.depend_on_m2m(lambda: ClassSection, meeting_times, lambda instance, object: {'self': instance})
+
     def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
         # Test any scheduling constraints
@@ -862,22 +867,28 @@ class ClassSection(models.Model):
                 return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title(), exp.requirement.label)
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
-        if scrmi.use_priority:
+        if not scrmi.use_priority:
             verbs = ['Enrolled']
+            section_list = user.getEnrolledSectionsFromProgram(self.parent_program)
         else:
             verbs = [scrmi.signup_verb.name]
-        
-        # Disallow joining a no-app class that conflicts with an app class
-        # For HSSP Harvard Spring 2010
-        #if self.parent_class.studentappquestion_set.count() == 0:
-        #    verbs += ['/Applied']
+            # Disallow joining a no-app class that conflicts with an app class
+            # For HSSP Harvard Spring 2010
+            #if self.parent_class.studentappquestion_set.count() == 0:
+            #    verbs += ['/Applied']
+            section_list = user.getSections(self.parent_program, verbs=verbs)
         
         # check to see if there's a conflict:
-        for sec in user.getSections(self.parent_program, verbs=verbs):
+        my_timeslots = self.timeslot_ids()
+        for sec in section_list:
             if sec.parent_class == self.parent_class:
                 return 'You are already signed up for a section of this class!'
-            for time in sec.meeting_times.all():
-                if len(self.meeting_times.filter(id = time.id)) > 0:
+            if hasattr(sec, '_timeslot_ids'):
+                timeslot_ids = sec._timeslot_ids
+            else:
+                timeslot_ids = sec.timeslot_ids()
+            for tid in timeslot_ids:
+                if tid in my_timeslots:
                     return 'This section conflicts with your schedule--check out the other sections!'
                     
         # check to see if registration has been closed for this section

@@ -1486,7 +1486,7 @@ class BooleanToken(models.Model):
         value = None
         stack = list(stack)
         while (value is None) and (len(stack) > 0):
-            token = stack.pop().subclass_instance()
+            token = stack.pop()     #   Used to be .subclass_instance() - this is now in BooleanExpression.get_stack()
             
             # Handle possibilities for what the token might be:
             if (token.text == '||') or (token.text.lower() == 'or'):
@@ -1532,8 +1532,10 @@ class BooleanExpression(models.Model):
     def subclass_instance(self):
         return get_subclass_instance(BooleanExpression, self)
 
+    @cache_function
     def get_stack(self):
-        return self.booleantoken_set.all().order_by('seq')
+        return [s.subclass_instance() for s in self.booleantoken_set.all().order_by('seq')]
+    get_stack.depend_on_row(lambda: BooleanToken, lambda token: {'self': token.exp})
         
     def reset(self):
         self.booleantoken_set.all().delete()
@@ -1575,31 +1577,27 @@ class ScheduleMap:
         (by adding/removing values) to quickly model the effect of a particular
         schedule change.
     """
-    @cache_function
     def __init__(self, user, program):
         if type(user) is not ESPUser:
             user = ESPUser(user)
         self.program = program
         self.user = user
         self.populate()
-    __init__.depend_on_row(lambda: StudentRegistration, lambda reg: {'user': reg.user})
 
-    @cache_function
     def populate(self):
         result = {}
-        for t in self.program.getTimeSlots():
+        for t in self.program.getTimeSlotList(exclude_compulsory=True):
             result[t.id] = []
-        sl = self.user.getEnrolledSections(self.program)
+        sl = self.user.getEnrolledSectionsFromProgram(self.program)
         for s in sl:
-            for m in s.meeting_times.all():
-                result[m.id].append(s)
+            for m in s._timeslot_ids:
+                result[m].append(s)
         self.map = result
         return self.map
-    populate.depend_on_row(lambda: StudentRegistration, lambda reg: {})
 
     def add_section(self, sec):
-        for t in sec.meeting_times.all().values_list('id'):
-            self.map[t[0]].append(sec)
+        for t in sec.timeslot_ids():
+            self.map[t].append(sec)
 
     def __marinade__(self):
         import hashlib
@@ -1633,7 +1631,6 @@ class ScheduleConstraint(models.Model):
     def __unicode__(self):
         return '%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
     
-    @cache_function
     def evaluate(self, smap, recursive=True):
         self.schedule_map = smap
         cond_state = self.condition.evaluate(map=self.schedule_map.map)
@@ -1653,10 +1650,6 @@ class ScheduleConstraint(models.Model):
                     return False
         else:
             return True
-    # It's okay to flush the cache if any of the boolean expressions change, since
-    # that isn't very frequent.
-    evaluate.depend_on_model(lambda: BooleanToken)
-    evaluate.depend_on_model(lambda: BooleanExpression)
 
     def handle_failure(self):
         #   Try the on_failure callback but be very lenient about it (fail silently)
