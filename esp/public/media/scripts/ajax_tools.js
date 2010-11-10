@@ -160,6 +160,7 @@ var handle_submit = function(mode, attrs, element)
 var fetch_fragment = function(attrs)
 {
     //  console.log("Fetching fragment with attributes: " + JSON.stringify(attrs, null, '\t'));
+    if (! attrs.url) { return; }
     dojo.xhrGet({
         url: attrs.url,
         handleAs: "json",
