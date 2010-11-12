@@ -31,7 +31,6 @@ input.button:hover {
     color: #c6def7;
 }
 </style>
-<script type="text/javascript" src="/media/scripts/creditcard.js"></script>
 <script type="text/javascript">
 <!--
 
@@ -85,7 +84,7 @@ function autofill(ci) {
 
 // disable the submit button so that people pay once
 function payOnce() {
-  document.getElementById('paybutton').disabled = true;
+  document.getElementById('submit_form').disabled = true;
   return true;
 }
 
@@ -95,16 +94,13 @@ function formTest() {
   errormsg = "You have errors with your form.\n\n";
   errors = false;
   
-  blankcheck = [['Cardnumber', 'card number'],
-                ['CardType', 'card type'],
-                ['billTo_firstName', 'cardholder\'s name'],
+  blankcheck = [['billTo_firstName', 'cardholder\'s name'],
                 ['billTo_street1', 'address line 1'],
                 ['billTo_city', 'city'],
                 ['billTo_state', 'state'],
                 ['billTo_postalCode', 'zipcode'],
-                ['billTo_email', 'telephone'],
-                ['ExpiresMonth', 'expiration, month'],
-                ['ExpiresYear', 'expiration, year']];
+                ['billTo_email', 'e-mail'],
+                ];
                 
   for (var i=0; i<blankcheck.length; i++) {
 
@@ -114,28 +110,12 @@ function formTest() {
      }
   }
 
-  if (!testCreditCard()) {
-    errormsg += "  -Your credit card is invalid.\n";
-    errors = true;
-  }
-
   if (errors) {
     alert(errormsg);
     return false;
   } 
   payOnce();
   return true;
-}
-
-function testCreditCard() {
-  myCardNo = document.getElementById('Cardnumber').value;
-  myCardType = document.getElementById('CardType').value;
-  if (checkCreditCard (myCardNo,myCardType)) {
-    return true;
-  } 
-  else {
-    return false;
-  }
 }
 //-->
 </script>
