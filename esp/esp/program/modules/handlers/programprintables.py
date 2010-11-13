@@ -224,6 +224,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def coursecatalog(self, request, tl, one, two, module, extra, prog):
         " This renders the course catalog in LaTeX. "
+        from esp.settings import INSTITUTION_NAME, ORGANIZATION_SHORT_NAME
 
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
@@ -256,6 +257,11 @@ class ProgramPrintables(ProgramModuleObj):
             classes = [cls_dict[clsid] for clsid in clsids if cls_dict.has_key(clsid)]
 
         context = {'classes': classes, 'program': self.program}
+
+        group_name = Tag.getTag('full_group_name')
+        if not group_name:
+            group_name = '%s %s' % (INSTITUTION_NAME, ORGANIZATION_SHORT_NAME)
+        context['group_name'] = group_name
 
         #   Hack for timeblock sorting
         if first_sort == 'timeblock':

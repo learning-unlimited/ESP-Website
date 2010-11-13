@@ -22,7 +22,7 @@
 %%\setlength{\textwidth}{7in}
 \setlength{}{}
 
-\lhead{MIT Educational Studies Program}
+\lhead{ {{ group_name }} }
 \chead{% templatetag openbrace %} {{program.niceName}} }
 
 \newcommand{\cat}[1]{\begin{center}\section*{#1}\end{center} }
@@ -45,7 +45,7 @@
 {{ cls.class_info|texescape }} \\
 \textit{Open to students grades {{ cls.grade_min }} through {{ cls.grade_max }} } \\
 \textit{Maximum Size: {{cls.class_size_max }} } \\
-\textbf{% templatetag openbrace %}{{ cls.friendly_times|join:"} \\ \textbf{" }} } \\
+\textbf{% templatetag openbrace %}{{ cls.friendly_times|join:"} \\\\ \textbf{" }} } \\
 {% if cls.isFull %}\textbf{Class is FULL!} \\ {% endif %}
 
 %\end{tabular}
