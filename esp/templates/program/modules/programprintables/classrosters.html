@@ -27,7 +27,9 @@ body { font-family: georgia; }
 {% for item in scheditems %}
 {% if not forloop.first %}
 {% endif %}
+{% for section in item.cls.sections.all %}
 {% include "program/modules/programprintables/classroster.html" %}
+{% endfor %}
 {% endfor %}
 
 </body>
