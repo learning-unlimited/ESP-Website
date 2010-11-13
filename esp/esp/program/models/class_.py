@@ -573,6 +573,13 @@ class ClassSection(models.Model):
         else:
             return None
    
+    def pretty_start_time(self):
+        s = self.start_time()
+        if s:
+            return s.short_time()
+        else:
+            return 'N/A'
+
     #   Scheduling helper functions
 
     @cache_function
