@@ -462,6 +462,7 @@ class ProgramPrintables(ProgramModuleObj):
             # aseering 9-29-2007, 1:30am: There must be a better way to do this...
             ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False).exclude(phone_cell='').order_by('id')
             if ci.count() > 0:
+                phone_day = ci[0].phone_day
                 phone_cell = ci[0].phone_cell
             else:
                 phone_day = 'N/A'
