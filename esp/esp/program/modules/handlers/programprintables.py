@@ -962,7 +962,13 @@ Student schedule for %s:
                     if val in tag_struct[key]:
                         print 'Adding cost to invoice: %s' % tag_struct[key][val]
                         student.itemizedcosttotal += Decimal(str(tag_struct[key][val]))
-            
+            if student.splashinfo:
+                if student.splashinfo.siblingdiscount:
+                    amt_str = Tag.getTag('splashinfo_sibling_discount')
+                    if not amt_str:
+                        amt_str = '20.0'
+                    student.itemizedcosttotal -= Decimal(amt_str)
+
             # check financial aid
             student.has_financial_aid = student.hasFinancialAid(prog.anchor)
             if student.has_financial_aid:
