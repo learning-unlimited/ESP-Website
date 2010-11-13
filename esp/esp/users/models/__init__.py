@@ -604,7 +604,7 @@ class ESPUser(User, AnonymousUser):
         return self.getSections(None, verbs=['Enrolled'])
 
     def getFirstClassTime(self, program):
-        sections = self.getEnrolledSectionsFromProgram(program).order_by('meeting_times')
+        sections = self.getSections(program, verbs=['Enrolled']).order_by('meeting_times')
         if sections.count() == 0:
             return None
         else:
