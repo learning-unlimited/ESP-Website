@@ -175,19 +175,42 @@ class OnSiteClassList(ProgramModuleObj):
                 context[key_option] = defaults[key_option]
 
         time_now = datetime.now()
-        window_start = time_now + timedelta(-1, 85200)
-        curtime = Event.objects.filter(start__gte=window_start).order_by('start')
+
+        if 'start' in request.GET:
+            curtime = Event.objects.filter(id=request.GET['start'])
+        else:
+            window_start = time_now + timedelta(-1, 85200)
+            curtime = Event.objects.filter(start__gte=window_start).order_by('start')
+
+        if 'end' in request.GET:
+            endtime = Event.objects.filter(id=request.GET['end'])
+        else:
+            endtime = None
+
         if curtime:
             curtime = curtime[0]
-            classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                status=10, parent_class__status=10,
-                begin_time__gte=curtime.start
-                ).order_by('parent_class__category', 'begin_time').distinct()
-        else:
-            curtime = None
-            classes = []
+            if endtime:
+                endtime = endtime[0]
+                classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
+                    status=10, parent_class__status=10,
+                    begin_time__gte=curtime.start, begin_time__lte=endtime.start
+                    )
+            else:
+                 classes = self.program.sections().annotate(begin_time=Min("meeting_times__start")).filter(
+                     status=10, parent_class__status=10,
+                     begin_time__gte=curtime.start
+                     )
+            if extra == 'unsorted':
+                classes = classes.order_by('begin_time', 'id').distinct()
+            else:
+                classes = classes.order_by('parent_class__category', 'begin_time', 'id').distinct()
         
         context.update({'prog': prog, 'current_time': curtime, 'classes': classes, 'one': one, 'two': two})
+
+        if extra == 'unsorted':
+            context['use_categories'] = False
+        else:
+            context['use_categories'] = True
         
         return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), context)
 
