@@ -1,23 +1,35 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html>
 <head>
 <title>On-Site Schedule Printer</title>
 <script type="text/javascript">
 <!--
+
+var timer;
+
+function reset_reload()
+{
+    clearTimeout(timer);
+    timer = setTimeout(plain_refresh, 2000);
+}
+
+function plain_refresh()
+{
+    var auto_reload_img = document.getElementById("auto_reload_img");
+    auto_reload_img.src = 'printschedules?gen_img&q='+ new Date().getTime();
+    reset_reload();
+}
+
 function printself() {
    self.focus();
    window.print();
+   reset_reload();
 }
 
-function refreshimg() {
-	var auto_reload_img = document.getElementById("auto_reload_img");
-	if (auto_reload_img.complete) {
-	auto_reload_img.src = auto_reload_img.src;
-	}
+reset_reload();
 
-	setTimeout(refreshimg, 2000);
-}
-
-setTimeout(refreshimg, 2000);
 //-->
 </script>
 </head>
