@@ -968,7 +968,7 @@ class Program(models.Model):
         return options.visible_enrollments
         
     def getVolunteerRequests(self):
-        return VolunteerRequest.objects.filter(timeslot__anchor=self.anchor)
+        return VolunteerRequest.objects.filter(timeslot__anchor=self.anchor).order_by('timeslot__start')
     
     def archive(self):
         archived_classes = []
@@ -1741,7 +1741,10 @@ class VolunteerRequest(models.Model):
         
     def get_offers(self):
         return self.volunteeroffer_set.all()
-    
+
+    def __unicode__(self):
+        return u'%s (%s)' % (self.timeslot.description, self.timeslot.short_time())
+
 class VolunteerOffer(models.Model):
     request = models.ForeignKey(VolunteerRequest)
     confirmed = models.BooleanField()
@@ -1754,6 +1757,8 @@ class VolunteerOffer(models.Model):
     name = models.CharField(max_length=80, blank=True, null=True)
     phone = PhoneNumberField(blank=True, null=True)
     
+    def __unicode__(self):
+        return u'%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)
     
 
 """ This class provides the information that was provided by the DataTree
