@@ -92,9 +92,10 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
     #   Add ajax_addclass to prereg_url if registering from catalog is allowed
     ajax_prereg_url = None
     scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
-    if scrmi.register_from_catalog:
-        if user is not None and ESPUser(user).is_authenticated():
-            ajax_prereg_url = cls.parent_program.get_learn_url() + 'ajax_addclass'
+
+    #   Ensure cached catalog shows buttons and fillslots don't
+    if scrmi.register_from_catalog and not timeslot:
+        ajax_prereg_url = cls.parent_program.get_learn_url() + 'ajax_addclass'
 
     prereg_url = cls.parent_program.get_learn_url() + 'addclass'
 
