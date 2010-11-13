@@ -107,18 +107,16 @@ class VolunteerOfferForm(forms.Form):
     
         super(VolunteerOfferForm, self).__init__(*args, **kwargs)
         vrs = self.program.getVolunteerRequests()
-        self.fields['requests'].choices = [(v.id, '%s: %s (%d more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, v.num_volunteers - v.num_offers())) for v in vrs]
+        self.fields['requests'].choices = [(v.id, '%s: %s (%d more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, v.num_volunteers - v.num_offers())) for v in vrs if v.num_offers() < v.num_volunteers]
     
     def load(self, user):
         user = ESPUser(user)
-        print 'Loading %s' % user
         self.fields['user'].initial = user.id
         self.fields['email'].initial = user.email
         self.fields['name'].initial = user.name()
         if user.getLastProfile().contact_user:
             self.fields['phone'].initial = user.getLastProfile().contact_user.phone_cell
         self.fields['requests'].initial = user.getVolunteerOffers(self.program).values_list('request', flat=True)
-        print 'Offers: %s' % user.getVolunteerOffers(self.program).values_list('request', flat=True)
 
     def save(self):
         #   Reset user's offers
