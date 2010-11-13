@@ -256,6 +256,14 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'classes': classes, 'program': self.program}
 
+        #   Hack for timeblock sorting
+        if first_sort == 'timeblock':
+            sections = []
+            for cls in classes: 
+                sections += list(cls.sections.all().filter(status__gt=0, meeting_times__isnull=False).distinct())
+            sections.sort(key=lambda x: x.start_time())
+            context['sections'] = sections
+
         if extra is None or len(str(extra).strip()) == 0:
             extra = 'pdf'
 

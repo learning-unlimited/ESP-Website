@@ -24,25 +24,27 @@
 \begin{document}
 \begin{multicols}{2}
 \vspace{.05in}
-{% for cls in classes %}
+{% for sec in sections %}
+{% with sec.parent_class as cls %}
   {% ifchanged %}
 \end{multicols}
 \newpage
-{# \cat{\Huge Courses starting at: \textit{ {{ cls.pretty_start_time }} } } #}
+\cat{\Huge Courses starting at: \textit{ {{ sec.start_time.start|date:"D g:i A" }} } }
 \vspace{.1in}
 \begin{multicols}{2} 
  {%endifchanged %}
 \rhead{% templatetag openbrace %}{{cls.category.category|texescape }} }
 %\begin{tabular}{p{.45\textwidth} }
-\textbf{% templatetag openbrace %}{{cls.emailcode}}: {{ cls.title|texescape }} } \\
+\textbf{% templatetag openbrace %}{{sec.emailcode}}: {{ cls.title|texescape }} } \\
 \textit{% templatetag openbrace %}{{cls.getTeacherNames|join:", "|texescape }} }  \\
 {{ cls.ascii_info|texescape }} \\
 \textit{Open to students grades {{ cls.grade_min }} through {{ cls.grade_max }} } \\
 \textit{Maximum Size: {{cls.class_size_max }} } \\
-\textbf{% templatetag openbrace %}{{ cls.friendly_times|join:"} \\ \textbf{" }} } \\
-{% comment %}{% if cls.isFull %}\textbf{Class is FULL!} \\ {% endif %}{% endcomment %}
+\textbf{% templatetag openbrace %}{{ sec.friendly_times|join:"} \\ \textbf{" }} } 
+{% if sec.isFull %}\textbf{(FULL)}{% endif %}
 %\end{tabular}
 \vspace{.1in}
+{% endwith %}
 {% endfor %}
 \end{multicols}
 \end{document}
