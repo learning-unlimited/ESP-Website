@@ -244,8 +244,9 @@ class ProgramPrintables(ProgramModuleObj):
         else:
             first_sort = "category"
 
+        #   Filter out classes that are not scheduled
         classes = [cls for cls in classes
-                   if cls.isAccepted()   ]
+                   if cls.isAccepted() and cls.sections.all().filter(meeting_times__isnull=False).exists() ]
 
         if request.GET.has_key('clsids'):
             clsids = request.GET['clsids'].split(',')
