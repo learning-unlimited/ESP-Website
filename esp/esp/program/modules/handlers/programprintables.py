@@ -967,18 +967,15 @@ Student schedule for %s:
             
             # add cost/credit information from SplashInfo (looks in JSON Tag: splashinfo_costs)
             student.splashinfo = SplashInfo.getForUser(student, prog)
-            tag_data = Tag.getTag('splashinfo_costs', target=prog)
-            if not tag_data: tag_data = Tag.getTag('splashinfo_costs')
-            if tag_data:
-                tag_struct = json.loads(tag_data)
-                print 'Found Splashinfo costs: %s' % tag_struct
-                for key in tag_struct:
-                    val = getattr(student.splashinfo, key)
-                    print 'Got Splashinfo value: %s=%s' % (key, val)
-                    if val in tag_struct[key]:
-                        print 'Adding cost to invoice: %s' % tag_struct[key][val]
-                        student.itemizedcosttotal += Decimal(str(tag_struct[key][val]))
             if student.splashinfo:
+                tag_data = Tag.getTag('splashinfo_costs', target=prog)
+                if not tag_data: tag_data = Tag.getTag('splashinfo_costs')
+                if tag_data:
+                    tag_struct = json.loads(tag_data)
+                    for key in tag_struct:
+                        val = getattr(student.splashinfo, key)
+                        if val in tag_struct[key]:
+                            student.itemizedcosttotal += Decimal(str(tag_struct[key][val]))
                 if student.splashinfo.siblingdiscount:
                     amt_str = Tag.getTag('splashinfo_sibling_discount')
                     if not amt_str:
