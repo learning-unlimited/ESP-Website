@@ -21,19 +21,6 @@
 
 <script type="text/javascript">
 <!--
-dragndrop = function() {
-    var Dom = YAHOO.util.Dom;
-    var DDM = YAHOO.util.DragDropMgr;
-
-{% for nav_entry in navbar_list.qsdTree %}{% if nav_entry.has_bits %}
-    new YAHOO.example.DDList("nav_entry__{{ nav_entry.entry.id }}");
-    document.getElementById('nav_entry__control__{{nav_entry.entry.id}}').innerHTML = '';{% endif %}{% endfor %}
-    DDM.mode = 0;
-};
-
-YAHOO.util.Event.addListener(window, "load", dragndrop);
-
-
 
 function delete_navbar(navbar_id) {
    if (!confirm("Are you SURE you want to delete this navbar?")) {
