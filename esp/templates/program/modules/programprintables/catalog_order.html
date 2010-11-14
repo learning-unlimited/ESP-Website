@@ -35,11 +35,40 @@ Get Catalog:
 <a href="/manage/{{program.getUrlBase}}/coursecatalog/log?sort_name_list={{ sort_name_list }}&clsids={{clsids}}">log</a>)
 
 <div id="program_form">
+<form action="" method="get">{% csrf_token %}
 <table cellspacing="0" cellpadding="0">
 
 <tr>
     <td colspan="6">
-        <form action="" method="get">{% csrf_token %}
+        
+        Filter by 
+        
+        grades
+        <select name="grade_min">
+        {% for op in grade_options %}
+        <option value="{{ op }}"{% ifequal op grade_min_orig %} selected="selected"{% endifequal %}>{{ op }}</option>
+        {% endfor %}
+        </select>
+        to
+        <select name="grade_max">
+        {% for op in grade_options %}
+        <option value="{{ op }}"{% ifequal op grade_max_orig %} selected="selected"{% endifequal %}>{{ op }}</option>
+        {% endfor %}
+        </select>
+        
+        categories
+        <select name="categories" multiple="multiple">
+        {% for op in category_options %}
+        <option value="{{ op }}"{% if op in categories_orig %} selected="selected"{% endif %}>{{ op }}</option>
+        {% endfor %}
+        </select>
+        
+        <input type="submit" value="Go!"/>
+    </td>
+</tr>
+
+<tr>
+    <td colspan="6">
         Sort by
         <select name="first_sort">
         {% for op in sorting_options %}
@@ -62,9 +91,7 @@ Get Catalog:
         <option value="{{ op }}"{% ifequal op sort_name_list_orig.2 %} selected="selected"{% endifequal %}>{{ op }}</option>
         {% endfor %}
         </select>
-        
         <input type="submit" value="Go!"/>
-        </form>
     </td>
 </tr>
 
@@ -96,6 +123,7 @@ Get Catalog:
 {% endfor %}
 
 </table>
+</form>
 </div>
 
 <p>

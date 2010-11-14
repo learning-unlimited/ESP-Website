@@ -131,6 +131,11 @@ class ProgramPrintables(ProgramModuleObj):
 
         sort_list = []
         sort_name_list = []
+        grade_min = prog.grade_min
+        grade_max = prog.grade_max
+        grade_options = range(grade_min, grade_max + 1)
+        category_options = prog.class_categories.all().values_list('category', flat=True)
+        categories = category_options
 
         if request.GET.has_key('first_sort'):
             sort_list.append( cmp_fn[request.GET['first_sort']] )
@@ -150,6 +155,20 @@ class ProgramPrintables(ProgramModuleObj):
         else:
             sort_list.append( cmp_fn["title"] )
 
+        if 'categories' in request.GET:
+            categories = request.GET.getlist('categories')
+        if 'grade_min' in request.GET:
+            grade_min = int(request.GET['grade_min'])
+        if 'grade_max' in request.GET:
+            grade_max = int(request.GET['grade_max'])
+
+        classes = ClassSubject.objects.filter(parent_program = self.program, status__gt=0)
+        classes = classes.filter(grade_min__lte=grade_max)
+        classes = classes.filter(grade_max__gte=grade_min)
+        classes = classes.filter(category__category__in=categories)
+        classes = [cls for cls in classes
+                   if cls.isAccepted() ]
+
         if request.GET.has_key('ids') and request.GET.has_key('op') and \
            request.GET.has_key('clsid'):
             try:
@@ -159,14 +178,9 @@ class ProgramPrintables(ProgramModuleObj):
             except:
                 raise ESPError(), 'Could not get the class object.'
 
-            classes = ClassSubject.objects.filter(parent_program = self.program)
-            classes = [cls for cls in classes
-                       if cls.isAccepted() ]
-
             cls_dict = {}
             for cur_cls in classes:
                 cls_dict[str(cur_cls.id)] = cur_cls
-            
 
             clsids = request.GET['ids'].split(',')
             found  = False
@@ -189,7 +203,6 @@ class ProgramPrintables(ProgramModuleObj):
             else:
                 raise ESPError(), 'Received invalid operation for class list.'
 
-            
             classes = []
 
             for clsid in clsids:
@@ -199,10 +212,7 @@ class ProgramPrintables(ProgramModuleObj):
             return render_to_response(self.baseDir()+'catalog_order.html',
                                       request,
                                       (self.program, tl),
-                                      {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list })
-
-        
-        classes = list(ClassSubject.objects.catalog(prog))
+                                      {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories })
 
         if request.GET.has_key("only_nonfull"):
             classes = [x for x in classes if not x.isFull()]
@@ -217,7 +227,7 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'catalog_order.html',
                                   request,
                                   (self.program, tl),
-                                  {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list })
+                                  {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories  })
         
 
     @aux_call
