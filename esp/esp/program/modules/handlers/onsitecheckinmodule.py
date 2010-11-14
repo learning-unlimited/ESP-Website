@@ -180,7 +180,9 @@ class OnSiteCheckinModule(ProgramModuleObj):
             form = OnSiteRapidCheckinForm(request.POST)
             if form.is_valid():
                 student = ESPUser(form.cleaned_data['user'])
-                bit, created = UserBit.objects.get_or_create(user=student, qsc=prog.anchor, verb=GetNode('V/Flags/Registration/Attended'))
+                existing_bits = UserBit.valid_objects().filter(user=student, qsc=prog.anchor, verb=GetNode('V/Flags/Registration/Attended'))
+                if not existing_bits.exists():
+                    new_bit, created = UserBit.objects.get_or_create(user=student, qsc=prog.anchor, verb=GetNode('V/Flags/Registration/Attended'))
                 context['message'] = '%s %s marked as attended.' % (student.first_name, student.last_name)
                 if request.is_ajax():
                     return self.ajax_status(request, tl, one, two, module, extra, prog, context)
