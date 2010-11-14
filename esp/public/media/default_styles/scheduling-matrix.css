@@ -23,3 +23,6 @@ td.CLS_grade_max_7, td.CLS_grade_max_8, td.CLS_grade_max_9 {
 text-decoration: underline;
 }
 
+/*td.CLS_rsrc_req_LCD-projector, td.ROOM_rsrc_LCD-projector {
+font-style: italic;
+}*/
