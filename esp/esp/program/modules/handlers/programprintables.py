@@ -988,6 +988,13 @@ Student schedule for %s:
                 student.itemizedcosttotal = 0
             student.has_paid = ( student.itemizedcosttotal == 0 )
             
+            # MIT Splash purchase counts; temporary, should be harmless
+            student.shirtcount = student.meals.filter(text__contains='T-shirt').count()
+            student.photocount = student.meals.filter(text__contains='Photo').count()
+            student.saturday_lunch = student.meals.filter(text__contains='Saturday Lunch').count()
+            student.sunday_lunch = student.meals.filter(text__contains='Sunday Lunch').count()
+            student.saturday_dinner = student.meals.filter(text__contains='Saturday Dinner').count()
+
             student.payment_info = True
             student.classes = classes
             
