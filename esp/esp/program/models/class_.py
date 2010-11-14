@@ -1175,9 +1175,9 @@ class ClassSection(models.Model):
             #    Then, create the registration for this class.
             now = datetime.datetime.now()
             
-            qs = self.registrations.filter(id=user.id, studentregistration__start_date__lte=now, studentregistration__end_date__gte=now)
+            rt = RegistrationType.get_cached(name=prereg_verb, category='student')
+            qs = self.registrations.filter(id=user.id, studentregistration__start_date__lte=now, studentregistration__end_date__gte=now, studentregistration__relationship=rt)
             if fast_force_create or not qs.exists():
-                rt = RegistrationType.get_cached(name=prereg_verb, category='student')
                 sr = StudentRegistration(user=user, section=self, relationship=rt)
                 sr.save()
                 #   print 'Created %s' % sr
