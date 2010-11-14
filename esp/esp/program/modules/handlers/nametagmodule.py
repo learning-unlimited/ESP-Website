@@ -41,6 +41,8 @@ from django.db.models.query import Q
 from esp.users.views  import get_user_list
 from esp.middleware import ESPError
 from esp.web.util.latex import render_to_latex
+from esp.tagdict.models import Tag
+from esp.settings import INSTITUTION_NAME, ORGANIZATION_SHORT_NAME
 
 class NameTagModule(ProgramModuleObj):
     """ This module allows you to generate a bunch of IDs for everyone in the program. """
@@ -112,7 +114,8 @@ class NameTagModule(ProgramModuleObj):
             for student in students:
                 users.append({'title': user_title,
                               'name' : '%s %s' % (student.first_name, student.last_name),
-                              'id'   : student.id})
+                              'id'   : student.id,
+                              'username': student.username})
                 
         elif idtype == 'teacher':
             teachers = []
@@ -128,7 +131,8 @@ class NameTagModule(ProgramModuleObj):
             for teacher in teachers:
                 users.append({'title': user_title,
                               'name' : '%s %s' % (teacher.first_name, teacher.last_name),
-                              'id'   : teacher.id})
+                              'id'   : teacher.id,
+                              'username': teacher.username})
 
         elif idtype == 'volunteers':
             users = []
@@ -176,6 +180,8 @@ class NameTagModule(ProgramModuleObj):
                     users.append(expanded[j][i])
 
         context['users'] = users
+        context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (INSTITUTION_NAME, ORGANIZATION_SHORT_NAME)
+        context['phone_number'] = Tag.getTag('group_phone_number')
             
         return render_to_response(self.baseDir()+'ids.html', request, (prog, tl), context)
         

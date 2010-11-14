@@ -4,19 +4,13 @@
   <table class="bottom">
   <tr>
      <td class="left">
-        <!--To change this image go to our dropbox, standard login-->
-        <img src="http://dl.dropbox.com/u/8034911/espimg.png"
-         class="espimg" />
+        <!-- INSERT LOGO IMAGE HERE.  Example:
+            <img src="/media/images/my-logo-small.png" class="logo" />
+        -->
      </td>
-     <td class="right">
-        <div class="espinfo">
-        http://esp.mit.edu
-        617.253.4882
-        </div>
-     </td>
-     <td class="right url">
-      <span class="studentid"></span>
-      <br />       http://esp.mit.edu
+     <td class="right url">{% if user.id %}
+      <span class="studentid">{{ user.username }} (ID: {{ user.id }})</span> <br />
+      {% endif  %} http://{{ request.META.HTTP_HOST }}
      </td>
   </tr>
   </table>
@@ -24,19 +18,18 @@
   <div class="restdiv">
     <table class="top">
     <tr>
-      <td class="left programname">
-         <!--To change this image go to our dropbox, standard login-->
-         <img src="http://dl.dropbox.com/u/8034911/programimg.png"
-         class="programimg" />
+      <td class="left company">
+        {{ group_name }}
       </td>
+      <td class="right phone"> {{ phone_number }}</td>
     </tr>
     </table>
-    <br>
     <div class="firstspace">&nbsp;</div>
-    <div class="name">{{ user.name }}</div>
+    <span class="programtitle">{{ programname }}</span>
     <div class="title">{{ user.title }}</div>
+    <hr />
+    <div class="name">{{ user.name }}</div>
   </div>
 </div>
 </div>
 <!-- End ID //-->
-
