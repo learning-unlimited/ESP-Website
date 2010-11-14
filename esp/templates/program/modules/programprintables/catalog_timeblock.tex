@@ -2,10 +2,9 @@
 {% load latex %}
 \usepackage[utf8]{inputenc}
 \usepackage{multicol}
-\usepackage{fullpage}
 \usepackage{amsfonts, amsmath, amsthm, amssymb}
 \usepackage{fancyhdr}
-\usepackage[left=.5in,top=1cm,right=.5in]{geometry}
+\usepackage[left=.5in,top=0.75in,bottom=.5in,right=.5in]{geometry}
 
 \pagestyle{fancy}
 
@@ -33,13 +32,13 @@
 \vspace{.1in}
 \begin{multicols}{2} 
  {%endifchanged %}
-\rhead{% templatetag openbrace %}{{cls.category.category|texescape }} }
+\rhead{% templatetag openbrace %}{{ sec.start_time.start|date:"D g:i A" }} }
 %\begin{tabular}{p{.45\textwidth} }
 \textbf{% templatetag openbrace %}{{sec.emailcode}}: {{ cls.title|texescape }} } \\
 \textit{% templatetag openbrace %}{{cls.getTeacherNames|join:", "|texescape }} }  \\
 {{ cls.ascii_info|texescape }} \\
 \textit{Open to students grades {{ cls.grade_min }} through {{ cls.grade_max }} } \\
-\textit{Maximum Size: {{cls.class_size_max }} } \\
+\textit{Maximum Size: {{ sec.capacity }} } \\
 \textbf{% templatetag openbrace %}{{ sec.friendly_times|join:"} \\ \textbf{" }} } 
 {% if sec.isFull %}\textbf{(FULL)}{% endif %}
 %\end{tabular}
