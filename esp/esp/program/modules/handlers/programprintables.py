@@ -903,7 +903,7 @@ Student schedule for %s:
 
         students.sort()
         
-        return ProgramPrintables.get_student_schedules(request, students, prog, onsite)
+        return ProgramPrintables.get_student_schedules(request, students, prog, extra, onsite)
 
     @staticmethod
     def get_student_schedules(request, students, prog, extra='', onsite=False):
