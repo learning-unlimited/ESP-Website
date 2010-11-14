@@ -603,6 +603,7 @@ class ESPUser(User, AnonymousUser):
     def getEnrolledSectionsAll(self):
         return self.getSections(None, verbs=['Enrolled'])
 
+    @cache_function
     def getFirstClassTime(self, program):
         sections = self.getSections(program, verbs=['Enrolled']).order_by('meeting_times')
         if sections.count() == 0:
@@ -612,7 +613,8 @@ class ESPUser(User, AnonymousUser):
                 return None
             else:
                 return sections[0].meeting_times.order_by('start')[0]
-
+    getFirstClassTime.depend_on_row(get_sr_model, lambda reg: {'self': reg.user})
+    
     def getRegistrationPriority(self, prog, timeslots):
         """ Finds the highest available priority level for this user across the supplied timeslots. 
             Returns 0 if the student is already enrolled in one or more of the timeslots. """
