@@ -1,0 +1,35 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/progressbar.css" type="text/css" />
+{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
+
+{% block content %}
+<br /><br />
+<h1>{{program.niceName}} Lottery Preferences for {{ student.first_name }} {{ student.last_name }}</h1>
+
+<p>Here are the preferences we have saved for you for the {{ program.niceName }} class registration lottery.
+If any of these look incorrect, please go back to the class registration lottery and change your preferences.</p>
+
+<h2>Priority flagged classes:</h2>{% if pempty %} (None) <br /> <br /> {% else %}
+<ul>
+{% for flag in priority %}<li> {{ flag.section.emailcode }}: {{ flag.section.title }} {% endfor %}
+</ul>{% endif %}
+
+<h2>Other interested classes:</h2>{% if iempty %} (None) {% else %}
+<ul>
+{% for flag in interested %}<li> {{ flag.section.emailcode }}: {{ flag.section.title }} {% endfor %}
+</ul>{% endif %}
+
+<br /> <br />
+
+<p><a href="/learn/Splash/2010/studentreg">Back to student registration</a></p>
+{% endblock %}

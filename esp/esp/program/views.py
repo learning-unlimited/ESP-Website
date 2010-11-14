@@ -65,6 +65,109 @@ import pickle
 import operator
 import simplejson as json
 
+
+@login_required
+def lottery_student_reg(request, program = None):
+    """
+    Serve the student reg page.
+
+    This is just a static page;
+    it gets all of its content from AJAX callbacks.
+    """
+
+    # First check whether the user is actually a student.
+    if not request.user.isStudent():
+        raise ESPError(False), "You must be a student in order to access Splash student registration."
+
+    context = {}
+    
+    return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, None, {})
+
+#@transaction.commit_manually
+@login_required
+def lsr_submit(request, program = None):
+    if program is None:
+        program = Program.objects.get(anchor__uri__contains="Splash/2010")
+
+    # First check whether the user is actually a student.
+    if not request.user.isStudent():
+        raise ESPError(False), "You must be a student in order to access Splash student registration."
+
+    data = json.loads(request.POST['json_data'])
+
+    classes_interest = set()
+    classes_no_interest = set()
+    classes_flagged = set()
+    classes_not_flagged = set()
+
+    reg_priority, created = RegistrationType.objects.get_or_create(name="Priority/1", category="student")
+    reg_interested, created = RegistrationType.objects.get_or_create(name="Interested", category="student",
+                                                                     defaults={"description":"For lottery reg, a student would be interested in being placed into this class, but it isn't their first choice"})
+
+    for reg_token, reg_status in data.iteritems():
+        parts = reg_token.split('_')
+        if parts[0] == 'flag':
+            ## Flagged class
+            flag, secid = parts
+            if reg_status:
+                classes_flagged.add(int(secid))
+            else:
+                classes_not_flagged.add(int(secid))
+        else:
+            secid = parts[0]
+            if reg_status:
+                classes_interest.add(int(secid))
+                classes_no_interest.add(int(secid))
+
+    errors = []
+
+    already_flagged_sections = request.user.getSections(program=program, verbs=[reg_priority]).annotate(first_block=Min('meeting_times__start'))
+    already_flagged_secids = set(int(x.id) for x in already_flagged_sections)
+    
+    flag_related_sections = classes_flagged | classes_not_flagged
+    flagworthy_sections = ClassSection.objects.filter(id__in=flag_related_sections-already_flagged_secids).select_related('anchor').annotate(first_block=Min('meeting_times__start'))
+    
+    sections_by_block = defaultdict(list)
+    sections_by_id = {}
+    for s in list(flagworthy_sections) + list(already_flagged_sections):
+        sections_by_id[int(s.id)] = s
+        if int(s.id) not in classes_not_flagged:
+            sections_by_block[s.first_block].append(s)
+
+    for val in sections_by_block.values():
+        if len(val) > 1:
+            errors.append({"text": "Can't flag two classes at the same time!", "cls_sections": [x.id for x in val], "block": val[0].firstBlockEvent().id, "flagged": True})
+
+    if len(errors) == 0:
+        for s_id in (already_flagged_secids - classes_flagged):
+            sections_by_id[s_id].unpreregister_student(request.user, prereg_verb=reg_priority.name)
+        for s_id in classes_flagged - already_flagged_secids:
+            if not sections_by_id[s_id].preregister_student(request.user, prereg_verb=reg_priority.name, overridefull=True):
+                errors.append({"text": "Unable to add flagged class", "cls_sections": [s_id], "emailcode": sections_by_id[s_id].emailcode(), "block": None, "flagged": True})
+
+    already_interested_sections = request.user.getSections(program=program, verbs=[reg_interested])
+    already_interested_secids = set(int(x.id) for x in already_interested_sections)
+    interest_related_sections = classes_interest | classes_no_interest
+    sections = ClassSection.objects.filter(id__in = (interest_related_sections - flag_related_sections - already_flagged_secids - already_interested_secids)).select_related('anchor')
+
+    ## No need to reset sections_by_id
+    for s in list(sections) + list(already_interested_sections):
+        sections_by_id[int(s.id)] = s
+
+    for s_id in (already_interested_secids - classes_interest):
+        sections_by_id[s_id].unpreregister_student(request.user, prereg_verb=reg_interested.name)
+    for s_id in classes_interest - already_interested_secids:
+        if not sections_by_id[s_id].preregister_student(request.user, prereg_verb=reg_interested.name, overridefull=True):
+            errors.append({"text": "Unable to add interested class", "cls_sections": [s_id], "emailcode": sections_by_id[s_id].emailcode(), "block": None, "flagged": False})
+
+    if len(errors) != 0:
+        s = StringIO()
+        pprint(errors, s)
+        mail_admins('Error in class reg', s.getvalue(), fail_silently=True)
+
+    return HttpResponse(json.dumps(errors), mimetype='application/json')
+
+
 def find_user(userstr):
     """
     Do a best-guess effort at finding a user based on a string identifying that user.
