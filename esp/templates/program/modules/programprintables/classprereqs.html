@@ -56,6 +56,7 @@ table.sortable thead {
  <td>{{forloop.counter}}</td>
  <td>{{ cls.emailcode }}</td>
  <td>{{ cls.title }}</td>
+{% comment %}
  <td>
   {% for implication in cls.implications %}
   {{ implication.operation }} of:
@@ -69,6 +70,10 @@ table.sortable thead {
   </ul>
   {% endfor %}
  </td>
+{% endcomment %}
+<td>
+{{ cls.prereqs }}
+</td>
 </tr>
 {% endfor %}
 </table>
