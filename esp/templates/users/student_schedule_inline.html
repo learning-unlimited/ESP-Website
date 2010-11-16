@@ -25,7 +25,7 @@
     {% else %}
     {% ifchanged timeslot.1 %}
     <tr>
-        <td width='15%' valign='top' align='center'> {{ timeslot.0.start|date:'P' }}</td>
+        <td width='25%' valign='top' align='center'> {% with timeslot.1.0.section.friendly_times as times %}{% for ts in times %}{{ ts }}{% endfor %}{% endwith %}</td>
         
         <td style='vertical-align: top !important;'>
         {% for cls in timeslot.1 %}
@@ -70,7 +70,7 @@
             {% else %}
             <!-- Allow removal of classes if the appropriate flag is set -->
             {% if allow_removal %}
-            <td width='20%' align='center' style='vertical-align: top !important;'>
+            <td width='15%' align='center' style='vertical-align: top !important;'>
             {% for cls in timeslot.1 %}
                 <a id='remove_{{ timeslot.0.id }}_{{ cls.section.id }}' href='/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}'>[remove]</a><br />
                 {% comment %}<a id='clearslotlink' href='/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}'>[remove]</a><br />{% endcomment %}
