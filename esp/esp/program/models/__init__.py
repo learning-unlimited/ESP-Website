@@ -518,13 +518,13 @@ class Program(models.Model):
             if QObject:
                 return Q(id = -1)
             else:
-                return User.objects.filter(id = -1)
+                return ESPUser.objects.filter(id = -1)
                     
         union = reduce(operator.or_, [x for x in self.students(True).values() ])
         if QObject:
             return union
         else:
-            return User.objects.filter(union).distinct()
+            return ESPUser.objects.filter(union).distinct()
 
 
     def teachers_union(self, QObject = False):
