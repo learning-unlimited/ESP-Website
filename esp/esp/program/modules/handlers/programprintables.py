@@ -1003,6 +1003,8 @@ Student schedule for %s:
         
         if extra:
             file_type = extra.strip()
+        elif 'img_format' in request.GET:
+            file_type = request.GET['img_format']
         else:
             file_type = 'pdf'
 
