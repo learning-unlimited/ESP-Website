@@ -277,7 +277,7 @@ class ProgramPrintables(ProgramModuleObj):
         if first_sort == 'timeblock':
             sections = []
             for cls in classes: 
-                sections += list(cls.sections.all().filter(status__gt=0, meeting_times__isnull=False).distinct())
+                sections += list(x for x in cls.sections.all().filter(status__gt=0, meeting_times__isnull=False).distinct() if not (request.GET.has_key('open') and x.isFull()))
             sections.sort(key=lambda x: x.start_time())
             context['sections'] = sections
 
