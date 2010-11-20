@@ -12,7 +12,7 @@
                 <tr><th class="materials">{{ class.category.category }}</th></tr>
                 <tr><td>
             {% endifchanged %}
-            <div class="classitem"><b>{{ class.emailcode }}</b> ({% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}): <br /> {{ class.title }} <br /></div>
+            <div class="classitem"><b>{{ class.emailcode }}</b> ({% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}): <br /> {{ class.title }} (Grades {{class.parent_class.grade_min}}-{{class.parent_class.grade_max}})<br /></div>
         {% endif %}
         {% endif %} 
     {% endfor %}
