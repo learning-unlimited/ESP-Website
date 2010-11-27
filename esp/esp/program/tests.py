@@ -398,7 +398,7 @@ class ProgramHappenTest(TestCase):
         self.client.post('%saddclass' % self.prog.get_learn_url(), reg_dict)
 
         sr = StudentRegistration.objects.all()[0]
-        print "StudentRegTest", StudentRegistration.valid_objects().all(), self.student.id, sec.id, self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb.id, sr.user.id, sr.section.id, sr.relationship.id, StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb), StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count(), StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count() > 0
+        #print "StudentRegTest", StudentRegistration.valid_objects().all(), self.student.id, sec.id, self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb.id, sr.user.id, sr.section.id, sr.relationship.id, StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb), StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count(), StudentRegistration.valid_objects().filter(user=self.student, section=sec, relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count() > 0
 
         self.assertTrue( StudentRegistration.valid_objects().filter(user=self.student, section=sec,
             relationship=self.prog.getModuleExtension('StudentClassRegModuleInfo').signup_verb).count() > 0, 'Registration failed.')
@@ -527,6 +527,7 @@ class ProgramFrameworkTest(TestCase):
         #   Create the program much like the /manage/newprogram view does
         pcf = ProgramCreationForm(prog_form_values)
         if not pcf.is_valid():
+            print "ProgramCreationForm errors"
             print pcf.data
             print pcf.errors
             print prog_form_values
@@ -576,7 +577,7 @@ def randomized_attrs(program):
     timeslot_list = list(program.getTimeSlots())
     random.shuffle(timeslot_list)
     return (section_list, timeslot_list)
-        
+
 class ScheduleMapTest(ProgramFrameworkTest):
     """ Fiddle around with a student's schedule and ensure the changes are
         properly reflected in their schedule map.
@@ -612,6 +613,9 @@ class ScheduleMapTest(ProgramFrameworkTest):
         #   Put the student in a class and check that it's there
         section1.assign_start_time(ts1)
         section1.preregister_student(student)
+
+        self.assertEqual(section1.num_students(), 1, "Cache error, didn't correctly update the number of students in the class")
+        self.assertEqual(section1.num_students(), ClassSection.objects.get(id=section1.id).enrolled_students, "Triggers error, didn't update enrolled_students with the new enrollee")
         sm = ScheduleMap(student, program)
         self.assertTrue(occupied_slots(sm.map) == [ts1.id], 'Schedule map not occupied at specified timeslot.')
         self.assertTrue(sm.map[ts1.id] == [section1], 'Schedule map contains incorrect value at specified timeslot.')
@@ -632,6 +636,8 @@ class ScheduleMapTest(ProgramFrameworkTest):
         #   Remove the student and check that the map is empty again
         section1.unpreregister_student(student)
         section2.unpreregister_student(student)
+        self.assertEqual(section1.num_students(), 0, "Cache error, didn't register a student being un-registered")
+        self.assertEqual(section1.num_students(), section1.enrolled_students, "Triggers error, didn't update enrolled_students with the new un-enrollee")
         sm = ScheduleMap(student, program)
         self.assertTrue(len(occupied_slots(sm.map)) == 0, 'Schedule map did not clear properly.')
         

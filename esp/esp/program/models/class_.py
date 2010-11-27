@@ -67,6 +67,7 @@ from esp.program.models          import Program, StudentRegistration, Registrati
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.resources.models        import ResourceType, Resource, ResourceRequest, ResourceAssignment
 from esp.cache                   import cache_function
+from esp.utils.derivedfield      import DerivedField
 
 from django.core.cache import cache  ## Yep, we do have to do some raw cache-management for performance.  Try to minimize it, though.
 #from pylibmc import NotFound as CacheNotFound
@@ -1005,7 +1006,15 @@ class ClassSection(models.Model):
     def num_students(self, verbs=['Enrolled']):
         return self.students(verbs).count()
     num_students.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
-    
+
+    @cache_function
+    def count_enrolled_students(self):
+        return self.num_students(use_cache=False)
+    count_enrolled_students.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
+
+    enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
+
+
     def clearStudents(self):
         from esp.program.models import StudentRegistration
         now = datetime.datetime.now()
