@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROGRAM="Spark"
+PROGRAM="Splash"
 INSTANCE="2010"
 
 echo "What printer do you want to print to? (lpr printer name)"
@@ -26,7 +26,7 @@ while (true); do
 	curl -b "${CURL_COOKIE_STORE}" "https://esp.mit.edu/onsite/${PROGRAM}/${INSTANCE}/printschedules?gen_img&img_format=ps" -o "${TMPFILE}" 2>/dev/null
 
 	if [ -n "`cat "${TMPFILE}"`" ]; then
-		lpr -P${PRINTERNAME} < "${TMPFILE}"
+		lpr -P "${PRINTERNAME}" < "${TMPFILE}"
 		echo -n "Printed! "
 		date
 		rm "${TMPFILE}"
