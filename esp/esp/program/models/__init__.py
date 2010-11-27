@@ -1564,8 +1564,8 @@ class BooleanExpression(models.Model):
         else:
             new_token = token_or_value
         if seq is None:
-            if my_stack.count() > 0:
-                new_token.seq = self.get_stack().order_by('-seq').values('seq')[0]['seq'] + 10
+            if len(my_stack) > 0:
+                new_token.seq = self.get_stack()[-1].seq + 10
             else:
                 new_token.seq = 0
         else:
