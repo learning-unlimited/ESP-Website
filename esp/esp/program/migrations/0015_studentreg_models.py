@@ -40,11 +40,12 @@ class Migration(SchemaMigration):
         db.send_create_signal('program', ['RegistrationType'])
 
         #   Converting data from UserBits
-        print 'WARNING: Converting UserBit registrations to StudentRegistrations.'
-        print '         This may take several minutes.'
-        for section in ClassSection.objects.all():
-            convert_student_reg(section)
-            print 'Converted %4d registrations for %s' % (section.num_students(), section)
+        if ClassSection.objects.all().exists():
+            print 'WARNING: Converting UserBit registrations to StudentRegistrations.'
+            print '         This may take several minutes.'
+            for section in ClassSection.objects.all():
+                convert_student_reg(section)
+                print 'Converted %4d registrations for %s' % (section.num_students(), section)
     
     def backwards(self, orm):
         
