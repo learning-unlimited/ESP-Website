@@ -10,9 +10,13 @@ from esp.db.forms import AjaxForeignKeyNewformField
 class QSDMoveForm(forms.Form):
     id = forms.IntegerField(widget=forms.HiddenInput)
     destination_path = AjaxForeignKeyNewformField(field=AjaxForeignKey(DataTree, name='destination_path'), label='Destination path', field_name='destination_path', help_text='Begin to type the tree location of the destination (starting with \'Q/\') and select the proper choice from the list that appears.')
-    nav_category = forms.ChoiceField(choices=[(n.id, n.name) for n in NavBarCategory.objects.all()], label='Navigation category')
+    nav_category = forms.ChoiceField(choices=(), label='Navigation category')
     destination_name = forms.CharField(help_text='The file name that comes before the \'.html\' in the URL.  Preface with \'learn:\', \'teach:\', etc. to place under the corresponding section of the site.')
     
+    def __init__(self, *args, **kwargs):
+        super(QSDMoveForm, self).__init__(*args, **kwargs)
+        self.fields['nav_category'] = [(n.id, n.name) for n in NavBarCategory.objects.all()]
+
     def load_data(self, qsd):
         self.fields['id'].initial = qsd.id
         self.fields['destination_path'].initial = qsd.path.id
