@@ -15,7 +15,7 @@ class QSDMoveForm(forms.Form):
     
     def __init__(self, *args, **kwargs):
         super(QSDMoveForm, self).__init__(*args, **kwargs)
-        self.fields['nav_category'] = [(n.id, n.name) for n in NavBarCategory.objects.all()]
+        self.fields['nav_category'].choices = [(n.id, n.name) for n in NavBarCategory.objects.all()]
 
     def load_data(self, qsd):
         self.fields['id'].initial = qsd.id
