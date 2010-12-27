@@ -544,7 +544,7 @@ class ESPUser(User, AnonymousUser):
         #   If priority registration is enabled, add in more verbs.
         if program:
             scrmi = program.getModuleExtension('StudentClassRegModuleInfo')
-            verb_list = scrmi.reg_verbs(uris=True)
+            verb_list = [v.name for v in scrmi.reg_verbs()]
         else:
             verb_list = ['Applied']
             
