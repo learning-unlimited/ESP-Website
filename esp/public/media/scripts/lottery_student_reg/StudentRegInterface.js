@@ -97,7 +97,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 			name: 'type'
 	            }
 		    ],
-		    proxy: new Ext.data.HttpProxy({ url: '/learn/Splash/2010/catalog_registered_classes_json' }),
+		    proxy: new Ext.data.HttpProxy({ url: '/learn/'+url_base+'/catalog_registered_classes_json' }),
 		    listeners: {
 			load: {
 			    scope: this,
@@ -149,7 +149,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	        } 
 		//fields needed for class id generation
 		],
-		proxy: new Ext.data.HttpProxy({ url: '/learn/Splash/2010/catalog_json' }),
+		proxy: new Ext.data.HttpProxy({ url: '/learn/'+url_base+'/catalog_json' }),
 		listeners: {
 		    load: {
 			scope: this,
@@ -160,6 +160,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	    },
     
     makeTabs: function (store, records, options) {
+	    alert(len(records));
 	    //make a tab for each class period
 	    //num_tabs and tab_names need to be modified for a particular program
 	tabs = [];
@@ -385,7 +386,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                     fn: function(button) {
                         if (button == 'ok') 
                         {
-                            window.location.href = '/learn/Splash/2010/confirmreg';
+                            window.location.href = '/learn/'+url_base+'/confirmreg';
                         }
                         if (button == 'cancel') {Ext.Msg.hide();}
                     }
