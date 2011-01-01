@@ -18,10 +18,10 @@
 <p>
 The directors would like you to specify up to {{ clrmi.num_teacher_questions }} question[s] per subject for your students to answer on their applications to {{ prog.niceName }}.  You will read the students' responses to these questions when scoring their applications.  Please enter the questions below and click "Submit Questions" when finished.
 </p>
-<p>
-If you do not want to use the maximum number of questions, feel free to leave some blank.
+<p><b>
+<a href="http://esp.mit.edu{{prog.get_teach_url}}teacherreg">If you do not want to application questions, click here to return to the main teacher reg page.</a> </b>
 </p>
-<br />
+
 
 <div id="program_form">
 <form method="post" action="{{ request.path }}">{% csrf_token %}
