@@ -10,11 +10,7 @@
 <!-- meta -->
 <meta http-equiv="Content-Script-Type" content="text/javascript">
 
-<title> BLA </title>
-
-<!--{% block title %}{{program.niceName}} Class Lottery Registration{% endblock %}
-<h1>Student registration for {{program.niceName}} </h1> -->
-
+<title> Class Lottery Registration for {{prog.niceName}}</title>
 
 
 <!-- Libraries -->
@@ -29,8 +25,8 @@
 <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
 
 <!-- Main application included here -->
-<script type='text/javascript' src='/media/scripts/lottery_student_reg/StudentRegInterface.js' 
-	url_base = {{program.getUrlBase}}></script>
+<script type='text/javascript'> var url_base = '{{prog.getUrlBase}}'</script>
+<script type='text/javascript' src='/media/scripts/lottery_student_reg/StudentRegInterface.js'></script>
 
 <!--script type="text/javascript">
 Ext.Msg.alert('message','stuff!')

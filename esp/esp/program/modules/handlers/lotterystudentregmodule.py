@@ -91,9 +91,9 @@ class LotteryStudentRegModule(ProgramModuleObj):
         it gets all of its content from AJAX callbacks.
         """
 
-        print "blooble"
-        print request.user.username
-        return lottery_student_reg(request, self.program)
+        #print "blooble"
+        #print request.user.username
+        return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', {'prog': self.program})
 
     @aux_call
     @meets_deadline('/Classes/Lottery')
