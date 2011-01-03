@@ -9,6 +9,7 @@ from datetime import datetime
 from esp.program.models import RegistrationProfile
 from esp.settings import INSTITUTION_NAME
 import re
+import simplejson as json
 
 # SRC: esp/program/manipulators.py
 
@@ -228,6 +229,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     post_hs = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(WhatToDoAfterHS, WhatToDoAfterHS)))
     transportation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HowToGetToProgram, HowToGetToProgram)))
+    schoolsystem_id = forms.CharField(max_length=32, required=False)
 
     studentrep_error = True
 
@@ -271,6 +273,12 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                     self.fields['graduation_year'].widget.attrs['disabled'] = "true"
                     self.fields['dob'].widget.attrs['disabled'] = "true"
 
+        if Tag.getTag('schoolsystem'):
+            sysinfo = json.loads(str(Tag.getTag('schoolsystem')))
+            for key in ['label', 'required', 'help_text']:
+                if key in sysinfo:
+                    setattr(self.fields['schoolsystem_id'], key, sysinfo[key])
+
         self._user = user
 
     def repress_studentrep_expl_error(self):
@@ -299,6 +307,19 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if self.cleaned_data['transportation'] == 'Other...:':
             raise forms.ValidationError("If 'Other...', please provide details")
         return self.cleaned_data['transportation']
+
+    def clean_schoolsystem_id(self):
+        if Tag.getTag('schoolsystem'):
+            sysinfo = json.loads(str(Tag.getTag('schoolsystem')))
+            if 'num_digits' in sysinfo:
+                input_str = self.cleaned_data['schoolsystem_id'].strip()
+                if len(input_str) > 0:
+                    if len(input_str) != int(sysinfo['num_digits']) or not input_str.isdigit():
+                        raise forms.ValidationError("Please enter a unique %d-digit number." % int(sysinfo['num_digits']))
+            if 'check_unique' in sysinfo and sysinfo['check_unique']:
+                if StudentInfo.objects.filter(schoolsystem_id=input_str).exclude(user=self._user).exists():
+                    raise forms.ValidationError("Someone else has already entered CPS ID number '%s'." % input_str)
+        return self.cleaned_data['schoolsystem_id']
 
     def clean(self):
         super(StudentInfoForm, self).clean()

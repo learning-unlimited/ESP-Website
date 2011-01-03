@@ -62,6 +62,7 @@ class UserAttributeGetter(object):
                     '16_heard_about': 'Heard about Splash from',
                     '17_transportation': 'Plan to Get to Splash',
                     '18_post_hs': 'Post-HS plans',
+                    '19_schoolsystem_id': 'School system ID',
                  }
 
         last_label_index = len(labels)
@@ -170,6 +171,10 @@ class UserAttributeGetter(object):
     def get_post_hs(self):
         if self.profile.student_info:
             return self.profile.student_info.post_hs
+
+    def get_schoolsystem_id(self):
+        if self.profile.student_info:
+            return self.profile.student_info.schoolsystem_id
 
     #Replace this with something based on presence and number of application questions for a particular program 
     def get_max_applications(self):

@@ -967,9 +967,9 @@ class StudentInfo(models.Model):
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
+    schoolsystem_id = models.CharField(max_length=32, blank=True, null=True)
     post_hs = models.TextField(default='', blank=True)
     transportation = models.TextField(default='', blank=True)
-    
 
     def save(self, *args, **kwargs):
         super(StudentInfo, self).save(*args, **kwargs)
@@ -1027,6 +1027,7 @@ class StudentInfo(models.Model):
         form_dict['studentrep']      = UserBit.UserHasPerms(user = self.user,
                                                             qsc  = STUDREP_QSC,
                                                             verb = STUDREP_VERB)
+        form_dict['schoolsystem_id'] = self.schoolsystem_id
         form_dict['post_hs'] = self.post_hs
         form_dict['transportation'] = self.transportation
         return form_dict
@@ -1066,6 +1067,7 @@ class StudentInfo(models.Model):
         studentInfo.studentrep = new_data.get('studentrep', False)    
         studentInfo.studentrep_expl = new_data.get('studentrep_expl', '')
 
+        studentInfo.schoolsystem_id = new_data.get('schoolsystem_id', '')
         studentInfo.post_hs = new_data.get('post_hs', '')
 
         studentInfo.transportation = new_data.get('transportation', '')        
