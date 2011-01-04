@@ -9,7 +9,7 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         
         # Adding field 'StudentInfo.schoolsystem_optout'
-        db.add_column('users_studentinfo', 'schoolsystem_optout', self.gf('django.db.models.fields.BooleanField')(default=True, blank=True), keep_default=False)
+        db.add_column('users_studentinfo', 'schoolsystem_optout', self.gf('django.db.models.fields.BooleanField')(default=False, blank=True), keep_default=False)
 
 
     def backwards(self, orm):
@@ -171,7 +171,7 @@ class Migration(SchemaMigration):
             'post_hs': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
             'school': ('django.db.models.fields.CharField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
             'schoolsystem_id': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True', 'blank': 'True'}),
-            'schoolsystem_optout': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
+            'schoolsystem_optout': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
             'shirt_size': ('django.db.models.fields.CharField', [], {'max_length': '5', 'null': 'True', 'blank': 'True'}),
             'shirt_type': ('django.db.models.fields.CharField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
             'studentrep': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),

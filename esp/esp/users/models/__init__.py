@@ -968,7 +968,7 @@ class StudentInfo(models.Model):
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
     schoolsystem_id = models.CharField(max_length=32, blank=True, null=True)
-    schoolsystem_optout = models.BooleanField(default=True)
+    schoolsystem_optout = models.BooleanField(default=False)
     post_hs = models.TextField(default='', blank=True)
     transportation = models.TextField(default='', blank=True)
 
