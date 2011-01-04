@@ -230,6 +230,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     post_hs = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(WhatToDoAfterHS, WhatToDoAfterHS)))
     transportation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HowToGetToProgram, HowToGetToProgram)))
     schoolsystem_id = forms.CharField(max_length=32, required=False)
+    schoolsystem_optout = forms.BooleanField(required=False)
 
     studentrep_error = True
 
@@ -273,12 +274,30 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                     self.fields['graduation_year'].widget.attrs['disabled'] = "true"
                     self.fields['dob'].widget.attrs['disabled'] = "true"
 
+        #   Add schoolsystem fields if directed by the Tag
         if Tag.getTag('schoolsystem'):
             sysinfo = json.loads(str(Tag.getTag('schoolsystem')))
             for key in ['label', 'required', 'help_text']:
                 if key in sysinfo:
                     setattr(self.fields['schoolsystem_id'], key, sysinfo[key])
-
+            if 'use_checkbox' in sysinfo and sysinfo['use_checkbox']:
+                if 'label' in sysinfo:
+                    self.fields['schoolsystem_optout'].help_text = '<span style="font-size: 0.8em;">Check this box if you don\'t have a %s</span>' % sysinfo['label']
+                else:
+                    self.fields['schoolsystem_optout'].help_text = '<span style="font-size: 0.8em;">Check this box if you don\'t have an ID number</span>'
+            else:
+                del self.fields['schoolsystem_optout']
+        else:
+            del self.fields['schoolsystem_id']
+            del self.fields['schoolsystem_optout']
+            
+        #   Make the schoolsystem_id field non-required if schoolsystem_optout is checked
+        if self.data and 'schoolsystem_optout' in self.data and 'schoolsystem_id' in self.data:
+            self.data = self.data.copy()
+            if self.data['schoolsystem_optout']:
+                self.fields['schoolsystem_id'].required = False
+                self.data['schoolsystem_id'] = ''
+                
         self._user = user
 
     def repress_studentrep_expl_error(self):

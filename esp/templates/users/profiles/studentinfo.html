@@ -59,8 +59,11 @@ detailed explanation of our age and grade level policy, please click
  <td><label for="id_schoolsystem_id">{% if form.fields.schoolsystem_id.label %}{{ form.fields.schoolsystem_id.label }}{% else %}School system ID{% endif %}:</label></td>
  <td>{{ form.schoolsystem_id }} {% if form.schoolsystem_id.errors %}
    <br /><span class="form_error">{{ form.schoolsystem_id.errors|join:", " }}</span>
-   {% endif %} {% if form.fields.schoolsystem_id.help_text %}
+   {% endif %} 
+   {% if form.fields.schoolsystem_id.help_text %}
    <br />{% autoescape off %}{{ form.schoolsystem_id.help_text }}{% endautoescape %}
+   <br />{{ form.schoolsystem_optout }}
+    <br />{% autoescape off %}{{ form.schoolsystem_optout.help_text }}{% endautoescape %}
    {% endif %}
  </td>
 </tr>
