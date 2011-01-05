@@ -39,6 +39,7 @@ from esp.users.models import User
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError_Log
 from esp.cache import cache_function
+from esp.tagdict.models          import Tag
 
 from django.db import models
 from django.db.models.query import Q
@@ -125,9 +126,12 @@ class ResourceType(models.Model):
     @staticmethod
     def get_or_create(label, program=None):
         if program:
-            current_type = ResourceType.objects.filter(name__icontains=label)
+            base_q = Q(program=program)
+            if Tag.getTag('allow_global_restypes'):
+                base_q = base_q | Q(program__isnull=True)
         else:
-            current_type = ResourceType.objects.filter(name__icontains=label, program=program)
+            base_q = Q(program__isnull=True)
+        current_type = ResourceType.objects.filter(base_q).filter(name__icontains=label)
         if len(current_type) != 0:
             return current_type[0]
         else:
