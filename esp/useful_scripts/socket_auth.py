@@ -47,8 +47,12 @@ def server(socket_path):
                 funcs[func](conn, *args)
             else:
                 return_('ERROR_Unknown_Action', conn=conn, )
-        except Exception:
+        except Exception as inst:
             traceback.print_exc()
+            print inst.__class__
+            return_('ERROR_Internal', conn=conn, )
+            print "Exiting to clean up..."
+            sys.exit()
 
 def user_exists(conn, username, *args):
     if len(ESPUser.objects.filter(username__iexact=username)[:1]) > 0:
@@ -94,4 +98,5 @@ funcs = {
 }
 
 if __name__ == '__main__':
+    print "Initializing server."
     server(socket_path)

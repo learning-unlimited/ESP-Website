@@ -1,5 +1,5 @@
-To start socket_auth, run:
-rm socket_auth/socket_auth.sock; (umask 002 && ./socket_auth.py socket_auth/socket_auth.sock)
+To start socket_auth, as www-data-mit (or appropriate user), run:
+(umask 002; while true; do rm -f socket_auth/socket_auth.sock; ./socket_auth.py socket_auth/socket_auth.sock; done )
 
 
 To fix connection issue:
