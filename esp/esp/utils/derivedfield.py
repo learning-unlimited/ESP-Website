@@ -35,6 +35,8 @@ Learning Unlimited, Inc.
 
 import sys
 
+from south.modelsinspector import introspector
+
 def DerivedField(FieldCls, getter_fn):
     """
     Returns a Django Model Field that is derived, ie., that is
@@ -141,5 +143,11 @@ def DerivedField(FieldCls, getter_fn):
                 finally:  ## Put the unlock in a 'finally' block so that it always happens
                     self._derived_reentrant_lock = False
             getter_fn.connect(handler)
+
+        def south_field_triple(self, ):
+            # XXX: Uhhh... Such a hack... FIIK this really works
+            field_class = FieldCls.__module__ + "." + self.get_internal_type()
+            args, kwargs = introspector(self)
+            return (field_class, args, kwargs, )
 
     return NewCls
