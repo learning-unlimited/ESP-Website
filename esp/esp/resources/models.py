@@ -139,6 +139,7 @@ class ResourceType(models.Model):
             nt = ResourceType()
             nt.name = label
             nt.description = ''
+            nt.attributes_pickled = "Yes"
             nt.program = program
             nt.autocreated = True
             nt.save()
