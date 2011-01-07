@@ -93,6 +93,7 @@ class ResourceType(models.Model):
     #   it could be extended.
     choices = ListField('attributes_pickled')
     program = models.ForeignKey('program.Program', null=True, blank=True)                 #   If null, this resource type is global.  Otherwise it's specific to one program.
+    autocreated = models.BooleanField(default=False)
     distancefunc = models.TextField(
         blank=True,
         null=True,
@@ -139,6 +140,7 @@ class ResourceType(models.Model):
             nt.name = label
             nt.description = ''
             nt.program = program
+            nt.autocreated = True
             nt.save()
             return nt
         
