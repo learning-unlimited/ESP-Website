@@ -138,6 +138,7 @@ class ResourceType(models.Model):
             nt = ResourceType()
             nt.name = label
             nt.description = ''
+            nt.program = program
             nt.save()
             return nt
         
