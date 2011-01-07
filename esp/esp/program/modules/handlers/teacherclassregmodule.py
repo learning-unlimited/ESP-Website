@@ -610,13 +610,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         else:
             errors = {}
             
-            request_program = self.program
-            if Tag.getTag('allow_global_restypes'):
-                request_program = None
-            
             if Tag.getTag('default_restypes'):
                 resource_type_labels = json.loads(Tag.getTag('default_restypes'))
-                resource_types = [ResourceType.get_or_create(x, request_program) for x in resource_type_labels]
+                resource_types = [ResourceType.get_or_create(x, self.program) for x in resource_type_labels]
             else:
                 if Tag.getTag('static_resource_requests'):
                     # With static resource requests, we need to display a form
@@ -632,7 +628,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     # If we're not using static resource requests, then just
                     # hardcode some sane defaults
                     resource_type_labels = ['Classroom', 'A/V']
-                    resource_types = [ResourceType.get_or_create(x, request_program) for x in resource_type_labels]
+                    resource_types = [ResourceType.get_or_create(x, self.program) for x in resource_type_labels]
 
             if newclass is not None:
                 current_data = newclass.__dict__
@@ -689,9 +685,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     reg_form = TeacherClassRegForm(self)
                 elif action=='createopenclass':
                     reg_form = TeacherOpenClassRegForm(self)
-                request_program = self.program
-                if Tag.getTag('allow_global_restypes'):
-                    request_program = None
 
                 #   Provide initial forms: a request for each provided type, but no requests for new types.
                 resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request')
