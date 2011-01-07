@@ -610,14 +610,30 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         else:
             errors = {}
             
-            if Tag.getTag('default_restypes'):
-                resource_type_labels = json.loads(Tag.getTag('default_restypes'))
-            else:
-                resource_type_labels = ['Classroom', 'A/V']
             request_program = self.program
             if Tag.getTag('allow_global_restypes'):
                 request_program = None
             
+            if Tag.getTag('default_restypes'):
+                resource_type_labels = json.loads(Tag.getTag('default_restypes'))
+                resource_types = [ResourceType.get_or_create(x, request_program) for x in resource_type_labels]
+            else:
+                if Tag.getTag('static_resource_requests'):
+                    # With static resource requests, we need to display a form
+                    # each available type --- there's no way to add the types
+                    # that we didn't start out with
+                    # Thus, if default_restype isn't set, we display everything
+                    # potentially relevant
+                    q_program = Q(program=self.program)
+                    if Tag.getTag('allow_global_restypes'):
+                        q_program = q_program | Q(program__isnull=True)
+                    resource_types=list(ResourceType.objects.filter(q_program).order_by('-priority_default'))
+                else:
+                    # If we're not using static resource requests, then just
+                    # hardcode some sane defaults
+                    resource_type_labels = ['Classroom', 'A/V']
+                    resource_types = [ResourceType.get_or_create(x, request_program) for x in resource_type_labels]
+
             if newclass is not None:
                 current_data = newclass.__dict__
                 # Duration can end up with rounding errors. Pick the closest.
@@ -653,7 +669,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 class_requests = ResourceRequest.objects.filter(target=ds)
                 if Tag.getTag('static_resource_requests'):
                     #   Program the multiple-checkbox forms if static requests are used.
-                    resource_formset = ResourceRequestFormSet(resource_type=[ResourceType.get_or_create(x, request_program) for x in resource_type_labels], prefix='request')
+                    resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request')
                     initial_requests = {}
                     for x in class_requests:
                         if x.res_type.name not in initial_requests:
@@ -678,7 +694,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     request_program = None
 
                 #   Provide initial forms: a request for each provided type, but no requests for new types.
-                resource_formset = ResourceRequestFormSet(resource_type=[ResourceType.get_or_create(x, request_program) for x in resource_type_labels], prefix='request')
+                resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request')
                 restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
         context['one'] = one
