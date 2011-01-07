@@ -674,10 +674,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 elif action=='createopenclass':
                     reg_form = TeacherOpenClassRegForm(self)
                 request_program = self.program
-                if Tag.getTag('default_restypes'):
-                    type_labels = json.loads(Tag.getTag('default_restypes'))
-                else:
-                    type_labels = ['Classroom', 'A/V']
                 if Tag.getTag('allow_global_restypes'):
                     request_program = None
 
