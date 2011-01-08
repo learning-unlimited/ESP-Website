@@ -5,6 +5,7 @@ from esp.program.modules.forms.teacherreg import TeacherClassRegForm
 from esp.resources.forms import ResourceRequestFormSet, ResourceTypeFormSet
 from esp.resources.models import ResourceType, ResourceRequest
 from esp.datatree.models import GetNode
+from esp.tagdict.models import Tag
 
 from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
@@ -68,8 +69,10 @@ class ClassCreationController(object):
     def get_forms(self, reg_data, form_class=TeacherClassRegForm):
         reg_form = form_class(self.crmi, reg_data)
 
+        static_resource_requests = Tag.getProgramTag('static_resource_requests', self.program, )
+
         try:
-            resource_formset = ResourceRequestFormSet(reg_data, prefix='request')
+            resource_formset = ResourceRequestFormSet(reg_data, prefix='request', static_resource_requests=static_resource_requests, )
         except ValidationError:
             resource_formset = None
 

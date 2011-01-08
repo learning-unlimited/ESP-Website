@@ -53,6 +53,8 @@ class ResourceRequestForm(forms.Form):
         if 'resource_type' in kwargs:
             self.resource_type = kwargs['resource_type']
             del kwargs['resource_type']
+        self.static_resource_requests = kwargs['static_resource_requests']
+        del kwargs['static_resource_requests']
 
         super(ResourceRequestForm, self).__init__(data, **kwargs)
     
@@ -64,7 +66,7 @@ class ResourceRequestForm(forms.Form):
             
         if hasattr(self, 'resource_type'):
             self.fields['desired_value'].label = self.resource_type.name
-            if Tag.getTag('static_resource_requests'):
+            if self.static_resource_requests:
                 #   If this is the only form to be displayed, show all options as checkboxes and let the user pick
                 #   any number (or none) with this form
                 self.fields['desired_value'] = forms.MultipleChoiceField(choices=(), widget=forms.CheckboxSelectMultiple, required=False)
@@ -86,6 +88,11 @@ class ResourceRequestFormSet(formset_factory(ResourceRequestForm, extra=0)):
         if 'resource_type' in kwargs:
             self.resource_type = kwargs['resource_type']
             del kwargs['resource_type']
+        if 'static_resource_requests' in kwargs:
+            self.static_resource_requests = kwargs['static_resource_requests']
+            del kwargs['static_resource_requests']
+        else:
+            raise TypeError, "static_resource_requests is required for ResourceRequestFormSet"
         super(ResourceRequestFormSet, self).__init__(*args, **kwargs)
     
     def initial_form_count(self):
@@ -119,6 +126,7 @@ class ResourceRequestFormSet(formset_factory(ResourceRequestForm, extra=0)):
             #   Select out appropriate list item for the form being constructed.
             if type(self.resource_type) == list:
                 default_args['resource_type'] = self.resource_type[i]
+        default_args['static_resource_requests'] = self.static_resource_requests
             
         defaults.update(default_args)
         form = self.form(**defaults)
