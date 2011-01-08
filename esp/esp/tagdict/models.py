@@ -50,6 +50,19 @@ class Tag(models.Model):
             return default
     getTag.depend_on_row(lambda: Tag, lambda tag: {'key': tag.key, 'target': tag.target})
     getTag = classmethod(getTag)
+
+    @classmethod
+    def getProgramTag(cls, key, program=None, default=None, ):
+        """
+        Given a key and program, return the corresponding value as string.
+        If the program does not have the tag set, return the global value.
+        """
+        res = None
+        if program is not None:
+            res = cls.getTag(key, target=program, default=None, )
+        if res is None:
+            res = cls.getTag(key, target=None, default=default, )
+        return res
     
     @classmethod
     def setTag(cls, key, target=None, value=EMPTY_TAG):
