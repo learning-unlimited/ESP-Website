@@ -727,58 +727,6 @@ class ProgramPrintables(ProgramModuleObj):
 
         return ''
 
-    @aux_call
-    @needs_admin
-    def refund_receipt(self, request, tl, one, two, module, extra, prog):
-        from esp.money.models import Transaction
-        from esp.web.util.latex import render_to_latex
-        from esp.program.modules.forms.printables_refund import RefundInfoForm
-        
-        user, found = search_for_user(request, self.program.students_union())
-        if not found:
-            return user
-
-        initial = {'userid': user.id }
-
-        if request.GET.has_key('payer_post'):
-            form = RefundInfoForm(request.GET, initial=initial)
-            if form.is_valid():
-                transactions = Transaction.objects.filter(fbo = user, anchor = self.program_anchor_cached())
-                if transactions.count() == 0:
-                    transaction = Transaction()
-                    try:
-                        transaction.amount = float(form.cleaned_data['txn_amount'])
-                    except:
-                        raise ESPError(False), 'No transaction was found, and you did not specify a valid refund amount.  Please enter a dollar amout such as "20.00" and try again.'
-                else:
-                    transaction = transactions[0]
-
-                context = {'user': user, 'transaction': transaction}
-                context['program'] = prog
-
-                context['payer_name'] = form.cleaned_data['payer_name']
-                context['payer_address'] = form.cleaned_data['payer_address']                
-                context['omars_number'] = form.cleaned_data['omars_number']
-                context['credit_card_num'] = form.cleaned_data['credit_card_num']
-                context['amount'] = '%.02f' % (float(transaction.amount))
-
-                if extra:
-                    file_type = extra.strip()
-                else:
-                    file_type = 'pdf'
-
-                return render_to_latex(self.baseDir()+'refund_receipt.tex', context, file_type)
-        else:
-            form = RefundInfoForm(initial = initial)
-
-        transactions = Transaction.objects.filter(fbo = user, anchor = self.program_anchor_cached())
-        if transactions.count() == 0:
-            transaction = Transaction()
-        else:
-            transaction = transactions[0]
-
-        return render_to_response(self.baseDir()+'refund_receipt_form.html', request, (prog, tl), {'form': form,'student':user,
-                                                                                                   'transaction': transaction})
     @staticmethod
     def get_student_classlist(program, student):
         
@@ -1093,34 +1041,6 @@ Student schedule for %s:
         context['phone_number'] = Tag.getTag('group_phone_number')
 
         return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
-        
-    @aux_call
-    @needs_admin
-    def satprepreceipt(self, request, tl, one, two, module, extra, prog):
-        from esp.money.models import Transaction
-        
-        filterObj, found = get_user_list(request, self.program.getLists(True))
-        if not found:
-            return filterObj
-
-        context = {'module': self     }
-        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
-
-        students.sort()
-
-        receipts = []
-        for student in students:
-            transactions = Transaction.objects.filter(fbo = student, anchor = self.program_anchor_cached())
-            if transactions.count() == 0:
-                transaction = Transaction()
-            else:
-                transaction = transactions[0]
-
-            receipts.append({'user': student, 'transaction': transaction})
-
-        context['receipts'] = receipts
-        
-        return render_to_response(self.baseDir()+'studentreceipts.html', request, (prog, tl), context)
 
     @aux_call
     @needs_admin

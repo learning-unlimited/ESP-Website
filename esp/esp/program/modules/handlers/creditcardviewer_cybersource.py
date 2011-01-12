@@ -43,7 +43,7 @@ from esp.accounting_core.models import LineItemType, EmptyTransactionException, 
 from esp.accounting_docs.models import Document
 from esp.middleware      import ESPError
 
-class CreditCardViewer_Cybersource(ProgramModuleObj, module_ext.CreditCardModuleInfo):
+class CreditCardViewer_Cybersource(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
@@ -52,9 +52,6 @@ class CreditCardViewer_Cybersource(ProgramModuleObj, module_ext.CreditCardModule
             "module_type": "manage",
             "seq": 10000
             }
-
-    def extensions(self):
-        return []#('creditCardInfo', module_ext.CreditCardModuleInfo)]
 
     @main_call
     @needs_admin

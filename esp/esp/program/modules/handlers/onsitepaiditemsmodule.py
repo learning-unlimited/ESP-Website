@@ -33,8 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.program.modules.module_ext import CreditCardModuleInfo
-from esp.program.modules.handlers.creditcardmodule import CreditCardModule
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response

@@ -182,7 +182,6 @@ INSTALLED_APPS = (
     'esp.setup',
     'esp.qsd',
     'esp.qsdmedia',
-    'esp.money',
     'esp.resources',
     'esp.gen_media',
     'esp.dblog',

@@ -43,7 +43,7 @@ from esp.accounting_core.models import LineItemType, EmptyTransactionException, 
 from esp.accounting_docs.models import Document
 from esp.middleware      import ESPError
 
-class CreditCardModule_Cybersource(ProgramModuleObj, module_ext.CreditCardModuleInfo):
+class CreditCardModule_Cybersource(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
@@ -52,12 +52,6 @@ class CreditCardModule_Cybersource(ProgramModuleObj, module_ext.CreditCardModule
             "module_type": "learn",
             "seq": 10000
             }
-    
-    def extensions(self):
-        return []#('creditCardInfo', module_ext.CreditCardModuleInfo)]
-
-    def cost(self, espuser, anchor):
-        return '%s.00' % str(self.creditCardInfo.base_cost)
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
@@ -82,8 +76,6 @@ class CreditCardModule_Cybersource(ProgramModuleObj, module_ext.CreditCardModule
             return {'creditcard': QObj}
         else:
             return {'creditcard':User.objects.filter(QObj).distinct()}
-
-
 
     def studentDesc(self):
         return {'creditcard': """Students who have filled out the credit card form."""}

@@ -306,17 +306,6 @@ class ClassRegModuleInfo(models.Model):
     
     def __unicode__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
-    
-
-class CreditCardModuleInfo(models.Model):
-    module = models.ForeignKey(ProgramModuleObj)
-    base_cost        = models.IntegerField(blank=True, null=True)
-
-    def __unicode__(self):
-        return 'Credit Card Ext. for %s' % str(self.module)
-
-    class Admin:
-        pass
 
 class RemoteProfile(models.Model):
     from esp.users.models import User
