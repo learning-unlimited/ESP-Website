@@ -35,9 +35,9 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.middleware.esperrormiddleware import ESPError
 from esp.program.modules import module_ext
 from esp.program.modules.forms.junction_teacher_review import JunctionTeacherReview
-from esp.users.models import ESPUser, UserBit, User
+from esp.users.models import ESPUser, User
 from esp.web.util        import render_to_response
-from esp.program.models import ClassSubject, StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
+from esp.program.models import ClassSubject, StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentRegistration
 from django.contrib.auth.decorators import login_required
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect
@@ -78,9 +78,7 @@ class TeacherReviewApps(ProgramModuleObj):
 
         for student in students:
             now = datetime.now()
-            student.added_class = student.userbit_set.filter(qsc__parent = cls.anchor)[0].startdate
-            student.added_userbits = student.userbit_set.filter(startdate__lte=now, enddate__gte=now).filter(qsc__parent = cls.anchor).order_by('-startdate').distinct()
-
+            student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
             try:
                 student.app = student.studentapplication_set.get(program = self.program)
             except:
@@ -190,7 +188,7 @@ class TeacherReviewApps(ProgramModuleObj):
         except ESPUser.DoesNotExist:
             raise ESPError(False), 'Cannot find student, %s' % student
 
-        not_registered = (student.userbit_set.filter(qsc__parent=cls.anchor, verb__in=reg_nodes).count() == 0)
+        not_registered = not StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student).exists()
         if not_registered:
             raise ESPError(False), 'Student not a student of this class.'
 
@@ -200,7 +198,7 @@ class TeacherReviewApps(ProgramModuleObj):
             student.app = None
             raise ESPError(False), 'Error: Student did not start an application.'
 
-        student.added_class = student.userbit_set.filter(qsc__parent = cls.anchor)[0].startdate
+        student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
 
         teacher_reviews = student.app.reviews.all().filter(reviewer=self.user)
         if teacher_reviews.count() > 0:
