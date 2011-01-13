@@ -6,7 +6,6 @@
 # Parameters
 GIT_REPO="http://diogenes.learningu.org/git/esp-project.git"
 #GIT_REPO="espuser@esp.mit.edu:/esp/git/esp-project.git"
-DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
 DROPBOX_STARTUP_SCRIPT="/etc/rc.local"
 
 # Stuff for random password generation
@@ -71,6 +70,9 @@ Options:
     --db:       Set up a PostgreSQL database
     --settings: Write settings files
     --apache:   Set up Apache to serve the site using mod_wsgi
+    
+For more detailed documentation, see: 
+    http://wiki.learningu.org/Dev_server_setup_script
 "
     exit 0
 fi
@@ -78,6 +80,8 @@ fi
 echo "This script creates or modifies an ESP Web site development server."
 echo "Different parts of it are controlled with command line options"
 echo "(run with --help to see them).  Please follow the directions."
+echo "For more detailed documentation, see: "
+echo "    http://wiki.learningu.org/Dev_server_setup_script"
 echo "You may hit Ctrl-C to exit at any time."
 echo
 
@@ -367,6 +371,7 @@ then
 	python -m easy_install south
 	python -m easy_install repoze.profile
 	python -m easy_install xlwt
+	python -m easy_install simplejson
 
 	#	Install sslauth
 	if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]
@@ -537,6 +542,7 @@ EOF
     mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/images
     mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/styles
     mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/uploaded
+    DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
     cp -r ${DJANGO_DIR}/contrib/admin/media $MEDIADIR/admin
     ln -sf ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media $BASEDIR/esp/public/custom_media
     ln -sf $BASEDIR/esp/public/custom_media/images $BASEDIR/esp/public/media/images
