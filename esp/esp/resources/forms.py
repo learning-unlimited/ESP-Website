@@ -69,8 +69,11 @@ class ResourceRequestForm(forms.Form):
             if self.static_resource_requests:
                 #   If this is the only form to be displayed, show all options as checkboxes and let the user pick
                 #   any number (or none) with this form
-                self.fields['desired_value'] = forms.MultipleChoiceField(choices=(), widget=forms.CheckboxSelectMultiple, required=False)
-                self.fields['desired_value'].label = self.resource_type.name
+                if self.resource_type.only_one:
+                    pass
+                else:
+                    self.fields['desired_value'] = forms.MultipleChoiceField(choices=(), widget=forms.CheckboxSelectMultiple, required=False)
+                    self.fields['desired_value'].label = self.resource_type.name
             else:
                 #   Use radio buttons for 4 or fewer choices; select boxes above that to save space
                 if len(self.resource_type.choices) > 4:
