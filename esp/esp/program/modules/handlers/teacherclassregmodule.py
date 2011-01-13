@@ -678,8 +678,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                             initial_requests[x.res_type.name]  = []
                         initial_requests[x.res_type.name].append(x.desired_value)
                     for form in resource_formset.forms:
-                        if form.fields['desired_value'].label in initial_requests:
-                            form.fields['desired_value'].initial = initial_requests[form.fields['desired_value'].label]
+                        field = form.fields['desired_value']
+                        if field.label in initial_requests:
+                            field.initial = initial_requests[field.label]
+                            if form.resource_type.only_one and len(field.initial):
+                                field.initial = field.initial[0]
                 else:
                     #   With dynamic requests each form uses radio buttons, so there's a one-to-one correspondence
                     #   between forms and requests.

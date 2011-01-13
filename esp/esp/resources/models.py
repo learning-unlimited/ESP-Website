@@ -88,6 +88,7 @@ class ResourceType(models.Model):
     description = models.TextField()                                #   What is this resource?
     consumable  = models.BooleanField(default = False)              #   Is this consumable?  (Not usable yet. -Michael P)
     priority_default = models.IntegerField(default=-1)  #   How important is this compared to other types?
+    only_one = models.BooleanField(default=False, help_text="If set, in some cases, only allow adding one instance of this resource.")
     attributes_pickled  = models.TextField(default="Don't care", blank=True, help_text="A pipe (|) delimited list of possible attribute values.")       
     #   As of now we have a list of string choices for the value of a resource.  But in the future
     #   it could be extended.
