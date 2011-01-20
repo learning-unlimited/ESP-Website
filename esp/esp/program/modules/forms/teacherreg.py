@@ -50,9 +50,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
                             (False, "I would like a classroom to be provided for my class.")]
     lateness_choices = [    (True, "Students may join this class up to 20 minutes after the official start time."),
                             (False, "My class is not suited to late additions.")]
-    hardness_choices = [    ("Hard","Hard - My class would be exceptionally difficult for your average high school student"),
-                            ("Normal","Normal"),
-                            ("Easy","Easy - My class could probably be taught to elementary school students")] 
+    hardness_choices = [
+        ("*",    "*    - Should be understandable to everyone in the class.",),
+        ("**",   "**   - Should not be too difficult for most students.",),
+        ("***",  "***  - Will move quickly and will have many difficult parts.",),
+        ("****", "**** - You should not expect to be able to understand most of this class.",),
+    ]
     
     # Grr, TypedChoiceField doesn't seem to exist yet
     title          = SizedCharField(    label='Course Title', length=50, max_length=200 )
@@ -77,7 +80,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
     optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', choices=[(0, 0)], widget=BlankSelectWidget() )
     allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], widget=forms.CheckboxSelectMultiple(), 
                                                              help_text="Please select all class size ranges you are comfortable teaching." )
-    hardness_rating = forms.ChoiceField( label='Hardness',choices=hardness_choices, initial="Normal")
+    hardness_rating = forms.ChoiceField( label='Hardness',choices=hardness_choices, initial="**",
+        help_text="Which best describes how hard your class will be for your students?")
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
     
     has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect(), required=False )
