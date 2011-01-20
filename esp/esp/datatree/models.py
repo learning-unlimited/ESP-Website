@@ -829,6 +829,7 @@ class DataTree(models.Model):
         def __init__(self, anchor, remainder):
             self.anchor = anchor
             self.remainder = remainder
+            super(DataTree.NoSuchNodeException, self).__init__(unicode(self))
 
         def __unicode__(self):
             return "Node not found: " + repr(self.remainder[0])

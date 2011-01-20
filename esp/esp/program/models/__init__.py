@@ -150,10 +150,8 @@ class ProgramModule(models.Model):
     class CannotGetClassException(Exception):
         def __init__(self, msg):
             self.msg = msg
+            super(ProgramModule.CannotGetClassException, self).__init__(msg)
 
-        def __unicode__(self):
-            return self.msg
-    
     def __unicode__(self):
         return 'Program Module: %s' % self.admin_title
     

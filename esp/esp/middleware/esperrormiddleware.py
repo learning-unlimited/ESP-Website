@@ -73,6 +73,7 @@ class AjaxErrorMiddleware(object):
     class AjaxError(Exception):
         def __init__(self, message):
             self.message = message
+            super(AjaxErrorMiddleWare.AjaxError, self).__init__(message)
 
     class AjaxParameterMissingError(AjaxError):
         def __init__(self, param):
