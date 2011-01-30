@@ -5,19 +5,15 @@
 {% block subsection_name %}Teacher{% endblock %}
 
 {% block xtrajs %}
-{% include "load_ajax_scripts.html" %}
 <script type="text/javascript">
-<!--
-   dojo.require("dojo.parser");
-   dojo.require("dijit.form.ComboBox");
-   dojo.require("dojo.data.ItemFileReadStore");
-//-->
+    dojo.require("dijit.form.FilteringSelect");
+    dojo.require("dojo.data.ItemFileReadStore");
+    dojo.require("dojox.data.JsonRestStore");
 </script>
 {% endblock %}
-     
+
 {% block stylesheets %}
 {{ block.super }}
-<link rel="stylesheet" type="text/css" href="/media/scripts/dojo-release-1.3.0/dijit/themes/tundra/tundra.css">
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css">
 {% endblock %}
 
@@ -85,11 +81,6 @@ You currently have no coteachers for this class.
             <input type="hidden" name="clsid" value="{{ class.id }}" />
             <input type="hidden" name="op" value="add" />
             <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
-            <script type="text/javascript">
-                dojo.require("dijit.form.FilteringSelect");
-                dojo.require("dojo.data.ItemFileReadStore");
-                dojo.require("dojox.data.JsonRestStore");
-            </script>
             <div dojoType="dojox.data.JsonRestStore" jsId="stateStore" target="/teach/{{ program.getUrlBase }}/teacherlookup/" idAttribute="id">
             </div>
             <input dojoType="dijit.form.FilteringSelect" value="" store="stateStore" searchAttr="name" name="teacher_selected" id="stateInput">

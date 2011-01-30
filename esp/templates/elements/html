@@ -2,17 +2,61 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
-<title>MIT ESP - {% block title %}{% endblock %}</title>
+<title>{% block fulltitle %}{% endblock %}</title>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <meta name="description" content="{% block description %}{% endblock %}" />
 <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
 <meta http-equiv="X-UA-Compatible" content="chrome=1">
-<!-- Copyright (C) 2005 Massachusetts Institute of Technology -->
-<script type="text/javascript" src="/media/scripts/error_logger.js"> </script>
-<script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
+
 {% block javascript %}
+    <script type="text/javascript" src="/media/scripts/error_logger.js"> </script>
+    <script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
+
+    <script type="text/javascript" src="/media/scripts/yui/yahoo/yahoo-min.js"></script>
+    <script type="text/javascript" src="/media/scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script>
+    <script type="text/javascript" src="/media/scripts/yui/dom/dom-min.js"></script>
+    <script type="text/javascript" src="/media/scripts/yui/connection/connection-min.js"></script>
+    <script type="text/javascript" src="/media/scripts/yui/animation/animation-min.js"></script>
+    <script type="text/javascript" src="/media/scripts/yui/autocomplete/autocomplete-min.js"></script>
+    <script type="text/javascript" src="/media/scripts/yui/logger/logger-min.js"></script>
+    <script type="text/javascript" src="/media/scripts/yui/dragdrop/dragdrop-debug.js"></script>
+    <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
+
+    <script type="text/javascript" src="/media/scripts/jquery.js"> </script>
+    <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
+    <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
+
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/dojo/1.5/dojo/dojo.xd.js" djConfig="parseOnLoad: true"></script>
 {% endblock %}
+
 {% block stylesheets %}
+<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css" />
+
+<style type="text/css">
+.admin_hidden {
+  display: none;
+}
+.logged_in_hidden {
+  display: none;
+}
+.not_logged_in_hidden {
+  display: none;
+}
+</style>
+
+<script language="JavaScript">
+$j = $.noConflict();
+$j(document).ready(function() {
+  if (esp_user.cur_admin == "1") {
+    $j(".admin").removeClass("admin_hidden");
+  }
+
+  if (esp_user.cur_username != null) {
+    $j(".not_logged_in").addClass("not_logged_in_hidden");
+    $j(".logged_in").removeClass("logged_in_hidden");
+  }
+});
+</script>
 {% endblock %}
 
 <script language="JavaScript">
@@ -44,21 +88,6 @@ function csrftoken() {
 {% block body %}{% endblock %}
 
 {% block counter %}
-<div class="offscreen">
-<!-- Web Reporting -->
-<!-- Disabled
-  <img src="http://counter.mit.edu/tally" width="1" height="1" alt="" />
--->
-<script src="https://ssl.google-analytics.com/urchin.js" type="text/javascript">
-</script>
-<script type="text/javascript">
-_uacct = "UA-1901567-1";
-try {
-  urchinTracker();
-} catch(err) {}  // Apparently Google sometimes throws exceptions here, and apparently sometimes urchin.js fails to load; either way, let's not error out
-</script>
-<!-- End Web Reporting -->
-</div>
 {% endblock %}
 </body>
 </html>
