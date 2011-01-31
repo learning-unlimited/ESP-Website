@@ -92,14 +92,6 @@ class Migration:
         ))
         db.send_create_signal('modules', ['ProgramModuleObj'])
         
-        # Adding model 'CreditCardModuleInfo'
-        db.create_table('modules_creditcardmoduleinfo', (
-            ('id', orm['modules.CreditCardModuleInfo:id']),
-            ('module', orm['modules.CreditCardModuleInfo:module']),
-            ('base_cost', orm['modules.CreditCardModuleInfo:base_cost']),
-        ))
-        db.send_create_signal('modules', ['CreditCardModuleInfo'])
-        
         # Adding model 'SATPrepAdminModuleInfo'
         db.create_table('modules_satprepadminmoduleinfo', (
             ('id', orm['modules.SATPrepAdminModuleInfo:id']),
@@ -149,10 +141,7 @@ class Migration:
         
         # Deleting model 'ProgramModuleObj'
         db.delete_table('modules_programmoduleobj')
-        
-        # Deleting model 'CreditCardModuleInfo'
-        db.delete_table('modules_creditcardmoduleinfo')
-        
+
         # Deleting model 'SATPrepAdminModuleInfo'
         db.delete_table('modules_satprepadminmoduleinfo')
         
@@ -250,11 +239,6 @@ class Migration:
             'set_prereqs': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
             'teacher_class_noedit': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
             'times_selectmultiple': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'})
-        },
-        'modules.creditcardmoduleinfo': {
-            'base_cost': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'module': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['modules.ProgramModuleObj']"})
         },
         'modules.dbreceipt': {
             'action': ('django.db.models.fields.CharField', [], {'default': "'confirm'", 'max_length': '80'}),
