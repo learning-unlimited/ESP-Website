@@ -316,7 +316,7 @@ then
 	cd $DEPDIR
 	
 	#	Get what we can using Ubuntu's package manager
-	apt-get install -y build-essential texlive imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-dns postgresql-8.4 python-psycopg2 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi
+	apt-get install -y build-essential texlive imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-dns postgresql-8.4 python-psycopg2 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape
 
 	#	Fetch and extract files
 	if [[ ! -d memcached-1.4.5 ]]
@@ -372,6 +372,7 @@ then
 	python -m easy_install repoze.profile
 	python -m easy_install xlwt
 	python -m easy_install simplejson
+	python -m easy_install twill
 
 	#	Install sslauth
 	if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]
@@ -478,6 +479,17 @@ from database_settings import *
 
 MIDDLEWARE_LOCAL = []
 
+# E-mails for contact form
+email_choices = (
+    ('general', 'General Inquiries'),
+    ('web',     'Web Site Problems'),
+    )
+# Corresponding email addresses                                                                                                                                 
+email_addresses = {
+    'general': '$GROUPEMAIL',
+    'web':     '$SITENAME-websupport@lists.learningu.org',
+    }
+
 EOF
 
     /etc/init.d/memcached restart
@@ -562,11 +574,12 @@ fi
 # To reset: remove user and DB in SQL
 if [[ "$MODE_DB" || "$MODE_ALL" ]]
 then
+    sudo -u postgres psql template1 -c "CREATE LANGUAGE plpgsql;"
 	sudo -u postgres psql -c "CREATE USER $DBUSER;"
 	sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
 	sudo -u postgres psql -c "DROP DATABASE $DBNAME;"
 	sudo -u postgres psql -c "CREATE DATABASE $DBNAME OWNER ${DBUSER};"
-	sudo -u postgres psql $DBNAME -c "CREATE LANGUAGE plpgsql;"
+	
 	echo "Created a PostgreSQL login role and empty database."
 	echo
 

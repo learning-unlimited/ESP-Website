@@ -314,6 +314,17 @@ from database_settings import *
 
 MIDDLEWARE_LOCAL = []
 
+# E-mails for contact form
+email_choices = (
+    ('general', 'General Inquiries'),
+    ('web',     'Web Site Problems'),
+    )
+# Corresponding email addresses                                                                                                                                 
+email_addresses = {
+    'general': '$GROUPEMAIL',
+    'web':     '$SITENAME-websupport@lists.learningu.org',
+    }
+
 EOF
 
     echo "Generated Django settings overrides, saved to:"
