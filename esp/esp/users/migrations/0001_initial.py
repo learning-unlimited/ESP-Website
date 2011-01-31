@@ -34,7 +34,7 @@ class Migration:
             ('recursive', orm['users.UserBitImplication:recursive']),
         ))
         db.send_create_signal('users', ['UserBitImplication'])
-        
+
         # Adding model 'ZipCode'
         db.create_table('users_zipcode', (
             ('id', orm['users.ZipCode:id']),
@@ -182,7 +182,12 @@ class Migration:
         ))
         db.send_create_signal('users', ['ContactInfo'])
         
-    
+        # Adding ManyToManyField 'UserBitImplication.created_bits'
+        db.create_table('users_userbitimplication_created_bits', (
+            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+            ('userbitimplication', models.ForeignKey(orm.UserBitImplication, null=False)),
+            ('userbit', models.ForeignKey(orm.UserBit, null=False))
+        ))
     
     def backwards(self, orm):
         
