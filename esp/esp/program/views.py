@@ -295,7 +295,7 @@ def userview(request):
 
     teacherbio = TeacherBio.getLastBio(user)
     if not teacherbio.picture:
-        teacherbio.picture = 'uploaded/not-available.jpg'
+        teacherbio.picture = 'images/not-available.jpg'
     
     return render_to_response("users/userview.html", request, GetNode("Q/Web"), { 'user': user, 'teacherbio': teacherbio, 'domain': SITE_INFO[1] } )
     
