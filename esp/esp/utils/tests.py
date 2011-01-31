@@ -126,7 +126,7 @@ class MemcachedTestCase(unittest.TestCase):
     def setUp(self):
         """ Launch memcached instances for all the caches listed in CACHES """
         caches = [ x.split(':') for x in self.CACHES ]
-        self.servers = [ subprocess.Popen(["memcached", "-p %s" % cache[1]], stderr=open(os.devnull, "w"))
+        self.servers = [ subprocess.Popen(["memcached", '-u', 'nobody', '-p', '%s' % cache[1]], stderr=open(os.devnull, "w"))
                          for cache in caches ]
         self.clients = [ memcache.Client([cache]) for cache in self.CACHES ] 
 
@@ -173,7 +173,7 @@ if MultihostCacheClass:
             
             for client in self.clients[5:7]:
                 client.disconnect_all()
-            self.clients = self.clients[:5] #+ [ memcache.Client(self.CACHES[5:7]) ]
+            self.clients = self.clients[:5] + [ memcache.Client(self.CACHES[5:7]) ]
             
             self._old_REMOTE_CACHE_SERVERS = getattr(settings, 'REMOTE_CACHE_SERVERS', None)
             settings.REMOTE_CACHE_SERVERS = self.CACHE_BACKENDS[1:3] + self.CACHE_BACKENDS[5:6]
@@ -186,6 +186,9 @@ if MultihostCacheClass:
             
             self.cacheclass = MultihostCacheClass(self.CACHE_BACKENDS[0], {})
             
+            #   Give the memcached processes time to start up before we query them.
+            os.system('sleep 2')
+
         def tearDown(self):
             """
             Clean up our MultihostCacheClass instance
