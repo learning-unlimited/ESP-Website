@@ -24,6 +24,9 @@ from esp import settings
 
 from django.test import TestCase as DjangoTestCase
 
+from django.core.management import call_command
+from django.db.models import loading
+
 # Code from <http://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
 # though I've had trouble finding documentation to clarify this.
@@ -355,7 +358,13 @@ class DefaultclassTestCase(unittest.TestCase):
         myOtherKls2 = kls[0]()
         self.assertEqual(myOtherKls2.get_name(), "otherKls")
         
-
+class DBOpsTestCase(DjangoTestCase):
+    def testSyncdb(self):
+        loading.cache.loaded = False
+        call_command('syncdb', verbosity=0)
+    def testMigrate(self):
+        loading.cache.loaded = False
+        call_command('migrate', verbosity=0)
         
 def suite():
     """Choose tests to expose to the Django tester."""
