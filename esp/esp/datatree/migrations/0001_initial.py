@@ -7,7 +7,7 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        
+
         # Adding model 'DataTree'
         db.create_table('datatree_datatree', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
@@ -25,7 +25,6 @@ class Migration(SchemaMigration):
 
         # Adding unique constraint on 'DataTree', fields ['name', 'parent']
         db.create_unique('datatree_datatree', ['name', 'parent_id'])
-
 
     def backwards(self, orm):
         

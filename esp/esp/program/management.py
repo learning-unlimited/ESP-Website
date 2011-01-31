@@ -48,7 +48,7 @@ def post_syncdb(sender, app, **kwargs):
     if app == program and not have_already_installed:
         with custom_cache():
             #   Check that required tables exist.
-            if missing_db_table(program.Program, users.ContactInfo):
+            if missing_db_table(program.Program) or missing_db_table(users.ContactInfo):
                 return
             #   Run installation
             have_already_installed = True

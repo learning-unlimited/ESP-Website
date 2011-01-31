@@ -8,6 +8,7 @@ class Migration(SchemaMigration):
 
     depends_on = (
         ("program", "0001_initial"),
+        ("users", "0001_initial"),
     )
     
     #   Added IF EXISTS in case the initial data fixture was deferred and hasn't been loaded yet.

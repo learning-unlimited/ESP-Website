@@ -34,8 +34,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-
-from django.db.models import signals 
+from django.db.models import signals
 from esp.datatree import models as datatree
 from esp.utils.custom_cache import custom_cache
 from esp.utils.migration import missing_db_table
@@ -46,13 +45,17 @@ have_already_installed = False
 
 def post_syncdb(sender, app, **kwargs):
     global have_already_installed
-    if app == datatree and not have_already_installed:
-        with custom_cache():
+    if app == datatree and not have_already_installed:     
+       with custom_cache():
             have_already_installed = True
 
             #   Check that required tables exist.
-            if missing_db_table(program_models.ClassSubject, users_models.UserBit):
-                return
+            if missing_db_table(program_models.ClassSubject, check_fields=False):
+                print 'Warning: DataTree post_syncdb missing table %s' % 'program_models.ClassSubject'
+                raise
+            if missing_db_table(users_models.UserBit, check_fields=False):
+                print 'Warning: DataTree post_syncdb missing table %s' % 'users_models.UserBit'
+                raise
 
             print "Installing esp.datatree initial data..."
             datatree.install()

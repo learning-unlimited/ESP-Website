@@ -64,15 +64,21 @@ def db_has_column(table, column, cursor=None):
         column_names = [x[0] for x in table_data]
         return column in column_names
         
-def missing_db_table(*args):
+def missing_db_table(model, check_fields=True):
     """ Check if any of the database tables for the models in the argument list
         have not yet been created. """
-    for model in args:
-        #   Check existence of table.
-        if not db_table_exists(model._meta.db_table):
-            return True
-        #   Check existence of all fields.
+
+    #   Check existence of table.
+    if not db_table_exists(model._meta.db_table):
+        print 'Missing table: %s' % model._meta.db_table
+        return True
+
+    #   Check existence of all fields.
+    if check_fields:
         for field in model._meta.fields:
             if not db_has_column(model._meta.db_table, field.column):
+                print 'Missing field: %s.%s' % (model._meta.db_table, field.column)
                 return True
+
     return False
+
