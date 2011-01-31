@@ -276,6 +276,9 @@ WHERE
         cursor = self.__get_cursor()
         cursor.execute(sql, params)
         result = cursor.fetchall()
+    
+        if result[0][0] is None:
+            raise Exception('Unexpected SQL result')  
 
         if result[0][0] < 0:
             return -result[0][0]
