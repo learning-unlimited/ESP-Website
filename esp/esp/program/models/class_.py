@@ -1294,7 +1294,7 @@ class ClassSubject(models.Model):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     class_size_min = models.IntegerField(blank=True, null=True)
-    hardness_rating = models.TextField()
+    hardness_rating = models.TextField(blank=True, null=True)
     class_size_max = models.IntegerField(blank=True, null=True)
     schedule = models.TextField(blank=True)
     prereqs  = models.TextField(blank=True, null=True)
