@@ -39,7 +39,10 @@ other servers need to regenerate their corresponding cached content).
 """
 
 from django.core.cache.backends.base import BaseCache
-from django.core.cache.backends.memcached import CacheClass as MemcacheCacheClass
+try:
+	from esp.utils.pylibcmd import CacheClass as MemcacheCacheClass
+except:
+	from django.core.cache.backends.memcached import CacheClass as MemcacheCacheClass
 from esp import settings
 
 
