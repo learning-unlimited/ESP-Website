@@ -967,6 +967,8 @@ class StudentInfo(models.Model):
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
 
+    medical_needs = models.TextField(blank=True, null=True)
+
     schoolsystem_id = models.CharField(max_length=32, blank=True, null=True)
     schoolsystem_optout = models.BooleanField(default=False)
     post_hs = models.TextField(default='', blank=True)
@@ -1029,6 +1031,7 @@ class StudentInfo(models.Model):
                                                             qsc  = STUDREP_QSC,
                                                             verb = STUDREP_VERB)
         form_dict['schoolsystem_id'] = self.schoolsystem_id
+        form_dict['medical_needs'] = self.medical_needs
         form_dict['schoolsystem_optout'] = self.schoolsystem_optout
         form_dict['post_hs'] = self.post_hs
         form_dict['transportation'] = self.transportation
@@ -1072,7 +1075,7 @@ class StudentInfo(models.Model):
         studentInfo.schoolsystem_optout = new_data.get('schoolsystem_optout', '')
         studentInfo.schoolsystem_id = new_data.get('schoolsystem_id', '')
         studentInfo.post_hs = new_data.get('post_hs', '')
-
+        studentInfo.medical_needs = new_data.get('medical_needs', '')
         studentInfo.transportation = new_data.get('transportation', '')        
         studentInfo.save()
         if new_data.get('studentrep', False):

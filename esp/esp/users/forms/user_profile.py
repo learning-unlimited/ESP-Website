@@ -227,6 +227,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
     food_preference = forms.ChoiceField(choices=([('','')]+list(food_choices)), required=False)
 
+    medical_needs = forms.CharField(required=False)
+
     post_hs = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(WhatToDoAfterHS, WhatToDoAfterHS)))
     transportation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HowToGetToProgram, HowToGetToProgram)))
     schoolsystem_id = forms.CharField(max_length=32, required=False)
@@ -290,6 +292,12 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         else:
             del self.fields['schoolsystem_id']
             del self.fields['schoolsystem_optout']
+
+        #   Add field asking about medical needs if directed by the Tag
+        if Tag.getTag('student_medical_needs'):
+            self.fields['medical_needs'].widget = forms.Textarea(attrs={'cols': 40, 'rows': 3})
+        else:
+            del self.fields['medical_needs']
             
         #   Make the schoolsystem_id field non-required if schoolsystem_optout is checked
         if self.data and 'schoolsystem_optout' in self.data and 'schoolsystem_id' in self.data:
