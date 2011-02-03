@@ -3,6 +3,7 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
+from esp.datatree.models import install as datatree_install
 
 class Migration(SchemaMigration):
 
@@ -25,6 +26,10 @@ class Migration(SchemaMigration):
 
         # Adding unique constraint on 'DataTree', fields ['name', 'parent']
         db.create_unique('datatree_datatree', ['name', 'parent_id'])
+
+        #   Force instantiation of datatree initial data if it wasn't already there
+        print 'Populating initial datatree...'
+        datatree_install()
 
     def backwards(self, orm):
         
