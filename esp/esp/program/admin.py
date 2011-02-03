@@ -109,7 +109,7 @@ admin.site.register(BooleanToken, BooleanTokenAdmin)
 class BooleanExpressionAdmin(admin.ModelAdmin):
     list_display = ('label', subclass_instance_type, 'num_tokens')
     def num_tokens(self, obj):
-        return obj.get_stack().count()
+        return len(obj.get_stack())
 admin.site.register(BooleanExpression, BooleanExpressionAdmin)   
 
 admin.site.register(ScheduleConstraint)

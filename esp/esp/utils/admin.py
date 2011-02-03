@@ -7,5 +7,6 @@ from django.contrib import admin
 
 class TemplateOverrideAdmin(admin.ModelAdmin):
     exclude = ['version']
+    search_fields = ['name']
 
 admin.site.register(TemplateOverride, TemplateOverrideAdmin)

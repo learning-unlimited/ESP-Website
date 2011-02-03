@@ -1534,7 +1534,7 @@ class BooleanExpression(models.Model):
     label = models.CharField(max_length=80, help_text='Description of the expression')
 
     def __unicode__(self):
-        return '(%d tokens) %s' % (self.get_stack().count(), self.label)
+        return '(%d tokens) %s' % (len(self.get_stack()), self.label)
 
     def subclass_instance(self):
         return get_subclass_instance(BooleanExpression, self)

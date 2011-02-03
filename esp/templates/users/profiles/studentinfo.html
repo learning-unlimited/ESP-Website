@@ -132,6 +132,16 @@ contact you soon! <br />
 </tr>
 {% endif %}
 
+{% if form.medical_needs %}
+<tr>
+ <td><label for="id_medical_needs">(Optional) Medical needs:</label></td>
+ <td>{{ form.medical_needs }} {% if form.medical_needs.errors %}
+   <br /><span class="form_error">{{ form.medical_needs.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+{% endif %}
+
 {% if form.post_hs %}
 <tr>
  <td><label for="id_post_hs">What are your plans after you graduate from high school?</label></td>

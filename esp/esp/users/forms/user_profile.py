@@ -227,6 +227,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
     food_preference = forms.ChoiceField(choices=([('','')]+list(food_choices)), required=False)
 
+    medical_needs = forms.CharField(required=False)
+
     post_hs = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(WhatToDoAfterHS, WhatToDoAfterHS)))
     transportation = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HowToGetToProgram, HowToGetToProgram)))
     schoolsystem_id = forms.CharField(max_length=32, required=False)
@@ -235,6 +237,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     studentrep_error = True
 
     def __init__(self, user=None, *args, **kwargs):
+        from esp.users.models import ESPUser
         super(StudentInfoForm, self).__init__(user, *args, **kwargs)
 
         self.allow_change_grade_level = Tag.getTag('allow_change_grade_level')
@@ -255,9 +258,15 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if not Tag.getTag('show_student_vegetarianism_options'):
             del self.fields['food_preference']
 
-        if not Tag.getTag('show_student_graduation_years_not_grades', default=True):            
+        #   Allow grade range of students to be customized by a Tag (default is 7-12)
+        custom_grade_options = Tag.getTag('student_grade_options')
+        if custom_grade_options:
+            custom_grade_options = json.loads(custom_grade_options)
+            self.fields['graduation_year'].choices = [(str(ESPUser.YOGFromGrade(x)), str(x)) for x in custom_grade_options]
+
+        if Tag.getTag('show_student_graduation_years_not_grades'):            
             current_grad_year = self.ESPUser.current_schoolyear()
-            self.fields['graduation_year'].widget.choices = [(str(12 - (x - current_grad_year)), "%d (%dth grade)" % (x, 12 - (x - current_grad_year))) for x in xrange(current_grad_year, current_grad_year + 6)]
+            self.fields['graduation_year'].choices = [(str(x[0]), "%s (%sth grade)" % (x[0], x[1])) for x in self.fields['graduation_year'].choices]
 
         if not Tag.getTag('ask_student_about_post_hs_plans'):
             del self.fields['post_hs']
@@ -290,6 +299,12 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         else:
             del self.fields['schoolsystem_id']
             del self.fields['schoolsystem_optout']
+
+        #   Add field asking about medical needs if directed by the Tag
+        if Tag.getTag('student_medical_needs'):
+            self.fields['medical_needs'].widget = forms.Textarea(attrs={'cols': 40, 'rows': 3})
+        else:
+            del self.fields['medical_needs']
             
         #   Make the schoolsystem_id field non-required if schoolsystem_optout is checked
         if self.data and 'schoolsystem_optout' in self.data and 'schoolsystem_id' in self.data:

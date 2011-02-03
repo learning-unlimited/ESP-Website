@@ -52,7 +52,8 @@ admin.site.register(ClassRegModuleInfo, CRMIAdmin)
 
 class ProgramModelObjAdmin(admin.ModelAdmin):
     list_display = ('program', 'module')
-    pass
+    list_filter = ('program', 'module')
+    search_fields = ('program__anchor__friendly_name', 'program__anchor__parent__friendly_name', 'module__admin_title', 'module__link_title')
 admin.site.register(ProgramModuleObj, ProgramModelObjAdmin)
 
 admin.site.register(SATPrepTeacherModuleInfo)
