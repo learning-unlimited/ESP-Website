@@ -89,11 +89,12 @@ class TeacherQuizController(object):
         """
         Check quiz answers for errors.
 
-        Not yet ready for programs besides Splash 2010.
+        Not yet ready for programs besides Spark 2011.
         """
         question_numbers = {
             'prog_month': 1,
             'prog_day': 1,
+            'prog_year': 1,
             'photo_exists': 5,
             'call_911': 6,
             'teacher_lunch': 7,
@@ -109,11 +110,14 @@ class TeacherQuizController(object):
             'reimburse2': 4,
             'reimburse3': 4,
             'reimburse4': 4,
+            'reimburse5': 4,
 
             'security_number': 2,
         }
         correct_answers = {
-            'prog_month': '11',
+            'prog_month': '3',
+            'prog_day': '12',
+            'prog_year': '2011',
             'photo_exists': 'True',
             'call_911': 'False',
             'teacher_lunch': 'True',
@@ -131,6 +135,7 @@ class TeacherQuizController(object):
             'reimburse2': False,
             'reimburse3': False,
             'reimburse4': True,
+            'reimburse5': True,
         }
         errors = []
         for key in correct_answers:
@@ -140,9 +145,9 @@ class TeacherQuizController(object):
             if bool(answer_dict.get(key, False)) != checkboxes[key]:
                 errors.append(question_numbers[key])
         # Check the day of the program
-        m = self.twoday_pattern.match(answer_dict.get('prog_day'))
-        if not m or set(m.groups()) != set(['20','21']):
-            errors.append(question_numbers['prog_day'])
+        # m = self.twoday_pattern.match(answer_dict.get('prog_day'))
+        # if not m or set(m.groups()) != set(['12']):
+        #     errors.append(question_numbers['prog_day'])
         # Check the security number
         ans = answer_dict.get('security_number', '')
         if ''.join([x for x in ans if x.isdigit()]) != '6172534941':
