@@ -44,6 +44,8 @@
  </td>
 </tr>
 
+{% if form.shirt_size %}
+
 <tr>
  <td colspan="2"><p>
     <div class="info"><b>Shirts for teachers!</b> If you teach for ESP, you're entitled to at least a free T-shirt (along with all of the free food).  If you would like a shirt, please enter your preferred size and shape below.  This information is optional.
@@ -57,7 +59,9 @@
    {% endif %}
  </td>
 </tr>
+{% endif %}
 
+{% if form.shirt_type %}
 <tr>
  <td><label for="id_shirt_type">Shirt type:</label></td>
  <td>{{ form.shirt_type }} {% if form.shirt_type.errors %}
@@ -65,6 +69,7 @@
    {% endif %}
  </td>
 </tr>
+{% endif %}
 
 {% if form.full_legal_name %}
 <tr>

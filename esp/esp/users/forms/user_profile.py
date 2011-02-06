@@ -427,6 +427,12 @@ class TeacherInfoForm(FormWithRequiredCss):
             for field_name in reimbursement_fields:
                 del self.fields[field_name]
 
+        if Tag.getTag('teacherinfo_shirt_options') == 'False':
+            del self.fields['shirt_size']
+            del self.fields['shirt_type']
+        elif Tag.getTag('teacherinfo_shirt_type_selection') == 'False':
+            del self.fields['shirt_type']
+            
     def clean(self):
         super(TeacherInfoForm, self).clean()
         cleaned_data = self.cleaned_data
