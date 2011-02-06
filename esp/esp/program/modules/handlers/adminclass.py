@@ -66,7 +66,8 @@ class AdminClass(ProgramModuleObj):
             "link_title": "Manage Classes",
             "module_type": "manage",
             "seq": 1,
-            "main_call": "listclasses"
+            "main_call": "listclasses",
+            "aux_calls": "changeoption,alter_checkmark,proposeclass,manageclass,deleteclass,editclass,approveclass,rejectclass,coteachers,teacherlookup,deletesection,addsection,attendees,bulkapproval"
             }
         
     form_choice_types = ['status', 'reg_status', 'room', 'progress', 'resources', 'times', 'min_grade', 'max_grade']
@@ -428,7 +429,13 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def coteachers(self, request, tl, one, two, module, extra, prog):
         from esp.users.models import ESPUser 
-        if not request.POST.has_key('clsid'):
+        
+        #   Allow submitting class ID via either GET or POST.
+        if request.GET.has_key('clsid'):
+            clsid = request.GET['clsid']
+        elif request.POST.has_key('clsid'):
+            clsid = request.POST['clsid']
+        else:
             return self.goToCore(tl) # just fails.
 
         if extra == 'nojs':
@@ -436,7 +443,7 @@ class AdminClass(ProgramModuleObj):
         else:
             ajax = True
             
-        classes = ClassSubject.objects.filter(id = request.POST['clsid'])
+        classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not self.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
 
@@ -511,14 +518,10 @@ class AdminClass(ProgramModuleObj):
                     cls.removeTeacher(teacher)
                     cls.removeAdmin(teacher)
 
-                # add self back...
-                cls.makeTeacher(self.user)
-                cls.makeAdmin(self.user, self.teacher_class_noedit)
-
                 # add bits for all new (and old) coteachers
                 for teacher in coteachers:
                     cls.makeTeacher(teacher)
-                    cls.makeAdmin(teacher, self.teacher_class_noedit)                    
+                    cls.makeAdmin(teacher)                    
                 
                 return self.goToCore(tl)
 
@@ -550,37 +553,40 @@ class AdminClass(ProgramModuleObj):
         limit = 10
         from esp.web.views.json import JsonResponse
         from esp.users.models import UserBit
-        from django.db.models.query import Q
 
-        # Initialize anchors for identifying teachers
-        q = GetNode( 'Q' )
-        v = GetNode( 'V/Flags/UserRole/Teacher' )
-
-        # Select teachers
-        queryset = UserBit.bits_get_users(q, v)
+        Q_teacher = Q(userbit__verb = GetNode('V/Flags/UserRole/Teacher'))
 
         # Search for teachers with names that start with search string
-        if not request.GET.has_key('q'):
-            return self.goToCore()
+        if not request.GET.has_key('name') or request.POST.has_key('name'):
+            return self.goToCore(tl)
+
+        queryset = User.objects.filter(Q_teacher)
         
-        startswith = request.GET['q']
-        parts = [x.strip() for x in startswith.split(',')]
-        Q_name = Q(user__last_name__istartswith=parts[0])
-        if len(parts) > 1:
-            Q_name = Q_name & Q(user__first_name__istartswith=parts[1])
+        if not request.GET.has_key('name'):
+            startswith = request.POST['name']
+        else:
+            startswith = request.GET['name']
+        parts = [x.strip('*') for x in startswith.split(',')]
+        
+        #   Don't return anything if there's no input.
+        if len(parts[0]) > 0:
+            Q_name = Q(last_name__istartswith=parts[0])
 
-        # Isolate user objects
-        queryset = queryset.filter(Q_name)[:(limit*10)]
-        users = [ub.user for ub in queryset]
-        user_dict = {}
-        for user in users:
-            user_dict[user.id] = user
-        users = user_dict.values()
+            if len(parts) > 1:
+                Q_name = Q_name & Q(first_name__istartswith=parts[1])
 
-        # Construct combo-box items
-        obj_list = [[user.last_name + ', ' + user.first_name + ' ('+user.username+')', user.id] for user in users]
+            # Isolate user objects
+            queryset = queryset.filter(Q_name)[:(limit*10)]
+            user_dict = {}
+            for user in queryset:
+                user_dict[user.id] = user
+            users = user_dict.values()
 
-        # Operation Complete!
+            # Construct combo-box items
+            obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]
+        else:
+            obj_list = []
+
         return JsonResponse(obj_list)
 
     @aux_call

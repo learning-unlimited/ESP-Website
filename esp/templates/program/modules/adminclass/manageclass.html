@@ -18,9 +18,8 @@
 </p>
 
 <div id="program_form">
-<form name="classmanage" action="{{ request.path }}" method="POST">{% csrf_token %}
-
 <br />
+<form name="classmanage" action="{{ request.path }}" method="POST">{% csrf_token %}
 
 <table align="center" width="500">
     <tr>
@@ -28,7 +27,10 @@
     </tr>
     <tr>
         <th class="smaller">Teachers:</th>
-        <td>{{ class.getTeacherNames|join:", " }}</td>
+        <td>{{ class.getTeacherNames|join:", " }}<br />
+        <a href="/manage/{{ program.getUrlBase }}/coteachers?clsid={{ class.id }}">
+        Edit Teacher List </a>
+        </td>
     </tr>
     <tr>
         <th class="smaller">Reviewing Status:<br />

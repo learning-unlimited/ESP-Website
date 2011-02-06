@@ -727,8 +727,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
 
     @aux_call
-    @needs_teacher
-#    @meets_deadline('/Classes')    
+    @needs_teacher    
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
         from esp.web.views.json import JsonResponse
@@ -767,14 +766,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         else:
             obj_list = []
 
-        # Operation Complete!
-        json_dict = {
-            "label": "name",
-            "identifier": "id",
-            "items": obj_list
-        }
-        
-        #return JsonResponse(json_dict)
         return JsonResponse(obj_list)
 
     def getNavBars(self):

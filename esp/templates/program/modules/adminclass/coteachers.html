@@ -1,93 +1,111 @@
 {% extends "main.html" %}
 
-{% block title %}{{prog.niceName }} Teacher Registration{% endblock %}
+{% block title %}{{prog.niceName }} Teacher Management{% endblock %}
 
 {% block subsection_name %}Teacher{% endblock %}
 
 {% block xtrajs %}
-{% if ajax %}
-{% if ajaxdebug %}
 <script type="text/javascript">
-<!--   djConfig = { isDebug: true }; //-->
+    dojo.require("dijit.form.FilteringSelect");
+    dojo.require("dojo.data.ItemFileReadStore");
+    dojo.require("dojox.data.JsonRestStore");
 </script>
-{% endif %}
-<script type="text/javascript" src="/media/scripts/dojo/dojo.js"></script>
-<script type="text/javascript">
-<!--
-   dojo.require("dojo.widget.ComboBox")
-//-->
-</script>
-{% endif %}
 {% endblock %}
-     
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css">
+{% endblock %}
 
 {% block content %}
 
-<h1>Setting Coteachers for &quot;<u>{{ class|escape }}</u>&quot;</h1>
-{% if conflicts|length %}
-<p style="color:red; font-weight: bold;">
-The following teachers have conflicting schedules:<br />
-{{ conflicts|join:"<br />" }}
+<h1>Setting Teachers for &quot;<u>{{ class|escape }}</u>&quot;</h1>
 
-</p>
+<p>Please list all teachers that will be helping teach this class.  They will need to create accounts and mark their available times through the teacher registration page (for scheduling purposes).</p>
+
+{% if conflicts|length %}
+    <p style="color:red; font-weight: bold;">
+    The following teachers have conflicting schedules:<br />
+    {{ conflicts|join:"<br />" }}
+    </p>
 {% endif %}
+
 {% if error %}
 <p style="color:red; font-weight: bold;">
 {{ error }}
 </p>
 {% endif %}
-<p>
-<form action="{{request.path}}" method="post" name="submit">{% csrf_token %}
-<input type="hidden" name="op" value="save" />
-<input type="hidden" name="clsid" value="{{ class.id }}" />
-<input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
-<input type="submit" value="Save Coteachers!" /><br />
-</form>
+<div id="program_form">
 {% if not coteachers|length %}
-You currently have no coteachers for this class.
+There are currently no teachers associated with this class.
 {% else %}
-Here are your current coteachers:<br />
-<form action="{{request.path}}" method="post" name="delteacher">{% csrf_token %}
-<input type="hidden" name="op" value="del" />
-<input type="hidden" name="clsid" value="{{ class.id }}" />
-<input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
+<form action="{{request.path}}" method="post" name="manage_coteachers">{% csrf_token %}
+<table align="center" width="400">
+    <tr>
+        <th colspan="2">Current Teachers</th>
+    </tr>
+    <tr>
+        <td width="50%">
+            <input type="hidden" name="op" value="del" />
+            <input type="hidden" name="clsid" value="{{ class.id }}" />
+            <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
 
-<select id="current_coteachers"
-        class="coteachers" name="delete_coteachers" 
-        size="5" multiple="multiple">
-{% for teacher in coteachers %}
-    <option value="{{teacher.id}}">{{teacher.last_name }}, 
-        {{teacher.first_name}} ({{teacher.username}})</option>
-{% endfor %}
-</select>
-<input type="submit" value="Delete Selected" />
+            <select id="current_coteachers"
+                    class="coteachers" name="delete_coteachers" 
+                    size="5" multiple="multiple">
+            {% for teacher in coteachers %}
+                <option value="{{teacher.id}}">{{teacher.last_name }}, 
+                    {{teacher.first_name}} ({{teacher.username}})</option>
+            {% endfor %}
+            </select>
+            <br />
+            
+        </td>
+        <td>
+            <input type="submit" class="button" value="Delete Selected" /><br />
+        </td>
+    </tr>
+</table>
 </form>
-
 {% endif %}
-</p>
-<br />
-<br />
-<p>
-Select a user to add:
-</p>
-<br />
 <form action="{{request.path}}" method="post" name="addteacher">{% csrf_token %}
-<input type="hidden" name="clsid" value="{{ class.id }}" />
-<input type="hidden" name="op" value="add" />
-<input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
-
-<small>Type `Last, First' and find the user.</small>
-		<select dojoType="ComboBox"
-			id="teacher_id"
-			name="teacher"
-			dataUrl="/teach/{{program.url}}/teacherlookup/?q=%{searchString}"
-			mode="remote"
-			style="width: 200px"
-			maxListLength="10"></select>
-			
-<input type="submit" value="Add Teacher" />
+<table align="center" width="400">
+    <tr>
+        <th colspan="2">Add More Teachers</th>
+    </tr>
+    <tr>
+        <td colspan="2">Begin typing the teacher's name in `Last, First' format to find them.</td>
+    </tr>
+    <tr>
+        <td width="50%">
+            <input type="hidden" name="clsid" value="{{ class.id }}" />
+            <input type="hidden" name="op" value="add" />
+            <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
+            <div dojoType="dojox.data.JsonRestStore" jsId="stateStore" target="/manage/{{ program.getUrlBase }}/teacherlookup/" idAttribute="id">
+            </div>
+            <input dojoType="dijit.form.FilteringSelect" value="" store="stateStore" searchAttr="name" name="teacher_selected" id="stateInput">
+        </td>
+        <td>
+            <input type="submit" class="button" value="Add Teacher" />
+        </td>
+    </tr>
+</table>
 </form>
-
-
+<table align="center" width="400">
+    <tr>
+        <td align="center" colspan="2">When you are done, click the button below to return to the program management page.</td>
+    </tr>
+    <tr>
+        <td align="center" colspan="2">
+            <form action="{{request.path}}" method="post" name="submit">{% csrf_token %}
+            <input type="hidden" name="op" value="save" />
+            <input type="hidden" name="clsid" value="{{ class.id }}" />
+            <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
+            <input type="submit" class="button" value="Save and Continue" /><br />
+            </form>
+        </td>
+    </tr>
+</table>
+</div>
 
 {% endblock %}
