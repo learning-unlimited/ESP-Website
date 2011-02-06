@@ -44,6 +44,7 @@ from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from esp.settings import INSTITUTION_NAME
 from datetime import datetime, timedelta
+import simplejson as json
 
 class TeacherClassRegForm(FormWithRequiredCss):
     location_choices = [    (True, "I will use my own space for this class (e.g. space in my laboratory).  I have explained this in 'Message for Directors' below."),
@@ -80,7 +81,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', choices=[(0, 0)], widget=BlankSelectWidget() )
     allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], widget=forms.CheckboxSelectMultiple(), 
                                                              help_text="Please select all class size ranges you are comfortable teaching." )
-    hardness_rating = forms.ChoiceField( label='Hardness',choices=hardness_choices, initial="**",
+    hardness_rating = forms.ChoiceField( label='Difficulty',choices=hardness_choices, initial="**",
         help_text="Which best describes how hard your class will be for your students?")
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
     
@@ -226,6 +227,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
         #   Rewrite purchase_requests help text if desired:
         if Tag.getTag('purchase_requests_help_text'):
             self.fields['purchase_requests'].help_text = Tag.getTag('purchase_requests_help_text')
+
+        #   Rewrite difficulty label/choices if desired:
+        if Tag.getTag('teacherreg_difficulty_choices'):
+            self.fields['hardness_rating'].choices = json.loads(Tag.getTag('teacherreg_difficulty_choices'))
+        if Tag.getTag('teacherreg_difficulty_label'):
+            self.fields['hardness_rating'].label = Tag.getTag('teacherreg_difficulty_label')
 
         # plus subprogram section wizard
     
