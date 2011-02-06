@@ -35,6 +35,7 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
 </p>
 {% endif %}
 
+
 <div id="program_form">
 <center>
 <table width="550">
@@ -43,6 +44,7 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
     <tr>
         <td colspan="2">&nbsp;</td>
     </tr>
+    {% if not formset.forms|length_is:0 %}
     <tr>
         <th colspan="2">Classroom Requests</th>
     </tr>
@@ -80,7 +82,9 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
 {% include "program/modules/teacherclassregmodule/restype_form_fragment.html" %}
 {% endwith %}
 </div>
+
 <table width="550">
+    {% endif %}
     <tr>
         <td colspan="2">&nbsp;</td>
     </tr>
