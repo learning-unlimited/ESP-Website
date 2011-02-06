@@ -87,8 +87,10 @@ echo
 
 if [ "$2" ]
 then
-    BASEDIR="$2"
+    BASEDIR=`echo "$2" | sed -e "s/\/*$//"`
+
     echo "You have entered the installation directory: $BASEDIR"
+    echo "(Note: Trailing slashes have been removed)"
     echo "Please confirm that this is the site you want to create/modify"
     echo -n "by typing 'yes' --> "
     read THROWAWAY
@@ -104,6 +106,7 @@ else
         echo -n "Enter the directory path to this site install --> "
         read BASEDIR
     done
+    BASEDIR=`echo "$BASEDIR" | sed -e "s/\/*$//"`
 fi
 
 # Load/reset settings
@@ -624,6 +627,9 @@ then
 		./manage.py syncdb
 		./manage.py migrate
 		
+		#   Set initial Site (used in password recovery e-mail)
+		sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
+
 		cd $CURDIR
 
 	fi

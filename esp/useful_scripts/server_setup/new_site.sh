@@ -76,8 +76,9 @@ echo
 
 if [ "$2" ]
 then
-    SITENAME="$2"
+    SITENAME=`echo "$2" | sed -e "s/\/*$//"`
     echo "You have entered the directory name: $SITENAME"
+    echo "(Note: Trailing slashes have been removed)"
     echo "Please confirm that this is the site you want to create/modify"
     echo -n "by typing 'yes' --> "
     read THROWAWAY
@@ -93,6 +94,7 @@ else
         echo -n "Enter the directory name of this site --> "
         read SITENAME
     done
+    SITENAME=`echo "$SITENAME" | sed -e "s/\/*$//"`
 fi
 
 BASEDIR=${CURDIR}/${SITENAME}
@@ -416,6 +418,9 @@ then
     ./manage.py migrate
     cd $CURDIR
     
+    #   Set initial Site (used in password recovery e-mail)
+    sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
+
     echo "Database has been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
