@@ -213,8 +213,14 @@ class TeacherClassRegForm(FormWithRequiredCss):
         for field in resource_fields:
             self.fields[field].widget = forms.HiddenInput()
         
+        #   Add program-custom form components (for inlining additional questions without
+        #   introducing a separate program module)
+        custom_fields = get_custom_fields()
+        for field_name in custom_fields:
+            self.fields[field_name] = custom_fields[field_name]
+        
         #   Modify help text on these fields if necessary.
-        custom_helptext_fields = ['requested_room', 'message_for_directors', 'purchase_requests', 'class_info']
+        custom_helptext_fields = ['requested_room', 'message_for_directors', 'purchase_requests', 'class_info'] + custom_fields.keys()
         for field in custom_helptext_fields:
             tag_data = Tag.getTag('teacherreg_label_%s' % field)
             if tag_data:
@@ -226,21 +232,11 @@ class TeacherClassRegForm(FormWithRequiredCss):
             for field_name in tag_data.split(','):
                 hide_field(self.fields[field_name])
 
-        #   Rewrite purchase_requests help text if desired:
-        if Tag.getTag('purchase_requests_help_text'):
-            self.fields['purchase_requests'].help_text = Tag.getTag('purchase_requests_help_text')
-
         #   Rewrite difficulty label/choices if desired:
         if Tag.getTag('teacherreg_difficulty_choices'):
             self.fields['hardness_rating'].choices = json.loads(Tag.getTag('teacherreg_difficulty_choices'))
         if Tag.getTag('teacherreg_difficulty_label'):
             self.fields['hardness_rating'].label = Tag.getTag('teacherreg_difficulty_label')
-
-        #   Add program-custom form components (for inlining additional questions without
-        #   introducing a separate program module)
-        custom_fields = get_custom_fields()
-        for field_name in custom_fields:
-            self.fields[field_name] = custom_fields[field_name]
                 
         # plus subprogram section wizard
     
