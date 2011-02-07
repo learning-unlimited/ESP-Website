@@ -37,7 +37,7 @@ from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType
-from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError
+from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.datatree.models import *
 from esp.tagdict.models          import Tag
 from esp.web.util                import render_to_response
@@ -656,6 +656,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 current_data['allow_lateness'] = newclass.allow_lateness
                 current_data['title'] = newclass.anchor.friendly_name
                 current_data['url']   = newclass.anchor.name
+                for field_name in get_custom_fields():
+                    if field_name in newclass.custom_form_data:
+                        current_data[field_name] = newclass.custom_form_data[field_name]
                 if newclass.optimal_class_size_range:
                     current_data['optimal_class_size_range'] = newclass.optimal_class_size_range.id
                 if newclass.allowable_class_size_ranges.all():

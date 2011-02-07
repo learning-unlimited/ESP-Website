@@ -49,6 +49,7 @@ from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 from esp.db.cache import GenericCacheHelper
 from esp.utils.property import PropertyDict
+from esp.utils.fields import JSONField
 from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
 
@@ -1305,6 +1306,7 @@ class ClassSubject(models.Model):
     session_count = models.IntegerField(default=1)
 
     purchase_requests = models.TextField(blank=True, null=True)
+    custom_form_data = JSONField(blank=True, null=True)
     
     objects = ClassManager()
     checklist_progress_all_cached = checklist_progress_base('ClassSubject')

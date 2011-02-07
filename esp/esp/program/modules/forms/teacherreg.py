@@ -88,7 +88,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect(), required=False )
     requested_room = forms.CharField(   label='Room Request', required=False,
                                         help_text='If you have a specific room or type of room in mind, name a room at %s that would be ideal for you.' % INSTITUTION_NAME )
-    
+
     global_resources = forms.MultipleChoiceField( label='Equipment and Classroom Options',
                                                   choices=[], widget=forms.CheckboxSelectMultiple(), required=False,
                                                   help_text="Check all that apply. We can usually supply these common resources at your request. But if your class is truly uncommon, ESP may also have access to unusual rooms and supplies. These can be entered in the next section, 'Special Requests.'" )
@@ -105,6 +105,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
     
     
     def __init__(self, module, *args, **kwargs):
+        from esp.program.controllers.classreg import get_custom_fields
+    
         def hide_field(field, default=None):
             field.widget = forms.HiddenInput()
             if default is not None:
@@ -212,7 +214,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
             self.fields[field].widget = forms.HiddenInput()
         
         #   Modify help text on these fields if necessary.
-        custom_helptext_fields = ['requested_room', 'message_for_directors', 'purchase_requests']
+        custom_helptext_fields = ['requested_room', 'message_for_directors', 'purchase_requests', 'class_info']
         for field in custom_helptext_fields:
             tag_data = Tag.getTag('teacherreg_label_%s' % field)
             if tag_data:
@@ -234,6 +236,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
         if Tag.getTag('teacherreg_difficulty_label'):
             self.fields['hardness_rating'].label = Tag.getTag('teacherreg_difficulty_label')
 
+        #   Add program-custom form components (for inlining additional questions without
+        #   introducing a separate program module)
+        custom_fields = get_custom_fields()
+        for field_name in custom_fields:
+            self.fields[field_name] = custom_fields[field_name]
+                
         # plus subprogram section wizard
     
     def clean(self):

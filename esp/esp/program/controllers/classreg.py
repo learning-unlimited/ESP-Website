@@ -10,10 +10,24 @@ from esp.tagdict.models import Tag
 from django.core.mail import send_mail
 from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
+from django.utils.datastructures import SortedDict
 from django.db import transaction
 
 from datetime import timedelta
 from decimal import Decimal
+import simplejson as json
+
+def get_custom_fields():
+    result = SortedDict()
+    form_list_str = Tag.getTag('teacherreg_custom_forms')
+    if form_list_str:
+        form_cls_list = json.loads(form_list_str)
+        for item in form_cls_list:
+            mod = __import__('esp.program.modules.forms.teacherreg_custom', (), (), [item])
+            cls = getattr(mod, item)
+            for field in cls.base_fields:
+                result[field] = cls.base_fields[field]
+    return result
 
 class ClassCreationValidationError(Exception):
     def __init__(self, reg_form, resource_formset, restype_formset, error_msg):
@@ -97,11 +111,18 @@ class ClassCreationController(object):
         self.add_rsrc_requests_to_class(cls, resource_formset, restype_formset)
         cls.propose()
         cls.update_cache()
-
+                
     def set_class_data(self, cls, reg_form):
+        custom_fields = get_custom_fields()
+        custom_data = {}
+    
         for k, v in reg_form.cleaned_data.items():
-            if k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges') and k[:8] is not 'section_':
+            if k in custom_fields:
+                custom_data[k] = v
+            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges') and k[:8] is not 'section_':
                 cls.__dict__[k] = v
+        
+        cls.custom_form_data = custom_data
 
         if hasattr(cls, 'duration'):
             cls.duration = Decimal(cls.duration)
