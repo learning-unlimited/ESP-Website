@@ -37,7 +37,8 @@ from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
 from esp.utils.widgets import DateTimeWidget
 from esp.users.forms.user_profile import PhoneNumberField
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, shirt_sizes, shirt_types
+from esp.tagdict.models import Tag
 
 class VolunteerRequestForm(forms.Form):
     
@@ -94,6 +95,9 @@ class VolunteerOfferForm(forms.Form):
     email = forms.EmailField(label='E-mail address')
     phone = PhoneNumberField(label='Phone number')
     
+    shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
+    shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
+    
     requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text='Sign up for one or more shifts; remember to avoid conflicts with your classes if you\'re teaching!', widget=forms.CheckboxSelectMultiple)
     
     confirm = forms.BooleanField(help_text='<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>')
@@ -109,6 +113,13 @@ class VolunteerOfferForm(forms.Form):
         vrs = self.program.getVolunteerRequests()
         self.fields['requests'].choices = [(v.id, '%s: %s (%d more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, v.num_volunteers - v.num_offers())) for v in vrs if v.num_offers() < v.num_volunteers]
     
+        #   Show t-shirt fields if specified by Tag (disabled by default)
+        if not Tag.getTag('volunteer_tshirt_options'):
+            del self.fields['shirt_size']
+            del self.fields['shirt_type']
+        elif not Tag.getTag('volunteer_tshirt_type_selection'):
+            del self.fields['shirt_type']
+
     def load(self, user):
         user = ESPUser(user)
         self.fields['user'].initial = user.id
@@ -116,7 +127,14 @@ class VolunteerOfferForm(forms.Form):
         self.fields['name'].initial = user.name()
         if user.getLastProfile().contact_user:
             self.fields['phone'].initial = user.getLastProfile().contact_user.phone_cell
-        self.fields['requests'].initial = user.getVolunteerOffers(self.program).values_list('request', flat=True)
+            
+        previous_offers = user.getVolunteerOffers(self.program).order_by('-id')
+        if previous_offers.exists():
+            self.fields['requests'].initial = previous_offers.values_list('request', flat=True)
+            if 'shirt_size' in self.fields:
+                self.fields['shirt_size'].initial = previous_offers[0].shirt_size 
+            if 'shirt_type' in self.fields:
+                self.fields['shirt_type'].initial = previous_offers[0].shirt_type
 
     def save(self):
         #   Reset user's offers
@@ -136,6 +154,10 @@ class VolunteerOfferForm(forms.Form):
             o.phone = self.cleaned_data['phone']
             o.name = self.cleaned_data['name']
             o.confirmed = self.cleaned_data['confirm']
+            if 'shirt_size' in self.cleaned_data:
+                o.shirt_size = self.cleaned_data['shirt_size']
+            if 'shirt_type' in self.cleaned_data:
+                o.shirt_type = self.cleaned_data['shirt_type']
             o.request_id = req
             o.save()
             offer_list.append(o)

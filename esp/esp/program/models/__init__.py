@@ -38,7 +38,7 @@ from django.db import models
 from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
 from esp.datatree.models import *
-from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser
+from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types
 from datetime import datetime, timedelta
 from django.core.cache import cache
 from django.db.models import Q
@@ -1763,6 +1763,9 @@ class VolunteerOffer(models.Model):
     email = models.EmailField(blank=True, null=True)
     name = models.CharField(max_length=80, blank=True, null=True)
     phone = PhoneNumberField(blank=True, null=True)
+    
+    shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
+    shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
     
     def __unicode__(self):
         return u'%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)
