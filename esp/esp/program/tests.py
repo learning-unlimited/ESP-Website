@@ -329,10 +329,10 @@ class ProgramHappenTest(TestCase):
             'request-1-desired_value': 'LCD projector',
             'restype-TOTAL_FORMS': '0',
             'restype-INITIAL_FORMS': '0',
-            'hardness_rating': "Easy",
+            'hardness_rating': "**",
         }
-        self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
-        
+        self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)    
+
         # Check that stuff went through correctly
         
         # check prog.classes
