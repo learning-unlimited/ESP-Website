@@ -233,10 +233,7 @@ class ClassCreationController(object):
 
     def generate_director_mail_context(self, cls, user):
         new_data = cls.__dict__
-        print new_data;
         mail_ctxt = dict(new_data.iteritems())
-        print mail_ctxt;
-
         
         # Make some of the fields in new_data nicer for viewing.
         mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category_id']).category
