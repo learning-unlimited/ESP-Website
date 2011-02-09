@@ -242,7 +242,6 @@ class ListGenModule(ProgramModuleObj):
 
                 labels_dict = UserAttributeGetter.getFunctions()
                 fields = [labels_dict[f] for f in form.cleaned_data['fields']]
-                fields.append('Class Application 1')
                 output_type = form.cleaned_data['output_type']
             
                 users = list(ESPUser.objects.filter(filterObj.get_Q()).filter(is_active=True).distinct())

@@ -530,7 +530,7 @@ class ESPUser(User, AnonymousUser):
         
         apps = StudentApplication.objects.filter(user=self, program=program)
         if apps.count() == 0:
-            return None
+            return []
         else:
             return apps[0].responses.all()
 
