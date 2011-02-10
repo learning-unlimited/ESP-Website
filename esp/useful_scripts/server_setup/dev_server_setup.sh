@@ -319,7 +319,7 @@ then
 	cd $DEPDIR
 	
 	#	Get what we can using Ubuntu's package manager
-	apt-get install -y build-essential texlive imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-dns postgresql-8.4 python-psycopg2 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large
+	apt-get install -y build-essential texlive imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-dns postgresql-8.4 python-psycopg2 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large ipython
 
 	#	Fetch and extract files
 	if [[ ! -d memcached-1.4.5 ]]
