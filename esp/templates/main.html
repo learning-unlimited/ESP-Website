@@ -74,7 +74,7 @@ body {
     <div id="navbar_content">
     <span class="announcementlink_title">Relevant Links</span>
     {% load navbar %}
-    {% navbar_gen %}
+    {% navbar_gen request.path request.user navbar_list %}
     </div>
 
     <div id="navbar_content">

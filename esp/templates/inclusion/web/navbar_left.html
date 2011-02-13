@@ -15,7 +15,7 @@
 {% endfor %}
 </ul>
 
-{% if request.user.isAdministrator %}
+{% if user.isAdministrator %}
 <ul id="navbar_admin">
 <li><a href="/admin/web/navbarentry/">Edit Nav bars</a></li>
 
@@ -35,7 +35,7 @@ function delete_navbar(navbar_id) {
     failure:function(o) {},
     argument: {nav_entry_id: navbar_id}};
 
-   sUrl = '/navbar/edit.scm?new_url={{request.path}}&navbar_id='+navbar_id+'&node_id=&action=delete'
+   sUrl = '/navbar/edit.scm?new_url={{request_path}}&navbar_id='+navbar_id+'&node_id=&action=delete'
 
    var request = YAHOO.util.Connect.asyncRequest('GET',sUrl,callback);
 

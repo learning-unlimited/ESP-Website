@@ -16,18 +16,10 @@ def cache_key(context, navbar_type='left'):
                                 request.user.id))
 
 
-@cache_inclusion_tag(register,'inclusion/web/navbar_left.html', takes_context = True, cache_key_func=cache_key)
-def navbar_gen(context, navbar_type='left'):
-    try:
-        request = context['request']
-    except KeyError:
-        request = {}
-
-    try:
-        navbar = context['navbar_list'].value
-    except:
-        navbar = None
+@cache_inclusion_tag(register,'inclusion/web/navbar_left.html', cache_key_func=cache_key)
+def navbar_gen(request_path, user, navbar_list, navbar_type='left'):
     
-    return {'navbar_list': navbar,
-            'request':     request,
+    return {'navbar_list': navbar_list,
+            'request_path': request_path,
+            'user': user,
             'navbar_type': navbar_type}
