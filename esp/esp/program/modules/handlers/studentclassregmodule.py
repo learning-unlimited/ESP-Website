@@ -253,6 +253,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
             prevTimeSlot = timeslot
                 
+        context['num_classes'] = len(classList)
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
         context['allow_removal'] = self.deadline_met('/Removal')
@@ -269,8 +270,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         context['prog'] = self.program
         context['one'] = one
         context['two'] = two
-        #   This should be populated by self.prepare()
-        context['num_classes'] = len(context['timeslots'])
         context['reg_open'] = bool(UserBit.UserHasPerms(request.user,
                                                         prog.anchor_id,
                                                         GetNode('V/Deadline/Registration/'+{'learn':'Student',
