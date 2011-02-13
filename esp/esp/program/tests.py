@@ -518,19 +518,19 @@ class ProgramFrameworkTest(TestCase):
         self.students = []
         self.admins = []
         for i in range(settings['num_students']):
-            new_student, created = User.objects.get_or_create(username='student%d' % i)
+            new_student, created = User.objects.get_or_create(username='student%04d' % i)
             new_student.set_password('password')
             new_student.save()
             role_bit, created = UserBit.objects.get_or_create(user=new_student, verb=GetNode('V/Flags/UserRole/Student'), qsc=GetNode('Q'), recursive=False)
-            self.students.append(ESPUser(new_student))
+            self.students.append(ESPUser(new_student)) 
         for i in range(settings['num_teachers']):
-            new_teacher, created = User.objects.get_or_create(username='teacher%d' % i)
+            new_teacher, created = User.objects.get_or_create(username='teacher%04d' % i)
             new_teacher.set_password('password')
             new_teacher.save()
             role_bit, created = UserBit.objects.get_or_create(user=new_teacher, verb=GetNode('V/Flags/UserRole/Teacher'), qsc=GetNode('Q'), recursive=False)
             self.teachers.append(ESPUser(new_teacher))
         for i in range(settings['num_admins']):
-            new_admin, created = User.objects.get_or_create(username='admin%d' % i)
+            new_admin, created = User.objects.get_or_create(username='admin%04d' % i)
             new_admin.set_password('password')
             new_admin.save()
             role_bit, created = UserBit.objects.get_or_create(user=new_admin, verb=GetNode('V/Flags/UserRole/Administrator'), qsc=GetNode('Q'), recursive=False)
@@ -592,6 +592,7 @@ class ProgramFrameworkTest(TestCase):
         for i in range(settings['num_rooms']):
             for ts in self.timeslots:
                 res, created = Resource.objects.get_or_create(name='Room %d' % i, num_students=settings['room_capacity'], event=ts, res_type=ResourceType.get_or_create('Classroom'))
+        self.rooms = self.program.getClassrooms()
                    
         #   Create classes and sections
         subject_count = 0
@@ -601,12 +602,39 @@ class ProgramFrameworkTest(TestCase):
                 current_category = self.categories[subject_count % settings['num_categories']]
                 class_anchor = GetNode('%s/Classes/%s%d' % (self.program.anchor.get_uri(), current_category.symbol, subject_count + 1))
                 new_class, created = ClassSubject.objects.get_or_create(anchor=class_anchor, category=current_category, grade_min=7, grade_max=12, parent_program=self.program, class_size_max=settings['room_capacity'])
+                new_class.makeTeacher(t)
                 subject_count += 1
                 for j in range(settings['sections_per_class']):
                     if new_class.get_sections().count() <= j:
                         new_class.add_section(duration=settings['timeslot_length']/60.0)
-                        
-                        
+                new_class.accept() 
+
+    #   Helper function to give the program a schedule.
+    #   Does not get called by default, but subclasses can call it.
+    def schedule_randomly(self):
+        #   Force availability
+        for t in self.teachers:
+            for ts in self.program.getTimeSlots():
+                t.addAvailableTime(self.program, ts)
+        for cls in self.program.classes():
+            for sec in cls.get_sections():
+                vt = sec.viable_times()
+                if len(vt) > 0:
+                    sec.assign_start_time(random.choice(vt))
+                    vr = sec.viable_rooms()
+                    if len(vr) > 0:
+                        sec.assign_room(random.choice(vr))
+                        #   print '%s -> %s at %s' % (sec, sec.start_time().short_time(), sec.initial_rooms()[0].name)
+
+    #   Helper function to give each student a profile so they can sign up for classes.
+    #   Does not get called by default, but subclasses can call it.
+    def add_student_profiles(self):
+        for student in self.students:
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(10))
+            student_studentinfo.save()
+            student_regprofile = RegistrationProfile(user=student, program=self.program, student_info=student_studentinfo, most_recent_profile=True)
+            student_regprofile.save()
+
 def randomized_attrs(program):
     section_list = list(program.sections())
     random.shuffle(section_list)

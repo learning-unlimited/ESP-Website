@@ -57,11 +57,7 @@ class AvailabilityModuleTest(ProgramFrameworkTest):
         sec = self.program.sections()[1]
         sec.duration = '1.83'
         sec.save()
-        
-        # Add the teacher to the classes
-        for cls in self.program.classes():
-            cls.makeTeacher( self.moduleobj.user )
-    
+
     def runTest(self):
         # Now we have a program with 3 timeslots, 1 teacher, and 2 classes.
         # Grab the timeslots
@@ -71,7 +67,7 @@ class AvailabilityModuleTest(ProgramFrameworkTest):
         self.failUnless( not self.moduleobj.isCompleted() )
         
         # Log in as the teacher
-        self.failUnless( self.client.login( username='teacher0', password='password' ), "Couldn't log in as teacher" )
+        self.failUnless( self.client.login( username=self.teachers[0].username, password='password' ), "Couldn't log in as teacher %s" % self.teachers[0].username )
         
         # Submit availability, checking results each time
         # Available for one timeslot
