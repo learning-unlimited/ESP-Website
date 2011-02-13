@@ -81,7 +81,7 @@ class NavBarEntry(models.Model):
         return UserBit.UserHasPerms(user, self.path, GetNode('V/Administer/Edit/QSD'))
     
     def __unicode__(self):
-        return unicode(self.category) + ':' + str(self.sort_rank) + ' (' + self.text + ') ' + '[' + self.link + ']' 
+        return u'%s:%s (%s) [%s]' % (self.category, self.sort_rank, self.text, self.link)
 
     def makeTitle(self):
         return self.text
