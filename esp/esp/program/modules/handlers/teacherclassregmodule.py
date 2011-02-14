@@ -113,27 +113,33 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         Q_full_teacher = Q(userbit__qsc__in=full_classes) & Q_isteacher
 
         if QObject:
-            return {'class_approved': self.getQForUser(Q_approved_teacher),
-                    'class_proposed': self.getQForUser(Q_proposed_teacher),
-                    'class_rejected': self.getQForUser(Q_rejected_teacher),
-                    'class_nearly_full': self.getQForUser(Q_nearly_full_teacher),
-                    'class_full': self.getQForUser(Q_full_teacher)}
+            return {
+                'class_approved': self.getQForUser(Q_approved_teacher),
+                'class_proposed': self.getQForUser(Q_proposed_teacher),
+                'class_rejected': self.getQForUser(Q_rejected_teacher),
+                'class_nearly_full': self.getQForUser(Q_nearly_full_teacher),
+                'class_full': self.getQForUser(Q_full_teacher),
+            }
 
         else:
-            return {'class_approved': User.objects.filter(Q_approved_teacher).distinct(),
-                    'class_proposed': User.objects.filter(Q_proposed_teacher).distinct(),
-                    'class_rejected': User.objects.filter(Q_rejected_teacher).distinct(),
-                    'class_nearly_full': User.objects.filter(Q_nearly_full_teacher).distinct(),
-                    'class_full': User.objects.filter(Q_full_teacher).distinct()}
+            return {
+                'class_approved': User.objects.filter(Q_approved_teacher).distinct(),
+                'class_proposed': User.objects.filter(Q_proposed_teacher).distinct(),
+                'class_rejected': User.objects.filter(Q_rejected_teacher).distinct(),
+                'class_nearly_full': User.objects.filter(Q_nearly_full_teacher).distinct(),
+                'class_full': User.objects.filter(Q_full_teacher).distinct(),
+            }
 
 
     def teacherDesc(self):
         capacity_factor = ClassSubject.get_capacity_factor()
-        return {'class_approved': """Teachers teaching an approved class.""",
-                'class_proposed': """Teachers teaching a class which has yet to be reviewed.""",
-                'class_rejected': """Teachers teaching a rejected class.""",
-                'class_full': """Teachers teaching a completely full class.""",
-                'class_nearly_full': """Teachers teaching a nearly-full class (>%d%% of capacity).""" % (100 * capacity_factor)}
+        return {
+            'class_approved': """Teachers teaching an approved class.""",
+            'class_proposed': """Teachers teaching a class which has yet to be reviewed.""",
+            'class_rejected': """Teachers teaching a rejected class.""",
+            'class_full': """Teachers teaching a completely full class.""",
+            'class_nearly_full': """Teachers teaching a nearly-full class (>%d%% of capacity).""" % (100 * capacity_factor),
+        }
 
     
     def deadline_met(self, extension=''):
