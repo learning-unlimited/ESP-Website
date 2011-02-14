@@ -321,6 +321,14 @@ class ESPUser(User, AnonymousUser):
             return "?code=%s" % otheruser.password
         return ''
 
+    def getTaughtPrograms(self,):
+        taught_programs = Program.objects.filter(
+            anchor__child_set__child_set__userbit_qsc__user=self,
+            anchor__child_set__child_set__userbit_qsc__verb=GetNode('V/Flags/Registration/Teacher'),
+            anchor__child_set__child_set__userbit_qsc__qsc__classsubject__status=10)
+        taught_programs = taught_programs.distinct()
+        return taught_programs
+
     def getTaughtClasses(self, program = None):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
