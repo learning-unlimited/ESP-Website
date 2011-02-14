@@ -122,7 +122,7 @@
 
 {% endwith %}
 
-{% with user.getTaughtClasses as classes %}{% if classes %}
+{% with taught_classes as classes %}{% if classes %}
 <h2>Classes Taught (or signed up to teach)</h2>
 {% for class in classes %}
 {% ifchanged class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_program.niceName }}<br /><ul>{% endifchanged %}
