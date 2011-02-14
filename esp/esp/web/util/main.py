@@ -58,20 +58,20 @@ def get_from_id(id, module, strtype = 'object', error = True):
         return None
     return foundobj
     
-def render_response(request, template, dictionary):
+def render_response(request, template, dictionary, mimetype=None, ):
     from esp.web.util.idebug import idebug_hook
     inst = RequestContext(request)
     inst.update(dictionary)
     idebug_hook(request, inst)
     
-    return django.shortcuts.render_to_response(template, {}, context_instance = inst)
+    return django.shortcuts.render_to_response(template, {}, context_instance = inst, mimetype=mimetype, )
 
 def _per_program_template_name(prog, templatename):
     tpath = templatename.split("/")
     new_tpath = tpath[:-1] + ["per_program", "%s_%s" % (prog.id, tpath[-1])]
     return "/".join(new_tpath)
 
-def render_to_response(template, requestOrContext, prog = None, context = None, auto_per_program_templates = True):
+def render_to_response(template, requestOrContext, prog = None, context = None, auto_per_program_templates = True, mimetype=None, ):
     from esp.web.views.navBar import makeNavBar
 
     if isinstance(template, (basestring,)):
@@ -85,7 +85,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
         context = {'navbar_list': []}
         context['DEFAULT_EMAIL_ADDRESSES'] = DEFAULT_EMAIL_ADDRESSES
         context['EMAIL_HOST'] = EMAIL_HOST
-        return django.shortcuts.render_to_response(template, requestOrContext, Context(context))
+        return django.shortcuts.render_to_response(template, requestOrContext, Context(context), mimetype=mimetype)
     
     if context is not None:
         request = requestOrContext
@@ -115,7 +115,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
                 context['navbar_list'] = makeNavBar(request.user, prog.anchor, section, category)
             else:
                 context['navbar_list'] = makeNavBar(request.user, prog, section, category)
-        return render_response(request, template, context)
+        return render_response(request, template, context, mimetype=mimetype)
         
     assert False, 'render_to_response expects 2 or 4 arguments.'
 
