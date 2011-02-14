@@ -112,6 +112,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         full_classes = [x.anchor for x in self.program.classes().filter(status__gt=0) if x.isFull()]
         Q_full_teacher = Q(userbit__qsc__in=full_classes) & Q_isteacher
 
+        Q_taught_before = Q_isteacher & Q(userbit__qsc__classsubject__status=10, userbit__qsc__classsubject__parent_program__in=Program.objects.exclude(pk=self.program.pk))
+
         if QObject:
             return {
                 'class_approved': self.getQForUser(Q_approved_teacher),
@@ -119,6 +121,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_rejected': self.getQForUser(Q_rejected_teacher),
                 'class_nearly_full': self.getQForUser(Q_nearly_full_teacher),
                 'class_full': self.getQForUser(Q_full_teacher),
+                'taught_before': self.getQForUser(Q_taught_before),
             }
 
         else:
@@ -128,6 +131,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_rejected': User.objects.filter(Q_rejected_teacher).distinct(),
                 'class_nearly_full': User.objects.filter(Q_nearly_full_teacher).distinct(),
                 'class_full': User.objects.filter(Q_full_teacher).distinct(),
+                'taught_before': User.objects.filter(Q_taught_before).distinct(),
             }
 
 
@@ -139,6 +143,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             'class_rejected': """Teachers teaching a rejected class.""",
             'class_full': """Teachers teaching a completely full class.""",
             'class_nearly_full': """Teachers teaching a nearly-full class (>%d%% of capacity).""" % (100 * capacity_factor),
+            'taught_before': """Teachers who have taught for a previous program.""",
         }
 
     
