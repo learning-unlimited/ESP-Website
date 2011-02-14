@@ -252,7 +252,23 @@ class ListGenModule(ProgramModuleObj):
                     user_fields = [ua.get(x) for x in form.cleaned_data['fields']]
                     u.fields = user_fields
 
-                return render_to_response(self.baseDir()+('list_%s.html' % output_type), request, (prog, tl), {'users': users, 'fields': fields, 'listdesc': filterObj.useful_name})
+                if output_type == 'csv':
+                    # properly speaking, this should be text/csv, but that
+                    # causes Chrome to open in an external editor, which is
+                    # annoying
+                    mimetype = 'text/plain'
+                elif output_type == 'html':
+                    mimetype = 'text/html'
+                else:
+                    # WTF?
+                    mimetype = 'text/html'
+                return render_to_response(
+                    self.baseDir()+('list_%s.html' % output_type),
+                    request,
+                    (prog, tl),
+                    {'users': users, 'fields': fields, 'listdesc': filterObj.useful_name},
+                    mimetype=mimetype,
+                )
             else:
                 return render_to_response(self.baseDir()+'options.html', request, (prog, tl), {'form': form, 'filterid': filterObj.id})
         else:
