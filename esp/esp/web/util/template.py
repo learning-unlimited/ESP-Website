@@ -85,6 +85,7 @@ class InclusionTagCacheDecorator(object):
         def prepare_dec(func):
             params, xx, xxx, defaults = getargspec(func)
             from esp.cache.function import describe_func
+            cached_function = cache_function(func)
 
             if takes_context:
                 if params[0] == 'context':
@@ -93,12 +94,12 @@ class InclusionTagCacheDecorator(object):
                     raise TemplateSyntaxError, "Any tag function decorated with takes_context=True must have a first argument of 'context'"
 
             class InclusionNode(template.Node):
+
                 def __init__(self, vars_to_resolve):
                     self.vars_to_resolve = vars_to_resolve
 
                 def render_given_args(self, args):
-
-                    dict = func(*args)
+                    dict = cached_function(*args)
 
                     if not getattr(self, 'nodelist', False):
                         from django.template.loader import get_template, select_template
@@ -110,7 +111,6 @@ class InclusionTagCacheDecorator(object):
                     retVal = self.nodelist.render(context_class(dict, autoescape=self._context.autoescape))
 
                     return retVal
-                render_given_args = cache_function(render_given_args, uid_extra='*'+describe_func(func))  
 
                 def render(self, context):
                     resolved_vars = []
@@ -132,7 +132,7 @@ class InclusionTagCacheDecorator(object):
             compile_func = curry(template.generic_tag_compiler, params, defaults, func.__name__, InclusionNode)
             compile_func.__doc__ = func.__doc__
             register.tag(func.__name__, compile_func)
-            func.cached_function = InclusionNode.render_given_args
+            func.cached_function = cached_function
             return func
 
         self.prepare_func = prepare_dec
