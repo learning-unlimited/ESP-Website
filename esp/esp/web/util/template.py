@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 from django import template
 from esp.middleware.threadlocalrequest import AutoRequestContext
 from esp.cache import cache_function
+from esp.cache.key_set import wildcard, is_wildcard
 from django.utils.functional import curry
 import random
 import warnings
@@ -113,7 +114,14 @@ class InclusionTagCacheDecorator(object):
                     return retVal
                 render_given_args = cache_function(render_given_args, uid_extra='*'+describe_func(func))
                 render_given_args.get_or_create_token(('args',))
-                render_given_args.depend_on_cache(cached_function, lambda **kwargs: {'args': [kwargs[key] for key in params if key in kwargs]})
+                def render_map(**kwargs):
+                    result = {'args': [kwargs[key] for key in params if key in kwargs]}
+                    #   Flush everything if we got a wildcard
+                    for key in kwargs:
+                        if is_wildcard(kwargs[key]):
+                            return {}
+                    return result
+                render_given_args.depend_on_cache(cached_function, render_map)
 
                 def render(self, context):
                     resolved_vars = []
