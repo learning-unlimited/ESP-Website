@@ -44,6 +44,7 @@ from django.db.models import Q
 from django.db import connection
 from django.db import transaction
 from django.core.cache import cache
+from django.db.models import signals
 from esp.db.fields import AjaxForeignKey
 from esp.datatree.sql.query_utils import *
 from esp.datatree.sql.set_isolation_level import commit_manually
@@ -160,7 +161,7 @@ class DataTree(models.Model):
                 self.uri_correct=False
 
         self.save_db(*self.SAFE_COLS)
-
+        signals.post_save.send(sender=self.__class__, instance=self, created=False)
 
     def save_db(self, *cols, **kwargs):
         # Update the db with this item, but only for the columns listed.
