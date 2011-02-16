@@ -24,7 +24,12 @@ class TemplateOverride(models.Model):
     
     def save(self, *args, **kwargs):
         #   Try finding a template in order to make sure Django has loaded the template loaders.
-        (source, origin) = find_template('main.html')
+        
+        # was throwing errors when trying to migrate web/ to web/migrations/0001_navbar_template_change.py, so added a try/except block at the recommendation of aseering
+        try:
+            (source, origin) = find_template('main.html')
+        except Exception:
+            pass
         
         #   Then grab the template loaders.
         from django.template.loader import template_source_loaders
