@@ -297,7 +297,13 @@ def userview(request):
     if not teacherbio.picture:
         teacherbio.picture = 'images/not-available.jpg'
     
-    return render_to_response("users/userview.html", request, GetNode("Q/Web"), { 'user': user, 'teacherbio': teacherbio, 'domain': SITE_INFO[1] } )
+    context = {
+        'user': user,
+        'taught_classes' : user.getTaughtClasses().order_by('parent_program'),
+        'teacherbio': teacherbio,
+        'domain': SITE_INFO[1],
+    }
+    return render_to_response("users/userview.html", request, GetNode("Q/Web"), context )
     
 def programTemplateEditor(request):
     """ Generate and display a listing of all QSD pages in the Programs template
