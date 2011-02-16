@@ -111,6 +111,9 @@ class InclusionTagCacheDecorator(object):
                     retVal = self.nodelist.render(context_class(dict, autoescape=self._context.autoescape))
 
                     return retVal
+                render_given_args = cache_function(render_given_args, uid_extra='*'+describe_func(func))
+                render_given_args.get_or_create_token(('args',))
+                render_given_args.depend_on_cache(cached_function, lambda **kwargs: {'args': [kwargs[key] for key in params if key in kwargs]})
 
                 def render(self, context):
                     resolved_vars = []
