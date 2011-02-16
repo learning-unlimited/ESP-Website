@@ -29,6 +29,9 @@ for app_name in settings.INSTALLED_APPS:
                sys.modules[key[4:]] = value
 
 
+#   Make sure all cached inclusion tags are registered
+from esp.utils.inclusion_tags import *
+
 # import esp.cache.test
 
 # Fix up the queued events

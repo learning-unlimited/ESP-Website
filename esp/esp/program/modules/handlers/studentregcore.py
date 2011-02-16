@@ -266,7 +266,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @cache_function
     def printer_names(self):
         return GetNode('V/Publish/Print').children().values_list('name', flat=True)
-    printer_names.depend_on_row(lambda: DataTree, lambda node: {}, lambda node: node.get_uri().startswith('V/Publish/Print'))
+    printer_names.depend_on_row(lambda: DataTree, lambda node: {}, lambda node: node.get_uri(save=False).startswith('V/Publish/Print'))
 
     @main_call
     @needs_student

@@ -253,6 +253,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
             prevTimeSlot = timeslot
                 
+        context['num_classes'] = len(classList)
         context['timeslots'] = schedule
         context['use_priority'] = scrmi.use_priority
         context['allow_removal'] = self.deadline_met('/Removal')
@@ -269,8 +270,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         context['prog'] = self.program
         context['one'] = one
         context['two'] = two
-        #   This should be populated by self.prepare()
-        context['num_classes'] = len(context['timeslots'])
         context['reg_open'] = bool(UserBit.UserHasPerms(request.user,
                                                         prog.anchor_id,
                                                         GetNode('V/Deadline/Registration/'+{'learn':'Student',
@@ -595,6 +594,20 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 'one':        one,
                 'two':        two,
                 })
+
+    
+    """@cache_control(public=True, max_age=3600)
+    def timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
+        """ """Return the program timeslot names for the tabs in the lottery inteface""" """
+        # using .extra() to select all the category text simultaneously
+        timeslots = self.program.getTimeSlots()
+
+        resp = HttpResponse(mimetype='application/json')
+        
+        simplejson.dump(list(timeslots), resp, default=json_encode)
+        
+        return resp"""
+
     
     @cache_control(public=True, max_age=3600)
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):

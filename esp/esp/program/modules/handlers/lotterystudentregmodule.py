@@ -50,6 +50,10 @@ from uuid                        import uuid4 as get_uuid
 from django.db.models.query      import Q
 from django.views.decorators.cache import cache_control
 
+#def json_encode_timeslots(obj):
+    
+
+
 class LotteryStudentRegModule(ProgramModuleObj):
 
     def students(self, QObject = False):
@@ -91,9 +95,9 @@ class LotteryStudentRegModule(ProgramModuleObj):
         it gets all of its content from AJAX callbacks.
         """
 
-        print "blooble"
-        print request.user.username
-        return lottery_student_reg(request, self.program)
+        #print "blooble"
+        #print request.user.username
+        return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', {'prog': self.program})
 
     @aux_call
     @meets_deadline('/Classes/Lottery')
@@ -104,6 +108,22 @@ class LotteryStudentRegModule(ProgramModuleObj):
         """
 
         return lsr_view_submit(request, self.program)
+
+    @aux_call
+    @cache_control(public=True, max_age=3600)
+    def timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
+        """ Return the program timeslot names for the tabs in the lottery inteface """
+        # using .extra() to select all the category text simultaneously
+        ordered_timeslots = sorted(self.program.getTimeSlotList(), key=lambda event: event.start)
+        ordered_timeslot_names = list()
+        for item in ordered_timeslots:
+            ordered_timeslot_names.append([item.id, item.short_description])
+
+        resp = HttpResponse(mimetype='application/json')
+        
+        simplejson.dump(ordered_timeslot_names, resp)
+        
+        return resp
 
 
     @aux_call

@@ -1,7 +1,36 @@
 {% extends "elements/html" %}
 
+{% comment %}
+    Customize your title formatting here.  For example:
+    {% block fulltitle %}Splash at UFoo - {% block title %}{% endblock %}{% endblock %} 
+{% endcomment %}
+{% block fulltitle %}{% block title %}{% endblock %}{% endblock %}
+
 {% block stylesheets %}
+    {{ block.super }}
+    {# Customize your stylesheets here #}
     <link rel="stylesheet" href="{{ MEDIA_URL }}styles/main.css" type="text/css" />
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+
+    {% comment %}
+        These script fragments ensure that the backgrounds of the nav bar and 
+        content area line up at the bottom of the page.  If you don't need them,
+        feel free to remove them.
+    {% endcomment %}
+    <script type="text/javascript" src="{{ MEDIA_URL }}scripts/match_heights.js"></script>
+    <script type="text/javascript">
+    <!--
+    match_content = function () {
+        match_heights(['main', 'navbar']);
+    };
+    $(document).ready(match_content);
+    -->
+    </script>
+
+    {# Customize your scripts here #}
 {% endblock %}
 
 {% block body %}
@@ -45,7 +74,7 @@ body {
     <div id="navbar_content">
     <span class="announcementlink_title">Relevant Links</span>
     {% load navbar %}
-    {% navbar_gen %}
+    {% navbar_gen request.path request.user navbar_list %}
     </div>
 
     <div id="navbar_content">
@@ -106,12 +135,6 @@ body {
 </div>
 
 </div>
-
-<script type="text/javascript">
-<!--
-    match_heights(['main', 'navbar']);
--->
-</script>
 
 <div id="footer">
 Your footer here
