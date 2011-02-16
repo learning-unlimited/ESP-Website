@@ -1,39 +1,10 @@
 from django import template
 from esp.web.util.template import cache_inclusion_tag
 from esp.users.models import ESPUser
+from esp.program.models import ClassSubject, ClassSection
+from esp.cache.key_set import wildcard
     
 register = template.Library()
-
-def cache_key_func(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
-    # Try more caching, our code screens the classes anyway.
-    if timeslot:
-        if user:
-            return 'CLASS_DISPLAY__%s_%s_%s' % (cls.id, timeslot.id, user.id)
-        else:
-            return 'CLASS_DISPLAY__%s_%s' % (cls.id, timeslot.id)
-    else:
-        if user:
-            return 'CLASS_DISPLAY__%s_%s' % (cls.id, user.id)
-        else:
-            return 'CLASS_DISPLAY__%s' % (cls.id)
-
-def core_cache_key_func(cls):
-    return 'CLASS_CORE_DISPLAY__%s' % cls.id
-
-def minimal_cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
-    if not user or not prereg_url:
-        return 'CLASS_MINDISPLAY__%s' % cls.id
-    return None
-
-def current_cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
-    if not user or not prereg_url:
-        return 'CLASS_CURRENT__%s' % cls.id
-    return None
-
-def preview_cache_key_func(cls, user=None, prereg_url=None, filter=False, request=None):
-    if not user or not prereg_url:
-        return 'CLASS_PREVIEW__%s' % cls.id
-    return None
 
 def get_smallest_section(cls, timeslot=None):
     if timeslot:
@@ -55,7 +26,7 @@ def get_smallest_section(cls, timeslot=None):
 
     return section
 
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html', cache_key_func=core_cache_key_func)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html')
 def render_class_core(cls):
 
     prog = cls.parent_program
@@ -78,9 +49,14 @@ def render_class_core(cls):
             'colorstring': colorstring,
             'show_enrollment': scrmi.visible_enrollments,
             'show_emailcodes': scrmi.show_emailcodes,
-            'show_meeting_times': scrmi.visible_meeting_times}
-            
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', cache_key_func=cache_key_func, cache_time=60)
+            'show_meeting_times': scrmi.visible_meeting_times}           
+render_class_core.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
+render_class_core.cached_function.depend_on_row(ClassSection, lambda sec: {'cls': sec.parent_class})
+render_class_core.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'cls': self})
+render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lambda self=wildcard, **kwargs: {'cls': self.parent_class})
+render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
+
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog.html')
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
     errormsg = None
     
@@ -119,9 +95,7 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
             'temp_full_message': scrmi.temporarily_full_text,
             'show_class': show_class}
 
-# We're not caching this yet because I doubt people will hit this function the same way repeatedly--same user and all.
-# The lambda is there because cache_inclusion_tag doesn't like receiving cache_key_func=None. -ageng 2008-02-18
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog_swap.html', cache_key_func=lambda a, b, c, d, e, f: None)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog_swap.html')
 def render_class_swap(cls, swap_class, user=None, prereg_url=None, filter=False, request=None):
     errormsg = None
 
@@ -146,7 +120,7 @@ def render_class_swap(cls, swap_class, user=None, prereg_url=None, filter=False,
             'errormsg':   errormsg,
             'show_class': show_class}
 
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog_minimal.html', cache_key_func=minimal_cache_key_func)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog_minimal.html')
 def render_class_minimal(cls, user=None, prereg_url=None, filter=False, request=None):
     errormsg = None
 
@@ -162,7 +136,7 @@ def render_class_minimal(cls, user=None, prereg_url=None, filter=False, request=
             'errormsg':   errormsg,
             'show_class': show_class}
             
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog_current.html', cache_key_func=current_cache_key_func)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog_current.html')
 def render_class_current(cls, user=None, prereg_url=None, filter=False, request=None):
     errormsg = None
 
@@ -175,7 +149,7 @@ def render_class_current(cls, user=None, prereg_url=None, filter=False, request=
             'show_class': show_class}
                         
             
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog_preview.html', cache_key_func=preview_cache_key_func)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog_preview.html')
 def render_class_preview(cls, user=None, prereg_url=None, filter=False, request=None):
     errormsg = None
 
@@ -191,7 +165,7 @@ def render_class_preview(cls, user=None, prereg_url=None, filter=False, request=
             'errormsg':   errormsg,
             'show_class': show_class}
 
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog_row.html', cache_key_func=minimal_cache_key_func)
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog_row.html')
 def render_class_row(cls, user=None, prereg_url=None, filter=False, request=None):
     errormsg = None
 
