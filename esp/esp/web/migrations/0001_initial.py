@@ -1,67 +1,43 @@
 # encoding: utf-8
 import datetime
 from south.db import db
-from south.v2 import DataMigration
+from south.v2 import SchemaMigration
 from django.db import models
 
-from esp.utils.models import TemplateOverride
-import string
-
-class Migration(DataMigration):
+class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        "Write your forwards methods here."
-        space = ['','']
-        overrides = {}
-        for i in range(0,4):
-            space[0] = '' +  ' '*(i&(1<<0))
-            space[1] = '' + ' '*((i&(1<<1))>>1)
-            contains_txt = "{%" + space[0] + "navbar_gen" + space[1] + "%}"
-            override = [x for x in TemplateOverride.objects.filter(content__contains=contains_txt)]
-            for o in override:
-                if o.name in overrides.keys():
-                    if overrides[o.name].version < o.version:
-                        overrides[o.name] = o
-                else:
-                    overrides[o.name] = o
-        for o in overrides.keys():
-            override = [x for x in TemplateOverride.objects.filter(name=o)]
-            max_vers = 0
-            for i in range(0, len(override)):
-                if override[i].version > max_vers:
-                    max_vers = override[i].version
-            if overrides[o].version < max_vers:
-                continue
-            overrides[o].content = string.replace(overrides[o].content, contains_txt, string.replace(contains_txt, "navbar_gen", "navbar_gen request.path request.user navbar_list"))
-            overrides[o].save()
         
-    
+        # Adding model 'NavBarCategory'
+        db.create_table('web_navbarcategory', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('anchor', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'], null=True, blank=True)),
+            ('include_auto_links', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('name', self.gf('django.db.models.fields.CharField')(max_length=64)),
+            ('long_explanation', self.gf('django.db.models.fields.TextField')()),
+        ))
+        db.send_create_signal('web', ['NavBarCategory'])
+
+        # Adding model 'NavBarEntry'
+        db.create_table('web_navbarentry', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('path', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='navbar', null=True, to=orm['datatree.DataTree'])),
+            ('sort_rank', self.gf('django.db.models.fields.IntegerField')()),
+            ('link', self.gf('django.db.models.fields.CharField')(max_length=256, null=True, blank=True)),
+            ('text', self.gf('django.db.models.fields.CharField')(max_length=64)),
+            ('indent', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('category', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['web.NavBarCategory'])),
+        ))
+        db.send_create_signal('web', ['NavBarEntry'])
+
 
     def backwards(self, orm):
-        "Write your backwards methods here."
-        space = ['','']
-        overrides = {}
-        for i in range(0,4):
-            space[0] = '' +  ' '*(i&(1<<0))
-            space[1] = '' + ' '*((i&(1<<1))>>1)
-            contains_txt = "{%" + space[0] + "navbar_gen request.path request.user navbar_list" + space[1] + "%}"
-            override = [x for x in TemplateOverride.objects.filter(content__contains=contains_txt)]
-            for o in override:
-                if o.name in overrides.keys():
-                    if overrides[o.name].version < o.version:
-                        overrides[o.name] = o
-                else:
-                    overrides[o.name] = o
-        for o in overrides.keys():
-            override = [x for x in TemplateOverride.objects.filter(name=o)]
-            max_vers = 0
-            for i in range(0, len(override)):
-                if override[i].version > max_vers:
-                    max_vers = override[i].version
-            if overrides[o].version < max_vers:
-                continue
-            overrides[o].content = string.replace(overrides[o].content, contains_txt, string.replace(contains_txt, "navbar_gen request.path request.user navbar_list", "navbar_gen"))
-            overrides[o].save()
+        
+        # Deleting model 'NavBarCategory'
+        db.delete_table('web_navbarcategory')
+
+        # Deleting model 'NavBarEntry'
+        db.delete_table('web_navbarentry')
 
 
     models = {
