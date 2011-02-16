@@ -7,6 +7,9 @@ ESP.Scheduling = function(){
 	// ensure event manager is empty before we begin setting up
 	ESP.Utilities.evm.unbind();
 	
+	ESP.Scheduling.classes_by_time_type = null;
+	ESP.Scheduling.ms_classes_by_time = null;
+
 	var pd = this.data = process_data(test_data_set);
 	this.raw_data = test_data_set;
 	if (!this.status) {
@@ -69,6 +72,18 @@ ESP.Scheduling = function(){
 	    dir.filter();
 	});
 	$j('#body').show()
+
+	console.log("Classes of each type in each timeblock:");
+	for (var time in ESP.Scheduling.classes_by_time_type) {
+	    for (var type in ESP.Scheduling.classes_by_time_type[time]) {
+		console.log("-- " + time + ",\t" + type + ":\t" + ESP.Scheduling.classes_by_time_type[time][type]);
+	    }
+	}
+	
+	console.log("Middle-School Classes of each type in each timeblock:");
+	for (var time in ESP.Scheduling.ms_classes_by_time) {
+	    console.log("-- " + time + ":\t" + ESP.Scheduling.ms_classes_by_time[time]);
+	}
     };
     
     // process data
@@ -174,7 +189,7 @@ ESP.Scheduling = function(){
 		          'Title:': c.text,
 			  'Teachers': c.teachers.map(function(x){ return Resources.get('Teacher', x).text; }),
 			  'Requests:': c.resource_requests.map(function(x){ var res = Resources.get('RoomResource', x[0]); return (res ? (res.text + ": " + x[1]) : null); }),
-			  'Size:': (c.max_class_size ? c.max_class.size.toString() : "(n/a)") + "max, " + (c.optimal_class_size ? c.optimal_class_size.toString() : "(n/a)") + " opt (" + c.optimal_class_size_range + ")",
+			  'Size:': (c.max_class_capacity ? c.max_class_capacity : "(n/a)") + " max cap, " + (c.max_class_size ? c.max_class.size.toString() : "(n/a)") + "max, " + (c.optimal_class_size ? c.optimal_class_size.toString() : "(n/a)") + " opt (" + c.optimal_class_size_range + ")",
 			  'Allowable Class-Size Ranges:': c.allowable_class_size_ranges,
 			  'Grades:': c.grades ? (c.grades[0] + "-" + c.grades[1]) : "(n/a)",
 			  "Prereq's:": c.prereqs,
@@ -189,7 +204,10 @@ ESP.Scheduling = function(){
 		    teachers:c.teachers.map(function(x){ return Resources.get('Teacher',x); }),
 		    resource_requests:c.resource_requests.map(function(x){ return [Resources.get('RoomResource', x[0]), x[1]]; }),
 		    grade_min: c.grades[0],
-		    grade_max: c.grades[1]
+		    grade_max: c.grades[1],
+		    max_class_capacity: c.max_class_capacity,
+		    optimal_class_size: c.optimal_class_size,
+		    optimal_class_size_range: c.optimal_class_size_range
 		    
 		    }));
 	    s.teachers.map(function(x){ x.sections.push(s); });
@@ -247,20 +265,119 @@ ESP.Scheduling = function(){
 		return (str_err ? "Teacher '" + section.teachers[i].text + "' not available at time '" + time.text + "'" : false);
 	}
 
+	// check for class over- or under-size
+	var room_size = block.room.num_students;
+	var class_size = (section.max_class_capacity ? section.max_class_capacity : section.optimal_class_size);
+	if (class_size && (class_size > room_size * 1.5 || class_size < room_size * 0.666)) {
+	    // This shouldn't be an actual error; sometimes it'll be the "right" thing to do
+	    //return (str_err ? "Class '" + section.text + "' (size: " + class_size + " students) not the right size for room '" + block.room.text + "' (max size: " + room_size + " students)" : false);
+	    console.log("Warning:  Class '" + section.text + "' (size: " + class_size + " students) not the right size for room '" + block.room.text + "' (max size: " + room_size + " students)");
+	}
+
+	// check for not scheduling across a time boundary
+	if (section.blocks && (section.blocks.length > 0)) {
+	    var cmpBlock = section.blocks[0];
+	    var first;
+	    var second;
+	    if (block.time.start > cmpBlock.time.start) {
+		first = cmpBlock;
+		second = block;
+	    } else {
+		first = block;
+		second = cmpBlock;
+	    }
+	    
+	    var inSeq = false;
+	    while (first.seq) {
+		if (first.uid[0] == second.uid[0]) {
+		    inSeq = true;
+		    break;
+		}
+		first = first.seq;
+	    }
+	    if (!inSeq) {
+		return (str_err ? "Class '" + section.text + "' is scheduled across a lunch boundary" : false)
+	    }
+	}
+	
 	// check for teacher class conflicts
+	// also check for making this class's teachers run all over campus (horrible dirty hack)
+	var class_bldg = block.room.text.split('-');
+	if (class_bldg.length > 1 && class_bldg[0].length < 4) {
+	    class_bldg = class_bldg[0];
+	} else {
+	    class_bldg = null;
+	}
 	for (var i = 0; i < section.teachers.length; i++) {
 	    var teacher = section.teachers[i];
 	    for (var j = 0; j < teacher.sections.length; j++) {
 		var other_section = teacher.sections[j];
 		if (other_section == section) continue;
 		for (var k = 0; k < other_section.blocks.length; k++) {
-		    if (other_section.blocks[k].time == time) {
+		    var other_block = other_section.blocks[k];
+		    if (other_block.time == time) {
 			return (str_err ? ("Teacher '" + teacher.text + "' cannot teach classes '" + section.code + "' and '" + other_section.code + "' simultaneously ('" + time.text + "')") : false);
+		    }
+		    if (other_block.seq == block || block.seq == other_block) {
+			var other_class_bldg = other_block.room.text.split('-');
+			if (other_class_bldg.length > 1 && other_class_bldg[0].length < 4) {
+			    other_class_bldg = other_class_bldg[0];
+			    if (other_class_bldg != class_bldg) {
+				return (str_err ? ("Teacher '" + teacher.text + "' running between bldg " + class_bldg + " (" + block.time.text + ") and bldg " + other_class_bldg + " (" + other_block.time.text + ")") : false);
+			    }
+			}
 		    }
 		}
 	    }
 	}
-
+	
+	// resources
+	// WARNING:  This is sketchy!; the website does not currently store/provide enough information
+	// about the resources associated with a block, to actually do this test.
+	// But try anyway.
+	var found_resource = true;
+	if (block.resources) {
+	    for (var i = 0; i < block.resources.length; i++) {
+		found_resource = false;
+		for (var j = 0; j < section.resource_requests.length; j++) {
+		    if (block.resources[i] == section.resource_requests[j].text) {
+			found_resource = true;
+			break;
+		    }
+		}
+		if (!found_resource) {
+		    break;
+		}
+	    }
+	    if (!found_resource) {
+		return (str_err ? "Class '" + section.text + "' requested a resource ('" + section.resource_requests[j].text + "') not available in room '" + block.room.text + "' (note that the website's resource tracker is not fully functional at this time!)" : true);
+	    }
+	}
+	
+	// Accumulate classes of each type, as scheduled so far
+	if (!ESP.Scheduling.classes_by_time_type) {
+	    ESP.Scheduling.classes_by_time_type = {};
+	}
+	if (!ESP.Scheduling.classes_by_time_type[block.time.text]) {
+	    ESP.Scheduling.classes_by_time_type[block.time.text] = {};
+	}
+	if (!ESP.Scheduling.classes_by_time_type[block.time.text][section.category]) {
+	    ESP.Scheduling.classes_by_time_type[block.time.text][section.category] = 1;
+	} else {
+	    ESP.Scheduling.classes_by_time_type[block.time.text][section.category] ++;
+	}
+	
+	if (section.grade_min < 9) {
+	    if (!ESP.Scheduling.ms_classes_by_time) {
+		ESP.Scheduling.ms_classes_by_time = {};
+	    }
+	    if (!ESP.Scheduling.ms_classes_by_time[block.time.text]) {
+		ESP.Scheduling.ms_classes_by_time[block.time.text] = 1;
+	    } else {
+		ESP.Scheduling.ms_classes_by_time[block.time.text] ++;
+	    }	  
+	}
+	
 	return (str_err ? "OK" : true);
     };
     

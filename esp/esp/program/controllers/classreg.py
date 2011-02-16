@@ -261,9 +261,7 @@ class ClassCreationController(object):
             mail_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
 
         # Get a list of the programs this person has taught for in the past, if any.
-        taught_programs = Program.objects.filter(anchor__child_set__child_set__userbit_qsc__user=user, \
-                                                 anchor__child_set__child_set__userbit_qsc__verb=GetNode('V/Flags/Registration/Teacher'), \
-                                                 anchor__child_set__child_set__userbit_qsc__qsc__classsubject__status=10).distinct().exclude(id=self.program.id)
+        taught_programs = user.getTaughtPrograms().order_by('pk').exclude(id=self.program.id)
         mail_ctxt['taught_programs'] = taught_programs
 
         return mail_ctxt

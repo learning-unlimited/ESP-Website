@@ -178,7 +178,7 @@ class TeacherEventsModule(ProgramModuleObj):
         training_times = self.getTimes('training').select_related('anchor__userbit_qsc__user')
         
         for ts in list( interview_times ) + list( training_times ):
-            ts.teachers = [ x.user.first_name + ' ' + x.user.last_name for x in self.bitsBySlot( ts.anchor ) ]
+            ts.teachers = [ x.user.first_name + ' ' + x.user.last_name + ' <' + x.user.email + '>' for x in self.bitsBySlot( ts.anchor ) ]
         
         return render_to_response( self.baseDir()+'teacher_events.html', request, (prog, tl), {'prog': prog, 'interview_times': interview_times, 'training_times': training_times} )
 
