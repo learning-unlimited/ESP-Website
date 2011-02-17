@@ -16,9 +16,9 @@
 {% render_inline_qsd prog.anchor "teach:quiz_tryagain" request.user %}
 
 <div style="text-align: center; color: #990000; font-size: 1.3em;">
-Questions with incorrect answers:
+You had {{errors|length}} questions with incorrect answers:
 {% for error in errors %}
-    {{ error }}{% if not forloop.last %}, {% endif %}
+    #{{ error }}{% if not forloop.last %}, {% endif %}
 {% endfor %}
 </div>
 
