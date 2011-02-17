@@ -44,6 +44,7 @@ from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits, admin_required, 
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
+from django.db.models import Min
 from django.core.mail import mail_admins
 from django.core.cache import cache
 from django.views.decorators.csrf import csrf_exempt
@@ -52,7 +53,7 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.datatree.sql.query_utils import QTree
-from esp.program.models import Program, TeacherBio
+from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.accounting_docs.models import Document
@@ -64,6 +65,7 @@ from esp.settings import SITE_INFO
 import pickle
 import operator
 import simplejson as json
+from collections import defaultdict
 
 
 @login_required
@@ -85,13 +87,13 @@ def lottery_student_reg(request, program = None):
 
 #@transaction.commit_manually
 @login_required
-def lsr_submit(request, program = None):
+def lsr_submit(request, program = None):    
     if program is None:
-        program = Program.objects.get(anchor__uri__contains="Splash/2010")
+        program = Program.objects.get(anchor__uri__contains="Spark/2011")
 
     # First check whether the user is actually a student.
     if not request.user.isStudent():
-        raise ESPError(False), "You must be a student in order to access Splash student registration."
+        raise ESPError(False), "You must be a student in order to access Spark student registration."
 
     data = json.loads(request.POST['json_data'])
 
