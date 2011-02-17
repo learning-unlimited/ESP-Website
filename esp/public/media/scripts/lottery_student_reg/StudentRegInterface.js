@@ -279,7 +279,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 		     xtype: 'displayfield',
 		     height: 80,
 		   //width: '600',
-		     value: 'To register for the ' + nice_name + ' class lottery, click "Show me my priority classes!"<br><br>  If you like what you see, click "Confirm Registratio."'
+		     value: 'To register for the ' + nice_name + ' class lottery, click "Show me my priority classes!"<br><br>  If you like what you see, click "Show me my priority classes!"'
 	     });
 
 	     //adds "confirm registration" button
@@ -363,12 +363,12 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 //  console.log("Registration successful.");
                 Ext.Msg.show({
                     title:  'Registration Successful',
-                    msg: 'Your preferences have been stored in the ESP database and will be used to assign classes in the lottery on Nov. 2.',
+                    msg: 'Your preferences have been stored in the ESP database and will be used to assign classes in the lottery on February 27.',
                     buttons: {ok:'Continue', cancel:'Return to edit preferences'},
                     fn: function(button) {
                         if (button == 'ok') 
                         {
-                            window.location.href = '/learn/'+url_base+'/confirmreg';
+                            window.location.href = '/learn/'+url_base+'/studentreg';
                         }
                         if (button == 'cancel') {Ext.Msg.hide();}
                     }
@@ -397,7 +397,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	     data = Ext.encode(classes);
 	     Ext.Ajax.request({
 		     url: 'lsr_submit',
-             success: handle_submit_response,
+		     success: handle_submit_response,
 		     params: {'json_data': data},
 		     method: 'POST'
 		 });
