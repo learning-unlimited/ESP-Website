@@ -885,4 +885,3 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         sec.parent_program._moduleExtension = {}
         self.assertEqual(sec.capacity, initial_capacity)
 
-from esp.program.modules.tests import *
