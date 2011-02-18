@@ -7,6 +7,7 @@ from esp.users.models import UserAvailability, ContactInfo, StudentInfo, Teacher
 
 
 class UserBitAdmin(admin.ModelAdmin):
+    list_display = [ 'id', 'user', 'qsc', 'verb', 'startdate', 'enddate', 'recursive', ]
     search_fields = ['user__last_name','user__first_name',
                      'qsc__uri','verb__uri']
 admin.site.register(UserBit, UserBitAdmin)
