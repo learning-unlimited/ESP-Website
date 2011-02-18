@@ -350,24 +350,6 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                     update = True                    
                     Q_include &= Q(registrationprofile__student_info__graduation_year__gte = yog, registrationprofile__most_recent_profile=True)
         
-            #   Filter by graduation years if specifically looking for teachers.
-            possible_gradyears = range(1920, 2020)
-            if request.GET.has_key('gradyear_min') and len(request.GET['gradyear_min'].strip()) > 0:
-                try:
-                    gradyear_min = int(request.GET['gradyear_min'])
-                except:
-                    raise ESPError(False), 'Please enter a 4-digit integer for graduation year limits.'
-                possible_gradyears = filter(lambda x: x >= gradyear_min, possible_gradyears)
-            if request.GET.has_key('gradyear_max') and len(request.GET['gradyear_min'].strip()) > 0:
-                try:
-                    gradyear_max = int(request.GET['gradyear_max'])
-                except:
-                    raise ESPError(False), 'Please enter a 4-digit integer for graduation year limits.'
-                possible_gradyears = filter(lambda x: x <= gradyear_max, possible_gradyears)
-            if request.GET.has_key('gradyear_min') or request.GET.has_key('gradyear_max'):
-                Q_include &= Q(registrationprofile__teacher_info__graduation_year__in = map(str, possible_gradyears), registrationprofile__most_recent_profile=True)
-                update = True
-        
         if not update:
             users = None
 	else:
