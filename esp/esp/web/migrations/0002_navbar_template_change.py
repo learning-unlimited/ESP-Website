@@ -5,68 +5,41 @@ from south.v2 import DataMigration
 from django.db import models
 
 from esp.utils.models import TemplateOverride
-import string
+import re
+
+def update_template_overrides(source_re, replacement):
+    overrides = {}
+    override = [x for x in TemplateOverride.objects.filter(content__regex=source_re)]
+    for o in override:
+        if o.name in overrides.keys():
+            if overrides[o.name].version < o.version:
+                overrides[o.name] = o
+        else:
+            overrides[o.name] = o
+    for o in overrides.keys():
+        override = [x for x in TemplateOverride.objects.filter(name=o)]
+        max_vers = 0
+        for i in range(0, len(override)):
+            if override[i].version > max_vers:
+                max_vers = override[i].version
+        if overrides[o].version < max_vers:
+            continue
+        overrides[o].content = re.sub(source_re, replacement, overrides[o].content)
+        overrides[o].save()
 
 class Migration(DataMigration):
 
     depends_on = (
         ("utils", "0001_initial"),
     )
-    
+        
     def forwards(self, orm):
         "Write your forwards methods here."
-        space = ['','']
-        overrides = {}
-        for i in range(0,4):
-            space[0] = '' +  ' '*(i&(1<<0))
-            space[1] = '' + ' '*((i&(1<<1))>>1)
-            contains_txt = "{%" + space[0] + "navbar_gen" + space[1] + "%}"
-            override = [x for x in TemplateOverride.objects.filter(content__contains=contains_txt)]
-            for o in override:
-                if o.name in overrides.keys():
-                    if overrides[o.name].version < o.version:
-                        overrides[o.name] = o
-                else:
-                    overrides[o.name] = o
-        for o in overrides.keys():
-            override = [x for x in TemplateOverride.objects.filter(name=o)]
-            max_vers = 0
-            for i in range(0, len(override)):
-                if override[i].version > max_vers:
-                    max_vers = override[i].version
-            if overrides[o].version < max_vers:
-                continue
-            overrides[o].content = string.replace(overrides[o].content, contains_txt, string.replace(contains_txt, "navbar_gen", "navbar_gen request.path request.user navbar_list"))
-            overrides[o].save()
+        update_template_overrides(r'{% *navbar_gen *(("[^"]*")?) *%}', r'{% navbar_gen request.path request.user navbar_list \1 %}')
         
-    
-
     def backwards(self, orm):
         "Write your backwards methods here."
-        space = ['','']
-        overrides = {}
-        for i in range(0,4):
-            space[0] = '' +  ' '*(i&(1<<0))
-            space[1] = '' + ' '*((i&(1<<1))>>1)
-            contains_txt = "{%" + space[0] + "navbar_gen request.path request.user navbar_list" + space[1] + "%}"
-            override = [x for x in TemplateOverride.objects.filter(content__contains=contains_txt)]
-            for o in override:
-                if o.name in overrides.keys():
-                    if overrides[o.name].version < o.version:
-                        overrides[o.name] = o
-                else:
-                    overrides[o.name] = o
-        for o in overrides.keys():
-            override = [x for x in TemplateOverride.objects.filter(name=o)]
-            max_vers = 0
-            for i in range(0, len(override)):
-                if override[i].version > max_vers:
-                    max_vers = override[i].version
-            if overrides[o].version < max_vers:
-                continue
-            overrides[o].content = string.replace(overrides[o].content, contains_txt, string.replace(contains_txt, "navbar_gen request.path request.user navbar_list", "navbar_gen"))
-            overrides[o].save()
-
+        update_template_overrides(r'{% *navbar_gen *request\.path *request\.user *navbar_list *(("[^"]*")?) *%}', r'{% navbar_gen \1 %}')
 
     models = {
         'datatree.datatree': {
