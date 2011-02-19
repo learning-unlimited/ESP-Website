@@ -32,14 +32,11 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.program.models.class_ import ClassSection
-
-from esp.middleware.esperrormiddleware import AjaxErrorMiddleware
-
+from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 
 import random
-import simplejson as json
+import re
 
 class StudentRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -79,8 +76,61 @@ class StudentRegTest(ProgramFrameworkTest):
         sec.preregister_student(student)
 
         #   Get the receipt and check that the class appears on it with title and time
-        response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase(), {})
+        response = self.client.get('/learn/%s/confirmreg' % self.program.getUrlBase())
         self.assertTrue(sec.title() in response.content)
         for ts in sec.meeting_times.all():
             self.assertTrue(ts.short_description in response.content)
+
+    def test_catalog(self):
+
+        def verify_catalog_correctness():
+            response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
+            for cls in self.program.classes():
+                #   Find the portion of the catalog corresponding to this class
+                pattern = r"""<div class="show_class">\s*<table [^>]+ >\s*<tr onclick="swap_visible\('%d_details'\).*?</table>\s*</div>""" % cls.id
+                cls_fragment = re.search(pattern, response.content, re.DOTALL).group(0)
+
+                pat2 = r"""<th [^>]+>\s*(?P<title>.*?)\s*<br />.*?<td colspan="3" class="info">(?P<description>.*?)</td>.*?<strong>Enrollment</strong>(?P<enrollment>.*?)</td>"""
+                cls_info = re.search(pat2, cls_fragment, re.DOTALL).groupdict(0) 
+                
+                #   Check title
+                title = cls_info['title'].strip()
+                expected_title = '%s: %s' % (cls.emailcode(), cls.title())
+                self.assertTrue(title == expected_title, 'Incorrect class title in catalog: got %s, expected %s' % (title, expected_title))
+
+                #   Check description
+                description = cls_info['description'].replace('<br />', '').strip()
+                self.assertTrue(description == cls.class_info.strip(), 'Incorrect class description in catalog: got %s, expected %s' % (description, cls.class_info.strip()))
+
+                #   Check enrollments
+                enrollments = [x.replace('<br />', '').strip() for x in cls_info['enrollment'].split('Section')[1:]]
+                for sec in cls.sections.order_by('id'):
+                    i = sec.index() - 1
+                    expected_str = '%s: %s (max %s)' % (sec.index(), sec.num_students(), sec.capacity)
+                    self.assertTrue(enrollments[i] == expected_str, 'Incorrect enrollment for %s in catalog: got %s, expected %s' % (sec.emailcode(), enrollments[i], expected_str))
+
+        program = self.program
+
+        #   Get the catalog and check that everything is OK
+        verify_catalog_correctness()
+
+        #   Change a class title and check
+        cls = random.choice(program.classes())
+        a = cls.anchor
+        a.friendly_name = 'New %s' % cls.title()
+        a.save()
+        verify_catalog_correctness()
+
+        #   Change a class description and check
+        cls2 = random.choice(program.classes())
+        cls2.class_info = 'New %s' % cls2.class_info
+        cls2.save()
+        verify_catalog_correctness()
+
+        #   Register a student for a class and check    
+        sec = random.choice(program.sections())
+        student = random.choice(self.students)
+        sec.preregister_student(student)
+        verify_catalog_correctness()
+
 
