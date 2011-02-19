@@ -36,3 +36,4 @@ Learning Unlimited, Inc.
 from esp.program.modules.tests.availabilitymodule import AvailabilityModuleTest
 from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest
 from esp.program.modules.tests.ajaxstudentreg import AjaxStudentRegTest
+from esp.program.modules.tests.studentreg import StudentRegTest
