@@ -207,7 +207,6 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         ## Get or create a userbit indicating whether or not email's been sent.
         confbit, created = UserBit.objects.get_or_create(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode())+"/ConfEmail"))
-        print confbit, created
         if created and options.send_confirmation:
             # Email has not been sent before, send an email
             try:
@@ -225,8 +224,12 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             context["program"] = prog
             return HttpResponse( Template(receipt_text).render( Context(context, autoescape=False) ) )
         except DBReceipt.DoesNotExist:
-            receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
-            return render_to_response(receipt, request, (prog, tl), context)
+            try:
+                receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
+                return render_to_response(receipt, request, (prog, tl), context)
+            except:
+                receipt = 'program/receipts/default.html'
+                return render_to_response(receipt, request, (prog, tl), context)
 
     @aux_call
     @needs_student
