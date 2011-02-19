@@ -133,4 +133,29 @@ class StudentRegTest(ProgramFrameworkTest):
         sec.preregister_student(student)
         verify_catalog_correctness()
 
+    def test_profile(self):
+        def template_names(response):
+            return [x.name for x in response.template]        
+
+        def expect_template(response, template):
+            self.assertTrue(template in template_names(response), 'Wrong template for profile: got %s, expected %s' % (template_names(response), template))
+
+        #   Login as a student and ensure we can submit the profile
+        student = random.choice(self.students)
+        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
+        expect_template(response, 'users/profile.html')      
+
+        #   Login as a teacher and ensure we get the right message
+        teacher = random.choice(self.teachers)
+        self.failUnless( self.client.login( username=teacher.username, password='password' ), "Couldn't log in as student %s" % teacher.username )
+        response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
+        expect_template(response, 'errors/program/notastudent.html')
+
+        #   Login as an admin and ensure we get the right message
+        admin = random.choice(self.admins)
+        self.failUnless( self.client.login( username=admin.username, password='password' ), "Couldn't log in as student %s" % admin.username )
+        response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
+        expect_template(response, 'users/profile.html')
+
 
