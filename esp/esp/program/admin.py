@@ -137,8 +137,12 @@ admin.site.register(ProgramCheckItem, ProgramCheckItemAdmin)
 
 admin.site.register(RegistrationType)
 
+def expire_student_registrations(modeladmin, request, queryset):
+    for reg in queryset:
+        reg.expire()
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date', )
+    actions = [ expire_student_registrations, ]
 admin.site.register(StudentRegistration, StudentRegistrationAdmin)
 
 def sec_classrooms(obj):
