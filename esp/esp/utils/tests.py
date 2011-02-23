@@ -21,11 +21,14 @@ except:
 from utils.defaultclass import defaultclass
 from esp import utils
 from esp import settings
+from esp.utils.models import TemplateOverride
 
 from django.test import TestCase as DjangoTestCase
 
 from django.core.management import call_command
 from django.db.models import loading
+
+from django.template import loader, Template, Context, TemplateDoesNotExist
 
 # Code from <http://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
@@ -369,6 +372,45 @@ class DBOpsTestCase(DjangoTestCase):
         loading.cache.loaded = False
         call_command('migrate', verbosity=0)
         
+class TemplateOverrideTest(DjangoTestCase):
+    def get_response_for_template(self, template_name):
+        template = loader.get_template(template_name)
+        return template.render(Context({}))
+
+    def expect_template_error(self, template_name):
+        template_error = False
+        try:
+            self.get_response_for_template(template_name)
+        except TemplateDoesNotExist:
+            template_error = True
+        except:
+            print 'Unexpected error fetching nonexistent template'
+            raise
+        self.assertTrue(template_error)
+
+    def test_overrides(self):
+        #   Try to render a page from a nonexistent template override
+        #   and make sure it doesn't exist
+        self.expect_template_error('BLAARG.NOTANACTUALTEMPLATE')
+
+        #   Create a template override and make sure you can see it
+        to = TemplateOverride(name='BLAARG.TEMPLATEOVERRIDE', content='Hello')
+        to.save()
+        self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Hello')
+
+        #   Save an update to the template override and make sure you see that too
+        to.content = 'Goodbye'
+        to.save()
+        self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Goodbye')
+
+        #   Delete the update to the template and make sure you see the old version
+        to.delete()
+        self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Hello')
+
+        #   Delete the original template override and make sure you see nothing
+        TemplateOverride.objects.filter(name='BLAARG.TEMPLATEOVERRIDE').delete()
+        self.expect_template_error('BLAARG.TEMPLATEOVERRIDE')
+
 def suite():
     """Choose tests to expose to the Django tester."""
     s = unittest.TestSuite()

@@ -1,13 +1,49 @@
-from django.contrib.auth.models import User, Group
-import datetime, random, hashlib
-from esp.tests.util import CacheFlushTestCase as TestCase
-from esp.users.models import UserBit, GetNode
-from esp.program.models import ClassSection
-from django.test.client import Client
+
+__author__    = "Individual contributors (see AUTHORS file)"
+__date__      = "$DATE$"
+__rev__       = "$REV$"
+__license__   = "AGPL v.3"
+__copyright__ = """
+This file is part of the ESP Web Site
+Copyright (c) 2009 by the individual contributors
+  (see AUTHORS file)
+
+The ESP Web Site is free software; you can redistribute it and/or
+modify it under the terms of the GNU Affero General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public
+License along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+Contact information:
+MIT Educational Studies Program
+  84 Massachusetts Ave W20-467, Cambridge, MA 02139
+  Phone: 617-253-4882
+  Email: esp-webmasters@mit.edu
+Learning Unlimited, Inc.
+  527 Franklin St, Cambridge, MA 02139
+  Phone: 617-379-0178
+  Email: web-team@lists.learningu.org
+"""
 
 from esp.datatree.models import *
-from esp.users.models import ESPUser
+from esp.users.models import UserBit, GetNode, ESPUser, StudentInfo
+from esp.program.models import ClassSection, RegistrationProfile
 from esp.resources.models import ResourceType
+
+from django.contrib.auth.models import User, Group
+import datetime, random, hashlib
+
+from django.test.client import Client
+from esp.tests.util import CacheFlushTestCase as TestCase
+
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
@@ -276,6 +312,7 @@ class ProgramHappenTest(TestCase):
     
     def teacherreg(self):
         """ Test teacher registration (currently just class reg) through the web form. """
+
         # Just register a class for now.
         # Make rooms & times, since I'm too lazy to do that as a test just yet.
         from esp.cal.models import EventType, Event
@@ -329,10 +366,10 @@ class ProgramHappenTest(TestCase):
             'request-1-desired_value': 'LCD projector',
             'restype-TOTAL_FORMS': '0',
             'restype-INITIAL_FORMS': '0',
-            'hardness_rating': "Easy",
+            'hardness_rating': "**",
         }
-        self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
-        
+        self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)    
+
         # Check that stuff went through correctly
         
         # check prog.classes
@@ -363,6 +400,25 @@ class ProgramHappenTest(TestCase):
         self.assertEqual( getTaughtSections.count(), num_sections, "User tubbeachubber is not teaching the right number of sections" )
         for section in getTaughtSections:
             self.assertEqual( section.parent_class, self.classsubject, "Created section has incorrect parent_class." )
+
+    def teacherreg_delete_classes(self):
+        #   Check that teacher can delete the classes
+        self.loginTeacher()
+        user_obj = self.teacher
+        target_classes = list(user_obj.getTaughtClasses())
+        self.assertTrue(len(target_classes) > 0, 'Expected at least 1 class remaining to test deletion')
+        while len(user_obj.getTaughtClasses()) > 0:
+            class_to_delete = target_classes[0]
+            del target_classes[0]
+
+            #   Test that you can't delete a class with students in it.
+            if class_to_delete.num_students() > 0:
+                response = self.client.get('/teach/%s/deleteclass/%d' % (self.prog.getUrlBase(), class_to_delete.id))
+                self.assertTrue('toomanystudents.html' in response.template.name)
+                class_to_delete.clearStudents()
+
+            response = self.client.get('/teach/%s/deleteclass/%d' % (self.prog.getUrlBase(), class_to_delete.id))
+            self.assertTrue(set(user_obj.getTaughtClasses()) == set(target_classes), 'Could not delete class; expected to have %s, got %s' % (target_classes, user_obj.getTaughtClasses()))
     
     def studentreg(self):
         from esp.users.models import ContactInfo, StudentInfo, UserBit
@@ -415,13 +471,12 @@ class ProgramHappenTest(TestCase):
         # Check that you're in no classes
         self.assertEqual( self.student.getEnrolledClasses().count(), 0, "Student incorrectly enrolled in a class" )
         self.assertEqual( self.student.getEnrolledSections().count(), 0, "Student incorrectly enrolled in a section")
-        
-        pass
-    
+
     def runTest(self):
         self.makeprogram()
         self.teacherreg()
         self.studentreg()
+        self.teacherreg_delete_classes()
 
 class ProgramFrameworkTest(TestCase):
     """ A test case that initializes a program with the parameters passed to setUp(). 
@@ -482,19 +537,19 @@ class ProgramFrameworkTest(TestCase):
         self.students = []
         self.admins = []
         for i in range(settings['num_students']):
-            new_student, created = User.objects.get_or_create(username='student%d' % i)
+            new_student, created = User.objects.get_or_create(username='student%04d' % i)
             new_student.set_password('password')
             new_student.save()
             role_bit, created = UserBit.objects.get_or_create(user=new_student, verb=GetNode('V/Flags/UserRole/Student'), qsc=GetNode('Q'), recursive=False)
-            self.students.append(ESPUser(new_student))
+            self.students.append(ESPUser(new_student)) 
         for i in range(settings['num_teachers']):
-            new_teacher, created = User.objects.get_or_create(username='teacher%d' % i)
+            new_teacher, created = User.objects.get_or_create(username='teacher%04d' % i)
             new_teacher.set_password('password')
             new_teacher.save()
             role_bit, created = UserBit.objects.get_or_create(user=new_teacher, verb=GetNode('V/Flags/UserRole/Teacher'), qsc=GetNode('Q'), recursive=False)
             self.teachers.append(ESPUser(new_teacher))
         for i in range(settings['num_admins']):
-            new_admin, created = User.objects.get_or_create(username='admin%d' % i)
+            new_admin, created = User.objects.get_or_create(username='admin%04d' % i)
             new_admin.set_password('password')
             new_admin.save()
             role_bit, created = UserBit.objects.get_or_create(user=new_admin, verb=GetNode('V/Flags/UserRole/Administrator'), qsc=GetNode('Q'), recursive=False)
@@ -556,6 +611,7 @@ class ProgramFrameworkTest(TestCase):
         for i in range(settings['num_rooms']):
             for ts in self.timeslots:
                 res, created = Resource.objects.get_or_create(name='Room %d' % i, num_students=settings['room_capacity'], event=ts, res_type=ResourceType.get_or_create('Classroom'))
+        self.rooms = self.program.getClassrooms()
                    
         #   Create classes and sections
         subject_count = 0
@@ -564,13 +620,40 @@ class ProgramFrameworkTest(TestCase):
             for i in range(settings['classes_per_teacher']):
                 current_category = self.categories[subject_count % settings['num_categories']]
                 class_anchor = GetNode('%s/Classes/%s%d' % (self.program.anchor.get_uri(), current_category.symbol, subject_count + 1))
-                new_class, created = ClassSubject.objects.get_or_create(anchor=class_anchor, category=current_category, grade_min=7, grade_max=12, parent_program=self.program, class_size_max=settings['room_capacity'])
+                new_class, created = ClassSubject.objects.get_or_create(anchor=class_anchor, category=current_category, grade_min=7, grade_max=12, parent_program=self.program, class_size_max=settings['room_capacity'], class_info='Description %d!' % subject_count)
+                new_class.makeTeacher(t)
                 subject_count += 1
                 for j in range(settings['sections_per_class']):
                     if new_class.get_sections().count() <= j:
                         new_class.add_section(duration=settings['timeslot_length']/60.0)
-                        
-                        
+                new_class.accept() 
+
+    #   Helper function to give the program a schedule.
+    #   Does not get called by default, but subclasses can call it.
+    def schedule_randomly(self):
+        #   Force availability
+        for t in self.teachers:
+            for ts in self.program.getTimeSlots():
+                t.addAvailableTime(self.program, ts)
+        for cls in self.program.classes():
+            for sec in cls.get_sections():
+                vt = sec.viable_times()
+                if len(vt) > 0:
+                    sec.assign_start_time(random.choice(vt))
+                    vr = sec.viable_rooms()
+                    if len(vr) > 0:
+                        sec.assign_room(random.choice(vr))
+                        #   print '%s -> %s at %s' % (sec, sec.start_time().short_time(), sec.initial_rooms()[0].name)
+
+    #   Helper function to give each student a profile so they can sign up for classes.
+    #   Does not get called by default, but subclasses can call it.
+    def add_student_profiles(self):
+        for student in self.students:
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(10))
+            student_studentinfo.save()
+            student_regprofile = RegistrationProfile(user=student, program=self.program, student_info=student_studentinfo, most_recent_profile=True)
+            student_regprofile.save()
+
 def randomized_attrs(program):
     section_list = list(program.sections())
     random.shuffle(section_list)
@@ -802,4 +885,3 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         sec.parent_program._moduleExtension = {}
         self.assertEqual(sec.capacity, initial_capacity)
 
-from esp.program.modules.tests import *

@@ -616,8 +616,9 @@ class ArgCacheDecorator(ArgCache):
         self.argspec = inspect.getargspec(func)
         self.func = func
         params = self.argspec[0]
-        name = describe_func(func)
-        uid = get_uid(func)
+        extra_name = kwargs.pop('uid_extra', '')
+        name = describe_func(func) + extra_name
+        uid = get_uid(func) + extra_name
         if self.argspec[1] is not None:
             raise ESPError(), "ArgCache does not support varargs."
         if self.argspec[2] is not None:

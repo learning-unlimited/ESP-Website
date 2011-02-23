@@ -319,7 +319,7 @@ then
 	cd $DEPDIR
 	
 	#	Get what we can using Ubuntu's package manager
-	apt-get install -y build-essential texlive imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-dns postgresql-8.4 python-psycopg2 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape
+	apt-get install -y build-essential texlive imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-dns postgresql-8.4 python-psycopg2 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large ipython
 
 	#	Fetch and extract files
 	if [[ ! -d memcached-1.4.5 ]]
@@ -565,6 +565,7 @@ EOF
     echo "Dropbox-hosted directories have been linked into the site's media."
 
     mkdir -p $MEDIADIR/uploaded
+    mkdir $MEDIADIR/uploaded/bio_pictures
     chmod -R 777 $MEDIADIR
     
     echo "Dropbox has been set up.  Please check them by looking over the"

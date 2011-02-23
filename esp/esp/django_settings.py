@@ -129,11 +129,12 @@ DEFAULT_CACHE_TIMEOUT = 86400
 SITE_ID = 1
 
 TEMPLATE_LOADERS = (
+    'esp.utils.template.Loader',
     ('django.template.loaders.cached.Loader',
-        ('esp.utils.template.Loader',
+        (
          'django.template.loaders.filesystem.Loader',
          'django.template.loaders.app_directories.Loader',
-)
+        )
     ),
 )
 

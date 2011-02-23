@@ -1601,7 +1601,7 @@ class ClassSubject(models.Model):
         return self.anchor.friendly_name
         
     def title_selector(node):
-        if node.classsubject_set.all().count == 1:
+        if node.classsubject_set.all().count() == 1:
             return {'self': node.classsubject_set.all()[0]}
         return {}
     title.depend_on_row(lambda: DataTree, title_selector)

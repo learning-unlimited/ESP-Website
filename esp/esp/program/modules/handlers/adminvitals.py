@@ -125,45 +125,8 @@ class AdminVitals(ProgramModuleObj):
             vitals['timeslots'].append(curTimeslot)
 
         context['vitals'] = vitals
-        
-        # Cache this; we don't want to walk over all registered students and teachers every page load
-        key = "SHIRT_STATS__%d" % self.program.id
-        adminvitals_shirt = cache.get(key)
-        if adminvitals_shirt is None:
-            # List of students' t-shirt sizes as indicated in their profiles. Currently parasitizing vitals.
-            shirt_count = {}
-            shirts = {}
-            for shirt_type in shirt_types:
-                shirt_count[ shirt_type[0] ] = {}
-                for shirt_size in shirt_sizes:
-                    shirt_count[ shirt_type[0] ][ shirt_size[0] ] = 0
-# removing this since students don't actually have t-shirt info anymore --rye 02-18-09
-#
-#            student_dict = self.program.students()
-#            if student_dict.has_key('classreg'):
-#                for student in student_dict['classreg']:
-#                    profile = ESPUser(student).getLastProfile().student_info
-#                    if profile is not None:
-#                        if shirt_count.has_key(profile.shirt_type) and shirt_count[profile.shirt_type].has_key(profile.shirt_size):
-#                            shirt_count[ profile.shirt_type ][ profile.shirt_size ] += 1
-#                shirts['students'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
 
-#            for shirt_type in shirt_types:
-#                for shirt_size in shirt_sizes:
-#                    shirt_count[ shirt_type[0] ][ shirt_size[0] ] = 0
-            teacher_dict = self.program.teachers()
-            if teacher_dict.has_key('class_approved'):
-                for teacher in teacher_dict['class_approved']:
-                    profile = ESPUser(teacher).getLastProfile().teacher_info
-                    if profile is not None:
-                        if shirt_count.has_key(profile.shirt_type) and shirt_count[profile.shirt_type].has_key(profile.shirt_size):
-                            shirt_count[ profile.shirt_type ][ profile.shirt_size ] += 1
-            shirts['teachers'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
-
-            adminvitals_shirt = {'shirts' : shirts, 'shirt_sizes' : shirt_sizes, 'shirt_types' : shirt_types }
-            # Use a timeout for the cache expirey --- expiring it "properly" would be rather messy and hard to maintain
-            cache.set(key, adminvitals_shirt, 24*3600)
-
+        adminvitals_shirt = self.program.getShirtInfo()
         context['shirt_sizes'] = adminvitals_shirt['shirt_sizes']
         context['shirt_types'] = adminvitals_shirt['shirt_types']
         context['shirts'] = adminvitals_shirt['shirts']

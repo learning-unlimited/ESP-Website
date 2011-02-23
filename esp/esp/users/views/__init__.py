@@ -89,7 +89,7 @@ def ajax_login(request, *args, **kwargs):
     else:
         result_str = 'Invalid username or password'
         
-    request.user = user
+    request.user = ESPUser(user)
     content = render_to_string('users/loginbox_content.html', {'request': request, 'login_result': result_str})
     
     return HttpResponse(json.dumps({'loginbox_html': content}))

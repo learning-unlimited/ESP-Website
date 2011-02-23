@@ -3,6 +3,7 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
+from esp.datatree.models import install as datatree_install
 
 class Migration(SchemaMigration):
 
@@ -24,6 +25,10 @@ DROP FUNCTION IF EXISTS userbit__user_has_perms(integer, integer, integer, times
 """
 
     def forwards(self, orm):
+        #   Force instantiation of datatree initial data if it wasn't already there
+        print 'Populating initial datatree...'
+        datatree_install()
+
         with open("datatree/sql/datatree.postgresql-multiline.sql") as f:
             db.execute(self.del_fns_str)
             db.execute(f.read())

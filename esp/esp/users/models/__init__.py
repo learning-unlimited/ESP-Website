@@ -57,7 +57,7 @@ from esp.db.models.prepared import ProcedureManager
 from esp.dblog.models import error
 from esp.tagdict.models import Tag
 from esp.middleware import ESPError
-from esp.settings import DEFAULT_HOST, DEFAULT_EMAIL_ADDRESSES, ORGANIZATION_SHORT_NAME
+from esp.settings import DEFAULT_HOST, DEFAULT_EMAIL_ADDRESSES, ORGANIZATION_SHORT_NAME, INSTITUTION_NAME
 
 import simplejson as json
 
@@ -321,6 +321,14 @@ class ESPUser(User, AnonymousUser):
             return "?code=%s" % otheruser.password
         return ''
 
+    def getTaughtPrograms(self,):
+        taught_programs = Program.objects.filter(
+            anchor__child_set__child_set__userbit_qsc__user=self,
+            anchor__child_set__child_set__userbit_qsc__verb=GetNode('V/Flags/Registration/Teacher'),
+            anchor__child_set__child_set__userbit_qsc__qsc__classsubject__status=10)
+        taught_programs = taught_programs.distinct()
+        return taught_programs
+
     def getTaughtClasses(self, program = None):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
@@ -530,7 +538,7 @@ class ESPUser(User, AnonymousUser):
         
         apps = StudentApplication.objects.filter(user=self, program=program)
         if apps.count() == 0:
-            return None
+            return []
         else:
             return apps[0].responses.all()
 
@@ -597,8 +605,11 @@ class ESPUser(User, AnonymousUser):
     def get_sr_model():
         from esp.program.models import StudentRegistration
         return StudentRegistration
+    def get_tsid_function():
+        from esp.program.models import ClassSection
+        return ClassSection.timeslot_ids
     getEnrolledSectionsFromProgram.depend_on_row(get_sr_model, lambda reg: {'self': reg.user})
-    #   TODO: Make this honor rescheduling of a class section (since we packed timeslot_ids in there)
+    getEnrolledSectionsFromProgram.depend_on_cache(get_tsid_function, lambda self=wildcard, **kwargs: {})
 
     def getEnrolledSectionsAll(self):
         return self.getSections(None, verbs=['Enrolled'])
@@ -800,7 +811,9 @@ class ESPUser(User, AnonymousUser):
         t = loader.get_template('email/password_recover')
         msgtext = t.render(DjangoContext({'user': self,
                                     'ticket': ticket,
-                                    'domainname': domainname}))
+                                    'domainname': domainname,
+                                    'orgname': ORGANIZATION_SHORT_NAME,
+                                    'institution': INSTITUTION_NAME}))
 
         # Do NOT fail_silently. We want to know if there's a problem.
         send_mail(subject, msgtext, from_email, to_email)
@@ -1907,3 +1920,4 @@ from esp.users.models.forwarder import UserForwarder
 from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, Program
 from esp.resources.models import Resource
+

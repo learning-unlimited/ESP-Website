@@ -51,11 +51,10 @@ def post_syncdb(sender, app, **kwargs):
 
             #   Check that required tables exist.
             if missing_db_table(program_models.ClassSubject, check_fields=False):
-                print 'Warning: DataTree post_syncdb missing table %s' % 'program_models.ClassSubject'
-                raise
+                raise Exception('DataTree post_syncdb missing table %s' % 'program_models.ClassSubject')
+                
             if missing_db_table(users_models.UserBit, check_fields=False):
-                print 'Warning: DataTree post_syncdb missing table %s' % 'users_models.UserBit'
-                raise
+                raise Exception('Warning: DataTree post_syncdb missing table %s' % 'users_models.UserBit')
 
             print "Installing esp.datatree initial data..."
             datatree.install()

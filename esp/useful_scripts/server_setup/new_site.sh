@@ -393,6 +393,7 @@ EOF
     echo "Default images and styles have been placed in the Dropbox."
 
     mkdir $MEDIADIR/uploaded
+    mkdir $MEDIADIR/uploaded/bio_pictures
     chmod -R 777 $MEDIADIR
     
     echo "Dropbox has been set up.  Please check them by looking over the"
