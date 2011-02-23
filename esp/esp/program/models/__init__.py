@@ -977,6 +977,29 @@ class Program(models.Model):
     def getVolunteerRequests(self):
         return VolunteerRequest.objects.filter(timeslot__anchor=self.anchor).order_by('timeslot__start')
     
+    @cache_function
+    def getShirtInfo(self):
+
+        shirt_count = {}
+        shirts = {}
+        for shirt_type in shirt_types:
+            shirt_count[ shirt_type[0] ] = {}
+            for shirt_size in shirt_sizes:
+                shirt_count[ shirt_type[0] ][ shirt_size[0] ] = 0
+        teacher_dict = self.teachers()
+        if teacher_dict.has_key('class_approved'):
+            for teacher in teacher_dict['class_approved']:
+                profile = ESPUser(teacher).getLastProfile().teacher_info
+                if profile is not None:
+                    if shirt_count.has_key(profile.shirt_type) and shirt_count[profile.shirt_type].has_key(profile.shirt_size):
+                        shirt_count[ profile.shirt_type ][ profile.shirt_size ] += 1
+        shirts['teachers'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
+
+        return {'shirts' : shirts, 'shirt_sizes' : shirt_sizes, 'shirt_types' : shirt_types }
+    #   Update cache whenever a class is approved or a teacher changes their profile
+    getShirtInfo.depend_on_row(lambda: ClassSubject, lambda cls: {'self': cls.parent_program})
+    getShirtInfo.depend_on_model(lambda: TeacherInfo) 
+
     def archive(self):
         archived_classes = []
         #   I think we should delete resources and user bits, but I'm afraid to.
