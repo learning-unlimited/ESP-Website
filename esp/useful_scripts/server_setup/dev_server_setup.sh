@@ -565,6 +565,7 @@ EOF
     echo "Dropbox-hosted directories have been linked into the site's media."
 
     mkdir -p $MEDIADIR/uploaded
+    mkdir $MEDIADIR/uploaded/bio_pictures
     chmod -R 777 $MEDIADIR
     
     echo "Dropbox has been set up.  Please check them by looking over the"

@@ -76,12 +76,25 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
 
     def expect_ajaxerror(self, request_url, post_data, error_str):
         error_received = False
+        error_msg = ''
         try:
             response = self.client.post(request_url, post_data, HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         except AjaxErrorMiddleware.AjaxError as inst:
             error_received = True
-            self.assertTrue(inst.args[0] == error_str, 'Unexpected Ajax error: "%s", expected "%s"' % (inst.args[0], error_str))
+            error_msg = inst.args[0]
+        except:
+            print 'Caught unexpected Ajax student reg error: willing to see %s' % AjaxErrorMiddleware.AjaxError
+            raise
+
+        if not error_received:
+            #   If AjaxErrorMiddleware is engaged, we should get a JSON response.
+            response_dict = json.loads(response.content)
+            self.assertTrue(int(response_dict['status']) == 200)
+            error_received = True
+            error_msg = response_dict['error']
+
         self.assertTrue(error_received)
+        self.assertTrue(error_msg == error_str, 'Unexpected Ajax error: "%s", expected "%s"' % (error_msg, error_str))
 
     def test_ajax_schedule(self):
         program = self.program

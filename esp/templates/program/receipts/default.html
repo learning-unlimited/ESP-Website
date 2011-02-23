@@ -1,0 +1,62 @@
+{% extends "elements/receipt.html" %}
+{% block title %}Registration Receipt for {{ program.niceName }}{% endblock %}
+{% block subsection_name %} {% endblock %}
+{% block body %}
+
+Your class selections and any other information you entered have been saved.  Be on the lookout for emails from the organizers for more details about {{ program.niceName }}.  We will also post any updates on our Web site!
+
+<br />
+<hr size="1" color="#000000" />
+<p>
+User Information: <br />
+<ul>
+<li>Username: {{ request.user.username }}</li>
+<li>Full Name: {{ request.user.first_name }} {{ request.user.last_name }}</li>
+<li>User ID: {{ request.user.id }}</li>
+</ul>
+</p>
+<br />
+<table cellpadding="3" style="width: 5.5in; margin: auto; border: 1px solid black; border-collapse: collapse;" border=1>
+<tr>
+    <th colspan="3">
+    Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}
+    </th>
+</tr>
+{% for timeslot in timeslots %}
+    {% ifchanged timeslot.0.start.day %}
+        <tr><th class="small" colspan="3" height="3" style="text-align: center;">{{ timeslot.0.start|date:"l, F j" }}</th></tr>
+    {% endifchanged %}
+{% comment %}    {% ifchanged timeslot.2 %}
+        <tr><th class="small" colspan="3" height="3">Block {{ timeslot.2 }}</th></tr>
+    {% endifchanged %}{% endcomment %}
+    {% ifequal timeslot.0.event_type.description "Compulsory" %}
+    <tr>
+        <td width="25%" valign="top" align="center" class="compulsory_event_time">{{ timeslot.0.short_description }}</td>
+        <td colspan="2" class="compulsory_event_desc">{{ timeslot.0.description }}</td>
+    </tr>
+    {% else %}
+    <tr>
+        <td width="25%" valign="top" align="center">{{ timeslot.0.short_description }}</td>
+        <td style="vertical-align: top !important;">
+        {% for cls in timeslot.1 %}
+	{% comment %}{% if use_priority %}{% endcomment %}
+            {% if not cls.section.verbs|length_is:0 %}
+                <i>{% for v in cls.section.verbs %}{{ v }}{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
+            {% endif %}
+	{% comment %}{% endif %}{% endcomment %}
+	{{ cls.section.title }} 
+            {% if request.user.onsite_local %}
+                ({{ cls.section.prettyrooms|join:", " }})
+            {% endif %}
+            {% if not forloop.last %}<br />{% endif %}
+        {% endfor %}
+        {% if timeslot.1|length_is:0 %}
+            Nothing Selected
+        {% endif %}
+        </td> 
+    </tr>
+    {% endifequal %}
+{% endfor %}
+</table> 
+<br />
+{% endblock %}

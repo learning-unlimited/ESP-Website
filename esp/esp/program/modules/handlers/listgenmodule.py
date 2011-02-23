@@ -63,6 +63,7 @@ class UserAttributeGetter(object):
                     '17_transportation': 'Plan to Get to Splash',
                     '18_post_hs': 'Post-HS plans',
                     '19_schoolsystem_id': 'School system ID',
+                    '20_tshirt_size': 'T-Shirt Size',
                  }
 
         last_label_index = len(labels)
@@ -155,6 +156,14 @@ class UserAttributeGetter(object):
                 return self.profile.student_info.k12school.name
             else:
                 return self.profile.student_info.school
+
+    def get_tshirt_size(self):
+        if self.profile.student_info:
+            return self.profile.student_info.shirt_size
+        elif self.profile.teacher_info:
+            return self.profile.teacher_info.shirt_size
+        else:
+            return None
                 
     def get_heard_about(self):
         if self.profile.student_info:

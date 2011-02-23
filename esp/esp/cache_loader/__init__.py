@@ -28,6 +28,8 @@ for app_name in settings.INSTALLED_APPS:
            if key.startswith(app_name):
                sys.modules[key[4:]] = value
 
+#   Make sure template override cache is registered
+from esp.utils.template import Loader
 
 #   Make sure all cached inclusion tags are registered
 from esp.utils.inclusion_tags import *
