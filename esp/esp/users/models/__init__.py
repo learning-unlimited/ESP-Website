@@ -57,7 +57,7 @@ from esp.db.models.prepared import ProcedureManager
 from esp.dblog.models import error
 from esp.tagdict.models import Tag
 from esp.middleware import ESPError
-from esp.settings import DEFAULT_HOST, DEFAULT_EMAIL_ADDRESSES, ORGANIZATION_SHORT_NAME
+from esp.settings import DEFAULT_HOST, DEFAULT_EMAIL_ADDRESSES, ORGANIZATION_SHORT_NAME, INSTITUTION_NAME
 
 import simplejson as json
 
@@ -811,7 +811,9 @@ class ESPUser(User, AnonymousUser):
         t = loader.get_template('email/password_recover')
         msgtext = t.render(DjangoContext({'user': self,
                                     'ticket': ticket,
-                                    'domainname': domainname}))
+                                    'domainname': domainname,
+                                    'orgname': ORGANIZATION_SHORT_NAME,
+                                    'institution': INSTITUTION_NAME}))
 
         # Do NOT fail_silently. We want to know if there's a problem.
         send_mail(subject, msgtext, from_email, to_email)
