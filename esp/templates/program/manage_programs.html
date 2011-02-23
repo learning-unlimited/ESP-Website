@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
 {% endblock %}
 
-{% block title %}Administrate a Program{% endblock %}
+{% block title %}Manage a Program{% endblock %}
 
 {% block content %}
 
@@ -22,7 +22,7 @@
 <tbody>
   <tr class="welcomebox">
     <td bgcolor="#FFFFFF" class="welcomebox">
-Select a program to administrate it.
+Select a program to manage it.
     </td>
   </tr>
 </tbody>
@@ -37,7 +37,7 @@ Select a program to administrate it.
 <br />
 {% for program in admPrograms %}
 <a href="/manage/{{program.getUrlBase}}/main"
-  title="Administer {{program.niceName}}"> 
+  title="Manage {{program.niceName}}">
   {{program.niceName}}
 </a>
    <br />
