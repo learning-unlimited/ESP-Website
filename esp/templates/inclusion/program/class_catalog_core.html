@@ -9,12 +9,12 @@
           {% endif %}
 	 
 	 {% ifnotequal class.hardness_rating "Normal"  %} <br />
-	   <font style="font-size:10px">Difficulty:
+	   <font style="font-size:10px">Difficulty:  {{ class.hardness_rating }}
 	   {% ifequal class.hardness_rating "Hard" %}
-	     Hard - This class may be exceptionally difficult
+	      - This class may be exceptionally difficult
 	   {% endifequal %}
 	   {% ifequal class.hardness_rating "Easy" %}
-	     Easy - This class is meant to be accessible to most students
+	      - This class is meant to be accessible to most students
 	   {% endifequal %}
 	   </font>
 	 {% endifnotequal %}
