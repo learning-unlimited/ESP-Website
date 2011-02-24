@@ -1,5 +1,7 @@
 {% extends "main.html" %}
 
+{% load render_qsd %}
+
 {% block title %}Lunch Preferences & Tuition{% endblock %}
 
 {% block stylesheets %}
@@ -18,12 +20,15 @@
 
 {% if form.errors or missing_siblingname %}<p align="center" style="color: red;">Please correct the form below before continuing. <br />{{ form.errors }}</p>{% endif %}
 
+{% inline_qsd_block program.anchor splashinfo_lunch request.user %}
 <h2>Lunch Preferences</h2>
 <p>Select your lunch preference below.
 <b>All meals come with chips or fruit and drink.</b>
 </p>
+{% end_inline_qsd_block %}
 
 <form action="{{ request.path }}" method="post">{% csrf_token %}
+{% if form.lunchsat %}
 <table cellpadding="1" align="center" border="0">
 <tr>
  <td>Would you like a catered lunch on SATURDAY?<br/>
@@ -31,7 +36,9 @@
  </td>
 </tr>
 </table>
+{% endif %}
 <br/>
+{% if form.lunchsun %}
 <table cellpadding="1" align="center" border="0">
 <tr>
  <td>Would you like a catered lunch on SUNDAY?<br/>
@@ -39,7 +46,9 @@
  </td>
 </tr>
 </table>
+{% endif %}
 
+{% if form.siblingdiscount %}
 <br />
 <hr/>
 <h2>Sibling Discount </h2>
@@ -69,12 +78,15 @@ We are offering a special discount to households with more than one attendee reg
     </tr>
     {% endif %}
 </table>
+{% endif %}
 
+{% inline_qsd_block program.anchor splashinfo_finaid request.user %}
 <hr/>
 <h2>Financial Aid</h2>
 <p>
 Full financial aid is available to any students who need it. If you require financial aid, please fill out a quick request by clicking the "Financial Aid Application (optional)" link on the next page.  Please e-mail us if you have any questions.
 </p>
+{% end_inline_qsd_block %}
 
 <center><input type="submit" class="button" value="Save and Continue"></center>
 

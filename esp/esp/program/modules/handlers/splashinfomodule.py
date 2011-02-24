@@ -39,6 +39,7 @@ from esp.web.util        import render_to_response
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.models import SplashInfo
 from esp.middleware import ESPError
+from esp.tagdict.models import Tag
 
 class SplashInfoModule(ProgramModuleObj):
     @classmethod
@@ -59,6 +60,22 @@ class SplashInfoModule(ProgramModuleObj):
     @needs_student
     def prepare(self, context={}):
         context['splashinfo'] = SplashInfo.getForUser(self.user, self.program)
+
+        if Tag.getTag('splashinfo_siblingdiscount', default='True') == 'False':
+            context['splashinfo'].include_siblingdiscount = False
+        else:
+            context['splashinfo'].include_siblingdiscount = True
+
+        if Tag.getTag('splashinfo_lunchsat', default='True') == 'False':
+            context['splashinfo'].include_lunchsat = False
+        else:
+            context['splashinfo'].include_lunchsat = True
+
+        if Tag.getTag('splashinfo_lunchsun', default='True') == 'False':
+            context['splashinfo'].include_lunchsun = False
+        else:
+            context['splashinfo'].include_lunchsun = True
+
         return context
 
     @main_call
@@ -71,7 +88,7 @@ class SplashInfoModule(ProgramModuleObj):
             new_data = request.POST.copy()
             form = SplashInfoForm(new_data, program=prog)
             if form.is_valid():
-                if eval(form.cleaned_data['siblingdiscount']) and len(form.cleaned_data['siblingname']) == 0:
+                if 'siblingdiscount' in form.cleaned_data and eval(form.cleaned_data['siblingdiscount']) and len(form.cleaned_data['siblingname']) == 0:
                     missing_siblingname = True
                 else:
                     spi = SplashInfo.getForUser(request.user, self.program)

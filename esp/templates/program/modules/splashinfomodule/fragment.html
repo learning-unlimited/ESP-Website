@@ -4,6 +4,7 @@
             Additional Information for {{ splashinfo.student.first_name }} {{ splashinfo.student.last_name }}
         </th>
     </tr>
+    {% if splashinfo.include_lunchsat %}
     <tr>
         <td valign="top">
             Saturday Lunch:
@@ -17,6 +18,8 @@
             <br />{{ splashinfo.pretty_satlunch }}
         </td>
     </tr>
+    {% endif %}
+    {% if splashinfo.include_lunchsun %}
     <tr>
         <td valign="top">
             Sunday Lunch:
@@ -30,6 +33,8 @@
             <br />{{ splashinfo.pretty_sunlunch }}
         </td>
     </tr>
+    {% endif %}
+    {% if splashinfo.include_siblingdiscount %}
     <tr>
         <td valign="top">
             Sibling Discount:
@@ -43,6 +48,7 @@
             {% endif %}
         </td>
     </tr>
+    {% endif %}
     {% if finaid_app %}
         <tr>
         <td valign="top" colspan="2">

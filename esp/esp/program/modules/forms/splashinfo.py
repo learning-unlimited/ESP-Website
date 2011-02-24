@@ -89,6 +89,16 @@ class SplashInfoForm(forms.Form):
             tag_struct = json.loads(tag_data)
             self.fields['lunchsat'].choices = tag_struct['lunchsat']
             self.fields['lunchsun'].choices = tag_struct['lunchsun']
+
+        if Tag.getTag('splashinfo_siblingdiscount', default='True') == 'False':
+            del self.fields['siblingdiscount']
+            del self.fields['siblingname']
+
+        if Tag.getTag('splashinfo_lunchsat', default='True') == 'False':
+            del self.fields['lunchsat']
+
+        if Tag.getTag('splashinfo_lunchsun', default='True') == 'False':
+            del self.fields['lunchsun']
     
     def load(self, splashinfo):
         self.initial['lunchsat'] = splashinfo.lunchsat
@@ -97,10 +107,14 @@ class SplashInfoForm(forms.Form):
         self.initial['siblingname'] = splashinfo.siblingname
 
     def save(self, splashinfo):
-        splashinfo.lunchsat = self.cleaned_data['lunchsat']
-        splashinfo.lunchsun = self.cleaned_data['lunchsun']
-        splashinfo.siblingdiscount = eval(self.cleaned_data['siblingdiscount'])
-        splashinfo.siblingname = self.cleaned_data['siblingname']
+        if 'lunchsat' in self.cleaned_data:
+            splashinfo.lunchsat = self.cleaned_data['lunchsat']
+        if 'lunchsun' in self.cleaned_data:
+            splashinfo.lunchsun = self.cleaned_data['lunchsun']
+        if 'siblingdiscount' in self.cleaned_data:
+            splashinfo.siblingdiscount = eval(self.cleaned_data['siblingdiscount'])
+        if 'siblingname' in self.cleaned_data:
+            splashinfo.siblingname = self.cleaned_data['siblingname']
         splashinfo.submitted = True
         splashinfo.save()
         
