@@ -35,12 +35,14 @@ rangemin = 0
 rangesize = 1
 
 # The program used for these scripts.
-# ID 65 = Splash 2010.
-program = Program.objects.get(id=65)
+# Spark 2011 is the most recent class as of this commit
+program = Program.objects.order_by('-id')[0]
 
 # Lunch hours, for checking whether a student has lunch free.
-satlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[495,496])])
-sunlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[497,498])])
+satlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[522,518])]) # for Spark 2011, lunch is 12-1, 1-2 on Saturday, March 18
+# no Sunday lunch for Spark
+# commented out all lines in the program that included sunlunch; for Splash, these should be uncommented
+# sunlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[497,498])])
 
 # The wiggle room factor for the class capacity, to leave a space for
 # those classes that didn't fill up from priority.  Set to 10% for now.
@@ -90,11 +92,11 @@ def try_add(user, cls):
         if not lunch_free(user, satlunch):
             return False
 
-    if not hasattr(cls, "_sunlunch"):
-        cls._sunlunch = bool(cls.meeting_times.filter(id__in=sunlunch))
-    if cls._sunlunch:
-        if not lunch_free(user, sunlunch):
-            return False
+#    if not hasattr(cls, "_sunlunch"):
+#        cls._sunlunch = bool(cls.meeting_times.filter(id__in=sunlunch))
+#    if cls._sunlunch:
+#        if not lunch_free(user, sunlunch):
+#            return False
 
     # Now we've worked out any potential lunch conflicts.
     # Check if this user can actually add this section (and has no conflicts).
@@ -182,8 +184,8 @@ def print_issues():
 
         if secs.filter(meeting_times__in=satlunch).count() > 1:
             print ESPUser(student).name() + " (" + student.username + "), Saturday lunch conflict"
-        if secs.filter(meeting_times__in=sunlunch).count() > 1:
-            print ESPUser(student).name() + " (" + student.username + "), Sunday lunch conflict"
+#        if secs.filter(meeting_times__in=sunlunch).count() > 1:
+#            print ESPUser(student).name() + " (" + student.username + "), Sunday lunch conflict"
 
 
 ################################
