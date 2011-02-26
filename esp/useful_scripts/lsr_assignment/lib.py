@@ -72,7 +72,12 @@ def capacity_star(cls):
 ####################
 
 def lunch_free(user, lunchtimes):
-    return not bool(ESPUser(user).getEnrolledSectionsFromProgram(program).filter(meeting_times__in=lunchtimes))
+    secs = ESPUser(user).getEnrolledSectionsFromProgram(program)
+    for sec in secs:
+        if lunchtimes in sec.get_meeting_times():
+            return True
+    return False
+    #return not bool(ESPUser(user).getEnrolledSectionsFromProgram(program).filter(meeting_times__in=lunchtimes))
 
 # TODO(rye): Add a mechanism for lunch, with some helper functions to ensure lunch.
 def try_add(user, cls):
@@ -173,7 +178,7 @@ def print_issues():
     # Find students with conflicting classes.
     print "ERROR SWEEP: Looking for students with conflicting classes or multiple classes over lunch..."
     for student in program.students()['lotteried_students']:
-        secs = ESPUser(student).getEnrolledSectionsFromProgram(program).distinct()
+        secs = ESPUser(student).getEnrolledSectionsFromProgram(program)
         my_tsdict = {}
         for sec in secs:
             for mt in sec.meeting_times.all():
@@ -182,8 +187,14 @@ def print_issues():
                 else:
                     my_tsdict[int(mt.id)] = sec
 
-        if secs.filter(meeting_times__in=satlunch).count() > 1:
-            print ESPUser(student).name() + " (" + student.username + "), Saturday lunch conflict"
+        lunch_count = 0
+        for sec in secs:
+            if satlunch in sec.get_meeting_times():
+                lunch_count += 1
+                if lunch_count > 1:
+                    print ESPUser(student).name() + " (" + student.username + "), Saturday lunch conflict"                    
+                    break
+
 #        if secs.filter(meeting_times__in=sunlunch).count() > 1:
 #            print ESPUser(student).name() + " (" + student.username + "), Sunday lunch conflict"
 
@@ -298,6 +309,7 @@ def screwed_sweep_p1_printout():
         else: return 0
 
     users = sorted(program.students()['lotteried_students'], key=pclasses_pct)
+    print "User\t(username):\t% classes gotten\t(# received/# applied)"
     for user in users:
         print user.name() + " (" + user.username + ")" + ":", pclasses_pct(user), "(" + str(classes_cnt(user)[0]) + "/" + str(classes_cnt(user)[1]) + ")"
         
