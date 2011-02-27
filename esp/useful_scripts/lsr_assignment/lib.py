@@ -37,6 +37,7 @@ rangesize = 1
 # The program used for these scripts.
 # Spark 2011 is the most recent class as of this commit
 program = Program.objects.order_by('-id')[0]
+print "Initialized program to", program
 
 # Lunch hours, for checking whether a student has lunch free.
 satlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[522,518])]) # for Spark 2011, lunch is 12-1, 1-2 on Saturday, March 18
@@ -245,7 +246,7 @@ def assign_priorities():
 
     # Handle the phase 1 sections
     for sec, priority in phase1_secs:
-        print "== Adding priority students to " + sec.emailcode() + ": " + sec.title() + " =="
+        print "== Phase 1: Adding priority students to " + sec.emailcode() + ": " + sec.title() + " =="
 
         # Loop through all classes where priority flags is less than capacity.
         # Try to register each student for the class; we don't care if
@@ -257,7 +258,7 @@ def assign_priorities():
 
     # Handle the phase 2 sections
     for sec, priority in phase2_secs:
-        print "== Adding priority students to " + sec.emailcode() + ": " + sec.title() + " =="
+        print "== Phase 2: Adding priority students to " + sec.emailcode() + ": " + sec.title() + " =="
 
         # We want to lottery students by ordering them in some way,
         # giving preference to the students who have so far gotten fewer
