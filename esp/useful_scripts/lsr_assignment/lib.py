@@ -40,7 +40,8 @@ program = Program.objects.order_by('-id')[0]
 print "Initialized program to", program
 
 # Lunch hours, for checking whether a student has lunch free.
-satlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[522,518])]) # for Spark 2011, lunch is 12-1, 1-2 on Saturday, March 18
+#satlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[522,518])]) # for Spark 2011, lunch is 12-1, 1-2 on Saturday, March 18
+satlunch = (522, 518)
 # no Sunday lunch for Spark
 # commented out all lines in the program that included sunlunch; for Splash, these should be uncommented
 # sunlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[497,498])])
@@ -76,8 +77,8 @@ def lunch_free(user, lunchtimes):
     secs = ESPUser(user).getEnrolledSectionsFromProgram(program)
     for sec in secs:
         if lunchtimes in sec.get_meeting_times():
-            return True
-    return False
+            return False
+    return True
     #return not bool(ESPUser(user).getEnrolledSectionsFromProgram(program).filter(meeting_times__in=lunchtimes))
 
 # TODO(rye): Add a mechanism for lunch, with some helper functions to ensure lunch.
