@@ -291,13 +291,15 @@ def assign_priorities():
     print_issues()
 
 
-def screwed_sweep_p1_printout():
+def screwed_sweep_p1_printout(fd=None):
     """
     Print out the percentage that each student got, of the priority
     classes that they marked, in order of increasing percentage.
     Also print out, for easy reference, the number of priority classes they
     got out of the total chosen.
     """
+    if fd is None: fd = sys.stdout
+
     def classes_cnt(user):
         classescnt = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=program, user=user, relationship__name=enrolled_type).values('section').distinct().count()
         pcnt = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=program, user=user, relationship__name=priority_type).values('section').distinct().count()
@@ -310,9 +312,10 @@ def screwed_sweep_p1_printout():
         else: return 0
 
     users = sorted(program.students()['lotteried_students'], key=pclasses_pct)
-    print "User\t(username):\t% classes gotten\t(# received/# applied)"
+    fd.write("Full name,Username,% classes gotten,# received,# applied\n")
     for user in users:
-        print user.name() + " (" + user.username + ")" + ":", pclasses_pct(user), "(" + str(classes_cnt(user)[0]) + "/" + str(classes_cnt(user)[1]) + ")"
+        output = "%s,%s,%d,%d,%d\n" % (user.name(), user.username, pclasses_pct(user), classes_cnt(user)[0], classes_cnt(user)[1])
+        fd.write(output.encode('utf-8'))
         
 
 def assign_interesteds():
