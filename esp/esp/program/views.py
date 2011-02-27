@@ -67,6 +67,11 @@ import operator
 import simplejson as json
 from collections import defaultdict
 
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
+
 
 @login_required
 def lottery_student_reg(request, program = None):
