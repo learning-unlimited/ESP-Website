@@ -1,0 +1,63 @@
+Date: Sat, 25 Sep 2010 19:13:20 -0400
+From: Alexandra Z Vinegar <ch3cooh@MIT.EDU>
+To: esp-webmasters@mit.edu
+Cc: splash-director@mit.edu
+Subject: [Splash Lottery] Fwd: Additional Internal Mechanisms
+
+(needs a bit of cleverness wrt 2+ hour classes)
+
+----- Forwarded message from ch3cooh@MIT.EDU -----
+    Date: Wed, 22 Sep 2010 22:27:33 -0400
+    From: Alexandra Z Vinegar <ch3cooh@MIT.EDU>
+Reply-To: Alexandra Z Vinegar <ch3cooh@MIT.EDU>
+ Subject: Additional Internal Mechanisms
+      To: pkoms@mit.edu, splash-director@mit.edu, chris.a.kennedy@gmail.com,
+ageng@mit.edu
+
+1) Paul's sanity sweep: for each class, see if there are fewer priority flags
+than enrollment size, if there are, enroll all of the priorities.  Do this for
+every class.
+
+2) Weighted probability enrollment: Each student starts with a valuation of 1*,
+divide by 2* for every priority class the student is already enrolled in.
+Starting with the smallest class with unresolved priority-level conflicts,
+enroll by weighted probability over interested students.  Do this for every
+class.
+
+3) Screwed Sweep: list students by number of priority classes accepted to out of
+number of priorities indicated.  If a fraction is below ~1/3, review and attempt
+to hand-fix.
+
+4) Large sanity sweep: Sort classes by number of students who checked
+interested.  Starting with the class the fewest students interested in, fill
+classes to capacity* (capacity* = capacity-10% for classes with 30 or more max
+enrollment).  When there is conflict over capacity* delay the class (send it to
+the back of the queue). When a full cycle of delays occurs, move to step 5.
+
+5) Weighted probability enrollment phase 2.  Starting with the final stage
+valuations from step 2 (1* divided by 2* for every enrolled priority class) ,
+use a parallel process to (2) dividing by 2** for every non-priority class the
+student is enrolled in. In the order from step 4 (smallest interest) enroll by
+the new and simultaneously adjusting weighted probabilities.
+
+6) Screwed sweep Two: look for students with lots of blank periods and look at
+students with an empty class period, and how many courses they checked in that
+period.  (if a lot of either case, hand-fix, filling into the 10% of adjustment
+space left by Step 4)
+
+7?) Screwing over everyone else and removing wiggle room to prevent squabble, or
+is squabble better?  Remove the 10% capacity constraint and enroll students with
+as-of-yet vacant schedule slots starting with the classes with the most space
+remaining and using adjusting weighted probabilities from 5 (1* divided by 2*
+for every enrolled priority class and 2** for every other enrolled class)
+
+1* = 1 but may be adjusted to a slightly larger constant to reflect a student
+who has selected a lot of classes in a lot of time blocks (example
+1*1.1(#periods student selects at least 5 classes).  In lieu of adjusting this
+value, there is control-preference for students with a small set of indicated
+interest.
+2* is a value between 1 and 2
+2** is a smaller value between 1 and 2
+
+
+----- End forwarded message -----

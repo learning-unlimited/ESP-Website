@@ -1,0 +1,118 @@
+Date: Sat, 25 Sep 2010 19:15:01 -0400
+From: Alexandra Z Vinegar <ch3cooh@MIT.EDU>
+To: esp-webmasters@mit.edu
+Cc: splash-director@mit.edu
+Subject: [Splash Lottery] Fwd: Wrap-up on my part of Lottery Algorithm
+    design
+
+More comments from Ageng and Pkoms after Wednesday worksession (my wrap-up
+notes)
+
+----- Forwarded message from ageng@MIT.EDU -----
+    Date: Thu, 23 Sep 2010 00:14:30 -0400
+    From: Andrew Geng <ageng@MIT.EDU>
+Reply-To: Andrew Geng <ageng@MIT.EDU>
+ Subject: Fwd: Wrap-up on my part of Lottery Algorithm design
+      To: Alexandra Z Vinegar <ch3cooh@mit.edu>
+
+
+
+-------- Original Message --------
+Subject: Wrap-up on my part of Lottery Algorithm design
+Date: Thu, 23 Sep 2010 00:13:18 -0400
+From: Alexandra Z Vinegar <ch3cooh@MIT.EDU>
+To: pkoms@mit.edu, splash-director@mit.edu, chris.a.kennedy@gmail.com,       
+ageng@mit.edu
+
+Note: the main emails in this thread are
+"Class Preference Algorithm" - a badly written explanation for the student's
+perspective, describes the suggested UI and data collection
+and "Additional Internal Mechanisms" - suggested lottery algorithm design
+
+THE IMMEDIATE CHOICES - UI
+
+The main choice that has to be made now is how to set up the UI.  I would argue
+for a sigle high-priority class in each time block and 6-7 "I'd be ok with this
+class checks" - to whatever extent desired, this can have more degrees of
+priority that can be run sequentially through the algorithm.  For example,
+"single high-priority flag = first choice" "single mid-priority flag = second
+choice" 5-6 additional checked classes = third tier choices.  However, I think
+high and checks is sufficient and healthier, and that a total of 7-8 classes
+per time block are necessary to complete any algorithm.
+
+GENERAL COMMENTS
+
+I like this UI over 1st choice 2nd choice 3rd choice because 1) I think three is
+not a big enough set to place most people, and if we do ranking 1-n, I think
+degree of preference is /still/ too difficult to indicate/measure.  However, 9n
+some sense, it's strictly better to have the ranking data to avoid cases where
+two students might be happier if they swapped two classes, which friends very
+well might do.  This can be partially alleviated by leaving the wiggle room
+that step 7 will mainly cut off.  Also, to the largest extent, I think people's
+preference DO work more like *favorite* like like like, not so much... and that
+this perspective is healthier.
+
+In general, a lottery will make it hard for friends to be in classes together,
+and possibly create subject-heavy/awkward schedules (or, inevitably, with a
+sample size of 2500, this /will/ happen in a few cases) I think variety in
+monsters and open classes will considerably alleviate this, but it has to be
+publicized well (stressed like I tried to do in my To Students script)
+
+NOTES ABOUT THE SCREWED SWEEPS
+
+Concerns were voiced (ageng, pkoms) that the screwed sweeps would be too
+difficult to implement.  These concerns were alleviated by clarification that
+the first sweep is only readjusting over preference for one class per student
+per time slot.
+
+However, in some circumstances (such as one or two classes being really /really/
+popular) the algorithm will simply fail - it is important to do a human analysis
+after each step to simply see what happened (people are awesome at this (and at
+GO) relative to any algorithm I can come up with) - if there's something that
+massively breaks down this system, we have the data, we can make a contingency
+algorithm on the spot given the new knowledge.
+
+For the second screwed sweep, note that the 10% reduction of large class
+capacity allows for some immediate easy readjustment.
+
+THE SEVENTH STEP
+
+Paul described that there would be a non trivial amount of time between class
+assignments and the first-come readjustment phase.  If we don't finish the
+seventh step, there may be a small rush for the 10% left in classes, however,
+this may be good as some students will inevitably unenroll in more popular
+classes in order to take advantage of this space (aka, "wiggle room") - in
+fact, it may be worthwhile to consider expanding 10% to 20% which would create
+a larger rush, but also alleviate the "desire to trade" problem described in
+the second paragraph considerably.
+
+THE IMPORTANCE OF WARNINGS
+
+As a UI feature, it is increadably important that students be warned when
+leaving a time-slots page if they 1) did not indicate a priority class, and 2)
+if they did not check at least 5 or 6 other classes - they should be warned
+that they may not be assigned a class for this block.
+
+ONE MORE NOTE: PREFERENCE FOR SMALL SCHEDULES
+
+I'd like to be very clear that the algorithm currently gives control-preference
+to small schedules, as these students are guaranteed to still be at full ratio
+when their class comes up.   In some ways, I think this is good - if a student
+chooses to only attend one day of splash, this prioritizes that day being what
+they want.  However, if we decide it's a good idea to remove this preference,
+we can do so fairly well by readjusting 1* to reflect preference for applying
+to more time slots.  This preferencing would also reflect positive
+reinforcement for choosing to take monster/open classes. :)
+
+HAVING TALKED WITH ANDREW
+
+Both the UI and algorithm components seem fairly easy to implement at first
+glance.  But you should take a look through everything, make changes, sanity
+check it via esp-admin, and then wait till the data comes in to make a final
+decision on the algorithm.
+
+-- Zandra, signing off till retreat
+
+
+
+----- End forwarded message -----
