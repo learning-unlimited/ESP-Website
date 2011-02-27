@@ -9,7 +9,6 @@
 <meta http-equiv="X-UA-Compatible" content="chrome=1">
 
 {% block javascript %}
-    <script type="text/javascript" src="/media/scripts/error_logger.js"> </script>
     <script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
 
     <script type="text/javascript" src="/media/scripts/yui/yahoo/yahoo-min.js"></script>
@@ -20,6 +19,8 @@
     <script type="text/javascript" src="/media/scripts/yui/autocomplete/autocomplete-min.js"></script>
     <script type="text/javascript" src="/media/scripts/yui/logger/logger-min.js"></script>
     <script type="text/javascript" src="/media/scripts/yui/dragdrop/dragdrop-debug.js"></script>
+    <script type="text/javascript" src="/media/scripts/error_logger.js"> </script>
+
     <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
 
     <script type="text/javascript" src="/media/scripts/jquery.js"> </script>
