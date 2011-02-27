@@ -96,7 +96,7 @@ class SectionManageForm(ManagementForm):
     room = forms.MultipleChoiceField(required=False, choices=())
     resources = forms.MultipleChoiceField(label='Floating Resources', required=False, choices=())
     status = forms.ChoiceField(choices=())
-    class_size = forms.IntegerField(label='Max. number of students (OVERRIDE: Force the section to be this size regardless of the class or room size!)')
+    class_size = forms.IntegerField(label='Max. number of students (OVERRIDE: Force the section to be this size regardless of the class or room size!)', required=False)
     reg_status = forms.ChoiceField(required=False, choices=())
     progress = forms.MultipleChoiceField(required=False, label='Checklist', widget=forms.CheckboxSelectMultiple, choices=())
 
