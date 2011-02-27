@@ -96,7 +96,7 @@ class SectionManageForm(ManagementForm):
     room = forms.MultipleChoiceField(required=False, choices=())
     resources = forms.MultipleChoiceField(label='Floating Resources', required=False, choices=())
     status = forms.ChoiceField(choices=())
-    class_size = forms.IntegerField(label='Max. number of students')
+    class_size = forms.IntegerField(label='Max. number of students (OVERRIDE: Force the section to be this size regardless of the class or room size!)')
     reg_status = forms.ChoiceField(required=False, choices=())
     progress = forms.MultipleChoiceField(required=False, label='Checklist', widget=forms.CheckboxSelectMultiple, choices=())
 
@@ -117,7 +117,7 @@ class SectionManageForm(ManagementForm):
             prefix+'reg_status': sec.registration_status,
             prefix+'progress': sec.checklist_progress.all().values_list('id', flat=True),
             prefix+'secid': sec.id,
-            prefix+'class_size': sec.capacity,
+            prefix+'class_size': sec.max_class_capacity,
             prefix+'times': [ts.id for ts in sec.meeting_times.all()]}
         ir = sec.initial_rooms()
         self.initial[prefix+'room'] = [r.name for r in ir]
