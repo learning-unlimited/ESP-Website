@@ -4,7 +4,7 @@ from esp.program.models import Program, ClassSubject, ClassSection
 from esp.mailman import create_list, load_list_settings, add_list_member, set_list_moderator_password, apply_list_settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from esp.settings import USE_MAILMAN
+from esp.settings import USE_MAILMAN, DEFAULT_EMAIL_ADDRESSES
 
 DEBUG=True
 DEBUG=False
@@ -77,6 +77,8 @@ class SectionList(BaseHandler):
         if DEBUG: print "Settings applied still..."
         add_list_member(list_name, [cls.parent_program.director_email])
         add_list_member(list_name, [x.email for x in cls.teachers()])
+        if 'archive' in DEFAULT_EMAIL_ADDRESSES:
+            add_list_member(list_name, DEFAULT_EMAIL_ADDRESSES['archive'])
         if DEBUG: print "Members added"
 
         self.recipients = ["%s@esp.mit.edu" % list_name]
