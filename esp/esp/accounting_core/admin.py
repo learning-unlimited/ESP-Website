@@ -36,7 +36,7 @@ from django.contrib import admin
 from esp.accounting_core.models import LineItemType, Transaction, LineItem
 
 class LITAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['text', 'amount', 'anchor']
 admin.site.register(LineItemType, LITAdmin)
 
 class TXNAdmin(admin.ModelAdmin):
