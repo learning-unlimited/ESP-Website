@@ -163,7 +163,7 @@ function hideClassesOutOfGradeRange(stu_grade) {
   arr = document.getElementsByClassName("grademin");
   for (var grademin in arr) {
     var grademin_node = arr[grademin];
-    if (grademin_node.id) {
+    if (grademin_node && grademin_node.id) {
       grade = parseInt(grademin_node.innerHTML);
       clsid = grademin_node.id.split("_")[0];
       mins[clsid] = grade;
@@ -173,7 +173,7 @@ function hideClassesOutOfGradeRange(stu_grade) {
   arr = document.getElementsByClassName("grademax");
   for (var grademax in arr) {
     grademax_node = arr[grademax];
-    if (grademax_node.id) {
+    if (grademax_node && grademax_node.id) {
       grade = parseInt(grademax_node.innerHTML);
       clsid = grademax_node.id.split("_")[0];
       maxes[clsid] = grade;
@@ -183,7 +183,7 @@ function hideClassesOutOfGradeRange(stu_grade) {
   arr = document.getElementsByClassName("classcontent");
   for (var clsnum in arr) {
     cls = arr[clsnum];
-    if (cls.id) {
+    if (cls && cls.id) {
       clsid = cls.id.split("_")[0];
       if (stu_grade < mins[clsid] || stu_grade > maxes[clsid]) {
         cls.style.display = 'none';
@@ -194,7 +194,7 @@ function hideClassesOutOfGradeRange(stu_grade) {
   arr = document.getElementsByClassName("classdetails");
   for (var clsnum in arr) {
     cls = arr[clsnum];
-    if (cls.id) {
+    if (cls && cls.id) {
       clsid = cls.id.split("_")[0];
       if (stu_grade < mins[clsid] || stu_grade > maxes[clsid]) {
         cls.style.display = 'none';
@@ -205,7 +205,7 @@ function hideClassesOutOfGradeRange(stu_grade) {
   arr = document.getElementsByClassName("classregbuttons");
   for (var clsnum in arr) {
     cls = arr[clsnum];
-    if (cls.id) {
+    if (cls && cls.id) {
       clsid = cls.id.split("_")[0];
       if (stu_grade < mins[clsid] || stu_grade > maxes[clsid]) {
         cls.style.display = 'none';
