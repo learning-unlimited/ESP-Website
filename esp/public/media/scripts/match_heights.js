@@ -5,9 +5,13 @@ match_heights = function(div_ids){
      var divs,contDivs,maxHeight,divHeight,d;
      // get <div> elements
      divs=[];
+     var got_div;
      for (var i in div_ids)
      {
-        divs.push(document.getElementById(div_ids[i]));
+	 got_div = document.getElementById(div_ids[i]);
+	 if (got_div) {
+	     divs.push(got_div);
+	 }
      }
      contDivs=[];
      // initialize maximum height value
