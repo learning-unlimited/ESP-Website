@@ -364,7 +364,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
                 except:
                     raise ESPError(False), 'Please enter a 4-digit integer for graduation year limits.'
                 possible_gradyears = filter(lambda x: x <= gradyear_max, possible_gradyears)
-            if request.GET.has_key('gradyear_min') or request.GET.has_key('gradyear_max'):
+            if request.GET.get('gradyear_min', None) or request.GET.get('gradyear_max', None):
                 Q_include &= Q(registrationprofile__teacher_info__graduation_year__in = map(str, possible_gradyears), registrationprofile__most_recent_profile=True)
                 update = True
         
