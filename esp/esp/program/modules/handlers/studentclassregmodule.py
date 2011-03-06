@@ -356,7 +356,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 reg_verbs = cls.getRegVerbs(request.user)
                 is_auto = 0
                 for r in reg_verbs:
-                    if r.name == 'Automatic':
+                    if r == 'Automatic':
                         is_auto = 1
                 if not is_auto:
                     classes_registered += 1
