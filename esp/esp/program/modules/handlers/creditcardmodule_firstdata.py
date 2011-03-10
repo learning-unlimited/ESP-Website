@@ -38,11 +38,13 @@ from esp.datatree.models import *
 from esp.web.util        import render_to_response
 from datetime            import datetime        
 from django.db.models.query     import Q
+from django.http         import HttpResponseRedirect
+from django.core.mail import send_mail
 from esp.users.models    import User, ESPUser
-from esp.accounting_core.models import LineItemType, EmptyTransactionException, Balance
+from esp.accounting_core.models import LineItemType, EmptyTransactionException, Balance, CompletedTransactionException
 from esp.accounting_docs.models import Document
 from esp.middleware      import ESPError
-from esp.settings import INSTITUTION_NAME
+from esp.settings import INSTITUTION_NAME, DEFAULT_EMAIL_ADDRESSES
 
 class CreditCardModule_FirstData(ProgramModuleObj):
     @classmethod
@@ -83,14 +85,59 @@ class CreditCardModule_FirstData(ProgramModuleObj):
         return {'creditcard': """Students who have filled out the credit card form."""}
 
     def payment_success(self, request, tl, one, two, module, extra, prog):
+        """ Receive payment from First Data Global Gateway """
+
+        if request.POST.get('status', '') != 'APPROVED':
+            return self.payment_failure(request, tl, one, two, module, extra, prog)
+
+        try:
+            from decimal import Decimal
+            post_locator = request.POST.get('invoice_number', '')
+            post_amount = Decimal(request.POST.get('total', '0.0'))
+            post_id = request.POST.get('refnumber', '')       
+            document = Document.receive_creditcard(request.user, post_locator, post_amount, post_id)
+        except CompletedTransactionException:
+            from django.conf import settings
+            invoice = Document.get_by_locator(post_locator)
+            # Look for duplicate payment by checking old receipts for different cc_ref.
+            cc_receipts = invoice.docs_next.filter(cc_ref__isnull=False).exclude(cc_ref=post_id)
+            # Prepare to send e-mail notification of duplicate postback.
+            recipient_list = [contact[1] for contact in settings.ADMINS]
+            refs = 'Cybersource request ID: %s' % post_id
+            if cc_receipts:
+                subject = 'DUPLICATE PAYMENT'
+                refs += '\n\nPrevious payments\' Cybersource IDs: ' + ( u', '.join([x.cc_ref for x in cc_receipts]) )
+            else:
+                subject = 'Duplicate Postback'
+            # Send mail!
+            send_mail('[ ESP CC ] ' + subject + ' for #' + post_locator + ' by ' + invoice.user.first_name + ' ' + invoice.user.last_name, \
+                  """%s Notification\n--------------------------------- \n\nDocument: %s\n\n%s\n\nUser: %s %s (%s)\n\nCardholder: %s\n\nProgram anchor: %s\n\nRequest: %s\n\n""" % \
+                  (subject, invoice.locator, refs, invoice.user.first_name, invoice.user.last_name, invoice.user.id, request.POST.get('bname', '--'), invoice.anchor.get_uri(), request) , \
+                  settings.SERVER_EMAIL, recipient_list, True)
+            # Get the document that would've been created instead
+            document = invoice.docs_next.all()[0]
+        except:
+            raise
+            # raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:%s\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience." % DEFAULT_EMAIL_ADDRESSES['support']
+
+        one = document.anchor.parent.name
+        two = document.anchor.name
+
         context = {}
         context['postdata'] = request.POST.copy()
+        context['support_email'] = DEFAULT_EMAIL_ADDRESSES['support']
+        context['prog'] = prog
+
+        #   Don't redirect to receipt just yet, in case they haven't finished all steps of registration
+        #   return HttpResponseRedirect("http://%s/learn/%s/%s/confirmreg" % (request.META['HTTP_HOST'], one, two))
         return render_to_response(self.baseDir() + 'success.html', request, (prog, tl), context)
+        
 
     def payment_failure(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['postdata'] = request.POST.copy()
-        return render_to_response(self.baseDir() + 'failure.html', request, (prog, tl), context)
+        context['prog'] = prog
+        context['support_email'] = DEFAULT_EMAIL_ADDRESSES['support']
 
     @aux_call
     @meets_deadline('/Payment')

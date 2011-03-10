@@ -1,6 +1,6 @@
 {% extends "main.html" %}
 
-{% block title %}{{program.niceName}} Payment Received{% endblock %}
+{% block title %}{{program.niceName}} Payment Failure{% endblock %}
 
 {% block subsection_name %}Register for {{program.niceName}}{% endblock %}
 
@@ -16,9 +16,23 @@
 <h1>Credit Card Payment for {{ program.niceName }}</h1>
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "payment_success_header" request.user %}
+
+{% inline_qsd_block program.anchor "payment_failure" request.user %}
 
 <h3>Failure</h3>
+
+<p>Your credit card transaction was not successful.  More information about this is shown below.
+</p>
+
+<p>
+If you believe this to be due to a mistake on your part, you may return to the <a href="/learn/{{ prog.getUrlBase }}/payonline">payment page</a> and try paying again.
+</p>
+
+<p>Otherwise, there may have been a problem with our Web site or with the credit card processor.  We apologize -- it happens once in a while.  Please contact our <a href="mailto:{{ support_email }}">technical support folks</a> and we'll try to remedy the situation.</p>
+
+<p><a href="/learn/{{ prog.getUrlBase }}/studentreg">Click here</a> to return to the main student registration page.</p>
+
+{% end_inline_qsd_block %}
 
 <p>Received data:
 <ul>
@@ -27,8 +41,6 @@
 {% endfor %}
 </ul>
 </p>
-
-{% render_inline_qsd program.anchor "payment_success_footer" request.user %}
 
 {% endblock %}
 
