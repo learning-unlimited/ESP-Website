@@ -40,6 +40,7 @@ from esp.survey.models import Survey, SurveyResponse, QuestionType, Question, An
 
 from copy import deepcopy
 
+# TODO: Update the anchors on the questions as well
 def copy_surveys(modeladmin, request, queryset):
     for survey in queryset:
         new_survey = deepcopy(survey)
@@ -52,7 +53,8 @@ def copy_surveys(modeladmin, request, queryset):
             new_question.survey = new_survey
             new_question.save()
 class SurveyAdmin(admin.ModelAdmin):
-    actions = [ copy_surveys, ]
+    #actions = [ copy_surveys, ]
+    pass
 admin.site.register(Survey, SurveyAdmin)
 
 class SurveyResponseAdmin(admin.ModelAdmin):
