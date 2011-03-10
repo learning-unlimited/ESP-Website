@@ -43,6 +43,7 @@ from copy import deepcopy
 def copy_surveys(modeladmin, request, queryset):
     for survey in queryset:
         new_survey = deepcopy(survey)
+        new_survey.name = survey.name + " (copy)"
         new_survey.id = None
         new_survey.save()
         for question in survey.questions.all():
