@@ -21,6 +21,7 @@
     <script type="text/javascript" src="/media/scripts/yui/dragdrop/dragdrop-debug.js"></script>
     <script type="text/javascript" src="/media/scripts/yui/container/container-min.js"></script>
 
+    <script type="text/javascript" src="/media/scripts/crashkit-javascript.js"> </script>
     <script type="text/javascript" src="/media/scripts/error_logger.js"> </script>
 
     <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
