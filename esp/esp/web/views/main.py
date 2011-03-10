@@ -58,6 +58,8 @@ from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
 from django.core.mail import mail_admins
 
+from django.views.decorators.csrf import csrf_exempt
+
 from pprint import pprint
 
 try:
@@ -316,7 +318,7 @@ def registration_redirect(request):
         ctxt['nextreg'] = list(nextreg)
         return render_to_response('users/profile_complete.html', request, GetNode('Q/Web'), ctxt)		    
     
-
+@csrf_exempt  ## We want this to work even (especially?) if something's borked with the CSRF cookie logic
 def error_reporter(request):
     """ Grab an error submitted as a GET request """
     url = request.GET.get('url', "")
@@ -328,10 +330,13 @@ def error_reporter(request):
     cookies = StringIO()
     get = StringIO()
     meta = StringIO()
+    post = StringIO()
 
     pprint(dict(request.COOKIES), cookies)
     pprint(dict(request.GET), get)
     pprint(dict(request.META), meta)
+    if request.POST:
+        pprint(dict(request.POST), post)
 
     msg = request.GET.get('msg', "(no message)")
 
@@ -345,13 +350,15 @@ Path: %s
 UserAgent: %s
 GET:
 %s
+POST:
+%s
 
 Cookies:
 %s
 
 META:
 %s
-""" % (user_str, request.path, user_agent_str, get.getvalue(), cookies.getvalue(), meta.getvalue())
+""" % (user_str, request.path, user_agent_str, get.getvalue(), post.getvalue(), cookies.getvalue(), meta.getvalue())
 
     mail_admins("[ESP] JS Error: %s" % msg[:100].replace("\n", "").replace("\r", ""), err_txt)
 
