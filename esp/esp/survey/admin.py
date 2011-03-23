@@ -38,7 +38,22 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.survey.models import Survey, SurveyResponse, QuestionType, Question, Answer
 
+from copy import deepcopy
+
+# TODO: Update the anchors on the questions as well
+def copy_surveys(modeladmin, request, queryset):
+    for survey in queryset:
+        new_survey = deepcopy(survey)
+        new_survey.name = survey.name + " (copy)"
+        new_survey.id = None
+        new_survey.save()
+        for question in survey.questions.all():
+            new_question = deepcopy(question)
+            new_question.id = None
+            new_question.survey = new_survey
+            new_question.save()
 class SurveyAdmin(admin.ModelAdmin):
+    #actions = [ copy_surveys, ]
     pass
 admin.site.register(Survey, SurveyAdmin)
 

@@ -6,7 +6,12 @@ if (window.onerror) {
 window.onerror = function(msg, url, line)
 {
     if (encodeURIComponent) {
-        var uri = "/error_reporter?url=" + encodeURIComponent(url) + "&lineNum=" + line + "&msg=" + encodeURIComponent(msg);
+	var uri;
+	if (!url && !line && JSON) {
+	    uri = "/error_reporter?url=" + encodeURIComponent(url) + "&lineNum=" + line + "&msg=" + encodeURIComponent(JSON.stringify(msg));
+	} else {
+	    uri = "/error_reporter?url=" + encodeURIComponent(url) + "&lineNum=" + line + "&msg=" + encodeURIComponent(msg);
+	}
         var img = new Image();
         img.src = uri;
     }
