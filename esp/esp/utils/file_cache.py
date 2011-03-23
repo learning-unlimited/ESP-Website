@@ -8,7 +8,7 @@ try:
 except ImportError:
     import pickle
 
-BASE_DIR = settings.PROJECT_ROOT + 'file_cache/'
+BASE_DIR = os.path.join(settings.PROJECT_ROOT, 'file_cache/')
 
 class FileCache(object):
 

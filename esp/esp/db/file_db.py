@@ -31,7 +31,7 @@ except ImportError:
 
 __all__ = ['FileDBManager']
 
-BASE_DIR = settings.PROJECT_ROOT + 'file_db/'
+BASE_DIR = os.path.join(settings.PROJECT_ROOT, 'file_db/')
 
 class FileDBManager(models.Manager):
 
