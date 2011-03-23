@@ -46,7 +46,7 @@ from esp.accounting_docs.models import Document
 from esp.middleware      import ESPError
 from esp.settings import INSTITUTION_NAME, DEFAULT_EMAIL_ADDRESSES
 
-class CreditCardModule_FirstData(ProgramModuleObj):
+class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings):
     @classmethod
     def module_properties(cls):
         return {
@@ -87,7 +87,7 @@ class CreditCardModule_FirstData(ProgramModuleObj):
     def payment_success(self, request, tl, one, two, module, extra, prog):
         """ Receive payment from First Data Global Gateway """
 
-        if request.POST.get('status', '') != 'APPROVED':
+        if request.method == 'GET' or request.POST.get('status', '') != 'APPROVED':
             return self.payment_failure(request, tl, one, two, module, extra, prog)
 
         try:
@@ -135,9 +135,11 @@ class CreditCardModule_FirstData(ProgramModuleObj):
 
     def payment_failure(self, request, tl, one, two, module, extra, prog):
         context = {}
-        context['postdata'] = request.POST.copy()
+        if request.method == 'POST':
+            context['postdata'] = request.POST.copy()
         context['prog'] = prog
         context['support_email'] = DEFAULT_EMAIL_ADDRESSES['support']
+        return render_to_response(self.baseDir() + 'failure.html', request, (prog, tl), context)
 
     @aux_call
     @meets_deadline('/Payment')
@@ -152,6 +154,7 @@ class CreditCardModule_FirstData(ProgramModuleObj):
         #   Default line item types
         li_types = self.program.getLineItemTypes(user)
 
+        # Get settings
         invoice = Document.get_invoice(user, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
         context = {}
         context['module'] = self
@@ -163,13 +166,13 @@ class CreditCardModule_FirstData(ProgramModuleObj):
         context['program'] = self.program
         context['hostname'] = request.META['HTTP_HOST']
         context['institution'] = INSTITUTION_NAME
-        context['storename'] = '1909968401' # Learning Unlimited, Inc.
-
+        context['storename'] = self.store_id
+        context['support_email'] = DEFAULT_EMAIL_ADDRESSES['support']
         try:
             context['itemizedcosttotal'] = invoice.cost()
         except EmptyTransactionException:
             context['itemizedcosttotal'] = 0
-            
+
         context['financial_aid'] = user.hasFinancialAid(prog.anchor)
         context['invoice'] = invoice
         
