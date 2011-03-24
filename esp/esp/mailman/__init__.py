@@ -1,5 +1,6 @@
 from __future__ import with_statement
 
+import os
 from subprocess import call, Popen, PIPE
 from esp.settings import USE_MAILMAN, PROJECT_ROOT
 from esp.utils.decorators import enable_with_setting
@@ -41,7 +42,7 @@ def load_list_settings(list, listfile):
     if listfile[0] == '/':
         listpath = listfile
     else:
-        listpath = PROJECT_ROOT + listfile
+        listpath = os.path.join(PROJECT_ROOT, listfile)
 
     return call([MM_PATH + "config_list", "-i", listpath, list])
 

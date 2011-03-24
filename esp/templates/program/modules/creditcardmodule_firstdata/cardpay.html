@@ -1,0 +1,347 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Registration{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block xtrajs %}
+<style type="text/css">
+#divmaintext a { text-decoration: underline; }
+#divmaintext a:hover { text-decoration: none; }
+table.payproc1 {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+}
+
+input.button {
+    background-color: #c6def7;
+    border: 1px solid black;
+    font-weight: bold;
+    font-size: 13px;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+input.button:hover {
+    background-color: #333333;
+    color: #c6def7;
+}
+</style>
+<script type="text/javascript">
+<!--
+
+// user contact information
+user_contact =  [
+{% for contactitem in module.user.getLastProfile.contact_user.items %}
+  ['{{ contactitem.0|striptags|addslashes }}','{{contactitem.1|striptags|addslashes }}'],{% endfor %}
+  ['','']
+];
+
+// guardian contact information
+guardian_contact =  [
+{% for contactitem in module.user.getLastProfile.contact_guardian.items %}
+  ['{{ contactitem.0|striptags|addslashes }}','{{contactitem.1|striptags|addslashes }}'],{% endfor %}
+  ['','']
+];
+
+
+// get an item from the above lists
+function getItem(arr, key) {
+
+   for (var i=0; i<arr.length; i++) {
+      if (arr[i][0] == key) {
+         if (arr[i][1] == 'None') {
+           return '';
+         }
+         return arr[i][1];
+      }
+   }
+   return '';
+}
+
+
+// autofill with contact information
+function autofill(ci) {
+   document.getElementById('id_bname').value = 
+          getItem(ci, 'first_name') + ' ' + getItem(ci, 'last_name');
+   document.getElementById('id_baddr1').value = 
+          getItem(ci, 'address_street');
+   document.getElementById('id_bcity').value = 
+          getItem(ci, 'address_city');
+   document.getElementById('id_bzip').value = 
+          getItem(ci, 'address_zip');   
+   document.getElementById('id_bstate').value = 
+          getItem(ci, 'address_state');
+}
+
+// disable the submit button so that people pay once
+function payOnce() {
+  document.getElementById('submit_form').disabled = true;
+  return true;
+}
+
+// allow adding a donation
+var initial_cost = {{ itemizedcosttotal|floatformat:2 }};
+var current_cost = initial_cost;
+var donation_set = false;
+function check_cost()
+{
+    var cost_last = document.getElementById("id_chargetotal").value;
+    var label_last = document.getElementById("id_total_label").innerHTML;
+    // console.log("Checkbox clicked, donation = " + donation_set + ", initial cost = " + initial_cost + ", current cost = " + cost_last + ", label = " + label_last);
+    donation_set = !donation_set;
+    if (donation_set)
+        current_cost = initial_cost + 10.0;
+    else
+        current_cost = initial_cost;			      
+    document.getElementById("id_chargetotal").value = current_cost.toFixed(2);
+    document.getElementById("id_total_label").innerHTML = "$" + current_cost.toFixed(2);
+}
+
+// test the form...make sure it's valid.
+function formTest() {
+  errormsg = "You have errors with your form.\n\n";
+  errors = false;
+  
+  blankcheck = [['bname', 'cardholder\'s name'],
+                ['baddr1', 'address line 1'],
+                ['bcity', 'city'],
+                ['bstate', 'state'],
+                ['bzip', 'zipcode']{% if module.host_payment_form %},
+		['cctype', 'credit card type'],
+		['cardnumber', 'credit card number'],
+		['expmonth', 'credit card expiration month'],
+		['expyear', 'credit card expiration year'],
+		['cvm', 'CVM security code']
+{% endif %}
+                ];
+                
+  for (var i=0; i<blankcheck.length; i++) {
+     if (document.getElementById('id_' + blankcheck[i][0]).value == '') {
+          errormsg += "  -The "+blankcheck[i][1]+" is not filled in.\n";
+          errors = true;
+     }
+  }
+
+  if (errors) {
+    alert(errormsg);
+    return false;
+  } 
+  payOnce();
+  return true;
+}
+//-->
+</script>
+{% endblock %}
+{% block content %}
+<h1>Credit Card Payment for {{ program.niceName }}</h1>
+
+<h3>Instructions for paying by credit card:</h3>
+<p>
+<ol>
+<li>
+Please review the costs below. If you are concerned that there is a problem, please <a href="mailto:{{ support_email }}">e-mail the webmasters</a>.<br />
+<li>Fill out your billing information below. When you submit the form, your information is sent to a secure <a href="http://www.firstdata.com/en_us/about-first-data/media/first-data-facts" target="_blank">third party payment processor</a>.  Then you will be redirected to a confirmation receipt.</li>
+</ol>
+</p>
+
+<form>
+{% include "program/modules/creditcardmodule_cybersource/transaction_record.html" %}
+</form>
+
+{% ifequal itemizedcosttotal 0 %}
+
+<p>You have no outstanding balance for this program.  Please <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.</p>
+
+{% else %}
+
+{% comment %}This template has been made fully static for security reasons.
+{% load render_qsd %}
+{% inline_qsd_block program.anchor payment_directions request.user %}
+{% endcomment %}
+
+<p>If you would like to cancel at this time, you can <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.  Otherwise, please fill out the form below.  Required fields are boxed in a colored border.</p>
+
+{% comment %}{% end_inline_qsd_block %}{% endcomment %}
+
+<form onsubmit="return formTest();" action="{{ module.post_url }}" method="post" autocomplete="off">{% csrf_token %} 
+
+<input type="hidden" name="storename" value="{{ module.store_id }}" />
+<input type="hidden" name="oid" value="{{ module.invoice_prefix }}-{{ invoice.get_locator }}" />
+<input type="hidden" id="id_chargetotal" name="chargetotal" value="{{ itemizedcosttotal|floatformat:2 }}" />
+<input type="hidden" id="id_total" name="total" value="{{ itemizedcosttotal|floatformat:2 }}" />
+<input type="hidden" name="ponumber" value="{{ invoice.txn.id }}" />
+<input type="hidden" name="invoice_number" value="{{ invoice.locator }}" />
+<input type="hidden" name="userid" value="{{ user.id }}" />
+<input type="hidden" name="bcountry" value="US" />
+<input type="hidden" name="responseSuccessURL" value="http://{{ hostname }}/learn/{{ program.getUrlBase }}/payment_success" />
+<input type="hidden" name="responseFailureURL" value="http://{{ hostname }}/learn/{{ program.getUrlBase }}/payment_failure" />
+<input type="hidden" name="comments" value="LU Credit Card Invoice {{ module.invoice_prefix }}-{{ invoice.get_locator }} (for {{ program.niceName }} at {{ institution }})" />
+
+<p>
+Autofill contact information:
+<a href="javascript:autofill(guardian_contact);"
+   title="Autofill with parent information">with Guardian Information</a> |
+<a href="javascript:autofill(user_contact);"
+   title="Autofill with student information">with Student Information</a>
+<br />
+</p>
+
+
+<div id="program_form">
+
+<table width="500" cellpadding="2" cellspacing="2" align="center">
+<tr>
+  <th colspan="2">Credit Card Information</th>
+</tr>
+<tr>
+    <td width="150"><b>Name on Card</b>
+    </td>
+    <td><input type="text" class="required" name="bname" id="id_bname" size="30"/>
+    </td>
+</tr>
+<tr>
+    <td><b>Billing Address:</b>
+    </td>
+    <td>Street: <input type="text" class="required" name="baddr1" id="id_baddr1" size="40"/> <br />
+        Apt. / Room: <input type="text" name="baddr2" id="id_baddr2" size="40"/> <br />
+        City: <input type="text" class="required" name="bcity" id="id_bcity" size="20"/>
+        State: 
+            <select name="bstate" class="required" id="id_bstate">
+            <option value="" selected="selected"></option>
+	    <option value="AL">Alabama</option>
+	    <option value="AK">Alaska</option>
+	    <option value="AZ">Arizona</option>
+	    <option value="AR">Arkansas</option>
+	    <option value="CA">California</option>
+	    <option value="CO">Colorado</option>
+	    <option value="CT">Connecticut</option>
+	    <option value="DE">Delaware</option>
+	    <option value="DC">District Of Columbia</option>
+	    <option value="FL">Florida</option>
+	    <option value="GA">Georgia</option>
+	    <option value="HI">Hawaii</option>
+	    <option value="ID">Idaho</option>
+	    <option value="IL">Illinois</option>
+	    <option value="IN">Indiana</option>
+	    <option value="IA">Iowa</option>
+	    <option value="KS">Kansas</option>
+	    <option value="KY">Kentucky</option>
+	    <option value="LA">Louisiana</option>
+	    <option value="ME">Maine</option>
+	    <option value="MD">Maryland</option>
+	    <option value="MA">Massachusetts</option>
+	    <option value="MI">Michigan</option>
+	    <option value="MN">Minnesota</option>
+	    <option value="MS">Mississippi</option>
+	    <option value="MO">Missouri</option>
+	    <option value="MT">Montana</option>
+	    <option value="NE">Nebraska</option>
+	    <option value="NV">Nevada</option>
+	    <option value="NH">New Hampshire</option>
+	    <option value="NJ">New Jersey</option>
+	    <option value="NM">New Mexico</option>
+	    <option value="NY">New York</option>
+	    <option value="NC">North Carolina</option>
+	    <option value="ND">North Dakota</option>
+	    <option value="OH">Ohio</option>
+	    <option value="OK">Oklahoma</option>
+	    <option value="OR">Oregon</option>
+	    <option value="PA">Pennsylvania</option>
+	    <option value="RI">Rhode Island</option>
+	    <option value="SC">South Carolina</option>
+	    <option value="SD">South Dakota</option>
+	    <option value="TN">Tennessee</option>
+	    <option value="TX">Texas</option>
+	    <option value="UT">Utah</option>
+	    <option value="VT">Vermont</option>
+	    <option value="VA">Virginia</option>
+	    <option value="WA">Washington</option>
+	    <option value="WV">West Virginia</option>
+	    <option value="WI">Wisconsin</option>
+	    <option value="WY">Wyoming</option>
+	    </select>
+        ZIP code: <input type="text" class="required" name="bzip" id="id_bzip" maxlength="5" size="5"/>
+    </td>
+</tr>
+{% if module.host_payment_form %}
+<tr>
+    <td><b>Credit Card:</b>
+    </td>
+    <td>
+      Card Type: 
+          <select name="cctype" id="id_cctype" class="required">
+	      <option value="" selected="1"></option>
+	      <option value="V">VISA</option>
+	      <option value="M">MasterCard</option>
+	      <option value="D">Discover</option>
+	      <option value="A">American Express</option>
+	      <option value="J">JCB</option>
+	      <option value="C">Diner's Club</option>
+	  </select> <br />
+      Card Number: <input type="text" class="required" name="cardnumber" id="id_cardnumber" size="20" maxlength="16"/> <br />
+      Expiration: <i>Month</i> 
+	  <select name="expmonth" id="id_expmonth" class="required">
+	      <option value="" selected="1"></option>
+	      <option value="01">January - 01</option>
+	      <option value="02">February - 02</option>
+	      <option value="03">March - 03</option>
+	      <option value="04">April - 04</option>
+	      <option value="05">May - 05</option>
+	      <option value="06">June - 06</option>
+	      <option value="07">July - 07</option>
+	      <option value="08">August - 08</option>
+	      <option value="09">September - 09</option>
+	      <option value="10">October - 10</option>
+	      <option value="11">November - 11</option>
+	      <option value="12">December - 12</option>
+	  </select>
+	  <i>Year</i> 
+	  <select class="required" name="expyear" id="id_expyear">
+	    <option value=""></option>
+	    <option value="2011">2011</option>
+	    <option value="2012">2012</option>
+	    <option value="2013">2013</option>
+	    <option value="2014">2014</option>
+	    <option value="2015">2015</option>
+	    <option value="2016">2016</option>
+	  </select> <br />
+      CVM Security Code: <input type="text" class="required" size="3" maxlength="3" name="cvm" id="id_cvm" />
+    </td>
+</tr>
+{% else %}
+<tr>
+<td colspan="2">You will be asked for your credit card information on the next page.</td>
+</tr>
+{% endif %}
+{% if module.offer_donation %}
+<tr>
+    <td colspan="2">
+      <input type="checkbox" onclick="check_cost();" />Check here to support Learning Unlimited's mentoring of UMBC Splash with an additional donation of $10.  <a href="http://www.learningu.org/about" target="_blank">Learning Unlimited</a> is a 501(c)(3) nonprofit that mentored the UMBC students in organizing this program and provided this Web site. </td>
+</tr>
+{% endif %}
+<tr>
+  <td colspan="2" align="center" style="padding: 10px !important"><b>Total amount: </b><tt><div id="id_total_label" style="border: 1px solid black; padding: 1px 20px 1px 1px; font-size: 140%">${{ itemizedcosttotal|floatformat:2 }}</div></tt><br /></td>
+  </tr>
+
+<tr>
+  <td colspan="2" align="center" />
+  Please check your form and click here to submit. <br />
+      <input id="submit_form" class="fancybutton" type="submit" value="{% if module.host_payment_form %}Submit Payment{% else %}Continue to Secure Payment{% endif %}"><br/>
+      </td>
+</tr>
+</table>
+
+
+</div>
+
+</form>
+
+{% endifequal %}
+
+{% endblock %}
+

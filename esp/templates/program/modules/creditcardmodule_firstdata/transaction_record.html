@@ -1,0 +1,24 @@
+
+<p>
+<div id="program_form">
+<table width="500" align="center">
+    <tr>
+        <th colspan="2">Transaction Record</th>
+    </tr>
+    <tr>
+        <th class="smaller">User: {{ user.name }}</th>
+        <th class="smaller">Event: {{ program.niceName }}</th>
+    </tr>
+    {% for lineitem in itemizedcosts %}
+    <tr>
+        <td>{{ lineitem.text }}</td>
+        <td>${{ lineitem.negative_amount|floatformat:2 }}</td>
+    </tr>
+    {% endfor %}
+    <tr>
+        <td align="right"><b>Total:</b></td>
+        <td>${{ itemizedcosttotal|floatformat:2 }}</td>
+    </tr>
+</table>
+</div>
+</p>

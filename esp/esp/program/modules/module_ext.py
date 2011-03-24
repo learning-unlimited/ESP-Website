@@ -36,7 +36,7 @@ from django.db import models
 from esp.datatree.models import *
 from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
-
+from esp import settings
 from esp.program.models import Program, RegistrationType
 
 class DBReceipt(models.Model):
@@ -387,5 +387,11 @@ class SATPrepTeacherModuleInfo(models.Model):
     def subjects():
         return SATPrepTeacherModuleInfo.SAT_SUBJECTS
 
-
-
+""" Model for settings that control the First Data credit card module. """
+class CreditCardSettings(models.Model):
+    module = models.ForeignKey(ProgramModuleObj)
+    store_id = models.CharField(max_length=80, default='')
+    host_payment_form = models.BooleanField(default=False)
+    post_url = models.CharField(max_length=255, default='')
+    offer_donation = models.BooleanField(default=False)
+    invoice_prefix = models.CharField(max_length=80, default=settings.INSTITUTION_NAME.lower())

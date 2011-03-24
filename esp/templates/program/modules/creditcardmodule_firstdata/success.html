@@ -1,0 +1,41 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Payment Received{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block xtrajs %}
+{% endblock %}
+
+{% block content %}
+<h1>Credit Card Payment for {{ program.niceName }}</h1>
+
+{% load render_qsd %}
+
+{% inline_qsd_block program.anchor "payment_success" request.user %}
+
+<h3>Success!</h3>
+
+<p>We have received your credit card payment.  <a href="/learn/{{ prog.getUrlBase }}/confirmreg">Click here</a> to print your registration receipt.</p>
+
+<p><a href="/learn/{{ prog.getUrlBase }}/studentreg">Click here</a> to return to the main student registration page.</p>
+
+{% end_inline_qsd_block %}
+
+{% comment %}
+<p>Received data:
+<ul>
+{% for key, value in postdata.items %}
+<li><b>{{ key }}</b> = {{ value }}</li>
+{% endfor %}
+</ul>
+</p>
+{% endcomment %}
+
+{% endblock %}
+

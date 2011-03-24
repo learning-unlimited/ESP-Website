@@ -329,8 +329,8 @@ class TeacherEventSignupForm(FormWithRequiredCss):
 
     def _slot_too_late(self, anchor):
         """ Determine whether it is too late to register for a time slot. """
-        # Don't allow signing up for a spot less than 3 days in advance
-        return Event.objects.get(anchor=anchor).start - datetime.now() < timedelta(days=3)
+        # Don't allow signing up for a spot insuficiently far in advance
+        return Event.objects.get(anchor=anchor).start - datetime.now() < timedelta(days=0)
 
     def _slot_is_available(self, anchor):
         """ Determine whether a time slot is available. """
