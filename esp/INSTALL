@@ -132,7 +132,7 @@ initialize your database from a backup of your organization's database.
 Otherwise, use Django's manage.py script to initialize your database:
 
 $ cd ./esp
-$ ./manage.py syncdb
+$ ./manage.py syncdb --all
 
 Django will ask you to add a super user.  Please do this so that you
 have administrative access when you start using the site.
