@@ -7,8 +7,8 @@
     <table cellpadding="0" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
     {% render_class_core class %}
     {% if prereg_url %}
-        <tr id="{{ class.id }}_regbuttons" class="classregbuttons">
-        <td colspan="3" align="center" valign="center" class="add_class">
+        <tr id="class_{{ class.id }}_regbuttons" class="classregbuttons">
+        <td colspan="3" align="center" valign="middle" class="add_class">
         {% if errormsg %}
              <p class="addbutton_error">{{ errormsg }}</p>
             {% if user.onsite_local %}
