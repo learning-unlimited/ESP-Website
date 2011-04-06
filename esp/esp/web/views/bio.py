@@ -42,6 +42,7 @@ from django.http          import HttpResponseRedirect, Http404
 from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
 from datetime             import datetime
+from esp                  import settings
 
 @login_required
 def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False, username=''):
@@ -114,6 +115,7 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
         form = BioEditForm(formdata)
         
     return render_to_response('users/teacherbioedit.html', request, GetNode('Q/Web/myesp'), {'form':    form,
+                                                   'institution': settings.INSTITUTION_NAME,
                                                    'user':    founduser,
                                                    'picture_file': lastbio.picture})
 
