@@ -667,7 +667,6 @@ class ClassSection(models.Model):
             
     def clear_resource_cache(self):
         from django.core.cache import cache
-        from esp.program.templatetags.scheduling import options_key_func
         from esp.resources.models import increment_global_resource_rev
         cache_key1 = 'class__viable_times:%d' % self.id
         cache_key2 = 'class__viable_rooms:%d' % self.id
@@ -1112,40 +1111,9 @@ class ClassSection(models.Model):
     def isRegOpen(self): return self.registration_status == 0
     def isRegClosed(self): return self.registration_status == 10
 
-    def update_cache_students(self):
-        from esp.program.templatetags.class_render import cache_key_func, core_cache_key_func
-        cache.delete(core_cache_key_func(self.parent_class))
-        cache.delete(cache_key_func(self.parent_class))
-
-        self.cache.update()
-
     def update_cache(self):
-        from esp.settings import CACHE_PREFIX
-
-        try: # if the section doesn't have a parent class yet, don't throw horrible errors
-            pclass = self.parent_class
-            from esp.program.templatetags.class_manage_row import cache_key as class_manage_row_cache_key
-            cache.delete(class_manage_row_cache_key(pclass, None)) # this cache_key doesn't actually care about the program, as classes can only be associated with one program.  If we ever change this, update this function call.
-            cache.delete(CACHE_PREFIX+class_manage_row_cache_key(pclass, None))
-
-            from esp.program.templatetags.class_render import cache_key_func, core_cache_key_func, minimal_cache_key_func, current_cache_key_func, preview_cache_key_func
-            cache.delete(cache_key_func(pclass))
-            cache.delete(core_cache_key_func(pclass))
-            cache.delete(minimal_cache_key_func(pclass))
-            cache.delete(current_cache_key_func(pclass))
-            cache.delete(preview_cache_key_func(pclass))
-
-            cache.delete(CACHE_PREFIX+cache_key_func(pclass))
-            cache.delete(CACHE_PREFIX+core_cache_key_func(pclass))
-            cache.delete(CACHE_PREFIX+minimal_cache_key_func(pclass))
-            cache.delete(CACHE_PREFIX+current_cache_key_func(pclass))
-            cache.delete(CACHE_PREFIX+preview_cache_key_func(pclass))
-
-            self.update_cache_students()
-            self.cache.update()
-
-        except:
-            pass
+        self.cache.update()
+    update_cache_students = update_cache
 
     def save(self, *args, **kwargs):
         super(ClassSection, self).save(*args, **kwargs)

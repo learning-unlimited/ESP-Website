@@ -38,15 +38,7 @@ from esp.web.util.template import cache_inclusion_tag
     
 register = template.Library()
 
-def schedule_key_func(room, program):
-    chars_to_avoid = '~!@#$%^&*(){}_ :;,"\\?<>'
-    clean_name = ''.join(c for c in room.name if c not in chars_to_avoid)
-    return 'SCHEDMATRIX__%s_%s' % (clean_name, program.id)
-
-def options_key_func(cls):
-    return 'CLASSOPTIONS__%s' % cls.id
-
-@cache_inclusion_tag(register, 'inclusion/program/matrix_row.html', cache_key_func=schedule_key_func)
+@cache_inclusion_tag(register, 'inclusion/program/matrix_row.html')
 def scheduling_matrix_row(room, program):
     #   Returns context needed for template.
     room.clear_schedule_cache(program)
@@ -56,7 +48,7 @@ def scheduling_matrix_row(room, program):
                 'room_sequence': [matrix_td(elt) for elt in room.schedule_sequence(program)]
             }
             
-@cache_inclusion_tag(register, 'inclusion/program/class_options.html', cache_key_func=options_key_func)
+@cache_inclusion_tag(register, 'inclusion/program/class_options.html')
 def class_options_row(cls):
     """ So it's no longer just one row.  This returns a block of rows for the scheduling table,
     one with information about the class and its teachers, and then one for setting the times

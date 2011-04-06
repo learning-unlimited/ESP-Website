@@ -45,7 +45,6 @@ from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.middleware              import ESPError
 from esp.resources.models        import ResourceRequest, ResourceType, Resource, ResourceAssignment
-from esp.program.templatetags.scheduling import schedule_key_func, options_key_func
 from datetime                    import timedelta
 
 class SchedulingModule(ProgramModuleObj):
@@ -78,8 +77,6 @@ class SchedulingModule(ProgramModuleObj):
         if extra == 'refresh':
             #   Clear out all of those inclusion tags.
             for cls in self.program.classes():
-                cache_key = options_key_func(cls)
-                cache.delete(cache_key)
                 for sec in cls.sections.all():
                     sec.clear_resource_cache()
                 for teacher in cls.teachers():
@@ -153,8 +150,6 @@ class SchedulingModule(ProgramModuleObj):
 
                     #   Clear the cache for this class and its new room.
                     sec.clear_resource_cache()
-                    opt_key = options_key_func(cls)
-                    cache.delete(opt_key)
                     if (sec.initial_rooms().count() > 0):
                         for room in sec.initial_rooms(): room.clear_schedule_cache(self.program)
 

@@ -6,24 +6,7 @@ from urllib import quote as urlencode
 from esp.web.util.template import cache_inclusion_tag
 register = template.Library()
 
-def cache_key(context):
-    try:
-        user = context['user']
-    except KeyError:
-        user = AnonymousUser()
-
-    try:
-        request = context['request']
-    except KeyError:
-        return 'DEFAULT_TOPBAR'
-
-    if not user.is_authenticated():
-        return 'TOPBAR__%s' % urlencode(str(request.path))
-
-    return 'TOPBAR__%s__%s' % (urlencode(str(request.path)), user.id)
-        
-
-@cache_inclusion_tag(register,'inclusion/web/navbar.html', takes_context = True, cache_key_func=cache_key)
+@cache_inclusion_tag(register,'inclusion/web/navbar.html', takes_context = True)
 def get_primary_nav(context):
     try:
         user = context['user']

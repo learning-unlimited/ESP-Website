@@ -58,22 +58,20 @@ class InclusionTagCacheDecorator(object):
     def __init__(self, register, file_name, context_class=AutoRequestContext,  takes_context=False, **kwargs):
         """
         This function will cache the rendering and output of a inclusion tag for cache_time seconds.
+        You may use the caching API to add dependencies for automatic invalidation by accessing the
+        'cached_function' attribute of the decorated function.
 
-        To use, just do the following::
+        To use, just do the following:
 
         from django import template
         from esp.web.util.template import cache_inclusion_tag
         
         register = template.Library()
 
-        def cache_key_func(foo, bar, baz):
-            # takes the same arguments as below
-            return str(foo)
-
-        @cache_inclusion_tag(register, 'path/to/template.html', cache_key_func=cache_key_func)
+        @cache_inclusion_tag(register, 'path/to/template.html')
         def fun_tag(foo, bar, baz):
             return {'foo': foo}
-
+        fun_tag.cached_function.depend_on_row(lambda: SomeModel, lambda some_instance: {'foo': some_instance.foo})
 
         The tag will now be cached.
         """
