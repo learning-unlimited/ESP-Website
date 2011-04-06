@@ -119,7 +119,7 @@ class ClassCreationController(object):
         for k, v in reg_form.cleaned_data.items():
             if k in custom_fields:
                 custom_data[k] = v
-            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges') and k[:8] is not 'section_':
+            elif k not in ('category', 'resources', 'viable_times', 'optimal_class_size_range', 'allowable_class_size_ranges', 'title') and k[:8] is not 'section_':
                 cls.__dict__[k] = v
         
         cls.custom_form_data = custom_data
@@ -132,10 +132,9 @@ class ClassCreationController(object):
         if 'optimal_class_size_range' in reg_form.cleaned_data and reg_form.cleaned_data['optimal_class_size_range']:
             cls.optimal_class_size_range = ClassSizeRange.objects.get(id=reg_form.cleaned_data['optimal_class_size_range'])
 
-        if cls.anchor.friendly_name != cls.title or cls.anchor.name != cls.emailcode or cls.id is None:
-            cls.save()
-            self.update_class_anchorname(cls)
-            cls.save()
+        #   Set title of class explicitly
+        cls.save()
+        self.update_class_anchorname(cls, reg_form.cleaned_data['title'])
 
         if 'allowable_class_size_ranges' in reg_form.cleaned_data and reg_form.cleaned_data['allowable_class_size_ranges']:
             cls.allowable_class_size_ranges = ClassSizeRange.objects.filter(id__in=reg_form.cleaned_data['allowable_class_size_ranges'])
@@ -159,11 +158,11 @@ class ClassCreationController(object):
         cls.parent_program = self.program
         cls.anchor = self.program.classes_node()
 
-    def update_class_anchorname(self, cls):
+    def update_class_anchorname(self, cls, title):
         nodestring = cls.emailcode()
         cls.anchor = self.program.classes_node().tree_create([nodestring])
         cls.anchor.tree_create(['TeacherEmail'])  ## Just to make sure it's there
-        cls.anchor.friendly_name = cls.title
+        cls.anchor.friendly_name = title
         cls.anchor.save()
 
     def associate_teacher_with_class(self, cls, user):
@@ -270,7 +269,7 @@ class ClassCreationController(object):
     def send_class_mail_to_directors(self, cls, user):
         if self.program.director_email:
             mail_ctxt = self.generate_director_mail_context(cls, user)
-            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title, \
+            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
                       ('%s <%s>' % (user.first_name + ' ' + user.last_name, user.email,)), \
                       [self.program.director_email], True)

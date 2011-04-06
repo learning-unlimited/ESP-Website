@@ -420,10 +420,6 @@ class ClassSection(models.Model):
     def _get_category(self):
         return self.parent_class.category
     category = property(_get_category)
-    
-    def _get_title(self):
-        return self.parent_class.title()
-    title = property(_get_title)
 
     def _get_room_capacity(self, rooms = None):
         if rooms == None:
@@ -493,8 +489,7 @@ class ClassSection(models.Model):
         self.cache = SectionCacheHelper(self)
 
     def __unicode__(self):
-        pc = self.parent_class
-        return '%s: %s' % (self.emailcode(), pc.title())
+        return '%s: %s' % (self.emailcode(), self.title())
 
     cache = ClassCacheHelper
 
