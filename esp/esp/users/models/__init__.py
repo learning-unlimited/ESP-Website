@@ -262,7 +262,7 @@ class ESPUser(User, AnonymousUser):
             # Disallow morphing into Administrators.
             # It's too broken, from a security perspective.
             # -- aseering 1/29/2010
-            raise ESPError(), "User '%s' is an administrator; morphing into administrators is not permitted." % user.username
+            raise ESPError(False), "User '%s' is an administrator; morphing into administrators is not permitted." % user.username
 
         logout(request)
         user.backend = 'django.contrib.auth.backends.ModelBackend'

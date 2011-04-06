@@ -352,7 +352,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                         raise forms.ValidationError("Please enter a unique %d-digit number." % int(sysinfo['num_digits']))
             if 'check_unique' in sysinfo and sysinfo['check_unique']:
                 if StudentInfo.objects.filter(schoolsystem_id=input_str).exclude(user=self._user).exists():
-                    raise forms.ValidationError("Someone else has already entered CPS ID number '%s'." % input_str)
+                    if len(input_str.strip('0')) != 0:
+                        raise forms.ValidationError("Someone else has already entered CPS ID number '%s'." % input_str)
         return self.cleaned_data['schoolsystem_id']
 
     def clean(self):

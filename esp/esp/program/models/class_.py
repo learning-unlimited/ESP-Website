@@ -1938,7 +1938,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             result.date = date_dir[1]
         teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.teachers()]
         result.teacher = ' and '.join(teacher_strs)
-        result.category = self.category.category
+        result.category = self.category.category[:32]
         result.title = self.title()
         result.description = self.class_info
         if self.prereqs and len(self.prereqs) > 0:
