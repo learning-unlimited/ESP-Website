@@ -69,7 +69,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             "link_title": "Register Your Classes",
             "module_type": "teach",
             "seq": 10,
-            "main_call": "listclasses"
+            "main_call": "listclasses",
+            "aux_calls": "ajax_requests,ajax_restypes"
             }
 
     

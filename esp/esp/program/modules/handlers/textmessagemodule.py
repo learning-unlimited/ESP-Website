@@ -49,6 +49,7 @@ class TextMessageModule(ProgramModuleObj):
             "admin_title": 'Text Message Reminders',
             "link_title": "Text Message Reminders",
             "module_type": "learn",
+            "main_call": "textmessage",
             "seq": 100
             }
 

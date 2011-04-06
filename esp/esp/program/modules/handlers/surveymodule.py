@@ -53,11 +53,13 @@ class SurveyModule(ProgramModuleObj):
             "admin_title": "Student Surveys",
             "link_title": "Surveys",
             "module_type": "learn",
+            "main_call": "survey",
             "seq": 20,
         }, {
             "admin_title": "Teacher Surveys",
             "link_title": "Survey",
             "module_type": "teach",
+            "main_call": "survey",
             "seq": 15,
         } ]
 
