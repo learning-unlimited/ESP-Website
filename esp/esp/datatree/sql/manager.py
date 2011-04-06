@@ -95,6 +95,7 @@ class DataTreeManager(models.Manager):
         If the get is only by URI, then a special function
         is used.
         """
+
         old_kwargs = kwargs.copy()
         if 'uri' in kwargs:
             uri = kwargs.pop('uri', None)
@@ -278,7 +279,8 @@ WHERE
         result = cursor.fetchall()
     
         if result[0][0] is None:
-            raise Exception('Unexpected SQL result')  
+            cursor.execute('SELECT id, parent_id, uri FROM datatree_datatree')
+            raise Exception('Unexpected SQL result: "%s" for query: \n%s\nExisting data (all rows in dB): %s' % (result, sql % tuple(params), cursor.fetchall()))
 
         if result[0][0] < 0:
             return -result[0][0]
