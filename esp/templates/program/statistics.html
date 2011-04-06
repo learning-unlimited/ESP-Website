@@ -5,11 +5,7 @@
 {% endblock %}
 
 {% block stylesheets %}
-<link href="{{ MEDIA_URL }}styles/main.css" rel="stylesheet" type="text/css">
-<link href="{{ MEDIA_URL }}styles/stanford.css" rel="stylesheet" type="text/css">
-<style type="text/css">
-    @import url("http://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css");
-</style>
+{{ block.super }}
 <style type="text/css">
 #statistics_form_contents ul
 {
@@ -33,13 +29,6 @@
     background-color: #999999;
 }
 </style>
-{% endblock %}
-
-{% block javascript %}
-{{ block.super }}
-<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/dojo/1.5/dojo/dojo.xd.js" djConfig="parseOnLoad: false"></script>
-<!-- <script type="text/javascript" src="/media/scripts/dojo-release-1.5.0/dojo/dojo.js"></script> -->
-<script type="text/javascript" src="/media/scripts/ajax_tools.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -83,7 +72,9 @@ function clear_widget(field_name)
 {
     if (dijit.byId)
         if (dijit.byId("id_" + field_name)) 
+        {
             dijit.byId("id_" + field_name).destroy();
+        }
 }
 
 function setup_update(field_name)

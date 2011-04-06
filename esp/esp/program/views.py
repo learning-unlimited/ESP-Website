@@ -650,6 +650,7 @@ def statistics(request, program=None):
             
             #   Return result
             context = {'form': form}
+            context['clear_first'] = True
             context['field_ids'] = get_field_ids(form)
             result = {}
             result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
@@ -714,6 +715,7 @@ def statistics(request, program=None):
             #   Generate response
             form.hide_unwanted_fields()
             context['form'] = form
+            context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
             
             if request.is_ajax():
@@ -728,6 +730,7 @@ def statistics(request, program=None):
             print form.errors
             form.hide_unwanted_fields()
             context = {'form': form}
+            context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
             if request.is_ajax():
                 return HttpResponse(json.dumps(result), mimetype='application/json')
