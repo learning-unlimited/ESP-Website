@@ -87,7 +87,7 @@ class StudentRegTest(ProgramFrameworkTest):
             response = self.client.get('/learn/%s/catalog' % program.getUrlBase())
             for cls in self.program.classes():
                 #   Find the portion of the catalog corresponding to this class
-                pattern = r"""<div class="show_class">\s*<table [^>]+ >\s*<tr onclick="swap_visible\('%d_details'\).*?</table>\s*</div>""" % cls.id
+                pattern = r"""<div class="show_class">\s*<table [^>]+ >\s*<tr onclick="swap_visible\('class_%d_details'\).*?</table>\s*</div>""" % cls.id
                 cls_fragment = re.search(pattern, response.content, re.DOTALL).group(0)
 
                 pat2 = r"""<th [^>]+>\s*(?P<title>.*?)\s*<br />.*?<td colspan="3" class="info">(?P<description>.*?)</td>.*?<strong>Enrollment</strong>(?P<enrollment>.*?)</td>"""
