@@ -434,6 +434,12 @@ class TeacherInfoForm(FormWithRequiredCss):
         elif Tag.getTag('teacherinfo_shirt_type_selection') == 'False':
             del self.fields['shirt_type']
             
+        if Tag.getTag('teacherinfo_shirt_size_required'):
+            self.fields['shirt_size'].required = True
+            self.fields['shirt_size'].widget.attrs['class'] = 'required'
+        if Tag.getTag('teacherinfo_reimbursement_checks') == 'False':
+            del self.fields['mail_reimbursement']
+            
     def clean(self):
         super(TeacherInfoForm, self).clean()
         cleaned_data = self.cleaned_data

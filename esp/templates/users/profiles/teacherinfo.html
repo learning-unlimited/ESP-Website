@@ -108,6 +108,7 @@
  </td>
 </tr>
 
+{% if form.mail_reimbursement %}
 <tr>
  <td><label for="id_mail_reimbursement">For reimbursement checks:</label></td>
  <td>{{ form.mail_reimbursement }} {% if form.mail_reimbursement.errors %}
@@ -115,6 +116,8 @@
    {% endif %}
  </td>
 </tr>
+{% endif %}
+
 {% endif %}
 
 
