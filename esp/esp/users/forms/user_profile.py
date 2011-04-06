@@ -104,9 +104,9 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
 
     def clean(self):
         super(UserContactForm, self).clean()
-        if Tag.getTag('request_student_phonenum', default='True') != 'False':
+        if self.user.isTeacher() or Tag.getTag('request_student_phonenum', default='True') != 'False':
             if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
-                raise forms.ValidationError("Please provide either a day phone or cell phone, for your personal contact information.")
+                raise forms.ValidationError("Please provide either a day phone or cell phone number in your personal contact information.")
         if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages.")
         return self.cleaned_data

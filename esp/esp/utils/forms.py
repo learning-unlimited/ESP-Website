@@ -117,6 +117,7 @@ class FormUnrestrictedOtherUser(FormWithRequiredCss):
 
     def __init__(self, user=None, *args, **kwargs):
         super(FormUnrestrictedOtherUser, self).__init__(*args, **kwargs)
+        self.user = user
         if user is None or not (hasattr(user, 'other_user') and user.other_user):
             pass
         else:
