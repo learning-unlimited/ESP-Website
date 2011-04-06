@@ -33,10 +33,10 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 {% end_inline_qsd_block %}
 
 {% if form.errors %}
-<h3 style="color:red">Please fix the error{{ form.errors|pluralize }} in the form.</h3>
+<h4 style="color:red">Please fix the following error{{ form.errors|pluralize }} in the form.</h3>
 <ul>
 {% for error in form.errors.items %}
-<li>{{ error.1 }}</li>
+{% if error.0 %}{{ error.0 }}: {% endif %}{{ error.1 }}
 {% endfor %}
 </ul>
 {% endif %}
