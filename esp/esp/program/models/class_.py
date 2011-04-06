@@ -894,7 +894,7 @@ class ClassSection(models.Model):
         return self.meeting_times.all().values_list('id', flat=True)
     timeslot_ids.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda instance, object: {'self': instance})
 
-    def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
+    def cannotAdd(self, user, checkFull=True, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
         # Test any scheduling constraints
         relevantConstraints = self.parent_program.getScheduleConstraints()
@@ -1679,7 +1679,7 @@ class ClassSubject(models.Model):
             teachers.append(name)
         return teachers
 
-    def cannotAdd(self, user, checkFull=True, request=False):
+    def cannotAdd(self, user, checkFull=True):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent() and not Tag.getTag("allowed_student_types", target=self.parent_program):
             return 'You are not a student!'
@@ -1699,12 +1699,8 @@ class ClassSubject(models.Model):
             scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
             return scrmi.temporarily_full_text
 
-        if request:
-            verb_override = request.get_node('V/Flags/Registration/GradeOverride')
-        else:
-            verb_override = GetNode('V/Flags/Registration/GradeOverride')
-
         if not Tag.getTag("allowed_student_types", target=self.parent_program):
+            verb_override = GetNode('V/Flags/Registration/GradeOverride')
             if user.getGrade() < self.grade_min or \
                    user.getGrade() > self.grade_max:
                 if not UserBit.UserHasPerms(user = user,
@@ -1717,14 +1713,14 @@ class ClassSubject(models.Model):
             return False
 
         for section in self.sections.all():
-            if user.isEnrolledInClass(section, request):
+            if user.isEnrolledInClass(section):
                 return 'You are already signed up for a section of this class!'
         
         res = False
         # check to see if there's a conflict with each section of the subject, or if the user
         # has already signed up for one of the sections of this class
         for section in self.sections.all():
-            res = section.cannotAdd(user, checkFull, request)
+            res = section.cannotAdd(user, checkFull)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
 

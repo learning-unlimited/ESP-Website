@@ -33,7 +33,7 @@ def render_class_core(cls):
 
     #   Show e-mail codes?  We need to look in the settings.
     scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
-    
+
     # Okay, chose a program? Good. Now fetch the color from its hiding place and format it...
     colorstring = prog.getColor()
     if colorstring is not None:
@@ -57,7 +57,7 @@ render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lam
 render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html')
-def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, request=None):
+def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     errormsg = None
     
     if timeslot:
@@ -76,13 +76,13 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
     prereg_url = cls.parent_program.get_learn_url() + 'addclass'
 
     if user and prereg_url and timeslot:
-        error1 = cls.cannotAdd(user, request=request)
+        error1 = cls.cannotAdd(user)
         # If we can't add the class at all, then we take that error message
         if error1:
             errormsg = error1
         else:  # there's some section for which we can add this class; does that hold for this one?
             if section:
-                errormsg = section.cannotAdd(user, request=request)
+                errormsg = section.cannotAdd(user)
         
     show_class =  (not filter) or (not errormsg)
     
@@ -94,16 +94,17 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None, r
             'errormsg':   errormsg,
             'temp_full_message': scrmi.temporarily_full_text,
             'show_class': show_class}
+render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_swap.html')
-def render_class_swap(cls, swap_class, user=None, prereg_url=None, filter=False, request=None):
+def render_class_swap(cls, swap_class, user=None, prereg_url=None, filter=False):
     errormsg = None
 
     if user and prereg_url:
         errormsg = cls.cannotAdd(user, True, request=request)
         if errormsg == 'Conflicts with your schedule!':
             errormsg = None
-            for currentclass in user.getEnrolledClasses(cls.parent_program, request).exclude(id=swap_class.id):
+            for currentclass in user.getEnrolledClasses(cls.parent_program).exclude(id=swap_class.id):
                 for time in currentclass.meeting_times.all():
                     if cls.meeting_times.filter(id = time.id).count() > 0:
                         errormsg = 'Conflicts with your schedule!'
@@ -121,11 +122,11 @@ def render_class_swap(cls, swap_class, user=None, prereg_url=None, filter=False,
             'show_class': show_class}
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_minimal.html')
-def render_class_minimal(cls, user=None, prereg_url=None, filter=False, request=None):
+def render_class_minimal(cls, user=None, prereg_url=None, filter=False):
     errormsg = None
 
     if user and prereg_url:
-        errormsg = cls.cannotAdd(user, True, request=request)
+        errormsg = cls.cannotAdd(user, True)
 
     show_class =  (not filter) or (not errormsg)
     
@@ -137,11 +138,11 @@ def render_class_minimal(cls, user=None, prereg_url=None, filter=False, request=
             'show_class': show_class}
             
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_current.html')
-def render_class_current(cls, user=None, prereg_url=None, filter=False, request=None):
+def render_class_current(cls, user=None, prereg_url=None, filter=False):
     errormsg = None
 
     if user and prereg_url:
-        errormsg = cls.cannotAdd(user, True, request=request)
+        errormsg = cls.cannotAdd(user, True)
 
     show_class =  (not filter) or (not errormsg)
 
@@ -150,11 +151,11 @@ def render_class_current(cls, user=None, prereg_url=None, filter=False, request=
                         
             
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_preview.html')
-def render_class_preview(cls, user=None, prereg_url=None, filter=False, request=None):
+def render_class_preview(cls, user=None, prereg_url=None, filter=False):
     errormsg = None
 
     if user and prereg_url:
-        errormsg = cls.cannotAdd(user, True, request=request)
+        errormsg = cls.cannotAdd(user, True)
 
     show_class =  (not filter) or (not errormsg)
     
@@ -166,11 +167,11 @@ def render_class_preview(cls, user=None, prereg_url=None, filter=False, request=
             'show_class': show_class}
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_row.html')
-def render_class_row(cls, user=None, prereg_url=None, filter=False, request=None):
+def render_class_row(cls, user=None, prereg_url=None, filter=False):
     errormsg = None
 
     if user and prereg_url:
-        errormsg = cls.cannotAdd(user, True, request=request)
+        errormsg = cls.cannotAdd(user, True)
 
     show_class =  (not filter) or (not errormsg)
     
