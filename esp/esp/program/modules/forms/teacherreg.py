@@ -63,7 +63,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
     class_info     = forms.CharField(   label='Course Description', widget=forms.Textarea(),
                                         help_text='Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)' )
-    prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(), required=False )
+    prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(), required=False,
+                                        help_text='If your course does not have prerequisites, leave this box blank.')
     
     # At the moment we don't use viable_times at all.
     viable_times   = forms.ChoiceField( label='Starting Time', choices=[] )
