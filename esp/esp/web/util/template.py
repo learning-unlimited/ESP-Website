@@ -96,36 +96,45 @@ class InclusionTagCacheDecorator(object):
 
             class InclusionNode(template.Node):
 
-                def __init__(self, vars_to_resolve):
-                    self.vars_to_resolve = vars_to_resolve
+                def __init__(in_self, vars_to_resolve):
+                    in_self.vars_to_resolve = vars_to_resolve
 
-                def render_given_args(self, args):
+                def __str__(in_self):
+                    return '<IN>'
+
+                def render_given_args(in_self, args):
                     dict = cached_function(*args)
 
-                    if not getattr(self, 'nodelist', False):
+                    if not getattr(in_self, 'nodelist', False):
                         from django.template.loader import get_template, select_template
                         if hasattr(file_name, '__iter__'):
                             t = select_template(file_name)
                         else:
                             t = get_template(file_name)
-                        self.nodelist = t.nodelist
-                    retVal = self.nodelist.render(context_class(dict, autoescape=self._context.autoescape))
+                        in_self.nodelist = t.nodelist
+                    return in_self.nodelist.render(context_class(dict, autoescape=in_self._context.autoescape))
 
-                    return retVal
                 render_given_args = cache_function(render_given_args, uid_extra='*'+describe_func(func))
                 render_given_args.get_or_create_token(('args',))
                 def render_map(**kwargs):
-                    result = {'args': [kwargs[key] for key in params if key in kwargs]}
+                    #   Reconstruct argument list in proper order
+                    result_args = []
+                    for key in params:
+                        if key in kwargs:
+                            result_args.append(kwargs[key])
+                        else:
+                            result_args.append(None)
+                    result = {'args': result_args}
                     #   Flush everything if we got a wildcard
                     for key in kwargs:
                         if is_wildcard(kwargs[key]):
-                            return {}
+                            result = {}
                     return result
                 render_given_args.depend_on_cache(cached_function, render_map)
 
-                def render(self, context):
+                def render(in_self, context):
                     resolved_vars = []
-                    for var in self.vars_to_resolve:
+                    for var in in_self.vars_to_resolve:
                         try:
                             resolved_vars.append(template.resolve_variable(var, context))
                         except:
@@ -136,9 +145,9 @@ class InclusionTagCacheDecorator(object):
                     else:
                         args = resolved_vars
 
-                    self._context = context
+                    in_self._context = context
 
-                    return self.render_given_args(args)
+                    return in_self.render_given_args(args)
 
             compile_func = curry(template.generic_tag_compiler, params, defaults, func.__name__, InclusionNode)
             compile_func.__doc__ = func.__doc__
