@@ -221,9 +221,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
             self.fields[field_name] = custom_fields[field_name]
         
         #   Modify help text on these fields if necessary.
-        custom_helptext_fields = ['requested_room', 'message_for_directors', 'purchase_requests', 'class_info'] + custom_fields.keys()
+        custom_helptext_fields = ['duration', 'class_size_max', 'num_sections', 'requested_room', 'message_for_directors', 'purchase_requests', 'class_info'] + custom_fields.keys()
         for field in custom_helptext_fields:
             tag_data = Tag.getTag('teacherreg_label_%s' % field)
+            if tag_data:
+                self.fields[field].label = tag_data
+            tag_data = Tag.getTag('teacherreg_help_text_%s' % field)
             if tag_data:
                 self.fields[field].help_text = tag_data
                 
