@@ -135,6 +135,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     curUser = request.user
     context = {'logged_in': request.user.is_authenticated() }
     context['user'] = request.user
+    context['program'] = prog
 
     curUser = ESPUser(curUser)
     curUser.updateOnsite(request)

@@ -1,5 +1,7 @@
 <!-- Begin Teacher Info Portion -->
 
+{% load render_qsd %}
+
 <tr>
  <th colspan="2">Teacher Information</th>
 </tr>
@@ -47,9 +49,13 @@
 {% if form.shirt_size %}
 
 <tr>
- <td colspan="2"><p>
-    <div class="info"><b>Shirts for teachers!</b> If you teach for ESP, you're entitled to at least a free T-shirt (along with all of the free food).  If you would like a shirt, please enter your preferred size and shape below.  This information is optional.
- </p></td>
+ <td colspan="2">
+    {% inline_qsd_block program.anchor teach:teacher_shirt_info request.user %}
+    <p>
+    <div class="info"><b>Shirts for teachers!</b> As a token of our appreciation for your teaching, you will receive a free shirt.  If you would like a shirt, please enter your preferred size {% if form.shirt_type %}and shape {% endif %}below.  This information is optional.
+    </p>
+    {% end_inline_qsd_block %}
+ </td>
 </tr>
 
 <tr>
