@@ -4,7 +4,7 @@
 # Michael Price, December 2010
 
 # Parameters
-GIT_REPO="espuser@esp.mit.edu:/esp/git/esp-project.git"
+GIT_REPO="http://diogenes.learningu.org/git/esp-project.git"
 APACHE_CONF_FILE="/etc/apache2/sites-available/esp_sites.conf"
 LOGDIR="/lu/logs"
 DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
@@ -13,12 +13,13 @@ DROPBOX_STARTUP_SCRIPT="/etc/rc.local"
 DROPBOX_PATH="/lu/software/dropbox"
 MAILMAN_LIST_PASSWORD="oobleck"
 MAILMAN_ADMIN="price@kilentra.net"
+CRON_FILE="/etc/crontab"
 
 #CURDIR=`dirname $0`
 CURDIR=`pwd`
 
 # Parse options
-OPTSETTINGS=`getopt -o 'ah' -l 'reset,git,settings,db,dropbox,apache,mailman,help' -- "$@"`
+OPTSETTINGS=`getopt -o 'ah' -l 'reset,git,settings,db,dropbox,apache,mailman,cron,help' -- "$@"`
 E_OPTERR=65
 if [ "$#" -eq 0 ]
 then   # Script needs at least one command-line argument.
@@ -43,6 +44,7 @@ do
     --settings) MODE_SETTINGS=true;;
     --apache) MODE_APACHE=true;;
     --mailman) MODE_MAILMAN=true;;
+    --cron) MODE_CRON=true;;
      *) break;;
   esac
 
@@ -64,6 +66,7 @@ Options:
     --settings: Write settings files
     --apache:   Set up Apache to serve the site using mod_wsgi
     --mailman:  Create a Mailman support list
+    --cron:     Add appropriate entry to cron for comm panel e-mail sending
 "
     exit 0
 fi
@@ -381,6 +384,7 @@ EOF
     mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/images
     mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/styles
     mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/uploaded
+    chmod -R 777 ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/uploaded
     cp -r ${DJANGO_DIR}/contrib/admin/media ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/admin
     ln -sf ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media $BASEDIR/esp/public/custom_media
     ln -sf $BASEDIR/esp/public/custom_media/images $BASEDIR/esp/public/media/images
@@ -476,7 +480,7 @@ EOF
     cat >>$APACHE_CONF_FILE <<EOF
 #   $INSTITUTION $GROUPNAME (automatically generated)
 WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
-<VirtualHost *:80>
+<VirtualHost *:80 *:81>
     ServerName $ESPHOSTNAME
     ServerAlias $SITENAME-orig.learningu.org
 
@@ -484,7 +488,7 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
     # RedirectMatch (.*) http://$SITENAME-backup.learningu.org\$1
 
     #   Caching - should use Squid if performance is really important
-    CacheEnable disk /
+    # CacheEnable disk /
 
     #   Static files
     Alias /media $BASEDIR/esp/public/media
@@ -516,6 +520,13 @@ EOF
     echo "Apache has been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
+fi
+
+if [[ "$MODE_CRON" || "$MODE_ALL" ]]
+then
+    cat >>$CRON_FILE <<EOF
+* * * * * root $BASEDIR/esp/dbmail_cron.py
+EOF
 fi
 
 # Done!
