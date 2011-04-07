@@ -177,6 +177,7 @@ Please review the costs below. If you are concerned that there is a problem, ple
 <input type="hidden" name="ponumber" value="{{ invoice.txn.id }}" />
 <input type="hidden" name="invoice_number" value="{{ invoice.locator }}" />
 <input type="hidden" name="userid" value="{{ user.id }}" />
+<input type="hidden" name="txntype" value="sale" />
 <input type="hidden" name="bcountry" value="US" />
 <input type="hidden" name="responseSuccessURL" value="http://{{ hostname }}/learn/{{ program.getUrlBase }}/payment_success" />
 <input type="hidden" name="responseFailureURL" value="http://{{ hostname }}/learn/{{ program.getUrlBase }}/payment_failure" />
