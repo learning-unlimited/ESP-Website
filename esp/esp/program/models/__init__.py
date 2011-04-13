@@ -274,7 +274,7 @@ class Program(models.Model):
     
     #from esp.program.models.class_ import ClassCategories
     
-    anchor = AjaxForeignKey(DataTree) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
+    anchor = AjaxForeignKey(DataTree,unique=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField()

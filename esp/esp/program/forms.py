@@ -41,12 +41,14 @@ from esp.utils.widgets import DateTimeWidget
 from esp.users.models import ESPUser
 from django.db.models import Q
 from django import forms
+from form_utils.forms import BetterModelForm
+
 
 def make_id_tuple(object_list):
     
     return tuple([(o.id, str(o)) for o in object_list])
 
-class ProgramCreationForm(forms.ModelForm):
+class ProgramCreationForm(BetterModelForm):
     """ Massive form for creating a new instance of a program. """
     
     term = forms.CharField(label='Term or year, in URL form (i.e. "2007_Fall")', widget=forms.TextInput(attrs={'size': '40'}))
@@ -72,16 +74,30 @@ class ProgramCreationForm(forms.ModelForm):
         self.fields['anchor'].queryset = DataTree.objects.filter(Q(child_set__program__isnull=False) | Q(parent=GetNode("Q/Programs"))).exclude(parent__name="Subprograms").distinct()
         self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
 
+        #self.fields.keyOrder = ['term','term_friendly','grade_min','grade_max','class_size_min','class_size_max','director_email','program_modules']
     def load_program(self, program):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
         pass
 
     # use field grouping
-    as_table = grouped_as_table
+    #as_table = grouped_as_table
 
     class Meta:
+        fieldsets = [
+			
+('Program Title', {'fields': ['term', 'term_friendly'] }),
+                     ('Program Constraints', {'fields':['grade_min','grade_max','class_size_min','class_size_max','program_size_max','program_allow_waitlist']}),
+                     ('About Program Creator',{'fields':['admins','director_email']}),
+                     ('Finacial Details' ,{'fields':['base_cost','finaid_cost']}),
+                     ('Program Internal details' ,{'fields':['anchor','program_modules','class_categories']}),
+                     ('Registrations Date',{'fields':['publish_start','publish_end','teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
+
+
+]                      # Here You can also add description for each fieldset.
+
         model = Program
-        
+ProgramCreationForm.base_fields['director_email'].widget = forms.TextInput(attrs={'size': 40})
+'''        
 ProgramCreationForm.base_fields['term'].line_group = -4
 ProgramCreationForm.base_fields['term_friendly'].line_group = -4
 
@@ -103,6 +119,7 @@ ProgramCreationForm.base_fields['publish_end'].line_group = 1
 
 ProgramCreationForm.base_fields['base_cost'].line_group = 4
 ProgramCreationForm.base_fields['finaid_cost'].line_group = 4
+'''
 
 class StatisticsQueryForm(forms.Form):
 
