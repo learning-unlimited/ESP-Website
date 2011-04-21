@@ -9,6 +9,8 @@
 {% endblock %}
 {% block content %}
 
+{% load main %}
+
 <div id="divmaintext">
 
 <h1>Manage Class {{ class.id }}: {{ class.title }}</h1>
@@ -76,6 +78,18 @@
                 Section {{ sec.index }}: {{ sec.num_students }} / {{ sec.num_students_prereg }} enrolled.  <a href="/teach/{{ program.getUrlBase }}/select_students/{{ sec.id }}">Enroll and reject students here.</a> <br />
             {% endfor %} 
         <td>
+    </tr>
+    <tr>
+        <th class="smaller">Additional information specified by teacher: </th>
+        <td>
+            <ul>
+            {% for key, value in class.custom_form_data.items %}
+                {% if value %}
+                <li style="color: black;"><i>{{ key|as_form_label }}</i>: {{ value }}</li>
+                {% endif %}
+            {% endfor %}
+            </ul>
+        </td>
     </tr>
 </table>
 
