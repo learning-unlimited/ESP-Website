@@ -129,8 +129,11 @@ class AvailabilityModule(ProgramModuleObj):
         teacher = ESPUser(request.user)
         time_options = self.program.getTimeSlots()
         #   Group contiguous blocks
-        time_groups = Event.group_contiguous(list(time_options))
-                
+        if Tag.getTag('availability_group_timeslots', default=True) == 'False':
+            time_groups = [list(time_options)]
+        else:
+            time_groups = Event.group_contiguous(list(time_options))
+
         if request.method == 'POST':
             #   Process form
             post_vars = request.POST
@@ -158,6 +161,7 @@ class AvailabilityModule(ProgramModuleObj):
                     teacher.addAvailableTime(self.program, a)
 
             context = {'groups': [{'selections': [{'checked': (t in available_slots), 'slot': t} for t in group]} for group in time_groups]}
+            context['num_groups'] = len(context['groups'])
             context['prog'] = self.program
             context['is_overbooked'] = (not self.isCompleted() and (self.user.getTaughtTime(self.program) > timedelta(0)))
             
