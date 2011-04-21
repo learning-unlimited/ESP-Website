@@ -69,13 +69,11 @@ We appreciate your interest!  If you have any questions, please <a href="mailto:
 
 </div>
 
+{# We used to check if module.useTemplate was true, but we'll just let the include tag silently fail.
+   This allows modules to link directly to a view AND show their template on the main page. #}
 {% for module in modules %}
-{% if module.useTemplate %}
-<a name="module-{{module.id}}"></a>
-<br />
- {% include module.getTemplate %}
-
-{% endif %}
+    <a name="module-{{module.id}}"></a>
+    {% include module.getTemplate %}
 {% endfor %}
 
 {% endblock %}
