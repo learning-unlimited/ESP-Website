@@ -41,12 +41,12 @@ class BCTeacherQuestionsForm(FormWithRequiredCss):
     video_adapter = forms.ChoiceField(label='Video Adapter', help_text='If you have a Mac, do you have a VGA video adapter?', choices=[('yes', 'Yes'), ('no', 'No'), ('pc', 'N/A - I have a PC')])
     
 class ChicagoTeacherQuestionsForm(FormWithRequiredCss):
-    room_type = forms.ChoiceField(label='Room type', choices=[('discussion', 'Discussion style'), ('lecture', 'Lecture style'), ('large', 'Large open room'), ('other', 'Other')])
-    discussion_type = forms.ChoiceField(label='', choices=[('', ''), ('carpet', 'Carpeted'), ('nocarpet', 'Not carpeted'), ('dontcare', 'No preference')], help_text='Specify your room preference here if you selected "Discussion" above.')
-    other_type = forms.ChoiceField(label='Additional room properties', choices=[('', ''), ('kitchen', 'Kitchen'), ('dance', 'Dance space with barre'), ('outdoors', 'Outdoors'), ('other', 'Other (please explain)')])
-    other_explain = forms.CharField(label='', help_text='Explain here if you chose "Other" above.')
+    room_type = forms.ChoiceField(label='Room type', choices=[('discussion', 'Discussion style'), ('lecture', 'Lecture style'), ('large', 'Large open room'), ('kitchen', 'Kitchen'), ('outdoors', 'Outdoors'), ('other', 'Other (please explain)')])
+    discussion_type = forms.ChoiceField(label='', choices=[('', ''), ('carpet', 'Carpeted'), ('nocarpet', 'Not carpeted'), ('dontcare', 'No preference')], help_text='Specify your room preference here if you selected "Large, open room" above.', required=False)
+    other_explain = forms.CharField(label='', help_text='Explain here if you chose "Other" above.', required=False)
+    dance_space = forms.BooleanField(label='',help_text='Please select this box if you would like a dance space with a barre.  We cannot guarantee that we will have enough of these rooms to meet demands, but we will work with you to find a room that will allow you teach an amazing class!')
     std_equipment = forms.MultipleChoiceField(label='Standard equipment requests', choices=[('audio', 'Audio support'), ('video', 'Visual support'), ('macadapter', 'Mac Adapter')], widget=forms.CheckboxSelectMultiple)
-    mac_adapter = forms.CharField(label='', help_text='If you have a Mac and know what kind of adapter you need, please write it in here.  Otherwise, leave this blank.')
+    mac_adapter = forms.CharField(label='', help_text='If you have a Mac and know what kind of adapter you need, please write it in here.  Otherwise, leave this blank.', required=False)
     special_equipment = forms.CharField(label='Special equipment requests', widget=forms.Textarea(attrs={'rows':4}), required=False,
                                          help_text='If you plan to purchase anything for your class, please indicate here what you plan to purchase and how much it will cost. Please talk with the program directors first before buying materials for your class!' )
     additional_comments = forms.CharField(label='Message for Directors', widget=forms.Textarea(attrs={'rows':4}), required=False,
