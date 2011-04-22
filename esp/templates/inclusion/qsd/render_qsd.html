@@ -2,17 +2,9 @@
 {% load markdown %}
 {% load latex %}
 
-{% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
-{% endblock %}
-
-{% block xtrajs %}
-    {{ block.super }}
-    <script type="text/javascript" src="/media/scripts/json2.js"></script>
-    <script type="text/javascript" src="/media/scripts/qsd.js"></script>
-{% endblock %}
-
+<link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
+<script type="text/javascript" src="/media/scripts/json2.js"></script>
+<script type="text/javascript" src="/media/scripts/qsd.js"></script>
 
 <div class="admin admin_hidden">
     <div class="qsd_header admin admin_hidden" onclick="qsd_inline_edit({{ qsdrec.id }});">This is quasi-static content.  Click here to edit the text; click outside the box to save changes.</div>

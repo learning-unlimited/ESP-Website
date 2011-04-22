@@ -1,16 +1,9 @@
 {% load smartypants %}
 {% load markdown %}
 
-{% block stylesheets %}
-    {{ block.super }}
-    <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
-{% endblock %}
-
-{% block xtrajs %}
-    {{ block.super }}
-    <script type="text/javascript" src="/media/scripts/json2.js"></script>
-    <script type="text/javascript" src="/media/scripts/qsd.js"></script>
-{% endblock %}
+<link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
+<script type="text/javascript" src="/media/scripts/json2.js"></script>
+<script type="text/javascript" src="/media/scripts/qsd.js"></script>
 
 {% if qsdrec %}
     {% if edit_bits %}
