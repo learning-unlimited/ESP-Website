@@ -26,6 +26,7 @@ from esp.utils.models import TemplateOverride
 from django.test import TestCase as DjangoTestCase
 
 from django.core.management import call_command
+from django.core.cache.backends.base import default_key_func
 from django.db.models import loading
 
 from django.template import loader, Template, Context, TemplateDoesNotExist
@@ -98,7 +99,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.assert_(not self._failed_import)
 
         # Make sure that we're actually using pylibmc.
-        # Note that this requires a patch to Django.
+        # Note that this requires a patch to Django (or Django version 1.3 or later).
         # Patch can be found at:  <http://code.djangoproject.com/ticket/11675>
         from pylibmc import Client
         from django.core.cache import cache
@@ -210,7 +211,11 @@ if MultihostCacheClass:
             they know nothing about Django at all, and they certainly don't know about the
             custom cache key setup that the Multihost class that we're testing, uses.
             """
-            return settings.CACHE_PREFIX + key
+
+            #   This is kind of a hack; this test case doesn't know about the Django configuration,
+            #   but the Django configuration controls what keys actually get sent to the
+            #   cache backend.  Here we're assuming that Django is running on defaults.
+            return default_key_func(settings.CACHE_PREFIX + key, '', '1')
         
         def validate_inAllClients(self, key, value):
             """ Validate that the given key is set in all clients to the given value """

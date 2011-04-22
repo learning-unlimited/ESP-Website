@@ -63,7 +63,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
     class_info     = forms.CharField(   label='Course Description', widget=forms.Textarea(),
                                         help_text='Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)' )
-    prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(), required=False )
+    prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(attrs={'rows': 4}), required=False,
+                                        help_text='If your course does not have prerequisites, leave this box blank.')
     
     # At the moment we don't use viable_times at all.
     viable_times   = forms.ChoiceField( label='Starting Time', choices=[] )
@@ -220,9 +221,12 @@ class TeacherClassRegForm(FormWithRequiredCss):
             self.fields[field_name] = custom_fields[field_name]
         
         #   Modify help text on these fields if necessary.
-        custom_helptext_fields = ['requested_room', 'message_for_directors', 'purchase_requests', 'class_info'] + custom_fields.keys()
+        custom_helptext_fields = ['duration', 'class_size_max', 'num_sections', 'requested_room', 'message_for_directors', 'purchase_requests', 'class_info'] + custom_fields.keys()
         for field in custom_helptext_fields:
             tag_data = Tag.getTag('teacherreg_label_%s' % field)
+            if tag_data:
+                self.fields[field].label = tag_data
+            tag_data = Tag.getTag('teacherreg_help_text_%s' % field)
             if tag_data:
                 self.fields[field].help_text = tag_data
                 

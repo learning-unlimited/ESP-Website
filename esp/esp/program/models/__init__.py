@@ -74,8 +74,10 @@ class ProgramModule(models.Model):
     admin_title = models.CharField(max_length=128)
 
     # Main view function associated with this Program Module
-    #   Not all program modules have main calls!
-    main_call  = models.CharField(max_length=32, blank=True, null=True)
+    #   Not all program modules have main calls, but this field
+    #   must contain the name of the default template if the main call
+    #   is not a function!
+    main_call  = models.CharField(max_length=32, default='main')
 
     # One of teach/learn/etc.; What is this module typically used for?
     module_type = models.CharField(max_length=32)
@@ -272,7 +274,7 @@ class Program(models.Model):
     
     #from esp.program.models.class_ import ClassCategories
     
-    anchor = AjaxForeignKey(DataTree) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
+    anchor = AjaxForeignKey(DataTree,unique=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField()

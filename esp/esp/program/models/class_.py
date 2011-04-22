@@ -420,10 +420,6 @@ class ClassSection(models.Model):
     def _get_category(self):
         return self.parent_class.category
     category = property(_get_category)
-    
-    def _get_title(self):
-        return self.parent_class.title()
-    title = property(_get_title)
 
     def _get_room_capacity(self, rooms = None):
         if rooms == None:
@@ -493,8 +489,7 @@ class ClassSection(models.Model):
         self.cache = SectionCacheHelper(self)
 
     def __unicode__(self):
-        pc = self.parent_class
-        return '%s: %s' % (self.emailcode(), pc.title())
+        return '%s: %s' % (self.emailcode(), self.title())
 
     cache = ClassCacheHelper
 
@@ -672,7 +667,6 @@ class ClassSection(models.Model):
             
     def clear_resource_cache(self):
         from django.core.cache import cache
-        from esp.program.templatetags.scheduling import options_key_func
         from esp.resources.models import increment_global_resource_rev
         cache_key1 = 'class__viable_times:%d' % self.id
         cache_key2 = 'class__viable_rooms:%d' % self.id
@@ -894,7 +888,7 @@ class ClassSection(models.Model):
         return self.meeting_times.all().values_list('id', flat=True)
     timeslot_ids.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda instance, object: {'self': instance})
 
-    def cannotAdd(self, user, checkFull=True, request=False, use_cache=True):
+    def cannotAdd(self, user, checkFull=True, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
         # Test any scheduling constraints
         relevantConstraints = self.parent_program.getScheduleConstraints()
@@ -1117,40 +1111,9 @@ class ClassSection(models.Model):
     def isRegOpen(self): return self.registration_status == 0
     def isRegClosed(self): return self.registration_status == 10
 
-    def update_cache_students(self):
-        from esp.program.templatetags.class_render import cache_key_func, core_cache_key_func
-        cache.delete(core_cache_key_func(self.parent_class))
-        cache.delete(cache_key_func(self.parent_class))
-
-        self.cache.update()
-
     def update_cache(self):
-        from esp.settings import CACHE_PREFIX
-
-        try: # if the section doesn't have a parent class yet, don't throw horrible errors
-            pclass = self.parent_class
-            from esp.program.templatetags.class_manage_row import cache_key as class_manage_row_cache_key
-            cache.delete(class_manage_row_cache_key(pclass, None)) # this cache_key doesn't actually care about the program, as classes can only be associated with one program.  If we ever change this, update this function call.
-            cache.delete(CACHE_PREFIX+class_manage_row_cache_key(pclass, None))
-
-            from esp.program.templatetags.class_render import cache_key_func, core_cache_key_func, minimal_cache_key_func, current_cache_key_func, preview_cache_key_func
-            cache.delete(cache_key_func(pclass))
-            cache.delete(core_cache_key_func(pclass))
-            cache.delete(minimal_cache_key_func(pclass))
-            cache.delete(current_cache_key_func(pclass))
-            cache.delete(preview_cache_key_func(pclass))
-
-            cache.delete(CACHE_PREFIX+cache_key_func(pclass))
-            cache.delete(CACHE_PREFIX+core_cache_key_func(pclass))
-            cache.delete(CACHE_PREFIX+minimal_cache_key_func(pclass))
-            cache.delete(CACHE_PREFIX+current_cache_key_func(pclass))
-            cache.delete(CACHE_PREFIX+preview_cache_key_func(pclass))
-
-            self.update_cache_students()
-            self.cache.update()
-
-        except:
-            pass
+        self.cache.update()
+    update_cache_students = update_cache
 
     def save(self, *args, **kwargs):
         super(ClassSection, self).save(*args, **kwargs)
@@ -1679,7 +1642,7 @@ class ClassSubject(models.Model):
             teachers.append(name)
         return teachers
 
-    def cannotAdd(self, user, checkFull=True, request=False):
+    def cannotAdd(self, user, checkFull=True):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent() and not Tag.getTag("allowed_student_types", target=self.parent_program):
             return 'You are not a student!'
@@ -1699,12 +1662,8 @@ class ClassSubject(models.Model):
             scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
             return scrmi.temporarily_full_text
 
-        if request:
-            verb_override = request.get_node('V/Flags/Registration/GradeOverride')
-        else:
-            verb_override = GetNode('V/Flags/Registration/GradeOverride')
-
         if not Tag.getTag("allowed_student_types", target=self.parent_program):
+            verb_override = GetNode('V/Flags/Registration/GradeOverride')
             if user.getGrade() < self.grade_min or \
                    user.getGrade() > self.grade_max:
                 if not UserBit.UserHasPerms(user = user,
@@ -1717,14 +1676,14 @@ class ClassSubject(models.Model):
             return False
 
         for section in self.sections.all():
-            if user.isEnrolledInClass(section, request):
+            if user.isEnrolledInClass(section):
                 return 'You are already signed up for a section of this class!'
         
         res = False
         # check to see if there's a conflict with each section of the subject, or if the user
         # has already signed up for one of the sections of this class
         for section in self.sections.all():
-            res = section.cannotAdd(user, checkFull, request)
+            res = section.cannotAdd(user, checkFull)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
 
@@ -1947,7 +1906,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             result.date = date_dir[1]
         teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.teachers()]
         result.teacher = ' and '.join(teacher_strs)
-        result.category = self.category.category
+        result.category = self.category.category[:32]
         result.title = self.title()
         result.description = self.class_info
         if self.prereqs and len(self.prereqs) > 0:

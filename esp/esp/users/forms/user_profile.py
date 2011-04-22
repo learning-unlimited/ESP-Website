@@ -104,9 +104,9 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
 
     def clean(self):
         super(UserContactForm, self).clean()
-        if Tag.getTag('request_student_phonenum', default='True') != 'False':
+        if self.user.isTeacher() or Tag.getTag('request_student_phonenum', default='True') != 'False':
             if self.cleaned_data.get('phone_day','') == '' and self.cleaned_data.get('phone_cell','') == '':
-                raise forms.ValidationError("Please provide either a day phone or cell phone, for your personal contact information.")
+                raise forms.ValidationError("Please provide either a day phone or cell phone number in your personal contact information.")
         if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages.")
         return self.cleaned_data
@@ -352,7 +352,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                         raise forms.ValidationError("Please enter a unique %d-digit number." % int(sysinfo['num_digits']))
             if 'check_unique' in sysinfo and sysinfo['check_unique']:
                 if StudentInfo.objects.filter(schoolsystem_id=input_str).exclude(user=self._user).exists():
-                    raise forms.ValidationError("Someone else has already entered CPS ID number '%s'." % input_str)
+                    if len(input_str.strip('0')) != 0:
+                        raise forms.ValidationError("Someone else has already entered CPS ID number '%s'." % input_str)
         return self.cleaned_data['schoolsystem_id']
 
     def clean(self):
@@ -433,6 +434,12 @@ class TeacherInfoForm(FormWithRequiredCss):
         elif Tag.getTag('teacherinfo_shirt_type_selection') == 'False':
             del self.fields['shirt_type']
             
+        if Tag.getTag('teacherinfo_shirt_size_required'):
+            self.fields['shirt_size'].required = True
+            self.fields['shirt_size'].widget.attrs['class'] = 'required'
+        if Tag.getTag('teacherinfo_reimbursement_checks') == 'False':
+            del self.fields['mail_reimbursement']
+            
     def clean(self):
         super(TeacherInfoForm, self).clean()
         cleaned_data = self.cleaned_data
@@ -477,6 +484,11 @@ StudentProfileForm = defaultclass(StudentProfileForm)
 
 class TeacherProfileForm(TeacherContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
+    def __init__(self, *args, **kwargs):
+        super(TeacherProfileForm, self).__init__(*args, **kwargs)
+        for field_name in Tag.getTag('teacher_profile_hide_fields', default='').split(','):
+            if field_name in self.fields:
+                del self.fields[field_name]
 
 class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """

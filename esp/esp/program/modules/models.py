@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.handlers import *
-
+from django.db.models import Q
 
 #from django.contrib import admin
 #from django.db import models 
@@ -59,7 +59,17 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False):
     """
     from esp.program.models import ProgramModule
     
-    mods = [ (datum, ProgramModule.objects.get_or_create(handler=datum["handler"], module_type=datum["module_type"], main_call=datum["main_call"], defaults=datum)) for datum in update_data ]
+    #   Select existing modules only by handler and module type, which are assumed to be unique;
+    #   don't create duplicate modules if the default main_call differs from the data.
+    mods = []
+    for datum in update_data:
+        query_kwargs = {'handler': datum["handler"], 'module_type': datum["module_type"]}
+        qs = ProgramModule.objects.filter(**query_kwargs)
+        if qs.exists():
+            mods.append((datum, (qs[0], False)))
+        else:
+            query_kwargs['defaults'] = datum
+            mods.append((datum, ProgramModule.objects.get_or_create(**query_kwargs)))
 
     if overwriteExisting:
         for (datum, (mod, created)) in mods:
@@ -75,7 +85,19 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False):
 
         #ProgramModule.objects.exclude(id__in=ids).delete()
 
-    
+    for (datum, (mod, created)) in mods:
+        #   If the module exists but the provided data adds fields that 
+        #   are null or blank, go ahead and add them.
+        #   This simplifies data migrations where the default module properties
+        #   are changed.
+        for key in datum:
+            if (key not in mod.__dict__) or (mod.__dict__[key] is None) or (mod.__dict__[key] == ''):
+                if datum[key] is not None and datum[key] != u'':
+                    print 'Setting field %s=%s on existing ProgramModule %s' % (key, datum[key], mod.handler)
+                    mod.__dict__[key] = datum[key] 
+        mod.save()
+
+
 def install():
     """ Install the initial ProgramModule table data for all currently-existing modules """
     from esp.program.modules import handlers

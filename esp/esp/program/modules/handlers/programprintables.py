@@ -960,7 +960,7 @@ Student schedule for %s:
             file_type = 'png'
 
         from django.conf import settings
-        context['PROJECT_ROOT'] = settings.PROJECT_ROOT
+        context['PROJECT_ROOT'] = settings.PROJECT_ROOT.rstrip('/') + '/'
     
         basedir = 'program/modules/programprintables/'
         if file_type == 'html':
@@ -1001,7 +1001,7 @@ Student schedule for %s:
         context['scheditems'] = scheditems
 
         from django.conf import settings
-        context['PROJECT_ROOT'] = settings.PROJECT_ROOT
+        context['PROJECT_ROOT'] = settings.PROJECT_ROOT.rstrip('/') + '/'
         
         return render_to_response(self.baseDir()+'flatstudentschedule.html', request, (prog, tl), context)
 

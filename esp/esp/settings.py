@@ -32,6 +32,10 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+import os
+
+PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
+
 # Configure Django to support ESP
 from django_settings import *
 
@@ -43,12 +47,12 @@ SERVER_EMAIL = 'server@%s' % EMAIL_HOST_SENDER
 ############################################
 
 # compute some derived settings
-MEDIA_ROOT = PROJECT_ROOT + MEDIA_ROOT_DIR
+MEDIA_ROOT = os.path.join(PROJECT_ROOT, MEDIA_ROOT_DIR)
 
 MANAGERS = ADMINS
 
 TEMPLATE_DIRS = (
-    PROJECT_ROOT+'templates',
+    os.path.join(PROJECT_ROOT, 'templates'),
 )
 
 DEFAULT_HOST = SITE_INFO[1]

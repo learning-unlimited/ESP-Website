@@ -45,8 +45,11 @@ Please enter the date ranges (bottom 3 rows) in one of the following formats:
 <p>
 Use a past program as a template:
 <select name="program_choose" id="id_program_choose" onchange="window.location='?template_prog='+document.getElementById('id_program_choose').value">
-<option />
+<option value = '0'> None </option>
 {% for program in programs %}
+{% if program.id == template_prog_id %}
+<option value="{{ program.id }}" selected = "selected">{{ program.niceName }}</option>
+{% endif %}
 <option value="{{ program.id }}">{{ program.niceName }}</option>
 {% endfor %}
 </select>
@@ -56,25 +59,52 @@ Use a past program as a template:
 
 <div id="alumni_form">
   <form action="{{ request.path }}" method="post">{% csrf_token %}
+  {% autoescape off %}
+  {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
+{% for fieldset in form.fieldsets %}
+  
+  <fieldset class="fieldset_{{ fieldset.name }}">
+  {% if fieldset.legend %}
+    <legend>{{ fieldset.legend }}</legend>
+  {% endif %}
+  {% if fieldset.description %}
+    <p class="description">{{ fieldset.description }}</p>
+  {% endif %}
   <table class="contact" align="center" width="550">
-  <thead>
-    <tr>
-      <th colspan="2">
-        Program Information
-      </th>
-    </tr>
-  </thead>
-  <tbody>
-  {% autoescape off %}{{ form }}{% endautoescape %}
-  </tbody>
-  <tbody>
+  {% for field in fieldset %}
+   
+   <tr>
+    {% if field.is_hidden %}
+     <td> {{ field }} </td>
+     {% else %}
+    {% if field.label  %}
+    <td>{{ field.label }} </td>
+    {% endif %}
+     {% if field %}
+      <td>  {{ field }} 
+    {% endif %}
+    {% for error in  field.errors %}
+    <br/>
+     <span> {{ error }} </span> </td>
+    {% endfor %}
+     </tr>
+      
+    {% endif %}
+  {% endfor %}
+  </table>
+  
+  </fieldset>
+{% endfor %}
+
+  {% endautoescape %}
+  <table>
     <tr> 
       <td colspan="2" class="submit" align="center">
         When finished, click here: <br /><br />
         <input class="fancybutton" type="submit" value="Make Program Happen!" />
       </td>
     </tr>
-  </tbody>
+  </table>
   </table>
 </form>
 </div>

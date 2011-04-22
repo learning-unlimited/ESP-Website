@@ -357,19 +357,22 @@ def manage_programs(request):
 @admin_required
 def newprogram(request):
     template_prog = None
-
-    if 'template_prog' in request.GET:
-        #try:
-        tprogram = Program.objects.get(id=int(request.GET["template_prog"]))
-
+    template_prog_id = None
+    if 'template_prog' in request.GET and (int(request.GET["template_prog"])) != 0:       # if user selects None which value is 0,so we need to check for 0.
+       #try:
+        template_prog_id = int(request.GET["template_prog"])
+        tprogram = Program.objects.get(id=template_prog_id)
         template_prog = {}
         template_prog.update(tprogram.__dict__)
         del template_prog["id"]
         
         template_prog["program_modules"] = tprogram.program_modules.all().values_list("id", flat=True)
         template_prog["class_categories"] = tprogram.class_categories.all().values_list("id", flat=True)
+        '''
+        As Program Name should be new for each new program created then it is better to not to show old program names in input box .
         template_prog["term"] = tprogram.anchor.name
         template_prog["term_friendly"] = tprogram.anchor.friendly_name
+        '''
         template_prog["anchor"] = tprogram.anchor.parent.id
         
         # aseering 5/18/2008 -- List everyone who was granted V/Administer on the specified program
@@ -476,7 +479,7 @@ def newprogram(request):
         else:
             form = ProgramCreationForm()
 
-    return render_to_response('program/newprogram.html', request, GetNode('Q/Programs/'), {'form': form, 'programs': Program.objects.all().order_by('-id')})
+    return render_to_response('program/newprogram.html', request, GetNode('Q/Programs/'), {'form': form, 'programs': Program.objects.all().order_by('-id'),'template_prog_id':template_prog_id})
 
 @csrf_exempt
 @login_required
@@ -650,6 +653,7 @@ def statistics(request, program=None):
             
             #   Return result
             context = {'form': form}
+            context['clear_first'] = True
             context['field_ids'] = get_field_ids(form)
             result = {}
             result['statistics_form_contents_html'] = render_to_string('program/statistics/form.html', context)
@@ -714,6 +718,7 @@ def statistics(request, program=None):
             #   Generate response
             form.hide_unwanted_fields()
             context['form'] = form
+            context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
             
             if request.is_ajax():
@@ -728,6 +733,7 @@ def statistics(request, program=None):
             print form.errors
             form.hide_unwanted_fields()
             context = {'form': form}
+            context['clear_first'] = False
             context['field_ids'] = get_field_ids(form)
             if request.is_ajax():
                 return HttpResponse(json.dumps(result), mimetype='application/json')

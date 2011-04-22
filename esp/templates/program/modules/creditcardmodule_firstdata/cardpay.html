@@ -84,6 +84,23 @@ function payOnce() {
   return true;
 }
 
+// allow adding a donation
+var initial_cost = {{ itemizedcosttotal|floatformat:2 }};
+var current_cost = initial_cost;
+var donation_set = false;
+function check_cost()
+{
+    var cost_last = document.getElementById("id_chargetotal").value;
+    var label_last = document.getElementById("id_total_label").innerHTML;
+    // console.log("Checkbox clicked, donation = " + donation_set + ", initial cost = " + initial_cost + ", current cost = " + cost_last + ", label = " + label_last);
+    donation_set = !donation_set;
+    if (donation_set)
+        current_cost = initial_cost + 10.0;
+    else
+        current_cost = initial_cost;			      
+    document.getElementById("id_chargetotal").value = current_cost.toFixed(2);
+    document.getElementById("id_total_label").innerHTML = "$" + current_cost.toFixed(2);
+}
 
 // test the form...make sure it's valid.
 function formTest() {
@@ -94,12 +111,13 @@ function formTest() {
                 ['baddr1', 'address line 1'],
                 ['bcity', 'city'],
                 ['bstate', 'state'],
-                ['bzip', 'zipcode'],
+                ['bzip', 'zipcode']{% if module.host_payment_form %},
 		['cctype', 'credit card type'],
 		['cardnumber', 'credit card number'],
 		['expmonth', 'credit card expiration month'],
 		['expyear', 'credit card expiration year'],
 		['cvm', 'CVM security code']
+{% endif %}
                 ];
                 
   for (var i=0; i<blankcheck.length; i++) {
@@ -125,8 +143,9 @@ function formTest() {
 <h3>Instructions for paying by credit card:</h3>
 <p>
 <ol>
-<li>Please review the costs below and make sure they are correct.  If you are concerned that there is a problem, please <a href="mailto:esp-web@mit.edu">e-mail the webmasters</a>.
-<li>Fill out your billing information on the form at the bottom of the page.  When you submit the form, your credit card information will be sent only to a secure <a href="http://www.firstdata.com/en_us/about-first-data/media/first-data-facts">third party payment processor</a>.  Then you will be redirected to a confirmation receipt.</li>
+<li>
+Please review the costs below. If you are concerned that there is a problem, please <a href="mailto:{{ support_email }}">e-mail the webmasters</a>.<br />
+<li>Fill out your billing information below. When you submit the form, your information is sent to a secure <a href="http://www.firstdata.com/en_us/about-first-data/media/first-data-facts" target="_blank">third party payment processor</a>.  Then you will be redirected to a confirmation receipt.</li>
 </ol>
 </p>
 
@@ -140,26 +159,29 @@ function formTest() {
 
 {% else %}
 
+{% comment %}This template has been made fully static for security reasons.
 {% load render_qsd %}
 {% inline_qsd_block program.anchor payment_directions request.user %}
+{% endcomment %}
 
 <p>If you would like to cancel at this time, you can <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.  Otherwise, please fill out the form below.  Required fields are boxed in a colored border.</p>
 
-{% end_inline_qsd_block %}
+{% comment %}{% end_inline_qsd_block %}{% endcomment %}
 
-<form onsubmit="return formTest();" action="https://www.staging.yourpay.com/lpc/servlet/lppay" method="post" autocomplete="off">{% csrf_token %} 
+<form onsubmit="return formTest();" action="{{ module.post_url }}" method="post" autocomplete="off">{% csrf_token %} 
 
-<input type="hidden" name="storename" value="{{ storename }}" />
-<input type="hidden" name="oid" value="{{ institution|slugify }}-{{ invoice.get_locator }}" />
-<input type="hidden" name="chargetotal" value="{{ itemizedcosttotal|floatformat:2 }}" />
-<input type="hidden" name="total" value="{{ itemizedcosttotal|floatformat:2 }}" />
+<input type="hidden" name="storename" value="{{ module.store_id }}" />
+<input type="hidden" name="oid" value="{{ module.invoice_prefix }}-{{ invoice.get_locator }}" />
+<input type="hidden" id="id_chargetotal" name="chargetotal" value="{{ itemizedcosttotal|floatformat:2 }}" />
+<input type="hidden" id="id_total" name="total" value="{{ itemizedcosttotal|floatformat:2 }}" />
 <input type="hidden" name="ponumber" value="{{ invoice.txn.id }}" />
 <input type="hidden" name="invoice_number" value="{{ invoice.locator }}" />
 <input type="hidden" name="userid" value="{{ user.id }}" />
+<input type="hidden" name="txntype" value="sale" />
 <input type="hidden" name="bcountry" value="US" />
 <input type="hidden" name="responseSuccessURL" value="http://{{ hostname }}/learn/{{ program.getUrlBase }}/payment_success" />
 <input type="hidden" name="responseFailureURL" value="http://{{ hostname }}/learn/{{ program.getUrlBase }}/payment_failure" />
-<input type="hidden" name="comments" value="LU Credit Card Invoice {{ institution|slugify}}-{{ invoice.get_locator }} (for {{ program.niceName }} at {{ institution }})" />
+<input type="hidden" name="comments" value="LU Credit Card Invoice {{ module.invoice_prefix }}-{{ invoice.get_locator }} (for {{ program.niceName }} at {{ institution }})" />
 
 <p>
 Autofill contact information:
@@ -167,14 +189,13 @@ Autofill contact information:
    title="Autofill with parent information">with Guardian Information</a> |
 <a href="javascript:autofill(user_contact);"
    title="Autofill with student information">with Student Information</a>
-<em>(JavaScript required)</em>
 <br />
 </p>
 
 
 <div id="program_form">
 
-<table width="500" cellpadding="2" cellspacing="2">
+<table width="500" cellpadding="2" cellspacing="2" align="center">
 <tr>
   <th colspan="2">Credit Card Information</th>
 </tr>
@@ -248,6 +269,7 @@ Autofill contact information:
         ZIP code: <input type="text" class="required" name="bzip" id="id_bzip" maxlength="5" size="5"/>
     </td>
 </tr>
+{% if module.host_payment_form %}
 <tr>
     <td><b>Credit Card:</b>
     </td>
@@ -292,15 +314,25 @@ Autofill contact information:
       CVM Security Code: <input type="text" class="required" size="3" maxlength="3" name="cvm" id="id_cvm" />
     </td>
 </tr>
-
+{% else %}
 <tr>
-  <td colspan="2" align="center" style="padding: 10px !important"><b>Total charge: </b><tt style="border: 1px solid black; padding: 1px 20px 1px 1px; font-size: 140%" width="0px"> ${{ itemizedcosttotal|floatformat:2 }} </tt><br /></td>
+<td colspan="2">You will be asked for your credit card information on the next page.</td>
+</tr>
+{% endif %}
+{% if module.offer_donation %}
+<tr>
+    <td colspan="2">
+      <input type="checkbox" onclick="check_cost();" />Check here to support Learning Unlimited's mentoring of UMBC Splash with an additional donation of $10.  <a href="http://www.learningu.org/about" target="_blank">Learning Unlimited</a> is a 501(c)(3) nonprofit that mentored the UMBC students in organizing this program and provided this Web site. </td>
+</tr>
+{% endif %}
+<tr>
+  <td colspan="2" align="center" style="padding: 10px !important"><b>Total amount: </b><tt><div id="id_total_label" style="border: 1px solid black; padding: 1px 20px 1px 1px; font-size: 140%">${{ itemizedcosttotal|floatformat:2 }}</div></tt><br /></td>
   </tr>
 
 <tr>
   <td colspan="2" align="center" />
   Please check your form and click here to submit. <br />
-      <input id="submit_form" class="fancybutton" type="submit" value="Submit Payment"><br/>
+      <input id="submit_form" class="fancybutton" type="submit" value="{% if module.host_payment_form %}Submit Payment{% else %}Continue to Secure Payment{% endif %}"><br/>
       </td>
 </tr>
 </table>

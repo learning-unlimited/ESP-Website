@@ -325,10 +325,7 @@ class Resource(models.Model):
     
     def clear_schedule_cache(self, program):
         from django.core.cache import cache
-        from esp.program.templatetags.scheduling import schedule_key_func
         cache.delete(self.cache_key(program))
-        other_key = schedule_key_func(self, program)
-        cache.delete(other_key)
     
     def schedule_sequence(self, program):
         """ Returns a list of strings, which are the status of the room (and its identical

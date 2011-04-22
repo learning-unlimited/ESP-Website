@@ -49,7 +49,10 @@ psycopg2        Python (easy_install)   N/A      (default is psycopg2)
 django-debug-toolbar    Python (easy_install)   N/A       * Optional
 
 LaTeX           System                  texlive, texlive-latex-extra
+libcurl         System                  libcurl4-openssl-dev
+libmemcached    System                  libmemcached2, libmemcached-dev
 libmemcache0    System                  libmemcache0
+libpq           System                  libpq-dev
 ImageMagick     System                  imagemagick
 memcached       System                  memcached
 dvipng          System                  dvipng
@@ -132,7 +135,7 @@ initialize your database from a backup of your organization's database.
 Otherwise, use Django's manage.py script to initialize your database:
 
 $ cd ./esp
-$ ./manage.py syncdb
+$ ./manage.py syncdb --all
 
 Django will ask you to add a super user.  Please do this so that you
 have administrative access when you start using the site.

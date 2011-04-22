@@ -217,7 +217,7 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this
                                'esp.context_processors.espuserified_request',
                                'esp.context_processors.preload_images',
                                'django.core.context_processors.i18n',
-                               'django.core.context_processors.auth',
+                               'django.contrib.auth.context_processors.auth',
                                'django.core.context_processors.media',
                                )
 
@@ -268,33 +268,13 @@ email_choices = (
     ('esp','Unknown'),
     ('general','General ESP'),
     ('esp-web','Web Site Problems'),
-    ('satprep','SATPrep'),
-    ('splash','Splash!'),
-    ('hssp', 'HSSP'),
-    ('junction', 'Junction'),
-    ('delve',    'Delve'),
-    ('splashonwheels', 'Splash On Wheels'),
-    ('proveit',        'ProveIt'),
-    ('membership',     'Student Reps'),
     ('relations',  'K-12 School Relations'),
-    ('mit',        'MIT Relations'),
-
     )
 
 # corresponding email addresses                                                                                                                                                     
 email_addresses = {
-    'esp'     : 'esp@mit.edu',
-    'general'     : 'esp@mit.edu',
-    'esp-web' : 'web@esp.mit.edu',
-    'satprep' : 'satprep-director@mit.edu',
-    'splash'  : 'esp@mit.edu',
-    'hssp'    : 'hssp-director@mit.edu',
-    'junction': 'junction-director@mit.edu',
-    'splashonwheels': 'splash-on-wheels@mit.edu',
-    'proveit' : 'proveit-director@mit.edu',
-    'relations': 'esp@mit.edu',
-    'mit'      : 'esp-publicity@mit.edu',
-    'membership': 'esp-membership@mit.edu',
-    'delve'    : 'delve-director@mit.edu',
-
+    'esp'     : DEFAULT_EMAIL_ADDRESSES['default'],
+    'general'     : DEFAULT_EMAIL_ADDRESSES['default'],
+    'esp-web' : DEFAULT_EMAIL_ADDRESSES['support'],
+    'relations': DEFAULT_EMAIL_ADDRESSES['default'],
     }

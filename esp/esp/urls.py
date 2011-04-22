@@ -31,6 +31,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
+import os
 from django.conf.urls.defaults import patterns, include, handler500, handler404
 from django.contrib import admin
 from esp.settings import PROJECT_ROOT, MEDIA_ROOT
@@ -46,7 +47,7 @@ handler500 = 'esp.web.util.main.error500'
 # Static media
 urlpatterns = patterns('django.views.static',
                        (r'^media/(?P<path>.*)$', 'serve', {'document_root': MEDIA_ROOT}),
-                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': PROJECT_ROOT + 'admin/media/'}),
+                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': os.path.join(PROJECT_ROOT, 'admin/media/')}),
                        )
 
 # Admin stuff
@@ -54,7 +55,7 @@ urlpatterns += patterns('',
                      (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
                      (r'^admin/ajax_children/?', 'esp.datatree.views.ajax_children'),
-                     (r'^admin/(.*)', admin.site.root),
+                     (r'^admin/', include(admin.site.urls)),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
                      #(r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
                      (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$','django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),

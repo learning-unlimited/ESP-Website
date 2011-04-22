@@ -1,2 +1,3 @@
 DATABASE_USER     = 'username'
 DATABASE_PASSWORD = 'password'
+MAILMAN_PASSWORD  = 'password'
