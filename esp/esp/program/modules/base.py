@@ -209,6 +209,7 @@ class ProgramModuleObj(models.Model):
         result_modules = list(other_modules)
         for mod in result_modules:
             mod.__class__ = mod.module.getPythonClass()
+            mod.fixExtensions()
             
         return result_modules
         

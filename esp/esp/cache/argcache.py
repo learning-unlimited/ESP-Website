@@ -470,7 +470,7 @@ class ArgCache(WithDelayableMethods):
         def delete_cb(sender, **kwargs):
             self.delete_key_sets(key_set)
         signals.post_save.connect(delete_cb, sender=Model, weak=False)
-        signals.post_delete.connect(delete_cb, sender=Model, weak=False)
+        signals.pre_delete.connect(delete_cb, sender=Model, weak=False)
     depend_on_model.alters_data = True
 
     @delay_method
@@ -511,7 +511,7 @@ class ArgCache(WithDelayableMethods):
             if new_key_set is not None:
                 self.delete_key_sets(new_key_set)
         signals.post_save.connect(delete_cb, sender=Model, weak=False)
-        signals.post_delete.connect(delete_cb, sender=Model, weak=False)
+        signals.pre_delete.connect(delete_cb, sender=Model, weak=False)
     depend_on_row.alters_data = True
 
     @delay_method

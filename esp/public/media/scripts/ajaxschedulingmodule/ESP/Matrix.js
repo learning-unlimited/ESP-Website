@@ -112,6 +112,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			if (!(data.nowriteback)) {
 			    if (data.blocks.length > 0) {
 				var req = { action: 'assignreg',
+                        csrfmiddlewaretoken: csrfmiddlewaretoken,
 					    cls: data.section.uid,
 					    block_room_assignments: data.blocks.map(function(x) { return x.time.uid + "," + x.room.uid; } ).join("\n") };
 
@@ -144,6 +145,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 		ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
 			if (!(data.nowriteback)) {
 			    var req = { action: 'deletereg',
+                    csrfmiddlewaretoken: csrfmiddlewaretoken,
 					cls: data.section.uid };
 
 			    $j.post('ajax_schedule_class', req, function(data, status) {

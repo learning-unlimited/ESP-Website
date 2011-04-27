@@ -39,12 +39,8 @@ other servers need to regenerate their corresponding cached content).
 """
 
 from django.core.cache.backends.base import BaseCache
-try:
-	from esp.utils.pylibcmd import CacheClass as MemcacheCacheClass
-except:
-	from django.core.cache.backends.memcached import CacheClass as MemcacheCacheClass
+from django.core.cache.backends.memcached import PyLibMCCache as MemcacheCacheClass
 from esp import settings
-
 
 class CacheClass(BaseCache):
     def __init__(self, server, params):
@@ -64,42 +60,42 @@ class CacheClass(BaseCache):
         """ Remove the CACHE_PREFIX prefix from a key """
         return key[len(settings.CACHE_PREFIX):]
     
-    def add(self, key, value, timeout=0):
+    def add(self, key, value, timeout=0, version=None):
         # Update all caches that we're keeping up-to-date
         # But, don't bother doing anything to remote caches if we don't actually add anything locally
-        retVal = self._wrapped_caches[0].add(self.make_key(key), value, timeout=timeout)
+        retVal = self._wrapped_caches[0].add(self.make_key(key), value, timeout=timeout, version=version)
 
         if retVal:
             for wrapped_cache in self._wrapped_caches[1:]:
-                wrapped_cache.add(self.make_key(key), value, timeout=timeout)
+                wrapped_cache.add(self.make_key(key), value, timeout=timeout, version=version)
 
             # Delete all cache keys from caches that we're flushing on edit
             for wrapped_cache in self._wrapped_flush_caches:
-                wrapped_cache.delete(self.make_key(key))
+                wrapped_cache.delete(self.make_key(key), version=version)
 
         return retVal
 
-    def get(self, key, default=None):
+    def get(self, key, default=None, version=None):
         # No need to touch remote caches here
-        return self._wrapped_caches[0].get(self.make_key(key), default=default)
+        return self._wrapped_caches[0].get(self.make_key(key), default=default, version=version)
 
-    def set(self, key, value, timeout=0):
+    def set(self, key, value, timeout=0, version=None):
         # Set this key in all caches that we're keeping up-to-date
         for wrapped_cache in self._wrapped_caches:
-            wrapped_cache.set(self.make_key(key), value, timeout=timeout)
+            wrapped_cache.set(self.make_key(key), value, timeout=timeout, version=version)
 
         # Delete all cache keys from caches that we're flushing on edit
         for wrapped_cache in self._wrapped_flush_caches:
-            wrapped_cache.delete(self.make_key(key))
+            wrapped_cache.delete(self.make_key(key), version=version)
         
-    def delete(self, key):
+    def delete(self, key, version=None):
         # Delete this key everywhere
         for wrapped_cache in self._wrapped_caches + self._wrapped_flush_caches:
-            wrapped_cache.delete(self.make_key(key))
+            wrapped_cache.delete(self.make_key(key), version=version)
 
-    def get_many(self, keys):
+    def get_many(self, keys, version=None):
         # No need to touch more than one cache here, just pick one and run with it
-        retDict = self._wrapped_caches[0].get_many([self.make_key(key) for key in keys])
+        retDict = self._wrapped_caches[0].get_many([self.make_key(key) for key in keys], version=version)
 
         # Get rid of cache prefixes in the returned keys
         cleanedDict = {}
@@ -108,27 +104,27 @@ class CacheClass(BaseCache):
 
         return cleanedDict
 
-    def has_key(self, key):
+    def has_key(self, key, version=None):
         # Do we have this key locally?
-        return self._wrapped_caches[0].has_key(self.make_key(key))
+        return self._wrapped_caches[0].has_key(self.make_key(key), version=version)
 
-    def incr(self, key, delta=1):
+    def incr(self, key, delta=1, version=None):
         # Update this key in all caches that we're keeping up-to-date
         for wrapped_cache in self._wrapped_caches:
-            return wrapped_cache.incr(self.make_key(key), delta)
+            return wrapped_cache.incr(self.make_key(key), delta, version=version)
 
         # Delete all cache keys from caches that we're flushing on edit
         for wrapped_cache in self._wrapped_flush_caches:
-            wrapped_cache.delete(self.make_key(key))
+            wrapped_cache.delete(self.make_key(key), version=version)
 
-    def decr(self, key, delta=1):
+    def decr(self, key, delta=1, version=None):
         # Update this key in all caches that we're keeping up-to-date
         for wrapped_cache in self._wrapped_caches:
-            return wrapped_cache.decr(self.make_key(key), delta)
+            return wrapped_cache.decr(self.make_key(key), delta, version=version)
 
         # Delete all cache keys from caches that we're flushing on edit
         for wrapped_cache in self._wrapped_flush_caches:
-            wrapped_cache.delete(self.make_key(key))        
+            wrapped_cache.delete(self.make_key(key), version=version)        
 
     def __contains__(self, key):
         # Do we have this key locally?

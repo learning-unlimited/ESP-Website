@@ -484,6 +484,11 @@ StudentProfileForm = defaultclass(StudentProfileForm)
 
 class TeacherProfileForm(TeacherContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
+    def __init__(self, *args, **kwargs):
+        super(TeacherProfileForm, self).__init__(*args, **kwargs)
+        for field_name in Tag.getTag('teacher_profile_hide_fields', default='').split(','):
+            if field_name in self.fields:
+                del self.fields[field_name]
 
 class GuardianProfileForm(UserContactForm, GuardianInfoForm):
     """ Form for guardian profiles """

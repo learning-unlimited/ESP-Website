@@ -96,7 +96,6 @@ class ClassCreationController(object):
             restype_formset = None
             
         if not reg_form.is_valid() or (resource_formset and not resource_formset.is_valid()) or (restype_formset and not restype_formset.is_valid()):
-            print "classreg get_forms", reg_form.errors, "\n", resource_formset.errors, "\n", restype_formset.errors
             raise ClassCreationValidationError, (reg_form, resource_formset, restype_formset, "Invalid form data.  Please make sure you are using the official registration form, on esp.mit.edu.  If you are, please let us know how you got this error.")
 
         return reg_form, resource_formset, restype_formset

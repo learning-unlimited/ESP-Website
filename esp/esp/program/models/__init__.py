@@ -995,6 +995,8 @@ class Program(models.Model):
                 if profile is not None:
                     if shirt_count.has_key(profile.shirt_type) and shirt_count[profile.shirt_type].has_key(profile.shirt_size):
                         shirt_count[ profile.shirt_type ][ profile.shirt_size ] += 1
+                    if not profile.shirt_type and profile.shirt_size:
+                        shirt_count['M'][profile.shirt_size] += 1
         shirts['teachers'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
 
         return {'shirts' : shirts, 'shirt_sizes' : shirt_sizes, 'shirt_types' : shirt_types }

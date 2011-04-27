@@ -218,7 +218,7 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this
                                'esp.context_processors.espuserified_request',
                                'esp.context_processors.preload_images',
                                'django.core.context_processors.i18n',
-                               'django.core.context_processors.auth',
+                               'django.contrib.auth.context_processors.auth',
                                'django.core.context_processors.media',
                                )
 

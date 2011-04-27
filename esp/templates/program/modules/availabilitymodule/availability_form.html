@@ -44,9 +44,11 @@ We have detected that you are currently signed up to teach more hours of class t
         <th colspan="2" align="center">Time Slots for {{ prog.niceName }}</th>
     </tr>
     {% for h in groups %}
+    {% if num_groups != 1 %}
     <tr>
         <th class="small" colspan="2" align="center"><b>Block {{ forloop.counter }} {% ifchanged h.selections.0.slot.start.day %}({{ h.selections.0.slot.start|date:"D M d, Y" }}){% endifchanged %}</b></th>
     </tr>
+    {% endif %}
         {% for t in h.selections %}
         <tr>
             <td align="center"><input type="checkbox" name="timeslots" value="{{ t.slot.id }}" {% if t.checked %}checked{% endif %} /></td>

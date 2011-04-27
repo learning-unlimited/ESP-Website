@@ -1,9 +1,6 @@
 "Memcached cache backend"
 from django.core.cache.backends.base import BaseCache
-try:
-	from esp.utils.pylibcmd import CacheClass as PylibmcCacheClass
-except:
-	from django.core.cache.backends.memcached import CacheClass as PylibmcCacheClass
+from django.core.cache.backends.memcached import PyLibMCCache as PylibmcCacheClass
 from esp import settings
 from esp.utils.try_multi import try_multi
 from esp.utils import ascii
@@ -33,13 +30,15 @@ class CacheClass(BaseCache):
         if not hasattr(settings, 'CACHE_PREFIX'):
             settings.CACHE_PREFIX = ''
 
-    def make_key(self, key):
+    def make_key(self, key, version=None):
         rawkey = ascii( NO_HASH_PREFIX + settings.CACHE_PREFIX + key )
-        if len(rawkey) <= MAX_KEY_LENGTH:
+        django_prefix = super(CacheClass, self).make_key('', version=version)
+        real_max_length = MAX_KEY_LENGTH - len(django_prefix)
+        if len(rawkey) <= real_max_length:
             return rawkey
         else: # We have an oversized key; hash it
             hashkey = HASH_PREFIX + hashlib.md5(key).hexdigest()
-            return hashkey + '_' + rawkey[ : MAX_KEY_LENGTH - len(hashkey) - 1 ]
+            return hashkey + '_' + rawkey[ :  real_max_length - len(hashkey) - 1 ]
 
     def _failfast_test(self, key, value):
         if FAILFAST:
@@ -50,30 +49,30 @@ class CacheClass(BaseCache):
                 print "Data size for key '%s' is dangerously large: %d bytes" % (key, data_size)
 
     @try_multi(8)
-    def add(self, key, value, timeout=0):
+    def add(self, key, value, timeout=0, version=None):
         self._failfast_test(key, value)
-        return self._wrapped_cache.add(self.make_key(key), value, timeout=timeout)
+        return self._wrapped_cache.add(self.make_key(key, version), value, timeout=timeout, version=version)
 
     @try_multi(8)
-    def get(self, key, default=None):
-        val = self._wrapped_cache.get(self.make_key(key), default=default)
+    def get(self, key, default=None, version=None):
+        val = self._wrapped_cache.get(self.make_key(key, version), default=default, version=version)
         if self.idebug: self._idebuglog("get", key, val)
         return val
 
     @try_multi(8)
-    def set(self, key, value, timeout=0):
+    def set(self, key, value, timeout=0, version=None):
         self._failfast_test(key, value)
-        return self._wrapped_cache.set(self.make_key(key), value, timeout=timeout)
+        return self._wrapped_cache.set(self.make_key(key, version), value, timeout=timeout, version=version)
 
     @try_multi(8)
-    def delete(self, key):
+    def delete(self, key, version=None):
         if self.idebug: self._idebuglog("delete", key, None)
-        return self._wrapped_cache.delete(self.make_key(key))
+        return self._wrapped_cache.delete(self.make_key(key, version), version=version)
 
     @try_multi(8)
-    def get_many(self, keys):
-        keys_dict = dict((self.make_key(key), key) for key in keys)
-        wrapped_ans = self._wrapped_cache.get_many(keys_dict.keys())
+    def get_many(self, keys, version=None):
+        keys_dict = dict((self.make_key(key, version), key) for key in keys)
+        wrapped_ans = self._wrapped_cache.get_many(keys_dict.keys(), version=version)
         ans = {}
         for k,v in wrapped_ans.items():
             ans[keys_dict[k]] = v
@@ -81,13 +80,13 @@ class CacheClass(BaseCache):
 
     # Django 1.1 feature
     # Don't try_multi, that could be all kinds of bad...
-    def incr(self, key, delta=1):
-        return self._wrapped_cache.incr(self.make_key(key), delta)
+    def incr(self, key, delta=1, version=None):
+        return self._wrapped_cache.incr(self.make_key(key, version), delta, version=version)
 
     # Django 1.1 feature
     # Don't try_multi, that could be all kinds of bad...
-    def decr(self, key, delta=1):
-        return self._wrapped_cache.decr(self.make_key(key), delta)
+    def decr(self, key, delta=1, version=None):
+        return self._wrapped_cache.decr(self.make_key(key, version), delta, version=version)
 
     def close(self, **kwargs):
         self._wrapped_cache.close()
