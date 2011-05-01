@@ -15,6 +15,14 @@ class SSLAuthBackend:
 
     In all methods, the ssl_info parameter is supposed to be an SSLInfo instance
     """
+
+    # At the moment, we don't support any authz stuff, so the value shouldn't
+    # matter
+    # If we start supporting authz, it would be good to support these being
+    # set to true --- I think we might be required to in a few versions?
+    supports_anonymous_user = True
+    supports_inactive_user = True
+    supports_object_permissions = True
     
     def authenticate(self, ssl_info):
         cert = self.get_certificate(ssl_info)
