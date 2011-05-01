@@ -49,8 +49,9 @@ Use a past program as a template:
 {% for program in programs %}
 {% if program.id == template_prog_id %}
 <option value="{{ program.id }}" selected = "selected">{{ program.niceName }}</option>
-{% endif %}
+{% else %}
 <option value="{{ program.id }}">{{ program.niceName }}</option>
+{% endif %}
 {% endfor %}
 </select>
 <br />

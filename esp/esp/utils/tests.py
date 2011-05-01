@@ -95,7 +95,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("flup")  # Used for interfacing with lighttpd via FastCGI
         self.tryImport("psycopg2")  # Used for talking with PostgreSQL.  Someday, we'll support psycopg2, but not today...
 	self.tryImport("xlwt")  # Used in our giant statistics spreadsheet-generating code
-
+        self.tryImport("form_utils")     #Used to create better forms.
         self.assert_(not self._failed_import)
 
         # Make sure that we're actually using pylibmc.

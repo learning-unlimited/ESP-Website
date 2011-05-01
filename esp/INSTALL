@@ -44,6 +44,7 @@ simplejson      Python (easy_install)   N/A
 pycurl          Python (easy_install)   N/A                      
 xlwt            Python (easy_install)   N/A                      
 South           Python (easy_install)   N/A    
+form_utils      Python (easy_install)   https://bitbucket.org/carljm/django-form-utils/src
 psycopg         Python (easy_install)   N/A    * Choose psycopg or psycopg2 and update local_settings.py DATABASE_BACKEND
 psycopg2        Python (easy_install)   N/A      (default is psycopg2)
 django-debug-toolbar    Python (easy_install)   N/A       * Optional

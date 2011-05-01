@@ -199,6 +199,7 @@ INSTALLED_APPS = (
     'django_extensions',
     'south',
     'sslauth',
+    'form_utils',
 )
 import os
 for app in ('django_evolution', 'django_command_extensions'):
