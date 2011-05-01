@@ -14,7 +14,9 @@ Supply two commits to see changes between them.
 from __future__ import with_statement
 
 import sys, os
-from esp.settings import DATABASE_NAME
+from esp.settings import DATABASES
+
+DATABASE_NAME = DATABASES['default']['NAME']
 
 # Tag for keeping track of current schema
 TAG_NAME = '%s-current-schema' % DATABASE_NAME
