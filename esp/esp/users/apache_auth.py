@@ -1,7 +1,14 @@
-import os
 from mod_python import apache
+import os
 from django.core.handlers.base import BaseHandler
 from django.core.handlers.modpython import ModPythonRequest
+
+from datetime import datetime
+
+f = open("/tmp/authlog.txt","wb")
+
+print >>f, "PYTHON MODULE LOADED: APACHE_AUTH.PY", datetime.now()
+f.flush()
 
 class AccessHandler(BaseHandler):
     def __call__(self, req):
