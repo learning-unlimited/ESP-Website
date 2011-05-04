@@ -46,12 +46,14 @@ class RegProfileModule(ProgramModuleObj):
             "admin_title": "Student Profile Editor",
             "link_title": "Update Your Profile",
             "module_type": "learn",
+            "main_call": "profile",
             "seq": 1,
             "required": True
         }, {
             "admin_title": "Teacher Profile Editor",
             "link_title": "Update Your Profile",
             "module_type": "teach",
+            "main_call": "profile",
             "seq": 1,
             "required": True
         } ]
