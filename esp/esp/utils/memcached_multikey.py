@@ -1,6 +1,12 @@
 "Memcached cache backend"
 from django.core.cache.backends.base import BaseCache
-from django.core.cache.backends.memcached import PyLibMCCache as PylibmcCacheClass
+try:
+    #   Test whether we have pylibmc, and if it works, use the real pylibmc backend;
+    #   if it doesn't work, fake it using the default memcached backend
+    import pylibmc
+    from django.core.cache.backends.memcached import PyLibMCCache as PylibmcCacheClass
+except ImportError:
+    from django.core.cache.backends.memcached import CacheClass as PylibmcCacheClass
 from esp import settings
 from esp.utils.try_multi import try_multi
 from esp.utils import ascii
