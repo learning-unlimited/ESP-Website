@@ -54,6 +54,11 @@ class RegProfileModuleTest(ProgramFrameworkTest):
     def runTest(self):
         from esp.program.models import RegistrationProfile
 
+        #   Check that the profile page does not cause an error when not logged in
+        #   (it should redirect to a login page)
+        response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
+        self.assertEqual(response.status_code, 302)
+
         # Check that the people start out without profiles
         # We'll probably need to be a little more careful about how we set
         # the ProgramModuleObj's user if we ever cache isCompleted().
