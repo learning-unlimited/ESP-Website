@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call, meets_deadline
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, needs_account, usercheck_usetl, main_call, aux_call, meets_deadline
 from esp.program.models import RegistrationProfile
 from esp.users.models   import ESPUser, User
 from django.db.models.query import Q
@@ -76,8 +76,8 @@ class RegProfileModule(ProgramModuleObj):
     def teacherDesc(self):
         return {'teacher_profile': """Teachers who have completed the profile."""}
 
+    @needs_account
     @main_call
-    @login_required
     @meets_deadline("/Profile")
     def profile(self, request, tl, one, two, module, extra, prog):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
@@ -113,10 +113,10 @@ class RegProfileModule(ProgramModuleObj):
             regProf.contact_user.e_mail = ''
             regProf.contact_user.save()
 
-	response = profile_editor(request, prog, False, role)
-	if response == True:
+        response = profile_editor(request, prog, False, role)
+        if response == True:
             return self.goToCore(tl)
-	return response
+        return response
 
     def isCompleted(self):
         regProf = RegistrationProfile.getLastForProgram(self.user, self.program)

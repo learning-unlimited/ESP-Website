@@ -618,6 +618,12 @@ def needs_student(method):
 
     return _checkStudent        
 
+def needs_account(method):
+    def _checkAccount(moduleObj, request, *args, **kwargs):
+        if not moduleObj.user or not moduleObj.user.is_authenticated():
+            return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+        return method(moduleObj, request, *args, **kwargs)
+    return _checkAccount
 
 def meets_grade(method):
     def _checkGrade(moduleObj, request, tl, *args, **kwargs):
