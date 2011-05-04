@@ -30,12 +30,12 @@
     <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
     <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
 
-    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/dojo/1.5/dojo/dojo.xd.js" djConfig="parseOnLoad: true"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.5/dojo/dojo.xd.js" djConfig="parseOnLoad: true"></script>
 {% endblock %}
 
 {% block stylesheets %}
 <style type="text/css">
-        @import "http://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css";
+        @import "https://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css";
 </style>
 
 <style type="text/css">
