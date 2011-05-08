@@ -509,9 +509,9 @@ class DataTree(models.Model):
 
 
     @classmethod
-    def root(cls):
+    def root(cls, force_create = False):
         " Get the root node of this tree. "
-        if cls.ROOT_NODE != None:
+        if cls.ROOT_NODE != None and not force_create:
             return cls.ROOT_NODE
 
         try:
@@ -525,6 +525,7 @@ class DataTree(models.Model):
                         rangestart = 0,
                         rangeend = 0+cls.START_SIZE * 10)
             root.save(True, old_save = True)
+            cls.ROOT_NODE = root
             return root
 
     @staticmethod
@@ -943,9 +944,14 @@ def install():
     This function sets up the initial ROOT, Q, and V nodes in the datatree.
     It's idempotent; ie., you can run it multiple times without harm.
     """
+    transaction.enter_transaction_management()
+
     root_node = DataTree.root()
     root_node.get_by_uri('Q', create=True)
     root_node.get_by_uri('V', create=True)
-    
+
     from esp.datatree.tree_template import genTemplate
     genTemplate()
+
+    transaction.commit()
+    transaction.leave_transaction_management()

@@ -154,9 +154,9 @@ class DataTreeManager(models.Manager):
         # TODO: Implement this.
         raise NotImplementedError("Need to do this ... ")
 
-    def get_root(self):
+    def get_root(self, force_create = False):
         # TODO: Implement this cleaner.
-        return self.model.root()
+        return self.model.root(force_create = force_create)
 
     @commit_manually
     @serializable
@@ -422,7 +422,10 @@ WHERE
 
         cur_name = pieces.pop()
         parent_uri = delimiter.join(pieces)
-        parent = self._get_by_uri(parent_uri, create, depth + 1)
+        if parent_uri == '':
+            parent = self.get_root(force_create = True)
+        else:
+            parent = self._get_by_uri(parent_uri, create, depth + 1)
 
         try:
             node = super(DataTreeManager, self).get(parent=parent,
