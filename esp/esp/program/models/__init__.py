@@ -42,6 +42,7 @@ from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, Edu
 from datetime import datetime, timedelta
 from django.core.cache import cache
 from django.db.models import Q
+from django.db.models.query import QuerySet
 from django.contrib.localflavor.us.models import PhoneNumberField
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError, AjaxError
@@ -78,6 +79,12 @@ class ProgramModule(models.Model):
     #   must contain the name of the default template if the main call
     #   is not a function!
     main_call  = models.CharField(max_length=32, default='main')
+
+    #   A module can have an inline template (whose context is filled by prepare())
+    #   independently of its main_call, although the main_call field can be used
+    #   to specify the template name (in the absence of a view function)
+    #   for backwards compatibility.
+    inline_template = models.CharField(max_length=32, blank=True, null=True)
 
     # One of teach/learn/etc.; What is this module typically used for?
     module_type = models.CharField(max_length=32)
@@ -404,6 +411,20 @@ class Program(models.Model):
                 students.update(tmpstudents)
         return students
 
+    def counts_from_query_dict(query_func):
+        def _get_num(self, QObjects=True):
+            result = query_func(self, QObjects)
+            result_dict = {}
+            for key, value in result.iteritems():
+                if isinstance(value, QuerySet):
+                    result_dict[key] = value.count()
+                else:
+                    result_dict[key] = len(value)
+            return result_dict
+        return _get_num
+    num_students = counts_from_query_dict(students)
+    num_teachers = counts_from_query_dict(teachers)
+
     @cache_function
     def capacity_by_section_id(self):
         capacities = {}
@@ -526,7 +547,6 @@ class Program(models.Model):
         else:
             return ESPUser.objects.filter(union).distinct()
 
-
     def teachers_union(self, QObject = False):
         import operator
         if len(self.teachers().values()) == 0:
@@ -536,19 +556,6 @@ class Program(models.Model):
             return union
         else:
             return User.objects.filter(union).distinct()    
-
-    def num_students(self):
-        modules = self.getModules(None, 'learn')
-        students = {}
-        for module in modules:
-            tmpstudents = module.students()
-            if tmpstudents is not None:
-                for k, v in tmpstudents.items():
-                    if type(v) == list:
-                        students[k] = len(v)
-                    else:
-                        students[k] = v.count()
-        return students
 
     def isFull(self, use_cache=True):
         """ Can this program accept any more students? """

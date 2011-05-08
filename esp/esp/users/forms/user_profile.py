@@ -216,7 +216,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     from esp.users.models import ESPUser
     from esp.users.models import shirt_sizes, shirt_types, food_choices
 
-    graduation_year = forms.ChoiceField(choices=[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
+    graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     school = forms.CharField(max_length=128, required=False)
     dob = forms.DateField(widget=SplitDateWidget())
@@ -266,7 +266,13 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         if Tag.getTag('show_student_graduation_years_not_grades'):            
             current_grad_year = self.ESPUser.current_schoolyear()
-            self.fields['graduation_year'].choices = [(str(x[0]), "%s (%sth grade)" % (x[0], x[1])) for x in self.fields['graduation_year'].choices]
+            new_choices = []
+            for x in self.fields['graduation_year'].choices:
+                if len(x[0]) > 0:
+                    new_choices.append((str(x[0]), "%s (%sth grade)" % (x[0], x[1])))
+                else:
+                    new_choices.append(x)
+            self.fields['graduation_year'].choices = new_choices
 
         if not Tag.getTag('ask_student_about_post_hs_plans'):
             del self.fields['post_hs']

@@ -405,7 +405,7 @@ class ProgramModuleObj(models.Model):
     def getTemplate(self):
         baseDir = 'program/modules/'+self.__class__.__name__.lower()+'/'
         mainCallTemp = self.module.main_call+'.html'
-
+        base_template = baseDir + mainCallTemp
         per_program_template = baseDir+'per_program/'+str(self.program.id)+ \
             '_'+ mainCallTemp
 
@@ -413,8 +413,14 @@ class ProgramModuleObj(models.Model):
             get_template(per_program_template)
             return per_program_template
         except TemplateDoesNotExist:
-            return baseDir + mainCallTemp
-                
+            try:
+                get_template(base_template)
+                return base_template
+            except TemplateDoesNotExist:
+                if self.module.inline_template:
+                    return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
+
+        return None
 
     def teachers(self, QObject = False):
         return {}
