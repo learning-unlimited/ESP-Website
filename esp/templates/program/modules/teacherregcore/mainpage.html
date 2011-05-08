@@ -70,11 +70,10 @@ We appreciate your interest!  If you have any questions, please <a href="mailto:
 </div>
 
 {% for module in modules %}
-{% if module.useTemplate %}
-<a name="module-{{module.id}}"></a>
-<br />
- {% include module.getTemplate %}
-
+{% if module.useTemplate or module.getTemplate %}
+    <a name="module-{{module.id}}"></a>
+    <br />
+    {% include module.getTemplate %}
 {% endif %}
 {% endfor %}
 

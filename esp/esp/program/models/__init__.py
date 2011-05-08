@@ -80,6 +80,12 @@ class ProgramModule(models.Model):
     #   is not a function!
     main_call  = models.CharField(max_length=32, default='main')
 
+    #   A module can have an inline template (whose context is filled by prepare())
+    #   independently of its main_call, although the main_call field can be used
+    #   to specify the template name (in the absence of a view function)
+    #   for backwards compatibility.
+    inline_template = models.CharField(max_length=32, blank=True, null=True)
+
     # One of teach/learn/etc.; What is this module typically used for?
     module_type = models.CharField(max_length=32)
 
