@@ -73,7 +73,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
                                         help_text='(How many independent sections (copies) of your class would you like to teach?)' )
     session_count  = forms.ChoiceField( label='Number of Days of Class', choices=[(1,1)], widget=BlankSelectWidget(),
                                         help_text='(How many days will your class take to complete?)' )
-    
+
+
     grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
     class_size_max = forms.ChoiceField( label='Maximum Number of Students', choices=[(0, 0)], widget=BlankSelectWidget(),
@@ -235,6 +236,22 @@ class TeacherClassRegForm(FormWithRequiredCss):
         if tag_data:
             for field_name in tag_data.split(','):
                 hide_field(self.fields[field_name])
+
+        tag_data = Tag.getProgramTag('teacherreg_default_min_grade', prog)
+        if tag_data:
+            print tag_data
+            self.fields['grade_min'].initial = tag_data
+
+        tag_data = Tag.getProgramTag('teacherreg_default_max_grade', prog)
+        if tag_data:
+            print tag_data
+            self.fields['grade_max'].initial = tag_data
+
+        tag_data = Tag.getProgramTag('teacherreg_default_class_size_max', prog)
+        if tag_data:
+            print tag_data
+            self.fields['class_size_max'].initial = tag_data
+
 
         #   Rewrite difficulty label/choices if desired:
         if Tag.getTag('teacherreg_difficulty_choices'):
