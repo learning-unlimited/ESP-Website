@@ -70,9 +70,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             "module_type": "teach",
             "seq": 10,
             "main_call": "listclasses",
-            "aux_calls": "class_students,section_students,makeaclass,editclass,deleteclass,coteachers,teacherlookup,class_status,class_docs,select_students,ajax_restypes,ajax_requests,makeopenclass"
+            "aux_calls": "ajax_requests,ajax_restypes"
             }
 
+    
     def extensions(self):
         """ This function gives all the extensions...that is, models that act on the join of a program and module."""
         return []#(., module_ext.ClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
