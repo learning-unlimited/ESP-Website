@@ -48,7 +48,7 @@ from django.db.models import Q
 #admin.site.register(DBReceipt)
 
 
-def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model=None):
+def updateModules(update_data, overwriteExisting=False, deleteExtra=False):
     """
     Given a list of key:value dictionaries containing fields from the
     ProgramModule table, populate the table based on that list.
@@ -59,20 +59,17 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
     """
     from esp.program.models import ProgramModule
     
-    if model is None:
-        model = ProgramModule
-    
     #   Select existing modules only by handler and module type, which are assumed to be unique;
     #   don't create duplicate modules if the default main_call differs from the data.
     mods = []
     for datum in update_data:
         query_kwargs = {'handler': datum["handler"], 'module_type': datum["module_type"]}
-        qs = model.objects.filter(**query_kwargs)
+        qs = ProgramModule.objects.filter(**query_kwargs)
         if qs.exists():
             mods.append((datum, (qs[0], False)))
         else:
             query_kwargs['defaults'] = datum
-            mods.append((datum, model.objects.get_or_create(**query_kwargs)))
+            mods.append((datum, ProgramModule.objects.get_or_create(**query_kwargs)))
 
     if overwriteExisting:
         for (datum, (mod, created)) in mods:
@@ -101,7 +98,7 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
         mod.save()
 
 
-def install(model=None):
+def install():
     """ Install the initial ProgramModule table data for all currently-existing modules """
     from esp.program.modules import handlers
     modules = [ x for x in handlers.__dict__.values() if hasattr(x, "module_properties") ]
@@ -110,5 +107,5 @@ def install(model=None):
     for module in modules:
         table_data += module.module_properties_autopopulated()
 
-    updateModules(table_data, model=model)
+    updateModules(table_data)
     

@@ -14,9 +14,9 @@ class Migration(DataMigration):
         """ Adds the makeopenclass aux call to the teacher class reg module."""
         
         #   Make sure ProgramModule initial data is there.
-        modules_models.install(model=orm['program.programmodule'])
+        modules_models.install()
         
-        teacherclassregmodule = orm['program.programmodule'].objects.get(handler="TeacherClassRegModule")
+        teacherclassregmodule = ProgramModule.objects.get(handler="TeacherClassRegModule")
         aux_calls = [x for x in teacherclassregmodule.aux_calls.split(",") if x.strip() not in ["", "makeopenclass"]]
         aux_calls += ["makeopenclass"]
         teacherclassregmodule.aux_calls = ",".join(aux_calls)
@@ -24,7 +24,7 @@ class Migration(DataMigration):
 
 
     def backwards(self, orm):
-        teacherclassregmodule = orm['program.programmodule'].objects.get(handler="TeacherClassRegModule")
+        teacherclassregmodule = ProgramModule.objects.get(handler="TeacherClassRegModule")
         aux_calls = [x for x in teacherclassregmodule.aux_calls.split(",") if x.strip() not in ["", "makeopenclass"]]
         teacherclassregmodule.aux_calls = ",".join(aux_calls)
         teacherclassregmodule.save()
