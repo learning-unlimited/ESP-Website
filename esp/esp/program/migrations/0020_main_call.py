@@ -12,7 +12,7 @@ class Migration(SchemaMigration):
         
         # Changing field 'ProgramModule.main_call'
         db.alter_column('program_programmodule', 'main_call', self.gf('django.db.models.fields.CharField')(max_length=32))
-        install_modules()
+        install_modules(model=orm['program.programmodule'])
 
     def backwards(self, orm):
         
