@@ -610,12 +610,12 @@ def flushcache(request):
             _cache = cache
             while hasattr(_cache, "_wrapped_cache"):
                 _cache = _cache._wrapped_cache
-            if hasattr(_cache, "flush_all"):
-                _cache.flush_all()
+            if hasattr(_cache, "clear"):
+                _cache.clear()
                 mail_admins("Cache Flushed on server '%s'!" % request.META['SERVER_NAME'], "The cache was flushed by %s!  The following reason was given:\n\n%s" % (request.user.username, reason))
                 context['success'] = "Cache Cleared."
             else:
-                context['error'] = "Error: This cache backend doesn't support the 'flush_all' method.  Sorry; you'll have to flush this one manually."
+                context['error'] = "Error: This cache backend doesn't support the 'clear' method.  Sorry; you'll have to flush this one manually."
         else:
             context['error'] = "Sorry, that doesn't count as a reason."
 
