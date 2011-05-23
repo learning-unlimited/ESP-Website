@@ -928,6 +928,10 @@ class ESPUser(User, AnonymousUser):
             if regProf and regProf.student_info:
                 if regProf.student_info.graduation_year:
                     grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year)
+                    # necessary if HSSP wants grades to reflect the incoming grades of the students - Jordan M 5/23/2011
+                    if program is not None and "Summer" in program.anchor.friendly_name and "HSSP" in program.anchor.parent.name:
+                        grade += 1
+                        
 
         self._grade = grade
 
