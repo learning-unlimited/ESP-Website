@@ -376,6 +376,7 @@ then
 	python -m easy_install xlwt
 	python -m easy_install simplejson
 	python -m easy_install twill
+	python -m easy_install django-form-utils
 
 	#	Install sslauth
 	if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]
