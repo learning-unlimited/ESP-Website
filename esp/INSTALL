@@ -44,6 +44,7 @@ simplejson      Python (easy_install)   N/A
 pycurl          Python (easy_install)   N/A                      
 xlwt            Python (easy_install)   N/A                      
 South           Python (easy_install)   N/A    
+django-extensions    Python (easy_install)   N/A    
 form_utils      Python (easy_install)   https://bitbucket.org/carljm/django-form-utils/src
 psycopg         Python (easy_install)   N/A    * Choose psycopg or psycopg2 and update local_settings.py DATABASE_BACKEND
 psycopg2        Python (easy_install)   N/A      (default is psycopg2)
@@ -136,10 +137,12 @@ initialize your database from a backup of your organization's database.
 Otherwise, use Django's manage.py script to initialize your database:
 
 $ cd ./esp
-$ ./manage.py syncdb --all
+$ ./manage.py syncdb
+$ ./manage.py migrate
 
-Django will ask you to add a super user.  Please do this so that you
-have administrative access when you start using the site.
+During the syncdb step, Django will ask you to add a super user.  
+Please do this so that you have administrative access when you start
+using the site.
 
 d) Set up media files
 
@@ -177,4 +180,8 @@ site you've set up in a Web browser.  You can now:
 - create static pages (start by typing in the desired URL)
 - change the styles and graphics (edit the files in /templates and /public/media)
 - set up programs (click the "Admin" button on the home page)
+
+Please refer to the documentation pages on the Learning Unlimited Wiki, which
+explain how to perform many common tasks with your newly set-up site:
+  http://wiki.learningu.org/How_to_use_the_website
 
