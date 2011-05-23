@@ -411,10 +411,14 @@ class ProgramModuleObj(models.Model):
 
         try:
             get_template(per_program_template)
+            if not self.useTemplate():
+                return None
             return per_program_template
         except TemplateDoesNotExist:
             try:
                 get_template(base_template)
+                if not self.useTemplate():
+                    return Node
                 return base_template
             except TemplateDoesNotExist:
                 if self.module.inline_template:
