@@ -1,0 +1,38 @@
+<html>
+	<head>
+		<title>Custom Forms Example</title>
+		
+		<link rel="stylesheet" type="text/css" href="/static/stylesheets/style.css">
+		
+		
+	</head>
+	
+	<body>
+		<div class="wrapper">
+			
+			<div class="form_preview">
+				<h2>Results</h2>
+				<hr />
+				<p>Results for <strong>{{ title }}</strong></p>
+				<br />
+				<div class="results">
+					<table id="tab_res">
+						<tr >
+							{% for question in questions %}
+							<th width="100px">{{question}}</th>
+							{% endfor %}
+						</tr>
+						{% for response in responses %}
+							<tr>
+								{% for answer in response %}
+									<td width="100px">{{answer}}</td>
+								{% endfor %}
+							</tr>
+						{%endfor%}			
+					</table>
+				</div>
+			</div>
+			
+		</div>	
+	</body>
+</html>			

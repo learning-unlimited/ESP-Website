@@ -182,3 +182,6 @@ urlpatterns += patterns('esp.web.views.main',
 urlpatterns += patterns('esp.web.views.navBar',
     # Update navbar
     (r'^navbar/edit.scm', 'updateNavBar') )
+
+urlpatterns +=patterns('esp.customforms.views',
+	(r'^customforms/$','landing'))

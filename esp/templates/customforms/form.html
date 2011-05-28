@@ -1,0 +1,28 @@
+<html>
+	<head>
+		<title>Custom Forms Example</title>
+		
+		<link rel="stylesheet" type="text/css" href="/static/stylesheets/style.css">
+	</head>
+	
+	<body>
+		<div class="wrapper">
+			
+			<div class="form_preview">
+				<h2>Form</h2>
+				<hr />
+				<p class="help_text">Fields marked * are <strong>required</strong></p>
+				<br />
+				
+				<form action="" method="POST">
+					{% csrf_token %}
+					{{ form.as_p }}
+					<br />
+					<input type="submit" value="Submit" />
+				</form>	
+				
+			</div>
+			
+		</div>	
+	</body>
+</html>			

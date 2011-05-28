@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{{username}}</title>  
+  
+</head>
+<body>
+<br/>	
+   <div><table>
+    {% if form_display %}
+   <form action="" name="post_question" method="POST">
+	Question: <br/>
+	<textarea name="question"></textarea><br/>
+	
+	{% for friend in friends %}
+		<tr>
+			<td><input type="checkbox" name="user_id" value="{{friend.id}}"/></td>
+			<td><img src="http://graph.facebook.com/{{friend.id}}/picture"/></td>
+			<td>{{friend.name}}</td>
+		</tr>
+		
+	{% endfor %}  
+
+	<input type="submit" value="Post your question"/>
+	</form>	
+	</table>
+	{% else %}
+	<p>{{question}} was successfully posted.</p>
+	{% endif %}
+     
+    </div>    
+</body>
+</html>
