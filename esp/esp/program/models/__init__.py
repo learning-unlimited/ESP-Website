@@ -1020,6 +1020,14 @@ class Program(models.Model):
             print 'Archived: %s' % c.title()
         
         return archived_classes
+
+    @cache_function
+    def incrementGrade(self): 
+        incrementTag = Tag.getProgramTag('increment_default_grade_levels', self)
+        if incrementTag: 
+            return 1
+        return 0
+    incrementGrade.depend_on_row(lambda: Tag, lambda tag: {'self' :  tag.target})
     
     @staticmethod
     def find_by_perms(user, verb):
