@@ -418,7 +418,7 @@ class ProgramModuleObj(models.Model):
             try:
                 get_template(base_template)
                 if not self.useTemplate():
-                    return Node
+                    return None
                 return base_template
             except TemplateDoesNotExist:
                 if self.module.inline_template:
@@ -652,7 +652,7 @@ def meets_grade(method):
         # now we have to use the grade..
 
         # get the last grade...
-        cur_grade = moduleObj.user.getGrade()
+        cur_grade = moduleObj.user.getGrade(moduleObj.program)
         if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
                                cur_grade > moduleObj.program.grade_max):
             return render_to_response(errorpage, request, (moduleObj.program, tl), {})

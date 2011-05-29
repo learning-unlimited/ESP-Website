@@ -483,7 +483,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         ts = ts[0]
 
         prereg_url = self.program.get_learn_url() + 'addclass/'
-        user_grade = user.getGrade()
+        user_grade = user.getGrade(self.program)
         user.updateOnsite(request)
         is_onsite = user.isOnsite(self.program)
         
@@ -525,7 +525,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         
         user = ESPUser(request.user) 
         prereg_url = self.program.get_learn_url() + 'swapclass/' + extra
-        user_grade = user.getGrade()
+        user_grade = user.getGrade(self.program)
         is_onsite = user.isOnsite(self.program)
 
         try:

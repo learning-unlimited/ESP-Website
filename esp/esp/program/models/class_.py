@@ -1664,8 +1664,8 @@ class ClassSubject(models.Model):
 
         if not Tag.getTag("allowed_student_types", target=self.parent_program):
             verb_override = GetNode('V/Flags/Registration/GradeOverride')
-            if user.getGrade() < self.grade_min or \
-                   user.getGrade() > self.grade_max:
+            if user.getGrade(self.parent_program) < self.grade_min or \
+                   user.getGrade(self.parent_program) > self.grade_max:
                 if not UserBit.UserHasPerms(user = user,
                                             qsc  = self.anchor,
                                             verb = verb_override):
