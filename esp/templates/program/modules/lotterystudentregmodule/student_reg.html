@@ -27,6 +27,18 @@
 <!-- Main application included here -->
 <script type='text/javascript'> var nice_name = '{{prog.niceName}}'</script>
 <script type='text/javascript'> var url_base = '{{prog.getUrlBase}}'</script>
+<script type='text/javascript'>
+var grade = 0;
+if (esp_user["cur_grade"])
+{
+    grade = parseInt(esp_user["cur_grade"]) + {{prog.incrementGrade}}; // adds 1 if appropriate tag is set; else does nothing
+    //  console.log("Got user grade: " + grade);
+}
+else
+{
+    alert("Could not determine your grade!  Please fill out the profile and then return to this page.");
+}
+</script>
 <script type='text/javascript' src='/media/scripts/lottery_student_reg/StudentRegInterface.js'></script>
 
 <!--script type="text/javascript">

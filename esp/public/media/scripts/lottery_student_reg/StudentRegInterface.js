@@ -7,17 +7,6 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 
     initComponent: function () {
     
-    if (esp_user["cur_grade"])
-    {
-        grade = esp_user.cur_grade;
-        //  console.log("Got user grade: " + grade);
-    }
-    else
-    {
-        grade = 0;
-        alert("Could not determine your grade!  Please fill out the profile and then return to this page.");
-    }
-
     Ext.Ajax.request({
 	    url: '/learn/'+url_base+'/timeslots_json',
 	    success: function (response, opts) {
@@ -420,7 +409,7 @@ win = new Ext.Panel({
       items: [{ xtype: 'lottery_student_reg', 
 	  id: 'sri'
 	  }],
-      title: nice_name + ' Class Lottery - ' + esp_user["cur_first_name"] + ' ' + esp_user["cur_last_name"] + ' (grade ' + esp_user["cur_grade"] + ')',
+      title: nice_name + ' Class Lottery - ' + esp_user["cur_first_name"] + ' ' + esp_user["cur_last_name"] + ' (grade ' + grade + ')',
       autoWidth: true,
       autoHeight: true
       });
