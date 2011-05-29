@@ -39,6 +39,7 @@ from esp.users.models import DBList, PersistentQueryFilter, ESPUser, User, ZipCo
 from esp.web.util     import render_to_response
 from esp.settings import USE_MAILMAN
 import pickle
+import re
 
 def get_user_list(request, listDict2, extra=''):
     """ Get a list of users from some complicated mixture of other lists.
@@ -299,6 +300,11 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
         else:
             for field in ['username','last_name','first_name', 'email']:
                 if request.GET.has_key(field) and len(request.GET[field].strip()) > 0:
+                    #   Check that it's a valid regular expression
+                    try:
+                        rc = re.compile(request.GET[field])
+                    except:
+                        raise ESPError(False), 'Invalid search expression, please check your syntax: %s' % request.GET[field]
                     filter_dict = {'%s__iregex' % field: request.GET[field]}
                     update = True
                     if request.GET.has_key('%s__not' % field):
