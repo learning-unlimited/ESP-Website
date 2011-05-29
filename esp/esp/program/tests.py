@@ -885,3 +885,39 @@ class DynamicCapacityTest(ProgramFrameworkTest):
         sec.parent_program._moduleExtension = {}
         self.assertEqual(sec.capacity, initial_capacity)
 
+
+class ModuleControlTest(ProgramFrameworkTest):
+    def runTest(self):
+        from esp.program.models import ProgramModule
+        from esp.program.modules.base import ProgramModuleObj
+        from esp.program.modules.handlers.satprepmodule import SATPrepModule
+    
+        #   Make all default modules non-required
+        for pmo in self.program.getModules():
+            pmo.__class__ = ProgramModuleObj
+            pmo.required = False
+            pmo.save()
+
+        #   Pick a student and log in; fill out profile
+        student = random.choice(self.students)
+        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        
+        #   Check that the main student reg page displays as usual in the initial state.
+        response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
+        self.assertTrue('Steps for Registration' in response.content)
+        
+        #   Set a student module to be required and make sure we are shown it.
+        sat_module = ProgramModule.objects.filter(handler='SATPrepModule')[0]
+        moduleobj = ProgramModuleObj.getFromProgModule(self.program, sat_module)
+        moduleobj.__class__ = ProgramModuleObj
+        moduleobj.required = True
+        moduleobj.save()
+        
+        response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
+        self.assertTrue('SAT Math Score' in response.content)
+        
+        #   Remove the module and make sure we are not shown it anymore.
+        self.program.program_modules.remove(sat_module)
+        response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
+        self.assertTrue('Steps for Registration' in response.content)
+        
