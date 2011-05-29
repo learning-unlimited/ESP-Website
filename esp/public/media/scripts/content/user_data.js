@@ -24,6 +24,7 @@ for (var i=0; i < esp_user_keys.length; i++) {
 esp_user['cur_email'] = unescape(esp_user['cur_email']);
 esp_user['cur_first_name'] = unescape(esp_user['cur_first_name']);
 esp_user['cur_last_name'] = unescape(esp_user['cur_last_name']);
+esp_user['cur_grade'] = parseInt(esp_user['cur_grade'])
 
 var esp_user_login = null;
 

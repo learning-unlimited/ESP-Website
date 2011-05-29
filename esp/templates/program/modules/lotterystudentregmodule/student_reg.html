@@ -31,7 +31,7 @@
 var grade = 0;
 if (esp_user["cur_grade"])
 {
-    grade = parseInt(esp_user["cur_grade"]) + {{prog.incrementGrade}}; // adds 1 if appropriate tag is set; else does nothing
+    grade = esp_user["cur_grade"] + {{prog.incrementGrade}}; // adds 1 if appropriate tag is set; else does nothing
     //  console.log("Got user grade: " + grade);
 }
 else
