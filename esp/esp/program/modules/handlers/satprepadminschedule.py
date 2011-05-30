@@ -588,9 +588,6 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
             cur_classes = ClassSubject.objects.filter(parent_program = self.program)
             [cls.delete() for cls in cur_classes]
 
-        #dummy_anchor = self.program_anchor_cached().tree_create(['DummyClass'])
-        #dummy_anchor.save()
-        
         data = request.POST
         
         #   Pull the timeslots from the multiselect field on the form.

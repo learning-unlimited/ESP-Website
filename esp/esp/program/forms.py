@@ -148,7 +148,7 @@ class StatisticsQueryForm(forms.Form):
     @staticmethod
     def get_program_type_choices():
         anchors = DataTree.objects.filter(id__in=Program.objects.all().values_list('anchor', flat=True))
-        parents = list(set([x.parent for x in anchors if x.parent.name not in ['Subprograms', 'Dummy_Programs']]))
+        parents = list(set([x.parent for x in anchors if x.parent.name not in ['Subprograms']]))
         names_url = [x.name for x in parents]
         names_url.sort()
         names_friendly = [x.friendly_name for x in parents]
