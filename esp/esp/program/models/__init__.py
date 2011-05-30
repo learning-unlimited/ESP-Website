@@ -1029,6 +1029,13 @@ class Program(models.Model):
         return 0
     incrementGrade.depend_on_row(lambda: Tag, lambda tag: {'self' :  tag.target})
     
+    def priorityLimit(self):
+        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        if studentregmodule and studentregmodule.use_priority and studentregmodule.priority_limit > 0:
+            return studentregmodule.priority_limit
+        else: 
+            return 1
+    
     @staticmethod
     def find_by_perms(user, verb):
         """ Fetch a list of relevant programs for a given user and verb """
