@@ -324,13 +324,13 @@ class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
     
-    anchor = models.ForeignKey(DataTree)
+    anchor = AjaxForeignKey(DataTree)
     status = models.IntegerField(default=0)                 #   -10 = rejected, 0 = unreviewed, 10 = accepted
     registration_status = models.IntegerField(default=0)    #   0 = open, 10 = closed
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
-    max_class_capacity = models.IntegerField(null=True)
+    max_class_capacity = models.IntegerField(blank=True, null=True)
     
     cache = SectionCacheHelper
     checklist_progress_all_cached = checklist_progress_base('ClassSection')
