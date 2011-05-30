@@ -146,3 +146,7 @@ class AdminVitals(ProgramModuleObj):
     
  
 
+
+    class Meta:
+        abstract = True
+

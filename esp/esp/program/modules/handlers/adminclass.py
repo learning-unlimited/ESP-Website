@@ -622,3 +622,7 @@ class AdminClass(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+"mass_approve_form.html", request, (prog, tl), {})
 
+
+    class Meta:
+        abstract = True
+

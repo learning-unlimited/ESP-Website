@@ -106,3 +106,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
 
         return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
 
+
+    class Meta:
+        abstract = True
+

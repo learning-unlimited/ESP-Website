@@ -816,3 +816,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         
         else:
             return []
+
+    class Meta:
+        abstract = True
+

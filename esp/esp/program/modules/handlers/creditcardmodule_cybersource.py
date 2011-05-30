@@ -120,3 +120,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         context['invoice'] = invoice
         
         return render_to_response(self.baseDir() + 'cardpay.html', request, (prog, tl), context)
+
+    class Meta:
+        abstract = True
+

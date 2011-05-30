@@ -82,3 +82,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
         else:
             return []
 
+
+    class Meta:
+        abstract = True
+

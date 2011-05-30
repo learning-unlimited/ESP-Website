@@ -186,3 +186,7 @@ class NameTagModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'ids.html', request, (prog, tl), context)
         
 
+
+    class Meta:
+        abstract = True
+

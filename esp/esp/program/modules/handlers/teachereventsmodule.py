@@ -184,3 +184,7 @@ class TeacherEventsModule(ProgramModuleObj):
 
 
 
+
+    class Meta:
+        abstract = True
+

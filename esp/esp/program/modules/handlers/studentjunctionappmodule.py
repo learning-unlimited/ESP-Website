@@ -133,3 +133,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'application.html', request, (self.program, tl), {'forms': forms, 'app': app})
     
+
+    class Meta:
+        abstract = True
+

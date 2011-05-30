@@ -82,3 +82,7 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
         return False
     
 
+
+    class Meta:
+        abstract = True
+

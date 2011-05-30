@@ -164,3 +164,7 @@ class SATPrepModule(ProgramModuleObj):
 	return render_to_response('program/modules/satprep_stureg.html', request, (prog, tl), {'form':form})
 
 
+
+    class Meta:
+        abstract = True
+

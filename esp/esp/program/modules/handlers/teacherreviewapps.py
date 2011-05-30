@@ -233,3 +233,7 @@ class TeacherReviewApps(ProgramModuleObj):
     def isStep(self):
         return True
 
+
+    class Meta:
+        abstract = True
+

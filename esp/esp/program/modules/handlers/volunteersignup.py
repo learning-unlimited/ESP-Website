@@ -78,3 +78,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             errors_on_separate_row = False)
         
         return render_to_response('program/modules/volunteersignup/signup.html', request, (prog, tl), context)
+
+    class Meta:
+        abstract = True
+

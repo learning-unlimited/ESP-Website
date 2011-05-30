@@ -70,3 +70,7 @@ class CreditCardViewer_Cybersource(ProgramModuleObj):
         context = { 'payment_table': payment_table }
         
         return render_to_response(self.baseDir() + 'viewpay_cybersource.html', request, (prog, tl), context)
+
+    class Meta:
+        abstract = True
+

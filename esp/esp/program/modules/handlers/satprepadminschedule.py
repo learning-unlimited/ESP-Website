@@ -707,3 +707,7 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
 
         return render_to_response(self.baseDir()+'setteachers.html', request, (prog, tl), context)
 
+
+    class Meta:
+        abstract = True
+

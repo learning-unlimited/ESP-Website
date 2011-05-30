@@ -219,3 +219,7 @@ class TeacherQuizModule(ProgramModuleObj):
             data = {}
             form = None  # SomeFormOrOther(self, initial=data)
             return render_to_response(self.baseDir()+'quiz.html', request, (prog, tl), {'prog':prog, 'form': form})
+
+    class Meta:
+        abstract = True
+

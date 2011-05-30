@@ -301,3 +301,7 @@ class MailingLabels(ProgramModuleObj):
 
 
         
+
+    class Meta:
+        abstract = True
+
