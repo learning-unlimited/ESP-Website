@@ -7,10 +7,12 @@ from django.utils import simplejson as json
 from customforms.models import *
 from customforms.useful import *
 from customforms.backups import *
+from program.models import Program
 
 
 def landing(request):
-	return render_to_response('customforms/index.html',{})
+	prog_list=Program.objects.all()
+	return render_to_response('customforms/index.html',{'prog_list':prog_list})
 
 def isRequired(text):
 	#Checks whether a question is required or not

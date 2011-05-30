@@ -21,10 +21,11 @@ var formElements={
 		address:{'disp_name':'Address','ques':'Address'},
 		state:{'disp_name':'State','ques':'State'},
 		city:{'disp_name':'City','ques':'City'}
-	},
-	'Program':{}
+	}
 };
-
+var program_fields={'fields':{
+	courses:{'disp_name':'Courses', 'ques':'Courses'}
+}};
 var elemTypes = {
 	// Stores the available types of form objects, and their number in the form
 	'textField':0,
@@ -43,7 +44,8 @@ var elemTypes = {
 	'email':0,
 	'address':0,
 	'state':0,
-	'city':0
+	'city':0,
+	'courses':0
 };
 
 var covenience = {
@@ -51,18 +53,38 @@ var covenience = {
 	
 };
 
-var currElemType, currElemIndex, optionCount=1, formTitle="Form",currCategory='',$prevField, $currField;
+var currElemType, currElemIndex, optionCount=1, formTitle="Form",currCategory='',$prevField, $currField, secCount=1, $currSection;
 
 $(document).ready(function() {
     $('#button_add').click(function(){insertField($('#elem_selector').attr('value'),$prevField)});
 	$('#sbmt').click(submit);
 	$('#button_title').click(updateTitle);
+	$('#input_form_title').bind('change', updateTitle);
+	$('#input_form_description').bind('change', updateDesc);
 	
+	$currSection=$('#section_0');
 	//'Initializing' the UI
 	onSelectCategory('Generic');
 	onSelectElem('textField');
 	
-	$('html').ajaxSend(function(event, xhr, settings) {
+	$('#header_fields').click(function(){
+		var options_html="";
+		if($('#id_assoc_prog').attr('value')!="-1"){
+			formElements['Program']=program_fields['fields'];
+		}
+		//Generating options for the category selector
+		$.each(formElements,function(idx,el){
+				options_html+="<option value="+idx+">"+idx+"</option>";
+		});
+		$('#cat_selector').html(options_html);
+		onSelectCategory('Generic');
+		onSelectElem('textField');
+	});
+	
+	
+	
+	//csrf stuff
+	$(document).ajaxSend(function(event, xhr, settings) {
 	    function getCookie(name) {
 	        var cookieValue = null;
 	        if (document.cookie && document.cookie != '') {
@@ -78,11 +100,29 @@ $(document).ready(function() {
 	        }
 	        return cookieValue;
 	    }
-	    if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
-	        // Only send the token to relative URLs i.e. locally.
+	    function sameOrigin(url) {
+	        // url could be relative or scheme relative or absolute
+	        var host = document.location.host; // host + port
+	        var protocol = document.location.protocol;
+	        var sr_origin = '//' + host;
+	        var origin = protocol + sr_origin;
+	        // Allow absolute or scheme relative URLs to same origin
+	        return (url == origin || url.slice(0, origin.length + 1) == origin + '/') ||
+	            (url == sr_origin || url.slice(0, sr_origin.length + 1) == sr_origin + '/') ||
+	            // or any other URL that isn't scheme relative or absolute i.e relative.
+	            !(/^(\/\/|http:|https:).*/.test(url));
+	    }
+	    function safeMethod(method) {
+	        return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+	    }
+
+	    if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
 	        xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
 	    }
 	});
+	//end of csrf stuff
+	
+	$('#form_toolbox').accordion({autoHeight:false, icons:{}});
 });
 
 
@@ -100,7 +140,6 @@ var cleanLabel=function(labeltext) {
 var createLabel=function(labeltext, required) {
 	//Returns an HTML-formatted label, with a red * if the question is required
 	
-	labeltext=$.trim(labeltext);
 	if(!required)
 		return '<p>'+labeltext+'</p>';
 	else return '<p>'+labeltext+'<span class="asterisk">'+'*'+'</span></p>';	
@@ -171,16 +210,19 @@ var getFirst=function(category){
 		return 'textField';
 	else if(category=='Personal')
 		return 'name';
+	else if(category=='Program')
+		return 'courses';
 	else return '';	
 };
 
 var onSelectCategory=function(category) {
 	//Populates the Field selector with the appropriate form fields
 	
-	fields_list=formElements[category];
+	var fields_list=formElements[category], options_html="";
+	if(fields_list.length ==0)
+		return;
 	currCategory=category;
 	//Generating Options list
-	options_html="";
 	$.each(fields_list, function(index,elem){
 		options_html+="<option value="+index+">"+elem['disp_name']+"</option>";
 	});
@@ -245,36 +287,40 @@ var onSelectElem = function(item) {
 	//Defining actions for custom fields	
 	
 	$('#id_question').attr('value',question_text);
-	$prevField=$('div.form_preview :last-child').filter('div.field_wrapper');
+	$prevField=$currSection.children(":last");
+	//$prevField=$('div.form_preview :last-child').filter('div.field_wrapper');
 	if($button.attr('value')!='Add to Form')
 		$button.attr('value','Add to Form').unbind('click').click(function(){insertField($('#elem_selector').attr('value'),$prevField)});
 };
 
 var updateField=function() {
 	var curr_field_type=$.data($currField[0],'data').field_type;
+	if(curr_field_type=='section'){
+		$currField.find('h2').html($('#id_question').attr('value'));
+		$currField.children('p.field_text').html($('#id_instructions').attr('value'));
+		return;
+	}
 	$prevField=$currField.prev();
 	$currField.remove();
 	$currField=addElement(curr_field_type,$prevField);
 	$currField.addClass('field_selected');
 };
 
-var onSelectField=function() {
+var onSelectField=function($elem) {
 	//Handles clicks on field wrappers
 	
 	clearSpecificOptions();
 	//De-selecting any previously selected field
 	$('div.field_selected').removeClass('field_selected');
 	
-	var $wrap=$(this), $button=$('#button_add');;
+	var $wrap=$elem, $button=$('#button_add');;
 	$wrap.removeClass('field_hover').addClass('field_selected');
 	$wrap.find('.wrapper_button').removeClass('wrapper_button_hover');
-	var field_data=$.data($wrap[0],'data'), question_text=$wrap.find("p").eq(0).text(), $options;
+	var field_data=$.data($wrap[0],'data'), question_text, $options;
 	$currField=$wrap;
-	
-	if(question_text.indexOf("*")!=-1)
-		$("#id_required").attr('checked','checked');
-	else $("#id_required").attr('checked','');
-	$("#id_question").attr('value',cleanLabel(question_text));
+	question_text=field_data.question_text;
+	$("#id_required").attr('checked',field_data.required);
+	$("#id_question").attr('value',question_text);
 	$("#id_instructions").attr('value',field_data.help_text);
 	
 	//Adding in field-specific options
@@ -309,12 +355,23 @@ var onSelectField=function() {
 		$range_div.appendTo($('#other_options'));
 	}
 	else if(field_data.field_type=='section'){
-		$("#id_question").attr('value',$wrap.find('h2').text());
+		$("#id_required").attr('checked','');
 	}
 	if($button.attr('value')=='Add to Form')
 		$button.attr('value','Update').unbind('click').click(updateField);
 		
 };
+
+var deSelectField=function() {
+	//De-selects 'this' field
+	
+	$(this).removeClass('field_selected');
+	$(this).addClass('field_hover');
+	$(this).find(".wrapper_button").toggleClass("wrapper_button_hover");
+	$('#cat_selector').children('select[value=Generic]').attr('selected','selected');
+	onSelectCategory('Generic');
+	onSelectElem('textField');
+}
 
 var insertField=function(item, $prevField){
 	//Handles addition of a field into the form, as well as other ancillary functions. Calls addElement()
@@ -333,16 +390,20 @@ var addElement = function(item,$prevField) {
 				return;
 			$(this).toggleClass('field_hover');
 			$(this).find(".wrapper_button").toggleClass("wrapper_button_hover");
-		}).click(onSelectField),
-		label_text=$('#id_question').attr('value'),
+		}).toggle(function(){onSelectField($(this));}, deSelectField),
+		label_text=$.trim($('#id_question').attr('value')),
 		help_text=$.trim($('#id_instructions').attr('value')),
 		html_name=item+"_"+elemTypes[item], html_id="id_"+item+"_"+elemTypes[item],
 		data={};
 	
 	$new_elem_label=$(createLabel(label_text,$('#id_required').attr('checked'))).appendTo($wrap);
 	$('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($wrap);
+	
+	//Populating common data attributes
+	data.question_text=label_text;
 	data.help_text=help_text;
 	data.field_type=item;
+	data.required=$('#id_required').attr('checked');
 	
 	//Generic fields first
 	if(item=="textField"){
@@ -378,7 +439,7 @@ var addElement = function(item,$prevField) {
 		});
 	}
 	else if(item=="radio") {
-		var $text_inputs=$('#multi_options input:text'), $one_option;
+		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
 		$new_elem=$("<div>", {
 			id:html_id
 		});
@@ -387,23 +448,27 @@ var addElement = function(item,$prevField) {
 						type:"radio",
 						name:html_name,
 						value:$(el).attr('value')
-				});	
+				});
+				options_string+=$(el).attr('value')+"|";	
 				$new_elem.append($("<p>").append($one_option).append($("<span>"+$(el).attr('value')+"</span>")));
 		});
+		data.options_string=options_string;
 	}
 	else if(item=="dropdown") {
 		$new_elem=$('<select>',{
 			name:html_name,
 			id:html_id
 		});
-		var $text_inputs=$('#multi_options input:text'), $one_option;
+		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
 		$text_inputs.each(function(idx,el) {
 				$one_option=$('<option>', {
 						value:$(el).attr('value')
 				});	
+				options_string+=$(el).attr('value')+"|";
 				$one_option.html($(el).attr('value'));
 				$new_elem.append($one_option);
 		});
+		data.options_string=options_string;
 	}
 	else if(item=="numeric"){
 		$new_elem=$('<input/>', {
@@ -477,8 +542,45 @@ var addElement = function(item,$prevField) {
 		});
 	}
 	else if(item=='section'){
-		$new_elem=$('<div>').addClass('section_header').append('<hr/>').append($('<h2>'+label_text+'</h2>')).append($('<p class="field_text">'+help_text+'</p>'));
+		//this one's processed differently from the others
+		
+		var $outline=$('<div class="field_wrapper"></div>');
+		$outline.append('<hr/>').append($('<h2 class="section_header">'+label_text+'</h2>')).append($('<p class="field_text">'+help_text+'</p>'));
+		$currSection=$('<div>', {
+			id:'section_'+secCount,
+			'class':'section'
+		});
+		$outline.append($currSection);
+		$('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($outline);
+		$outline.toggle(function() {
+			onSelectField($(this));
+			$(this).children(".wrapper_button").addClass("wrapper_button_hover");
+		}, function(){
+			$(this).children(".wrapper_button").removeClass("wrapper_button_hover");
+			$(this).removeClass('field_selected');
+			$('#cat_selector').children('select[value=Generic]').attr('selected','selected');
+			onSelectCategory('Generic');
+			onSelectElem('textField');
+		});
+		$outline.appendTo($('div.form_preview')).dblclick(function(){
+			$currSection=$(this);
+		});
+		//currSection=$('#section_'+secCount);
+		$('div.form_preview').sortable();
+		secCount++;
+		$.data($outline[0],'data',data);
+		return $outline;
+		
+		/*$new_elem=
+		//$new_elem=$('<div>').addClass('section_header').append('<hr/>').append($('<h2>'+label_text+'</h2>')).append($('<p class="field_text">'+help_text+'</p>')).attr('id','section_'+secCount);
 		$new_elem_label.remove();
+		$new_elem.dblclick(function(){
+			$currSection=$(this);
+		});
+		$new_elem.appendTo($('div.form_preview'));
+		$currSection=$('#section_'+secCount);
+		secCount++;
+		return;*/
 	}
 	
 	//'Personal Information' Fields
@@ -542,17 +644,21 @@ var addElement = function(item,$prevField) {
 			size:'30'
 		});
 	}
+	else if(item=='courses'){
+		$new_elem=$('<select>');
+	}
 	
 	elemTypes[item]++;
 	$new_elem.appendTo($wrap);
 	$.data($wrap[0],'data',data);
+	
 	if($prevField.length==0)
-		$wrap.prependTo($('div.form_preview'));
+		$wrap.prependTo($currSection);
 	else
 		$wrap.insertAfter($prevField);
 	
 	//Making fields draggable
-	$('div.form_preview').sortable();
+	$currSection.sortable();
 	
 	return $wrap;
 };
@@ -611,7 +717,12 @@ var submit=function() {
 var updateTitle = function(){
 	//Updates the title for the form
 	
-	formTitle=$("#input_title").attr('value');
-	$("#form_title").html(formTitle);
+	$("#form_title").html($('#input_form_title').attr('value'));
+};
+
+var updateDesc=function() {
+	//Updates the form description
+	$('#form_description').html($('#input_form_description').attr('value'));
+	
 };
 

@@ -6,37 +6,43 @@
 		<script src="/media/scripts/json2.js"></script>
 		<script src="/media/scripts/custom_form.js"></script> 
 		 
+		<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui-1.8.13.custom.css">
 		<link rel="stylesheet" type="text/css" href="/media/styles/customforms-style.css">
+		
 	</head>
 	
 	<body>
 		<div class="wrapper">
 			
 			<div class="preview_area">
-				<h2 id='form_title'>Form Preview</h2>
+				<h2 id='form_title'>Form Title</h2>
+				<p id='form_description' class="field_text"></p>
 				<hr />
 				<br /><br/>
-				<div class="form_preview"></div>
+				<div class="form_preview">
+					<div id="section_0" class="section">
+					</div>	
+				</div>
 				<!--<input type="button" value="Create form" id="sbmt"/>-->
 			</div>
 			
-			<div class="form_toolbox">
-				<div id="toolbox_header"> 
-					<ul>
-						<li>Form Information</li>
-						<li>Form Fields</li>
-					</ul>
+			<div id="form_toolbox">
+				<h3><a href='#'>Form information</a></h3>
+				<div id="form_information">
+					<p>Form Title <input type='text' id='input_form_title' size='40'/></p>
+					<p>Description</p>
+					<textarea rows='5' cols='20' id='input_form_description'></textarea>
+					<p>Which program would you like to associate this form with?</p>
+					<select name='assoc_prog' id='id_assoc_prog'>						
+						<option value="-1">None</option>
+						{% for prog in prog_list %}
+							<option value="{{ prog.id }}">{{ prog.niceName }}</option>
+						{% endfor %}	
+					</select>	
 				</div>
-				
+					
+				<h3 id="header_fields"><a href='#'>Fields</a></h3>
 				<div id="toolbox_content">
-					<!--
-					<p>Give your form a title-</p>
-					<form>
-						<input type="text" id="input_title" />
-						<input type="button" id="button_title" value="Update"/>
-					</form>	
-					<br/>
-					-->
 				
 					<div id="field_selector">
 						<br/>
@@ -47,9 +53,7 @@
 								</td>
 								<td>
 									<select id="cat_selector" onChange="onSelectCategory($('#cat_selector').attr('value'))">
-										<option value="Generic" selected="selected">Generic</option>
-										<option value="Personal">Personal Information</option>
-										<option value="Program">Dummy Program</option>
+										
 									</select>
 								</td>
 							</tr>

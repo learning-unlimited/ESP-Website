@@ -30,6 +30,12 @@ body {
 	position:relative;
 }
 
+.section {
+	display:block;
+	padding:10px 10px;
+	position:relative;
+}
+
 .field_wrapper p{
 	margin:0px;
 	padding:0px;
@@ -69,7 +75,7 @@ body {
 	padding:0px;
 }
 
-.section_header h2{
+.section_header{
 	margin:0px;
 	padding:0px;
 }
@@ -85,7 +91,7 @@ body {
 /* End Form Preview Area */
 
 /* Form Toolbox */
-.form_toolbox {
+#form_toolbox {
 	width:360px;
 	height:800px;
 	background-color:#d2f8ff;
@@ -117,6 +123,12 @@ body {
 	
 }
 
+#form_information p{
+	margin:0;
+	padding:0;
+	margin-top:10px;
+}
+
 .toolboxText {
 	margin:0px;
 	padding-top:10px;
@@ -137,6 +149,8 @@ body {
 	padding:5px;
 	border: 1px solid;
 }
+
+
 /* End Form Toolbox */
 
 .help_text {
