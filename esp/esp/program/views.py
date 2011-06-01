@@ -92,10 +92,16 @@ def lottery_student_reg(request, program = None):
 
 #@transaction.commit_manually
 @login_required
-def lsr_submit(request, program = None):    
+def lsr_submit(request, program = None): 
     if program is None:
-        program = Program.objects.get(anchor__uri__contains="Spark/2011")
-
+        url_base = json.loads(request.POST['url_base'])
+        program = Program.objects.get(anchor__uri__contains=url_base)
+    
+    priority_limit = program.priorityLimit()
+    
+    if priority_limit > 1: 
+        return lsr_submit_HSSP(request, program, priority_limit) # temporary function. will merge the two later -jmoldow 05/31
+    
     # First check whether the user is actually a student.
     if not request.user.isStudent():
         raise ESPError(False), "You must be a student in order to access Spark student registration."
@@ -166,6 +172,74 @@ def lsr_submit(request, program = None):
     for s_id in classes_interest - already_interested_secids:
         if not sections_by_id[s_id].preregister_student(request.user, prereg_verb=reg_interested.name, overridefull=True):
             errors.append({"text": "Unable to add interested class", "cls_sections": [s_id], "emailcode": sections_by_id[s_id].emailcode(), "block": None, "flagged": False})
+
+    if len(errors) != 0:
+        s = StringIO()
+        pprint(errors, s)
+        mail_admins('Error in class reg', s.getvalue(), fail_silently=True)
+
+    return HttpResponse(json.dumps(errors), mimetype='application/json')
+
+
+#@transaction.commit_manually
+@login_required
+def lsr_submit_HSSP(request, program, priority_limit):  # temporary function. will merge the two later -jmoldow 05/31
+    
+    # First check whether the user is actually a student.
+    if not request.user.isStudent():
+        raise ESPError(False), "You must be a student in order to access Spark student registration."
+
+    data = json.loads(request.POST['json_data'])
+
+    classes_flagged = [set() for i in range(0,priority_limit+1)] # 1-indexed
+    sections_by_block = [defaultdict(set) for i in range(0,priority_limit+1)] # 1-indexed - sections_by_block[i][block] is a set of classes that were given priority i in timeblock block. This should hopefully be a set of size 0 or 1.
+    
+    for section_id, (priority, block_id) in data.iteritems():
+        section_id = int(section_id)
+        priority = int(priority)
+        block_id = int(block_id)
+        classes_flagged[0].add(section_id)
+        classes_flagged[priority].add(section_id)
+        sections_by_block[priority][block_id].add(section_id)
+        #sections_by_block[priority][]
+
+    errors = []
+    
+    for i in range(1, priority_limit+1):
+        for block in sections_by_block[i].keys():
+            if len(sections_by_block[i][block]) > 1:
+                errors.append({"text": "Can't flag two classes with the same priority at the same time!", "cls_sections": list(sections_by_block[i][block]), "block": block, "priority": i})
+    
+    if len(errors): 
+        return HttpResponse(json.dumps(errors), mimetype='application/json')
+
+    reg_priority = [(None,None)] + [RegistrationType.objects.get_or_create(name="Priority/"+str(i), category="student") for i in range(1,priority_limit+1)]
+    reg_priority = [reg_priority[i][0] for i in range(0, priority_limit+1)] 
+    
+    allStudentRegistrations = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=program, user=request.user)
+    oldRegistrations = [[] for i in range(0, priority_limit+1)] # 1-indexed for priority registrations, the 0-index is for interested registrations
+    
+    for i in range(1, priority_limit+1):
+        oldRegistrations[i] = list(allStudentRegistrations.filter(relationship=reg_priority[i]).select_related(depth=3))
+    
+    for oldRegistration in oldRegistrations:
+        if oldRegistration.section.id not in classes_flagged[0]:
+            oldRegistration.expire()
+            continue
+        for i in range(1, priority_limit + 1):
+            if oldRegistration.section.id in classes_flagged[i] and i != int(oldRegistration.relations.name[-1]):
+                oldRegistration.expire()
+                break
+            elif i == int(oldRegistration.relations.name[-1]):
+                classes_flagged[i].remove(oldRegistration.section.id)
+                classes_flagged[0].remove(oldRegistration.section.id)
+                
+    flagworthy_sections = [None] + [ClassSection.objects.filter(id__in=classes_flagged[i]).select_related('anchor').select_related(depth=2).annotate(first_block=Min('meeting_times__start')) for i in range(1, priority_limit + 1)]
+    
+    for i in range(1, priority_limit + 1):
+        for s in list(flagworthy_sections[i]):
+            if not s.preregister_student(request.user, prereg_verb=reg_priority[i].name, overridefull=True):
+                errors.append({"text": "Unable to add flagged class", "cls_sections": [s.id], "emailcode": s.emailcode(), "block": s.first_block, "flagged": True, "priority": i})
 
     if len(errors) != 0:
         s = StringIO()

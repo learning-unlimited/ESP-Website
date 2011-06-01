@@ -435,23 +435,28 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	    //submitForm.getForm().submit({url: 'lsr_submit'})
 	     classes = new Object;
 	     count = 0;
-
-	     for(i=0; i<checkbox_ids.length; i++) {
-		     checkbox = Ext.getCmp(checkbox_ids[i]);
-		     classes[checkbox_ids[i]] = checkbox.getValue();
-		     if (priority_limit == 1) {
+	     var val = 0;
+         if (priority_limit == 1) {
+	        for(i=0; i<checkbox_ids.length; i++) {
+		         checkbox = Ext.getCmp(checkbox_ids[i]);
+	             classes[checkbox_ids[i]] = checkbox.getValue();
 		         flag_id = 'flag_'+checkbox_ids[i];
 		         flag = Ext.getCmp(flag_id);
 		         classes[flag_id] = flag.getValue();
 		     }
-		     else {
-		        for(k = 1; k <= priority_limit; ++k) {
-		            flag_id = 'flag_'+k+'_'+checkbox_ids[i];
-		            flag = Ext.getCmp(flag_id);
-		            classes[flag_id] = flag.getValue(); 
-		        }
-		     }
-	     }
+	    }
+        else {
+            for(i = 0; i < this.num_tabs; i++) {
+                var ids = checkbox_ids_by_timeblock[this.tab_names[i][0]].split('_');
+                alert(ids);
+                for (j = 0; j < ids.length - 1; ++j) {
+                    if (val = parseInt(Ext.getCmp("combo_"+ids[j]).getValue())) {
+		                classes[ids[j]] = new Array(val, this.tab_names[i][0]);
+		                alert(classes[ids[j]]);
+		            }
+                }
+            }    
+        }
 
 	     /*
 	     for(i=0; i<flag_ids.length; i++){
