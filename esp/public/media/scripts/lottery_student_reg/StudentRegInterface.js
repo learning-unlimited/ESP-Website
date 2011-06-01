@@ -1,4 +1,5 @@
 checkbox_ids = [];
+var checkbox_ids_by_timeblock = new Array();
 
 StudentRegInterface = Ext.extend(Ext.TabPanel, {
 
@@ -83,13 +84,18 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	},
     
     prepopulateData: function (store, records, options) {
-	    for (i = 0; i<records.length; i++){
+        for (i = 0; i<records.length; i++){
 		r = records[i];
 		if(r.data.type == 'Interested'){
 		    Ext.getCmp(r.data.section_id).setValue(true);
 		}
-		if(r.data.type == 'Priority/1'){
-		    Ext.getCmp('flag_'+r.data.section_id).setValue(true);
+		if((! r.data.type.indexOf('Priority/')) && (r.data.type.length == 'Priority/'.length + 1) && (parseInt(r.data.type.substring(r.data.type.length-1))) && (parseInt(r.data.type.substring(r.data.type.length-1)) <= priority_limit)){
+		    if (priority_limit == 1) {
+		        Ext.getCmp('flag_'+r.data.section_id).setValue(true);
+		    }
+		    else{
+		        Ext.getCmp('combo_' + r.data.section_id).setValue(parseInt(r.data.type.substring(r.data.type.length-1)));
+	        }
 		}
 	    }
 	},
@@ -141,8 +147,8 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	flag_added = [];
 
 	//makes tabs with id = short_description of timeblock
-	for(i = 0; i < this.num_tabs; i++)
-	    {
+	for(i = 0; i < this.num_tabs; i++) {
+	    checkbox_ids_by_timeblock[this.tab_names[i][0]] = "";
 		//alert(this.tab_names[i]);
 		tabs[this.tab_names[i][0]] = 
 		    {
@@ -154,7 +160,35 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 			autoScroll: true,
 			monitorResize: true,
 			listeners: {
-			    render: function() { num_opened_tabs++; }
+			    render: function() { num_opened_tabs++; }, 
+			    beforehide: function(tab) {
+			        var priorities = new Array(priority_limit + 1);
+			        for(i=0; i <= priority_limit; ++i) {
+			            priorities[i] = 0;
+			        }
+			        /*
+			        if (!Ext.iterate(tab.items, function(key, value, it) {
+			            alert(key);
+			            alert(value);
+			            if (++priorities[Ext.getCmp('combo_'+value.getId().split('_')[1]).getValue()] > 1) {
+			                return false;
+			            } 
+			            return true;
+			        })) {
+			            alert("You assigned multiple classes to have the same priority. Please fix this.");
+		                return false;
+			        }*/
+			        var ids = checkbox_ids_by_timeblock[tab.getId()].split('_');
+			        for(i=0; i < ids.length - 1; ++i) {
+			            //if (++priorities[parseInt(tab.items[i].items[0].getValue())] > 1) {
+			            if (parseInt(Ext.getCmp("combo_"+ids[i]).getValue()) && ++priorities[Ext.getCmp("combo_"+ids[i]).getValue()] > 1) {
+			                alert("You assigned multiple classes to have the same priority. Please fix this.");
+			                tab.show();
+			                return false;
+			            }
+			        }
+			        return true;
+			    }
 			}
 			}
 		if (priority_limit == 1) {
@@ -176,50 +210,14 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 		        ]
 		    });
 		}
-		else {
-		    for (j = 1; j <= priority_limit; ++j) {
-	            new_column = {
-	                xtype: 'fieldset',
-				    layout: 'column',
-				    id: this.tab_names[i][1]+'no_class_'+j,
-				    name: this.tab_names[i][1]+'no_class_'+j,
-	                items: []
-	            }
-	            for (k = 1; k <= priority_limit; ++k) {
-	                if (j == k) {
-	                    new_column.items.push({
-	                        xtype: 'radio',
-					        id: 'flag_'+k+'_'+this.tab_names[i][0],
-					        name: 'flag_'+k+'_'+this.tab_names[i][0]
-	                    });
-	                }
-	                else {
-	                    new_column.items.push({
-	                        xtype: 'radio',
-					        id: 'flag_'+k+'_'+this.tab_names[i][0],
-					        name: 'flag_'+k+'_'+this.tab_names[i][0],
-					        hidden: true,
-					        hideMode: "visibility",
-					        disabled: true
-	                    });
-	                }
-	            }
-	            new_column.items.push({
-                    xtype: 'checkbox',
-                    name: new_column.id+'_checkbox_hidden',
-                    id: new_column.id+'_checkbox_hidden',
-                    hidden: true,
-			        hideMode: "visibility",
-			        disabled: true
-                });
-	            new_column.items.push({ 
-			        xtype: 'displayfield',
-			        value: "I would not like to flag a priority " + j + " class for this timeblock."
-		        });
-		        tabs[this.tab_names[i][0]].items.push(new_column);
-            }
 		}
-	    }
+		// this will be needed later, when making dropdown boxes
+		var dropdown_states_data = [];
+		dropdown_states_data.push(['0','none']);
+        for (i = 1; i <= priority_limit; ++i) {
+            dropdown_states_data.push([String(i),String(i)]);
+        }
+		
 	    //itterate through records (classes)
 	    for (i = 0; i < records.length; i++)
 	    { 
@@ -286,10 +284,10 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	            new_column = {
 				        xtype: 'fieldset',
 				        layout: 'column',
-				        id: timeblock.short_description+r.data.title,
+				        id: 'column_'+checkbox_id,
 				        name: timeblock.short_description+r.data.title,
 				        items: []
-		        }
+		        }/*
 		        for (k = 1; k <= priority_limit; ++k) {
 		            new_column.items.push({
 					       xtype: 'radio',
@@ -299,19 +297,36 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 					           
 					       }
 	                });
-                }
+                }*/
+                new_column.items.push({
+                    xtype: 'combo',
+                    hiddenName: 'priority_' + checkbox_id,
+                    hiddenID: 'priority_' + checkbox_id,
+                    id: 'combo_' + checkbox_id,
+                    name: 'combo_' + checkbox_id,
+                    store: dropdown_states_data,
+                    queryMode: 'local',
+                    submitValue: true,
+                    width: 70,
+                    editable: false,
+                    triggerAction: 'all',
+                    value: '0'
+                });
+                /*
                 new_column.items.push({
                     xtype: 'checkbox',
 			        name: checkbox_id,
 			        id: checkbox_id
                 });
+                */
                 new_column.items.push({
 		            xtype: 'displayfield',
-		            value: text,
+		            value: " &nbsp; &nbsp; &nbsp; &nbsp; " + text,
 		            autoHeight: true,
 		            id: 'title_'+ checkbox_id 
 			    });
 			    tabs[timeblock.id].items.push(new_column)
+			    checkbox_ids_by_timeblock[timeblock.id] += (checkbox_id+"_");
 		    }
 		    }
 		}
@@ -396,7 +411,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
             for(j = 1; j <= priority_limit; ++j) {
                 flagged_classes = flagged_classes + '<br /><b>Priority ' + j + '</b><br />';
                 for(i = 0; i<checkbox_ids.length; i++){
-                    if (Ext.getCmp('flag_'+j+'_'+checkbox_ids[i]).getValue() == true){
+                    if (Ext.getCmp('combo_'+checkbox_ids[i]).getValue() == j){
                         title = Ext.getCmp('title_'+checkbox_ids[i]).getValue();
                         flagged_classes = flagged_classes + title + '<br />';
                     }
@@ -487,7 +502,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	     Ext.Ajax.request({
 		     url: 'lsr_submit',
 		     success: handle_submit_response,
-		     params: {'json_data': data},
+		     params: {'json_data': data, 'url_base': url_base},
 		     method: 'POST'
 		 });
     }
