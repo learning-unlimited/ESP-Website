@@ -376,6 +376,7 @@ then
 	python -m easy_install xlwt
 	python -m easy_install simplejson
 	python -m easy_install twill
+	python -m easy_install django-form-utils
 
 	#	Install sslauth
 	if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]
@@ -579,6 +580,7 @@ fi
 if [[ "$MODE_DB" || "$MODE_ALL" ]]
 then
     sudo -u postgres psql template1 -c "CREATE LANGUAGE plpgsql;"
+    sudo -u postgres psql -c "DROP ROLE IF EXISTS $DBUSER;"
 	sudo -u postgres psql -c "CREATE USER $DBUSER CREATEDB;"
 	sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
 	sudo -u postgres psql -c "DROP DATABASE $DBNAME;"

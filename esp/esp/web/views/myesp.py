@@ -126,7 +126,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
 
     if prog_input is None:
-        prog = Program.getDummy()
+        prog = None
         navnode = GetNode('Q/Web/myesp')
     else:
         prog = prog_input

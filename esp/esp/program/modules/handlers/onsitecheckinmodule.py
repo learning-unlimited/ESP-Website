@@ -138,7 +138,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         if 'grades' in snippet_list:
             grade_levels = {}
             for student in students:
-                grade = student.getGrade()
+                grade = student.getGrade(self.program)
                 if grade not in grade_levels:
                     grade_levels[grade] = 0
                 grade_levels[grade] += 1
@@ -219,4 +219,8 @@ class OnSiteCheckinModule(ProgramModuleObj):
             return self.goToCore(tl)
 
         return render_to_response(self.baseDir()+'checkin.html', request, (prog, tl), {'module': self})
+
+
+    class Meta:
+        abstract = True
 

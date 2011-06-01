@@ -1,4 +1,5 @@
 checkbox_ids = [];
+var checkbox_ids_by_timeblock = new Array();
 
 StudentRegInterface = Ext.extend(Ext.TabPanel, {
 
@@ -7,17 +8,6 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 
     initComponent: function () {
     
-    if (esp_user["cur_grade"])
-    {
-        grade = esp_user.cur_grade;
-        //  console.log("Got user grade: " + grade);
-    }
-    else
-    {
-        grade = 0;
-        alert("Could not determine your grade!  Please fill out the profile and then return to this page.");
-    }
-
     Ext.Ajax.request({
 	    url: '/learn/'+url_base+'/timeslots_json',
 	    success: function (response, opts) {
@@ -94,13 +84,18 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	},
     
     prepopulateData: function (store, records, options) {
-	    for (i = 0; i<records.length; i++){
+        for (i = 0; i<records.length; i++){
 		r = records[i];
 		if(r.data.type == 'Interested'){
 		    Ext.getCmp(r.data.section_id).setValue(true);
 		}
-		if(r.data.type == 'Priority/1'){
-		    Ext.getCmp('flag_'+r.data.section_id).setValue(true);
+		if((! r.data.type.indexOf('Priority/')) && (r.data.type.length == 'Priority/'.length + 1) && (parseInt(r.data.type.substring(r.data.type.length-1))) && (parseInt(r.data.type.substring(r.data.type.length-1)) <= priority_limit)){
+		    if (priority_limit == 1) {
+		        Ext.getCmp('flag_'+r.data.section_id).setValue(true);
+		    }
+		    else{
+		        Ext.getCmp('combo_' + r.data.section_id).setValue(parseInt(r.data.type.substring(r.data.type.length-1)));
+	        }
 		}
 	    }
 	},
@@ -152,8 +147,8 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	flag_added = [];
 
 	//makes tabs with id = short_description of timeblock
-	for(i = 0; i < this.num_tabs; i++)
-	    {
+	for(i = 0; i < this.num_tabs; i++) {
+	    checkbox_ids_by_timeblock[this.tab_names[i][0]] = "";
 		//alert(this.tab_names[i]);
 		tabs[this.tab_names[i][0]] = 
 		    {
@@ -165,31 +160,64 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 			autoScroll: true,
 			monitorResize: true,
 			listeners: {
-			    render: function() { num_opened_tabs++; }
-			},
-			items: [
-		                    {
-					xtype: 'fieldset',
-					layout: 'column',
-					id: this.tab_names[i][1]+'no_class',
-					name: this.tab_names[i][1]+'no_class',
-					items: 
-					[
-		                            {
-						xtype: 'radio',
-						id: 'flag_'+this.tab_names[i][0],
-						name: 'flag_'+this.tab_names[i][0]
-					    }, 
-		                            { 
-						xtype: 'displayfield',
-						value: "I would not like to flag a priority class for this timeblock."
-					    }
-				       ]
-				    }
-                        ]
-
-		    }
-	    }
+			    render: function() { num_opened_tabs++; }, 
+			    beforehide: function(tab) {
+			        var priorities = new Array(priority_limit + 1);
+			        for(i=0; i <= priority_limit; ++i) {
+			            priorities[i] = 0;
+			        }
+			        /*
+			        if (!Ext.iterate(tab.items, function(key, value, it) {
+			            alert(key);
+			            alert(value);
+			            if (++priorities[Ext.getCmp('combo_'+value.getId().split('_')[1]).getValue()] > 1) {
+			                return false;
+			            } 
+			            return true;
+			        })) {
+			            alert("You assigned multiple classes to have the same priority. Please fix this.");
+		                return false;
+			        }*/
+			        var ids = checkbox_ids_by_timeblock[tab.getId()].split('_');
+			        for(i=0; i < ids.length - 1; ++i) {
+			            //if (++priorities[parseInt(tab.items[i].items[0].getValue())] > 1) {
+			            if (parseInt(Ext.getCmp("combo_"+ids[i]).getValue()) && ++priorities[Ext.getCmp("combo_"+ids[i]).getValue()] > 1) {
+			                alert("You assigned multiple classes to have the same priority. Please fix this.");
+			                tab.show();
+			                return false;
+			            }
+			        }
+			        return true;
+			    }
+			}
+			}
+		if (priority_limit == 1) {
+		    tabs[this.tab_names[i][0]].items.push({
+				xtype: 'fieldset',
+				layout: 'column',
+				id: this.tab_names[i][1]+'no_class',
+				name: this.tab_names[i][1]+'no_class',
+				items: 
+				[
+				    {
+				        xtype: 'radio',
+					    id: 'flag_'+this.tab_names[i][0],
+					    name: 'flag_'+this.tab_names[i][0]
+			        },{ 
+					    xtype: 'displayfield',
+					    value: "I would not like to flag a priority class for this timeblock."
+			        }
+		        ]
+		    });
+		}
+		}
+		// this will be needed later, when making dropdown boxes
+		var dropdown_states_data = [];
+		dropdown_states_data.push(['0','none']);
+        for (i = 1; i <= priority_limit; ++i) {
+            dropdown_states_data.push([String(i),String(i)]);
+        }
+		
 	    //itterate through records (classes)
 	    for (i = 0; i < records.length; i++)
 	    { 
@@ -219,37 +247,87 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 			text = text + r.data.category.symbol + r.data.id + ': ' + r.data.title + ', ';
 			end_timeblock = r.data.get_sections[j].get_meeting_times[r.data.get_sections[j].get_meeting_times.length-1];
 			text = text + timeblock.start.substring(11,16) + ' - ' + end_timeblock.end.substring(11,16);
-	
-			tabs[timeblock.id].items.push({
-				    xtype: 'fieldset',
-				    layout: 'column',
-				    id: timeblock.short_description+r.data.title,
-				    name: timeblock.short_description+r.data.title,
-				    items: 
-				    [
-			               {
-					   xtype: 'radio',
-					   id: 'flag_'+checkbox_id,
-					   name: 'flag_'+timeblock.id,
-					   inputValue: r.data.id,
-					   listeners: { //listener changes the flagged classes box at the top when the flagged class changes
-					       
-					   }
-				       }, 
-			               {
-					   xtype: 'checkbox',
-					   name: checkbox_id,
-					   id: checkbox_id
-				       }, 
-			               { 
-					   xtype: 'displayfield',
-					   value: text,
-					   autoHeight: true,
-					   id: 'title_'+ checkbox_id 
-				       }
-				    ]
+	        
+	        if (priority_limit == 1) {
+			    tabs[timeblock.id].items.push({
+				        xtype: 'fieldset',
+				        layout: 'column',
+				        id: timeblock.short_description+r.data.title,
+				        name: timeblock.short_description+r.data.title,
+				        items: 
+				        [
+			                   {
+					       xtype: 'radio',
+					       id: 'flag_'+checkbox_id,
+					       name: 'flag_'+timeblock.id,
+					       inputValue: r.data.id,
+					       listeners: { //listener changes the flagged classes box at the top when the flagged class changes
+					           
+					       }
+				           }, 
+			                   {
+					       xtype: 'checkbox',
+					       name: checkbox_id,
+					       id: checkbox_id
+				           }, 
+			                   { 
+					       xtype: 'displayfield',
+					       value: text,
+					       autoHeight: true,
+					       id: 'title_'+ checkbox_id 
+				           }
+				        ]
 			
-			});
+			    });
+		    }
+            else {
+	            new_column = {
+				        xtype: 'fieldset',
+				        layout: 'column',
+				        id: 'column_'+checkbox_id,
+				        name: timeblock.short_description+r.data.title,
+				        items: []
+		        }/*
+		        for (k = 1; k <= priority_limit; ++k) {
+		            new_column.items.push({
+					       xtype: 'radio',
+					       id: 'flag_'+k+'_'+checkbox_id,
+					       name: 'flag_'+k+'_'+timeblock.id,
+					       listeners: { //listener changes the flagged classes box at the top when the flagged class changes
+					           
+					       }
+	                });
+                }*/
+                new_column.items.push({
+                    xtype: 'combo',
+                    hiddenName: 'priority_' + checkbox_id,
+                    hiddenID: 'priority_' + checkbox_id,
+                    id: 'combo_' + checkbox_id,
+                    name: 'combo_' + checkbox_id,
+                    store: dropdown_states_data,
+                    queryMode: 'local',
+                    submitValue: true,
+                    width: 70,
+                    editable: false,
+                    triggerAction: 'all',
+                    value: '0'
+                });
+                /*
+                new_column.items.push({
+                    xtype: 'checkbox',
+			        name: checkbox_id,
+			        id: checkbox_id
+                });
+                */
+                new_column.items.push({
+		            xtype: 'displayfield',
+		            value: " &nbsp; &nbsp; &nbsp; &nbsp; " + text,
+		            autoHeight: true,
+		            id: 'title_'+ checkbox_id 
+			    });
+			    tabs[timeblock.id].items.push(new_column)
+			    checkbox_ids_by_timeblock[timeblock.id] += (checkbox_id+"_");
+		    }
 		    }
 		}
 		}//end if for walk in seminars
@@ -320,12 +398,25 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	},
 
     promptCheck: function() {
-	    flagged_classes = 'Please check to see that these are the classes you intended to flag:<ul>';
-	    for(i = 0; i<checkbox_ids.length; i++){
-		if (Ext.getCmp('flag_'+checkbox_ids[i]).getValue() == true){
-		    title = Ext.getCmp('title_'+checkbox_ids[i]).getValue();
-		    flagged_classes = flagged_classes + title + '<ul>';
-		}
+	    flagged_classes = 'Please check to see that these are the classes you intended to flag:<br />';
+	    if (priority_limit == 1) {
+	        for(i = 0; i<checkbox_ids.length; i++){
+	            if (Ext.getCmp('flag_'+checkbox_ids[i]).getValue() == true){
+		            title = Ext.getCmp('title_'+checkbox_ids[i]).getValue();
+		            flagged_classes = flagged_classes + title + '<br />';
+		        }
+	        }
+	    }
+        else {
+            for(j = 1; j <= priority_limit; ++j) {
+                flagged_classes = flagged_classes + '<br /><b>Priority ' + j + '</b><br />';
+                for(i = 0; i<checkbox_ids.length; i++){
+                    if (Ext.getCmp('combo_'+checkbox_ids[i]).getValue() == j){
+                        title = Ext.getCmp('title_'+checkbox_ids[i]).getValue();
+                        flagged_classes = flagged_classes + title + '<br />';
+                    }
+                }
+            }
 	    }
 	    flagged_classes = flagged_classes + '<br><br><b> After you enter the lottery, remember to finish registering on the main registration page.</b>'
 	    Ext.Msg.show({
@@ -344,14 +435,28 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	    //submitForm.getForm().submit({url: 'lsr_submit'})
 	     classes = new Object;
 	     count = 0;
-
-	     for(i=0; i<checkbox_ids.length; i++) {
-		 checkbox = Ext.getCmp(checkbox_ids[i]);
-		 classes[checkbox_ids[i]] = checkbox.getValue();
-		 flag_id = 'flag_'+checkbox_ids[i];
-		 flag = Ext.getCmp(flag_id);
-		 classes[flag_id] = flag.getValue();
-	     }
+	     var val = 0;
+         if (priority_limit == 1) {
+	        for(i=0; i<checkbox_ids.length; i++) {
+		         checkbox = Ext.getCmp(checkbox_ids[i]);
+	             classes[checkbox_ids[i]] = checkbox.getValue();
+		         flag_id = 'flag_'+checkbox_ids[i];
+		         flag = Ext.getCmp(flag_id);
+		         classes[flag_id] = flag.getValue();
+		     }
+	    }
+        else {
+            for(i = 0; i < this.num_tabs; i++) {
+                var ids = checkbox_ids_by_timeblock[this.tab_names[i][0]].split('_');
+                alert(ids);
+                for (j = 0; j < ids.length - 1; ++j) {
+                    if (val = parseInt(Ext.getCmp("combo_"+ids[j]).getValue())) {
+		                classes[ids[j]] = new Array(val, this.tab_names[i][0]);
+		                alert(classes[ids[j]]);
+		            }
+                }
+            }    
+        }
 
 	     /*
 	     for(i=0; i<flag_ids.length; i++){
@@ -402,7 +507,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	     Ext.Ajax.request({
 		     url: 'lsr_submit',
 		     success: handle_submit_response,
-		     params: {'json_data': data},
+		     params: {'json_data': data, 'url_base': url_base},
 		     method: 'POST'
 		 });
     }
@@ -420,7 +525,7 @@ win = new Ext.Panel({
       items: [{ xtype: 'lottery_student_reg', 
 	  id: 'sri'
 	  }],
-      title: nice_name + ' Class Lottery - ' + esp_user["cur_first_name"] + ' ' + esp_user["cur_last_name"] + ' (grade ' + esp_user["cur_grade"] + ')',
+      title: nice_name + ' Class Lottery - ' + esp_user["cur_first_name"] + ' ' + esp_user["cur_last_name"] + ' (grade ' + grade + ')',
       autoWidth: true,
       autoHeight: true
       });

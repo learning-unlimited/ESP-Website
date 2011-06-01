@@ -97,3 +97,7 @@ class RemoteTeacherProfile(ProgramModuleObj):
         return render_to_response(self.baseDir() + 'editprofile.html', request, (prog, tl), context)
 
 
+
+    class Meta:
+        abstract = True
+

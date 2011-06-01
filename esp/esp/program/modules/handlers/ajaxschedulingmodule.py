@@ -398,3 +398,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'securityschedule.html', request, (prog, tl), context)
             
         
+
+    class Meta:
+        abstract = True
+

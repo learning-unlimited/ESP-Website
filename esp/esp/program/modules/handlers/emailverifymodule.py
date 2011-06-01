@@ -123,3 +123,7 @@ class EmailVerifyModule(ProgramModuleObj):
     
 
 
+
+    class Meta:
+        abstract = True
+

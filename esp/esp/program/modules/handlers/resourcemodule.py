@@ -238,3 +238,7 @@ class ResourceModule(ProgramModuleObj):
         #   Display default form
         return render_to_response(self.baseDir()+'resource_main.html', request, (prog, tl), context)
     
+
+    class Meta:
+        abstract = True
+

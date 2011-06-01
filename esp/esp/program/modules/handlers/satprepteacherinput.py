@@ -80,3 +80,7 @@ class SATPrepTeacherInput(ProgramModuleObj):
         return False
     
 
+
+    class Meta:
+        abstract = True
+

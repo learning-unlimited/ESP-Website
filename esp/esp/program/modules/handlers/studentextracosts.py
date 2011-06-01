@@ -172,3 +172,7 @@ class StudentExtraCosts(ProgramModuleObj):
                                       (self.program, tl),
                                       { 'forms': forms, 'financial_aid': ESPUser(request.user).hasFinancialAid(prog.anchor), 'select_qty': len(multicosts_list) > 0 })
 
+
+    class Meta:
+        abstract = True
+

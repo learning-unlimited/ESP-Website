@@ -56,3 +56,7 @@ class StudentRegConfirm(ProgramModuleObj):
 
     def hideNotRequired(self):
         return True
+
+    class Meta:
+        abstract = True
+

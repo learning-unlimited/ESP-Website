@@ -928,12 +928,16 @@ class ESPUser(User, AnonymousUser):
             if regProf and regProf.student_info:
                 if regProf.student_info.graduation_year:
                     grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year)
+                    if program:
+                        grade += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
+                        
 
         self._grade = grade
 
         return grade
     #   The cache will need to be cleared once per academic year.
     getGrade.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
+    getGrade.depend_on_row(lambda: Tag, lambda tag: {'program' :  tag.target})
 
     def currentSchoolYear(self):
         return ESPUser.current_schoolyear()-1

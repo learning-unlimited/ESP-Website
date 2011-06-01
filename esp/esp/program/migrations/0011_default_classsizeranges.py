@@ -4,33 +4,16 @@ from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 
-from esp.datatree.models import GetNode
-from esp.program.models import ClassSizeRange, Program
-
-from esp.program import models as program_models
-
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        #   Make sure Program initial data is there.
-        program_models.install()
-    
-        dummy_prog = Program.objects.get(anchor=GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
-        ClassSizeRange.objects.get_or_create(range_min=4, range_max=10, program=dummy_prog)
-        ClassSizeRange.objects.get_or_create(range_min=10, range_max=15, program=dummy_prog)
-        ClassSizeRange.objects.get_or_create(range_min=15, range_max=22, program=dummy_prog)
-        ClassSizeRange.objects.get_or_create(range_min=22, range_max=27, program=dummy_prog)
-        ClassSizeRange.objects.get_or_create(range_min=27, range_max=35, program=dummy_prog)
-        ClassSizeRange.objects.get_or_create(range_min=35, range_max=45, program=dummy_prog)
-        ClassSizeRange.objects.get_or_create(range_min=45, range_max=60, program=dummy_prog)
-        ClassSizeRange.objects.get_or_create(range_min=60, range_max=200, program=dummy_prog)
-
+        #   Changed to accommodate NULL program column; 
+        #   default ClassSizeRanges now loaded in migration 0022_allow_null_program
+        pass
 
     def backwards(self, orm):
-        dummy_prog = Program.objects.get(anchor=GetNode('Q/Programs/Dummy_Programs/Profile_Storage'))
-        dummy_ranges = ClassSizeRange.objects.filter(program=dummy_prog)
-        dummy_ranges.delete()
-
+        #   No-op
+        pass
 
     models = {
         'auth.group': {

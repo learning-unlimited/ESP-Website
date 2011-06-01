@@ -306,15 +306,6 @@ class Program(models.Model):
     isUsingStudentApps.depend_on_model(_SAQ)
 
     @cache_function
-    def getDummy():
-        try:
-            return Program.objects.get(anchor = GetNode("Q/Programs/Dummy_Programs/Profile_Storage"))
-        except:
-            raise ESPError(), 'Error: There needs to exist an administrive program anchored at Q/Programs/Dummy_Programs/Profile_Storage.'
-    getDummy.depend_on_model(lambda: Program)
-    getDummy = staticmethod(getDummy)
-
-    @cache_function
     def checkitems_all_cached(self):
         """  The main Manage page requests checkitems.all() O(n) times in
         the number of classes in the program.  Minimize the number of these
@@ -1020,6 +1011,21 @@ class Program(models.Model):
             print 'Archived: %s' % c.title()
         
         return archived_classes
+
+    @cache_function
+    def incrementGrade(self): 
+        incrementTag = Tag.getProgramTag('increment_default_grade_levels', self)
+        if incrementTag: 
+            return 1
+        return 0
+    incrementGrade.depend_on_row(lambda: Tag, lambda tag: {'self' :  tag.target})
+    
+    def priorityLimit(self):
+        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        if studentregmodule and studentregmodule.use_priority and studentregmodule.priority_limit > 0:
+            return studentregmodule.priority_limit
+        else: 
+            return 1
     
     @staticmethod
     def find_by_perms(user, verb):
@@ -1167,7 +1173,7 @@ class SATPrepRegInfo(models.Model):
 class RegistrationProfile(models.Model):
     """ A student registration form """
     user = AjaxForeignKey(User)
-    program = models.ForeignKey(Program, null=True)
+    program = models.ForeignKey(Program, blank=True, null=True)
     contact_user = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_user')
     contact_guardian = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_guardian')
     contact_emergency = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_emergency')
@@ -1248,8 +1254,11 @@ class RegistrationProfile(models.Model):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
         regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
         if len(regProfList) < 1:
-            # Has this user already filled out a profile for the parent program?
-            parent_program = program.getParentProgram()
+            if program:
+                # Has this user already filled out a profile for the parent program?
+                parent_program = program.getParentProgram()
+            else:
+                parent_program = None
             if parent_program is not None:
                 regProf = RegistrationProfile.getLastForProgram(user, parent_program)
                 regProf.program = program
@@ -1307,7 +1316,7 @@ class RegistrationProfile(models.Model):
 class TeacherBio(models.Model):
     """ This is the biography of a teacher."""
 
-    program = models.ForeignKey(Program)
+    program = models.ForeignKey(Program, blank=True, null=True)
     user    = AjaxForeignKey(User)
     bio     = models.TextField(blank=True, null=True)
     slugbio = models.CharField(max_length=50, blank=True, null=True)
@@ -1333,14 +1342,10 @@ class TeacherBio(models.Model):
     def save(self, *args, **kwargs):
         """ update the timestamp """
         self.last_ts = datetime.now()
-        if self.program_id is None:
-            self.program = Program.getDummy()
         super(TeacherBio, self).save(*args, **kwargs)
 
     def url(self):
         return '/teach/teachers/%s/bio.html' % self.user.username
-
-
 
     def edit_url(self):
         return '/teach/teachers/%s/bio.edit.html' % self.user.username
@@ -1881,8 +1886,3 @@ from esp.program.models.app_ import *
 # The following are only so that we can refer to them in caching Program.getModules.
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo
-
-def install():
-    """ Setup for program. """
-    from esp.program.dummy_program import init_dummy_program
-    init_dummy_program()

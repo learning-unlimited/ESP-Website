@@ -231,3 +231,7 @@ Student schedule for %s:
                
         return schedule
 
+
+    class Meta:
+        abstract = True
+

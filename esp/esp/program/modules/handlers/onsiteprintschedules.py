@@ -111,3 +111,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
 #        return module.studentschedules(request, *args, **kwargs)
         return ProgramPrintables.get_student_schedules(request, [self.user], self.program, onsite=True)
         
+
+    class Meta:
+        abstract = True
+

@@ -49,8 +49,6 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         m = ProgramModule.objects.get(handler='RegProfileModule', module_type='learn')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, m)
 
-        self.dummyprog = Program.getDummy()
-
     def runTest(self):
         from esp.program.models import RegistrationProfile
 
@@ -69,7 +67,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         # First student: Test copying of sufficiently recent profiles
         self.moduleobj.user = self.students[0]
         prof = self.students[0].getLastProfile()
-        prof.program = self.dummyprog
+        prof.program = None
         prof.save()
         self.failUnless( self.students[0].registrationprofile_set.count() >= 1, "Profile failed to save." )
         self.failUnless( self.students[0].registrationprofile_set.count() <= 1, "Too many profiles." )
@@ -80,7 +78,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         # Second student: Test non-auto-saving of sufficiently old profiles
         self.moduleobj.user = self.students[1]
         prof = self.students[1].getLastProfile()
-        prof.program = self.dummyprog
+        prof.program = None
         # HACK -- save properly to dump the appropriate cache.
         # Then save sneakily so that we can override the timestamp.
         prof.save()

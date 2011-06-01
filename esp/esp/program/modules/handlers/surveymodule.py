@@ -117,3 +117,7 @@ class SurveyModule(ProgramModuleObj):
         elif extra == 'review_single':
             return survey_review_single(request, tl, one, two)
         
+
+    class Meta:
+        abstract = True
+

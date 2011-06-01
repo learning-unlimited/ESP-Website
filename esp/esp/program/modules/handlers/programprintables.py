@@ -1482,3 +1482,7 @@ Student schedule for %s:
                                
         response['Content-Disposition'] = 'attachment; filename=ok_times.csv'
         return response
+
+    class Meta:
+        abstract = True
+
