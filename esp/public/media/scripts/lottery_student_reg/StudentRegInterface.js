@@ -155,29 +155,70 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 			monitorResize: true,
 			listeners: {
 			    render: function() { num_opened_tabs++; }
-			},
-			items: [
-		                    {
-					xtype: 'fieldset',
-					layout: 'column',
-					id: this.tab_names[i][1]+'no_class',
-					name: this.tab_names[i][1]+'no_class',
-					items: 
-					[
-		                            {
-						xtype: 'radio',
-						id: 'flag_'+this.tab_names[i][0],
-						name: 'flag_'+this.tab_names[i][0]
-					    }, 
-		                            { 
-						xtype: 'displayfield',
-						value: "I would not like to flag a priority class for this timeblock."
-					    }
-				       ]
-				    }
-                        ]
-
-		    }
+			}
+			}
+		if (priority_limit == 1) {
+		    tabs[this.tab_names[i][0]].items.push({
+				xtype: 'fieldset',
+				layout: 'column',
+				id: this.tab_names[i][1]+'no_class',
+				name: this.tab_names[i][1]+'no_class',
+				items: 
+				[
+				    {
+				        xtype: 'radio',
+					    id: 'flag_'+this.tab_names[i][0],
+					    name: 'flag_'+this.tab_names[i][0]
+			        },{ 
+					    xtype: 'displayfield',
+					    value: "I would not like to flag a priority class for this timeblock."
+			        }
+		        ]
+		    });
+		}
+		else {
+		    for (j = 1; j <= priority_limit; ++j) {
+	            new_column = {
+	                xtype: 'fieldset',
+				    layout: 'column',
+				    id: this.tab_names[i][1]+'no_class_'+j,
+				    name: this.tab_names[i][1]+'no_class_'+j,
+	                items: []
+	            }
+	            for (k = 1; k <= priority_limit; ++k) {
+	                if (j == k) {
+	                    new_column.items.push({
+	                        xtype: 'radio',
+					        id: 'flag_'+k+'_'+this.tab_names[i][0],
+					        name: 'flag_'+k+'_'+this.tab_names[i][0]
+	                    });
+	                }
+	                else {
+	                    new_column.items.push({
+	                        xtype: 'radio',
+					        id: 'flag_'+k+'_'+this.tab_names[i][0],
+					        name: 'flag_'+k+'_'+this.tab_names[i][0],
+					        hidden: true,
+					        hideMode: "visibility",
+					        disabled: true
+	                    });
+	                }
+	            }
+	            new_column.items.push({
+                    xtype: 'checkbox',
+                    name: new_column.id+'_checkbox_hidden',
+                    id: new_column.id+'_checkbox_hidden',
+                    hidden: true,
+			        hideMode: "visibility",
+			        disabled: true
+                });
+	            new_column.items.push({ 
+			        xtype: 'displayfield',
+			        value: "I would not like to flag a priority " + j + " class for this timeblock."
+		        });
+		        tabs[this.tab_names[i][0]].items.push(new_column);
+            }
+		}
 	    }
 	    //itterate through records (classes)
 	    for (i = 0; i < records.length; i++)
@@ -208,37 +249,70 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 			text = text + r.data.category.symbol + r.data.id + ': ' + r.data.title + ', ';
 			end_timeblock = r.data.get_sections[j].get_meeting_times[r.data.get_sections[j].get_meeting_times.length-1];
 			text = text + timeblock.start.substring(11,16) + ' - ' + end_timeblock.end.substring(11,16);
-	
-			tabs[timeblock.id].items.push({
-				    xtype: 'fieldset',
-				    layout: 'column',
-				    id: timeblock.short_description+r.data.title,
-				    name: timeblock.short_description+r.data.title,
-				    items: 
-				    [
-			               {
-					   xtype: 'radio',
-					   id: 'flag_'+checkbox_id,
-					   name: 'flag_'+timeblock.id,
-					   inputValue: r.data.id,
-					   listeners: { //listener changes the flagged classes box at the top when the flagged class changes
-					       
-					   }
-				       }, 
-			               {
-					   xtype: 'checkbox',
-					   name: checkbox_id,
-					   id: checkbox_id
-				       }, 
-			               { 
-					   xtype: 'displayfield',
-					   value: text,
-					   autoHeight: true,
-					   id: 'title_'+ checkbox_id 
-				       }
-				    ]
+	        
+	        if (priority_limit == 1) {
+			    tabs[timeblock.id].items.push({
+				        xtype: 'fieldset',
+				        layout: 'column',
+				        id: timeblock.short_description+r.data.title,
+				        name: timeblock.short_description+r.data.title,
+				        items: 
+				        [
+			                   {
+					       xtype: 'radio',
+					       id: 'flag_'+checkbox_id,
+					       name: 'flag_'+timeblock.id,
+					       inputValue: r.data.id,
+					       listeners: { //listener changes the flagged classes box at the top when the flagged class changes
+					           
+					       }
+				           }, 
+			                   {
+					       xtype: 'checkbox',
+					       name: checkbox_id,
+					       id: checkbox_id
+				           }, 
+			                   { 
+					       xtype: 'displayfield',
+					       value: text,
+					       autoHeight: true,
+					       id: 'title_'+ checkbox_id 
+				           }
+				        ]
 			
-			});
+			    });
+		    }
+            else {
+	            new_column = {
+				        xtype: 'fieldset',
+				        layout: 'column',
+				        id: timeblock.short_description+r.data.title,
+				        name: timeblock.short_description+r.data.title,
+				        items: []
+		        }
+		        for (k = 1; k <= priority_limit; ++k) {
+		            new_column.items.push({
+					       xtype: 'radio',
+					       id: 'flag_'+k+'_'+checkbox_id,
+					       name: 'flag_'+k+'_'+timeblock.id,
+					       listeners: { //listener changes the flagged classes box at the top when the flagged class changes
+					           
+					       }
+	                });
+                }
+                new_column.items.push({
+                    xtype: 'checkbox',
+			        name: checkbox_id,
+			        id: checkbox_id
+                });
+                new_column.items.push({
+		            xtype: 'displayfield',
+		            value: text,
+		            autoHeight: true,
+		            id: 'title_'+ checkbox_id 
+			    });
+			    tabs[timeblock.id].items.push(new_column)
+		    }
 		    }
 		}
 		}//end if for walk in seminars
@@ -309,12 +383,25 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	},
 
     promptCheck: function() {
-	    flagged_classes = 'Please check to see that these are the classes you intended to flag:<ul>';
-	    for(i = 0; i<checkbox_ids.length; i++){
-		if (Ext.getCmp('flag_'+checkbox_ids[i]).getValue() == true){
-		    title = Ext.getCmp('title_'+checkbox_ids[i]).getValue();
-		    flagged_classes = flagged_classes + title + '<ul>';
-		}
+	    flagged_classes = 'Please check to see that these are the classes you intended to flag:<br />';
+	    if (priority_limit == 1) {
+	        for(i = 0; i<checkbox_ids.length; i++){
+	            if (Ext.getCmp('flag_'+checkbox_ids[i]).getValue() == true){
+		            title = Ext.getCmp('title_'+checkbox_ids[i]).getValue();
+		            flagged_classes = flagged_classes + title + '<br />';
+		        }
+	        }
+	    }
+        else {
+            for(j = 1; j <= priority_limit; ++j) {
+                flagged_classes = flagged_classes + '<br /><b>Priority ' + j + '</b><br />';
+                for(i = 0; i<checkbox_ids.length; i++){
+                    if (Ext.getCmp('flag_'+j+'_'+checkbox_ids[i]).getValue() == true){
+                        title = Ext.getCmp('title_'+checkbox_ids[i]).getValue();
+                        flagged_classes = flagged_classes + title + '<br />';
+                    }
+                }
+            }
 	    }
 	    flagged_classes = flagged_classes + '<br><br><b> After you enter the lottery, remember to finish registering on the main registration page.</b>'
 	    Ext.Msg.show({
@@ -335,11 +422,20 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	     count = 0;
 
 	     for(i=0; i<checkbox_ids.length; i++) {
-		 checkbox = Ext.getCmp(checkbox_ids[i]);
-		 classes[checkbox_ids[i]] = checkbox.getValue();
-		 flag_id = 'flag_'+checkbox_ids[i];
-		 flag = Ext.getCmp(flag_id);
-		 classes[flag_id] = flag.getValue();
+		     checkbox = Ext.getCmp(checkbox_ids[i]);
+		     classes[checkbox_ids[i]] = checkbox.getValue();
+		     if (priority_limit == 1) {
+		         flag_id = 'flag_'+checkbox_ids[i];
+		         flag = Ext.getCmp(flag_id);
+		         classes[flag_id] = flag.getValue();
+		     }
+		     else {
+		        for(k = 1; k <= priority_limit; ++k) {
+		            flag_id = 'flag_'+k+'_'+checkbox_ids[i];
+		            flag = Ext.getCmp(flag_id);
+		            classes[flag_id] = flag.getValue(); 
+		        }
+		     }
 	     }
 
 	     /*

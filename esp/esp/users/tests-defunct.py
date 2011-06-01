@@ -9,21 +9,8 @@ class ESPUserTestCase(TestCase):
     fixtures = ['users']
 
     def setUp(self):
-        from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString        from esp.program.models
-        import Program
-        node = GetNode('Q/Programs/Dummy_Programs/Profile_Storage')
-        dummy_program = Program(anchor = node,
-                                grade_min = 13,
-                                grade_max = 13,
-                                director_email = 'esp-webmasters@mit.edu',
-                                class_size_min = 9999,
-                                class_size_max = 9999)
-
-        dummy_program.save()
-                                
-        
+        from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString        from esp.program.models     
         self.client = Client()
-
 
     def test_dtails(self):
 
