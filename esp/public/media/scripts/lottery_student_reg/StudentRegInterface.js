@@ -448,11 +448,11 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
         else {
             for(i = 0; i < this.num_tabs; i++) {
                 var ids = checkbox_ids_by_timeblock[this.tab_names[i][0]].split('_');
-                alert(ids);
+                //alert(ids);
                 for (j = 0; j < ids.length - 1; ++j) {
                     if (val = parseInt(Ext.getCmp("combo_"+ids[j]).getValue())) {
 		                classes[ids[j]] = new Array(val, this.tab_names[i][0]);
-		                alert(classes[ids[j]]);
+		                //alert(classes[ids[j]]);
 		            }
                 }
             }    
@@ -473,42 +473,51 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 Ext.Msg.show({
                     title:  'Registration Successful',
                     msg: 'Your preferences have been stored in the ESP database and will be used to assign classes in the lottery on February 27.',
-                    buttons: {ok:'Continue', cancel:'Return to edit preferences'},
+                    buttons: {ok:'Continue'},
                     fn: function(button) {
                         if (button == 'ok') 
                         {
                             window.location.href = '/learn/'+url_base+'/studentreg';
                         }
-                        if (button == 'cancel') {Ext.Msg.hide();}
                     }
                 });
             }
             else
             {
                 //  console.log("Registration unsuccessful: " + JSON.stringify(response));
-                msg_list = 'Some of your preferences have been stored in the ESP database.  Others caused problems: <br />';
-                for (var i = 0; i < response.length; i++)
-                {
-                    if (response[i].emailcode)
-                        msg_list = msg_list + response[i].emailcode + ': ' + response[i].text + '<br />';
+                if (response[0].doubled_priority) {
+                    alert("You assigned multiple classes to have the same priority in the same timeblock. Please fix this.");
                 }
-                Ext.Msg.show({
-                    title:  'Registration Problems',
-                    msg: msg_list,
-                    buttons: {ok: 'Return to edit preferences'},
-                    fn: function(button) {
-                        Ext.Msg.hide();
+                else {
+                    msg_list = 'Some of your preferences have been stored in the ESP database.  Others caused problems: <br /><br />';
+                    for (var i = 0; i < response.length; i++)
+                    {
+                        if (response[i].emailcode) {
+                            msg_list = msg_list + response[i].emailcode + ': ' + response[i].text + '<br />';
+                        }
                     }
-                });
+                    Ext.Msg.show({
+                        title:  'Registration Problems',
+                        msg: msg_list,
+                        buttons: {ok: 'Return to edit preferences'},
+                        fn: function(button) {
+                            Ext.Msg.hide();
+                        }
+                    });
+                }
             }
         };
 
 	     data = Ext.encode(classes);
 	     Ext.Ajax.request({
-		     url: 'lsr_submit',
+		     url: '/learn/'+url_base+'/lsr_submit',
 		     success: handle_submit_response,
+		     failure: function() {
+		        alert("There has been an error on the website. Please contact esp@mit.edu to report this problem.");
+		     },
 		     params: {'json_data': data, 'url_base': url_base},
-		     method: 'POST'
+		     method: 'POST',
+		     headers: {'X-CSRFToken': Ext.util.Cookies.get('csrftoken')}
 		 });
     }
 });
