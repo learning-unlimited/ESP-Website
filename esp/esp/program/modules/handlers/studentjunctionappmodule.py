@@ -102,7 +102,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
             for i in [x['id'] for x in cls.studentappquestion_set.all().values('id')]:
                 if i not in response_question_ids:
                     return False
-                elif (not response_dict[i].complete) or response_dict[i].response == "":
+                elif (not response_dict[i].complete) and len(response_dict[i].response) == 0:
                     return False
         return True
         
