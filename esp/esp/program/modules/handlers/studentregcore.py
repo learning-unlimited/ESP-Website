@@ -325,3 +325,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         return nav_bars
     
+
+    class Meta:
+        abstract = True
+

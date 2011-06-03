@@ -166,3 +166,7 @@ class AvailabilityModule(ProgramModuleObj):
             context['is_overbooked'] = (not self.isCompleted() and (self.user.getTaughtTime(self.program) > timedelta(0)))
             
             return render_to_response(self.baseDir()+'availability_form.html', request, (prog, tl), context)
+
+    class Meta:
+        abstract = True
+

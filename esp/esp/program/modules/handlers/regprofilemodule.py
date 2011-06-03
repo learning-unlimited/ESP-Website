@@ -125,3 +125,7 @@ class RegProfileModule(ProgramModuleObj):
         return regProf.id is not None
 
 
+
+    class Meta:
+        abstract = True
+

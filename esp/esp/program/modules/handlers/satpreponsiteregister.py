@@ -142,3 +142,7 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
  
 
 
+
+    class Meta:
+        abstract = True
+

@@ -99,3 +99,7 @@ class SATPrepTeacherModule(ProgramModuleObj):
 		form = SATPrepTeacherInfoForm(subject_list, instance = moduleinfos[0])
 
 	return render_to_response(self.baseDir()+'satprep_info.html', request, (prog, tl), {'form':form})
+
+    class Meta:
+        abstract = True
+

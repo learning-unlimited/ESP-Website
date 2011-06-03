@@ -283,3 +283,7 @@ class ListGenModule(ProgramModuleObj):
             form = ListGenForm()
             return render_to_response(self.baseDir()+'options.html', request, (prog, tl), {'form': form, 'filterid': filterObj.id})
 
+
+    class Meta:
+        abstract = True
+

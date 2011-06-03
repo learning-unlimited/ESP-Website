@@ -196,3 +196,7 @@ This request can be (re)viewed at:
                                   (self.program, tl),
                                   {'form': form, 'app': app})
 
+
+    class Meta:
+        abstract = True
+

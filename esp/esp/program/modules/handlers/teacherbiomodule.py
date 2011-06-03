@@ -75,3 +75,7 @@ class TeacherBioModule(ProgramModuleObj):
         lastBio = TeacherBio.getLastForProgram(self.user, self.program)
         return lastBio.id is not None
 
+
+    class Meta:
+        abstract = True
+

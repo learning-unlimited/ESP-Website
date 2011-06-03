@@ -160,3 +160,7 @@ class OnSiteRegister(ProgramModuleObj):
             form = OnSiteRegForm()
 
 	return render_to_response(self.baseDir()+'reg_info.html', request, (prog, tl), {'form':form, 'current_year':ESPUser.current_schoolyear()})
+
+    class Meta:
+        abstract = True
+

@@ -90,3 +90,7 @@ class CheckListModule(ProgramModuleObj):
                      "Teachers teaching a class flagged with '%s'" % check_item.title
 
         return finish_dict
+
+    class Meta:
+        abstract = True
+

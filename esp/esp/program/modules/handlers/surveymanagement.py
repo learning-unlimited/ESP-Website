@@ -96,3 +96,7 @@ class SurveyManagement(ProgramModuleObj):
             return survey_review_single(request, tl, one, two)
         elif extra == 'top_classes':
             return top_classes(request, tl, one, two)
+
+    class Meta:
+        abstract = True
+

@@ -797,3 +797,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             return user.getFullClasses_pretty(self.program)
 
         return 'No classes.'
+
+    class Meta:
+        abstract = True
+
