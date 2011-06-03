@@ -123,6 +123,7 @@ $(document).ready(function() {
 	//end of csrf stuff
 	
 	$('#form_toolbox').accordion({autoHeight:false, icons:{}});
+	$.data($('div.outline')[0], 'data', {});
 });
 
 
@@ -544,7 +545,7 @@ var addElement = function(item,$prevField) {
 	else if(item=='section'){
 		//this one's processed differently from the others
 		
-		var $outline=$('<div class="field_wrapper"></div>');
+		var $outline=$('<div class="outline"></div>');
 		$outline.append('<hr/>').append($('<h2 class="section_header">'+label_text+'</h2>')).append($('<p class="field_text">'+help_text+'</p>'));
 		$currSection=$('<div>', {
 			id:'section_'+secCount,
@@ -563,7 +564,7 @@ var addElement = function(item,$prevField) {
 			onSelectElem('textField');
 		});
 		$outline.appendTo($('div.form_preview')).dblclick(function(){
-			$currSection=$(this);
+			$currSection=$(this).children('div.section');
 		});
 		//currSection=$('#section_'+secCount);
 		$('div.form_preview').sortable();
@@ -666,42 +667,53 @@ var addElement = function(item,$prevField) {
 var submit=function() {
 	//submits the created form to the server
 	
+	var form={'title':$('#form_title').html(), 'desc':$('#form_description').html(), 'program':$('#id_assoc_program').val(), 'pages':[]}, section, elem, page;
 	
-	var ellem,i,options,j,options_string="";
-	var form={"title":formTitle,"types":[]};
-	for (ellem in elemTypes) {
+	//Constructing the object to be sent to the server
+	$('div.preview_area').children('div.form_preview').each(function(pidx,pel) {
+		page={'sections':[]};
+		$(pel).children().each(function(idx, el) {
+			section={'data':$.data(el, 'data'), 'fields':[]};
+			section['data']['seq']=idx;
+
+			//Putting fields inside a section
+			$(el).children('div.section').children().each(function(fidx, fel) {
+				if( $(fel).hasClass('field_wrapper')){
+					elem={'data':$.data(fel,'data')};
+					elem['data']['seq']=fidx;
+					section['fields'].push(elem);
+				}
+			});
+
+			//Putting the section inside the page
+			page['sections'].push(section);
+		});
+		//Putting the page inside the form
+		form['pages'].push(page);
 		
-	    if (!elemTypes.hasOwnProperty(ellem)) {
-	        //The current property is not a direct property of elemTypes
-	        
-			continue;
-	    }
+	});
+	/*$('div.form_preview').children().each(function(idx, el) {
+		section={'data':$.data(el, 'data'), 'fields':[]};
+		section['data']['seq']=idx;
 		
-	    for(i=0;i<elemTypes[ellem];i++) {
-			if(ellem=='radio') {
-				$('input[name=radio_'+i+']').each(function(idx,el) {
-					
-					options_string+=$(el).attr('value')+',';
-				});
-				
-				form['types'].push({typ:ellem, question:$('#label_'+ellem+'_'+i).html(),opts:options_string});
-				
+		//Putting fields inside a section
+		$(el).children('div.section').children().each(function(fidx, fel) {
+			console.log(fel);
+			if( $(fel).hasClass('field_wrapper')){
+				elem={'data':$.data(fel,'data')};
+				elem['data']['seq']=fidx;
+				section['fields'].push(elem);
 			}
-			else
-				form['types'].push({typ:ellem, question:$('#label_'+ellem+'_'+i).html()});
-		}
-	}
-	
-	
-	/*$.post("/submit/", form,
-		   function(data) {
-		        alert(data);
-		   } 
-	);*/
-	query=JSON.stringify(form);
+		});
+		
+		//Putting the section inside the form
+		form['sections'].push(section);
+	});*/
+	console.log(form);
+	//POSTing to server
 	$.ajax({
-		url:'submit/',
-		data:query,
+		url:'customforms/submit/',
+		data:JSON.stringify(form),
 		type:'POST',
 		success: function(value) {
 			if(value=='OK') {
@@ -710,8 +722,8 @@ var submit=function() {
 			}
 		}
 	});
-	$('#sbmt').attr("disabled","true")
-	
+	$('#sbmt').attr("disabled","true");
+		
 };
 
 var updateTitle = function(){

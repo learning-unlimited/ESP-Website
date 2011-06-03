@@ -1,31 +1,31 @@
 from django.db import models
+from esp.users.models import ESPUser
+from program.models import Program
 
-class MyUser(models.Model):
-	name=models.CharField(max_length=15, default="User")
+"""class Form(models.Model):
+	title=models.CharField(max_length=40)
+	description=models.CharField(max_length=140)
+	program=models.ForeignKey(Program)
+	date_created=models.DateField(auto_now_add=True)
+	created_by=models.ForeignKey(ESPUser)
+	
+class Page(models.Model):
+	form=models.ForeignKey(Form)
+	
+class Section(models.Model):
+	page=models.ForeignKey(Page)
+	title=models.CharField(max_length=40)
+	description=models.CharField(max_length=40)
+	seq=models.IntegerField()
 
-class Form(models.Model):
-	title=models.CharField(max_length=30,default="Form")
-	active=models.IntegerField(max_length=2,default=1)
+class Field(models.Model):
+	section=models.ForeignKey(Section)
+	seq=models.IntegerField()
+	label=models.CharField(max_length=200)
+	help_text=models.CharField(max_length=200)
+	required=models.BooleanField()
 	
-class Question(models.Model):
-	form=models.ForeignKey(Form)
-	question=models.CharField(max_length=60)
-	ques_type=models.CharField(max_length=15)
-	required=models.CharField(max_length=2)
-	
-class Option(models.Model):
-	#Stores options for a particular multiple-choice type question
-	
-	form=models.ForeignKey(Form)
-	question=models.ForeignKey(Question)
-	opt=models.CharField(max_length=30)
-	
-	
-		
-class Responses(models.Model):
-	#The static table for responses. NOT being used currently.
-	
-	question=models.ForeignKey(Question)
-	resp=models.CharField(max_length=50,null=True,blank=True)	
-	form=models.ForeignKey(Form)
-	myuser=models.ForeignKey(MyUser)
+class Attribute(models.Model):
+	field=models.ForeignKey(Field)
+	attr_type=models.CharField(max_length=15)
+	value=models.CharField(max_length=40)"""				

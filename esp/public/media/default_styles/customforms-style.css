@@ -88,6 +88,17 @@ body {
 	text-align: left;
 }
 
+.outline {
+	display:block;
+	padding:10px 10px;
+	position:relative;
+}
+
+.outline p{
+	margin:0px;
+	padding:0px;
+}
+
 /* End Form Preview Area */
 
 /* Form Toolbox */

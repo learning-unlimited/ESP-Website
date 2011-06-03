@@ -4,15 +4,18 @@ from django.template import RequestContext
 from django.db import connection
 from forms import CustomForm
 from django.utils import simplejson as json
-from customforms.models import *
-from customforms.useful import *
-from customforms.backups import *
+#from customforms.models import *
+#from customforms.useful import *
+#from customforms.backups import *
 from program.models import Program
 
 
 def landing(request):
-	prog_list=Program.objects.all()
-	return render_to_response('customforms/index.html',{'prog_list':prog_list})
+	if request.user.is_authenticated():
+		prog_list=Program.objects.all()
+		return render_to_response('customforms/index.html',{'prog_list':prog_list})
+	else: 
+		return HttpResponseRedirect('/')	
 
 def isRequired(text):
 	#Checks whether a question is required or not
@@ -47,7 +50,7 @@ def onSubmit(request):
 	
 	return HttpResponse('OK')
 	
-def formList(request):
+"""def formList(request):
 	#Lists all created forms
 	
 	return render_to_response('list.html',{'forms':Form.objects.order_by('-id')})	
@@ -191,7 +194,7 @@ def restoreForm(form_id):
 	#Changing status of form to '1' to show that it's been deleted
 	form.active=1;
 	form.save();	
-	
+"""
 	
 
 
