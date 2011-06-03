@@ -392,7 +392,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 		     xtype: 'displayfield',
 		     height: 40,
 		   //width: '600',
-		     value: '<font size=3">To register for the ' + nice_name + ' class lottery, click "Show me my priority classes!"</font>'//<br><br>  If you like what you see, click "Show me my priority classes!"'
+		     value: '<font size=3">To register for the ' + nice_name + ' class lottery, click "Show me my priority classes!" and then, if everything appears correct, press "Enter me in the lottery!"</font>'//<br><br>  If you like what you see, click "Show me my priority classes!"'
 	     });
 
 	     //adds "confirm registration" button
@@ -506,7 +506,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 //  console.log("Registration successful.");
                 Ext.Msg.show({
                     title:  'Registration Successful',
-                    msg: 'Your preferences have been stored in the ESP database and will be used to assign classes in the lottery on February 27.',
+                    msg: 'Your preferences have been stored in the ESP database and will be used to assign classes in the lottery.',
                     buttons: {ok:'Continue'},
                     fn: function(button) {
                         if (button == 'ok') 
