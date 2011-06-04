@@ -413,22 +413,37 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
      },
 
     allTabsCheck: function() {
-	    if (num_opened_tabs != this.num_tabs)
-		{
-		    Ext.Msg.show({
-			    title: 'Wait!',
-			    msg: "You haven't filled out preferences for every time slot.",
-			    buttons: {ok:"That's fine.  I won't be at " + nice_name + " for those time slots.", cancel:"No, let me go back and fill out the parts I missed!"},
-			    fn: function(button){
-				if(button == 'ok') {
-				    for(j = 0; j < this.num_tabs; j++) { Ext.getCmp('sri').setActiveTab(i);} 
-				    Ext.getCmp('sri').confirmRegistration();
-				}
-				if(button == 'cancel') { Ext.Msg.hide(); }
-			    }
-		    });
-		}
-	    else {  Ext.getCmp('sri').confirmRegistration();  }
+	    var priorities_per_timeblock = new Array();
+        for(i=0; i < this.num_tabs; ++i) {
+            priorities_per_timeblock[i] = 0;
+            var ids = checkbox_ids_by_timeblock[this.tab_names[i][0]].split('_');
+            for(j=0; j < ids.length - 1; ++j) {
+	            if (parseInt(Ext.getCmp("combo_"+ids[j]).getValue())) {
+	                alert("timeblock " + i + ": " + ++priorities_per_timeblock[i]);
+                }
+	        }
+        }
+        for(i=0; i < this.num_tabs; ++i) {
+            var missing = false
+            if (!priorities_per_timeblock[i]) {
+                missing = true;
+                break;
+            }
+        }
+        if (missing) {
+            Ext.Msg.show({
+                title: 'Wait!',
+                msg: "You haven't filled out preferences for every time slot.",
+                buttons: {ok:"That's fine.  I won't be at " + nice_name + " for those time slots.", cancel:"No, let me go back and fill out the parts I missed!"},
+                fn: function(button){
+                    if(button == 'ok') {
+                        Ext.getCmp('sri').confirmRegistration();
+                    }
+                    if(button == 'cancel') { Ext.Msg.hide(); }
+                }
+            });
+        }
+        else {  Ext.getCmp('sri').confirmRegistration();  }
 	},
 
     promptCheck: function() {
