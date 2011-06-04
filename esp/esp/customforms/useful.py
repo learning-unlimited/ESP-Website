@@ -5,6 +5,8 @@ from django.db import connection
 from django.core.management import color
 from django.db.backends.creation import BaseDatabaseCreation
 
+
+"""
 def create_model(name, fields=None, app_label='', module='', options=None, admin_opts=None):
     """
     Create specified model
@@ -82,4 +84,4 @@ def run_sql(model):
 		cursor.execute(sql)
 	for query in index_queries:
 		cursor.execute(query)	
-	
+"""	

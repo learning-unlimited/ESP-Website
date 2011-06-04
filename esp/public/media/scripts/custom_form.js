@@ -123,7 +123,7 @@ $(document).ready(function() {
 	//end of csrf stuff
 	
 	$('#form_toolbox').accordion({autoHeight:false, icons:{}});
-	$.data($('div.outline')[0], 'data', {});
+	$.data($('div.outline')[0], 'data', {'question_text':'', 'help_text':''});
 });
 
 
@@ -405,6 +405,7 @@ var addElement = function(item,$prevField) {
 	data.help_text=help_text;
 	data.field_type=item;
 	data.required=$('#id_required').attr('checked');
+	data.attrs=[];
 	
 	//Generic fields first
 	if(item=="textField"){
@@ -453,7 +454,7 @@ var addElement = function(item,$prevField) {
 				options_string+=$(el).attr('value')+"|";	
 				$new_elem.append($("<p>").append($one_option).append($("<span>"+$(el).attr('value')+"</span>")));
 		});
-		data.options_string=options_string;
+		data['attrs'].push({'options':options_string});
 	}
 	else if(item=="dropdown") {
 		$new_elem=$('<select>',{
@@ -469,7 +470,7 @@ var addElement = function(item,$prevField) {
 				$one_option.html($(el).attr('value'));
 				$new_elem.append($one_option);
 		});
-		data.options_string=options_string;
+		data['attrs'].push({'options':options_string});
 	}
 	else if(item=="numeric"){
 		$new_elem=$('<input/>', {
@@ -478,8 +479,7 @@ var addElement = function(item,$prevField) {
 			id:html_id,
 			size:"20"
 		});
-		data.min=$('#id_minVal').attr('value');
-		data.max=$('#id_maxVal').attr('value');
+		data['attrs'].push({'limits':$('#id_minVal').attr('value') + ',' + $('#id_maxVal').attr('value')});
 	}
 	else if(item=='date'){
 		$new_elem=$("<div>", {
@@ -667,7 +667,15 @@ var addElement = function(item,$prevField) {
 var submit=function() {
 	//submits the created form to the server
 	
-	var form={'title':$('#form_title').html(), 'desc':$('#form_description').html(), 'program':$('#id_assoc_program').val(), 'pages':[]}, section, elem, page;
+	var form={'title':$('#form_title').html(), 'desc':$('#form_description').html(), 'pages':[]}, section, elem, page;
+	if($('#id_assoc_prog').val()!="-1") {
+		form['link_type']='program';
+		form['link_id']=$('#id_assoc_prog').val();
+	}
+	else {
+		form['link_type']='none';
+		form['link_id']='-1';
+	}
 	
 	//Constructing the object to be sent to the server
 	$('div.preview_area').children('div.form_preview').each(function(pidx,pel) {
@@ -675,12 +683,14 @@ var submit=function() {
 		$(pel).children().each(function(idx, el) {
 			section={'data':$.data(el, 'data'), 'fields':[]};
 			section['data']['seq']=idx;
+			delete(section['data']['required']);
 
 			//Putting fields inside a section
 			$(el).children('div.section').children().each(function(fidx, fel) {
 				if( $(fel).hasClass('field_wrapper')){
 					elem={'data':$.data(fel,'data')};
 					elem['data']['seq']=fidx;
+					elem['data']['required']=String(elem['data']['required']);
 					section['fields'].push(elem);
 				}
 			});
@@ -712,13 +722,13 @@ var submit=function() {
 	console.log(form);
 	//POSTing to server
 	$.ajax({
-		url:'customforms/submit/',
+		url:'submit/',
 		data:JSON.stringify(form),
 		type:'POST',
 		success: function(value) {
+			console.log(value);
 			if(value=='OK') {
-				alert("Created!");
-				window.location='/list/';
+				//window.location='/list/';
 			}
 		}
 	});

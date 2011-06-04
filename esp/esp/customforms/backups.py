@@ -5,6 +5,7 @@ from django.utils import simplejson as json
 from customforms.models import *
 from customforms.useful import *
 
+"""
 #Directories to work in
 temp_dir=os.path.join(os.path.dirname(__file__), '../form_backups/temp')
 backup_dir=os.path.join(os.path.dirname(__file__), '../form_backups')
@@ -79,5 +80,5 @@ def restoreFromFile(form):
 		
 	#deleting archived data for this form
 	os.remove(os.path.join(backup_dir,str(form.id)+'.tar.gz'))
-	
+"""	
 	

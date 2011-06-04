@@ -1,13 +1,14 @@
+from django.db import transaction
 from django.shortcuts import redirect, render_to_response, HttpResponse
 from django.http import Http404,HttpResponseRedirect
 from django.template import RequestContext
 from django.db import connection
 from forms import CustomForm
 from django.utils import simplejson as json
-#from customforms.models import *
+from customforms.models import *
 #from customforms.useful import *
 #from customforms.backups import *
-from program.models import Program
+from esp.program.models import Program
 
 
 def landing(request):
@@ -17,40 +18,46 @@ def landing(request):
 	else: 
 		return HttpResponseRedirect('/')	
 
-def isRequired(text):
-	#Checks whether a question is required or not
-	
-	if(text[len(text)-1])=='*':
-		return'Y'
-	else: 
-		return 'N'
 
+def is_required(text):
+	#returns True if the field is required, else False
+	if(text=='true'):
+		return True
+	else:
+		return False	
+
+@transaction.commit_on_success
 def onSubmit(request):
-	#Stores the form structure in the database
+	#Stores form metadata in the database.
 	
 	if request.is_ajax():
 		if request.method == 'POST':
-			elems=json.loads(request.raw_post_data)	
-	
-		form=Form.objects.create(title=elems['title'])
+			metadata=json.loads(request.raw_post_data)
+			
+		#Creating form
+		form=Form.objects.create(title=metadata['title'], description=metadata['desc'], created_by=request.user, link_type=metadata['link_type'], link_id=int(metadata['link_id']))
+		
+		#Inserting pages
+		for i,page in enumerate(metadata['pages']):
+			new_page=Page.objects.create(form=form, seq=i)
+			
+			#inserting sections
+			for section in page['sections']:
+				new_section=Section.objects.create(page=new_page, title=section['data']['question_text'], description=section['data']['help_text'], seq=int(section['data']['seq']))
+				
+				#inserting fields
+				for field in section['fields']:
+					new_field=Field.objects.create(section=new_section, field_type=field['data']['field_type'], seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], required=is_required(field['data']['required']))
+					
+					#inserting other attributes, if any
+					for attr in field['data']['attrs']:
+						new_attr=Attribute.objects.create(field=new_field, attr_type=attr.keys()[0], value=attr.values()[0])
+							
+		return HttpResponse('OK')				
+		
 
-	for elem in elems['types']:
-		question=Question.objects.create(form=form,question=elem['question'],ques_type=elem['typ'],required=isRequired(elem['question']))
-		if elem['typ']=='radio':
-			options=elem['opts'].split(',')
-			for i in options:
-				if i!='':
-					Option.objects.create(question=question,opt=i,form=form)
-	
-	#Generating the dynamic model and creating the table
-	dyn_model=dynamic_model(int(form.id))
-	
-	#Setting up the SQL using South migrations now
-	#run_sql(dyn_model)
-	
-	return HttpResponse('OK')
-	
-"""def formList(request):
+"""	
+def formList(request):
 	#Lists all created forms
 	
 	return render_to_response('list.html',{'forms':Form.objects.order_by('-id')})	

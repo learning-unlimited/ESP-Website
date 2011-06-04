@@ -8,73 +8,14 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Adding model 'Form'
-        db.create_table('customforms_form', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=40, blank=True)),
-            ('description', self.gf('django.db.models.fields.CharField')(max_length=140, blank=True)),
-            ('date_created', self.gf('django.db.models.fields.DateField')(auto_now_add=True, blank=True)),
-            ('created_by', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
-            ('link_type', self.gf('django.db.models.fields.CharField')(max_length=10, blank=True)),
-            ('link_id', self.gf('django.db.models.fields.IntegerField')(default=-1)),
-        ))
-        db.send_create_signal('customforms', ['Form'])
-
-        # Adding model 'Page'
-        db.create_table('customforms_page', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('form', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['customforms.Form'])),
-            ('seq', self.gf('django.db.models.fields.IntegerField')(default=-1)),
-        ))
-        db.send_create_signal('customforms', ['Page'])
-
-        # Adding model 'Section'
-        db.create_table('customforms_section', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('page', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['customforms.Page'])),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=40)),
-            ('description', self.gf('django.db.models.fields.CharField')(max_length=40, blank=True)),
-            ('seq', self.gf('django.db.models.fields.IntegerField')()),
-        ))
-        db.send_create_signal('customforms', ['Section'])
-
-        # Adding model 'Field'
-        db.create_table('customforms_field', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('section', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['customforms.Section'])),
-            ('seq', self.gf('django.db.models.fields.IntegerField')()),
-            ('label', self.gf('django.db.models.fields.CharField')(max_length=200)),
-            ('help_text', self.gf('django.db.models.fields.CharField')(max_length=200, blank=True)),
-            ('required', self.gf('django.db.models.fields.BooleanField')(default=False)),
-        ))
-        db.send_create_signal('customforms', ['Field'])
-
-        # Adding model 'Attribute'
-        db.create_table('customforms_attribute', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('field', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['customforms.Field'])),
-            ('attr_type', self.gf('django.db.models.fields.CharField')(max_length=15)),
-            ('value', self.gf('django.db.models.fields.CharField')(max_length=40)),
-        ))
-        db.send_create_signal('customforms', ['Attribute'])
+        # Adding field 'Field.field_type'
+        db.add_column('customforms_field', 'field_type', self.gf('django.db.models.fields.CharField')(default='textField', max_length=20), keep_default=False)
 
 
     def backwards(self, orm):
         
-        # Deleting model 'Form'
-        db.delete_table('customforms_form')
-
-        # Deleting model 'Page'
-        db.delete_table('customforms_page')
-
-        # Deleting model 'Section'
-        db.delete_table('customforms_section')
-
-        # Deleting model 'Field'
-        db.delete_table('customforms_field')
-
-        # Deleting model 'Attribute'
-        db.delete_table('customforms_attribute')
+        # Deleting field 'Field.field_type'
+        db.delete_column('customforms_field', 'field_type')
 
 
     models = {
@@ -123,6 +64,7 @@ class Migration(SchemaMigration):
         },
         'customforms.field': {
             'Meta': {'object_name': 'Field'},
+            'field_type': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
             'help_text': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'label': ('django.db.models.fields.CharField', [], {'max_length': '200'}),
