@@ -304,7 +304,12 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['have_paid'] = self.have_paid()
         
         context['printers'] = self.printer_names()
-
+        
+        if context['scrmi'] and context['scrmi'].use_priority:
+            context['no_confirm'] = True
+        else:
+            context['no_confirm'] = False
+        
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 
     def isStep(self):
