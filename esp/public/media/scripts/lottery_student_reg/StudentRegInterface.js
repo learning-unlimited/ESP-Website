@@ -419,7 +419,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
             var ids = checkbox_ids_by_timeblock[this.tab_names[i][0]].split('_');
             for(j=0; j < ids.length - 1; ++j) {
 	            if (parseInt(Ext.getCmp("combo_"+ids[j]).getValue())) {
-	                alert("timeblock " + i + ": " + ++priorities_per_timeblock[i]);
+	                ++priorities_per_timeblock[i];
                 }
 	        }
         }
