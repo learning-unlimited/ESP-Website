@@ -35,7 +35,7 @@ def onSubmit(request):
 			metadata=json.loads(request.raw_post_data)
 			
 		#Creating form
-		form=Form.objects.create(title=metadata['title'], description=metadata['desc'], created_by=request.user, link_type=metadata['link_type'], link_id=int(metadata['link_id']))
+		form=Form.objects.create(title=metadata['title'], description=metadata['desc'], created_by=request.user, link_type=metadata['link_type'], link_id=int(metadata['link_id']), anonymous=is_required(metadata['anonymous']))
 		
 		#Inserting pages
 		for i,page in enumerate(metadata['pages']):

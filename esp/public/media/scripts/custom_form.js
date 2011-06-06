@@ -667,7 +667,7 @@ var addElement = function(item,$prevField) {
 var submit=function() {
 	//submits the created form to the server
 	
-	var form={'title':$('#form_title').html(), 'desc':$('#form_description').html(), 'pages':[]}, section, elem, page;
+	var form={'title':$('#form_title').html(), 'desc':$('#form_description').html(), 'anonymous':String($('#id_anonymous').attr('checked')), 'pages':[]}, section, elem, page;
 	if($('#id_assoc_prog').val()!="-1") {
 		form['link_type']='program';
 		form['link_id']=$('#id_assoc_prog').val();

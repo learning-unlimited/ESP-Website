@@ -10,6 +10,7 @@ class Form(models.Model):
 	created_by=models.ForeignKey(User)
 	link_type=models.CharField(max_length=10, choices=( ('program', 'Program'), ('course', 'Course'), ('none','None') ), blank=True)
 	link_id=models.IntegerField(default=-1)
+	anonymous=models.BooleanField(default=False)
 	
 class Page(models.Model):
 	form=models.ForeignKey(Form)
