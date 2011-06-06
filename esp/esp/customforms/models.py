@@ -23,6 +23,7 @@ class Section(models.Model):
 	seq=models.IntegerField()
 
 class Field(models.Model):
+	form=models.ForeignKey(Form)
 	section=models.ForeignKey(Section)
 	field_type=models.CharField(max_length=20)
 	seq=models.IntegerField()

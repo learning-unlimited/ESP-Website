@@ -17,6 +17,7 @@ class Migration(SchemaMigration):
             ('created_by', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
             ('link_type', self.gf('django.db.models.fields.CharField')(max_length=10, blank=True)),
             ('link_id', self.gf('django.db.models.fields.IntegerField')(default=-1)),
+            ('anonymous', self.gf('django.db.models.fields.BooleanField')(default=False)),
         ))
         db.send_create_signal('customforms', ['Form'])
 
@@ -33,7 +34,7 @@ class Migration(SchemaMigration):
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
             ('page', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['customforms.Page'])),
             ('title', self.gf('django.db.models.fields.CharField')(max_length=40)),
-            ('description', self.gf('django.db.models.fields.CharField')(max_length=40, blank=True)),
+            ('description', self.gf('django.db.models.fields.CharField')(max_length=140, blank=True)),
             ('seq', self.gf('django.db.models.fields.IntegerField')()),
         ))
         db.send_create_signal('customforms', ['Section'])
@@ -41,7 +42,9 @@ class Migration(SchemaMigration):
         # Adding model 'Field'
         db.create_table('customforms_field', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('form', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['customforms.Form'])),
             ('section', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['customforms.Section'])),
+            ('field_type', self.gf('django.db.models.fields.CharField')(max_length=20)),
             ('seq', self.gf('django.db.models.fields.IntegerField')()),
             ('label', self.gf('django.db.models.fields.CharField')(max_length=200)),
             ('help_text', self.gf('django.db.models.fields.CharField')(max_length=200, blank=True)),
@@ -123,6 +126,8 @@ class Migration(SchemaMigration):
         },
         'customforms.field': {
             'Meta': {'object_name': 'Field'},
+            'field_type': ('django.db.models.fields.CharField', [], {'max_length': '20'}),
+            'form': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['customforms.Form']"}),
             'help_text': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'label': ('django.db.models.fields.CharField', [], {'max_length': '200'}),
@@ -132,6 +137,7 @@ class Migration(SchemaMigration):
         },
         'customforms.form': {
             'Meta': {'object_name': 'Form'},
+            'anonymous': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'created_by': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"}),
             'date_created': ('django.db.models.fields.DateField', [], {'auto_now_add': 'True', 'blank': 'True'}),
             'description': ('django.db.models.fields.CharField', [], {'max_length': '140', 'blank': 'True'}),
@@ -148,7 +154,7 @@ class Migration(SchemaMigration):
         },
         'customforms.section': {
             'Meta': {'object_name': 'Section'},
-            'description': ('django.db.models.fields.CharField', [], {'max_length': '40', 'blank': 'True'}),
+            'description': ('django.db.models.fields.CharField', [], {'max_length': '140', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'page': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['customforms.Page']"}),
             'seq': ('django.db.models.fields.IntegerField', [], {}),
