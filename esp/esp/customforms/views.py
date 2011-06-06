@@ -9,6 +9,7 @@ from customforms.models import *
 #from customforms.useful import *
 #from customforms.backups import *
 from esp.program.models import Program
+from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 
 
 def landing(request):
@@ -34,6 +35,8 @@ def onSubmit(request):
 		if request.method == 'POST':
 			metadata=json.loads(request.raw_post_data)
 			
+			fields=[]
+			
 		#Creating form
 		form=Form.objects.create(title=metadata['title'], description=metadata['desc'], created_by=request.user, link_type=metadata['link_type'], link_id=int(metadata['link_id']), anonymous=is_required(metadata['anonymous']))
 		
@@ -47,11 +50,15 @@ def onSubmit(request):
 				
 				#inserting fields
 				for field in section['fields']:
-					new_field=Field.objects.create(section=new_section, field_type=field['data']['field_type'], seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], required=is_required(field['data']['required']))
+					new_field=Field.objects.create(form=form, section=new_section, field_type=field['data']['field_type'], seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], required=is_required(field['data']['required']))
+					fields.append( (new_field.id, new_field.field_type) ) 
 					
 					#inserting other attributes, if any
 					for attr in field['data']['attrs']:
 						new_attr=Attribute.objects.create(field=new_field, attr_type=attr.keys()[0], value=attr.values()[0])
+						
+		dynH=DMH(form=form, fields=fields)
+		dynH.createTable()				
 							
 		return HttpResponse('OK')				
 		
