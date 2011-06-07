@@ -21,6 +21,8 @@ class DynamicModelHandler:
 		'reallyLongAns':{'typeMap':models.TextField, 'attrs':{}},
 		'radio':{'typeMap':models.CharField, 'attrs':{'max_length':50,}},
 		'dropdown':{'typeMap':models.CharField, 'attrs':{'max_length':50,}},
+		'multiselect':{'typeMap':models.TextField, 'attrs':{}},
+		'checkboxes':{'typeMap':models.TextField, 'attrs':{}},
 		'numeric':{'typeMap':models.IntegerField, 'attrs':{'null':True, }},
 		'date':{'typeMap':models.DateField, 'attrs':{'null':True, }},
 		'time':{'typeMap':models.TimeField, 'attrs':{'null':True, }},

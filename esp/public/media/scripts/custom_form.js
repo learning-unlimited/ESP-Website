@@ -7,6 +7,8 @@ var formElements={
 		reallyLongAns:{'disp_name':'Really Long Answer','ques':''},
 		radio:{'disp_name':'Radio Button Group','ques':'Pick an option'},
 		dropdown:{'disp_name':'Dropdown List','ques':'Pick an option'},
+		multiselect:{'disp_name':'Multiple Select', 'ques':'Pick some options'},
+		checkboxes:{'disp_name':'Checkbox Group', 'ques':'Pick some options'},
 		numeric:{'disp_name':'Numeric Field','ques':''},
 		date:{'disp_name':'Date','ques':'Date'},
 		time:{'disp_name':'Time','ques':'Time'},
@@ -34,6 +36,8 @@ var elemTypes = {
 	'reallyLongAns':0,
 	'radio':0,
 	'dropdown':0,
+	'multiselect':0,
+	'checkboxes':0,
 	'numeric':0,
 	'date':0,
 	'time':0,
@@ -127,17 +131,6 @@ $(document).ready(function() {
 });
 
 
-
-var cleanLabel=function(labeltext) {
-	// Strips the * sign from the label text, if present
-	
-	var return_val;
-	if(labeltext.indexOf('*')== -1)
-		return_val = labeltext;
-	else return_val= labeltext.substr(0,labeltext.length-1);	
-	return return_val;
-};
-
 var createLabel=function(labeltext, required) {
 	//Returns an HTML-formatted label, with a red * if the question is required
 	
@@ -150,29 +143,6 @@ var removeField = function() {
 	//removes the selected element from the form by performing .remove() on the wrapper div
 	
 	$(this).parent().remove();
-};
-
-var updateElement=function() {
-	// updates the selected form element
-	var $lab_text=$('#id_question').attr('value');
-	if($('#id_required').attr('checked'))
-		$lab_text+="*";
-	$('#label_'+currElemType+'_'+currElemIndex).html($lab_text);
-};
-
-var onClickLabel=function(event) {
-	// Allows realtime updating of form
-	
-	var $radio_options;
-	var $curr_label=$(event.target);
-	currElemType=$curr_label.attr('id').split('_')['1'];
-	if(currElemType!='radio')
-		$('#multi_options').children().each(function(idx,el) {$(el).remove()});
-	currElemIndex=$curr_label.attr('id').split('_')['2'];
-	$('#id_question').attr('value',cleanLabel($curr_label.html()));
-	if($curr_label.html().indexOf('*')== -1)
-		$('#id_required').attr('checked','');
-	else $('#id_required').attr('checked','on')	;
 };
 
 var addOption=function(option_text) {
@@ -257,9 +227,7 @@ var onSelectElem = function(item) {
 	var $option,$wrap_option,i, question_text=formElements[currCategory][item]['ques'], $button=$('#button_add');;
 	
 	//Defining actions for generic elements
-	if(item=="radio") 
-		generateOptions();
-	else if(item=="dropdown")
+	if(item=="radio" || item=="dropdown" || item=="multiselect" || item=="checkboxes") 
 		generateOptions();
 	else if(item=="numeric") {
 		var $range_div=$('<div></div>').addClass('toolboxText');
@@ -329,13 +297,25 @@ var onSelectField=function($elem) {
 		$options=$wrap.find('div').children().filter('p');
 		$options.each(function(idx,el) {
 			addOption($(el).text());
-		})
+		});
 	}
 	else if(field_data.field_type=='dropdown'){
 		$options=$wrap.find('select').children();
 		$options.each(function(idx,el){
 			addOption($(el).html());
-		})
+		});
+	}
+	else if(field_data.field_type=='multiselect'){
+		$options=$wrap.find('select').children();
+		$options.each(function(idx,el){
+			addOption($(el).html());
+		});
+	}
+	else if(field_data.field_type=='checkboxes'){
+		$options=$wrap.find('div').children().filter('p');
+		$options.each(function(idx,el) {
+			addOption($(el).text());
+		});
 	}
 	else if(field_data.field_type=='numeric'){
 		var $range_div=$('<div></div>').addClass('toolboxText');
@@ -469,6 +449,39 @@ var addElement = function(item,$prevField) {
 				options_string+=$(el).attr('value')+"|";
 				$one_option.html($(el).attr('value'));
 				$new_elem.append($one_option);
+		});
+		data['attrs'].push({'options':options_string});
+	}
+	else if(item=="multiselect") {
+		$new_elem=$('<select>',{
+			name:html_name,
+			id:html_id,
+			'multiple':'multiple'
+		});
+		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
+		$text_inputs.each(function(idx,el) {
+				$one_option=$('<option>', {
+						value:$(el).attr('value')
+				});	
+				options_string+=$(el).attr('value')+"|";
+				$one_option.html($(el).attr('value'));
+				$new_elem.append($one_option);
+		});
+		data['attrs'].push({'options':options_string});
+	}
+	else if(item=="checkboxes"){
+		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
+		$new_elem=$("<div>", {
+			id:html_id
+		});
+		$text_inputs.each(function(idx,el) {
+				$one_option=$('<input>', {
+						type:"checkbox",
+						name:html_name,
+						value:$(el).attr('value')
+				});
+				options_string+=$(el).attr('value')+"|";	
+				$new_elem.append($("<p>").append($one_option).append($("<span>"+$(el).attr('value')+"</span>")));
 		});
 		data['attrs'].push({'options':options_string});
 	}
@@ -702,23 +715,7 @@ var submit=function() {
 		form['pages'].push(page);
 		
 	});
-	/*$('div.form_preview').children().each(function(idx, el) {
-		section={'data':$.data(el, 'data'), 'fields':[]};
-		section['data']['seq']=idx;
-		
-		//Putting fields inside a section
-		$(el).children('div.section').children().each(function(fidx, fel) {
-			console.log(fel);
-			if( $(fel).hasClass('field_wrapper')){
-				elem={'data':$.data(fel,'data')};
-				elem['data']['seq']=fidx;
-				section['fields'].push(elem);
-			}
-		});
-		
-		//Putting the section inside the form
-		form['sections'].push(section);
-	});*/
+	
 	console.log(form);
 	//POSTing to server
 	$.ajax({
