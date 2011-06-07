@@ -35,6 +35,7 @@ import os
 from django.conf.urls.defaults import patterns, include, handler500, handler404
 from django.contrib import admin
 from esp.settings import PROJECT_ROOT, MEDIA_ROOT
+from django.views.generic.base import RedirectView
 
 admin.autodiscover()
 
@@ -55,10 +56,10 @@ urlpatterns += patterns('',
                      (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
                      (r'^admin/ajax_children/?', 'esp.datatree.views.ajax_children'),
-                     (r'^admin/', include(admin.site.urls)),
+                     (r'^admin/?', include(admin.site.urls)),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
-                     #(r'^learn/Junction/2007_Spring/catalog/?$','django.views.generic.simple.redirect_to', {'url': '/learn/Junction/2007_Summer/catalog/'}),
-                     (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$','django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
+                     #(r'^learn/Junction/2007_Spring/catalog/?$',RedirectView.as_view(url='/learn/Junction/2007_Summer/catalog/')),
+                     (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$',RedirectView.as_view(url='/%(subsection)s/index.html')),
                         )
 
 #   Short term views
@@ -113,7 +114,7 @@ urlpatterns += patterns('esp.qsd.views',
                         )
 
 #urlpatterns += patterns('',
-#                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/?$', 'django.views.generic.simple.redirect_to', {'url': '/%(subsection)s/index.html'} ),
+#                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html')),
 #                        )
 
 # logging in and out
@@ -178,6 +179,9 @@ urlpatterns += patterns('esp.web.views.main',
     #(r'^events/create/$', 'esp.cal.views.createevent'),
     #(r'^events/edit/$', 'esp.cal.views.updateevent'),
     #(r'^events/edit/(?P<id>\d+)/$', 'esp.cal.views.updateevent'),
+
+urlpatterns += patterns('',
+(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html')),)
 
 urlpatterns += patterns('esp.web.views.navBar',
     # Update navbar
