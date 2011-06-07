@@ -15,25 +15,25 @@ class DynamicModelHandler:
 	_module='esp.customforms.models'
 	
 	_field_types={
-		'textField':{'max_length':30,},
-		'longTextField':{'max_length':60,},
-		'longAns':{},
-		'reallyLongAns':{},
-		'radio':{'max_length':50,},
-		'dropdown':{'max_length':50,},
-		'numeric':{},
-		'date':{},
-		'time':{},
-		'first_name':{'max_length':30,},
-		'last_name':{'max_length':30,},
-		'gender':{'max_length':1,},
-		'phone':{'max_length':15,},
-		'email':{'max_length':30,},
-		'street_address':{'max_length':100,},
-		'state':{'max_length':20,},
-		'city':{'max_length':30,},
-		'zip':{'max_length':5,},
-		'courses':{'max_length':100,},
+		'textField':{'typeMap':models.CharField, 'attrs':{'max_length':30,}},
+		'longTextField':{'typeMap':models.CharField, 'attrs':{'max_length':60,}},
+		'longAns':{'typeMap':models.TextField, 'attrs':{}},
+		'reallyLongAns':{'typeMap':models.TextField, 'attrs':{}},
+		'radio':{'typeMap':models.CharField, 'attrs':{'max_length':50,}},
+		'dropdown':{'typeMap':models.CharField, 'attrs':{'max_length':50,}},
+		'numeric':{'typeMap':models.IntegerField, 'attrs':{'null':True, }},
+		'date':{'typeMap':models.DateField, 'attrs':{'null':True, }},
+		'time':{'typeMap':models.TimeField, 'attrs':{'null':True, }},
+		'first_name':{'typeMap':models.CharField, 'attrs':{'max_length':30,}},
+		'last_name':{'typeMap':models.CharField, 'attrs':{'max_length':30,}},
+		'gender':{'typeMap':models.CharField, 'attrs':{'max_length':1,}},
+		'phone':{'typeMap':models.CharField, 'attrs':{'max_length':15,}},
+		'email':{'typeMap':models.CharField, 'attrs':{'max_length':30,}},
+		'street_address':{'typeMap':models.CharField, 'attrs':{'max_length':100,}},
+		'state':{'typeMap':models.CharField, 'attrs':{'max_length':20,}},
+		'city':{'typeMap':models.CharField, 'attrs':{'max_length':30,}},
+		'zip':{'typeMap':models.CharField, 'attrs':{'max_length':5,}},
+		'courses':{'typeMap':models.CharField, 'attrs':{'max_length':100,}},
 	}
 	
 	_customFields={
@@ -56,16 +56,7 @@ class DynamicModelHandler:
 	def _getModelField(self, field_type):
 		"""Returns the appropriate Django Model Field based on field_type"""
 		
-		if field_type=='longAns' or field_type=='reallyLongAns':
-			return models.TextField()
-		elif field_type=='numeric':
-			return models.IntegerField(null=True)
-		elif field_type=='date':
-			return models.DateField(null=True)
-		elif field_type=='time':
-			return models.TimeField(null=True)
-		else:
-			return models.CharField(max_length=self._field_types[field_type]['max_length'])
+		return self._field_types[field_type]['typeMap'](**self._field_types[field_type]['attrs'])
 			
 	def _getModelFieldList(self):
 		"""Returns a list of Model Field tuples given a list of field_types (from the metadata)
