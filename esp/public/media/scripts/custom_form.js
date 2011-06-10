@@ -13,7 +13,8 @@ var formElements={
 		date:{'disp_name':'Date','ques':'Date'},
 		time:{'disp_name':'Time','ques':'Time'},
 		file:{'disp_name':'File Upload','ques':'Upload file'},
-		section:{'disp_name':'Section', 'ques':'Section'}
+		section:{'disp_name':'Section', 'ques':'Section'},
+		page:{'disp_name':'Page', 'ques':'Page'}
 	},
 	'Personal':{
 		name:{'disp_name':'Name','ques':'Your name'},
@@ -57,7 +58,7 @@ var covenience = {
 	
 };
 
-var currElemType, currElemIndex, optionCount=1, formTitle="Form",currCategory='',$prevField, $currField, secCount=1, $currSection;
+var currElemType, currElemIndex, optionCount=1, formTitle="Form",currCategory='',$prevField, $currField, secCount=1, $currSection, pageCount=1, $currPage;
 
 $(document).ready(function() {
     $('#button_add').click(function(){insertField($('#elem_selector').attr('value'),$prevField)});
@@ -67,6 +68,7 @@ $(document).ready(function() {
 	$('#input_form_description').bind('change', updateDesc);
 	
 	$currSection=$('#section_0');
+	$currPage=$('#page_0');
 	//'Initializing' the UI
 	onSelectCategory('Generic');
 	onSelectElem('textField');
@@ -142,6 +144,10 @@ var createLabel=function(labeltext, required) {
 var removeField = function() {
 	//removes the selected element from the form by performing .remove() on the wrapper div
 	
+	if($(this).parent().hasClass('form_preview')){
+		//If it's a page, remove the page-break text as well
+		$(this).parent().prev().remove();
+	}
 	$(this).parent().remove();
 };
 
@@ -250,6 +256,9 @@ var onSelectElem = function(item) {
 	else if(item=='section'){
 		$('#id_instructions').attr('value','Enter a short description about the section');
 	}
+	else if(item=='page'){
+		$('#id_instructions').attr('value','Not required');
+	}
 	
 	//Defining actions for 'personal' fields
 	
@@ -257,7 +266,6 @@ var onSelectElem = function(item) {
 	
 	$('#id_question').attr('value',question_text);
 	$prevField=$currSection.children(":last");
-	//$prevField=$('div.form_preview :last-child').filter('div.field_wrapper');
 	if($button.attr('value')!='Add to Form')
 		$button.attr('value','Add to Form').unbind('click').click(function(){insertField($('#elem_selector').attr('value'),$prevField)});
 };
@@ -576,25 +584,32 @@ var addElement = function(item,$prevField) {
 			onSelectCategory('Generic');
 			onSelectElem('textField');
 		});
-		$outline.appendTo($('div.form_preview')).dblclick(function(){
+		$outline.appendTo($currPage).dblclick(function(){
 			$currSection=$(this).children('div.section');
 		});
-		//currSection=$('#section_'+secCount);
-		$('div.form_preview').sortable();
+		$currPage.sortable();
 		secCount++;
 		$.data($outline[0],'data',data);
 		return $outline;
+	}
+	else if(item=='page'){
+		//First putting in the page break text
+		var $page_break = $('<div class="page_break"><span>** Page Break **</span></div>');
+		$page_break.appendTo($('div.preview_area'));
 		
-		/*$new_elem=
-		//$new_elem=$('<div>').addClass('section_header').append('<hr/>').append($('<h2>'+label_text+'</h2>')).append($('<p class="field_text">'+help_text+'</p>')).attr('id','section_'+secCount);
-		$new_elem_label.remove();
-		$new_elem.dblclick(function(){
-			$currSection=$(this);
+		//Now putting in the page div
+		$currPage=$('<div class="form_preview"></div>');
+		$currSection=$('<div class="section"></div>');
+		$currPage.append($('<div class="outline"></div>').append($currSection));
+		$('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($currPage);
+		$currPage.toggle( function(){$(this).children(".wrapper_button").addClass("wrapper_button_hover");}, 
+						function(){$(this).children(".wrapper_button").removeClass("wrapper_button_hover");});
+		$currPage.dblclick(function(){
+			$currPage=$(this);
 		});
-		$new_elem.appendTo($('div.form_preview'));
-		$currSection=$('#section_'+secCount);
-		secCount++;
-		return;*/
+		$currPage.appendTo($('div.preview_area'));
+		$.data(($currSection.parent())[0], 'data', {'question_text':'', 'help_text':''});
+		return $currPage;
 	}
 	
 	//'Personal Information' Fields
@@ -693,7 +708,7 @@ var submit=function() {
 	//Constructing the object to be sent to the server
 	$('div.preview_area').children('div.form_preview').each(function(pidx,pel) {
 		page={'sections':[]};
-		$(pel).children().each(function(idx, el) {
+		$(pel).children('div.outline').each(function(idx, el) {
 			section={'data':$.data(el, 'data'), 'fields':[]};
 			section['data']['seq']=idx;
 			delete(section['data']['required']);

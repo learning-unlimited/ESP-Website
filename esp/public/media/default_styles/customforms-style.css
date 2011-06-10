@@ -24,6 +24,10 @@ body {
 	overflow-y:auto;
 }
 
+.form_preview {
+	position:relative;
+}
+
 .field_wrapper {
 	display:block;
 	padding:10px 10px;
@@ -97,6 +101,18 @@ body {
 .outline p{
 	margin:0px;
 	padding:0px;
+}
+
+.page_break {
+	height: 2px; 
+	background-color: black; 
+	text-align: center
+}
+
+.page_break span {
+	background-color: white;
+	position: relative; 
+	top: -0.5em;
 }
 
 /* End Form Preview Area */
