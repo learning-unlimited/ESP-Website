@@ -26,21 +26,21 @@ class DynamicModelHandler:
 		'numeric':{'typeMap':models.IntegerField, 'attrs':{'null':True, }},
 		'date':{'typeMap':models.DateField, 'attrs':{'null':True, }},
 		'time':{'typeMap':models.TimeField, 'attrs':{'null':True, }},
-		'first_name':{'typeMap':models.CharField, 'attrs':{'max_length':30,}},
-		'last_name':{'typeMap':models.CharField, 'attrs':{'max_length':30,}},
+		'first_name':{'typeMap':models.CharField, 'attrs':{'max_length':64,}},
+		'last_name':{'typeMap':models.CharField, 'attrs':{'max_length':64,}},
 		'gender':{'typeMap':models.CharField, 'attrs':{'max_length':1,}},
-		'phone':{'typeMap':models.CharField, 'attrs':{'max_length':15,}},
+		'phone':{'typeMap':models.CharField, 'attrs':{'max_length':20,}},
 		'email':{'typeMap':models.CharField, 'attrs':{'max_length':30,}},
-		'street_address':{'typeMap':models.CharField, 'attrs':{'max_length':100,}},
-		'state':{'typeMap':models.CharField, 'attrs':{'max_length':20,}},
-		'city':{'typeMap':models.CharField, 'attrs':{'max_length':30,}},
+		'street':{'typeMap':models.CharField, 'attrs':{'max_length':100,}},
+		'state':{'typeMap':models.CharField, 'attrs':{'max_length':2,}},
+		'city':{'typeMap':models.CharField, 'attrs':{'max_length':50,}},
 		'zip':{'typeMap':models.CharField, 'attrs':{'max_length':5,}},
 		'courses':{'typeMap':models.CharField, 'attrs':{'max_length':100,}},
 	}
 	
 	_customFields={
 		'name':['first_name', 'last_name'],
-		'address':['street_address', 'state', 'city', 'zip'],
+		'address':['street', 'state', 'city', 'zip'],
 	}
 	
 	def __init__(self, form=None, fields=[]):

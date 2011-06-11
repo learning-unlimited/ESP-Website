@@ -3,14 +3,14 @@ from django.shortcuts import redirect, render_to_response, HttpResponse
 from django.http import Http404,HttpResponseRedirect
 from django.template import RequestContext
 from django.db import connection
-from forms import CustomForm
 from django.utils import simplejson as json
 from customforms.models import *
 #from customforms.useful import *
 #from customforms.backups import *
 from esp.program.models import Program
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
-
+from esp.customforms.DynamicForm import FormHandler
+from esp.customforms.playing import MyForm1, MyForm2, Combo
 
 def landing(request):
 	if request.user.is_authenticated():
@@ -60,7 +60,19 @@ def onSubmit(request):
 		dynH=DMH(form=form, fields=fields)
 		dynH.createTable()				
 							
-		return HttpResponse('OK')				
+		return HttpResponse('OK')
+		
+def viewForm(request, form_id):
+	"""Form viewing and submission"""
+	try:
+		form_id=int(form_id)
+	except ValueError:
+		raise Http404
+		
+	form=Form.objects.get(pk=form_id)
+	fh=FormHandler(form=form)
+	wizard=fh.getWizard()
+	return wizard(request)						
 		
 
 """	
