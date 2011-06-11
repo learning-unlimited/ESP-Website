@@ -37,6 +37,14 @@ class CustomFormHandler():
 	
 	_field_attrs=['label', 'help_text', 'required']
 	
+	_contactinfo_map={
+		'first_name':'first_name',
+		'last_name':'last_name',
+		'email':'e_mail',
+		'phone':'phone_day',
+		'address'
+	}
+	
 	def __init__(self, page=None, form=None):
 		self.page=page
 		self.form=form
@@ -85,7 +93,7 @@ class CustomFormHandler():
 						field_attrs['widget']=field_attrs['widget'](program=Program.objects.get(pk=int(self.form.link_id)))
 				else:		
 					try:
-						field_attrs['widget']=field_attrs['widget'](**self._field_types[field['field_type']]['widget_attrs'])
+						field_attrs['widget']=field_attrs['widget'](attrs=self._field_types[field['field_type']]['widget_attrs'])
 					except KeyError:
 						pass
 					
@@ -115,7 +123,12 @@ class ComboForm(FormWizard):
 		return 'customforms/playing.html'
 	
 	def done(self, request, form_list):
-		return HttpResponseRedirect('success/')
+		return HttpResponseRedirect('/customforms/success/')
+		
+	def prefix_for_step(self, step):
+		"""The FormWizard needs implements a prefix for each step. Setting the prefix to an empty string, 
+		as the field name is already unique"""
+		return ''	
 		
 class FormHandler:
 	"""Handles creation of a form (single page or multi-page). Uses Django's FormWizard."""
