@@ -42,7 +42,10 @@ class CustomFormHandler():
 		'last_name':'last_name',
 		'email':'e_mail',
 		'phone':'phone_day',
-		'address'
+		'street':'address_street',
+		'city':'address_city',
+		'zip':'address_zip',
+		'state':'address_state'
 	}
 	
 	def __init__(self, page=None, form=None):
