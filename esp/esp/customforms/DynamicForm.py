@@ -7,6 +7,8 @@ from django.shortcuts import redirect, render_to_response, HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.customforms.forms import CourseSelect
+from esp.customforms.DynamicModel import DynamicModelHandler as DMH
+from esp.users.models import ContactInfo
 
 class CustomFormHandler():
 	"""Handles creation of 'one' Django form (=one page)"""
@@ -53,6 +55,7 @@ class CustomFormHandler():
 		self.form=form
 		self.fields=[]
 		self.fieldsets=[]
+		self.initial={}
 		
 	def _getAttrs(self, attrs):
 		"""Takes attrs from the metadata and returns its Django equivalent"""
@@ -86,6 +89,11 @@ class CustomFormHandler():
 			for field in fields:
 				field_name='question_%d' % field['id']
 				field_attrs=field.copy()
+				
+				#Checking if it needs to be pre-populated with initial data during rendering
+				if field['field_type'] in self._contactinfo_map:
+					self.initial[field_name]=self._contactinfo_map[field['field_type']]
+					
 				del field_attrs['id'], field_attrs['field_type']
 				other_attrs=Attribute.objects.filter(field=field['id']).values('attr_type', 'value')
 				if other_attrs:
@@ -129,17 +137,19 @@ class ComboForm(FormWizard):
 		return HttpResponseRedirect('/customforms/success/')
 		
 	def prefix_for_step(self, step):
-		"""The FormWizard needs implements a prefix for each step. Setting the prefix to an empty string, 
+		"""The FormWizard implements a form prefix for each step. Setting the prefix to an empty string, 
 		as the field name is already unique"""
 		return ''	
 		
 class FormHandler:
 	"""Handles creation of a form (single page or multi-page). Uses Django's FormWizard."""
 	
-	def __init__(self, form):
+	def __init__(self, form, user):
 		self.form=form
 		self.form_list=[]
 		self.wizard=None
+		self.user=user
+		self.initial={}
 		
 	def _populateFormList(self):
 		"""Populates self.form_list with the BetterForm sub-classes corresponding to each page"""
@@ -148,13 +158,29 @@ class FormHandler:
 		for page in pages:
 			cfh=CustomFormHandler(page=page, form=self.form)
 			self.form_list.append(cfh.getForm())
+			
+			#Setting intitial data for this page/step
+			if cfh.initial:
+				self.initial[page.seq]={}
+				user_info=ContactInfo.objects.filter(user=self.user).values()[0]
+				for k,v in cfh.initial.items():
+					self.initial[page.seq].update({k:user_info[v]})
 	
 	def getWizard(self):
 		"""Returns the ComboForm instance for this form"""
 		if not self.form_list:
 			self._populateFormList()
-		self.wizard=ComboForm(self.form_list)	
+		self.wizard=ComboForm(self.form_list, self.initial)	
 		return self.wizard
+		
+	def deleteForm(self):
+		"""Deletes all information relating to the form from the db.
+			Also removes the response table
+		"""
+		dyn=DMH(form=self.form)
+		dyn.deleteTable()
+		self.form.delete() #Cascading Foreign Keys should take care of everything
+				
 		
 											
 					

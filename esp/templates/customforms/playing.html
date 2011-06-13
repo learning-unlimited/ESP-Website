@@ -1,6 +1,8 @@
 <html>
 	<head></head>
 	<body>
+		<h3>{{form_title}}</h3>
+		<p>{{form_description}}</p>
 		<p>Step {{ step }} of {{ step_count }}</p>
 		
 		<form action="." method="post">{% csrf_token %}

@@ -70,9 +70,10 @@ def viewForm(request, form_id):
 		raise Http404
 		
 	form=Form.objects.get(pk=form_id)
-	fh=FormHandler(form=form)
+	fh=FormHandler(form=form, user=request.user)
 	wizard=fh.getWizard()
-	return wizard(request)						
+	extra_context={'form_title':form.title, 'form_description':form.description}
+	return wizard(request, extra_context=extra_context)						
 		
 
 """	
