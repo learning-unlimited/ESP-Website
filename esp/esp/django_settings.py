@@ -200,6 +200,7 @@ INSTALLED_APPS = (
     'south',
     'sslauth',
     'form_utils',
+    'esp.dataviews',
 )
 import os
 for app in ('django_evolution', 'django_command_extensions'):
