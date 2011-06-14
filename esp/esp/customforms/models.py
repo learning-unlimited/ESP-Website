@@ -12,15 +12,24 @@ class Form(models.Model):
 	link_id=models.IntegerField(default=-1)
 	anonymous=models.BooleanField(default=False)
 	
+	def __unicode__(self):
+		return u'%s (created by %s)' % (self.title, self.created_by.username)
+	
 class Page(models.Model):
 	form=models.ForeignKey(Form)
 	seq=models.IntegerField(default=-1)
+	
+	def __unicode__(self):
+		return u'Page %d of %s' % (self.seq, self.form.title)
 	
 class Section(models.Model):
 	page=models.ForeignKey(Page)
 	title=models.CharField(max_length=40)
 	description=models.CharField(max_length=140, blank=True)
 	seq=models.IntegerField()
+	
+	def __unicode__(self):
+		return u'Sec. %d: %s' % (self.seq, unicode(self.title))
 
 class Field(models.Model):
 	form=models.ForeignKey(Form)
@@ -30,6 +39,9 @@ class Field(models.Model):
 	label=models.CharField(max_length=200)
 	help_text=models.CharField(max_length=200, blank=True)
 	required=models.BooleanField()
+	
+	def __unicode__(self):
+		return u'%s' % (self.label)
 	
 class Attribute(models.Model):
 	field=models.ForeignKey(Field)
