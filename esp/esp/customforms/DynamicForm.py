@@ -6,9 +6,25 @@ from django.contrib.formtools.wizard import FormWizard
 from django.shortcuts import redirect, render_to_response, HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
-from esp.customforms.forms import CourseSelect
+from esp.customforms.forms import CourseSelect, NameField, AddressField
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.users.models import ContactInfo
+
+class BaseCustomForm(BetterForm):
+	"""
+	This is the base class for all custom forms.
+	"""
+	def clean(self):
+		"""
+		This takes cleaned_data and expands the values for combo fields
+		"""
+		cleaned_data=self.cleaned_data.copy()
+		for k,v in self.cleaned_data.items():
+			if isinstance(v, dict):
+				cleaned_data.update(v)
+				del cleaned_data[k]
+		return cleaned_data		
+		
 
 class CustomFormHandler():
 	"""Handles creation of 'one' Django form (=one page)"""
@@ -20,16 +36,16 @@ class CustomFormHandler():
 		'reallyLongAns':{'typeMap': forms.CharField, 'attrs':{'widget':forms.Textarea,}, 'widget_attrs':{'rows':'14', 'cols':'70',}},
 		'radio':{'typeMap': forms.ChoiceField, 'attrs':{'widget': forms.RadioSelect, }, 'widget_attrs':{}},
 		'dropdown':{'typeMap': forms.ChoiceField, 'attrs':{'widget': forms.Select, }, 'widget_attrs':{}},
-		'multiselect':{'typeMap': forms.ChoiceField, 'attrs':{'widget': forms.SelectMultiple, }, 'widget_attrs':{}},
-		'checkboxes':{'typeMap': forms.ChoiceField, 'attrs':{'widget': forms.CheckboxSelectMultiple, }, 'widget_attrs':{}},
+		'multiselect':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.SelectMultiple, }, 'widget_attrs':{}},
+		'checkboxes':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.CheckboxSelectMultiple, }, 'widget_attrs':{}},
 		'numeric':{'typeMap': forms.IntegerField, 'attrs':{}, 'widget_attrs':{},},
 		'date':{'typeMap': forms.DateField,'attrs':{}, 'widget_attrs':{},},
 		'time':{'typeMap': forms.TimeField, 'attrs':{}, 'widget_attrs':{},},
-		'first_name':{'typeMap': forms.CharField, 'attrs':{'widget':forms.TextInput, 'max_length':64}, 'widget_attrs':{'size':'30',}},
-		'last_name':{'typeMap': forms.CharField, 'attrs':{'max_length':64,}, 'widget_attrs':{}},
+		'name':{'typeMap':NameField, 'attrs':{}, 'widget_attrs':{}},
 		'gender':{'typeMap': forms.ChoiceField, 'attrs':{'widget':forms.RadioSelect, 'choices':[('M','Male'), ('F', 'Female')]}, 'widget_attrs':{}},
 		'phone':{'typeMap': USPhoneNumberField, 'attrs':{}, 'widget_attrs':{}},
 		'email':{'typeMap': forms.EmailField, 'attrs':{'max_length':30,}, 'widget_attrs':{}},
+		'address':{'typeMap':AddressField, 'attrs':{}, 'widget_attrs':{}},
 		'street':{'typeMap': forms.CharField, 'attrs':{'max_length':100,}, 'widget_attrs':{}},
 		'state':{'typeMap': USStateField, 'attrs':{'widget': USStateSelect}, 'widget_attrs':{}},
 		'city':{'typeMap': forms.CharField, 'attrs':{'max_length':50,}, 'widget_attrs':{},},
@@ -40,15 +56,17 @@ class CustomFormHandler():
 	_field_attrs=['label', 'help_text', 'required']
 	
 	_contactinfo_map={
-		'first_name':'first_name',
-		'last_name':'last_name',
+		'name':['first_name', 'last_name'],
 		'email':'e_mail',
 		'phone':'phone_day',
+		'address':['address_street', 'address_city', 'address_state', 'address_zip'],
 		'street':'address_street',
 		'city':'address_city',
 		'zip':'address_zip',
 		'state':'address_state'
 	}
+	
+	_combo_fields=['name', 'address']
 	
 	def __init__(self, page=None, form=None):
 		self.page=page
@@ -90,9 +108,13 @@ class CustomFormHandler():
 				field_name='question_%d' % field['id']
 				field_attrs=field.copy()
 				
-				#Checking if it needs to be pre-populated with initial data during rendering
+				#Checking if it needs to be pre-populated with initial data during rendering.
 				if field['field_type'] in self._contactinfo_map:
 					self.initial[field_name]=self._contactinfo_map[field['field_type']]
+				
+				#Setting the 'name' attribute for combo fields
+				if field_attrs['field_type'] in self._combo_fields:
+					field_attrs['name']=field_name
 					
 				del field_attrs['id'], field_attrs['field_type']
 				other_attrs=Attribute.objects.filter(field=field['id']).values('attr_type', 'value')
@@ -125,26 +147,40 @@ class CustomFormHandler():
 		attrs={'Meta':Meta}
 		attrs.update(SortedDict(self.fields))	
 		
-		self.page_form=type(_form_name, (BetterForm,), attrs)
+		self.page_form=type(_form_name, (BaseCustomForm,), attrs)
 		return self.page_form
 		
 class ComboForm(FormWizard):
+	
+	def __init__(self, form_list, form, initial=None):
+		self.form=form
+		super(ComboForm, self).__init__(form_list, initial)
 	
 	def get_template(self, step):
 		return 'customforms/playing.html'
 	
 	def done(self, request, form_list):
+		data={}
+		for form in form_list:
+			data.update(form.cleaned_data)
+		#Plonking in user_id if the form is non-anonymous
+		if not self.form.anonymous:
+			data['user_id']=request.user.id
+		#Generating the dynamic model and saving the response		
+		dyn=DMH(form=self.form)
+		dynModel=dyn.createDynModel()
+		dynModel.objects.create(**data)	
 		return HttpResponseRedirect('/customforms/success/')
 		
 	def prefix_for_step(self, step):
 		"""The FormWizard implements a form prefix for each step. Setting the prefix to an empty string, 
 		as the field name is already unique"""
-		return ''	
+		return ''			
 		
 class FormHandler:
 	"""Handles creation of a form (single page or multi-page). Uses Django's FormWizard."""
 	
-	def __init__(self, form, user):
+	def __init__(self, form, user=None):
 		self.form=form
 		self.form_list=[]
 		self.wizard=None
@@ -164,13 +200,17 @@ class FormHandler:
 				self.initial[page.seq]={}
 				user_info=ContactInfo.objects.filter(user=self.user).values()[0]
 				for k,v in cfh.initial.items():
-					self.initial[page.seq].update({k:user_info[v]})
+					#Compound fields need to be initialized with a list of values
+					if isinstance(v, (list)):
+						self.initial[page.seq].update({k:[user_info[key] for key in v]})
+					else:
+						self.initial[page.seq].update({k:user_info[v]})
 	
 	def getWizard(self):
 		"""Returns the ComboForm instance for this form"""
 		if not self.form_list:
 			self._populateFormList()
-		self.wizard=ComboForm(self.form_list, self.initial)	
+		self.wizard=ComboForm(self.form_list, self.form, self.initial)	
 		return self.wizard
 		
 	def deleteForm(self):

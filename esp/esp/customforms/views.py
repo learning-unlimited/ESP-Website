@@ -73,7 +73,13 @@ def viewForm(request, form_id):
 	fh=FormHandler(form=form, user=request.user)
 	wizard=fh.getWizard()
 	extra_context={'form_title':form.title, 'form_description':form.description}
-	return wizard(request, extra_context=extra_context)						
+	return wizard(request, extra_context=extra_context)	
+
+def success(request):
+	"""
+	Successful form submission
+	"""
+	return render_to_response('customforms/success.html',{})						
 		
 
 """	
