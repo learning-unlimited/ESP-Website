@@ -68,12 +68,12 @@ class CustomFormHandler():
 	
 	_combo_fields=['name', 'address']
 	
-	def __init__(self, page=None, form=None):
+	def __init__(self, page, form):
 		self.page=page
 		self.form=form
+		self.seq=page[0][0].section.page.id
 		self.fields=[]
 		self.fieldsets=[]
-		self.initial={}
 		
 	def _getAttrs(self, attrs):
 		"""Takes attrs from the metadata and returns its Django equivalent"""
@@ -91,64 +91,65 @@ class CustomFormHandler():
 					other_attrs['min_value']=int(limits[0])
 				if limits[1]:
 					other_attrs['max_value']=int(limits[1])
-		return other_attrs				 			
-		
-	def _populateFields(self):
-		
-		"""Populates self.fields and self.fieldsets with the appropriate Form fields"""
-		
-		sections=Section.objects.filter(page=self.page).order_by('seq').values('id', 'title','description')
-		for section in sections:
+		return other_attrs
+	
+	def _getFields(self):
+		"""
+		Sets self.fields and self.fieldsets for this page
+		"""
+		for section in self.page:
 			curr_fieldset=[]
-			curr_fieldset.extend([section['title'], {'fields':[]}])
-			curr_fieldset[1]['description']=section['description']
-			
-			fields=Field.objects.filter(form=self.form, section=section['id']).order_by('seq').values('id', 'field_type', 'label', 'help_text', 'required')
-			for field in fields:
-				field_name='question_%d' % field['id']
-				field_attrs=field.copy()
-				
-				#Checking if it needs to be pre-populated with initial data during rendering.
-				if field['field_type'] in self._contactinfo_map:
-					self.initial[field_name]=self._contactinfo_map[field['field_type']]
+			curr_fieldset.extend([section[0].section.title, {'fields':[]}])
+			curr_fieldset[1]['description']=section[0].section.description
+			for field in section:
+				field_name='question_%d' % field.id
+				field_attrs={'label':field.label, 'help_text':field.help_text, 'required':field.required}
 				
 				#Setting the 'name' attribute for combo fields
-				if field_attrs['field_type'] in self._combo_fields:
+				if field.field_type in self._combo_fields:
 					field_attrs['name']=field_name
-					
-				del field_attrs['id'], field_attrs['field_type']
-				other_attrs=Attribute.objects.filter(field=field['id']).values('attr_type', 'value')
+				
+				other_attrs=Attribute.objects.filter(field=field).values('attr_type', 'value')
 				if other_attrs:
 					field_attrs.update(self._getAttrs(other_attrs))
-				field_attrs.update(self._field_types[field['field_type']]['attrs'])
-				if field['field_type']=='courses':
+				field_attrs.update(self._field_types[field.field_type]['attrs'])
+				if field.field_type=='courses':
 					if self.form.link_type=='program':
 						field_attrs['widget']=field_attrs['widget'](program=Program.objects.get(pk=int(self.form.link_id)))
 				else:		
 					try:
-						field_attrs['widget']=field_attrs['widget'](attrs=self._field_types[field['field_type']]['widget_attrs'])
+						field_attrs['widget']=field_attrs['widget'](attrs=self._field_types[field.field_type]['widget_attrs'])
 					except KeyError:
 						pass
-					
-				self.fields.append([field_name, self._field_types[field['field_type']]['typeMap'](**field_attrs) ])
-				curr_fieldset[1]['fields'].append(field_name)
+				self.fields.append([field_name, self._field_types[field.field_type]['typeMap'](**field_attrs) ])
+				curr_fieldset[1]['fields'].append(field_name)			
 			self.fieldsets.append(tuple(curr_fieldset))
 			
+	def getInitialDataFields(self):
+		"""
+		Returns a dict mapping fields to be pre-populated with the corresponding model field
+		"""
+		initial={}
+		for section in self.page:
+			for field in section:
+				field_name='question_%d' % field.id
+				if field.field_type in self._contactinfo_map:
+					initial[field_name]=self._contactinfo_map[field.field_type]
+		return initial						
+	
 	def getForm(self):
-		""" Returns the BetterForm class for the current page"""
-		_form_name="page_%d" % self.page.id
+		"""Returns the BetterForm class for the current page"""
+		_form_name="page_%d" % self.seq
 		
 		if not self.fields:
-			self._populateFields()
-		
+			self._getFields()
 		class Meta:
 			fieldsets=self.fieldsets
-		
 		attrs={'Meta':Meta}
-		attrs.update(SortedDict(self.fields))	
+		attrs.update(SortedDict(self.fields))
 		
-		self.page_form=type(_form_name, (BaseCustomForm,), attrs)
-		return self.page_form
+		page_form=type(_form_name, (BaseCustomForm,), attrs)
+		return page_form		
 		
 class ComboForm(FormWizard):
 	
@@ -182,35 +183,80 @@ class FormHandler:
 	
 	def __init__(self, form, user=None):
 		self.form=form
-		self.form_list=[]
 		self.wizard=None
 		self.user=user
-		self.initial={}
+		self.user_info={}
+		self.handlers=[]
+	
+	def _getFormMetadata(self, form):
+		"""
+		Returns the metadata for this form. Gets everything in one large query, and then organizes the information.
+		"""
+		fields=Field.objects.select_related(depth=2).filter(form=form).order_by('section__page__seq', 'section__seq', 'seq')
 		
-	def _populateFormList(self):
-		"""Populates self.form_list with the BetterForm sub-classes corresponding to each page"""
+		#Generating the 'master' struct for metadata
+		#master_struct is a nested list of the form (pages(sections(fields)))
+		master_struct=[]
+		for field in fields:
+			try:
+				page=master_struct[field.section.page.seq]
+			except IndexError:
+				page=[]
+				master_struct.append(page)
+			try:
+				section=page[field.section.seq]
+			except IndexError:
+				section=[]
+				page.append(section)
+			section.append(field)
+		return master_struct
+	
+	def _getHandlers(self):
+		"""
+		Returns a list of CustomFormHandler instances corresponding to each page
+		"""
+		master_struct=self._getFormMetadata(self.form)
+		for page in master_struct:
+			self.handlers.append(CustomFormHandler(page=page, form=self.form))
+		return self.handlers
+	
+	def _getFormList(self, form):
+		"""
+		Returns the list of BetterForm sub-classes corresponding to each page
+		"""
+		form_list=[]
+		if not self.handlers:
+			self._getHandlers()
+		for handler in self.handlers:
+			form_list.append(handler.getForm())
+		return form_list
 		
-		pages=Page.objects.filter(form=self.form).order_by('seq')
-		for page in pages:
-			cfh=CustomFormHandler(page=page, form=self.form)
-			self.form_list.append(cfh.getForm())
-			
-			#Setting intitial data for this page/step
-			if cfh.initial:
-				self.initial[page.seq]={}
-				user_info=ContactInfo.objects.filter(user=self.user).values()[0]
-				for k,v in cfh.initial.items():
+	def _getInitialData(self, form, user):
+		"""
+		Returns the initial data for this form
+		"""
+		initial_data={}
+		if form.anonymous or user is None:
+			return {}
+		if not self.handlers:
+			self._getHandlers()
+		for handler in self.handlers:
+			initial=handler.getInitialDataFields()
+			if initial:
+				initial_data[handler.seq]={}
+				if not self.user_info:
+					self.user_info=ContactInfo.objects.filter(user=user).values()[0]
+				for k,v in initial.items():
 					#Compound fields need to be initialized with a list of values
 					if isinstance(v, (list)):
-						self.initial[page.seq].update({k:[user_info[key] for key in v]})
+						initial_data[handler.seq].update({k:[self.user_info[key] for key in v]})
 					else:
-						self.initial[page.seq].update({k:user_info[v]})
+						initial_data[handler.seq].update({k:self.user_info[v]})
+		return initial_data				
 	
 	def getWizard(self):
 		"""Returns the ComboForm instance for this form"""
-		if not self.form_list:
-			self._populateFormList()
-		self.wizard=ComboForm(self.form_list, self.form, self.initial)	
+		self.wizard=ComboForm(self._getFormList(self.form), self.form, self._getInitialData(self.form, self.user))	
 		return self.wizard
 		
 	def deleteForm(self):

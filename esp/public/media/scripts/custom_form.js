@@ -695,7 +695,7 @@ var addElement = function(item,$prevField) {
 var submit=function() {
 	//submits the created form to the server
 	
-	var form={'title':$('#form_title').html(), 'desc':$('#form_description').html(), 'anonymous':String($('#id_anonymous').attr('checked')), 'pages':[]}, section, elem, page;
+	var form={'title':$('#form_title').html(), 'desc':$('#form_description').html(), 'anonymous':String($('#id_anonymous').attr('checked')), 'pages':[]}, section, elem, page, section_seq;
 	if($('#id_assoc_prog').val()!="-1") {
 		form['link_type']='program';
 		form['link_id']=$('#id_assoc_prog').val();
@@ -708,9 +708,10 @@ var submit=function() {
 	//Constructing the object to be sent to the server
 	$('div.preview_area').children('div.form_preview').each(function(pidx,pel) {
 		page={'sections':[]};
+		section_seq=0;
 		$(pel).children('div.outline').each(function(idx, el) {
 			section={'data':$.data(el, 'data'), 'fields':[]};
-			section['data']['seq']=idx;
+			section['data']['seq']=section_seq;
 			delete(section['data']['required']);
 
 			//Putting fields inside a section
@@ -722,13 +723,15 @@ var submit=function() {
 					section['fields'].push(elem);
 				}
 			});
-
-			//Putting the section inside the page
-			page['sections'].push(section);
+			if(section['fields'].length!=0){
+				//Put section inside page if section is non-empty
+				page['sections'].push(section);
+				section_seq++;
+			}	
 		});
 		//Putting the page inside the form
-		form['pages'].push(page);
-		
+		if(page['sections'].length!=0)
+			form['pages'].push(page);
 	});
 	
 	console.log(form);
