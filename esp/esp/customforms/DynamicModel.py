@@ -3,6 +3,7 @@ from south.db import db
 from django.db.models.loading import cache
 from django.db import transaction
 from esp.customforms.models import Field
+from esp.cache import cache_function
 
 class DynamicModelHandler:
 	"""Handler class for creating, modifying and deleting dynamic models
@@ -47,13 +48,21 @@ class DynamicModelHandler:
 		self.form=form
 		self.field_list=[]
 		self.fields=fields
+	
+	def __marinade__(self):
+		"""
+		Implemented for caching convenience
+		"""
+		return 'dyn'	
 		
-	def _getFieldsForForm(self):
+	@cache_function
+	def _getFieldsForForm(self, form):
 		"""Gets the list of (field_id, field_type) tuples for the present form.
 			Called if this list isn't passed to __init__() and the dynamic model needs to be generated.
 		"""
-		self.fields=Field.objects.filter(form=self.form).values_list('id', 'field_type')
-		return self.fields	
+		self.fields=Field.objects.filter(form=form).values_list('id', 'field_type')
+		return self.fields
+	_getFieldsForForm.depend_on_row(lambda: Field, lambda field: {'form': field.form})		
 	
 	def _getModelField(self, field_type):
 		"""Returns the appropriate Django Model Field based on field_type"""
@@ -69,7 +78,7 @@ class DynamicModelHandler:
 			-For custom fields like address, a field-name would be of the form 'question_23_zip'
 		"""
 		if not self.fields:
-			self._getFieldsForForm()
+			self._getFieldsForForm(self.form)
 		
 		self.field_list.append( ('id', models.AutoField(primary_key=True) ) )
 		if not self.form.anonymous:

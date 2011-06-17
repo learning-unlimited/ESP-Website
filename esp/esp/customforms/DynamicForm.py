@@ -1,4 +1,4 @@
-from esp.customforms.models import *
+from esp.customforms.models import Field, Attribute, Form
 from django import forms
 from form_utils.forms import BetterForm
 from django.utils.datastructures import SortedDict
@@ -9,6 +9,7 @@ from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField
 from esp.customforms.forms import CourseSelect, NameField, AddressField
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.users.models import ContactInfo
+from esp.cache import cache_function
 
 class BaseCustomForm(BetterForm):
 	"""
@@ -71,7 +72,7 @@ class CustomFormHandler():
 	def __init__(self, page, form):
 		self.page=page
 		self.form=form
-		self.seq=page[0][0].section.page.id
+		self.seq=page[0][0]['section__page__seq']
 		self.fields=[]
 		self.fieldsets=[]
 		
@@ -99,29 +100,33 @@ class CustomFormHandler():
 		"""
 		for section in self.page:
 			curr_fieldset=[]
-			curr_fieldset.extend([section[0].section.title, {'fields':[]}])
-			curr_fieldset[1]['description']=section[0].section.description
+			curr_fieldset.extend([section[0]['section__title'], {'fields':[]}])
+			curr_fieldset[1]['description']=section[0]['section__description']
 			for field in section:
-				field_name='question_%d' % field.id
-				field_attrs={'label':field.label, 'help_text':field.help_text, 'required':field.required}
+				field_name='question_%d' % field['id']
+				field_attrs={'label':field['label'], 'help_text':field['help_text'], 'required':field['required']}
 				
 				#Setting the 'name' attribute for combo fields
-				if field.field_type in self._combo_fields:
+				if field['field_type'] in self._combo_fields:
 					field_attrs['name']=field_name
 				
-				other_attrs=Attribute.objects.filter(field=field).values('attr_type', 'value')
+				#TODO: Change for multiple attributes - could be possible
+				other_attrs=[]
+				if field['attribute__attr_type'] is not None:
+					other_attrs.append({'attr_type':field['attribute__attr_type'], 'value':field['attribute__value']})
+				
 				if other_attrs:
 					field_attrs.update(self._getAttrs(other_attrs))
-				field_attrs.update(self._field_types[field.field_type]['attrs'])
-				if field.field_type=='courses':
+				field_attrs.update(self._field_types[field['field_type']]['attrs'])
+				if field['field_type']=='courses':
 					if self.form.link_type=='program':
 						field_attrs['widget']=field_attrs['widget'](program=Program.objects.get(pk=int(self.form.link_id)))
 				else:		
 					try:
-						field_attrs['widget']=field_attrs['widget'](attrs=self._field_types[field.field_type]['widget_attrs'])
+						field_attrs['widget']=field_attrs['widget'](attrs=self._field_types[field['field_type']]['widget_attrs'])
 					except KeyError:
 						pass
-				self.fields.append([field_name, self._field_types[field.field_type]['typeMap'](**field_attrs) ])
+				self.fields.append([field_name, self._field_types[field['field_type']]['typeMap'](**field_attrs) ])
 				curr_fieldset[1]['fields'].append(field_name)			
 			self.fieldsets.append(tuple(curr_fieldset))
 			
@@ -132,14 +137,14 @@ class CustomFormHandler():
 		initial={}
 		for section in self.page:
 			for field in section:
-				field_name='question_%d' % field.id
-				if field.field_type in self._contactinfo_map:
-					initial[field_name]=self._contactinfo_map[field.field_type]
+				if field['field_type'] in self._contactinfo_map:
+					field_name='question_%d' % field['id']
+					initial[field_name]=self._contactinfo_map[field['field_type']]
 		return initial						
 	
 	def getForm(self):
 		"""Returns the BetterForm class for the current page"""
-		_form_name="page_%d" % self.seq
+		_form_name="Page_%d_%d" % (self.form.id, self.seq)
 		
 		if not self.fields:
 			self._getFields()
@@ -187,29 +192,40 @@ class FormHandler:
 		self.user=user
 		self.user_info={}
 		self.handlers=[]
+		
+	def __marinade__(self):
+		"""
+		Implemented for caching convenience
+		"""
+		return "fh"	
 	
+	@cache_function
 	def _getFormMetadata(self, form):
 		"""
 		Returns the metadata for this form. Gets everything in one large query, and then organizes the information.
 		"""
-		fields=Field.objects.select_related(depth=2).filter(form=form).order_by('section__page__seq', 'section__seq', 'seq')
+		fields=Field.objects.filter(form=form).order_by('section__page__seq', 'section__seq', 'seq').values('id', 'field_type', 'label', 'help_text', 'required', 'seq',
+				'section__title', 'section__description', 'section__seq',
+				'section__page__id', 'section__page__seq',
+				'attribute__attr_type', 'attribute__value')
 		
 		#Generating the 'master' struct for metadata
 		#master_struct is a nested list of the form (pages(sections(fields)))
 		master_struct=[]
 		for field in fields:
 			try:
-				page=master_struct[field.section.page.seq]
+				page=master_struct[field['section__page__seq']]
 			except IndexError:
 				page=[]
 				master_struct.append(page)
 			try:
-				section=page[field.section.seq]
+				section=page[field['section__seq']]
 			except IndexError:
 				section=[]
 				page.append(section)
 			section.append(field)
 		return master_struct
+	_getFormMetadata.depend_on_row(lambda: Field, lambda field: {'form': field.form})	
 	
 	def _getHandlers(self):
 		"""
@@ -220,7 +236,7 @@ class FormHandler:
 			self.handlers.append(CustomFormHandler(page=page, form=self.form))
 		return self.handlers
 	
-	def _getFormList(self, form):
+	def _getFormList(self):
 		"""
 		Returns the list of BetterForm sub-classes corresponding to each page
 		"""
@@ -230,7 +246,7 @@ class FormHandler:
 		for handler in self.handlers:
 			form_list.append(handler.getForm())
 		return form_list
-		
+
 	def _getInitialData(self, form, user):
 		"""
 		Returns the initial data for this form
@@ -256,7 +272,7 @@ class FormHandler:
 	
 	def getWizard(self):
 		"""Returns the ComboForm instance for this form"""
-		self.wizard=ComboForm(self._getFormList(self.form), self.form, self._getInitialData(self.form, self.user))	
+		self.wizard=ComboForm(self._getFormList(), self.form, self._getInitialData(self.form, self.user))	
 		return self.wizard
 		
 	def deleteForm(self):
@@ -265,12 +281,13 @@ class FormHandler:
 		"""
 		dyn=DMH(form=self.form)
 		dyn.deleteTable()
-		self.form.delete() #Cascading Foreign Keys should take care of everything
-				
-		
-											
-					
-				
+		self.form.delete() #Cascading Foreign Keys should take care of everything				
+
+form=Form.objects.get(id=13)					
+def test():
+	#form=Form.objects.get(pk=13)
+	fh=FormHandler(form)
+	fh.getWizard()				
 			
 			 
 			
