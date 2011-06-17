@@ -49,6 +49,9 @@ class HiddenNameWidget(NameWidget):
 			widget.input_type='hidden'
 			widget.is_hidden=True
 			
+	def format_output(self, rendered_widgets):
+		return u''.join(rendered_widgets)		
+	
 class NameField(forms.MultiValueField):
 	"""
 	Custom field for the 'Name' field
@@ -100,7 +103,10 @@ class HiddenAddressWidget(AddressWidget):
 		super(HiddenAddressWidget, self).__init__(*args, **kwargs)
 		for widget in self.widgets:
 			widget.input_type='hidden'
-			widget.is_hidden=True		
+			widget.is_hidden=True
+			
+	def format_output(self, rendered_widgets):
+		return u''.join(rendered_widgets)				
 		
 class AddressField(forms.MultiValueField):
 	"""
