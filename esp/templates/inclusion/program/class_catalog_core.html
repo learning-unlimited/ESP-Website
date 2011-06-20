@@ -5,7 +5,7 @@
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }}</a>
           {% else %}
-           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }} {% if class.isFull %}<font color="#990000" style="font-size: 14px">Full!</font>{% endif %}
+           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }} {% if class.isFull %}<font color="#990000" style="font-size: 14px">Full!</font>{% endif %}{% elif class.isRegClosed %}<font color="#990000" style="font-size: 14px">Closed!</font>{% endif %}
           {% endif %}
 	 
 	 {% ifnotequal class.hardness_rating "Normal"  %} <br />
@@ -111,7 +111,7 @@
     {% endif %}
     {% endwith %}
 
-{% if class.isFull %}
+{% if class.isFull or class.isRegClosed %}
 <!-- This class is already full; start it off as invisible -->
 <script language="JavaScript" type="text/javascript">
 swap_visible('class_{{ class.id }}_details');
