@@ -1,9 +1,12 @@
+import re
+
 from django.db import models
 from south.db import db
 from django.db.models.loading import cache
 from django.db import transaction
 from esp.customforms.models import Field
 from esp.cache import cache_function
+from esp.users.models import ESPUser
 
 class DynamicModelHandler:
 	"""Handler class for creating, modifying and deleting dynamic models
@@ -14,6 +17,7 @@ class DynamicModelHandler:
 	
 	_app_label='customforms'
 	_module='esp.customforms.models'
+	_schema_name='customforms'
 	
 	_field_types={
 		'textField':{'typeMap':models.CharField, 'attrs':{'max_length':30,}},
@@ -82,7 +86,7 @@ class DynamicModelHandler:
 		
 		self.field_list.append( ('id', models.AutoField(primary_key=True) ) )
 		if not self.form.anonymous:
-			self.field_list.append( ('user_id', models.IntegerField() ) )
+			self.field_list.append( ('user', models.ForeignKey(ESPUser, null=True, blank=True, on_delete=models.SET_NULL) ) )
 		for field_id, field in self.fields:
 			if field in self._customFields:
 				for f in self._customFields[field]:
@@ -94,15 +98,30 @@ class DynamicModelHandler:
 	def createTable(self):
 		"""Sets up the database table using self.field_list"""
 		
+		table_name='customforms\".\"customforms_response_%d' % self.form.id
 		if not self.field_list:
 			self._getModelFieldList()
 		
 		if not transaction.is_managed:
 			db.start_transaction()
-			db.create_table('customforms_response_%d' % self.form.id, tuple(self.field_list))
+			db.create_table(table_name, tuple(self.field_list))
+			
+			#Executing deferred SQL, after correcting the CREATE INDEX statements
+			deferred_sql=[]
+			for stmt in db.deferred_sql:
+				deferred_sql.append(re.sub('^CREATE INDEX \"customforms\".', 'CREATE INDEX ', stmt))
+			db.deferred_sql=deferred_sql	
+			db.execute_deferred_sql()	
 			db.commit_transaction()
 		else:
-			db.create_table('customforms_response_%d' % self.form.id, tuple(self.field_list))	
+			db.create_table(table_name, tuple(self.field_list))
+			
+			#Executing deferred SQL, after correcting the CREATE INDEX statements
+			deferred_sql=[]
+			for stmt in db.deferred_sql:
+				deferred_sql.append(re.sub('^CREATE INDEX \"customforms\".', 'CREATE INDEX ', stmt))
+			db.deferred_sql=deferred_sql	
+			db.execute_deferred_sql()	
 		
 	def deleteTable(self):
 		"""Deletes the response table for the current form"""
@@ -114,7 +133,7 @@ class DynamicModelHandler:
 	def createDynModel(self):
 		"""Creates and returns the dynamic model for this form"""
 		
-		_db_table='customforms_response_%d' % self.form.id
+		_db_table='customforms\".\"customforms_response_%d' % self.form.id
 		_model_name='Response_%d' % self.form.id
 		
 		#Removing any existing model definitions from Django's cache

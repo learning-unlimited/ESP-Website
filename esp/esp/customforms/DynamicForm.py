@@ -1,4 +1,4 @@
-from esp.customforms.models import Field, Attribute, Form
+from esp.customforms.models import Field, Attribute, Section, Page, Form
 from django import forms
 from form_utils.forms import BetterForm
 from django.utils.datastructures import SortedDict
@@ -171,7 +171,7 @@ class ComboForm(FormWizard):
 			data.update(form.cleaned_data)
 		#Plonking in user_id if the form is non-anonymous
 		if not self.form.anonymous:
-			data['user_id']=request.user.id
+			data['user']=request.user
 		#Generating the dynamic model and saving the response		
 		dyn=DMH(form=self.form)
 		dynModel=dyn.createDynModel()
@@ -225,8 +225,11 @@ class FormHandler:
 				page.append(section)
 			section.append(field)
 		return master_struct
-	_getFormMetadata.depend_on_row(lambda: Field, lambda field: {'form': field.form})	
-	
+	_getFormMetadata.depend_on_row(lambda: Field, lambda field: {'form': field.form})
+	_getFormMetadata.depend_on_row(lambda: Attribute, lambda attr: {'form': attr.field.form})
+	_getFormMetadata.depend_on_row(lambda: Section, lambda section: {'form': section.page.form})
+	_getFormMetadata.depend_on_row(lambda: Page, lambda page: {'form': page.form})	
+		
 	def _getHandlers(self):
 		"""
 		Returns a list of CustomFormHandler instances corresponding to each page

@@ -10,7 +10,6 @@ from customforms.models import *
 from esp.program.models import Program
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.customforms.DynamicForm import FormHandler
-from esp.customforms.playing import MyForm1, MyForm2, Combo
 
 def landing(request):
 	if request.user.is_authenticated():
