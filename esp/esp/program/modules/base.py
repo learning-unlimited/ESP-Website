@@ -398,20 +398,22 @@ class ProgramModuleObj(models.Model):
         per_program_template = baseDir+'per_program/'+str(self.program.id)+ \
             '_'+ mainCallTemp
 
+        if self.module.inline_template:
+            return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
+
+        #   Iterate over a bunch of reasons to return a template;
+        #   if none of them come up true, return None.
         try:
             get_template(per_program_template)
-            if not self.useTemplate():
-                return None
-            return per_program_template
+            if self.useTemplate():
+                return per_program_template
         except TemplateDoesNotExist:
             try:
                 get_template(base_template)
-                if not self.useTemplate():
-                    return None
-                return base_template
+                if self.useTemplate():
+                    return base_template
             except TemplateDoesNotExist:
-                if self.module.inline_template:
-                    return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
+                pass
 
         return None
 
