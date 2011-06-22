@@ -4,7 +4,7 @@ from django.db.models import Model
 from django.db.models.related import RelatedObject
 from django.db.models.fields.related import RelatedField, ManyToManyField
 from inspect import isclass
-import string
+from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 
 def path_v1(*args):
     '''
@@ -54,9 +54,9 @@ If the first is an instance and the second is a model, the function returns the 
                 obj = getattr(obj, attr)
             results[i] = obj
     elif instances[1] and not instances[0]:
-        results = [classes[0].objects.filter(**{'__'.join(path): instances[1]}) for path in paths]
+        results = [classes[0].objects.filter(**{LOOKUP_SEP.join(path): instances[1]}) for path in paths]
     else:
-        results = ['__'.join(path) for path in paths]
+        results = [LOOKUP_SEP.join(path) for path in paths]
     if not results or not results[0]:
         return []
     return results
@@ -71,7 +71,7 @@ The list of conditions can be arbitrarily long, but must consist entirely of ins
 
 The function uses path_v1() to find the forward path from model to conditions[i] (for all i), and then applies the appropriate filter.
 
-If there is more than one path from model to conditions[i], the functions asks the user (via the raw_input() function) which path(s) to filter on.
+If there is more than one path from model to conditions[i], the function asks the user (via the raw_input() function) which path(s) to filter on.
     '''
     if not (isclass(model) and issubclass(model, Model)):
         raise TypeError("path_v2 argument 1 must be a model")
@@ -95,9 +95,80 @@ If there is more than one path from model to conditions[i], the functions asks t
                 repeat = True
                 while repeat:
                     use = raw_input("Include the path "+path+" as a condition ([y]/n)? ")
-                    if string.lower(use) == 'y' or string.lower(use) == 'yes' or not use:
+                    if use.lower() == 'y' or use.lower() == 'yes' or not use:
                         kwargs[path] = conditions[i]
                         repeat = False
-                    elif string.lower(use) == 'n' or string.lower(use) == 'no':
+                    elif use.lower() == 'n' or use.lower() == 'no':
                         repeat = False
+    return model.objects.filter(**kwargs)
+
+def iscorrecttuple(T): 
+    if not (isinstance(T, tuple)) or not (3 <= len(T) <= 4):
+        return False
+    elif not (isclass(T[0]) and issubclass(T[0], Model)):
+        return False
+    elif not (isinstance(T[1], str) and T[1] in T[0]._meta.init_name_map().keys()):
+        return False
+    elif len(T) == 3:
+        try: 
+            T[0]._meta.init_name_map()[T[1]][0].to_python(T[2])
+        except Exception:
+            return False
+        else: 
+            return True
+    elif len(T) == 4:
+        pass
+    else:
+        return False
+    return False
+    
+def path_v3(model, *conditions):
+    '''
+Returns a filter of all objects of type model, subject to the list of conditions. 
+
+The first argument, model, must be a model. It cannot be an instance of a model, or any other object.
+
+The list of conditions can be arbitrarily long, but each condition must be one of the following: 
+ * an instance of a model 
+ * a 3-tuple (model, field, value), where field is a string which is the name of a field of model, and value is a valid value of that field
+
+The function uses path_v1() to find the forward path from model to conditions[i] or conditions[i][0] (for all i), and then applies the appropriate filter.
+
+The function asks the user (via the raw_input() function) which path(s) to filter on.
+    '''
+    if not (isclass(model) and issubclass(model, Model)):
+        raise TypeError("path_v3 argument 1 must be a model")
+    models = [None for i in range(len(conditions))]
+    fields = ['' for i in range(len(conditions))]
+    values = [None for i in range(len(conditions))]
+    iter_conditions = range(len(conditions))
+    for i in iter_conditions: 
+        if isinstance(conditions[i], Model): 
+            values[i] = conditions[i]
+            models[i] = type(conditions[i])
+        elif isinstance(conditions[i], tuple) and len(conditions[i]) == 3 and iscorrecttuple(conditions[i]):
+            fields[i] = conditions[i][1]
+            values[i] = conditions[i][2]
+            models[i] = conditions[i][0]
+        else:
+            raise TypeError("path_v3 argument 2 must be a list, with each item being either an instance of a model or valid (model, field, value) 3-tuple")
+    
+    repeat = False
+    use = ''
+    kwargs = {}
+    paths = []
+    num_paths = 0
+    for i in iter_conditions:
+        paths = path_v1(model, models[i])
+        if fields[i]:
+            paths = [path + LOOKUP_SEP + fields[i] for path in paths]
+        for path in paths: 
+            repeat = True
+            while repeat:
+                use = raw_input("Include the path "+path+" as a condition ([y]/n)? ")
+                if use.lower() == 'y' or use.lower() == 'yes' or not use:
+                    kwargs[path] = values[i]
+                    repeat = False
+                elif use.lower() == 'n' or use.lower() == 'no':
+                    repeat = False
     return model.objects.filter(**kwargs)
