@@ -1,0 +1,19 @@
+<html>
+	<head>
+		<title>Custom Forms</title>
+		<link rel="stylesheet" type="text/css" href="/media/default_styles/customforms-style.css">
+	</head>
+	
+	<body>
+		<div class="content">
+			<h2>Your Forms</h2>
+			<ul class="form_list">
+				{% for form in form_list %}
+					<li>{{form.title}} - <a href="/customforms/view/{{form.id}}/">Fill</a> - <a href="/customforms/responses/{{form.id}}/">View Responses</a></li>
+				{% endfor %}	
+			</ul>
+			<br/><br/>
+			<a href="/customforms/create/">Create a Form</a>	
+		</div>	
+	</body>		
+</html>

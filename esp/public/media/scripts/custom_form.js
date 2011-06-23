@@ -737,14 +737,13 @@ var submit=function() {
 	console.log(form);
 	//POSTing to server
 	$.ajax({
-		url:'submit/',
+		url:'/customforms/submit/',
 		data:JSON.stringify(form),
 		type:'POST',
 		success: function(value) {
 			console.log(value);
-			if(value=='OK') {
-				//window.location='/list/';
-			}
+			if(value=='OK')
+				window.location='/customforms/';
 		}
 	});
 	$('#sbmt').attr("disabled","true");

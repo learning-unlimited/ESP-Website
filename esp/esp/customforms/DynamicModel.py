@@ -29,8 +29,8 @@ class DynamicModelHandler:
 		'multiselect':{'typeMap':models.TextField, 'attrs':{}},
 		'checkboxes':{'typeMap':models.TextField, 'attrs':{}},
 		'numeric':{'typeMap':models.IntegerField, 'attrs':{'null':True, }},
-		'date':{'typeMap':models.DateField, 'attrs':{'null':True, }},
-		'time':{'typeMap':models.TimeField, 'attrs':{'null':True, }},
+		'date':{'typeMap':models.CharField, 'attrs':{'max_length':10, }},
+		'time':{'typeMap':models.CharField, 'attrs':{'max_length':10, }},
 		'first_name':{'typeMap':models.CharField, 'attrs':{'max_length':64,}},
 		'last_name':{'typeMap':models.CharField, 'attrs':{'max_length':64,}},
 		'gender':{'typeMap':models.CharField, 'attrs':{'max_length':1,}},
@@ -59,6 +59,7 @@ class DynamicModelHandler:
 		"""
 		return 'dyn'	
 		
+	#CHECK THIS
 	@cache_function
 	def _getFieldsForForm(self, form):
 		"""Gets the list of (field_id, field_type) tuples for the present form.
@@ -82,7 +83,7 @@ class DynamicModelHandler:
 			-For custom fields like address, a field-name would be of the form 'question_23_zip'
 		"""
 		if not self.fields:
-			self._getFieldsForForm(self.form)
+			self.fields=self._getFieldsForForm(self.form)
 		
 		self.field_list.append( ('id', models.AutoField(primary_key=True) ) )
 		if not self.form.anonymous:
@@ -125,9 +126,9 @@ class DynamicModelHandler:
 		
 	def deleteTable(self):
 		"""Deletes the response table for the current form"""
-		
+		tname='customforms\".\"customforms_response_%d' % self.form.id
 		db.start_transaction()
-		db.delete_table('customforms_response_%d' % self.form.id)
+		db.delete_table(tname)
 		db.commit_transaction()		
 	
 	def createDynModel(self):
@@ -157,8 +158,8 @@ class DynamicModelHandler:
 		return dynModel	
 				
 		
-		
-		
+#Giving it an alias that's less of a mouthful		
+DMH=DynamicModelHandler
 						
 				
 		

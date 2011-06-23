@@ -7,7 +7,7 @@ from django.shortcuts import redirect, render_to_response, HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.customforms.forms import CourseSelect, NameField, AddressField
-from esp.customforms.DynamicModel import DynamicModelHandler as DMH
+from esp.customforms.DynamicModel import DMH
 from esp.users.models import ContactInfo
 from esp.cache import cache_function
 
@@ -21,6 +21,8 @@ class BaseCustomForm(BetterForm):
 		"""
 		cleaned_data=self.cleaned_data.copy()
 		for k,v in self.cleaned_data.items():
+			if isinstance(v, list):
+				cleaned_data[k]=";".join(v)
 			if isinstance(v, dict):
 				cleaned_data.update(v)
 				del cleaned_data[k]
@@ -186,6 +188,11 @@ class ComboForm(FormWizard):
 class FormHandler:
 	"""Handles creation of a form (single page or multi-page). Uses Django's FormWizard."""
 	
+	_customFields={
+		'name':['first_name', 'last_name'],
+		'address':['street', 'state', 'city', 'zip'],
+	}
+	
 	def __init__(self, form, user=None):
 		self.form=form
 		self.wizard=None
@@ -284,13 +291,36 @@ class FormHandler:
 		"""
 		dyn=DMH(form=self.form)
 		dyn.deleteTable()
-		self.form.delete() #Cascading Foreign Keys should take care of everything				
-
-form=Form.objects.get(id=13)					
+		self.form.delete() #Cascading Foreign Keys should take care of everything
+		
+	#IMPORTANT -> *NEED* TO REGISTER A CACHE DEPENDENCY ON THE RESPONSE MODEL
+	#@cache_function
+	def getResponseData(self, form):
+		"""
+		Returns the response data for this form, along with the questions
+		"""
+		dmh=DMH(form=form)
+		dyn=dmh.createDynModel()
+		response_data={'questions':[], 'answers':[]}
+		response_data['answers'].extend(dyn.objects.all().order_by('id').values())
+		fields=Field.objects.filter(form=form).order_by('section__page__seq', 'section__seq', 'seq').values('id', 'field_type', 'label')
+		
+		for field in fields:
+			qname='question_%d' % field['id']
+			if field['field_type'] in self._customFields:
+				for f in self._customFields[field['field_type']]:
+					response_data['questions'].append([qname+'_'+f, field['label'] + '_'+f])
+			else:
+				response_data['questions'].append([qname, field['label']])
+		return response_data
+	#getResponseData.depend_on_row(lambda: Field, lambda field: {'form': field.form})					
+f=Form.objects.get(id=13)	
 def test():
-	#form=Form.objects.get(pk=13)
-	fh=FormHandler(form)
-	fh.getWizard()				
+	fh=FormHandler(form=f)
+	a=fh.getResponseData(f)
+
+					
+						
 			
 			 
 			

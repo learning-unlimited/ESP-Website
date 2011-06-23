@@ -185,7 +185,10 @@ urlpatterns += patterns('esp.web.views.navBar',
 
 urlpatterns +=patterns('esp.customforms.views',
 	(r'^customforms/$','landing'),
+	(r'^customforms/create/$','formBuilder'),
 	(r'^customforms/submit/$','onSubmit'),
 	(r'^customforms/view/(?P<form_id>\d{1,6})/$','viewForm'),
-	(r'^customforms/success/$', 'success'),)
+	(r'^customforms/success/$', 'success'),
+	(r'^customforms/responses/(?P<form_id>\d{1,6})/$', 'viewResponse'),
+	(r'^customforms/getData/$', 'getData'),)
 	
