@@ -1,21 +1,18 @@
 <html>
 	<head>
 		<title>Form responses</title>
-		<link rel="stylesheet" type="text/css" href="/media/default_styles/customforms-style.css" />
 		<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/dojo/1.6/dojo/resources/dojo.css" />
-		<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/dojo/1.6/dijit/themes/tundra/tundra.css" />
-
-		<!--<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/dojo/1.6/dojox/grid/resources/Grid.css" />-->
-
-		<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/dojo/1.6/dojox/grid/resources/tundraGrid.css" />
+		<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/dojo/1.6/dijit/themes/claro/claro.css" />
+		<!--<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/dojo/1.5/dojox/grid/resources/Grid.css" />-->
+		<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/dojo/1.6/dojox/grid/enhanced/resources/claro/EnhancedGrid.css" />
 		<link rel="stylesheet" type="text/css"  href="http://ajax.googleapis.com/ajax/libs/dojo/1.6/dojox/grid/enhanced/resources/EnhancedGrid_rtl.css" />
-		
+		<link rel="stylesheet" type="text/css" href="/media/default_styles/customforms-style.css">
 	</head>
-	<body>
+	<body class="claro">
 		<div class="content">
 			<input type="hidden" id="form_id" value="{{form.id}}"/>
 			<h2>{{form.title}}</h2>
-			<div id="gridContainer">
+			<div id="gridContainer" style="width:100%; height:100%;">
 			</div>	
 		</div>
 		
