@@ -30,11 +30,10 @@ If the first is an instance and the second is a model, the function returns the 
             classes[i] = type(args[i])
     if instances[0] and instances[1]:
         raise TypeError("at least one of the path_v1 arguments must be a model")
-    stack = [((classes[0],),())]
+    stack = [(classes[0],())]
     paths = []
     while stack:
-        (model_heirarchy, path) = stack.pop()
-        model = model_heirarchy[-1]
+        (model, path) = stack.pop()
         if issubclass(model, DataTree):
             continue
         relatedObjects = {}
@@ -43,7 +42,7 @@ If the first is an instance and the second is a model, the function returns the 
         for name, field in model._meta.init_name_map().iteritems():
             if not isinstance(field[0], RelatedObject) and not isinstance(field[0], ManyToManyField):
                 if isinstance(field[0], RelatedField):
-                    stack.append((model_heirarchy+(field[0].rel.to,), path+(name,)))
+                    stack.append((field[0].rel.to, path+(name,)))
             else:
                 relatedObjects[name] = field
     results = [None for i in range(len(paths))]
@@ -54,11 +53,11 @@ If the first is an instance and the second is a model, the function returns the 
                 obj = getattr(obj, attr)
             results[i] = obj
     elif instances[1] and not instances[0]:
-        results = [classes[0].objects.filter(**{LOOKUP_SEP.join(path): instances[1]}) for path in paths]
+        results = [classes[0].objects.filter(**{LOOKUP_SEP.join(path): instances[1]}) for path in paths if path]
+        if not paths[0]:
+            results += [instances[1]]
     else:
         results = [LOOKUP_SEP.join(path) for path in paths]
-    if not results or not results[0]:
-        return []
     return results
 
 def path_v2(model, *conditions):
@@ -81,6 +80,8 @@ If there is more than one path from model to conditions[i], the function asks th
     for i in range(len(conditions)):
         if not isinstance(conditions[i], Model): 
             raise TypeError("path_v2 argument 2 must be a list of instances of models")
+        elif isinstance(conditions[i], model):
+            raise TypeError("path_v2 argument 2 must not contain any instances of argument 1")
         models[i] = type(conditions[i])
     kwargs = {}
     paths = None
@@ -88,22 +89,19 @@ If there is more than one path from model to conditions[i], the function asks th
     use = None
     for i in range(len(conditions)):
         paths = path_v1(model, models[i])
-        if len(paths) == 1:
-             kwargs[paths[0]] = conditions[i]
-        elif len(paths) > 1:
-            for path in paths: 
-                repeat = True
-                while repeat:
-                    use = raw_input("Include the path "+path+" as a condition ([y]/n)? ")
-                    if use.lower() == 'y' or use.lower() == 'yes' or not use:
-                        kwargs[path] = conditions[i]
-                        repeat = False
-                    elif use.lower() == 'n' or use.lower() == 'no':
-                        repeat = False
+        for path in paths: 
+            repeat = True
+            while repeat:
+                use = raw_input("Include the path "+path+" as a condition ([y]/n)? ")
+                repeat = False
+                if use.lower() == 'y' or use.lower() == 'yes' or not use: 
+                    kwargs[path] = conditions[i]
+                elif not (use.lower() == 'n' or use.lower() == 'no'):
+                    repeat = True
     return model.objects.filter(**kwargs)
 
 def iscorrecttuple(T): 
-    if not (isinstance(T, tuple)) or not (3 <= len(T) <= 4):
+    if not ((isinstance(T, tuple)) and (3 <= len(T) <= 4)):
         return False
     elif not (isclass(T[0]) and issubclass(T[0], Model)):
         return False
@@ -117,10 +115,12 @@ def iscorrecttuple(T):
         else: 
             return True
     elif len(T) == 4:
-        pass
+        if not T[2] in QUERY_TERMS.keys():
+            return False
+        else:
+            return True
     else:
         return False
-    return False
     
 def path_v3(model, *conditions):
     '''
@@ -136,14 +136,19 @@ The function uses path_v1() to find the forward path from model to conditions[i]
 
 The function asks the user (via the raw_input() function) which path(s) to filter on.
     '''
+    conditions = list(conditions)
     if not (isclass(model) and issubclass(model, Model)):
         raise TypeError("path_v3 argument 1 must be a model")
-    models = [None for i in range(len(conditions))]
-    fields = ['' for i in range(len(conditions))]
-    values = [None for i in range(len(conditions))]
     iter_conditions = range(len(conditions))
+    models = [None for i in iter_conditions]
+    fields = ['' for i in iter_conditions]
+    values = [None for i in iter_conditions]
     for i in iter_conditions: 
+        if isinstance(conditions[i], tuple) and isinstance(conditions[i][-1], Model): 
+            conditions[i] = conditions[i][-1]
         if isinstance(conditions[i], Model): 
+            if isinstance(conditions[i], model):
+                raise TypeError("path_v3 argument 2 must not contain any instances of argument 1")
             values[i] = conditions[i]
             models[i] = type(conditions[i])
         elif isinstance(conditions[i], tuple) and len(conditions[i]) == 3 and iscorrecttuple(conditions[i]):
@@ -159,16 +164,72 @@ The function asks the user (via the raw_input() function) which path(s) to filte
     paths = []
     num_paths = 0
     for i in iter_conditions:
-        paths = path_v1(model, models[i])
-        if fields[i]:
-            paths = [path + LOOKUP_SEP + fields[i] for path in paths]
-        for path in paths: 
+        for path in [LOOKUP_SEP.join((path, fields[i])).strip(LOOKUP_SEP) for path in path_v1(model, models[i])]: 
             repeat = True
             while repeat:
                 use = raw_input("Include the path "+path+" as a condition ([y]/n)? ")
-                if use.lower() == 'y' or use.lower() == 'yes' or not use:
+                repeat = False
+                if use.lower() == 'y' or use.lower() == 'yes' or not use: 
                     kwargs[path] = values[i]
-                    repeat = False
-                elif use.lower() == 'n' or use.lower() == 'no':
-                    repeat = False
+                elif not (use.lower() == 'n' or use.lower() == 'no'):
+                    repeat = True
+    return model.objects.filter(**kwargs)
+
+def path_v4(model, *conditions):
+    '''
+Returns a filter of all objects of type model, subject to the list of conditions. 
+
+The first argument, model, must be a model. It cannot be an instance of a model, or any other object.
+
+The list of conditions can be arbitrarily long, but each condition must be one of the following: 
+ * an instance of a model 
+ * a 3-tuple (model, field, value), where field is a string which is the name of a field of model, and value is a valid value of that field
+ * a 4-tuple (model, field, query_term, value), where field is a string which is the name of a field of model, query_term is a string which is the name of a Django query term (defined in django.db.models.sql.constants.QUERY_TERMS), and value is a valid value of that field
+
+The function uses path_v1() to find the forward path from model to conditions[i] or conditions[i][0] (for all i), and then applies the appropriate filter.
+
+The function asks the user (via the raw_input() function) which path(s) to filter on.
+    '''
+    conditions = list(conditions)
+    if not (isclass(model) and issubclass(model, Model)):
+        raise TypeError("path_v4 argument 1 must be a model")
+    iter_conditions = range(len(conditions))
+    models = [None for i in iter_conditions]
+    fields = ['' for i in iter_conditions]
+    lookup_type = ['' for i in iter_conditions]
+    values = [None for i in iter_conditions]
+    for i in iter_conditions: 
+        if isinstance(conditions[i], tuple) and isinstance(conditions[i][-1], Model): 
+            conditions[i] = conditions[i][-1]
+        if isinstance(conditions[i], Model): 
+            if isinstance(conditions[i], model):
+                raise TypeError("path_v4 argument 2 must not contain any instances of argument 1")
+            values[i] = conditions[i]
+            models[i] = type(conditions[i])
+        elif isinstance(conditions[i], tuple) and iscorrecttuple(conditions[i]):
+            fields[i] = conditions[i][1]
+            models[i] = conditions[i][0]
+            if len(conditions[i]) == 3:
+                values[i] = conditions[i][2]
+            else:
+                values[i] = conditions[i][3]
+                lookup_type[i] = conditions[i][2]
+        else:
+            raise TypeError("path_v4 argument 2 must be a list, with each item being either an instance of a model or valid (model, field, value) 3-tuple")
+    
+    repeat = False
+    use = ''
+    kwargs = {}
+    paths = []
+    num_paths = 0
+    for i in iter_conditions:
+        for path in [LOOKUP_SEP.join((path, fields[i], lookup_type[i])).strip(LOOKUP_SEP) for path in path_v1(model, models[i])]: 
+            repeat = True
+            while repeat:
+                use = raw_input("Include the path "+path+" as a condition ([y]/n)? ")
+                repeat = False
+                if use.lower() == 'y' or use.lower() == 'yes' or not use: 
+                    kwargs[path] = values[i]
+                elif not (use.lower() == 'n' or use.lower() == 'no'):
+                    repeat = True
     return model.objects.filter(**kwargs)
