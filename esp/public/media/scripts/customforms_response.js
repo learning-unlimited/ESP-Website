@@ -1,5 +1,3 @@
-var a;
-
 dojo.addOnLoad(function() {
 	
 	//csrf stuff
@@ -51,9 +49,8 @@ dojo.addOnLoad(function() {
 		dataType:'json',
 		async:false,
 		success: function(form_data) {
-			a=form_data;
 			console.log(form_data);
-			createGrid(a);
+			createGrid(form_data);
 		}
 	});
 });
@@ -77,7 +74,8 @@ var getLayout=function(data) {
 		layout.push({
 			field:val[0],
 			name:val[1],
-			width:'80px'
+			width:'80px',
+			datatype:'string'
 		});
 	});
 	console.log('out getLayout');
@@ -92,10 +90,17 @@ var createGrid=function(form_data){
 	var stor, layt, grid;
 	layt=getLayout(form_data['questions']);
 	stor=getStore(form_data['answers']);
-	grid=new dojox.grid.DataGrid({
+	grid=new dojox.grid.EnhancedGrid({
 		store:stor,
 		clientSort:true,
-		structure:layt
+		structure:layt,
+		columnReordering:true,
+		jsId:grid,
+		rowSelector:'20px',
+		loadingMessage:"Please wait while your data is fetched",
+		plugins:{
+			filter:true,
+		}
 	},
 	document.createElement('div'));
 	
