@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
+from esp.program.controllers.consistency import ConsistencyChecker
 
 from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem
 from esp.users.models import UserBit, ESPUser, User
@@ -316,6 +317,14 @@ class AdminClass(ProgramModuleObj):
                 cls_form.save_data(cls_alter)
 
                 return HttpResponseRedirect('/manage/%s/%s/dashboard' % (one, two))            
+            
+        consistency_checker = ConsistencyChecker(self.program)
+        context['errors'] = []
+        for teacher in cls.teachers():
+            context['errors'] += consistency_checker.check_teacher_conflict(teacher)
+        for section in sections:
+            context['errors'] += consistency_checker.check_expected_duration(section)
+            context['errors'] += consistency_checker.check_resource_consistency(section)
             
         context['class'] = cls
         context['sections'] = sections
