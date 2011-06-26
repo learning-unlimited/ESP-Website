@@ -33,12 +33,12 @@ def initial_passwd_request(request, success=None):
             
             username = form.cleaned_data['username']
             if username != '':
-                users = User.objects.filter(username = username)
+                users = ESPUser.objects.filter(username = username)
             else:
-                users = User.objects.filter(email__iexact = form.cleaned_data['email'])
+                users = ESPUser.objects.filter(email__iexact = form.cleaned_data['email'])
 
             for user in users:
-                ESPUser(user).recoverPassword()
+                user.recoverPassword()
 
             return HttpResponseRedirect('%ssuccess/' % request.path)
 

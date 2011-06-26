@@ -191,7 +191,7 @@ class TeacherQuizModule(ProgramModuleObj):
             }
         else:
             return {
-                'quiz_done': User.objects.filter(qo).distinct(),
+                'quiz_done': ESPUser.objects.filter(qo).distinct(),
             }
 
     def teacherDesc(self):

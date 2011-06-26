@@ -16,7 +16,7 @@ from esp.users.models.forwarder import UserForwarder
 def filter_username(username, password):
     #   Allow login by e-mail address if so specified
     if username and '@' in username and Tag.getTag('login_by_email'):
-        accounts = User.objects.filter(email = username)
+        accounts = ESPUser.objects.filter(email = username)
         matches = []
         for u in accounts:
             if u.check_password(password):

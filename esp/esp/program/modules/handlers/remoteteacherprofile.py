@@ -61,7 +61,7 @@ class RemoteTeacherProfile(ProgramModuleObj):
         if QObject:
             return {'teacher_remoteprofile': self.getQForUser(Q_teachers)}
         
-        teachers = User.objects.filter(Q_teachers).distinct()
+        teachers = ESPUser.objects.filter(Q_teachers).distinct()
         return {'teacher_remoteprofile': teachers}
 
     def teacherDesc(self):

@@ -188,7 +188,7 @@ class AdminClass(ProgramModuleObj):
             if ids:
                 Q_Users |= Q(id__in = ids)
                     
-            users = User.objects.filter( Q_Users )
+            users = ESPUser.objects.filter( Q_Users )
 
             if request.POST['class_id'] == 'program':
                 already_registered_users = prog.students()['attended']
@@ -198,12 +198,12 @@ class AdminClass(ProgramModuleObj):
 
             already_registered_ids = [ i.id for i in already_registered_users ]
                                                
-            new_attendees = User.objects.filter( Q_Users )
+            new_attendees = ESPUser.objects.filter( Q_Users )
             if already_registered_ids != []:
                 new_attendees = new_attendees.exclude( id__in = already_registered_ids )
             new_attendees = new_attendees.distinct()
 
-            no_longer_attending = User.objects.filter( id__in = already_registered_ids )
+            no_longer_attending = ESPUser.objects.filter( id__in = already_registered_ids )
             if ids != [] or usernames != []:
                 no_longer_attending = no_longer_attending.exclude( Q_Users )
             no_longer_attending = no_longer_attending.distinct()
@@ -569,7 +569,7 @@ class AdminClass(ProgramModuleObj):
         if not request.GET.has_key('name') or request.POST.has_key('name'):
             return self.goToCore(tl)
 
-        queryset = User.objects.filter(Q_teacher)
+        queryset = ESPUser.objects.filter(Q_teacher)
         
         if not request.GET.has_key('name'):
             startswith = request.POST['name']

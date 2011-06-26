@@ -432,11 +432,11 @@ class ESPUser(User, AnonymousUser):
             num = int(num)
         except:
             raise ESPError(), 'Could not find user "%s %s"' % (first, last)
-        users = User.objects.filter(last_name__iexact = last,
+        users = ESPUser.objects.filter(last_name__iexact = last,
                                     first_name__iexact = first).order_by('id')
         if len(users) <= num:
             raise ESPError(False), '"%s %s": Unknown User' % (first, last)
-        return ESPUser(users[num])
+        return users[num]
 
     @staticmethod
     def getTypes():
@@ -460,7 +460,7 @@ class ESPUser(User, AnonymousUser):
             return Q_useroftype
 
         else:
-            return User.objects.filter(Q_useroftype)
+            return ESPUser.objects.filter(Q_useroftype)
 
     @cache_function
     def getAvailableTimes(self, program, ignore_classes=False):
@@ -1849,12 +1849,12 @@ class DBList(object):
         if self.QObject: # if there is a q object we can just
             if not self.totalnum:
                 if override:
-                    self.totalnum = User.objects.filter(self.QObject).distinct().count()
+                    self.totalnum = ESPUser.objects.filter(self.QObject).distinct().count()
                     cache.set(cache_id, self.totalnum, 60)
                 else:
                     cachedval = cache.get(cache_id)
                     if cachedval is None:
-                        self.totalnum = User.objects.filter(self.QObject).distinct().count()
+                        self.totalnum = ESPUser.objects.filter(self.QObject).distinct().count()
                         cache.set(cache_id, self.totalnum, 60)
                     else:
                         self.totalnum = cachedval

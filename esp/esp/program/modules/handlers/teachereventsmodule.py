@@ -93,8 +93,8 @@ class TeacherEventsModule(ProgramModuleObj):
             }
         else:
             return {
-                'interview': User.objects.filter( userbit__qsc__parent = self.qscs['interview'] ).distinct(),
-                'training': User.objects.filter( userbit__qsc__parent = self.qscs['training'] ).distinct()
+                'interview': ESPUser.objects.filter( userbit__qsc__parent = self.qscs['interview'] ).distinct(),
+                'training': ESPUser.objects.filter( userbit__qsc__parent = self.qscs['training'] ).distinct()
             }
 
     def teacherDesc(self):

@@ -441,7 +441,7 @@ def newprogram(request):
         template_prog["anchor"] = tprogram.anchor.parent.id
         
         # aseering 5/18/2008 -- List everyone who was granted V/Administer on the specified program
-        template_prog["admins"] = User.objects.filter(userbit__verb=GetNode("V/Administer"), userbit__qsc=tprogram.anchor).values_list("id", flat=True)
+        template_prog["admins"] = ESPUser.objects.filter(userbit__verb=GetNode("V/Administer"), userbit__qsc=tprogram.anchor).values_list("id", flat=True)
 
         # aseering 5/18/2008 -- More aggressively list everyone who was an Admin
         #template_prog["admins"] = [ x.id for x in UserBit.objects.bits_get_users(verb=GetNode("V/Administer"), qsc=tprogram.anchor, user_objs=True) ]
