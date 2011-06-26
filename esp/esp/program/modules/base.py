@@ -131,41 +131,6 @@ class ProgramModuleObj(models.Model):
         else:
             return Q(id__in = ids)
 
-    @staticmethod
-    def renderMyESP():
-        """
-        Returns a rendered myESP home template, with content from all relevant modules
-
-        Renders the page based on content from all 
-        """
-        all_modules = []
-        context = {}
-
-        for x in ProgramModules.objects.all():
-            try:
-                thisClass = x.getPythonClass()
-
-                try:
-                    page = thisClass.summaryPage()
-                    context = thisClass.prepareSummary(context)
-                except:
-                    page = None
-
-                
-                    subpages = [ { 'name': i.__name__, 'link_title': i.__doc__.split('\n')[0], 'function': i } for i in thisClass.getSummaryCalls() ]
-                    if subpages == []:
-                        subpages = None
-
-               
-                    all_modules.append({ 'module': thisClass,
-                                         'page': page,
-                                         'subpages': subpages })
-            except:
-                pass
-
-        context['modules'] = all_modules
-        return render_to_response("myesp/mainpage.html", context)
-            
     #   This function caches the customized (augmented) program module objects
     @cache_function
     def findModuleObject(tl, call_txt, prog):
