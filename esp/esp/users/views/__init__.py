@@ -35,7 +35,7 @@ def login_checked(request, *args, **kwargs):
     # Check for user forwarders
     if request.user.is_authenticated():
         old_username = request.user.username
-        user, forwarded = UserForwarder.follow(request.user)
+        user, forwarded = UserForwarder.follow(ESPUser(request.user))
         if forwarded:
             auth_logout(request)
             auth_login(request, user)

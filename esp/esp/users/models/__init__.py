@@ -98,7 +98,7 @@ class FakeState(object):
     db = None
 
 class UserAvailability(models.Model):
-    user = AjaxForeignKey(User)
+    user = AjaxForeignKey('ESPUser')
     event = models.ForeignKey(Event)
     role = AjaxForeignKey(DataTree)
     priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
@@ -255,10 +255,7 @@ class ESPUser(User, AnonymousUser):
                       'retTitle': retTitle,
                       'onsite'  : onsite}
 
-        if type(user) == ESPUser:
-            user = user.getOld()
-
-        if ESPUser(user).isAdministrator():
+        if user.isAdministrator():
             # Disallow morphing into Administrators.
             # It's too broken, from a security perspective.
             # -- aseering 1/29/2010
@@ -293,11 +290,7 @@ class ESPUser(User, AnonymousUser):
         del request.session['user_morph']
         logout(request)
 
-        if type(new_user) == ESPUser:
-            old_user = new_user.getOld()
-        else:
-            old_user = new_user
-
+        old_user = new_user
         old_user.backend = 'django.contrib.auth.backends.ModelBackend'
         
         login(request, old_user)
@@ -972,7 +965,7 @@ food_choices = zip(food_choices, food_choices)
 
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     k12school = AjaxForeignKey('K12School', help_text='Begin to type your school name and select your school if it comes up.', blank=True, null=True)
     school = models.CharField(max_length=256,blank=True, null=True)
@@ -1133,7 +1126,7 @@ class StudentInfo(models.Model):
 
 class TeacherInfo(models.Model):
     """ ESP Teacher-specific contact information """
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     from_here = models.NullBooleanField(null=True)
     is_graduate_student = models.NullBooleanField(blank=True, null=True)
@@ -1224,7 +1217,7 @@ class TeacherInfo(models.Model):
 
 class GuardianInfo(models.Model):
     """ ES Guardian-specific contact information """
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     year_finished = models.PositiveIntegerField(blank=True, null=True)
     num_kids = models.PositiveIntegerField(blank=True, null=True)
 
@@ -1287,7 +1280,7 @@ class GuardianInfo(models.Model):
 
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     subject_taught = models.CharField(max_length=64,blank=True, null=True)
     grades_taught = models.CharField(max_length=16,blank=True, null=True)
     school = models.CharField(max_length=128,blank=True, null=True)
@@ -1439,7 +1432,7 @@ class ZipCodeSearches(models.Model):
 
 class ContactInfo(models.Model):
     """ ESP-specific contact information for (possibly) a specific user """
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('E-mail address', blank=True, null=True)
@@ -1736,7 +1729,7 @@ class PersistentQueryFilter(models.Model):
 
 
 class ESPUser_Profile(models.Model):
-    user = AjaxForeignKey(User, unique=True)
+    user = AjaxForeignKey(ESPUser, unique=True)
 
     class Meta:
         app_label = 'users'

@@ -410,7 +410,7 @@ class UserBit(models.Model):
     >>> UserBit.objects.bits_get_qsc(user=ringo,verb=GetNode('V/Purchase'),qsc_root=GetNode('Q/Albums'))
     []
     """
-    user = AjaxForeignKey(User, 'id', blank=True, null=True, default=None) # User to give this permission
+    user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True, default=None) # User to give this permission
     qsc = AjaxForeignKey(DataTree, related_name='userbit_qsc') # Controller to grant access to
     verb = AjaxForeignKey(DataTree, related_name='userbit_verb') # Do we want to use Subjects?
 

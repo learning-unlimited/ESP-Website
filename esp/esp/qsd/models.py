@@ -45,6 +45,7 @@ from esp.db.fields import AjaxForeignKey
 from esp.db.file_db import *
 from esp.cache import cache_function
 from esp.web.models import NavBarCategory
+from esp.users.models import ESPUser
 
 class QSDManager(FileDBManager):
     @cache_function
@@ -77,7 +78,7 @@ class QuasiStaticData(models.Model):
     nav_category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
 
     create_date = models.DateTimeField(default=datetime.now, editable=False)
-    author = AjaxForeignKey(User)
+    author = AjaxForeignKey(ESPUser)
     disabled = models.BooleanField(default=False)
     keywords = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)

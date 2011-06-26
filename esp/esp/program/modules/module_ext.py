@@ -37,6 +37,7 @@ from esp.datatree.models import *
 from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
 from esp import settings
+from esp.users.models import ESPUser
 from esp.program.models import Program, RegistrationType
 
 class DBReceipt(models.Model):
@@ -311,7 +312,7 @@ class RemoteProfile(models.Model):
     from esp.program.models import Program
     from esp.cal.models import Event
 
-    user      = AjaxForeignKey(User,blank=True, null=True)
+    user      = AjaxForeignKey(ESPUser,blank=True, null=True)
     program   = models.ForeignKey(Program,blank=True, null=True)
     volunteer = models.BooleanField(default = False)
     need_bus  = models.BooleanField(default = False)
@@ -359,7 +360,7 @@ class SATPrepTeacherModuleInfo(models.Model):
 
     subject  = models.CharField(max_length=32, choices = SAT_SUBJECTS)
 
-    user     = AjaxForeignKey(User,blank=True, null=True)
+    user     = AjaxForeignKey(ESPUser,blank=True, null=True)
     program  = models.ForeignKey(Program,blank=True, null=True)
     section  = models.CharField(max_length=5)
    

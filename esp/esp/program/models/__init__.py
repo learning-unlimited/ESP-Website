@@ -1058,7 +1058,7 @@ class BusSchedule(models.Model):
     
 class TeacherParticipationProfile(models.Model):
     """ Profile properties associated with a teacher in a program """
-    teacher = AjaxForeignKey(User)
+    teacher = AjaxForeignKey(ESPUser)
     program = models.ForeignKey(Program)
     unique_together = (('teacher', 'program'),)
     bus_schedule = models.ManyToManyField(BusSchedule)
@@ -1077,7 +1077,7 @@ class SplashInfo(models.Model):
         The data is manipulated by a separate program module, SplashInfoModule,
         which produces an additional registration step if enabled.
     """
-    student = AjaxForeignKey(User)
+    student = AjaxForeignKey(ESPUser)
     #   Program field may be empty for backwards compatibility with Stanford data
     program = AjaxForeignKey(Program, null=True)
     lunchsat = models.CharField(max_length=32, blank=True, null=True)
@@ -1147,7 +1147,7 @@ class SATPrepRegInfo(models.Model):
     prac_verb_score = models.IntegerField(blank=True, null=True)
     prac_writ_score = models.IntegerField(blank=True, null=True)    
     heard_by = models.CharField(max_length=128, blank=True, null=True)
-    user = AjaxForeignKey(User)
+    user = AjaxForeignKey(ESPUser)
     program = models.ForeignKey(Program)
 
     class Meta:
@@ -1172,7 +1172,7 @@ class SATPrepRegInfo(models.Model):
 
 class RegistrationProfile(models.Model):
     """ A student registration form """
-    user = AjaxForeignKey(User)
+    user = AjaxForeignKey(ESPUser)
     program = models.ForeignKey(Program, blank=True, null=True)
     contact_user = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_user')
     contact_guardian = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_guardian')
@@ -1317,7 +1317,7 @@ class TeacherBio(models.Model):
     """ This is the biography of a teacher."""
 
     program = models.ForeignKey(Program, blank=True, null=True)
-    user    = AjaxForeignKey(User)
+    user    = AjaxForeignKey(ESPUser)
     bio     = models.TextField(blank=True, null=True)
     slugbio = models.CharField(max_length=50, blank=True, null=True)
     picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "uploaded/bio_pictures/%y_%m/",blank=True, null=True)
@@ -1369,7 +1369,7 @@ class FinancialAidRequest(models.Model):
     """
 
     program = models.ForeignKey(Program, editable = False)
-    user    = AjaxForeignKey(User, editable = False)
+    user    = AjaxForeignKey(ESPUser, editable = False)
 
     approved = models.DateTimeField(blank=True, null=True)
 
@@ -1796,7 +1796,7 @@ class VolunteerOffer(models.Model):
     confirmed = models.BooleanField()
 
     #   Fill out this if you're logged in...
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     
     #   ...or this if you haven't.
     email = models.EmailField(blank=True, null=True)

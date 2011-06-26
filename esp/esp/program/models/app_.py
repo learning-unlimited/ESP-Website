@@ -160,7 +160,7 @@ class StudentAppReview(BaseAppElement, models.Model):
     The application can be reviewed by any director of the program or
     teacher of a class for which the student applied. """
         
-    reviewer = AjaxForeignKey(User, editable=False)
+    reviewer = AjaxForeignKey(ESPUser, editable=False)
     date = models.DateTimeField(default=datetime.datetime.now, editable=False)
     score = models.PositiveIntegerField(null=True, blank=True, help_text='Please rate each student', choices=((10, "Yes"), (5, "Maybe"), (1, "No")))
     comments = models.TextField()
@@ -182,7 +182,7 @@ class StudentApplication(models.Model):
     from esp.program.models import Program
     
     program = models.ForeignKey(Program, editable=False)
-    user    = AjaxForeignKey(User, editable=False)
+    user    = AjaxForeignKey(ESPUser, editable=False)
 
     questions = models.ManyToManyField(StudentAppQuestion)
     responses = models.ManyToManyField(StudentAppResponse)

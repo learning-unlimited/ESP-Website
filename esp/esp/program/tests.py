@@ -39,6 +39,7 @@ from esp.program.models import ClassSection, RegistrationProfile
 from esp.resources.models import ResourceType
 
 from django.contrib.auth.models import User, Group
+from esp.users.models import ESPUser
 import datetime, random, hashlib
 
 from django.test.client import Client
@@ -50,17 +51,17 @@ class ViewUserInfoTest(TestCase):
         """ Set up a bunch of user accounts to play with """
         self.password = "pass1234"
         
-        self.user, created = User.objects.get_or_create(first_name="Test", last_name="User", username="testuser123543", email="server@esp.mit.edu")
+        self.user, created = ESPUser.objects.get_or_create(first_name="Test", last_name="User", username="testuser123543", email="server@esp.mit.edu")
         if created:
             self.user.set_password(self.password)
             self.user.save()
 
-        self.admin, created = User.objects.get_or_create(first_name="Admin", last_name="User", username="adminuser124353", email="server@esp.mit.edu")
+        self.admin, created = ESPUser.objects.get_or_create(first_name="Admin", last_name="User", username="adminuser124353", email="server@esp.mit.edu")
         if created:
             self.admin.set_password(self.password)
             self.admin.save()
 
-        self.fake_admin, created = User.objects.get_or_create(first_name="Not An Admin", last_name="User", username="notanadminuser124353", email="server@esp.mit.edu")
+        self.fake_admin, created = ESPUser.objects.get_or_create(first_name="Not An Admin", last_name="User", username="notanadminuser124353", email="server@esp.mit.edu")
         if created:
             self.fake_admin.set_password(self.password)
             self.fake_admin.save()
@@ -174,7 +175,7 @@ class ProfileTest(TestCase):
         self.salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
 
     def testAcctCreate(self):
-        self.u=User(
+        self.u=ESPUser(
             first_name='bob',
             last_name='jones',
             username='bjones',
@@ -186,7 +187,7 @@ class ProfileTest(TestCase):
         self.group=Group(name='Test Group')
         self.group.save()
         self.u.groups.add(self.group)
-        self.assertEquals(User.objects.get(username='bjones'), self.u)
+        self.assertEquals(ESPUser.objects.get(username='bjones'), self.u)
         self.assertEquals(Group.objects.get(name='Test Group'), self.group)
         #print self.u.__dict__
         #print self.u.groups.all()
@@ -217,7 +218,7 @@ class ProgramHappenTest(TestCase):
         self.program_type_anchor.save()
         
         def makeuser(f, l, un, email, p):
-            u = User(first_name=f, last_name=l, username=un, email=email)
+            u = ESPUser(first_name=f, last_name=l, username=un, email=email)
             u.set_password(p)
             u.save()
             return ESPUser(u)
@@ -537,19 +538,19 @@ class ProgramFrameworkTest(TestCase):
         self.students = []
         self.admins = []
         for i in range(settings['num_students']):
-            new_student, created = User.objects.get_or_create(username='student%04d' % i)
+            new_student, created = ESPUser.objects.get_or_create(username='student%04d' % i)
             new_student.set_password('password')
             new_student.save()
             role_bit, created = UserBit.objects.get_or_create(user=new_student, verb=GetNode('V/Flags/UserRole/Student'), qsc=GetNode('Q'), recursive=False)
             self.students.append(ESPUser(new_student)) 
         for i in range(settings['num_teachers']):
-            new_teacher, created = User.objects.get_or_create(username='teacher%04d' % i)
+            new_teacher, created = ESPUser.objects.get_or_create(username='teacher%04d' % i)
             new_teacher.set_password('password')
             new_teacher.save()
             role_bit, created = UserBit.objects.get_or_create(user=new_teacher, verb=GetNode('V/Flags/UserRole/Teacher'), qsc=GetNode('Q'), recursive=False)
             self.teachers.append(ESPUser(new_teacher))
         for i in range(settings['num_admins']):
-            new_admin, created = User.objects.get_or_create(username='admin%04d' % i)
+            new_admin, created = ESPUser.objects.get_or_create(username='admin%04d' % i)
             new_admin.set_password('password')
             new_admin.save()
             role_bit, created = UserBit.objects.get_or_create(user=new_admin, verb=GetNode('V/Flags/UserRole/Administrator'), qsc=GetNode('Q'), recursive=False)
