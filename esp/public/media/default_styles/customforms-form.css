@@ -1,0 +1,75 @@
+/* Form view */
+.help_text {
+	font-size:14px;
+	font-style:italic;
+}
+
+ul.errorlist {
+	margin: 0;
+	padding: 0;
+}
+.errorlist li {
+	background-color: #C40000;
+	color: white;
+	display: block;
+	font-size: 11px;
+	margin: 0 0 3px;
+	padding: 4px 5px;
+	opacity:0.7;
+}
+
+.form_title {
+	font-size:2em;
+	padding-bottom:0;
+	margin-bottom:5px;
+	color:#66512B;
+}
+
+.form_desc {
+	font-style:italic;
+	padding-top:0;
+	margin-top:5px;
+	margin-bottom:15px;
+}
+
+.section {
+	margin:10px;
+	margin-left:5px;
+	border:0;
+}
+.sect_desc {
+	font-style:italic;
+	margin-top:2px;
+	padding:0;
+	font-size:0.1em;
+}
+
+.sect_title {
+	font-size:1.5em;
+	font-weight:bold;
+	margin-bottom:5px;
+	color:#652A30;
+}
+
+.field_list {
+	margin:5px;
+	padding:0;
+}
+
+.field_list p{
+	margin-top:10px;
+}
+
+.error { 
+	padding-left: 16px;
+	padding-bottom: 2px;
+	font-weight: bold;
+	color: #EA5200;
+	background:url(../default_images/unchecked.gif) no-repeat;
+	font-size:12px; 
+}
+
+input.required {
+	border:solid 2px green;
+}
+/* End of Form view*/

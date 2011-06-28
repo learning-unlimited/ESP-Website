@@ -5,11 +5,11 @@ from django.template import RequestContext
 from django.db import connection
 from django.utils import simplejson as json
 from customforms.models import *
-#from customforms.useful import *
-#from customforms.backups import *
 from esp.program.models import Program
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.customforms.DynamicForm import FormHandler
+
+from esp.users.models import ESPUser
 
 def landing(request):
 	if request.user.is_authenticated():
@@ -116,3 +116,17 @@ def getData(request):
 			return HttpResponse(resp_data)
 	else:
 		return HttpResponse(status=400)
+		
+def test():
+	f=Form.objects.get(pk=16)
+	from esp.customforms.DynamicForm import rd
+	dyn=DMH(form=f).createDynModel()
+	rd.depend_on_model(lambda:dyn)
+	data1=rd(dyn,f)
+	user=ESPUser.objects.get(pk=1)
+	dyn.objects.create(user=user, question_83='yyy')
+	data2=rd(dyn,f)
+	return {'first':data1, 'second':data2}
+	
+	
+			

@@ -33,27 +33,27 @@ class CustomFormHandler():
 	"""Handles creation of 'one' Django form (=one page)"""
 	
 	_field_types={
-		'textField':{'typeMap': forms.CharField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'size':'30',}},
-		'longTextField':{'typeMap': forms.CharField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'size':'60',}},
-		'longAns':{'typeMap': forms.CharField, 'attrs':{'widget':forms.Textarea,}, 'widget_attrs':{'rows':'8', 'cols':'50',}},
-		'reallyLongAns':{'typeMap': forms.CharField, 'attrs':{'widget':forms.Textarea,}, 'widget_attrs':{'rows':'14', 'cols':'70',}},
-		'radio':{'typeMap': forms.ChoiceField, 'attrs':{'widget': forms.RadioSelect, }, 'widget_attrs':{}},
-		'dropdown':{'typeMap': forms.ChoiceField, 'attrs':{'widget': forms.Select, }, 'widget_attrs':{}},
-		'multiselect':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.SelectMultiple, }, 'widget_attrs':{}},
-		'checkboxes':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.CheckboxSelectMultiple, }, 'widget_attrs':{}},
-		'numeric':{'typeMap': forms.IntegerField, 'attrs':{}, 'widget_attrs':{},},
-		'date':{'typeMap': forms.DateField,'attrs':{}, 'widget_attrs':{},},
-		'time':{'typeMap': forms.TimeField, 'attrs':{}, 'widget_attrs':{},},
-		'name':{'typeMap':NameField, 'attrs':{}, 'widget_attrs':{}},
-		'gender':{'typeMap': forms.ChoiceField, 'attrs':{'widget':forms.RadioSelect, 'choices':[('M','Male'), ('F', 'Female')]}, 'widget_attrs':{}},
-		'phone':{'typeMap': USPhoneNumberField, 'attrs':{}, 'widget_attrs':{}},
-		'email':{'typeMap': forms.EmailField, 'attrs':{'max_length':30,}, 'widget_attrs':{}},
-		'address':{'typeMap':AddressField, 'attrs':{}, 'widget_attrs':{}},
-		'street':{'typeMap': forms.CharField, 'attrs':{'max_length':100,}, 'widget_attrs':{}},
-		'state':{'typeMap': USStateField, 'attrs':{'widget': USStateSelect}, 'widget_attrs':{}},
-		'city':{'typeMap': forms.CharField, 'attrs':{'max_length':50,}, 'widget_attrs':{},},
-		'zip':{'typeMap': forms.CharField, 'attrs':{'max_length':5,}, 'widget_attrs':{}},
-		'courses':{'typeMap': forms.ChoiceField, 'attrs':{'widget':CourseSelect}, 'widget_attrs':{}},
+		'textField':{'typeMap': forms.CharField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'size':'30', 'class':''}},
+		'longTextField':{'typeMap': forms.CharField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'size':'60', 'class':''}},
+		'longAns':{'typeMap': forms.CharField, 'attrs':{'widget':forms.Textarea,}, 'widget_attrs':{'rows':'8', 'cols':'50', 'class':''}},
+		'reallyLongAns':{'typeMap': forms.CharField, 'attrs':{'widget':forms.Textarea,}, 'widget_attrs':{'rows':'14', 'cols':'70', 'class':''}},
+		'radio':{'typeMap': forms.ChoiceField, 'attrs':{'widget': forms.RadioSelect, }, 'widget_attrs':{'class':''}},
+		'dropdown':{'typeMap': forms.ChoiceField, 'attrs':{'widget': forms.Select, }, 'widget_attrs':{'class':''}},
+		'multiselect':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.SelectMultiple, }, 'widget_attrs':{'class':''}},
+		'checkboxes':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.CheckboxSelectMultiple, }, 'widget_attrs':{'class':''}},
+		'numeric':{'typeMap': forms.IntegerField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'digits'},},
+		'date':{'typeMap': forms.DateField,'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'date'},},
+		'time':{'typeMap': forms.TimeField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'time'},},
+		'name':{'typeMap':NameField, 'attrs':{}, 'widget_attrs':{'class':''}},
+		'gender':{'typeMap': forms.ChoiceField, 'attrs':{'widget':forms.RadioSelect, 'choices':[('M','Male'), ('F', 'Female')]}, 'widget_attrs':{'class':''}},
+		'phone':{'typeMap': USPhoneNumberField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'USPhone'}},
+		'email':{'typeMap': forms.EmailField, 'attrs':{'max_length':30, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'email'}},
+		'address':{'typeMap':AddressField, 'attrs':{}, 'widget_attrs':{'class':''}},
+		'street':{'typeMap': forms.CharField, 'attrs':{'max_length':100, 'widget':forms.TextInput,}, 'widget_attrs':{'class':''}},
+		'state':{'typeMap': USStateField, 'attrs':{'widget': USStateSelect}, 'widget_attrs':{'class':''}},
+		'city':{'typeMap': forms.CharField, 'attrs':{'max_length':50, 'widget':forms.TextInput,}, 'widget_attrs':{'class':''},},
+		'zip':{'typeMap': forms.CharField, 'attrs':{'max_length':5, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'USZip'}},
+		'courses':{'typeMap': forms.ChoiceField, 'attrs':{'widget':CourseSelect}, 'widget_attrs':{'class':''}},
 	}
 	
 	_field_attrs=['label', 'help_text', 'required']
@@ -102,7 +102,7 @@ class CustomFormHandler():
 		"""
 		for section in self.page:
 			curr_fieldset=[]
-			curr_fieldset.extend([section[0]['section__title'], {'fields':[]}])
+			curr_fieldset.extend([section[0]['section__title'], {'fields':[], 'classes':['section',]}])
 			curr_fieldset[1]['description']=section[0]['section__description']
 			for field in section:
 				field_name='question_%d' % field['id']
@@ -120,12 +120,24 @@ class CustomFormHandler():
 				if other_attrs:
 					field_attrs.update(self._getAttrs(other_attrs))
 				field_attrs.update(self._field_types[field['field_type']]['attrs'])
+				
+				#Setting classes
+				widget_attrs={}	
+				widget_attrs.update(self._field_types[field['field_type']]['widget_attrs'])
+				if field['required']:
+					widget_attrs['class']+=' required'
+				if 'min_value' in field_attrs:
+					widget_attrs['min']=field_attrs['min_value']
+				if 'max_value' in field_attrs:
+					widget_attrs['max']=field_attrs['max_value']		
+				
+				#TODO-> Implement courses properly
 				if field['field_type']=='courses':
 					if self.form.link_type=='program':
 						field_attrs['widget']=field_attrs['widget'](program=Program.objects.get(pk=int(self.form.link_id)))
 				else:		
 					try:
-						field_attrs['widget']=field_attrs['widget'](attrs=self._field_types[field['field_type']]['widget_attrs'])
+						field_attrs['widget']=field_attrs['widget'](attrs=widget_attrs)
 					except KeyError:
 						pass
 				self.fields.append([field_name, self._field_types[field['field_type']]['typeMap'](**field_attrs) ])
@@ -165,7 +177,7 @@ class ComboForm(FormWizard):
 		super(ComboForm, self).__init__(form_list, initial)
 	
 	def get_template(self, step):
-		return 'customforms/playing.html'
+		return 'customforms/form.html'
 	
 	def done(self, request, form_list):
 		data={}
@@ -314,10 +326,30 @@ class FormHandler:
 				response_data['questions'].append([qname, field['label']])
 		return response_data
 	#getResponseData.depend_on_row(lambda: Field, lambda field: {'form': field.form})					
-f=Form.objects.get(id=13)	
+	
 def test():
+	f=Form.objects.get(id=13)
 	fh=FormHandler(form=f)
 	a=fh.getResponseData(f)
+	
+@cache_function
+def rd(dyn, f):
+	"""
+	Returns the response data for this form, along with the questions
+	"""
+	a=FormHandler(form=f)
+	response_data={'questions':[], 'answers':[]}
+	response_data['answers'].extend(dyn.objects.all().order_by('id').values())
+	fields=Field.objects.filter(form=f).order_by('section__page__seq', 'section__seq', 'seq').values('id', 'field_type', 'label')
+	
+	for field in fields:
+		qname='question_%d' % field['id']
+		if field['field_type'] in a._customFields:
+			for f in a._customFields[field['field_type']]:
+				response_data['questions'].append([qname+'_'+f, field['label'] + '_'+f])
+		else:
+			response_data['questions'].append([qname, field['label']])
+	return response_data	
 
 					
 						
