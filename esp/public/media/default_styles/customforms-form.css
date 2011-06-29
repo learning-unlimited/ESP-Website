@@ -69,7 +69,23 @@ ul.errorlist {
 	font-size:12px; 
 }
 
-input.required {
+input.required, select.required {
 	border:solid 2px green;
+}
+
+table.combo_field {
+	margin-top:0;
+	padding:0;
+	font-size:0.8em;
+	font-style:italic;
+}
+
+table.combo_field td.small_field{
+	width:50px;
+}
+
+.req_text{
+	font-size:0.6em;
+	font-style:italic;
 }
 /* End of Form view*/

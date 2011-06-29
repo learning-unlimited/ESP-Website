@@ -15,6 +15,7 @@
 	<h3 class="form_title">{{form_title}}</h3>
 	<p class="form_desc">{{form_description}}</p>
 	<p class="step_count">Step {{ step }} of {{ step_count }}</p>
+	<p class="req_text">(Fields with a green border are required)</p>
 	
 	<form action="." method="post" id="cstform">{% csrf_token %}
 	{% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}

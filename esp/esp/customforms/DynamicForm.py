@@ -42,7 +42,7 @@ class CustomFormHandler():
 		'multiselect':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.SelectMultiple, }, 'widget_attrs':{'class':''}},
 		'checkboxes':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.CheckboxSelectMultiple, }, 'widget_attrs':{'class':''}},
 		'numeric':{'typeMap': forms.IntegerField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'digits'},},
-		'date':{'typeMap': forms.DateField,'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'date'},},
+		'date':{'typeMap': forms.DateField,'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'ddate'},},
 		'time':{'typeMap': forms.TimeField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'time'},},
 		'name':{'typeMap':NameField, 'attrs':{}, 'widget_attrs':{'class':''}},
 		'gender':{'typeMap': forms.ChoiceField, 'attrs':{'widget':forms.RadioSelect, 'choices':[('M','Male'), ('F', 'Female')]}, 'widget_attrs':{'class':''}},
@@ -131,6 +131,10 @@ class CustomFormHandler():
 				if 'max_value' in field_attrs:
 					widget_attrs['max']=field_attrs['max_value']		
 				
+				#For combo fields, classes need to be passed in to the field
+				if field['field_type'] in self._combo_fields:
+					field_attrs.update(widget_attrs)
+					
 				#TODO-> Implement courses properly
 				if field['field_type']=='courses':
 					if self.form.link_type=='program':

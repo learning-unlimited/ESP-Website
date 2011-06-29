@@ -733,7 +733,10 @@ var submit=function() {
 		if(page['sections'].length!=0)
 			form['pages'].push(page);
 	});
-	
+	if(form['pages'].length==0){
+		alert("Sorry, that's an empty form.");
+		return;
+	}
 	console.log(form);
 	//POSTing to server
 	$.ajax({
