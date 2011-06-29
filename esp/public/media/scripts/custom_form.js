@@ -62,7 +62,7 @@ var currElemType, currElemIndex, optionCount=1, formTitle="Form",currCategory=''
 
 $(document).ready(function() {
     $('#button_add').click(function(){insertField($('#elem_selector').attr('value'),$prevField)});
-	$('#sbmt').click(submit);
+	$('#submit').click(submit);
 	$('#button_title').click(updateTitle);
 	$('#input_form_title').bind('change', updateTitle);
 	$('#input_form_description').bind('change', updateDesc);
@@ -746,7 +746,7 @@ var submit=function() {
 				window.location='/customforms/';
 		}
 	});
-	$('#sbmt').attr("disabled","true");
+	$('#submit').attr("disabled","true");
 		
 };
 

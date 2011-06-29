@@ -177,7 +177,9 @@ body {
 	border: 1px solid;
 }
 
-
+#submit {
+	margin:15px 10px;
+}
 /* End Form Toolbox */
 
 .results {
