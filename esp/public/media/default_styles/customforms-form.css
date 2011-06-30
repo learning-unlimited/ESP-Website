@@ -69,7 +69,7 @@ ul.errorlist {
 	font-size:12px; 
 }
 
-input.required, select.required {
+input.required, select.required, textarea.required {
 	border:solid 2px green;
 }
 

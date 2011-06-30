@@ -10,6 +10,7 @@ from esp.customforms.forms import CourseSelect, NameField, AddressField
 from esp.customforms.DynamicModel import DMH
 from esp.users.models import ContactInfo
 from esp.cache import cache_function
+from esp.program.models import Program
 
 class BaseCustomForm(BetterForm):
 	"""

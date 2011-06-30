@@ -75,6 +75,8 @@ def viewForm(request, form_id):
 		raise Http404
 		
 	form=Form.objects.get(pk=form_id)
+	if (not form.anonymous) and not request.user.is_authenticated():
+		return HttpResponseRedirect('/')
 	fh=FormHandler(form=form, user=request.user)
 	wizard=fh.getWizard()
 	extra_context={'form_title':form.title, 'form_description':form.description}
