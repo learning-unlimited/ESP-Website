@@ -70,7 +70,7 @@ class ClassManageForm(ManagementForm):
             if self.cleaned_data['reg_status']:
                 sec.registration_status = self.cleaned_data['reg_status']
             #   Give the section a new capacity if the size of the class has been changed on the form.
-            if self.cleaned_data['class_size'] != cls.class_size_max:
+            if self.cleaned_data['class_size'] != cls.class_size_max and sec.max_class_capacity is not None:
                 sec.max_class_capacity = self.cleaned_data['class_size']
             sec.save()
         cls.grade_min = self.cleaned_data['min_grade']

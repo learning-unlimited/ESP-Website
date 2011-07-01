@@ -85,6 +85,22 @@ ADMINS = (
     ('LU Web Team','serverlog@lists.learningu.org'),
 )
 
+#############################
+# Default database settings #
+#############################
+
+# The name, user and password must be filled in via local_settings.py and django_settings.py
+DATABASES = {'default':
+    {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': '',
+        'HOST': 'localhost',
+        'PORT': '5432',
+        'USER': '',
+        'PASSWORD': '',
+    }
+}
+
 ##########################
 # Default email settings #
 ##########################

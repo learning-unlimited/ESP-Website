@@ -92,7 +92,7 @@ class StudentExtraCosts(ProgramModuleObj):
             if QObject:
                 student_lists[i.text] = self.getQForUser(Q(accounting_lineitem__li_type = i))
             else:
-                student_lists[i.text] = User.objects.filter(accounting_lineitem__li_type = i).distinct()
+                student_lists[i.text] = ESPUser.objects.filter(accounting_lineitem__li_type = i).distinct()
 
         return student_lists
 

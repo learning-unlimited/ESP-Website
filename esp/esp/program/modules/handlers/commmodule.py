@@ -58,14 +58,14 @@ class CommModule(ProgramModuleObj):
             "seq": 10
             }
     
+    #   TODO: What the heck?
     def students(self,QObject = False):
         if QObject:
             return {'satprepinfo': Q(satprepreginfo__program = self.program)}
-        students = User.objects.filter(satprepreginfo__program = self.program).distinct()
+        students = ESPUser.objects.filter(satprepreginfo__program = self.program).distinct()
         return {'satprepinfo': students }
 
     def isCompleted(self):
-        
         satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)
         return satPrep.id is not None
 
@@ -198,7 +198,7 @@ class CommModule(ProgramModuleObj):
         if not found:
             return filterObj
 
-        listcount = User.objects.filter(filterObj.get_Q()).distinct().count()
+        listcount = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
 
         return render_to_response(self.baseDir()+'step2.html', request,
                                   (prog, tl), {'listcount': listcount,

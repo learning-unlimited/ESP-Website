@@ -66,21 +66,21 @@ def user_registration(request):
         if form.is_valid():         
             ## First, check to see if we have any users with the same e-mail
             if not 'do_reg_no_really' in request.POST and Tag.getTag('ask_about_duplicate_accounts', default='False') == 'True':
-                existing_accounts = User.objects.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
+                existing_accounts = ESPUser.objects.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
                 if len(existing_accounts) != 0:
                     return render_to_response('registration/newuser.html',
                                               request, request.get_node('Q/Web/myesp'),
                                               { 'accounts': existing_accounts, 'form': form, 'site': Site.objects.get_current() })                
             
             try:
-                user = User.objects.get(email=form.cleaned_data['email'],
+                user = ESPUser.objects.get(email=form.cleaned_data['email'],
                                         password = 'emailuser')
             except User.DoesNotExist:
                 try:
-                    user = User.objects.filter(username = form.cleaned_data['username'],
+                    user = ESPUser.objects.filter(username = form.cleaned_data['username'],
                                                is_active = False).latest('date_joined')
                 except User.DoesNotExist:
-                    user = User(email = form.cleaned_data['email'])
+                    user = ESPUser(email = form.cleaned_data['email'])
 
             user.username   = form.cleaned_data['username']
             user.last_name  = form.cleaned_data['last_name']
@@ -133,7 +133,7 @@ def activate_account(request):
         raise ESPError(), "Invalid account activation information.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
 
     try:
-        u = User.objects.get(username = request.GET['username'])
+        u = ESPUser.objects.get(username = request.GET['username'])
     except:
         raise ESPError(), "Invalid account username.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
 

@@ -79,14 +79,6 @@ urlpatterns += patterns('esp.web.views.main',
                         (r'.php$', 'home'), # index
                         )
 
-# generic stuff
-urlpatterns += patterns('django.views.generic',
-                        (r'^web/?', 'simple.direct_to_template',{'template':'splash.html'}), # index
-                        (r'^web$', 'simple.direct_to_template',{'template':'splash.html'}), # index                        
-                        (r'^esp_web', 'simple.direct_to_template',{'template':'splash.html'}), # index
-                        (r'.php$', 'simple.direct_to_template',{'template':'splash.html'}), # index                        
-                        )
-
 # program stuff
 urlpatterns += patterns('',
                         (r'^',  include('esp.program.urls')),

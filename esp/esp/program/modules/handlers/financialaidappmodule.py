@@ -68,9 +68,9 @@ class FinancialAidAppModule(ProgramModuleObj):
                     'studentfinaid':          Q_students,
                     'studentfinaid_approved': Q_students & Q_students_approved}
         else:
-            return {'studentfinaid_complete': User.objects.filter(Q_students & Q_students_complete),
-                    'studentfinaid':          User.objects.filter(Q_students),
-                    'studentfinaid_approved': User.objects.filter(Q_students & Q_students_approved)}
+            return {'studentfinaid_complete': ESPUser.objects.filter(Q_students & Q_students_complete),
+                    'studentfinaid':          ESPUser.objects.filter(Q_students),
+                    'studentfinaid_approved': ESPUser.objects.filter(Q_students & Q_students_approved)}
         
 
     def studentDesc(self):

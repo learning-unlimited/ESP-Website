@@ -99,15 +99,15 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                     
             return retVal
 
-        retVal = {'confirmed': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct(),
-                  'attended' : User.objects.filter(userbit__qsc = self.program_anchor_cached(), \
+        retVal = {'confirmed': ESPUser.objects.filter(userbit__qsc = qsc, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct(),
+                  'attended' : ESPUser.objects.filter(userbit__qsc = self.program_anchor_cached(), \
                                                        userbit__verb = verb2,
                                                        userbit__startdate__lte=now,
                                                        userbit__enddate__gte=now).distinct(),
-                  'studentrep': User.objects.filter(Q_studentrep).distinct()}
+                  'studentrep': ESPUser.objects.filter(Q_studentrep).distinct()}
                   
         if self.program.program_allow_waitlist:
-            retVal['waitlisted_students'] = User.objects.filter(userbit__qsc = qsc_waitlist, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+            retVal['waitlisted_students'] = ESPUser.objects.filter(userbit__qsc = qsc_waitlist, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
                   
         return retVal
 
