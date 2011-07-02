@@ -130,21 +130,7 @@ $(document).ready(function() {
 	
 	$('#form_toolbox').accordion({autoHeight:false, icons:{}});
 	$.data($('div.outline')[0], 'data', {'question_text':'', 'help_text':''});
-	
-	var base_form_id=$('#base_form_id').val();
-	if(base_form_id!="-1"){
-		$.ajax({
-			url:'/customforms/metadata/',
-			data:{'form_id':base_form_id},
-			type:'GET',
-			dataType:'json',
-			async:false,
-			success: function(metadata) {
-				console.log(metadata);
-				rebuild(metadata);
-			}
-		});
-	}
+
 });
 
 
@@ -370,9 +356,7 @@ var insertField=function(item, $prevField){
 	//Handles addition of a field into the form, as well as other ancillary functions. Calls addElement()
 	
 	addElement(item,$prevField);
-	console.log('out add');
 	onSelectElem(item);
-	console.log('out insert');
 }
 
 var addElement = function(item,$prevField) {
@@ -770,6 +754,31 @@ var updateDesc=function() {
 	
 };
 
+var createFromBase=function(){
+	//Clearing previous fields, if any
+	$('div.form_preview').remove();
+	$('div.page_break').remove();
+	$currPage=$('<div class="form_preview"></div>');
+	$currSection=$('<div class="section"></div>');
+	$currPage.append($('<div class="outline"></div>').append($currSection));
+	$('div.preview_area').append($currPage);
+	
+	var base_form_id=$('#base_form').val();
+	if(base_form_id!="-1"){
+		$.ajax({
+			url:'/customforms/metadata/',
+			data:{'form_id':base_form_id},
+			type:'GET',
+			dataType:'json',
+			async:false,
+			success: function(metadata) {
+				console.log(metadata);
+				rebuild(metadata);
+			}
+		});
+	}
+};
+
 var rebuild=function(metadata) {
 	//Takes form metadata, and reconstructs the form from it
 	
@@ -786,16 +795,17 @@ var rebuild=function(metadata) {
 		
 	//Putting in pages, sections and fields
 	$.each(metadata['pages'], function(pidx, page){
-		console.log('page'+pidx);
-		if(pidx!=0){
+		if(pidx!=0)
 			addElement('page',[]);
 			
-		}	
 		$.each(page, function(sidx, section){
-			console.log('section'+sidx);
 			$('#id_question').val(section[0]['section__title']);
 			$('#id_instructions').val(section[0]['section__description']);
-			addElement('section',[]);
+			var $outline=addElement('section',[]);
+			if(sidx==0){
+				//Removing the <hr> that comes before every section
+				$outline.find('hr').remove();
+			}
 			$prevField=[];
 			$.each(section, function(fidx, field){
 				/*
@@ -804,7 +814,6 @@ var rebuild=function(metadata) {
 					will populate stuff like label, options etc. in the toolbox, and then we
 					can call insertField(...). This is slightly roundabout, but hey, DRY.
 				*/
-				console.log('field'+fidx);	
 				var field_data={
 					question_text:field['label'],
 					help_text:field['help_text'],
@@ -815,12 +824,9 @@ var rebuild=function(metadata) {
 				
 				
 				if($.inArray(field['attribute__attr_type'], ['options', 'limits'])!=-1)
-					field_data.attrs[field['attribute__attr_type']]=field['attribute__value'];
-					
-				onSelectField([], field_data);
-				
+					field_data.attrs[field['attribute__attr_type']]=field['attribute__value'];	
+				onSelectField([], field_data);	
 				$prevField=addElement(field['field_type'], $prevField);	
-				console.log('field'+fidx);
 			});
 		});
 	});	

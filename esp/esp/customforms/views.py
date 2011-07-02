@@ -13,17 +13,16 @@ from esp.users.models import ESPUser
 
 def landing(request):
 	if request.user.is_authenticated():
-		form_list=Form.objects.filter(created_by=request.user)
-		return render_to_response('customforms/landing.html',{'form_list':form_list})
-	else: 
-		return HttpResponseRedirect('/')	
+		forms=Form.objects.filter(created_by=request.user)
+		return render_to_response("customforms/landing.html", {'form_list':forms}, context_instance=RequestContext(request))
+	return HttpResponseRedirect('/')	
 
 def formBuilder(request):
 	if request.user.is_authenticated():
 		prog_list=Program.objects.all()
-		return render_to_response('customforms/index.html',{'prog_list':prog_list, 'base_form_id':-1})
-	else: 
-		return HttpResponseRedirect('/')	
+		form_list=Form.objects.filter(created_by=request.user)
+		return render_to_response('customforms/index.html',{'prog_list':prog_list, 'form_list':form_list}) 
+	return HttpResponseRedirect('/')	
 
 def is_required(text):
 	#returns True if the field is required, else False

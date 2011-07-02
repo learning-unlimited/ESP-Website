@@ -130,4 +130,4 @@ class AddressField(forms.MultiValueField):
 			compressed_value[self.name+'_city']=value_list[1]
 			compressed_value[self.name+'_state']=value_list[2]
 			compressed_value[self.name+'_zip']=value_list[3]
-		return compressed_value			
+		return compressed_value
