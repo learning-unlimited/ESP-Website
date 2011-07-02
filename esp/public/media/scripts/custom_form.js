@@ -130,6 +130,21 @@ $(document).ready(function() {
 	
 	$('#form_toolbox').accordion({autoHeight:false, icons:{}});
 	$.data($('div.outline')[0], 'data', {'question_text':'', 'help_text':''});
+	
+	var base_form_id=$('#base_form_id').val();
+	if(base_form_id!="-1"){
+		$.ajax({
+			url:'/customforms/metadata/',
+			data:{'form_id':base_form_id},
+			type:'GET',
+			dataType:'json',
+			async:false,
+			success: function(metadata) {
+				console.log(metadata);
+				rebuild(metadata);
+			}
+		});
+	}
 });
 
 
@@ -283,59 +298,48 @@ var updateField=function() {
 	$currField.addClass('field_selected');
 };
 
-var onSelectField=function($elem) {
-	//Handles clicks on field wrappers
+var onSelectField=function($elem, field_data) {
+	/*
+		Handles clicks on field wrappers.
+		Also called by rebuild(..) to recreate a form from metadata
+	*/
 	
 	clearSpecificOptions();
 	//De-selecting any previously selected field
 	$('div.field_selected').removeClass('field_selected');
 	
-	var $wrap=$elem, $button=$('#button_add');;
-	$wrap.removeClass('field_hover').addClass('field_selected');
-	$wrap.find('.wrapper_button').removeClass('wrapper_button_hover');
-	var field_data=$.data($wrap[0],'data'), question_text, $options;
-	$currField=$wrap;
-	question_text=field_data.question_text;
-	$("#id_required").attr('checked',field_data.required);
-	$("#id_question").attr('value',question_text);
+	var $wrap=$elem, $button=$('#button_add'), options;
+	
+	if($wrap.length !=0){
+		$wrap.removeClass('field_hover').addClass('field_selected');
+		$wrap.find('.wrapper_button').removeClass('wrapper_button_hover');
+		$currField=$wrap;
+	}
+	if(field_data.field_type!='section')
+		$("#id_required").attr('checked',field_data.required);
+	$("#id_question").attr('value',field_data.question_text);
 	$("#id_instructions").attr('value',field_data.help_text);
 	
 	//Adding in field-specific options
-	if(field_data.field_type=='radio'){
-		$options=$wrap.find('div').children().filter('p');
-		$options.each(function(idx,el) {
-			addOption($(el).text());
-		});
-	}
-	else if(field_data.field_type=='dropdown'){
-		$options=$wrap.find('select').children();
-		$options.each(function(idx,el){
-			addOption($(el).html());
-		});
-	}
-	else if(field_data.field_type=='multiselect'){
-		$options=$wrap.find('select').children();
-		$options.each(function(idx,el){
-			addOption($(el).html());
-		});
-	}
-	else if(field_data.field_type=='checkboxes'){
-		$options=$wrap.find('div').children().filter('p');
-		$options.each(function(idx,el) {
-			addOption($(el).text());
+	if($.inArray(field_data.field_type, ['radio', 'dropdown', 'multiselect', 'checkboxes']) != -1){
+		options=field_data.attrs['options'].split("|");
+		$.each(options, function(idx,el) {
+			if(el!="")
+				addOption(el);
 		});
 	}
 	else if(field_data.field_type=='numeric'){
 		var $range_div=$('<div></div>').addClass('toolboxText');
+		var limits=field_data.attrs['limits'].split(',');
 		$minInput=$('<input/>', {
 			type:"text",
-			value:field_data.min,
+			value:limits[0],
 			name:"minVal",
 			id:"id_minVal"
 		});
 		$maxInput=$('<input/>', {
 			type:"text",
-			value:field_data.max,
+			value:limits[1],
 			name:"maxVal",
 			id:"id_maxVal"
 		});
@@ -366,7 +370,9 @@ var insertField=function(item, $prevField){
 	//Handles addition of a field into the form, as well as other ancillary functions. Calls addElement()
 	
 	addElement(item,$prevField);
+	console.log('out add');
 	onSelectElem(item);
+	console.log('out insert');
 }
 
 var addElement = function(item,$prevField) {
@@ -379,7 +385,7 @@ var addElement = function(item,$prevField) {
 				return;
 			$(this).toggleClass('field_hover');
 			$(this).find(".wrapper_button").toggleClass("wrapper_button_hover");
-		}).toggle(function(){onSelectField($(this));}, deSelectField),
+		}).toggle(function(){onSelectField($(this), $.data(this, 'data'));}, deSelectField),
 		label_text=$.trim($('#id_question').attr('value')),
 		help_text=$.trim($('#id_instructions').attr('value')),
 		html_name=item+"_"+elemTypes[item], html_id="id_"+item+"_"+elemTypes[item],
@@ -393,7 +399,7 @@ var addElement = function(item,$prevField) {
 	data.help_text=help_text;
 	data.field_type=item;
 	data.required=$('#id_required').attr('checked');
-	data.attrs=[];
+	data.attrs={};
 	
 	//Generic fields first
 	if(item=="textField"){
@@ -442,7 +448,7 @@ var addElement = function(item,$prevField) {
 				options_string+=$(el).attr('value')+"|";	
 				$new_elem.append($("<p>").append($one_option).append($("<span>"+$(el).attr('value')+"</span>")));
 		});
-		data['attrs'].push({'options':options_string});
+		data['attrs']['options']=options_string;
 	}
 	else if(item=="dropdown") {
 		$new_elem=$('<select>',{
@@ -458,7 +464,7 @@ var addElement = function(item,$prevField) {
 				$one_option.html($(el).attr('value'));
 				$new_elem.append($one_option);
 		});
-		data['attrs'].push({'options':options_string});
+		data['attrs']['options']=options_string;
 	}
 	else if(item=="multiselect") {
 		$new_elem=$('<select>',{
@@ -475,7 +481,7 @@ var addElement = function(item,$prevField) {
 				$one_option.html($(el).attr('value'));
 				$new_elem.append($one_option);
 		});
-		data['attrs'].push({'options':options_string});
+		data['attrs']['options']=options_string;
 	}
 	else if(item=="checkboxes"){
 		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
@@ -491,7 +497,7 @@ var addElement = function(item,$prevField) {
 				options_string+=$(el).attr('value')+"|";	
 				$new_elem.append($("<p>").append($one_option).append($("<span>"+$(el).attr('value')+"</span>")));
 		});
-		data['attrs'].push({'options':options_string});
+		data['attrs']['options']=options_string;
 	}
 	else if(item=="numeric"){
 		$new_elem=$('<input/>', {
@@ -500,7 +506,7 @@ var addElement = function(item,$prevField) {
 			id:html_id,
 			size:"20"
 		});
-		data['attrs'].push({'limits':$('#id_minVal').attr('value') + ',' + $('#id_maxVal').attr('value')});
+		data['attrs']['limits']=$('#id_minVal').attr('value') + ',' + $('#id_maxVal').attr('value');
 	}
 	else if(item=='date'){
 		$new_elem=$("<div>", {
@@ -575,7 +581,7 @@ var addElement = function(item,$prevField) {
 		$outline.append($currSection);
 		$('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($outline);
 		$outline.toggle(function() {
-			onSelectField($(this));
+			onSelectField($(this), $.data(this, 'data'));
 			$(this).children(".wrapper_button").addClass("wrapper_button_hover");
 		}, function(){
 			$(this).children(".wrapper_button").removeClass("wrapper_button_hover");
@@ -688,7 +694,6 @@ var addElement = function(item,$prevField) {
 	
 	//Making fields draggable
 	$currSection.sortable();
-	
 	return $wrap;
 };
 
@@ -762,6 +767,63 @@ var updateTitle = function(){
 var updateDesc=function() {
 	//Updates the form description
 	$('#form_description').html($('#input_form_description').attr('value'));
+	
+};
+
+var rebuild=function(metadata) {
+	//Takes form metadata, and reconstructs the form from it
+	
+	$('#outline_0').remove();
+	//Setting form's title and description
+	$('#input_form_title').attr('value', metadata['title']).change();
+	$('#input_form_description').attr('value',metadata['desc']).change();
+	
+	//Setting other form options
+	if(metadata['anonymous'])
+		$('#id_anonymous').attr('checked', true);
+	if(metadata['link_type']=='program')
+		$('#id_assoc_prog').val(metadata['link_id'])
+		
+	//Putting in pages, sections and fields
+	$.each(metadata['pages'], function(pidx, page){
+		console.log('page'+pidx);
+		if(pidx!=0){
+			addElement('page',[]);
+			
+		}	
+		$.each(page, function(sidx, section){
+			console.log('section'+sidx);
+			$('#id_question').val(section[0]['section__title']);
+			$('#id_instructions').val(section[0]['section__description']);
+			addElement('section',[]);
+			$prevField=[];
+			$.each(section, function(fidx, field){
+				/*
+					The idea is to collect a field's metadata in the format expected, and
+					then call onSelectField(...) passing it the metadata. onSelectField()
+					will populate stuff like label, options etc. in the toolbox, and then we
+					can call insertField(...). This is slightly roundabout, but hey, DRY.
+				*/
+				console.log('field'+fidx);	
+				var field_data={
+					question_text:field['label'],
+					help_text:field['help_text'],
+					field_type:field['field_type'],
+					required: field['required'],
+					attrs:{}
+				};
+				
+				
+				if($.inArray(field['attribute__attr_type'], ['options', 'limits'])!=-1)
+					field_data.attrs[field['attribute__attr_type']]=field['attribute__value'];
+					
+				onSelectField([], field_data);
+				
+				$prevField=addElement(field['field_type'], $prevField);	
+				console.log('field'+fidx);
+			});
+		});
+	});	
 	
 };
 

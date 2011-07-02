@@ -190,5 +190,7 @@ urlpatterns +=patterns('esp.customforms.views',
 	(r'^customforms/view/(?P<form_id>\d{1,6})/$','viewForm'),
 	(r'^customforms/success/$', 'success'),
 	(r'^customforms/responses/(?P<form_id>\d{1,6})/$', 'viewResponse'),
-	(r'^customforms/getData/$', 'getData'),)
+	(r'^customforms/getData/$', 'getData'),
+	(r'^customforms/metadata/$', 'getRebuildData'),
+	)
 	

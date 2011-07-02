@@ -227,6 +227,7 @@ class FormHandler:
 	def _getFormMetadata(self, form):
 		"""
 		Returns the metadata for this form. Gets everything in one large query, and then organizes the information.
+		Used for rendering.
 		"""
 		fields=Field.objects.filter(form=form).order_by('section__page__seq', 'section__seq', 'seq').values('id', 'field_type', 'label', 'help_text', 'required', 'seq',
 				'section__title', 'section__description', 'section__seq',
@@ -330,8 +331,22 @@ class FormHandler:
 			else:
 				response_data['questions'].append([qname, field['label']])
 		return response_data
-	#getResponseData.depend_on_row(lambda: Field, lambda field: {'form': field.form})					
+	#getResponseData.depend_on_row(lambda: Field, lambda field: {'form': field.form})
 	
+	def rebuildData(self):
+		"""
+		Returns the metadata so that a form can be re-built in the form builder
+		"""
+		metadata={
+			'title':self.form.title, 
+			'desc':self.form.description, 
+			'anonymous':self.form.anonymous, 
+			'link_type':self.form.link_type,
+			'link_id':self.form.link_id,
+			'pages':self._getFormMetadata(self.form)
+		}
+		return metadata					
+		
 def test():
 	f=Form.objects.get(id=13)
 	fh=FormHandler(form=f)

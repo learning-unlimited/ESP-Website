@@ -21,7 +21,7 @@ def landing(request):
 def formBuilder(request):
 	if request.user.is_authenticated():
 		prog_list=Program.objects.all()
-		return render_to_response('customforms/index.html',{'prog_list':prog_list})
+		return render_to_response('customforms/index.html',{'prog_list':prog_list, 'base_form_id':-1})
 	else: 
 		return HttpResponseRedirect('/')	
 
@@ -59,8 +59,8 @@ def onSubmit(request):
 					fields.append( (new_field.id, new_field.field_type) ) 
 					
 					#inserting other attributes, if any
-					for attr in field['data']['attrs']:
-						new_attr=Attribute.objects.create(field=new_field, attr_type=attr.keys()[0], value=attr.values()[0])
+					for atype, aval in field['data']['attrs'].items():
+						new_attr=Attribute.objects.create(field=new_field, attr_type=atype, value=aval)
 						
 		dynH=DMH(form=form, fields=fields)
 		dynH.createTable()				
@@ -111,19 +111,35 @@ def getData(request):
 			try:
 				form_id=int(request.GET['form_id'])
 			except ValueError:
-				raise HttpResponse(status=400)
+				return HttpResponse(status=400)
 			form=Form.objects.get(pk=form_id)	
 			fh=FormHandler(form=form)
 			resp_data=json.dumps(fh.getResponseData(form))
 			return HttpResponse(resp_data)
-	else:
-		return HttpResponse(status=400)
+	return HttpResponse(status=400)
+		
+def getRebuildData(request):
+	"""
+	Returns form metadata for rebuilding via AJAX
+	"""
+	if request.is_ajax():
+		if request.method=='GET':
+			try:
+				form_id=int(request.GET['form_id'])
+			except ValueError:
+				return HttpResponse(status=400)
+			form=Form.objects.get(pk=form_id)
+			fh=FormHandler(form=form)
+			metadata=json.dumps(fh.rebuildData())
+			return HttpResponse(metadata)
+	return HttpResponse(status=400)						
 		
 def test():
 	f=Form.objects.get(pk=16)
 	from esp.customforms.DynamicForm import rd
 	dyn=DMH(form=f).createDynModel()
 	rd.depend_on_model(lambda:dyn)
+	rd.run_all_delayed()
 	data1=rd(dyn,f)
 	user=ESPUser.objects.get(pk=1)
 	dyn.objects.create(user=user, question_83='yyy')
