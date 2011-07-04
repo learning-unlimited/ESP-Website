@@ -88,4 +88,10 @@ table.combo_field td.small_field{
 	font-size:0.6em;
 	font-style:italic;
 }
+
+.qmark{
+	width:15px;
+	height:15px;
+}
+
 /* End of Form view*/

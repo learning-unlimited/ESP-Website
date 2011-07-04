@@ -13,6 +13,30 @@ $(document).ready(function(){
 	jQuery.validator.addMethod('USZip', USZipValidator, "Please enter a valid US zip-code");
 	jQuery.validator.addMethod('USPhone', USPhoneValidator, "Must be of the format xxx-xxx-xxxx");
 	jQuery.validator.addMethod('ddate', DateValidator, "Must be of the format mm/dd/yyyy");
+	
+	//Initializing the tool-tips
+	$('img.qmark').qtip({
+		content:{
+			text:false
+		},
+		show:'mouseover',
+		hide:'mouseout',
+		style: { 
+		      padding: 5,
+		      background: '#FCEBB6',
+		      color: 'black',
+		      textAlign: 'left',
+			  maxWidth:200,	
+			  fontSize:15,	
+		      border: {
+		         width: 2,
+		         radius: 3,
+		         color: '#555152'
+		      },
+		      tip: 'topLeft',
+		      name: 'dark' // Inherit the rest of the attributes from the preset dark style
+		}
+	});
 });
 
 var USZipValidator = function(value, element){
