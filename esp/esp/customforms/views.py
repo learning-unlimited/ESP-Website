@@ -24,13 +24,6 @@ def formBuilder(request):
 		return render_to_response('customforms/index.html',{'prog_list':prog_list, 'form_list':form_list}) 
 	return HttpResponseRedirect('/')	
 
-def is_required(text):
-	#returns True if the field is required, else False
-	if(text=='true'):
-		return True
-	else:
-		return False	
-
 @transaction.commit_on_success
 def onSubmit(request):
 	#Stores form metadata in the database.
@@ -42,11 +35,11 @@ def onSubmit(request):
 			fields=[]
 			
 		#Creating form
-		form=Form.objects.create(title=metadata['title'], description=metadata['desc'], created_by=request.user, link_type=metadata['link_type'], link_id=int(metadata['link_id']), anonymous=is_required(metadata['anonymous']))
+		form=Form.objects.create(title=metadata['title'], description=metadata['desc'], created_by=request.user, link_type=metadata['link_type'], link_id=int(metadata['link_id']), anonymous=metadata['anonymous'])
 		
 		#Inserting pages
-		for i,page in enumerate(metadata['pages']):
-			new_page=Page.objects.create(form=form, seq=i)
+		for page in metadata['pages']:
+			new_page=Page.objects.create(form=form, seq=int(page['seq']))
 			
 			#inserting sections
 			for section in page['sections']:
@@ -54,7 +47,7 @@ def onSubmit(request):
 				
 				#inserting fields
 				for field in section['fields']:
-					new_field=Field.objects.create(form=form, section=new_section, field_type=field['data']['field_type'], seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], required=is_required(field['data']['required']))
+					new_field=Field.objects.create(form=form, section=new_section, field_type=field['data']['field_type'], seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], required=field['data']['required'])
 					fields.append( (new_field.id, new_field.field_type) ) 
 					
 					#inserting other attributes, if any
@@ -65,6 +58,67 @@ def onSubmit(request):
 		dynH.createTable()				
 							
 		return HttpResponse('OK')
+
+@transaction.commit_on_success		
+def onModify(request):
+	"""
+	Handles form modifications
+	"""
+	if request.is_ajax():
+		if request.method=='POST':
+			metadata=json.loads(request.raw_post_data)
+			form=Form.objects.filter(id=int(metadata['form_id']))
+			dmh=DMH(form=form[0])
+			form.update(title=metadata['title'], description=metadata['desc'], link_type=metadata['link_type'], link_id=int(metadata['link_id']), anonymous=metadata['anonymous'])
+			curr_keys={'pages':[], 'sections':[], 'fields':[]}
+			old_pages=Page.objects.filter(form=form[0])	
+			for page in metadata['pages']:
+				if page['parent_id']==-1:
+					#New page
+					curr_page=Page.objects.create(form=form[0], seq=int(page['seq']))
+				else:
+					cp=old_pages.filter(id=int(page['parent_id']))
+					cp.update(form=form[0], seq=page['seq'])
+					curr_page=cp[0]
+				curr_keys['pages'].append(curr_page.id)
+				old_sections=Section.objects.filter(page=curr_page)	
+				for section in page['sections']:
+					if section['data']['parent_id']==-1:
+						#New Section
+						curr_sect=Section.objects.create(page=curr_page, title=section['data']['question_text'], description=section['data']['help_text'], seq=int(section['data']['seq']))
+					else:
+						cs=old_sections.get(id=section['data']['parent_id'])
+						cs.update(page=curr_page, title=section['data']['question_text'], description=section['data']['help_text'], seq=int(section['data']['seq']))
+						curr_sect=cs[0]
+					curr_keys['sections'].append(curr_sect.id)
+					old_fields=Field.objects.filter(section=curr_sect)
+					for field in section['fields']:
+						if field['data']['parent_id']==-1:
+							#New field
+							curr_field=Field.objects.create(form=form[0], section=curr_sect, field_type=field['data']['field_type'], seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], required=field['data']['required'])
+							dmh.addField(curr_field)
+							for atype, aval in field['data']['attrs'].items():
+								Attribute.objects.create(field=curr_field, attr_type=atype, value=aval)
+						else:
+							curr_field=old_fields.filter(id=int(field['data']['parent_id']))
+							curr_field.update(form=form[0], section=curr_sect, field_type=field['data']['field_type'], seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], required=field['data']['required'])
+							for atype, aval in field['data']['attrs'].items():
+								Attribute.objects.get(field=curr_field[0]).update(field=curr_field[0], attr_type=atype, value=aval)
+						curr_keys['fields'].append(curr_field.id)
+			
+			#Removing obsolete items
+			for old_page in old_pages:
+				old_sections=Section.objects.filter(page=old_page)
+				for old_section in old_sections:
+					old_fields=Field.objects.filter(section=old_section)
+					for old_field in old_fields:
+						if old_field.id not in curr_keys['fields']:
+							dmh.removeField(old_field)
+							old_field.delete()
+					if old_section.id not in curr_keys['sections']: old_section.delete()
+				if old_page not in curr_keys['pages']: old_page.delete()
+			return HttpResponse('OK')									 			
+					
 		
 def viewForm(request, form_id):
 	"""Form viewing and submission"""

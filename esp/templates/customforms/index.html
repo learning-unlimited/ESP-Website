@@ -41,7 +41,7 @@
 							<option value="{{ prog.id }}">{{ prog.niceName }}</option>
 						{% endfor %}	
 					</select>
-					<span>Anonymous Form</span><input type='checkbox' id='id_anonymous'/>
+					<p>Anonymous Form <input type='checkbox' id='id_anonymous'/></p>
 					<p>Create from existing form</p>
 					<select id="base_form">
 						<option value="-1">None (Blank Form)</option>
@@ -49,7 +49,11 @@
 							<option value="{{form.id}}">{{form.title}}</option>
 						{% endfor %}	
 					</select>
-					<input type="button" value="Create from previous form" onclick="createFromBase()"/>		
+					<input type="button" value="Create from previous form" onclick="createFromBase()"/>
+					<div id="id_modify_wrapper"><p>Modify this form <input type="checkbox" id="id_modify"/></p>
+					<p>(Please check this off <b>only</b> if you want to modify this form. If you just want to create a form that
+						resembles this one, leave this unchecked.)</p>
+					</div> 		
 				</div>
 					
 				<h3 id="header_fields"><a href='#'>Fields</a></h3>

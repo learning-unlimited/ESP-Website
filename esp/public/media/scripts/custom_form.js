@@ -86,7 +86,7 @@ $(document).ready(function() {
 		onSelectCategory('Generic');
 		onSelectElem('textField');
 	});
-	
+	$('#id_modify_wrapper').hide();
 	
 	
 	//csrf stuff
@@ -130,6 +130,7 @@ $(document).ready(function() {
 	
 	$('#form_toolbox').accordion({autoHeight:false, icons:{}});
 	$.data($('div.outline')[0], 'data', {'question_text':'', 'help_text':''});
+	$.data($currPage[0], 'data', {'parent_id':-1});
 
 });
 
@@ -264,7 +265,6 @@ var onSelectElem = function(item) {
 	//Defining actions for 'personal' fields
 	
 	//Defining actions for custom fields	
-	
 	$('#id_question').attr('value',question_text);
 	$prevField=$currSection.children(":last");
 	if($button.attr('value')!='Add to Form')
@@ -300,6 +300,8 @@ var onSelectField=function($elem, field_data) {
 		$wrap.removeClass('field_hover').addClass('field_selected');
 		$wrap.find('.wrapper_button').removeClass('wrapper_button_hover');
 		$currField=$wrap;
+		$currSection=$wrap.parent();
+		$prevField=$wrap.prev('div.field_wrapper');	
 	}
 	if(field_data.field_type!='section')
 		$("#id_required").attr('checked',field_data.required);
@@ -383,6 +385,7 @@ var addElement = function(item,$prevField) {
 	data.help_text=help_text;
 	data.field_type=item;
 	data.required=$('#id_required').attr('checked');
+	data.parent_id=-1; //Useful for modifications
 	data.attrs={};
 	
 	//Generic fields first
@@ -599,6 +602,7 @@ var addElement = function(item,$prevField) {
 		});
 		$currPage.appendTo($('div.preview_area'));
 		$.data(($currSection.parent())[0], 'data', {'question_text':'', 'help_text':''});
+		$.data($currPage[0], 'data', {'parent_id':-1});
 		return $currPage;
 	}
 	
@@ -684,7 +688,7 @@ var addElement = function(item,$prevField) {
 var submit=function() {
 	//submits the created form to the server
 	
-	var form={'title':$('#form_title').html(), 'desc':$('#form_description').html(), 'anonymous':String($('#id_anonymous').attr('checked')), 'pages':[]}, section, elem, page, section_seq;
+	var form={'title':$('#form_title').html(), 'desc':$('#form_description').html(), 'anonymous':$('#id_anonymous').attr('checked'), 'pages':[]}, section, elem, page, section_seq, page_seq=0;
 	if($('#id_assoc_prog').val()!="-1") {
 		form['link_type']='program';
 		form['link_id']=$('#id_assoc_prog').val();
@@ -696,7 +700,7 @@ var submit=function() {
 	
 	//Constructing the object to be sent to the server
 	$('div.preview_area').children('div.form_preview').each(function(pidx,pel) {
-		page={'sections':[]};
+		page={'sections':[], 'parent_id':$.data(pel, 'data')['parent_id'], 'seq':page_seq};
 		section_seq=0;
 		$(pel).children('div.outline').each(function(idx, el) {
 			section={'data':$.data(el, 'data'), 'fields':[]};
@@ -708,7 +712,6 @@ var submit=function() {
 				if( $(fel).hasClass('field_wrapper')){
 					elem={'data':$.data(fel,'data')};
 					elem['data']['seq']=fidx;
-					elem['data']['required']=String(elem['data']['required']);
 					section['fields'].push(elem);
 				}
 			});
@@ -719,8 +722,10 @@ var submit=function() {
 			}	
 		});
 		//Putting the page inside the form
-		if(page['sections'].length!=0)
+		if(page['sections'].length!=0){
 			form['pages'].push(page);
+			page_seq++;
+		}	
 	});
 	if(form['pages'].length==0){
 		alert("Sorry, that's an empty form.");
@@ -728,8 +733,13 @@ var submit=function() {
 	}
 	console.log(form);
 	//POSTing to server
+	var post_url='/customforms/submit/';
+	if($('#id_modify').attr('checked')){
+		form.form_id=$('#base_form').val();
+		post_url='/customforms/modify/';
+	}
 	$.ajax({
-		url:'/customforms/submit/',
+		url:post_url,
 		data:JSON.stringify(form),
 		type:'POST',
 		success: function(value) {
@@ -759,9 +769,10 @@ var createFromBase=function(){
 	$('div.form_preview').remove();
 	$('div.page_break').remove();
 	$currPage=$('<div class="form_preview"></div>');
-	$currSection=$('<div class="section"></div>');
-	$currPage.append($('<div class="outline"></div>').append($currSection));
+	/*$currSection=$('<div class="section"></div>');
+	$currPage.append($('<div class="outline"></div>').append($currSection));*/
 	$('div.preview_area').append($currPage);
+	$.data($currPage[0], 'data', {'parent_id':-1});
 	
 	var base_form_id=$('#base_form').val();
 	if(base_form_id!="-1"){
@@ -776,6 +787,15 @@ var createFromBase=function(){
 				rebuild(metadata);
 			}
 		});
+		$('#id_modify_wrapper').show();
+	}
+	else {
+		$('#id_modify_wrapper').hide();
+		$('#id_modify').attr('checked', false);
+		$('#input_form_title').attr('value', '').change();
+		$('#input_form_description').attr('value','').change();
+		$('#id_anonymous').attr('checked', false);
+		$('#id_assoc_prog').val('-1');
 	}
 };
 
@@ -797,11 +817,13 @@ var rebuild=function(metadata) {
 	$.each(metadata['pages'], function(pidx, page){
 		if(pidx!=0)
 			addElement('page',[]);
+		$.data($currPage[0], 'data')['parent_id']=page[0][0]['section__page__id'];
 			
 		$.each(page, function(sidx, section){
 			$('#id_question').val(section[0]['section__title']);
 			$('#id_instructions').val(section[0]['section__description']);
 			var $outline=addElement('section',[]);
+			$.data($outline[0], 'data')['parent_id']=section[0]['section__id'];
 			if(sidx==0){
 				//Removing the <hr> that comes before every section
 				$outline.find('hr').remove();
@@ -826,7 +848,8 @@ var rebuild=function(metadata) {
 				if($.inArray(field['attribute__attr_type'], ['options', 'limits'])!=-1)
 					field_data.attrs[field['attribute__attr_type']]=field['attribute__value'];	
 				onSelectField([], field_data);	
-				$prevField=addElement(field['field_type'], $prevField);	
+				$prevField=addElement(field['field_type'], $prevField);
+				$.data($prevField[0], 'data')['parent_id']=field['id'];	
 			});
 		});
 	});	

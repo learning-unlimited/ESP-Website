@@ -48,10 +48,11 @@ class DynamicModelHandler:
 		'address':['street', 'state', 'city', 'zip'],
 	}
 	
-	def __init__(self, form=None, fields=[]):
+	def __init__(self, form, fields=[]):
 		self.form=form
 		self.field_list=[]
 		self.fields=fields
+		self._tname='customforms\".\"customforms_response_%d' % form.id
 	
 	def __marinade__(self):
 		"""
@@ -99,13 +100,12 @@ class DynamicModelHandler:
 	def createTable(self):
 		"""Sets up the database table using self.field_list"""
 		
-		table_name='customforms\".\"customforms_response_%d' % self.form.id
 		if not self.field_list:
 			self._getModelFieldList()
 		
 		if not transaction.is_managed:
 			db.start_transaction()
-			db.create_table(table_name, tuple(self.field_list))
+			db.create_table(self._tname, tuple(self.field_list))
 			
 			#Executing deferred SQL, after correcting the CREATE INDEX statements
 			deferred_sql=[]
@@ -115,7 +115,7 @@ class DynamicModelHandler:
 			db.execute_deferred_sql()	
 			db.commit_transaction()
 		else:
-			db.create_table(table_name, tuple(self.field_list))
+			db.create_table(self._tname, tuple(self.field_list))
 			
 			#Executing deferred SQL, after correcting the CREATE INDEX statements
 			deferred_sql=[]
@@ -126,15 +126,36 @@ class DynamicModelHandler:
 		
 	def deleteTable(self):
 		"""Deletes the response table for the current form"""
-		tname='customforms\".\"customforms_response_%d' % self.form.id
 		db.start_transaction()
-		db.delete_table(tname)
-		db.commit_transaction()		
+		db.delete_table(self._tname)
+		db.commit_transaction()
+		
+	def addField(self, field):
+		"""
+		Adds a column (or columns) corresponding to a particular field
+		"""
+		field_name="question_%d" % field.id
+		if field.field_type in self._customFields:
+			for f in self._customFields[field.field_type]:
+				db.add_column(self._tname, field_name+'_'+f, self._getModelField(f))
+		else:
+			db.add_column(self._tname, field_name, self._getModelField(field.field_type))
+		
+	def removeField(self, field):
+		"""
+		Removes a column (or columns) corresponding to a particular field
+		"""
+		field_name="question_%d" % field.id
+		if field.field_type in self._customFields:
+			for f in self._customFields[field.field_type]:
+				db.delete_column(self._tname, field_name+'_'+f)
+		else:
+			db.delete_column(self._tname, field_name)									
 	
 	def createDynModel(self):
 		"""Creates and returns the dynamic model for this form"""
 		
-		_db_table='customforms\".\"customforms_response_%d' % self.form.id
+		_db_table=self._tname
 		_model_name='Response_%d' % self.form.id
 		
 		#Removing any existing model definitions from Django's cache

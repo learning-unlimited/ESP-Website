@@ -230,7 +230,7 @@ class FormHandler:
 		Used for rendering.
 		"""
 		fields=Field.objects.filter(form=form).order_by('section__page__seq', 'section__seq', 'seq').values('id', 'field_type', 'label', 'help_text', 'required', 'seq',
-				'section__title', 'section__description', 'section__seq',
+				'section__title', 'section__description', 'section__seq', 'section__id',
 				'section__page__id', 'section__page__seq',
 				'attribute__attr_type', 'attribute__value')
 		
