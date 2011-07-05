@@ -35,6 +35,8 @@ Learning Unlimited, Inc.
 from esp.qsd.views import qsd
 from django.core.exceptions import PermissionDenied
 from django.contrib.sites.models import Site
+from esp.program.modules.base import LOGIN_URL
+from django.contrib.auth import REDIRECT_FIELD_NAME
 from esp.datatree.models import *
 from esp.users.models import GetNodeOrNoBits, ESPUser, UserBit
 from django.http import Http404, HttpResponseRedirect, HttpResponse
@@ -236,8 +238,6 @@ def classchangerequest(request, tl, one, two):
     context['timeslots'] = timeslots
     context['enrollments'] = enrollments
     return render_to_response('program/classchangerequest.html', request, (prog, tl), context)
-
-    raise Http404
 
 
 def archives(request, selection, category = None, options = None):
