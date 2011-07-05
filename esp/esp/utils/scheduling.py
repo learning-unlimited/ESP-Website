@@ -36,7 +36,7 @@ def getRankInClass(student, section):
     global NOW
     if not StudentAppQuestion.objects.filter(subject=section.parent_class).count():
         return 10
-    elif StudentRegistration.objects.filter(section=section, relationship__name="Rejected",end_date__gte=NOW,user=student).count() or not student.studentapplication_set.filter(program = section.parent_class.parent_program).count():
+    elif StudentRegistration.objects.filter(section=section, relationship__name="Rejected",end_date__gte=NOW,user=student).count() or not student.studentapplication_set.filter(program = section.parent_class.parent_program).count() or not StudentAppResponse.objects.filter(question__subject=section.parent_class, studentapplication__user=student).count():
         return 1
     for sar in StudentAppResponse.objects.filter(question__subject=section.parent_class, studentapplication__user=student):
         if not len(sar.response.strip()):
