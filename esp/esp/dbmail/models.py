@@ -53,11 +53,13 @@ from django.core.mail import SMTPConnection
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=settings.DEFAULT_EMAIL_ADDRESSES['archive'],
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
               *args, **kwargs):
+    from_email = from_email.strip()
+    if 'Reply-To' in extra_headers:
+        extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
     if type(recipient_list) == str or type(recipient_list) == unicode:
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
-    
     from django.core.mail import EmailMessage #send_mail as django_send_mail
     print "Sent mail to %s" % str(new_list)
     
@@ -243,7 +245,7 @@ class TextOfEmail(models.Model):
                   self.msgtext,
                   self.send_from,
                   self.send_to,
-                  True,
+                  False,
                   extra_headers=extra_headers)
 
         #send_mail(str(self.subject),
