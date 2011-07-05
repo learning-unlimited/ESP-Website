@@ -36,7 +36,7 @@ from esp.qsd.views import qsd
 from django.core.exceptions import PermissionDenied
 from django.contrib.sites.models import Site
 from esp.datatree.models import *
-from esp.users.models import GetNodeOrNoBits
+from esp.users.models import GetNodeOrNoBits, ESPUser, UserBit
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
@@ -178,6 +178,66 @@ def program(request, tl, one, two, module, extra = None):
 		return newResponse
 
 	raise Http404
+
+def classchangerequest(request, tl, one, two):
+    from esp.program.models import Program, StudentAppResponse
+    from esp.program.models.class_ import * 
+        
+    try:
+        prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
+    except Program.DoesNotExist:
+        raise Http404("Program not found.")
+    
+    if tl != "learn":
+        raise Http404
+
+    if not request.user or not request.user.is_authenticated():
+        return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+
+    if not request.user.isStudent() and not request.user.isAdmin(prog):
+        allowed_student_types = Tag.getTag("allowed_student_types", prog, default='')
+        matching_user_types = UserBit.valid_objects().filter(user=request.user, verb__parent=GetNode("V/Flags/UserRole"), verb__name__in=allowed_student_types.split(","))
+        if not matching_user_types:
+            return render_to_response('errors/program/notastudent.html', request, (prog, 'learn'), {})
+    
+    errorpage = 'errors/program/wronggrade.html'
+    
+    verb_override = GetNode('V/Flags/Registration/GradeOverride')
+    cur_grade = request.user.getGrade(prog)
+    if (not UserBit.UserHasPerms(user = request.user, qsc  = prog.anchor_id, verb = verb_override)) and (cur_grade != 0 and (cur_grade < prog.grade_min or \
+                           cur_grade > prog.grade_max)):
+        return render_to_response(errorpage, request, (prog, tl), {})
+
+    setattr(request, "program", prog)
+    setattr(request, "tl", tl)
+    setattr(request, "module", "classchangerequest")
+
+    from django import forms
+    from datetime import datetime
+    from esp.utils.scheduling import getRankInClass
+
+    timeslots = prog.getTimeSlots()
+    sections = prog.sections().filter(status=10)
+    
+    enrollments = dict([(timeslot, ClassSubject.objects.get(sections__studentregistration__relationship__name="Enrolled", sections__studentregistration__user=request.user, sections__meeting_times=timeslot, parent_program=prog, sections__studentregistration__end_date__gte=datetime.now())) for timeslot in timeslots])
+    print enrollments
+    sections_by_slot = dict([(timeslot,[section for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in enrollments.values() and getRankInClass(request.user, section) in (5,10)]) for timeslot in timeslots])
+    print sections_by_slot
+    print getRankInClass(request.user, ClassSection.objects.get(parent_class__parent_program__pk=72, parent_class__anchor__friendly_name__contains="HSSP Sym"))
+    print request.user.studentapplication_set.filter(program__pk=72).count()
+    
+    fields = {}
+    for i, timeslot in enumerate(sections_by_slot.keys()): 
+        fields['timeslot_'+str(i+1)] = forms.ChoiceField(label="Timeslot "+str(i+1)+" ("+timeslot.pretty_time()+")", choices=[('0',"I'm happy with my current enrollment.")]+[(section.emailcode(), section.emailcode()+": "+section.title()) for section in sections_by_slot[timeslot]])
+        fields['orig_timeslot_'+str(i+1)] = forms.ChoiceField(label="Timeslot "+str(i+1)+" ("+timeslot.pretty_time()+")", choices=[('0',"I'm happy with my current enrollment.")]+[(section.emailcode(), section.emailcode()+": "+section.title()) for section in sections_by_slot[timeslot]], widget = forms.HiddenInput, initial="A1234")
+    
+    context = {}
+    context['form'] = type('ClassChangeRequestForm', (forms.Form,), fields)()
+    context['timeslots'] = timeslots
+    context['enrollments'] = enrollments
+    return render_to_response('program/classchangerequest.html', request, (prog, tl), context)
+
+    raise Http404
 
 
 def archives(request, selection, category = None, options = None):
