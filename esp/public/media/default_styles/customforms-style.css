@@ -106,13 +106,15 @@ body {
 .page_break {
 	height: 2px; 
 	background-color: black; 
-	text-align: center
+	text-align: center;
+	cursor:pointer;
 }
 
 .page_break span {
 	background-color: white;
 	position: relative; 
 	top: -0.5em;
+	cursor:pointer;
 }
 
 /* End Form Preview Area */

@@ -69,6 +69,7 @@ $(document).ready(function() {
 	
 	$currSection=$('#section_0');
 	$currPage=$('#page_0');
+	$('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($currPage);
 	//'Initializing' the UI
 	onSelectCategory('Generic');
 	onSelectElem('textField');
@@ -131,6 +132,13 @@ $(document).ready(function() {
 	$('#form_toolbox').accordion({autoHeight:false, icons:{}});
 	$.data($('div.outline')[0], 'data', {'question_text':'', 'help_text':''});
 	$.data($currPage[0], 'data', {'parent_id':-1});
+	
+	$("#page_break_0").dblclick(function(){
+		$currPage=$(this).next('div.form_preview'); 
+		//$currSection=$(this).children(":last").children("div.section");
+	}).toggle(function(){$(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");}, 
+			function(){$(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");}
+			);
 
 });
 
@@ -591,7 +599,9 @@ var addElement = function(item,$prevField) {
 		$page_break.dblclick(function(){
 			$currPage=$(this).next('div.form_preview'); 
 			//$currSection=$(this).children(":last").children("div.section");
-		}).appendTo($('div.preview_area'));
+		}).toggle(function(){$(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");}, 
+				function(){$(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");}
+				).appendTo($('div.preview_area'));
 		
 		//Now putting in the page div
 		$currPage=$('<div class="form_preview"></div>');
@@ -605,7 +615,7 @@ var addElement = function(item,$prevField) {
 			//$currSection=$(this).children(":last").children("div.section");
 		});
 		$currPage.appendTo($('div.preview_area'));
-		$.data(($currSection.parent())[0], 'data', {'question_text':'', 'help_text':''});
+		$.data(($currSection.parent())[0], 'data', {'question_text':'', 'help_text':'', 'parent_id':-1});
 		$.data($currPage[0], 'data', {'parent_id':-1});
 		return $currPage;
 	}
@@ -772,11 +782,11 @@ var createFromBase=function(){
 	//Clearing previous fields, if any
 	$('div.form_preview').remove();
 	$('div.page_break').remove();
-	$currPage=$('<div class="form_preview"></div>');
-	/*$currSection=$('<div class="section"></div>');
-	$currPage.append($('<div class="outline"></div>').append($currSection));*/
+	/*$currPage=$('<div class="form_preview"></div>');
+	$currSection=$('<div class="section"></div>');
+	$currPage.append($('<div class="outline"></div>').append($currSection));
 	$('div.preview_area').append($currPage);
-	$.data($currPage[0], 'data', {'parent_id':-1});
+	$.data($currPage[0], 'data', {'parent_id':-1});*/
 	
 	var base_form_id=$('#base_form').val();
 	if(base_form_id!="-1"){
@@ -819,8 +829,7 @@ var rebuild=function(metadata) {
 		
 	//Putting in pages, sections and fields
 	$.each(metadata['pages'], function(pidx, page){
-		if(pidx!=0)
-			addElement('page',[]);
+		addElement('page',[]);
 		$.data($currPage[0], 'data')['parent_id']=page[0][0]['section__page__id'];
 			
 		$.each(page, function(sidx, section){

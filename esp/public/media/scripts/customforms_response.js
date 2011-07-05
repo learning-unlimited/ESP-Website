@@ -99,7 +99,7 @@ var createGrid=function(form_data){
 		rowSelector:'20px',
 		loadingMessage:"Please wait while your data is fetched",
 		plugins:{
-			filter:true,
+			filter:true
 		}
 	},
 	document.createElement('div'));

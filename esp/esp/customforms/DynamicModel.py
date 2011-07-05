@@ -146,7 +146,7 @@ class DynamicModelHandler:
 		field_name="question_%d" % field.id
 		if field.field_type in self._customFields:
 			for f in self._customFields[field.field_type]:
-				db.add_column(self._tname, field_name+'_'+f, self._getFieldToAdd(f))
+				db.add_column(self._tname, field_name+'_'+f, self._getFieldToAdd(f), keep_default=False)
 		else:
 			db.add_column(self._tname, field_name, self._getFieldToAdd(field.field_type), keep_default=False)
 		

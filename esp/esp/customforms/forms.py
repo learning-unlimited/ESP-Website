@@ -3,6 +3,8 @@ from django import forms
 from django.utils.datastructures import SortedDict
 from django.contrib.localflavor.us.forms import USStateField, USStateSelect
 
+choices=[(1,1), (2,2),]
+
 class CourseSelect(Select):
 	"""A select widget with courses related to a particular program as its choices"""
 	def __init__(self, program=None, attrs=None):
@@ -62,7 +64,7 @@ class NameField(forms.MultiValueField):
 		if 'name' in kwargs:
 			self.name=kwargs.pop('name')
 		widget_class=kwargs.pop('class')
-		self.widget=NameWidget(wclass=widget_class)	
+		self.widget=NameWidget(wclass=widget_class)
 		fields=(forms.CharField(), forms.CharField())
 		super(NameField, self).__init__(fields, *args, **kwargs)
 	
@@ -101,11 +103,9 @@ class HiddenAddressWidget(AddressWidget):
 	is_hidden=True
 	
 	def __init__(self, *args, **kwargs):
-		super(HiddenAddressWidget, self).__init__(*args, **kwargs)
-		for widget in self.widgets:
-			widget.input_type='hidden'
-			widget.is_hidden=True
-			
+		super(HiddenAddressWidget, self).__init__(wclass='', *args, **kwargs)
+		self.widgets=[forms.HiddenInput(), forms.HiddenInput(), forms.HiddenInput(), forms.HiddenInput()]
+				
 	def format_output(self, rendered_widgets):
 		return u''.join(rendered_widgets)				
 		
@@ -119,7 +119,7 @@ class AddressField(forms.MultiValueField):
 		if 'name' in kwargs:
 			self.name=kwargs.pop('name')
 		wclass=kwargs.pop('class')
-		self.widget=AddressWidget(wclass=wclass)	
+		self.widget=AddressWidget(wclass=wclass)
 		fields=(forms.CharField(max_length=100), forms.CharField(max_length=50), USStateField(), forms.CharField(max_length=5))
 		super(AddressField, self).__init__(fields, *args, **kwargs)
 		

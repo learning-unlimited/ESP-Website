@@ -71,6 +71,7 @@ def onModify(request):
 			dmh=DMH(form=form[0])
 			form.update(title=metadata['title'], description=metadata['desc'], link_type=metadata['link_type'], link_id=int(metadata['link_id']), anonymous=metadata['anonymous'])
 			curr_keys={'pages':[], 'sections':[], 'fields':[]}
+			#to_delete={'pages':[], 'sections':[], 'fields':[]}
 			old_pages=Page.objects.filter(form=form[0])	
 			for page in metadata['pages']:
 				if page['parent_id']==-1:
@@ -106,8 +107,22 @@ def onModify(request):
 								Attribute.objects.filter(field=curr_field[0]).update(field=curr_field[0], attr_type=atype, value=aval)
 							curr_field=curr_field[0]	
 						curr_keys['fields'].append(curr_field.id)
+					"""to_delete['fields'].extend([old_field for old_field in old_fields if old_field.id not in curr_keys['fields']])
+				to_delete['sections'].extend([old_sec for old_sec in old_sections if old_sec.id not in curr_keys['sections']])
+			to_delete['pages'].extend([old_pag for old_pag in old_pages if old_pag.id not in curr_keys['pages']])			
+			"""
 			
 			#Removing obsolete items
+			"""for f in to_delete['fields']:
+				dmh.removeField(f)
+				f.delete()
+				
+			for s in to_delete['sections']:
+				s.delete()
+				
+			for p in to_delete['pages']:
+				p.delete()"""		
+				
 			for old_page in old_pages:
 				old_sections=Section.objects.filter(page=old_page)
 				for old_section in old_sections:
