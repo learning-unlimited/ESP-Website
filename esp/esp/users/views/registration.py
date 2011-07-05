@@ -1,6 +1,6 @@
 
 
-from esp.users.models import User, UserBit, ESPUser_Profile
+from esp.users.models import User, UserBit, ESPUser_Profile, ESPUser
 from esp.users.forms.user_reg import UserRegForm, EmailUserForm
 from esp.web.util.main import render_to_response
 from esp.datatree.models import GetNode
