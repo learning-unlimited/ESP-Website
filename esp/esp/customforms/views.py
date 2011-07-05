@@ -87,7 +87,7 @@ def onModify(request):
 						#New Section
 						curr_sect=Section.objects.create(page=curr_page, title=section['data']['question_text'], description=section['data']['help_text'], seq=int(section['data']['seq']))
 					else:
-						cs=old_sections.get(id=section['data']['parent_id'])
+						cs=old_sections.filter(id=section['data']['parent_id'])
 						cs.update(page=curr_page, title=section['data']['question_text'], description=section['data']['help_text'], seq=int(section['data']['seq']))
 						curr_sect=cs[0]
 					curr_keys['sections'].append(curr_sect.id)
@@ -103,7 +103,8 @@ def onModify(request):
 							curr_field=old_fields.filter(id=int(field['data']['parent_id']))
 							curr_field.update(form=form[0], section=curr_sect, field_type=field['data']['field_type'], seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], required=field['data']['required'])
 							for atype, aval in field['data']['attrs'].items():
-								Attribute.objects.get(field=curr_field[0]).update(field=curr_field[0], attr_type=atype, value=aval)
+								Attribute.objects.filter(field=curr_field[0]).update(field=curr_field[0], attr_type=atype, value=aval)
+							curr_field=curr_field[0]	
 						curr_keys['fields'].append(curr_field.id)
 			
 			#Removing obsolete items
@@ -116,7 +117,7 @@ def onModify(request):
 							dmh.removeField(old_field)
 							old_field.delete()
 					if old_section.id not in curr_keys['sections']: old_section.delete()
-				if old_page not in curr_keys['pages']: old_page.delete()
+				if old_page.id not in curr_keys['pages']: old_page.delete()
 			return HttpResponse('OK')									 			
 					
 		

@@ -588,7 +588,10 @@ var addElement = function(item,$prevField) {
 	else if(item=='page'){
 		//First putting in the page break text
 		var $page_break = $('<div class="page_break"><span>** Page Break **</span></div>');
-		$page_break.appendTo($('div.preview_area'));
+		$page_break.dblclick(function(){
+			$currPage=$(this).next('div.form_preview'); 
+			//$currSection=$(this).children(":last").children("div.section");
+		}).appendTo($('div.preview_area'));
 		
 		//Now putting in the page div
 		$currPage=$('<div class="form_preview"></div>');
@@ -599,6 +602,7 @@ var addElement = function(item,$prevField) {
 						function(){$(this).children(".wrapper_button").removeClass("wrapper_button_hover");});
 		$currPage.dblclick(function(){
 			$currPage=$(this);
+			//$currSection=$(this).children(":last").children("div.section");
 		});
 		$currPage.appendTo($('div.preview_area'));
 		$.data(($currSection.parent())[0], 'data', {'question_text':'', 'help_text':''});
@@ -735,7 +739,7 @@ var submit=function() {
 	//POSTing to server
 	var post_url='/customforms/submit/';
 	if($('#id_modify').attr('checked')){
-		form.form_id=$('#base_form').val();
+		form.form_id=parseInt($('#base_form').val());
 		post_url='/customforms/modify/';
 	}
 	$.ajax({

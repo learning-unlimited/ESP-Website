@@ -130,6 +130,15 @@ class DynamicModelHandler:
 		db.delete_table(self._tname)
 		db.commit_transaction()
 		
+	def _getFieldToAdd(self, ftype):
+		"""
+		Returns the model field to add, along with a suitable default
+		"""
+		attrs=self._field_types[ftype]['attrs'].copy()
+		if ftype!="numeric":
+			attrs['default']=''
+		return self._field_types[ftype]['typeMap'](**attrs)	
+	
 	def addField(self, field):
 		"""
 		Adds a column (or columns) corresponding to a particular field
@@ -137,9 +146,9 @@ class DynamicModelHandler:
 		field_name="question_%d" % field.id
 		if field.field_type in self._customFields:
 			for f in self._customFields[field.field_type]:
-				db.add_column(self._tname, field_name+'_'+f, self._getModelField(f))
+				db.add_column(self._tname, field_name+'_'+f, self._getFieldToAdd(f))
 		else:
-			db.add_column(self._tname, field_name, self._getModelField(field.field_type))
+			db.add_column(self._tname, field_name, self._getFieldToAdd(field.field_type), keep_default=False)
 		
 	def removeField(self, field):
 		"""
