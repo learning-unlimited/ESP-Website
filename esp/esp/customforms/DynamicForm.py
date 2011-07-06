@@ -54,7 +54,7 @@ class CustomFormHandler():
 		'state':{'typeMap': USStateField, 'attrs':{'widget': USStateSelect}, 'widget_attrs':{'class':''}},
 		'city':{'typeMap': forms.CharField, 'attrs':{'max_length':50, 'widget':forms.TextInput,}, 'widget_attrs':{'class':''},},
 		'zip':{'typeMap': forms.CharField, 'attrs':{'max_length':5, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'USZip'}},
-		'courses':{'typeMap': forms.ChoiceField, 'attrs':{'widget':CourseSelect}, 'widget_attrs':{'class':''}},
+		'courses':{'typeMap': forms.ModelChoiceField, 'attrs':{'widget':forms.Select, 'empty_label':None}, 'widget_attrs':{'class':'courses'}},
 	}
 	
 	_field_attrs=['label', 'help_text', 'required']
@@ -136,15 +136,17 @@ class CustomFormHandler():
 				if field['field_type'] in self._combo_fields:
 					field_attrs.update(widget_attrs)
 					
-				#TODO-> Implement courses properly
+				#Setting the queryset for a courses field
 				if field['field_type']=='courses':
 					if self.form.link_type=='program':
-						field_attrs['widget']=field_attrs['widget'](program=Program.objects.get(pk=int(self.form.link_id)))
-				else:		
-					try:
-						field_attrs['widget']=field_attrs['widget'](attrs=widget_attrs)
-					except KeyError:
-						pass
+						field_attrs['queryset']=Program.objects.get(pk=self.form.link_id).classsubject_set.all()
+						
+				#Initializing widget				
+				try:
+					field_attrs['widget']=field_attrs['widget'](attrs=widget_attrs)
+				except KeyError:
+					pass
+					
 				self.fields.append([field_name, self._field_types[field['field_type']]['typeMap'](**field_attrs) ])
 				curr_fieldset[1]['fields'].append(field_name)			
 			self.fieldsets.append(tuple(curr_fieldset))

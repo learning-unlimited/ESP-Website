@@ -7,6 +7,7 @@ from django.db import transaction
 from esp.customforms.models import Field
 from esp.cache import cache_function
 from esp.users.models import ESPUser
+from esp.program.models import ClassSubject
 
 class DynamicModelHandler:
 	"""Handler class for creating, modifying and deleting dynamic models
@@ -20,28 +21,30 @@ class DynamicModelHandler:
 	_schema_name='customforms'
 	
 	_field_types={
-		'textField':{'typeMap':models.CharField, 'attrs':{'max_length':30,}},
-		'longTextField':{'typeMap':models.CharField, 'attrs':{'max_length':60,}},
-		'longAns':{'typeMap':models.TextField, 'attrs':{}},
-		'reallyLongAns':{'typeMap':models.TextField, 'attrs':{}},
-		'radio':{'typeMap':models.CharField, 'attrs':{'max_length':50,}},
-		'dropdown':{'typeMap':models.CharField, 'attrs':{'max_length':50,}},
-		'multiselect':{'typeMap':models.TextField, 'attrs':{}},
-		'checkboxes':{'typeMap':models.TextField, 'attrs':{}},
-		'numeric':{'typeMap':models.IntegerField, 'attrs':{'null':True, }},
-		'date':{'typeMap':models.CharField, 'attrs':{'max_length':10, }},
-		'time':{'typeMap':models.CharField, 'attrs':{'max_length':10, }},
-		'first_name':{'typeMap':models.CharField, 'attrs':{'max_length':64,}},
-		'last_name':{'typeMap':models.CharField, 'attrs':{'max_length':64,}},
-		'gender':{'typeMap':models.CharField, 'attrs':{'max_length':1,}},
-		'phone':{'typeMap':models.CharField, 'attrs':{'max_length':20,}},
-		'email':{'typeMap':models.CharField, 'attrs':{'max_length':30,}},
-		'street':{'typeMap':models.CharField, 'attrs':{'max_length':100,}},
-		'state':{'typeMap':models.CharField, 'attrs':{'max_length':2,}},
-		'city':{'typeMap':models.CharField, 'attrs':{'max_length':50,}},
-		'zip':{'typeMap':models.CharField, 'attrs':{'max_length':5,}},
-		'courses':{'typeMap':models.CharField, 'attrs':{'max_length':100,}},
+		'textField':{'typeMap':models.CharField, 'attrs':{'max_length':30,}, 'args':[]},
+		'longTextField':{'typeMap':models.CharField, 'attrs':{'max_length':60,}, 'args':[]},
+		'longAns':{'typeMap':models.TextField, 'attrs':{}, 'args':[]},
+		'reallyLongAns':{'typeMap':models.TextField, 'attrs':{}, 'args':[]},
+		'radio':{'typeMap':models.CharField, 'attrs':{'max_length':50,}, 'args':[]},
+		'dropdown':{'typeMap':models.CharField, 'attrs':{'max_length':50,}, 'args':[]},
+		'multiselect':{'typeMap':models.TextField, 'attrs':{}, 'args':[]},
+		'checkboxes':{'typeMap':models.TextField, 'attrs':{}, 'args':[]},
+		'numeric':{'typeMap':models.IntegerField, 'attrs':{'null':True, }, 'args':[]},
+		'date':{'typeMap':models.CharField, 'attrs':{'max_length':10, }, 'args':[]},
+		'time':{'typeMap':models.CharField, 'attrs':{'max_length':10, }, 'args':[]},
+		'first_name':{'typeMap':models.CharField, 'attrs':{'max_length':64,}, 'args':[]},
+		'last_name':{'typeMap':models.CharField, 'attrs':{'max_length':64,}, 'args':[]},
+		'gender':{'typeMap':models.CharField, 'attrs':{'max_length':1,}, 'args':[]},
+		'phone':{'typeMap':models.CharField, 'attrs':{'max_length':20,}, 'args':[]},
+		'email':{'typeMap':models.CharField, 'attrs':{'max_length':30,}, 'args':[]},
+		'street':{'typeMap':models.CharField, 'attrs':{'max_length':100,}, 'args':[]},
+		'state':{'typeMap':models.CharField, 'attrs':{'max_length':2,}, 'args':[]},
+		'city':{'typeMap':models.CharField, 'attrs':{'max_length':50,}, 'args':[]},
+		'zip':{'typeMap':models.CharField, 'attrs':{'max_length':5,}, 'args':[]},
+		'courses':{'typeMap':models.ForeignKey, 'attrs':{'blank':True, 'null':True, 'on_delete':models.SET_NULL}, 'args':[ClassSubject]},
 	}
+	
+	_foreign_key_fields=['courses',]
 	
 	_customFields={
 		'name':['first_name', 'last_name'],
@@ -73,7 +76,7 @@ class DynamicModelHandler:
 	def _getModelField(self, field_type):
 		"""Returns the appropriate Django Model Field based on field_type"""
 		
-		return self._field_types[field_type]['typeMap'](**self._field_types[field_type]['attrs'])
+		return self._field_types[field_type]['typeMap'](*self._field_types[field_type]['args'], **self._field_types[field_type]['attrs'])
 			
 	def _getModelFieldList(self):
 		"""Returns a list of Model Field tuples given a list of field_types (from the metadata)
@@ -135,9 +138,10 @@ class DynamicModelHandler:
 		Returns the model field to add, along with a suitable default
 		"""
 		attrs=self._field_types[ftype]['attrs'].copy()
-		if ftype!="numeric":
+		args=self._field_types[ftype]['args']
+		if ftype!="numeric" and ftype!='courses':
 			attrs['default']=''
-		return self._field_types[ftype]['typeMap'](**attrs)	
+		return self._field_types[ftype]['typeMap'](*args, **attrs)	
 	
 	def addField(self, field):
 		"""
@@ -155,6 +159,8 @@ class DynamicModelHandler:
 		Removes a column (or columns) corresponding to a particular field
 		"""
 		field_name="question_%d" % field.id
+		if field.field_type in self._foreign_key_fields:
+			field_name+='_id'
 		if field.field_type in self._customFields:
 			for f in self._customFields[field.field_type]:
 				db.delete_column(self._tname, field_name+'_'+f)
