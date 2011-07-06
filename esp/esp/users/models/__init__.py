@@ -1671,7 +1671,7 @@ class PersistentQueryFilter(models.Model):
         foo.save()
         return foo
 
-    def get_Q(self):
+    def get_Q(self, restrict_to_active = True):
         """ This will return the Q object that was passed into it. """
         try:
             QObj = pickle.loads(str(self.q_filter))
@@ -1679,7 +1679,7 @@ class PersistentQueryFilter(models.Model):
             raise ESPError(), 'Invalid Q object stored in database.'
 
         #   Do not include users if they have disabled their account.
-        if self.item_model.find('auth.models.User') >= 0:
+        if restrict_to_active and self.item_model.find('auth.models.User') >= 0:
             QObj = QObj & Q(is_active=True)
 
         return QObj
