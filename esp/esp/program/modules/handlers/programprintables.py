@@ -852,7 +852,7 @@ class ProgramPrintables(ProgramModuleObj):
             if not found:
                 return filterObj
 
-            students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
+            students = list(ESPUser.objects.filter(filterObj.get_Q(restrict_to_active=False)).distinct())
 
         students.sort()
         
