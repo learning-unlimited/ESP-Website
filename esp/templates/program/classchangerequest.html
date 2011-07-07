@@ -6,12 +6,23 @@
 <h3>Current Enrollments</h3>
 <ol>
 {% for timeslot, cls in enrollments.items %}
-<li>{{ timeslot.pretty_time }} - {{ cls.emailcode }}: {{ cls.title }}</li>
+<li>
+{{ timeslot.pretty_time }} - 
+{% if cls %}
+{{ cls.emailcode }}: {{ cls.title }}
+{% else %}
+None
+{% endif %}
+</li>
 {% endfor %}
 </ol>
 <h3>Class Change Request Form</h3>
 <form action="classchangerequest" method="post">{% csrf_token %}
 {{ form.as_p }}
+{% if user.isStudent %}
 <input type="submit" value="Submit" />
+{% else %}
+<input type="button" value="This would be a 'Submit' button, if you were a student" />
+{% endif %}
 </form>
 {% endblock %}

@@ -42,6 +42,7 @@ from esp.users.models import GetNodeOrNoBits, ESPUser, UserBit
 from django.http import Http404, HttpResponseRedirect, HttpResponse
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
+from urllib import quote
 
 #from icalendar import Calendar, Event as CalEvent, UTC
 
@@ -221,12 +222,17 @@ def classchangerequest(request, tl, one, two):
     timeslots = prog.getTimeSlots()
     sections = prog.sections().filter(status=10)
     
-    enrollments = dict([(timeslot, ClassSubject.objects.get(sections__studentregistration__relationship__name="Enrolled", sections__studentregistration__user=request.user, sections__meeting_times=timeslot, parent_program=prog, sections__studentregistration__end_date__gte=datetime.now())) for timeslot in timeslots])
-    print enrollments
-    sections_by_slot = dict([(timeslot,[section for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in enrollments.values() and getRankInClass(request.user, section) in (5,10)]) for timeslot in timeslots])
-    print sections_by_slot
-    print getRankInClass(request.user, ClassSection.objects.get(parent_class__parent_program__pk=72, parent_class__anchor__friendly_name__contains="HSSP Sym"))
-    print request.user.studentapplication_set.filter(program__pk=72).count()
+    enrollments = {}
+    for timeslot in timeslots:
+        try:
+            enrollments[timeslot] = ClassSubject.objects.get(sections__studentregistration__relationship__name="Enrolled", sections__studentregistration__user=request.user, sections__meeting_times=timeslot, parent_program=prog, sections__studentregistration__end_date__gte=datetime.now())
+        except ClassSubject.DoesNotExist: 
+            enrollments[timeslot] = None
+    
+    if request.user.isStudent():
+        sections_by_slot = dict([(timeslot,[section for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in enrollments.values() and getRankInClass(request.user, section) in (5,10)]) for timeslot in timeslots])
+    else: 
+        sections_by_slot = dict([(timeslot,[section for section in sections if section.get_meeting_times()[0] == timeslot]) for timeslot in timeslots])
     
     fields = {}
     for i, timeslot in enumerate(sections_by_slot.keys()): 
@@ -237,6 +243,7 @@ def classchangerequest(request, tl, one, two):
     context['form'] = type('ClassChangeRequestForm', (forms.Form,), fields)()
     context['timeslots'] = timeslots
     context['enrollments'] = enrollments
+    context['user'] = request.user
     return render_to_response('program/classchangerequest.html', request, (prog, tl), context)
 
 
