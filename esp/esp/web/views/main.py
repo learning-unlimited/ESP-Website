@@ -275,11 +275,13 @@ def contact(request, section='esp'):
 		if form.is_valid():
 			
 			to_email = []
+			usernames = []
 
 			if len(form.cleaned_data['sender'].strip()) == 0:
 				email = 'esp@mit.edu'
 			else:
 				email = form.cleaned_data['sender']
+				usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
                 
 			if form.cleaned_data['cc_myself']:
 				to_email.append(email)
@@ -296,7 +298,7 @@ def contact(request, section='esp'):
 
 			t = loader.get_template('email/comment')
 
-			msgtext = t.render(Context({'form': form, 'domain': domain}))
+			msgtext = t.render(Context({'form': form, 'domain': domain, 'usernames': usernames}))
 				
 			send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
 				  msgtext,
