@@ -82,6 +82,7 @@ body {
 .section_header{
 	margin:0px;
 	padding:0px;
+	cursor:pointer;
 }
 
 .section_header hr{

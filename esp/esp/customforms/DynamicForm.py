@@ -6,7 +6,7 @@ from django.contrib.formtools.wizard import FormWizard
 from django.shortcuts import redirect, render_to_response, HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
-from esp.customforms.forms import CourseSelect, NameField, AddressField
+from esp.customforms.forms import NameField, AddressField
 from esp.customforms.DynamicModel import DMH
 from esp.users.models import ContactInfo
 from esp.cache import cache_function
