@@ -39,13 +39,14 @@ from esp.program.modules.base import LOGIN_URL
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from esp.datatree.models import *
 from esp.users.models import GetNodeOrNoBits, ESPUser, UserBit
-from django.http import Http404, HttpResponseRedirect, HttpResponse
+from django.http import Http404, HttpResponseRedirect, HttpResponse, MultiValueDict
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 
 #from icalendar import Calendar, Event as CalEvent, UTC
 
 import datetime
+import re
 
 from esp.web.models import NavBarCategory
 from esp.web.util.main import render_to_response
@@ -271,7 +272,8 @@ def contact(request, section='esp'):
 		form = ContactForm(request.POST)
 		SUBJECT_PREPEND = '[webform]'
                 domain = Site.objects.get_current().domain
-		
+		ok_to_send = True
+
 		if form.is_valid():
 			
 			to_email = []
@@ -282,6 +284,15 @@ def contact(request, section='esp'):
 			else:
 				email = form.cleaned_data['sender']
 				usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
+
+			if usernames and not form.cleaned_data['decline_password_recovery']:
+				m = 'password|account|log( ?)in'
+				if re.search(m, form.cleaned_data['message'].lower()) or re.search(m, form.cleaned_data['subject'].lower()):
+					# Ask if they want a password recovery before sending.
+					ok_to_send = False
+					# If they submit again, don't ask a second time.
+					form.data = MultiValueDict(form.data)
+					form.data['decline_password_recovery'] = True
                 
 			if form.cleaned_data['cc_myself']:
 				to_email.append(email)
@@ -296,15 +307,16 @@ def contact(request, section='esp'):
 				email = '%s <%s>' % (form.cleaned_data['name'], email)
 
 
-			t = loader.get_template('email/comment')
+			if ok_to_send:
+				t = loader.get_template('email/comment')
 
-			msgtext = t.render(Context({'form': form, 'domain': domain, 'usernames': usernames}))
-				
-			send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
-				  msgtext,
-				  email, to_email, fail_silently = True)
+				msgtext = t.render(Context({'form': form, 'domain': domain, 'usernames': usernames}))
 
-			return HttpResponseRedirect(request.path + '?success')
+				send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
+					  msgtext,
+					  email, to_email, fail_silently = True)
+
+				return HttpResponseRedirect(request.path + '?success')
 
         
 	else:

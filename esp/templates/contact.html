@@ -18,6 +18,21 @@
 <h1>Contact ESP</h1><br />
 
 {% load render_qsd %}
+{% if contact_form.data.decline_password_recovery %}
+{% inline_qsd_block Q/Web contact_password_recovery_check request.user %}
+<p>
+It looks like you're trying to recover your login information.
+If you would like, we can e-mail you a link to reset your password.
+The e-mail will remind you of your username.
+</p>
+{% end_inline_qsd_block %}
+<form action="/myesp/passwdrecover/" method="post">{% csrf_token %}
+	<input type="hidden" name="email" value="{{contact_form.cleaned_data.sender}}" />
+	<input type="submit" name="recoverpassword" value="Reset my password" />
+</form>
+<form action="{{ request.path }}" method="post">{% csrf_token %}
+<input type="submit" name="sendanyway" value="I want to send this message anyway" />
+{% else %}
 {% inline_qsd_block Q/Web contact_header_text request.user %}
 <p>
  Fill out this form to send a quick e-mail to the ESP office. We will get back to 
@@ -37,8 +52,9 @@ We really do appreciate your interest, but we're an all-volunteer organization s
 
 </p>
 {% end_inline_qsd_block %}
-
 <form action="{{ request.path }}" method="post">{% csrf_token %}
+{% endif %}
+
 <table class="contact">
 <thead>
 <tr>
