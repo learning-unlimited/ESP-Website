@@ -47,3 +47,6 @@ class Attribute(models.Model):
 	field=models.ForeignKey(Field)
 	attr_type=models.CharField(max_length=15)
 	value=models.CharField(max_length=40)				
+
+from esp.customforms.DynamicForm import *
+from esp.customforms.DynamicModel import *
