@@ -10,6 +10,7 @@ from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.customforms.DynamicForm import FormHandler
 
 from esp.users.models import ESPUser
+from esp.middleware import ESPError
 
 def landing(request):
 	if request.user.is_authenticated():
@@ -59,6 +60,20 @@ def onSubmit(request):
 							
 		return HttpResponse('OK')
 
+def get_or_create_altered_obj(model, initial_id, **attrs):
+	if model.objects.filter(id=initial_id).exists():
+		obj = model.objects.get(id=initial_id)
+		obj.__dict__.update(attrs)
+		obj.save()
+		created = False
+	else:
+		obj = model.objects.create(**attrs)
+		created = True
+	return (obj, created)
+	
+def get_new_or_altered_obj(*args, **kwargs):
+	return get_or_create_altered_obj(*args, **kwargs)[0]
+
 @transaction.commit_on_success		
 def onModify(request):
 	"""
@@ -67,50 +82,37 @@ def onModify(request):
 	if request.is_ajax():
 		if request.method=='POST':
 			metadata=json.loads(request.raw_post_data)
-			form=Form.objects.filter(id=int(metadata['form_id']))
-			dmh=DMH(form=form[0])
-			form.update(title=metadata['title'], description=metadata['desc'], link_type=metadata['link_type'], link_id=int(metadata['link_id']), anonymous=metadata['anonymous'])
+			try:
+				form=Form.objects.get(id=int(metadata['form_id']))
+			except:
+				raise ESPError(False), 'Form %s not found' % metadata['form_id']
+			dmh=DMH(form=form)
+			form.__dict__.update(title=metadata['title'], description=metadata['desc'], link_type=metadata['link_type'], link_id=int(metadata['link_id']), anonymous=metadata['anonymous'])
+			form.save()
 			curr_keys={'pages':[], 'sections':[], 'fields':[]}
-			old_pages=Page.objects.filter(form=form[0])
+			old_pages=Page.objects.filter(form=form)
 			old_sections=Section.objects.filter(page__in=old_pages)	
-			old_fields=Field.objects.filter(form=form[0])
+			old_fields=Field.objects.filter(form=form)
 			for page in metadata['pages']:
-				if page['parent_id']==-1:
-					#New page
-					curr_page=Page.objects.create(form=form[0], seq=int(page['seq']))
-				else:
-					cp=old_pages.filter(id=int(page['parent_id']))
-					cp.update(form=form[0], seq=page['seq'])
-					curr_page=cp[0]
+				curr_page = get_new_or_altered_obj(Page, page['parent_id'], form=form, seq=int(page['seq']))
 				curr_keys['pages'].append(curr_page.id)
 				for section in page['sections']:
-					if section['data']['parent_id']==-1:
-						#New Section
-						curr_sect=Section.objects.create(page=curr_page, title=section['data']['question_text'], description=section['data']['help_text'], seq=int(section['data']['seq']))
-					else:
-						cs=old_sections.filter(id=section['data']['parent_id'])
-						cs.update(page=curr_page, title=section['data']['question_text'], description=section['data']['help_text'], seq=int(section['data']['seq']))
-						curr_sect=cs[0]
+					curr_sect = get_new_or_altered_obj(Section, section['data']['parent_id'], page=curr_page, title=section['data']['question_text'], description=section['data']['help_text'], seq=int(section['data']['seq']))
 					curr_keys['sections'].append(curr_sect.id)
 					for field in section['fields']:
-						if field['data']['parent_id']==-1:
-							#New field
-							curr_field=Field.objects.create(form=form[0], section=curr_sect, field_type=field['data']['field_type'], seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], required=field['data']['required'])
+						(curr_field, field_created) = get_or_create_altered_obj(Field, field['data']['parent_id'], form=form, section=curr_sect, field_type=field['data']['field_type'], seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], required=field['data']['required'])
+						if field_created:
 							dmh.addField(curr_field)
-							for atype, aval in field['data']['attrs'].items():
-								Attribute.objects.create(field=curr_field, attr_type=atype, value=aval)
 						else:
-							curr_field=old_fields.filter(id=int(field['data']['parent_id']))
-							curr_field.update(form=form[0], section=curr_sect, field_type=field['data']['field_type'], seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], required=field['data']['required'])
-							for atype, aval in field['data']['attrs'].items():
-								Attribute.objects.filter(field=curr_field[0]).update(field=curr_field[0], attr_type=atype, value=aval)
-							curr_field=curr_field[0]	
+							dmh.updateField(curr_field)
+						for atype, aval in field['data']['attrs'].items():
+							curr_field.set_attribute(atype, aval)
 						curr_keys['fields'].append(curr_field.id)
 						
 			del_fields=old_fields.exclude(id__in=curr_keys['fields'])
 			for df in del_fields:
 				dmh.removeField(df)
-				df.delete()
+			del_fields.delete()
 				
 			old_sections.exclude(id__in=curr_keys['sections']).delete()
 			old_pages.exclude(id__in=curr_keys['pages']).delete()				
