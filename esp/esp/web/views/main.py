@@ -183,6 +183,7 @@ def program(request, tl, one, two, module, extra = None):
 	raise Http404
 
 def classchangerequest(request, tl, one, two):
+    raise ESPError(False), "Class change request form will open at approximately 9pm today (Sunday July 10)."
     from esp.program.models import Program, StudentAppResponse
     from esp.program.models.class_ import * 
         
