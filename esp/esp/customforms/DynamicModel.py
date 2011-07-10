@@ -143,22 +143,32 @@ class DynamicModelHandler:
 			attrs['default']=''
 		return self._field_types[ftype]['typeMap'](*args, **attrs)	
 	
-	def addField(self, field):
+	def get_field_name(self, field):
+		return "question_%d" % field.id
+	
+	def addOrUpdateField(self, field, db_func, **kwargs):
 		"""
-		Adds a column (or columns) corresponding to a particular field
+		Applies db_func to a column (or columns) corresponding to a particular field
+		Depending on db_func, this can be used to ADD COLUMN or ALTER COLUMN
 		"""
-		field_name="question_%d" % field.id
+		field_name=self.get_field_name(field)
 		if field.field_type in self._customFields:
 			for f in self._customFields[field.field_type]:
-				db.add_column(self._tname, field_name+'_'+f, self._getFieldToAdd(f), keep_default=False)
+				db_func(self._tname, field_name+'_'+f, self._getFieldToAdd(f), **kwargs)
 		else:
-			db.add_column(self._tname, field_name, self._getFieldToAdd(field.field_type), keep_default=False)
+			db_func(self._tname, field_name, self._getFieldToAdd(field.field_type), **kwargs)
+		
+	def addField(self, field):
+		self.addOrUpdateField(field, db.add_column, keep_default=False)
+
+	def updateField(self, field):
+		self.addOrUpdateField(field, db.alter_column)
 		
 	def removeField(self, field):
 		"""
 		Removes a column (or columns) corresponding to a particular field
 		"""
-		field_name="question_%d" % field.id
+		field_name=self.get_field_name(field)
 		if field.field_type in self._foreign_key_fields:
 			field_name+='_id'
 		if field.field_type in self._customFields:
