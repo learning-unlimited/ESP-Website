@@ -42,6 +42,16 @@ class Field(models.Model):
 	
 	def __unicode__(self):
 		return u'%s' % (self.label)
+		
+	def set_attribute(self, atype, value):
+		from esp.customforms.models import Attribute
+		if Attribute.objects.filter(field=self, attr_type=atype).exists():
+			attr = Attribute.objects.get(field=self, attr_type=atype)
+			attr.value = value
+			attr.save()
+		else:
+			attr = Attribute.objects.create(field=self, attr_type=atype, value=value)
+		return attr
 	
 class Attribute(models.Model):
 	field=models.ForeignKey(Field)
