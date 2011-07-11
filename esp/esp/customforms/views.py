@@ -169,7 +169,7 @@ def hasPerm(user, form):
 	"""
 	Checks if this user qualifies to view this form
 	"""
-	if (not form.anonymous) and not user.is_authenticated():
+	if (not form.anonymous or form.perms!="") and not user.is_authenticated():
 		return HttpResponseRedirect('/')
 	if form.perms=="":
 		return True

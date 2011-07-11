@@ -173,6 +173,7 @@ var getPerms=function(){
 			async:false,
 			success: function(retval) {
 				perms=retval;
+				populatePerms(perms);
 			}
 		});
 	}
@@ -186,11 +187,15 @@ var setPerms=function(){
 		return;
 	if($.isEmptyObject(perms))
 		getPerms();
+	else populatePerms(perms);	
+};
+
+var populatePerms=function(perm_opts){
 	var options=[], main_perm, options_string='';
 	main_perm=$('#id_main_perm').val();
 	if(main_perm!="none"){
-		if(main_perm=='teachers') options=perms['teachers'];
-		else if(main_perm=='students') options=perms['students'];
+		if(main_perm=='Teacher') options=perm_opts['teachers'];
+		else if(main_perm=='Student') options=perm_opts['students'];
 		
 		$.each(options, function(idx, el){
 			options_string+='<option value='+el[0]+'>'+el[1]+'</option>';
