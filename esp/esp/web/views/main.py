@@ -184,10 +184,8 @@ def program(request, tl, one, two, module, extra = None):
 	raise Http404
 
 def classchangerequest(request, tl, one, two):
-    raise ESPError(False), "Class change request form will open at approximately 9pm today (Sunday July 10)."
-    from esp.program.models import Program, StudentAppResponse
-    from esp.program.models.class_ import * 
-        
+    from esp.program.models import Program, StudentAppResponse, ClassSubject, ClassSection, StudentRegistration, RegistrationType
+    
     try:
         prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
     except Program.DoesNotExist:
@@ -231,22 +229,53 @@ def classchangerequest(request, tl, one, two):
         except ClassSubject.DoesNotExist: 
             enrollments[timeslot] = None
     
-    if request.user.isStudent():
-        sections_by_slot = dict([(timeslot,[section for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in enrollments.values() and getRankInClass(request.user, section) in (5,10)]) for timeslot in timeslots])
-    else: 
-        sections_by_slot = dict([(timeslot,[section for section in sections if section.get_meeting_times()[0] == timeslot]) for timeslot in timeslots])
-    
-    fields = {}
-    for i, timeslot in enumerate(sections_by_slot.keys()): 
-        fields['timeslot_'+str(i+1)] = forms.ChoiceField(label="Timeslot "+str(i+1)+" ("+timeslot.pretty_time()+")", choices=[('0',"I'm happy with my current enrollment.")]+[(section.emailcode(), section.emailcode()+": "+section.title()) for section in sections_by_slot[timeslot]])
-        fields['orig_timeslot_'+str(i+1)] = forms.ChoiceField(label="Timeslot "+str(i+1)+" ("+timeslot.pretty_time()+")", choices=[('0',"I'm happy with my current enrollment.")]+[(section.emailcode(), section.emailcode()+": "+section.title()) for section in sections_by_slot[timeslot]], widget = forms.HiddenInput, initial="A1234")
-    
     context = {}
-    context['form'] = type('ClassChangeRequestForm', (forms.Form,), fields)()
     context['timeslots'] = timeslots
     context['enrollments'] = enrollments
     context['user'] = request.user
-    return render_to_response('program/classchangerequest.html', request, (prog, tl), context)
+    if 'success' in request.GET: 
+        context['success'] = True
+    else: 
+        context['success'] = False
+    
+    if request.user.isStudent():
+        sections_by_slot = dict([(timeslot,[(section, 1 == StudentRegistration.objects.filter(user=context['user'], section=section, relationship__name="Request", end_date__gte=datetime.now()).count()) for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in enrollments.values() and getRankInClass(request.user, section) in (5,10)]) for timeslot in timeslots])
+    else: 
+        sections_by_slot = dict([(timeslot,[(section, False) for section in sections if section.get_meeting_times()[0] == timeslot]) for timeslot in timeslots])
+    
+    fields = {}
+    for i, timeslot in enumerate(sections_by_slot.keys()): 
+        choices = [('0', "I'm happy with my current enrollment.")]
+        initial = '0'
+        for section in sections_by_slot[timeslot]:
+            choices.append((section[0].emailcode(), section[0].emailcode()+": "+section[0].title()))
+            if section[1]:
+                initial = section[0].emailcode()
+        fields['timeslot_'+str(i+1)] = forms.ChoiceField(label="Timeslot "+str(i+1)+" ("+timeslot.pretty_time()+")", choices=choices, initial=initial)
+    
+    form = type('ClassChangeRequestForm', (forms.Form,), fields)
+    context['form'] = form()
+    if request.method == "POST": 
+        old_requests = StudentRegistration.objects.filter(user=context['user'], section__parent_class__parent_program=prog, relationship__name="Request", end_date__gte=datetime.now())
+        for r in old_requests:
+            r.expire()
+        form = form(request.POST)
+        if form.is_valid(): 
+            for value in form.cleaned_data.values(): 
+                section = None
+                for s in sections: 
+                    if s.emailcode() == value: 
+                        section = s
+                        break
+                if not section: 
+                    continue
+                r = StudentRegistration.objects.get_or_create(user=context['user'], section=section, relationship=RegistrationType.objects.get_or_create(name="Request", category="student")[0])[0]
+                r.end_date = datetime(9999, 1, 1, 0, 0, 0, 0)
+                r.save()
+                
+            return HttpResponseRedirect(request.path.rstrip('/')+'/?success')
+    else: 
+        return render_to_response('program/classchangerequest.html', request, (prog, tl), context)
 
 
 def archives(request, selection, category = None, options = None):
