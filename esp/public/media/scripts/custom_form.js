@@ -24,7 +24,8 @@ var formElements={
 		address:{'disp_name':'Address','ques':'Address'},
 		state:{'disp_name':'State','ques':'State'},
 		city:{'disp_name':'City','ques':'City'}
-	}
+	},
+	'Program':{}
 };
 var program_fields={'fields':{
 	courses:{'disp_name':'Courses', 'ques':'Courses'}
@@ -59,13 +60,18 @@ var covenience = {
 };
 
 var currElemType, currElemIndex, optionCount=1, formTitle="Form",currCategory='',$prevField, $currField, secCount=1, $currSection, pageCount=1, $currPage;
+var perms={};
 
 $(document).ready(function() {
+	
+	//Assigning event handlers
     $('#button_add').click(function(){insertField($('#elem_selector').attr('value'),$prevField)});
 	$('#submit').click(submit);
 	$('#button_title').click(updateTitle);
 	$('#input_form_title').bind('change', updateTitle);
 	$('#input_form_description').bind('change', updateDesc);
+	$('#id_main_perm').change(onChangeMainPerm);
+	$('#id_prog_belong').change(onChangeProgBelong);
 	
 	$currSection=$('#section_0');
 	$currPage=$('#page_0');
@@ -74,18 +80,22 @@ $(document).ready(function() {
 	onSelectCategory('Generic');
 	onSelectElem('textField');
 	
-	$('#header_fields').click(function(){
+	$('#id_assoc_prog').change(function(){
 		var options_html="";
-		if($('#id_assoc_prog').attr('value')!="-1"){
+		if($(this).attr('value')!="-1"){
 			formElements['Program']=program_fields['fields'];
 		}
+		else formElements['Program']={};
 		//Generating options for the category selector
 		$.each(formElements,function(idx,el){
-				options_html+="<option value="+idx+">"+idx+"</option>";
+				if(!$.isEmptyObject(el))
+					options_html+="<option value="+idx+">"+idx+"</option>";
 		});
 		$('#cat_selector').html(options_html);
 		onSelectCategory('Generic');
 		onSelectElem('textField');
+		perms={};
+		clearPermsArea();
 	});
 	$('#id_modify_wrapper').hide();
 	
@@ -139,9 +149,71 @@ $(document).ready(function() {
 	}).toggle(function(){$(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");}, 
 			function(){$(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");}
 			);
-
+			
+	//Setting state for permissions area		
+	clearPermsArea();
 });
 
+var clearPermsArea=function(){
+	//Initializes the permissions area
+	$('#id_prog_belong').attr('checked', false).parent().hide();
+	$('#id_sub_perm').children().remove();
+	$('#id_sub_perm').parent().hide();
+};
+
+var getPerms=function(){
+	//Queries the server for perms related to the currently selected program
+	var prog_id=$('#id_assoc_prog').val();
+	if(prog_id!="-1"){
+		$.ajax({
+			url:'/customforms/getperms/',
+			data:{'prog_id':prog_id},
+			type:'GET',
+			dataType:'json',
+			async:false,
+			success: function(retval) {
+				perms=retval;
+			}
+		});
+	}
+	else perms={};
+};
+
+var setPerms=function(){
+	//Sets the permission options based on selected values
+	
+	if($('#id_assoc_prog').val()=="-1")
+		return;
+	if($.isEmptyObject(perms))
+		getPerms();
+	var options=[], main_perm, options_string='';
+	main_perm=$('#id_main_perm').val();
+	if(main_perm!="none"){
+		if(main_perm=='teachers') options=perms['teachers'];
+		else if(main_perm=='students') options=perms['students'];
+		
+		$.each(options, function(idx, el){
+			options_string+='<option value='+el[0]+'>'+el[1]+'</option>';
+		});
+		$('#id_sub_perm').html(options_string).parent().show();
+	}
+};
+
+var onChangeMainPerm=function(){
+	clearPermsArea();
+	var main_perm=$(this).val();
+	if(main_perm!='none' && $('#id_assoc_prog').val()!="-1"){
+		$('#id_prog_belong').parent().show();
+	}
+};
+
+var onChangeProgBelong=function(){
+	var belongs=$(this).attr('checked');
+	if(belongs){
+		setPerms();
+	}
+	else $('#id_sub_perm').parent().hide();
+}
 
 var createLabel=function(labeltext, required) {
 	//Returns an HTML-formatted label, with a red * if the question is required
@@ -711,6 +783,14 @@ var submit=function() {
 		form['link_type']='none';
 		form['link_id']='-1';
 	}
+	
+	var form_perms='';
+	if($('#id_main_perm').val()!='none'){
+		form_perms+=$('#id_main_perm').val();
+		if(!$('#id_sub_perm').is(':hidden'))
+			form_perms+=","+$('#id_sub_perm').val();
+	}
+	form['perms']=form_perms;
 	
 	//Constructing the object to be sent to the server
 	$('div.preview_area').children('div.form_preview').each(function(pidx,pel) {

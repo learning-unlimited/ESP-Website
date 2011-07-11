@@ -23,7 +23,31 @@ def formBuilder(request):
 		prog_list=Program.objects.all()
 		form_list=Form.objects.filter(created_by=request.user)
 		return render_to_response('customforms/index.html',{'prog_list':prog_list, 'form_list':form_list}) 
-	return HttpResponseRedirect('/')	
+	return HttpResponseRedirect('/')
+	
+def getPerms(request):
+	"""
+	Returns the various permissions available for the current program via AJAX.
+	"""
+	if request.is_ajax():
+		if request.method=='GET':
+			try:
+				prog_id=int(request.GET['prog_id'])	
+			except ValueError:
+				return HttpResponse(status=400)
+			prog=Program.objects.get(pk=prog_id)
+			perms={'teachers':[], 'students':[]}
+			for module in prog.getModules(None):
+				teach_desc=module.teacherDesc()
+				stud_desc=module.studentDesc()
+				if teach_desc:
+					for k,v in teach_desc.items():
+						perms['teachers'].append([k,v])
+				elif stud_desc:
+					for k,v in stud_desc.items():
+						perms['students'].append([k,v])
+			return HttpResponse(json.dumps(perms))
+	return HttpResponse(status=400)										
 
 @transaction.commit_on_success
 def onSubmit(request):
@@ -36,7 +60,7 @@ def onSubmit(request):
 			fields=[]
 			
 		#Creating form
-		form=Form.objects.create(title=metadata['title'], description=metadata['desc'], created_by=request.user, link_type=metadata['link_type'], link_id=int(metadata['link_id']), anonymous=metadata['anonymous'])
+		form=Form.objects.create(title=metadata['title'], description=metadata['desc'], created_by=request.user, link_type=metadata['link_type'], link_id=int(metadata['link_id']), anonymous=metadata['anonymous'], perms=metadata['perms'])
 		
 		#Inserting pages
 		for page in metadata['pages']:
@@ -141,6 +165,28 @@ def onModify(request):
 			
 			return HttpResponse('OK')									 			
 					
+def hasPerm(user, form):
+	"""
+	Checks if this user qualifies to view this form
+	"""
+	if (not form.anonymous) and not user.is_authenticated():
+		return HttpResponseRedirect('/')
+	if form.perms=="":
+		return True
+	else:
+		perms_list=form.perms.strip(',').split(',')
+		main_perm=perms_list[0]
+		sub_perms=perms_list[1:]
+		Qlist=[]
+		Qlist.append(ESPUser.getAllOfType(main_perm))  #Check -> what to do with students?
+		if sub_perms:
+			if form.link_type=='program':
+				prog=Program.objects.get(pk=form.link_id)
+				all_Qs=prog.getLists()
+				for perm in sub_perms:
+					Qlist.append(all_Qs[perm])
+		return ESPUser.objects.filter(id=user.id).filter(*Qlist).exists()				
+		
 		
 def viewForm(request, form_id):
 	"""Form viewing and submission"""
@@ -150,8 +196,9 @@ def viewForm(request, form_id):
 		raise Http404
 		
 	form=Form.objects.get(pk=form_id)
-	if (not form.anonymous) and not request.user.is_authenticated():
-		return HttpResponseRedirect('/')
+	
+	if not hasPerm(request.user, form):
+		return HttpResponseRedirect('/')	
 	fh=FormHandler(form=form, user=request.user)
 	wizard=fh.getWizard()
 	extra_context={'form_title':form.title, 'form_description':form.description}
