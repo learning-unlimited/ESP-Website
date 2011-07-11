@@ -447,7 +447,10 @@ def error_reporter(request):
     pprint(dict(request.GET), get)
     pprint(dict(request.META), meta)
     if request.POST:
-        pprint(dict(request.POST), post)
+        if request.raw_post_data.strip()[0] == '[':
+            pprint(request.raw_post_data, post)
+        else:
+            pprint(dict(request.POST), post)
 
     msg = request.GET.get('msg', "(no message)")
 
