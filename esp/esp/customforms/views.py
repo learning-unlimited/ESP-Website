@@ -170,9 +170,9 @@ def hasPerm(user, form):
 	Checks if this user qualifies to view this form
 	"""
 	if (not form.anonymous or form.perms!="") and not user.is_authenticated():
-		return HttpResponseRedirect('/')
+		return False, "You need to be logged in to view this form."
 	if form.perms=="":
-		return True
+		return True, ""
 	else:
 		perms_list=form.perms.strip(',').split(',')
 		main_perm=perms_list[0]
@@ -185,7 +185,10 @@ def hasPerm(user, form):
 				all_Qs=prog.getLists()
 				for perm in sub_perms:
 					Qlist.append(all_Qs[perm])
-		return ESPUser.objects.filter(id=user.id).filter(*Qlist).exists()				
+		if ESPUser.objects.filter(id=user.id).filter(*Qlist).exists():
+			return True, ""
+		else:
+			return False, "You are not permitted to view this form."					
 		
 		
 def viewForm(request, form_id):
@@ -197,8 +200,9 @@ def viewForm(request, form_id):
 		
 	form=Form.objects.get(pk=form_id)
 	
-	if not hasPerm(request.user, form):
-		return HttpResponseRedirect('/')	
+	perm, error_text=hasPerm(request.user, form)
+	if not perm:
+		return render_to_response('customforms/error.html', {'error_text': error_text}, context_instance=RequestContext(request))	
 	fh=FormHandler(form=form, user=request.user)
 	wizard=fh.getWizard()
 	extra_context={'form_title':form.title, 'form_description':form.description}
