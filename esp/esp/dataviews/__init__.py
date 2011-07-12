@@ -1,10 +1,16 @@
 from esp.program.models import *
+from esp.users.models import * 
+from esp.cal.models import * 
+from esp.survey.models import *
 from esp.datatree.models import DataTree
 from django.db.models import Model
 from django.db.models.related import RelatedObject
 from django.db.models.fields.related import RelatedField, ManyToManyField
 from inspect import isclass
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
+
+useful_models = [User, ESPUser, Program, RegistrationProfile, RegistrationType, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication, StudentRegistration, Event, ClassCategories, ClassSection, ClassSubject, EventType, ArchiveClass, FinancialAidRequest, QuestionType, Question, SurveyResponse, Survey, ContactInfo, EducatorInfo, GuardianInfo, K12School, StudentInfo, TeacherInfo, UserAvailability, UserBit, ZipCodeSearches, ZipCode]
+query_terms = QUERY_TERMS.keys()
 
 def path_v1(*args):
     '''
@@ -115,7 +121,7 @@ def iscorrecttuple(T):
         else: 
             return True
     elif len(T) == 4:
-        if not T[2] in QUERY_TERMS.keys():
+        if not T[2] in query_terms:
             return False
         else:
             return True
