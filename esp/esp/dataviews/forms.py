@@ -42,6 +42,11 @@ def displaycolumnsform_factory(num_columns = 1):
     return type(name, base, fields)
 
 class DataViewsWizard(FormWizard):
+    
+    @method_decorator(admin_required)
+    def __call__(self, request, *args, **kwargs):
+        return super(DataViewsWizard, self).__call__(request, *args, **kwargs)
+    
     def done(self, request, form_list):
         model = globals()[form_list[1].cleaned_data['model']]
         args = []
