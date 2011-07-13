@@ -66,8 +66,8 @@ class StudentJunctionAppModule(ProgramModuleObj):
             return {'studentapps_complete': Q_students & Q_students_complete,
                     'studentapps':          Q_students}
         else:
-            return {'studentapps_complete': User.objects.filter(Q_students & Q_students_complete),
-                    'studentapps':          User.objects.filter(Q_students)}
+            return {'studentapps_complete': ESPUser.objects.filter(Q_students & Q_students_complete),
+                    'studentapps':          ESPUser.objects.filter(Q_students)}
         
     def studentDesc(self):
         return {'studentapps_complete': """Students who have completed the student application.""",

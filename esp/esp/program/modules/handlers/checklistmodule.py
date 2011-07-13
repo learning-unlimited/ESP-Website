@@ -78,7 +78,7 @@ class CheckListModule(ProgramModuleObj):
             return finish_dict
 
         for k,v in finish_dict.items():
-            finish_dict[k] = User.objects.filter(v)
+            finish_dict[k] = ESPUser.objects.filter(v)
 
         return finish_dict
 

@@ -73,7 +73,6 @@ class AvailabilityModule(ProgramModuleObj):
 
     def isCompleted(self):
         """ Make sure that they have indicated sufficient availability for all classes they have signed up to teach. """
-        self.user = ESPUser(self.user)
         available_slots = self.user.getAvailableTimes(self.program, ignore_classes=False)
         
         #   Check number of timeslots against Tag-specified minimum
@@ -100,7 +99,7 @@ class AvailabilityModule(ProgramModuleObj):
         if QObject is True:
             return {'availability': self.getQForUser(qf)}
         
-        teacher_list = User.objects.filter(qf).distinct()
+        teacher_list = ESPUser.objects.filter(qf).distinct()
         
         return {'availability': teacher_list }#[t['user'] for t in teacher_list]}
 

@@ -770,11 +770,16 @@ class ProgramPrintables(ProgramModuleObj):
     @staticmethod
     def getSchedule(program, student):
         
-        
+        #   This is terrible, but also hilarious enough to leave in.
+        #   (The user passed as the 'student' argument is improperly named, since it could also be a teacher.)
+        schedule_label = 'Student'
+        if student.isTeacher():
+            schedule_label = 'Teacher'
+            
         schedule = """
-Student schedule for %s:
+%s schedule for %s:
 
- Time                   | Class                                  | Room\n""" % student.name()
+ Time                   | Class                                  | Room\n""" % (schedule_label, student.name())
         schedule += '------------------------+----------------------------------------+-----------\n'
         
         classes = ProgramPrintables.get_student_classlist(program, student)
@@ -847,7 +852,7 @@ Student schedule for %s:
             if not found:
                 return filterObj
 
-            students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
+            students = list(ESPUser.objects.filter(filterObj.get_Q(restrict_to_active=False)).distinct())
 
         students.sort()
         

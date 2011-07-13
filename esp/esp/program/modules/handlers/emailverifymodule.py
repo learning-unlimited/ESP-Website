@@ -49,7 +49,7 @@ class EmailVerifyModule(ProgramModuleObj):
             return {'student_emailverified': Q_students}
                                  
 
-        students = User.objects.filter(Q_students).distinct()
+        students = ESPUser.objects.filter(Q_students).distinct()
         return {'student_emailverified': students }
 
     def studentDesc(self):
@@ -64,7 +64,7 @@ class EmailVerifyModule(ProgramModuleObj):
             return {'teacher_emailverified': Q_teachers}
                                  
 
-        teachers = User.objects.filter(Q_teachers).distinct()
+        teachers = ESPUser.objects.filter(Q_teachers).distinct()
         return {'teacher_emailverified': teachers }
 
 

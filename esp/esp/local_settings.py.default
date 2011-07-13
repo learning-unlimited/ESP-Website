@@ -77,14 +77,12 @@ SHOW_TEMPLATE_ERRORS = DEBUG
 # Database     #
 ################
 
-DATABASE_ENGINE = 'postgresql_psycopg2'
-DATABASE_NAME = 'django'
-DATABASE_HOST = 'localhost'
-DATABASE_PORT = '5432'
+# Set DB name for this site
+DATABASES['default']['NAME'] = 'mysite_django'
 
 # Import db username and password
 from database_settings import *
-
+        
 ##############
 # Middleware #
 ##############
