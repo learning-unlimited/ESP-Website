@@ -76,28 +76,8 @@ $(document).ready(function() {
 	$currSection=$('#section_0');
 	$currPage=$('#page_0');
 	$('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($currPage);
-	//'Initializing' the UI
-	onSelectCategory('Generic');
-	onSelectElem('textField');
 	
-	$('#id_assoc_prog').change(function(){
-		var options_html="";
-		if($(this).attr('value')!="-1"){
-			formElements['Program']=program_fields['fields'];
-		}
-		else formElements['Program']={};
-		//Generating options for the category selector
-		$.each(formElements,function(idx,el){
-				if(!$.isEmptyObject(el))
-					options_html+="<option value="+idx+">"+idx+"</option>";
-		});
-		$('#cat_selector').html(options_html);
-		onSelectCategory('Generic');
-		onSelectElem('textField');
-		perms={};
-		clearPermsArea();
-	});
-	$('#id_modify_wrapper').hide();
+	$('#id_assoc_prog').change(initUI);
 	
 	
 	//csrf stuff
@@ -150,9 +130,29 @@ $(document).ready(function() {
 			function(){$(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");}
 			);
 			
-	//Setting state for permissions area		
-	clearPermsArea();
+	//Initializing UI
+	initUI();		
 });
+
+var initUI=function(){
+	//Sets up the initial options
+	var options_html="";
+	if($('#id_assoc_prog').val()!="-1"){
+		formElements['Program']=program_fields['fields'];
+	}
+	else formElements['Program']={};
+	//Generating options for the category selector
+	$.each(formElements,function(idx,el){
+			if(!$.isEmptyObject(el))
+				options_html+="<option value="+idx+">"+idx+"</option>";
+	});
+	$('#cat_selector').html(options_html);
+	onSelectCategory('Generic');
+	onSelectElem('textField');
+	perms={};
+	clearPermsArea();
+	$('#id_modify_wrapper').hide();
+};
 
 var clearPermsArea=function(){
 	//Initializes the permissions area
