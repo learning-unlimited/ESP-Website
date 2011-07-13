@@ -13,7 +13,9 @@ useful_models = all_usefull_models[:14]
 modes = ["Rows represent instances of a model, columns represent attributes of that model."]
 model_choices = [(model.__name__, model.__name__) for model in useful_models]
 model_field_choices = [('', "None")]+[(model.__name__,list([(model.__name__+'.'+fieldname, fieldname) for fieldname, field in model._meta.init_name_map().iteritems() if not (isinstance(field[0], RelatedField) or isinstance(field[0], RelatedObject))])) for model in useful_models]
-
+query_term_symbols = {'exact': '[case-sensitive] ==', 'iexact': 'case-insensitive ==', 'contains': 'case-sensitive contains', 'icontains': 'case-insesitive contains', 'gt': '>', 'gte': '>=', 'lt': '<', 'lte': '<=', 'in': 'in',
+    'startswith': 'case-sensitive starts with', 'istartswith': 'case-insensitive starts with', 'endswith': 'case-sensitive ends with', 'iendswith': 'case-insensitive ends with', 'range': 'range', 'year': 'year',
+    'month': 'month', 'day': 'day', 'week_day': 'week day', 'isnull': 'is null', 'search': 'search', 'regex': 'case-sensitive regex', 'iregex': 'case-insensitive regex'}
 
 class ModeForm(forms.Form):
     mode = forms.ChoiceField(choices=[(i, modes[i]) for i in range(len(modes))])
@@ -26,7 +28,7 @@ def headingconditionsform_factory(num_conditions = 1):
     fields = {'model': forms.ChoiceField(choices=model_choices)}
     for i in range(num_conditions): 
         fields['condition_'+str(i+1)] = forms.ChoiceField(choices = model_field_choices, required=False)
-        fields['query_term_'+str(i+1)] = forms.ChoiceField(choices = [(query_term, query_term) for query_term in query_terms], initial="exact")
+        fields['query_term_'+str(i+1)] = forms.ChoiceField(choices = [(query_term, query_term_symbol) for query_term, query_term_symbol in query_term_symbols.iteritems()], initial="exact")
         fields['text_'+str(i+1)] = forms.CharField(required=False)
     return type(name, base, fields)
 
