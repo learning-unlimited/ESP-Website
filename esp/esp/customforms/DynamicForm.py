@@ -12,6 +12,9 @@ from esp.users.models import ContactInfo
 from esp.cache import cache_function
 from esp.program.models import Program
 
+from esp.customforms.linkfields import link_fields
+from django.contrib.contenttypes.models import ContentType
+
 class BaseCustomForm(BetterForm):
 	"""
 	This is the base class for all custom forms.
@@ -120,11 +123,18 @@ class CustomFormHandler():
 				
 				if other_attrs:
 					field_attrs.update(self._getAttrs(other_attrs))
-				field_attrs.update(self._field_types[field['field_type']]['attrs'])
+					
+				widget_attrs={}	
+				if field['field_type'] in link_fields:
+					field_attrs.update(link_fields[field['field_type']]['form_fld_props']['attrs'])
+					widget_attrs.update(link_fields[field['field_type']]['form_fld_props']['widget_attrs'])
+					typeMap=link_fields[field['field_type']]['form_fld_props']['typeMap']
+				else:	
+					field_attrs.update(self._field_types[field['field_type']]['attrs'])
+					widget_attrs.update(self._field_types[field['field_type']]['widget_attrs'])
+					typeMap=self._field_types[field['field_type']]['typeMap']
 				
 				#Setting classes
-				widget_attrs={}	
-				widget_attrs.update(self._field_types[field['field_type']]['widget_attrs'])
 				if field['required']:
 					widget_attrs['class']+=' required'
 				if 'min_value' in field_attrs:
@@ -147,20 +157,27 @@ class CustomFormHandler():
 				except KeyError:
 					pass
 					
-				self.fields.append([field_name, self._field_types[field['field_type']]['typeMap'](**field_attrs) ])
+				self.fields.append([field_name, typeMap(**field_attrs) ])
 				curr_fieldset[1]['fields'].append(field_name)			
 			self.fieldsets.append(tuple(curr_fieldset))
 			
 	def getInitialDataFields(self):
 		"""
-		Returns a dict mapping fields to be pre-populated with the corresponding model field
+		Returns a dict mapping fields to be pre-populated with the corresponding model and model-field
 		"""
 		initial={}
 		for section in self.page:
 			for field in section:
-				if field['field_type'] in self._contactinfo_map:
+				ftype=field['field_type']
+				if ftype in link_fields:
 					field_name='question_%d' % field['id']
-					initial[field_name]=self._contactinfo_map[field['field_type']]
+					initial[field_name]={'model':link_fields[ftype]['model']}
+					if 'combo' in link_fields[ftype]:
+						initial[field_name]['field']=[]
+						for f in link_fields[ftype]['combo']:
+							initial[field_name]['field'].append(link_fields[f]['model_field'])
+					else:
+						initial[field_name]['field']=link_fields[ftype]['model_field']		
 		return initial						
 	
 	def getForm(self):
@@ -279,25 +296,30 @@ class FormHandler:
 
 	def _getInitialData(self, form, user):
 		"""
-		Returns the initial data for this form
+		Returns the initial data for this form, according to the format that FormWizard expects.
 		"""
 		initial_data={}
-		if form.anonymous or user is None:
+		link_models={} #Stores all fields that are required for initial data from a particular model
+		if form.anonymous or (not form.anonymous and user is None):
 			return {}
 		if not self.handlers:
 			self._getHandlers()
 		for handler in self.handlers:
 			initial=handler.getInitialDataFields()
 			if initial:
-				initial_data[handler.seq]={}
-				if not self.user_info:
-					self.user_info=ContactInfo.objects.filter(user=user).values()[0]
+				#First figuring out which models need to be queried for which fields
 				for k,v in initial.items():
-					#Compound fields need to be initialized with a list of values
-					if isinstance(v, (list)):
-						initial_data[handler.seq].update({k:[self.user_info[key] for key in v]})
+					curr_fields=[]
+					if v['model'] not in link_models:
+						link_models.update({v['model']:[]})
+					if not isinstance(v['field'], list):
+						#Simple fields
+						curr_fields.append(v['field'])
 					else:
-						initial_data[handler.seq].update({k:self.user_info[v]})
+						#Combo field
+						curr_fields.extend(v['field'])
+						
+									
 		return initial_data				
 	
 	def getWizard(self):
