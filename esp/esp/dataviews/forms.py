@@ -20,7 +20,7 @@ query_term_symbols = {'exact': '[case-sensitive] ==', 'iexact': 'case-insensitiv
 class ModeForm(forms.Form):
     mode = forms.ChoiceField(choices=[(i, modes[i]) for i in range(len(modes))])
     num_columns = forms.IntegerField(min_value=1)
-    num_conditions = forms.IntegerField(min_value=1)
+    num_conditions = forms.IntegerField(min_value=0)
 
 def headingconditionsform_factory(num_conditions = 1): 
     name = "HeadingConditionsForm"
@@ -58,8 +58,16 @@ class DataViewsWizard(FormWizard):
         headers = [ [form_list[2].cleaned_data['field_'+str(i+1)], form_list[2].cleaned_data['text_'+str(i+1)]] for i in range(form_list[0].cleaned_data['num_columns']) if form_list[2].cleaned_data['field_'+str(i+1)]]
         fields = [header[0] for header in headers]
         data = []
-        for item in queryset:
-            data.append(dict([ (field , getattr(item, field)) for field in fields]))
+        for item in queryset: 
+            item_dict = {}
+            for field in fields:
+                attributes = field.split('.')
+                print attributes
+                new_item = [item][:][0]
+                for attribute in attributes:
+                    new_item = [getattr(new_item, attribute)][:][0]
+                item_dict[field] = new_item
+            data.append(item_dict)
         from tempfile import TemporaryFile
         from xlwt import Workbook
         book = Workbook()
