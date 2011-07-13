@@ -8,6 +8,8 @@ from esp.customforms.models import Field
 from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
+from esp.customforms.linkfields import link_fields
+from django.contrib.contenttypes.models import ContentType
 
 class DynamicModelHandler:
 	"""Handler class for creating, modifying and deleting dynamic models
@@ -86,6 +88,7 @@ class DynamicModelHandler:
 			-A field-name is of the form 'question_23', where '23' is the ID of the corresponding question
 			-For custom fields like address, a field-name would be of the form 'question_23_zip'
 		"""
+		link_models=[]
 		if not self.fields:
 			self.fields=self._getFieldsForForm(self.form)
 		
@@ -93,11 +96,22 @@ class DynamicModelHandler:
 		if not self.form.anonymous:
 			self.field_list.append( ('user', models.ForeignKey(ESPUser, null=True, blank=True, on_delete=models.SET_NULL) ) )
 		for field_id, field in self.fields:
-			if field in self._customFields:
+			#Check for linked fields
+			if field in link_fields:
+				if link_fields[field]['model'] not in link_models: link_models.append(link_fields[field]['model'])
+			
+			elif field in self._customFields:
 				for f in self._customFields[field]:
 					self.field_list.append( ('question_'+str(field_id)+'_'+f, self._getModelField(f) ) )
 			else:
-				self.field_list.append( ('question_'+str(field_id), self._getModelField(field) ) )	
+				self.field_list.append( ('question_'+str(field_id), self._getModelField(field) ) )
+		
+		#Adding foreign key fields for linked models
+		for lm in link_models:
+			app, model_name=lm.split(".")
+			model_cls=ContentType.objects.get(app_label=app, model=model_name).model_class()
+			self.field_list.append( (model_name, models.ForeignKey(model_cls, null=True, blank=True, on_delete=models.SET_NULL) ) )
+					
 		return self.field_list
 		
 	def createTable(self):
@@ -206,7 +220,3 @@ class DynamicModelHandler:
 		
 #Giving it an alias that's less of a mouthful		
 DMH=DynamicModelHandler
-						
-				
-		
-								
