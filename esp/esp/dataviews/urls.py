@@ -1,6 +1,6 @@
 from django.conf.urls.defaults import *
-from dataviews.forms import ModeForm, HeadingConditionsForm, DisplayColumnForm, DataViewsWizard
+from dataviews.forms import ModeForm, DataViewsWizard
 
 urlpatterns = patterns('esp.dataviews',
-    (r'^$', DataViewsWizard([ModeForm, HeadingConditionsForm, DisplayColumnForm]))
+    (r'^$', DataViewsWizard([ModeForm]))
 )

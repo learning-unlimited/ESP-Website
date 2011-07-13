@@ -20,60 +20,40 @@ class ModeForm(forms.Form):
     num_columns = forms.IntegerField(min_value=1)
     num_conditions = forms.IntegerField(min_value=1)
 
-class HeadingConditionsForm(forms.Form):
-    model = forms.ChoiceField(choices=model_choices)
-    num_conditions = 4
-    condition1 = forms.ChoiceField(choices = model_field_choices, required=False)
-    query_term1 = forms.ChoiceField(choices = [(query_term, query_term) for query_term in query_terms], initial="exact")
-    text1 = forms.CharField(required=False)
-    condition2 = forms.ChoiceField(choices = model_field_choices, required=False)
-    query_term2 = forms.ChoiceField(choices = [(query_term, query_term) for query_term in query_terms], initial="exact")
-    text2 = forms.CharField(required=False)
-    condition3 = forms.ChoiceField(choices = model_field_choices, required=False)
-    query_term3 = forms.ChoiceField(choices = [(query_term, query_term) for query_term in query_terms], initial="exact")
-    text3 = forms.CharField(required=False)
-    condition4 = forms.ChoiceField(choices = model_field_choices, required=False)
-    query_term4 = forms.ChoiceField(choices = [(query_term, query_term) for query_term in query_terms], initial="exact")
-    text4 = forms.CharField(required=False)
-    
-#    def __init__(self, num_conditions = None, data=None, files=None, auto_id='id_%s', prefix=None,
-#                 initial=None, error_class=ErrorList, label_suffix=':',
-#                 empty_permitted=False):
-#        forms.Form.__init__(self, data, files, auto_id, prefix, initial, error_class, label_suffix, empty_permitted)
-#        if num_conditions:
-#            self.num_conditions = num_conditions
-#        for i in range(self.num_conditions):
-#            print i
-#            setattr(self, 'condition'+str(i+1), forms.ChoiceField(choices = model_field_choices))
+def headingconditionsform_factory(num_conditions = 1): 
+    name = "HeadingConditionsForm"
+    base = (forms.Form,)
+    fields = {'model': forms.ChoiceField(choices=model_choices)}
+    for i in range(num_conditions): 
+        fields['condition_'+str(i+1)] = forms.ChoiceField(choices = model_field_choices, required=False)
+        fields['query_term_'+str(i+1)] = forms.ChoiceField(choices = [(query_term, query_term) for query_term in query_terms], initial="exact")
+        fields['text_'+str(i+1)] = forms.CharField(required=False)
+    return type(name, base, fields)
 
-class DisplayColumnForm(forms.Form):
-    num_columns = 4
-    text1 = forms.CharField(required=False)
-    field1 = forms.CharField(required=False)
-    text2 = forms.CharField(required=False)
-    field2 = forms.CharField(required=False)
-    text3 = forms.CharField(required=False)
-    field3 = forms.CharField(required=False)
-    text4 = forms.CharField(required=False)
-    field4 = forms.CharField(required=False)
-    
-
+def displaycolumnsform_factory(num_columns = 1): 
+    name = "DisplayColumnsForm"
+    base = (forms.Form,)
+    fields = {}
+    for i in range(num_columns): 
+        fields['field_'+str(i+1)] = forms.CharField(required=(not i))
+        fields['text_'+str(i+1)] = forms.CharField(required=(not i))
+    return type(name, base, fields)
 
 class DataViewsWizard(FormWizard):
     def done(self, request, form_list):
         model = globals()[form_list[1].cleaned_data['model']]
         args = []
-        for i in range(form_list[1].num_conditions):
-            if not form_list[1].cleaned_data['condition'+str(i+1)]: 
+        for i in range(form_list[0].cleaned_data['num_conditions']):
+            if not form_list[1].cleaned_data['condition_'+str(i+1)]: 
                 continue
-            condition_model, condition_field = get_mod_func(form_list[1].cleaned_data['condition'+str(i+1)])
+            condition_model, condition_field = get_mod_func(form_list[1].cleaned_data['condition_'+str(i+1)])
             condition_model = globals()[condition_model]
-            query_term = form_list[1].cleaned_data['query_term'+str(i+1)]
-            text = form_list[1].cleaned_data['text'+str(i+1)]
+            query_term = form_list[1].cleaned_data['query_term_'+str(i+1)]
+            text = form_list[1].cleaned_data['text_'+str(i+1)]
             val = condition_model._meta.init_name_map()[condition_field][0].to_python(text)
             args.append((condition_model, str(condition_field), str(query_term), val))
         queryset = path_v4(model, *args)
-        headers = [ [form_list[2].cleaned_data['field'+str(i+1)], form_list[2].cleaned_data['text'+str(i+1)]] for i in range(form_list[2].num_columns) if form_list[2].cleaned_data['field'+str(i+1)]]
+        headers = [ [form_list[2].cleaned_data['field_'+str(i+1)], form_list[2].cleaned_data['text_'+str(i+1)]] for i in range(form_list[0].cleaned_data['num_columns']) if form_list[2].cleaned_data['field_'+str(i+1)]]
         fields = [header[0] for header in headers]
         data = []
         for item in queryset:
@@ -98,3 +78,8 @@ class DataViewsWizard(FormWizard):
     
     def get_template(self, step):
         return 'dataviews/forms/wizard.html'
+    
+    def process_step(self, request, form, step): 
+        if self.num_steps() == 1 and not step: 
+            self.form_list.append(headingconditionsform_factory(form.cleaned_data['num_conditions']))
+            self.form_list.append(displaycolumnsform_factory(form.cleaned_data['num_columns']))
