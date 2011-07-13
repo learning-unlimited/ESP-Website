@@ -299,26 +299,26 @@ class FormHandler:
 		Returns the initial data for this form, according to the format that FormWizard expects.
 		"""
 		initial_data={}
-		link_models={} #Stores all fields that are required for initial data from a particular model
-		if form.anonymous or (not form.anonymous and user is None):
+		link_models={} #Stores data from a particular model
+		if form.anonymous or user is None:
 			return {}
 		if not self.handlers:
 			self._getHandlers()
 		for handler in self.handlers:
 			initial=handler.getInitialDataFields()
 			if initial:
-				#First figuring out which models need to be queried for which fields
+				initial_data[handler.seq]={}
 				for k,v in initial.items():
-					curr_fields=[]
 					if v['model'] not in link_models:
-						link_models.update({v['model']:[]})
+						app, model_name=v['model'].split(".")
+						model_cls=ContentType.objects.get(app_label=app, model=model_name).model_class()
+						link_models[v['model']]=model_cls.objects.filter(user=user).values()[0]
 					if not isinstance(v['field'], list):
-						#Simple fields
-						curr_fields.append(v['field'])
+						#Simple field
+						initial_data[handler.seq].update({ k:link_models[v['model']][v['field']] })
 					else:
-						#Combo field
-						curr_fields.extend(v['field'])
-						
+						#Compound field. Needs to be passed a list of values.
+						initial_data[handler.seq].update({k:[link_models[v['model']][val] for val in v['field'] ]})		
 									
 		return initial_data				
 	

@@ -40,7 +40,7 @@ link_fields={
 	},
 	'zip':{
 		'model':'users.contactinfo',
-		'model_field':'last_name',
+		'model_field':'address_zip',
 		'form_fld_props':{'typeMap': forms.CharField, 'attrs':{'max_length':5, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'USZip'}},
 	},
 	'name':{
