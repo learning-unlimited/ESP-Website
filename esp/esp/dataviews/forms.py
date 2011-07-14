@@ -8,6 +8,7 @@ from django.forms.util import flatatt, ErrorDict, ErrorList
 from django.core.urlresolvers import get_callable, get_mod_func
 from django.utils.importlib import import_module
 from django.http import Http404, HttpResponseRedirect, HttpResponse
+from django.utils.decorators import method_decorator
 
 useful_models = all_usefull_models[:14]
 modes = ["Rows represent instances of a model, columns represent attributes of that model."]
