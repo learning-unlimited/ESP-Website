@@ -205,14 +205,31 @@ class ComboForm(FormWizard):
 	
 	def done(self, request, form_list):
 		data={}
-		for form in form_list:
-			data.update(form.cleaned_data)
+		dyn=DMH(form=self.form)
+		dynModel=dyn.createDynModel()
+		fields=dict(dyn.fields)
+		link_models=[]
+		
 		#Plonking in user_id if the form is non-anonymous
 		if not self.form.anonymous:
 			data['user']=request.user
-		#Generating the dynamic model and saving the response		
-		dyn=DMH(form=self.form)
-		dynModel=dyn.createDynModel()
+		
+		#Populating data with the values that need to be inserted
+		for form in form_list:
+			for k,v in form.cleaned_data.items():
+				field_id=int(k.split("_")[1])
+				ftype=fields[field_id]
+				if ftype in link_fields:
+					if link_fields[ftype]['model'] not in link_models: link_models.append(link_fields[ftype]['model'])
+				else:
+					data[k]=v
+					
+		#Populating data with foreign keys that need to be inserted
+		for lm in link_models:
+			app, model_name=lm.split('.')
+			data[model_name]=ContentType.objects.get(app_label=app, model=model_name).get_object_for_this_type(user=request.user)				
+		
+		#Saving response
 		dynModel.objects.create(**data)	
 		return HttpResponseRedirect('/customforms/success/')
 		
