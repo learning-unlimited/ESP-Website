@@ -8,6 +8,7 @@ from django.forms.util import flatatt, ErrorDict, ErrorList
 from django.core.urlresolvers import get_callable, get_mod_func
 from django.utils.importlib import import_module
 from django.http import Http404, HttpResponseRedirect, HttpResponse
+from django.utils.decorators import method_decorator
 
 useful_models = all_usefull_models[:14]
 modes = ["Rows represent instances of a model, columns represent attributes of that model."]
@@ -41,6 +42,14 @@ def displaycolumnsform_factory(num_columns = 1):
         fields['text_'+str(i+1)] = forms.CharField(required=(not i))
     return type(name, base, fields)
 
+def pathchoiceform_factory(model, paths): 
+    name = "PathChoiceForm"
+    base = (forms.Form,)
+    fields = {}
+    for path in paths: 
+        fields[path] = forms.BooleanField(required=False, label=unicode(model.__name__)+ u' \u2192 ' + unicode(path).replace(unicode(LOOKUP_SEP), u' \u2192 '))
+    return type(name, base, fields)
+
 class DataViewsWizard(FormWizard):
     
     @method_decorator(admin_required)
@@ -60,7 +69,7 @@ class DataViewsWizard(FormWizard):
             val = condition_model._meta.init_name_map()[condition_field][0].to_python(text)
             args.append((condition_model, str(condition_field), str(query_term), val))
         queryset = path_v4(model, *args)
-        headers = [ [form_list[2].cleaned_data['field_'+str(i+1)], form_list[2].cleaned_data['text_'+str(i+1)]] for i in range(form_list[0].cleaned_data['num_columns']) if form_list[2].cleaned_data['field_'+str(i+1)]]
+        headers = [ [form_list[3].cleaned_data['field_'+str(i+1)], form_list[3].cleaned_data['text_'+str(i+1)]] for i in range(form_list[0].cleaned_data['num_columns']) if form_list[3].cleaned_data['field_'+str(i+1)]]
         fields = [header[0] for header in headers]
         data = []
         for item in queryset: 
@@ -98,3 +107,16 @@ class DataViewsWizard(FormWizard):
         if self.num_steps() == 1 and not step: 
             self.form_list.append(headingconditionsform_factory(form.cleaned_data['num_conditions']))
             self.form_list.append(displaycolumnsform_factory(form.cleaned_data['num_columns']))
+        if self.num_steps() == 3 and step == 1: 
+            model = globals()[form.cleaned_data['model']]
+            paths = []
+            form0 = self.get_form(0, request.POST)
+            if not form0.is_valid():
+                return self.render_revalidation_failure(request, 0, form0)
+            for i in range(form0.cleaned_data['num_conditions']):
+                if not form.cleaned_data['condition_'+str(i+1)]: 
+                    continue
+                condition_model, condition_field = get_mod_func(form.cleaned_data['condition_'+str(i+1)])
+                condition_model = globals()[condition_model]
+                paths += path_v1(model, condition_model)
+            self.form_list.insert(2, pathchoiceform_factory(model, paths))
