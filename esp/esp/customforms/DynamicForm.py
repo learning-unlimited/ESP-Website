@@ -361,16 +361,56 @@ class FormHandler:
 		dmh=DMH(form=form)
 		dyn=dmh.createDynModel()
 		response_data={'questions':[], 'answers':[]}
-		response_data['answers'].extend(dyn.objects.all().order_by('id').values())
+		responses=dyn.objects.all().order_by('id').values()
 		fields=Field.objects.filter(form=form).order_by('section__page__seq', 'section__seq', 'seq').values('id', 'field_type', 'label')
 		
+		#Let's first do a bit of introspection to figure out
+		#what the linked models are, and what values need to be added to the
+		#response data from these linked models.
+		#And since we're already iterating over fields,
+		#let's also set the questions in the process.
+		link_models={}
+		add_fields={}
+		
 		for field in fields:
+			#I'll do a lot of merging here later
 			qname='question_%d' % field['id']
-			if field['field_type'] in self._customFields:
+			ftype=field['field_type']
+			if ftype in self._customFields:
 				for f in self._customFields[field['field_type']]:
 					response_data['questions'].append([qname+'_'+f, field['label'] + '_'+f])
 			else:
 				response_data['questions'].append([qname, field['label']])
+			
+			if ftype in link_fields:
+				#Let's grab the model first
+				if link_fields[ftype]['model']	not in link_models:
+					app, model_name=link_fields[ftype]['model'].split('.')
+					link_models[link_fields[ftype]['model']]=ContentType.objects.get(app_label=app, model=model_name).model_class()
+				
+				#Now let's see what fields need to be set
+				if 'combo' not in link_fields[ftype]:
+					#Simple field
+					add_fields[qname]=[link_fields[ftype]['model'], link_fields[ftype]['model_field']]
+				else:
+					#Combo field
+					for f in link_fields[ftype]['combo']:
+						add_fields[qname+'_'+f]=[link_fields[f]['model'], link_fields[f]['model_field']]
+		
+		#Now let's set up the responses
+		for response in responses:
+			#First, grab the values dict from all linked instances. The id is stored in response.
+			link_instances={}
+			for model, model_cls in link_models.items():
+				link_instances[model]=model_cls.objects.filter(pk=response[ model.split('.')[1]+'_id' ]).values()[0]
+			
+			#Now, put in the additional fields in response
+			for qname, data in add_fields.items():
+				response[qname]=link_instances[data[0]][data[1]]
+				
+		#Add responses to response_data
+		response_data['answers'].extend(responses)									
+					
 		return response_data
 	#getResponseData.depend_on_row(lambda: Field, lambda field: {'form': field.form})
 	
@@ -400,7 +440,7 @@ def rd(dyn, f):
 	"""
 	a=FormHandler(form=f)
 	response_data={'questions':[], 'answers':[]}
-	response_data['answers'].extend(dyn.objects.all().order_by('id').values())
+	responses=dyn.objects.all().order_by('id')
 	fields=Field.objects.filter(form=f).order_by('section__page__seq', 'section__seq', 'seq').values('id', 'field_type', 'label')
 	
 	for field in fields:
