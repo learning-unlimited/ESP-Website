@@ -42,6 +42,15 @@ def displaycolumnsform_factory(num_columns = 1):
         fields['text_'+str(i+1)] = forms.CharField(required=(not i))
     return type(name, base, fields)
 
+def pathchoiceform_factory(model, all_paths): 
+    name = "PathChoiceForm"
+    base = (forms.Form,)
+    fields = {}
+    for target_model, model_paths in all_paths:
+        for path in model_paths: 
+            fields[target_model.__name__ + LOOKUP_SEP + path] = forms.BooleanField(required=False, label=unicode(model.__name__)+ u' \u2192 ' + unicode(path).replace(unicode(LOOKUP_SEP), u' \u2192 '))
+    return type(name, base, fields)
+
 class DataViewsWizard(FormWizard):
     
     @method_decorator(admin_required)
@@ -60,15 +69,19 @@ class DataViewsWizard(FormWizard):
             text = form_list[1].cleaned_data['text_'+str(i+1)]
             val = condition_model._meta.init_name_map()[condition_field][0].to_python(text)
             args.append((condition_model, str(condition_field), str(query_term), val))
-        queryset = path_v4(model, *args)
-        headers = [ [form_list[2].cleaned_data['field_'+str(i+1)], form_list[2].cleaned_data['text_'+str(i+1)]] for i in range(form_list[0].cleaned_data['num_columns']) if form_list[2].cleaned_data['field_'+str(i+1)]]
+        paths = defaultdict(list)
+        for model_and_path, value in form_list[2].cleaned_data.iteritems():
+            if value: 
+                condition_model, _, path = model_and_path.partition(LOOKUP_SEP)
+                paths[globals()[condition_model]].append(path)
+        queryset = path_v5(model, paths, *args)
+        headers = [ [form_list[3].cleaned_data['field_'+str(i+1)], form_list[3].cleaned_data['text_'+str(i+1)]] for i in range(form_list[0].cleaned_data['num_columns']) if form_list[3].cleaned_data['field_'+str(i+1)]]
         fields = [header[0] for header in headers]
         data = []
         for item in queryset: 
             item_dict = {}
             for field in fields:
                 attributes = field.split('.')
-                print attributes
                 new_item = [item][:][0]
                 for attribute in attributes:
                     new_item = [getattr(new_item, attribute)][:][0]
@@ -99,3 +112,16 @@ class DataViewsWizard(FormWizard):
         if self.num_steps() == 1 and not step: 
             self.form_list.append(headingconditionsform_factory(form.cleaned_data['num_conditions']))
             self.form_list.append(displaycolumnsform_factory(form.cleaned_data['num_columns']))
+        if self.num_steps() == 3 and step == 1: 
+            model = globals()[form.cleaned_data['model']]
+            paths = []
+            form0 = self.get_form(0, request.POST)
+            if not form0.is_valid():
+                return self.render_revalidation_failure(request, 0, form0)
+            for i in range(form0.cleaned_data['num_conditions']):
+                if not form.cleaned_data['condition_'+str(i+1)]: 
+                    continue
+                condition_model, condition_field = get_mod_func(form.cleaned_data['condition_'+str(i+1)])
+                condition_model = globals()[condition_model]
+                paths.append((condition_model, path_v1(model, condition_model)))
+            self.form_list.insert(2, pathchoiceform_factory(model, paths))
