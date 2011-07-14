@@ -37,6 +37,7 @@ from esp.datatree.models import *
 from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
 from esp import settings
+from esp.users.models import ESPUser
 from esp.program.models import Program, RegistrationType
 
 class DBReceipt(models.Model):
@@ -123,13 +124,12 @@ class StudentClassRegModuleInfo(models.Model):
     force_show_required_modules = models.BooleanField(default=True, help_text = "Check this box to require that users see and fill out \"required\" modules before they can see the main StudentReg page")
     
     def reg_verbs(self):
+        verb_list = [self.signup_verb]
+
         if self.use_priority:
-            verb_list = []
             for i in range(0, self.priority_limit):
-                name = self.signup_verb.name + '/%d' % (i + 1)
+                name = 'Priority/%d' % (i + 1)
                 verb_list.append(RegistrationType.get_map(include=[name], category='student')[name])
-        else:
-            verb_list = [self.signup_verb]
         
         #   Require that the /Applied bit is in the list, since students cannot enroll
         #   directly in classes with application questions.
@@ -312,7 +312,7 @@ class RemoteProfile(models.Model):
     from esp.program.models import Program
     from esp.cal.models import Event
 
-    user      = AjaxForeignKey(User,blank=True, null=True)
+    user      = AjaxForeignKey(ESPUser,blank=True, null=True)
     program   = models.ForeignKey(Program,blank=True, null=True)
     volunteer = models.BooleanField(default = False)
     need_bus  = models.BooleanField(default = False)
@@ -360,7 +360,7 @@ class SATPrepTeacherModuleInfo(models.Model):
 
     subject  = models.CharField(max_length=32, choices = SAT_SUBJECTS)
 
-    user     = AjaxForeignKey(User,blank=True, null=True)
+    user     = AjaxForeignKey(ESPUser,blank=True, null=True)
     program  = models.ForeignKey(Program,blank=True, null=True)
     section  = models.CharField(max_length=5)
    

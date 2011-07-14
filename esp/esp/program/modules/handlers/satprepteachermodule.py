@@ -59,7 +59,7 @@ class SATPrepTeacherModule(ProgramModuleObj):
         if QObject:
             return {'teachers_satprepinfo': self.getQForUser(Q(satprepteachermoduleinfo__program = self.program))}
                     
-        teachers = User.objects.filter(satprepteachermoduleinfo__program = self.program).distinct()
+        teachers = ESPUser.objects.filter(satprepteachermoduleinfo__program = self.program).distinct()
         return {'teachers_satprepinfo': teachers }
 
     def teacherDesc(self):

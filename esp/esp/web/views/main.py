@@ -35,15 +35,19 @@ Learning Unlimited, Inc.
 from esp.qsd.views import qsd
 from django.core.exceptions import PermissionDenied
 from django.contrib.sites.models import Site
+from esp.program.modules.base import LOGIN_URL
+from django.contrib.auth import REDIRECT_FIELD_NAME
 from esp.datatree.models import *
-from esp.users.models import GetNodeOrNoBits
-from django.http import Http404, HttpResponseRedirect, HttpResponse
+from esp.users.models import GetNodeOrNoBits, ESPUser, UserBit
+from django.http import Http404, HttpResponseRedirect, HttpResponse, MultiValueDict
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
+from urllib import quote
 
 #from icalendar import Calendar, Event as CalEvent, UTC
 
 import datetime
+import re
 
 from esp.web.models import NavBarCategory
 from esp.web.util.main import render_to_response
@@ -179,6 +183,100 @@ def program(request, tl, one, two, module, extra = None):
 
 	raise Http404
 
+def classchangerequest(request, tl, one, two):
+    from esp.program.models import Program, StudentAppResponse, ClassSubject, ClassSection, StudentRegistration, RegistrationType
+    
+    try:
+        prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
+    except Program.DoesNotExist:
+        raise Http404("Program not found.")
+    
+    if tl != "learn":
+        raise Http404
+
+    if not request.user or not request.user.is_authenticated():
+        return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+
+    if not request.user.isStudent() and not request.user.isAdmin(prog):
+        allowed_student_types = Tag.getTag("allowed_student_types", prog, default='')
+        matching_user_types = UserBit.valid_objects().filter(user=request.user, verb__parent=GetNode("V/Flags/UserRole"), verb__name__in=allowed_student_types.split(","))
+        if not matching_user_types:
+            return render_to_response('errors/program/notastudent.html', request, (prog, 'learn'), {})
+    
+    errorpage = 'errors/program/wronggrade.html'
+    
+    verb_override = GetNode('V/Flags/Registration/GradeOverride')
+    cur_grade = request.user.getGrade(prog)
+    if (not UserBit.UserHasPerms(user = request.user, qsc  = prog.anchor_id, verb = verb_override)) and (cur_grade != 0 and (cur_grade < prog.grade_min or \
+                           cur_grade > prog.grade_max)):
+        return render_to_response(errorpage, request, (prog, tl), {})
+
+    setattr(request, "program", prog)
+    setattr(request, "tl", tl)
+    setattr(request, "module", "classchangerequest")
+
+    from django import forms
+    from datetime import datetime
+    from esp.utils.scheduling import getRankInClass
+
+    timeslots = prog.getTimeSlots()
+    sections = prog.sections().filter(status=10)
+    
+    enrollments = {}
+    for timeslot in timeslots:
+        try:
+            enrollments[timeslot] = ClassSubject.objects.get(sections__studentregistration__relationship__name="Enrolled", sections__studentregistration__user=request.user, sections__meeting_times=timeslot, parent_program=prog, sections__studentregistration__end_date__gte=datetime.now())
+        except ClassSubject.DoesNotExist: 
+            enrollments[timeslot] = None
+    
+    context = {}
+    context['timeslots'] = timeslots
+    context['enrollments'] = enrollments
+    context['user'] = request.user
+    if 'success' in request.GET: 
+        context['success'] = True
+    else: 
+        context['success'] = False
+    
+    if request.user.isStudent():
+        sections_by_slot = dict([(timeslot,[(section, 1 == StudentRegistration.objects.filter(user=context['user'], section=section, relationship__name="Request", end_date__gte=datetime.now()).count()) for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in enrollments.values() and getRankInClass(request.user, section) in (5,10)]) for timeslot in timeslots])
+    else: 
+        sections_by_slot = dict([(timeslot,[(section, False) for section in sections if section.get_meeting_times()[0] == timeslot]) for timeslot in timeslots])
+    
+    fields = {}
+    for i, timeslot in enumerate(sections_by_slot.keys()): 
+        choices = [('0', "I'm happy with my current enrollment.")]
+        initial = '0'
+        for section in sections_by_slot[timeslot]:
+            choices.append((section[0].emailcode(), section[0].emailcode()+": "+section[0].title()))
+            if section[1]:
+                initial = section[0].emailcode()
+        fields['timeslot_'+str(i+1)] = forms.ChoiceField(label="Timeslot "+str(i+1)+" ("+timeslot.pretty_time()+")", choices=choices, initial=initial)
+    
+    form = type('ClassChangeRequestForm', (forms.Form,), fields)
+    context['form'] = form()
+    if request.method == "POST": 
+        old_requests = StudentRegistration.objects.filter(user=context['user'], section__parent_class__parent_program=prog, relationship__name="Request", end_date__gte=datetime.now())
+        for r in old_requests:
+            r.expire()
+        form = form(request.POST)
+        if form.is_valid(): 
+            for value in form.cleaned_data.values(): 
+                section = None
+                for s in sections: 
+                    if s.emailcode() == value: 
+                        section = s
+                        break
+                if not section: 
+                    continue
+                r = StudentRegistration.objects.get_or_create(user=context['user'], section=section, relationship=RegistrationType.objects.get_or_create(name="Request", category="student")[0])[0]
+                r.end_date = datetime(9999, 1, 1, 0, 0, 0, 0)
+                r.save()
+                
+            return HttpResponseRedirect(request.path.rstrip('/')+'/?success')
+    else: 
+        return render_to_response('program/classchangerequest.html', request, (prog, tl), context)
+
 
 def archives(request, selection, category = None, options = None):
 	""" Return a page with class archives """
@@ -211,15 +309,27 @@ def contact(request, section='esp'):
 		form = ContactForm(request.POST)
 		SUBJECT_PREPEND = '[webform]'
                 domain = Site.objects.get_current().domain
-		
+		ok_to_send = True
+
 		if form.is_valid():
 			
 			to_email = []
+			usernames = []
 
 			if len(form.cleaned_data['sender'].strip()) == 0:
 				email = 'esp@mit.edu'
 			else:
 				email = form.cleaned_data['sender']
+				usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
+
+			if usernames and not form.cleaned_data['decline_password_recovery']:
+				m = 'password|account|log( ?)in'
+				if re.search(m, form.cleaned_data['message'].lower()) or re.search(m, form.cleaned_data['subject'].lower()):
+					# Ask if they want a password recovery before sending.
+					ok_to_send = False
+					# If they submit again, don't ask a second time.
+					form.data = MultiValueDict(form.data)
+					form.data['decline_password_recovery'] = True
                 
 			if form.cleaned_data['cc_myself']:
 				to_email.append(email)
@@ -234,15 +344,16 @@ def contact(request, section='esp'):
 				email = '%s <%s>' % (form.cleaned_data['name'], email)
 
 
-			t = loader.get_template('email/comment')
+			if ok_to_send:
+				t = loader.get_template('email/comment')
 
-			msgtext = t.render(Context({'form': form, 'domain': domain}))
-				
-			send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
-				  msgtext,
-				  email, to_email, fail_silently = True)
+				msgtext = t.render(Context({'form': form, 'domain': domain, 'usernames': usernames}))
 
-			return HttpResponseRedirect(request.path + '?success')
+				send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
+					  msgtext,
+					  email, to_email, fail_silently = True)
+
+				return HttpResponseRedirect(request.path + '?success')
 
         
 	else:
@@ -336,7 +447,10 @@ def error_reporter(request):
     pprint(dict(request.GET), get)
     pprint(dict(request.META), meta)
     if request.POST:
-        pprint(dict(request.POST), post)
+        if request.raw_post_data.strip()[0] == '[':
+            pprint(request.raw_post_data, post)
+        else:
+            pprint(dict(request.POST), post)
 
     msg = request.GET.get('msg', "(no message)")
 

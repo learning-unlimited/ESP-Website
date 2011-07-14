@@ -36,7 +36,7 @@ from django.db import models
 from django.db.models.query import Q
 from esp.datatree.models import *
 from esp.lib.markdown import markdown
-from esp.users.models import UserBit
+from esp.users.models import UserBit, ESPUser
 from django.contrib.auth.models import User
 from esp.db.fields import AjaxForeignKey
 from django.core.cache import cache
@@ -90,7 +90,7 @@ class Entry(models.Model):
     content = models.TextField(help_text='Yes, you can use markdown.') # Markdown-encoded
     sent    = models.BooleanField(editable=False, default=False)
     email   = models.BooleanField(editable=False, default=False)
-    fromuser = AjaxForeignKey(User, blank=True, null=True,editable=False)
+    fromuser = AjaxForeignKey(ESPUser, blank=True, null=True,editable=False)
     fromemail = models.CharField(max_length=80, blank=True, null=True, editable=False)
     priority = models.IntegerField(blank=True, null=True) # Message priority (role of this field not yet well-defined -- aseering 8-10-2006)
     section = models.CharField(max_length=32,blank=True,null=True,help_text="e.g. 'teach' or 'learn' or blank")
@@ -178,7 +178,7 @@ class Entry(models.Model):
 
 class Comment(models.Model):
 
-    author = AjaxForeignKey(User)
+    author = AjaxForeignKey(ESPUser)
     entry  = models.ForeignKey(Entry)
     
     post_ts = models.DateTimeField(default=datetime.datetime.now,

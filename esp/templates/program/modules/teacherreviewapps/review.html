@@ -68,7 +68,9 @@ Please review the student's biographical information and responses to our questi
 {{ form }}
 <tr>
  <th colspan="2" class="submit"> 
-  <input type="submit" class="fancybutton" value="Submit" name="submit" />
+  <input type="submit" class="fancybutton" value="Submit, and stay on page" name="submit" />
+  <input type="submit" class="fancybutton" value="Submit, and review next student" name="submit_next" />
+  <input type="submit" class="fancybutton" value="Submit, and return to roster" name="submit_return" />
  </th>
 </tr>
 
@@ -77,7 +79,10 @@ Please review the student's biographical information and responses to our questi
 </div>
 
 <p>
-<a href="/teach/{{ program.getUrlBase }}/teacherreg/">Click here</a> to return to the main teacher page.
+If you have no changes to save, <a href="/teach/{{ program.getUrlBase }}/review_students/{{class.id}}/">click here</a> to review the other students.
+</p>
+<p>
+To return to the main teacher page, <a href="/teach/{{ program.getUrlBase }}/teacherreg/">click here</a>. 
 </p>
 
 {% endblock %}

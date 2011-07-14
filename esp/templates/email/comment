@@ -2,6 +2,7 @@
 Someone filled a form out on {{ domain }}:
 
 Name: {{ form.cleaned_data.name }}
+Usernames with this e-mail address: {{ usernames|join:', ' }}
 I am a: {{ form.cleaned_data.person_type }}
 How did you hear about us?: {{ form.cleaned_data.hear_about }}
 Topic of interest: {{ form.cleaned_data.topic }}

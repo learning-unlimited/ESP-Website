@@ -1,7 +1,7 @@
 from django import template
 from esp.web.util.template import cache_inclusion_tag
 from esp.users.models import ESPUser
-from esp.program.models import ClassSubject, ClassSection
+from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion
 from esp.cache.key_set import wildcard
     
 register = template.Library()
@@ -55,6 +55,7 @@ render_class_core.cached_function.depend_on_row(ClassSection, lambda sec: {'cls'
 render_class_core.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'cls': self})
 render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lambda self=wildcard, **kwargs: {'cls': self.parent_class})
 render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
+render_class_core.cached_function.depend_on_row(StudentAppQuestion, lambda ques: {'cls': ques.subject})
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html')
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):

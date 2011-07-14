@@ -66,8 +66,6 @@ class TeacherClassRegForm(FormWithRequiredCss):
     prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(attrs={'rows': 4}), required=False,
                                         help_text='If your course does not have prerequisites, leave this box blank.')
     
-    # At the moment we don't use viable_times at all.
-    viable_times   = forms.ChoiceField( label='Starting Time', choices=[] )
     duration       = forms.ChoiceField( label='Duration of a Class Meeting', help_text='(hours:minutes)', choices=[('0.0', 'Program default')], widget=BlankSelectWidget() )
     num_sections   = forms.ChoiceField( label='Number of Sections', choices=[(1,1)], widget=BlankSelectWidget(),
                                         help_text='(How many independent sections (copies) of your class would you like to teach?)' )
@@ -186,17 +184,8 @@ class TeacherClassRegForm(FormWithRequiredCss):
         if not module.allow_lateness:
             self.fields['allow_lateness'].widget = forms.HiddenInput()
             self.fields['allow_lateness'].initial = 'False'
-        
-        #  viable_times vs. duration
-        if module.display_times:
-            if module.times_selectmultiple:
-                self.fields['viable_times'] = forms.MultipleChoiceField( label='Viable Times', choices=module.getTimes(), widget=forms.CheckboxSelectMultiple() )
-            else:
-                self.fields['viable_times'].choices = module.getTimes()
-        else:
-            del self.fields['viable_times']
-        if module.times_selectmultiple or not module.display_times:
-            self.fields['duration'].choices = sorted(module.getDurations())
+
+        self.fields['duration'].choices = sorted(module.getDurations())
         hide_choice_if_useless( self.fields['duration'] )
         
         # session_count
@@ -251,7 +240,6 @@ class TeacherClassRegForm(FormWithRequiredCss):
         if tag_data:
             print tag_data
             self.fields['class_size_max'].initial = tag_data
-
 
         #   Rewrite difficulty label/choices if desired:
         if Tag.getTag('teacherreg_difficulty_choices'):
@@ -324,7 +312,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
         fields = [('category', open_class_category.id), 
-                  ('prereqs', ''), ('viable_times', ''), ('session_count', 1), ('grade_min', 7), ('grade_max', 12), 
+                  ('prereqs', ''), ('session_count', 1), ('grade_min', 7), ('grade_max', 12), 
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''), 
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True), 
                   ('has_own_space', False), ('requested_room', ''), ('global_resources', ''),

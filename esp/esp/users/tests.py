@@ -19,7 +19,7 @@ class ESPUserTest(TestCase):
         from esp.datatree.models import GetNode
         from esp.users.models import UserBit
         # Create a user and a userbit
-        self.user, created = User.objects.get_or_create(username='forgetful')
+        self.user, created = ESPUser.objects.get_or_create(username='forgetful')
         self.userbit = UserBit.objects.get_or_create(user=self.user, verb=GetNode('V/Administer'), qsc=GetNode('Q'))
         # Save the ID and then delete the user
         uid = self.user.id
@@ -49,10 +49,10 @@ class ESPUserTest(TestCase):
         request.session = scratchDict()
 
         # Create a couple users and a userbit
-        self.user, created = User.objects.get_or_create(username='forgetful')
+        self.user, created = ESPUser.objects.get_or_create(username='forgetful')
         self.userbit = UserBit.objects.get_or_create(user=self.user, verb=GetNode('V/Administer'), qsc=GetNode('Q'))
 
-        self.basic_user, created = User.objects.get_or_create(username='simple_student')
+        self.basic_user, created = ESPUser.objects.get_or_create(username='simple_student')
         self.userbit = UserBit.objects.get_or_create(user=self.basic_user, verb=GetNode('V/Flags/UserRole/Student'), qsc=GetNode('Q'))
 
         self.user.backend = request.backend
@@ -61,12 +61,11 @@ class ESPUserTest(TestCase):
         login(request, self.user)
         self.assertEqual(request.user, self.user, "Failed to log in as '%s'" % self.user)
 
-        ESPUser(request.user).switch_to_user(request, self.basic_user, None, None)
+        request.user.switch_to_user(request, self.basic_user, None, None)
         self.assertEqual(request.user, self.basic_user, "Failed to morph into '%s'" % self.basic_user)
 
-        ESPUser(request.user).switch_back(request)
+        request.user.switch_back(request)
         self.assertEqual(request.user, self.user, "Failed to morph back into '%s'" % self.user)        
-        
 
         blocked_illegal_morph = True
         try:
@@ -126,8 +125,7 @@ class PasswordRecoveryTicketTest(TestCase):
 
 class TeacherInfo__validationtest(TestCase):
     def setUp(self):
-        self.user, created = User.objects.get_or_create(username='teacherinfo_teacher')
-        self.user = ESPUser( self.user )
+        self.user, created = ESPUser.objects.get_or_create(username='teacherinfo_teacher')
         self.user.profile = self.user.getLastProfile()
         self.info_data = {
             'graduation_year': '2000',
@@ -197,9 +195,9 @@ class ValidHostEmailFieldTest(TestCase):
 
 class UserForwarderTest(TestCase):
     def setUp(self):
-        self.ua, created = User.objects.get_or_create(username='forward_a')
-        self.ub, created = User.objects.get_or_create(username='forward_b')
-        self.uc, created = User.objects.get_or_create(username='forward_c')
+        self.ua, created = ESPUser.objects.get_or_create(username='forward_a')
+        self.ub, created = ESPUser.objects.get_or_create(username='forward_b')
+        self.uc, created = ESPUser.objects.get_or_create(username='forward_c')
         self.users = [self.ua, self.ub, self.uc]
     def runTest(self):
         def fwd_info(user):
