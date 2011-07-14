@@ -217,6 +217,7 @@ INSTALLED_APPS = (
     'south',
     'sslauth',
     'form_utils',
+    'esp.dataviews',
 )
 
 import os
