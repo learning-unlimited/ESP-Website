@@ -291,7 +291,10 @@ class FormHandler:
 			if initial:
 				initial_data[handler.seq]={}
 				if not self.user_info:
-					self.user_info=ContactInfo.objects.filter(user=user).values()[0]
+					try:
+						self.user_info=ContactInfo.objects.filter(user=user).values()[0]
+					except:
+						return {}	
 				for k,v in initial.items():
 					#Compound fields need to be initialized with a list of values
 					if isinstance(v, (list)):
