@@ -12,7 +12,7 @@ var formElements={
 		numeric:{'disp_name':'Numeric Field','ques':''},
 		date:{'disp_name':'Date','ques':'Date'},
 		time:{'disp_name':'Time','ques':'Time'},
-		file:{'disp_name':'File Upload','ques':'Upload file'},
+		//file:{'disp_name':'File Upload','ques':'Upload file'},
 		section:{'disp_name':'Section', 'ques':'Section'},
 		page:{'disp_name':'Page', 'ques':'Page'}
 	},
