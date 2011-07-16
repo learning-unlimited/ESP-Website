@@ -109,19 +109,20 @@ class DataViewsWizard(FormWizard):
         return 'dataviews/forms/wizard.html'
     
     def process_step(self, request, form, step): 
-        if self.num_steps() == 1 and not step: 
-            self.form_list.append(headingconditionsform_factory(form.cleaned_data['num_conditions']))
-            self.form_list.append(displaycolumnsform_factory(form.cleaned_data['num_columns']))
-        if self.num_steps() == 3 and step == 1: 
+        form0 = self.get_form(0, request.POST)
+        if not form0.is_valid():
+            return self.render_revalidation_failure(request, 0, form0)
+        if not step: 
+            self.form_list[1] = headingconditionsform_factory(form0.cleaned_data['num_conditions'])
+        if step == 1: 
             model = globals()[form.cleaned_data['model']]
             paths = []
-            form0 = self.get_form(0, request.POST)
-            if not form0.is_valid():
-                return self.render_revalidation_failure(request, 0, form0)
             for i in range(form0.cleaned_data['num_conditions']):
                 if not form.cleaned_data['condition_'+str(i+1)]: 
                     continue
                 condition_model, condition_field = get_mod_func(form.cleaned_data['condition_'+str(i+1)])
                 condition_model = globals()[condition_model]
                 paths.append((condition_model, path_v1(model, condition_model)))
-            self.form_list.insert(2, pathchoiceform_factory(model, paths))
+            self.form_list[2] = pathchoiceform_factory(model, paths)
+        if step == 2:
+            self.form_list[3] = displaycolumnsform_factory(form0.cleaned_data['num_columns'])
