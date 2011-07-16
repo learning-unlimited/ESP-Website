@@ -33,11 +33,25 @@ cap = {}
 score = {}
 req_num = {}
 wait = {}
+all_students = set()
+changed = set()
+unchanged = set()
+
+def get_student_schedule(student):
+    global p, timeslots
+    """ generate student schedules """
+    schedule = "<table>\n<tr>\n<th>Time and Room</th>\n<th>Class and Teacher</th>\n<th>Code</th>\n</tr>\n"
+    for timeslot in timeslots: 
+        for cls in student.getSections(p, ["Enrolled"]):
+            if cls.get_meeting_times()[0] == timeslot:
+                schedule += "<tr>\n<td>"+timeslot.pretty_time()+"<br />"+", ".join(cls.prettyrooms())+"</td>\n<td>"+cls.title()+"<br />"+", ".join(cls.parent_class.getTeacherNames())+"</td>\n<td>"+cls.emailcode()+"</td>\n</tr>\n"
+    schedule += "</table>\n"
+    return schedule
 
 def main(): 
     
-    global NOW, priorityLimit, SR_PROG, SR_REQ, SR_WAIT, SR_EN, PROG, REQ, WAIT, EN, p, students, sections, timeslots, timeslot
-    global en, req, loc, en_new, cap, score, req_num, wait
+    global NOW, priorityLimit, SR_PROG, SR_REQ, SR_WAIT, SR_EN, PROG, REQ, WAIT, EN, p, students, sections, timeslots, timeslot, all_students
+    global en, req, loc, en_new, cap, score, req_num, wait, changed, unchanged
     
     save_enrollments = False
     
@@ -110,6 +124,7 @@ def main():
             req_num[sections[i]] = 0
             score[sections[i]] = -cap[sections[i]]
         students = ESPUser.objects.filter(SR_REQ, studentregistration__section__meeting_times=timeslot)
+        all_students |= set(students)
         for i in range(students.count()):
             req[students[i]] = StudentRegistration.objects.get(REQ, user=students[i], section__meeting_times=timeslot).section
             loc[students[i]] = StudentRegistration.objects.get(REQ, user=students[i], section__meeting_times=timeslot).section
@@ -213,180 +228,52 @@ def main():
                 else:
                     cap[en[limbo_old[i]]] -= 1
                 loc[limbo_old[i]] = en[limbo_old[i]]
-#        print "\n\n\n", timeslot
         for student in students:
-            if loc[student] == en[student]: 
-                pass
-#                print student, "-", en[student], ">>", req[student], ">>", loc[student]
-            else:
-#                print student, "-", en[student], ">>", loc[student]
-                if loc[student] == NullSection:
-                    pass
-#                    print "\t", en[student], ">>", req[student], ">>", loc[student]
-#                    print "\t", (student in limbo_all[0])
-#                    for i in range(1,len(limbo_all)):
-#                        if student in limbo_all[i]:
-#                            print "\t", i
-                elif save_enrollments:
+            if loc[student] != en[student] and loc[student] != NullSection: 
+                if save_enrollments:
                     loc[student].preregister_student(student)
                     if en[student] != NullSection:
                         en[student].unpreregister_student(student)
-#        print cap
-#        print "\n\n\n"
-                
-#    for student in students:
-#        student_assignments_original[student] = {}
-#        for timeslot in timeslots:
-#            student_assignments_original[student][timeslot] = None
-#            student_preferences_final[student][timeslot] = None
-#    
-#    for section in sections:
-#        class_assignments_original[section] = students.filter(id__in=[students.id for student in section.students()])
-#        class_assignments_final[section] = [class_assignments_original[section].exclude(studentregistration__section__meeting_times=section.get_meeting_times()[0], REQ)]
-#        class_sizes[section] = len(class_assignments_original)
-#        class_assignments_original[section.parent_class] += list(class_assignments_original)
-#        class_request_priorities[section] = [students.filter(studentregistration__section=section, WAIT[i], REQ) for i in range(priorityLimit)]
-#        class_request_priorities[section].append(students.filter(studentregistration__section=section, REQ).exclude(studentregistration__section=section, WAIT[-1]))
-#        sections_by_timeslot[section.get_meeting_times()[0]].append(section)
-#    
-#    print "complete!\n"
-#    print "Running lottery... ",
-#    
-#    for timeslot in timeslots:
-#        for section in sections_by_timeslot[timeslot]:
-#            
-#    
-#    print "complete!\n"
-#    if save_enrollments:
-#        print "Writing output and saving enrollments... ",
-#    else: 
-#        print "Writing output... ",
-#    
-#    f = open("scheduling.output.txt", "w")
-#    
-#    f.write("Enrollment lottery for "+str(p)+" was run at "+str(NOW)+".\n\n\n")
-#    
-#    for timeslot in timeslots:
-#        errors[timeslot] = []
-#    
-#    for student in students:
-#        s = student.username + " ["
-#        firstTimeslot = True
-#        for timeslot in timeslots:
-#            if not firstTimeslot:
-#                s += ", "
-#            try:
-#                s += "[" + str(student_assignments[student][timeslot].parent_class.anchor.name) + ", ["
-#            except:
-#                s += "[None, ["
-#            firstPriority = True
-#            for priority in priorities:
-#                if not firstPriority:
-#                    s += ", "
-#                if priority in student_preferences[student][timeslot].keys():
-#                    s += str(student_preferences[student][timeslot][priority].parent_class.anchor.name)
-#                else:
-#                    s += "None"
-#                firstPriority = False
-#            firstTimeslot = False
-#            s += "]]"
-#        s += "] ["
-#        firstTimeslot = True
-#        num_classes = 0
-#        num_preferences = 0
-#        std_err = ""
-#        for timeslot in timeslots:
-#            if not firstTimeslot:
-#                s += ", "
-#            num_classes_now = 0
-#            num_preferences_now = 0
-#            try:
-#                t = student_assignments[student][timeslot].id
-#                s += "1/"
-#                num_classes += 1
-#                num_classes_now = 1
-#            except:
-#                s += "0/"
-#            num_preferences_now = len(student_preferences[student][timeslot])
-#            num_preferences += num_preferences_now
-#            s += str(num_preferences_now)
-#            firstTimeslot = False
-#            if num_preferences_now and not num_classes_now:
-#                errors[timeslot].append(student)
-#        s += "] " + str(num_classes) + "/" + str(num_preferences)
-#        if num_preferences: 
-#            if not num_classes:
-#                enrolled_in_no_classes.append(student)
-#            f.write(s+"\n")
-#        else:
-#            never_registered.add(student)
-#    
-#    f.write("\n\n\n")
-#    
-#    students = list(set(students) - never_registered)
-#    
-#    for timeslot in timeslots:
-#        f.write("The following "+str(len(errors[timeslot]))+" students are not enrolled in any classes during the timeslot "+str(timeslot)+": \n")
-#        f.write(str([str(student.username) for student in errors[timeslot]])+"\n\n")
-#    
-#    f.write("The following "+str(len(enrolled_in_no_classes))+" students are not enrolled in any classes: \n")
-#    f.write(str([str(student.username) for student in enrolled_in_no_classes]))
-#    
-#    f.write("\n\n\n")
-#    
-#    wb = {}
-#    for timeslot in timeslots:
-#        wb[timeslot] = Workbook()
-#        f.write("\n"+str(timeslot)+"\n\n\n")
-#        for section in sections:
-#            if section.get_meeting_times()[0] == timeslot:
-#                i = 0
-#                f.write(str(section)+": "+str(len(class_assignments[section]))+"/"+str(class_sizes[section])+"\n")
-#                f.write(str([str(student.username) for student in class_assignments[section]])+"\n\n")
-#                ws = wb[timeslot].add_sheet(section.parent_class.anchor.name)
-#                ws.row(i).set_cell_text(0, "Username")
-#                ws.row(i).set_cell_text(1, "Grade")
-#                ws.row(i).set_cell_text(2, "Email")
-#                ws.row(i).set_cell_text(3, "Current Enrollment Status")
-#                ws.row(i).set_cell_text(4, "Rank")
-#                i += 1
-#                for priority in priorities:
-#                    for student in students_f[priority][section]:
-#                        rank = getRankInClass(student, section)
-#                        ws.row(i).set_cell_text(0, student.username)
-#                        ws.row(i).set_cell_number(1, student.getGrade(p))
-#                        ws.row(i).set_cell_text(2, student.email)
-#                        ws.row(i).set_cell_number(4, rank)
-#                        if student_assignments[student][timeslot] == section:
-#                            ws.row(i).set_cell_text(3, "Enrolled")
-#                            if save_enrollments:
-#                                section.preregister_student(student)
-#                        elif rank != 1:
-#                            if priority_assigned[student][timeslot] < int(priority[-1]):
-#                                ws.row(i).set_cell_text(3, priority)
-#                            else: 
-#                                ws.row(i).set_cell_text(3, priority + " Waitlist")
-#                                if save_enrollments:
-#                                    sr = StudentRegistration()
-#                                    sr.section = section
-#                                    sr.user = student
-#                                    sr.relationship = RegistrationType.objects.get(name="Waitlist/"+str(priority[-1]))
-#                                    sr.start_date = NOW
-#                                    sr.save()
-#                        else:
-#                            ws.row(i).set_cell_text(3, "Rejected")
-#                        i += 1
-#    
-#    f.write("\n\n\nThe following "+str(len(never_registered))+" students started the profile, but never registered:\n")
-#    f.write(str([str(user.username) for user in never_registered]))
-#    f.close()
-#    i = 0
-#    for timeslot in timeslots:
-#        wb[timeslot].save('Timeslot'+str(i+1)+'.xls')
-#        i += 1
-#    
-#    print "complete!\n"
+                changed.add(student)
+            else:
+                unchanged.add(student)
     
+    unchanged -= changed
+    
+    
+    
+    from esp.dbmail.models import send_mail, MessageRequest, TextOfEmail
+    for student in list(changed)[:3]:
+        text = "<html>\nHello "+student.first_name+"<br /><br />\n\n"
+        text += "We've processed your class change request, and have updated your schedule. Your new schedule is as follows: <br /><br />\n\n"
+        text += get_student_schedule(student)+"\n\n<br /><br />\n\n"
+        text += "We hope you enjoy your new schedule. See you soon!<br /><br />"
+        text += "The " + p.niceName() + " Directors\n"
+        text += "</html>"
+        subject = "[" + p.niceName() + "] Class Change"
+        from_email = p.director_email
+        recipient_list = ["jmoldow@mit.edu"] # [student.email]
+        bcc = "jmoldow@mit.edu" # p.director_email
+        extra_headers = {}
+        extra_headers['Reply-To'] = p.director_email
+        print text, "\n\n"
+        send_mail(subject, text, from_email, recipient_list, bcc=bcc, extra_headers=extra_headers)
+    
+    for student in list(unchanged)[:3]:
+        text = "<html>\nHello "+student.first_name+"<br /><br />\n\n"
+        text += "We've processed your class change request, and unfortunately are unable to update your schedule. Your schedule is still as follows: <br /><br />\n\n"
+        text += get_student_schedule(student)+"\n\n<br /><br />\n\n"
+        text += "See you soon!<br /><br />"
+        text += "The " + p.niceName() + " Directors\n"
+        text += "</html>"
+        subject = "[" + p.niceName() + "] Class Change"
+        from_email = p.director_email
+        recipient_list = ["jmoldow@mit.edu"] # [student.email]
+        bcc = "jmoldow@mit.edu" # p.director_email
+        extra_headers = {}
+        extra_headers['Reply-To'] = p.director_email
+        print text, "\n\n"
+        send_mail(subject, text, from_email, recipient_list, bcc=bcc, extra_headers=extra_headers)
     return 0
     
 if __name__ == "__main__":
