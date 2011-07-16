@@ -9,6 +9,7 @@ from decimal import Decimal
 from xlwt import Workbook,Style
 from django.db.models import Q
 import Queue
+import time
 
 p = None # program
 timeslots = None
@@ -23,6 +24,7 @@ REQ = None
 WAIT = None
 EN = None
 students = []
+student = None
 sections = []
 timeslot = None
 en = {}
@@ -40,7 +42,7 @@ unchanged = set()
 def get_student_schedule(student):
     global p, timeslots
     """ generate student schedules """
-    schedule = "<table>\n<tr>\n<th>Time and Room</th>\n<th>Class and Teacher</th>\n<th>Code</th>\n</tr>\n"
+    schedule = "<table border='1'>\n<tr>\n<th>Time and Room</th>\n<th>Class and Teacher</th>\n<th>Code</th>\n</tr>\n"
     for timeslot in timeslots: 
         for cls in student.getSections(p, ["Enrolled"]):
             if cls.get_meeting_times()[0] == timeslot:
@@ -51,9 +53,10 @@ def get_student_schedule(student):
 def main(): 
     
     global NOW, priorityLimit, SR_PROG, SR_REQ, SR_WAIT, SR_EN, PROG, REQ, WAIT, EN, p, students, sections, timeslots, timeslot, all_students
-    global en, req, loc, en_new, cap, score, req_num, wait, changed, unchanged
+    global en, req, loc, en_new, cap, score, req_num, wait, changed, unchanged, student
     
     save_enrollments = False
+    send_emails = False
     
     if "-h" in sys.argv or "--help" in sys.argv:
         print "Help."
@@ -62,6 +65,9 @@ def main():
     if "--save-enrollments" in sys.argv or "-se" in sys.argv:
         save_enrollments = True
     
+    if "--send-emails" in sys.argv:
+        send_emails = True
+
     p = None
     
     for arg in sys.argv:
@@ -96,8 +102,10 @@ def main():
     WAIT += [Q(relationship__name=("Waitlist/%s" % str(i+1))) & PROG for i in range(priorityLimit)]
     EN = Q(relationship__name="Enrolled") & PROG
     timeslots = p.getTimeSlots()
-    
-    for timeslot in timeslots:
+
+    for timeslot in timeslots: 
+        print "Setup for", timeslot, "....",
+        sys.stdout.flush()
         en = {}
         req = {}
         loc = {}
@@ -146,6 +154,9 @@ def main():
             en[req[students[i]]][wait[students[i]]].append(students[i])
         cap[NullSection] = 0
         score[NullSection] = 0
+        print " done!"
+        print "Randomly assigning students to classes by priority ....", 
+        sys.stdout.flush()
         for i in range(len(sections)):
             for j in range(1, priorityLimit+2): 
                 if len(en[sections[i]][j]) > cap[sections[i]]:
@@ -163,61 +174,29 @@ def main():
                 en_new[sections[i]] += en[sections[i]][j]
                 if not cap[sections[i]]:
                     break
-           ################     
+        print " done!"
+        print "Pushing students back to original classes...", 
+        sys.stdout.flush()
         a = 0
-        #del en[NullSection]
-        #print en
-        #del req[NullSection]
-        #print req
-        #del loc[NullSection]
-        #print loc
-        #del en_new[NullSection]
-        #print en_new
-        #del cap[NullSection]
-        #print cap
-        #del score[NullSection]
-        #print score
-        #del req_num[NullSection]
-        #print req_num
-        #del wait[NullSection]
-        #print wait
-        #return 0
-        
         limbo_orig = NullSection.limbo[:]
         limbo_all = [set()]
         
-#        print cap
-        
         while len(NullSection.limbo): 
-#            print a
-#            sys.stdout.flush()
             a += 1
             limbo_all.append(set())
             limbo_old = NullSection.limbo[:]
             NullSection.limbo = []
             for i in range(len(limbo_old)): 
-#                print "\t", i
-#                sys.stdout.flush()
                 limbo_all[0].add(limbo_old[i])
                 limbo_all[a].add(limbo_old[i])
                 if en[limbo_old[i]] == NullSection:
                     continue
                 if isinstance(en_new[en[limbo_old[i]]], list) and len(en_new[en[limbo_old[i]]]): 
-#                    print "test0", 
-#                    sys.stdout.flush()
                     pq = Queue.PriorityQueue()
-#                    print "test1", 
-#                    sys.stdout.flush()
                     random.shuffle(en_new[en[limbo_old[i]]])
-#                    print "test2", 
-#                    sys.stdout.flush()
                     b = 0
                     for student in en_new[en[limbo_old[i]]]:
-#                        print (score[en[student]], student)
-#                        sys.stdout.flush()
                         pq.put((score[en[student]], student), False)
-#                        print "\t\t", b
-#                        sys.stdout.flush()
                         b += 1
                     en_new[en[limbo_old[i]]] = pq
                 if not cap[en[limbo_old[i]]]: 
@@ -228,6 +207,9 @@ def main():
                 else:
                     cap[en[limbo_old[i]]] -= 1
                 loc[limbo_old[i]] = en[limbo_old[i]]
+        print " done!"
+        print "Saving enrollments ....",
+        sys.stdout.flush()
         for student in students:
             if loc[student] != en[student] and loc[student] != NullSection: 
                 if save_enrollments:
@@ -237,43 +219,52 @@ def main():
                 changed.add(student)
             else:
                 unchanged.add(student)
-    
+        print " done!\n\n"
+        sys.stdout.flush()
     unchanged -= changed
     
-    
-    
+    print "Sending emails...."
+    from django.conf import settings
+    if hasattr(settings, 'EMAILTIMEOUT') and \
+           settings.EMAILTIMEOUT is not None:
+        timeout = settings.EMAILTIMEOUT
+    else:
+        timeout = 2
+    f = open("classchanges.txt", 'w')
     from esp.dbmail.models import send_mail, MessageRequest, TextOfEmail
-    for student in list(changed)[:3]:
-        text = "<html>\nHello "+student.first_name+"<br /><br />\n\n"
+    subject = "[" + p.niceName() + "] Class Change"
+    from_email = p.director_email
+    bcc = p.director_email
+    extra_headers = {}
+    extra_headers['Reply-To'] = p.director_email
+    for student in changed:
+        text = "<html>\nHello "+student.first_name+",<br /><br />\n\n"
         text += "We've processed your class change request, and have updated your schedule. Your new schedule is as follows: <br /><br />\n\n"
         text += get_student_schedule(student)+"\n\n<br /><br />\n\n"
         text += "We hope you enjoy your new schedule. See you soon!<br /><br />"
         text += "The " + p.niceName() + " Directors\n"
         text += "</html>"
-        subject = "[" + p.niceName() + "] Class Change"
-        from_email = p.director_email
-        recipient_list = ["jmoldow@mit.edu"] # [student.email]
-        bcc = "jmoldow@mit.edu" # p.director_email
-        extra_headers = {}
-        extra_headers['Reply-To'] = p.director_email
-        print text, "\n\n"
-        send_mail(subject, text, from_email, recipient_list, bcc=bcc, extra_headers=extra_headers)
+        recipient_list = [student.email]
+        print text, "\n\nSent to", student.username, "<", student.email, ">\n\n------------------------\n\n"
+        f.write(text.replace(u'\u2019', "'").replace(u'\u201c','"').replace(u'\u201d','"')+"\n\nSent to "+student.username+"\n\n------------------------\n\n")
+        if save_enrollments and send_emails:
+            send_mail(subject, text, from_email, recipient_list, bcc=bcc, extra_headers=extra_headers)
+            time.sleep(timeout)
     
-    for student in list(unchanged)[:3]:
-        text = "<html>\nHello "+student.first_name+"<br /><br />\n\n"
+    for student in unchanged:
+        text = "<html>\nHello "+student.first_name+",<br /><br />\n\n"
         text += "We've processed your class change request, and unfortunately are unable to update your schedule. Your schedule is still as follows: <br /><br />\n\n"
         text += get_student_schedule(student)+"\n\n<br /><br />\n\n"
         text += "See you soon!<br /><br />"
         text += "The " + p.niceName() + " Directors\n"
         text += "</html>"
-        subject = "[" + p.niceName() + "] Class Change"
-        from_email = p.director_email
-        recipient_list = ["jmoldow@mit.edu"] # [student.email]
-        bcc = "jmoldow@mit.edu" # p.director_email
-        extra_headers = {}
-        extra_headers['Reply-To'] = p.director_email
-        print text, "\n\n"
-        send_mail(subject, text, from_email, recipient_list, bcc=bcc, extra_headers=extra_headers)
+        recipient_list = [student.email]
+        print text, "\n\nSent to", student.username, "<", student.email, ">\n\n------------------------\n\n"
+        f.write(text.replace(u'\u2019', "'").replace(u'\u201c','"').replace(u'\u201d','"')+"\n\nSent to "+student.username+"\n\n------------------------\n\n")
+        if save_enrollments and send_emails:
+            send_mail(subject, text, from_email, recipient_list, bcc=bcc, extra_headers=extra_headers)
+            time.sleep(timeout)
+
     return 0
     
 if __name__ == "__main__":
