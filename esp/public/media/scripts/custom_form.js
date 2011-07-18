@@ -72,6 +72,11 @@ $(document).ready(function() {
 	$('#input_form_description').bind('change', updateDesc);
 	$('#id_main_perm').change(onChangeMainPerm);
 	$('#id_prog_belong').change(onChangeProgBelong);
+	$('#id_modify').change(function(){
+		if($(this).attr('checked'))
+			$('#submit').val('Modify Form');
+		else $('#submit').val('Create Form');	
+	});
 	
 	$currSection=$('#section_0');
 	$currPage=$('#page_0');
