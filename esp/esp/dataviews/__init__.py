@@ -239,3 +239,53 @@ The function asks the user (via the raw_input() function) which path(s) to filte
                 elif not (use.lower() == 'n' or use.lower() == 'no'):
                     repeat = True
     return model.objects.filter(**kwargs)
+
+def path_v5(model, paths, *conditions):
+    '''
+Returns a filter of all objects of type model, subject to the list of conditions. 
+
+The first argument, model, must be a model. It cannot be an instance of a model, or any other object.
+
+The second argument, paths, is a dictionary. paths[condition_model] is a list of selected paths from model to condition_model that should be queried.
+
+The list of conditions can be arbitrarily long, but each condition must be one of the following: 
+ * an instance of a model 
+ * a 3-tuple (model, field, value), where field is a string which is the name of a field of model, and value is a valid value of that field
+ * a 4-tuple (model, field, query_term, value), where field is a string which is the name of a field of model, query_term is a string which is the name of a Django query term (defined in django.db.models.sql.constants.QUERY_TERMS), and value is a valid value of that field
+
+path_v1() is used outside of the scope of this function, to determine paths. Then path_v5 applies the appropriate filter.
+    '''
+    conditions = list(conditions)
+    if not (isclass(model) and issubclass(model, Model)):
+        raise TypeError("path_v4 argument 1 must be a model")
+    iter_conditions = range(len(conditions))
+    models = [None for i in iter_conditions]
+    fields = ['' for i in iter_conditions]
+    lookup_type = ['' for i in iter_conditions]
+    values = [None for i in iter_conditions]
+    for i in iter_conditions: 
+        if isinstance(conditions[i], tuple) and isinstance(conditions[i][-1], Model): 
+            conditions[i] = conditions[i][-1]
+        if isinstance(conditions[i], Model): 
+            if isinstance(conditions[i], model):
+                raise TypeError("path_v4 argument 2 must not contain any instances of argument 1")
+            values[i] = conditions[i]
+            models[i] = type(conditions[i])
+        elif isinstance(conditions[i], tuple) and iscorrecttuple(conditions[i]):
+            fields[i] = conditions[i][1]
+            models[i] = conditions[i][0]
+            if len(conditions[i]) == 3:
+                values[i] = conditions[i][2]
+            else:
+                values[i] = conditions[i][3]
+                lookup_type[i] = conditions[i][2]
+        else:
+            raise TypeError("path_v4 argument 2 must be a list, with each item being either an instance of a model or valid (model, field, value) 3-tuple")
+    
+    repeat = False
+    use = ''
+    kwargs = {}
+    for i in iter_conditions:
+        for path in paths[models[i]]: 
+            kwargs[LOOKUP_SEP.join((path, fields[i], lookup_type[i])).strip(LOOKUP_SEP)] = values[i]
+    return model.objects.filter(**kwargs)
