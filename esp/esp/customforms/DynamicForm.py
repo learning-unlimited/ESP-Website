@@ -91,10 +91,17 @@ class CustomFormHandler():
 					other_attrs['choices'].append( (option, option) )
 			elif attr['attr_type']=='limits':
 				limits=attr['value'].split(',')
-				if limits[0]:
-					other_attrs['min_value']=int(limits[0])
-				if limits[1]:
-					other_attrs['max_value']=int(limits[1])
+				if limits[0]: other_attrs['min_value']=int(limits[0])
+				if limits[1]: other_attrs['max_value']=int(limits[1])
+			elif attr['attr_type']=='charlimits':
+				limits=attr['value'].split(',')
+				if limits[0]: other_attrs['min_length']=int(limits[0])
+				if limits[1]: other_attrs['max_length']=int(limits[1])
+			"""elif attr['attr_type']=='wordlimits':
+				limits=attr['value'].split(',')
+				if limits[0]: other_attrs['min_words']=int(limits[0])
+				if limits[1]: other_attrs['max_words']=int(limits[1])
+			"""					
 		return other_attrs
 	
 	def _getFields(self):
@@ -122,7 +129,7 @@ class CustomFormHandler():
 					field_attrs.update(self._getAttrs(other_attrs))
 				field_attrs.update(self._field_types[field['field_type']]['attrs'])
 				
-				#Setting classes
+				#Setting classes required for front-end validation
 				widget_attrs={}	
 				widget_attrs.update(self._field_types[field['field_type']]['widget_attrs'])
 				if field['required']:
@@ -130,8 +137,16 @@ class CustomFormHandler():
 				if 'min_value' in field_attrs:
 					widget_attrs['min']=field_attrs['min_value']
 				if 'max_value' in field_attrs:
-					widget_attrs['max']=field_attrs['max_value']		
-				
+					widget_attrs['max']=field_attrs['max_value']
+				if 'min_length' in field_attrs:
+					widget_attrs['minlength']=field_attrs['min_length']
+				if 'max_length' in field_attrs:
+					widget_attrs['maxlength']=field_attrs['max_length']
+				if 'min_words' in field_attrs:
+					widget_attrs['minWords']=field_attrs['min_words']
+				if 'max_words' in field_attrs:
+					widget_attrs['maxWords']=field_attrs['max_words']					
+			
 				#For combo fields, classes need to be passed in to the field
 				if field['field_type'] in self._combo_fields:
 					field_attrs.update(widget_attrs)

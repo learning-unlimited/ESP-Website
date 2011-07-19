@@ -310,7 +310,42 @@ var clearSpecificOptions=function() {
 		$multi_options.empty();
 	if($other_options.children().length!=0)
 		$other_options.empty();
-}
+};
+
+var addSpecificOptions=function(elem, options, limtype) {
+	//Adds in specific options for some fields
+	
+	var limits, frag, $div;
+	if(elem=='numeric'){
+		if(options!='')
+			limits=options.split(',');
+		else limits=[0,0];
+		frag='<div class="toolboxText">';
+		frag+='<p>Min <input type="text" id="id_minVal" value="'+limits[0]+'"/>';
+		frag+='&nbsp;&nbsp;Max <input type="text" id="id_maxVal" value="'+limits[1]+'"/>';
+		frag+='</p></div>';
+	 	$div=$(frag);
+		$div.appendTo($('#other_options'));	
+	}
+	else if(elem=='textField' || elem=='longTextField' || elem=='longAns' || elem=='reallyLongAns'){
+		if(options!='')
+			limits=options.split(',');
+		else limits=['',''];
+		frag='<div id="text_limits" class="toolboxText">';
+		frag+='<select id="charOrWord">';
+		frag+='<option value="chars">Characters</option>';
+		frag+='<option value="words">Words</option>';
+		frag+='</select>';
+		frag+='<p>Min <input type="text" id="text_min" value="'+limits[0]+'"/> &nbsp;&nbsp;'; 
+		frag+='Max <input type="text" id="text_max" value="'+limits[1]+'"/></p>';
+		frag+='</div>';
+		var $div=$(frag);
+		$div.appendTo($('#other_options'));
+		if(limtype!='')
+			$('#charOrWord').val(limtype);
+		else $('#charOrWord').val('chars');
+	}
+};
 
 var onSelectElem = function(item) {
 	//Generates the properties fields when a form item is selected from the list
@@ -325,26 +360,12 @@ var onSelectElem = function(item) {
 	var $option,$wrap_option,i, question_text=formElements[currCategory][item]['ques'], $button=$('#button_add');;
 	
 	//Defining actions for generic elements
-	if(item=="radio" || item=="dropdown" || item=="multiselect" || item=="checkboxes") 
+	if(item=='textField' || item=='longTextField' || item=='longAns' || item=='reallyLongAns')
+		addSpecificOptions(item, '', '');
+	else if(item=="radio" || item=="dropdown" || item=="multiselect" || item=="checkboxes") 
 		generateOptions();
-	else if(item=="numeric") {
-		var $range_div=$('<div></div>').addClass('toolboxText');
-		$minInput=$('<input/>', {
-			type:"text",
-			value:"0",
-			name:"minVal",
-			id:"id_minVal"
-		});
-		$maxInput=$('<input/>', {
-			type:"text",
-			value:"0",
-			name:"maxVal",
-			id:"id_maxVal"
-		});
-		
-		$range_div.append($('<span>Min</span>')).append($minInput).append('&nbsp;&nbsp;').append($('<span>Max</span>')).append($maxInput);
-		$range_div.appendTo($('#other_options'));
-	}
+	else if(item=="numeric") 
+		addSpecificOptions(item, '', '');
 	else if(item=='section'){
 		$('#id_instructions').attr('value','Enter a short description about the section');
 	}
@@ -384,7 +405,7 @@ var onSelectField=function($elem, field_data) {
 	//De-selecting any previously selected field
 	$('div.field_selected').removeClass('field_selected');
 	
-	var $wrap=$elem, $button=$('#button_add'), options;
+	var $wrap=$elem, $button=$('#button_add'), options, ftype=field_data.field_type;
 	
 	if($wrap.length !=0){
 		$wrap.removeClass('field_hover').addClass('field_selected');
@@ -393,44 +414,33 @@ var onSelectField=function($elem, field_data) {
 		$currSection=$wrap.parent();
 		$prevField=$wrap.prev('div.field_wrapper');	
 	}
-	if(field_data.field_type!='section')
+	if(ftype!='section')
 		$("#id_required").attr('checked',field_data.required);
 	$("#id_question").attr('value',field_data.question_text);
 	$("#id_instructions").attr('value',field_data.help_text);
 	
 	//Adding in field-specific options
-	if($.inArray(field_data.field_type, ['radio', 'dropdown', 'multiselect', 'checkboxes']) != -1){
+	if($.inArray(ftype, ['radio', 'dropdown', 'multiselect', 'checkboxes']) != -1){
 		options=field_data.attrs['options'].split("|");
 		$.each(options, function(idx,el) {
 			if(el!="")
 				addOption(el);
 		});
 	}
-	else if(field_data.field_type=='numeric'){
-		var $range_div=$('<div></div>').addClass('toolboxText');
-		var limits=field_data.attrs['limits'].split(',');
-		$minInput=$('<input/>', {
-			type:"text",
-			value:limits[0],
-			name:"minVal",
-			id:"id_minVal"
-		});
-		$maxInput=$('<input/>', {
-			type:"text",
-			value:limits[1],
-			name:"maxVal",
-			id:"id_maxVal"
-		});
-		
-		$range_div.append($('<span>Min</span>')).append($minInput).append('&nbsp;&nbsp;').append($('<span>Max</span>')).append($maxInput);
-		$range_div.appendTo($('#other_options'));
+	else if(ftype=='numeric')
+		addSpecificOptions('numeric', field_data.attrs['limits'], '');
+	else if($.inArray(ftype, ['textField', 'longTextField', 'longAns', 'reallyLongAns']) != -1){
+		var key;
+		if('charlimits' in field_data.attrs)
+			addSpecificOptions(ftype, field_data.attrs['charlimits'], 'chars');
+		else
+			addSpecificOptions(ftype, field_data.attrs['wordlimits'], 'words');
 	}
-	else if(field_data.field_type=='section'){
+	else if(ftype=='section'){
 		$("#id_required").attr('checked','');
 	}
 	if($button.attr('value')=='Add to Form')
 		$button.attr('value','Update').unbind('click').click(updateField);
-		
 };
 
 var deSelectField=function() {
@@ -486,6 +496,11 @@ var addElement = function(item,$prevField) {
 			id:html_id,
 			size:"30"
 		});
+		var key;
+		if($('#charOrWord').val()=='chars')
+			key='charlimits';
+		else key='wordlimits';	
+		data['attrs'][key]=$('#text_min').attr('value') + ',' + $('#text_max').attr('value');
 	}
 	else if(item=="longTextField"){
 		$new_elem=$('<input/>', {
@@ -494,6 +509,11 @@ var addElement = function(item,$prevField) {
 			id:html_id,
 			size:"60"
 		});
+		var key;
+		if($('#charOrWord').val()=='chars')
+			key='charlimits';
+		else key='wordlimits';	
+		data['attrs'][key]=$('#text_min').attr('value') + ',' + $('#text_max').attr('value');
 	}
 	else if(item=="longAns") {
 		$new_elem=$('<textarea>', {
@@ -502,6 +522,11 @@ var addElement = function(item,$prevField) {
 			rows:"8",
 			cols:"50"
 		});
+		var key;
+		if($('#charOrWord').val()=='chars')
+			key='charlimits';
+		else key='wordlimits';	
+		data['attrs'][key]=$('#text_min').attr('value') + ',' + $('#text_max').attr('value');
 	}
 	else if(item=="reallyLongAns") {
 		$new_elem=$('<textarea>', {
@@ -510,6 +535,11 @@ var addElement = function(item,$prevField) {
 			rows:"14",
 			cols:"70"
 		});
+		var key;
+		if($('#charOrWord').val()=='chars')
+			key='charlimits';
+		else key='wordlimits';	
+		data['attrs'][key]=$('#text_min').attr('value') + ',' + $('#text_max').attr('value');
 	}
 	else if(item=="radio") {
 		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
