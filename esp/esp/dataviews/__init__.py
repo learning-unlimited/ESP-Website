@@ -9,7 +9,7 @@ from django.db.models.fields.related import RelatedField, ManyToManyField
 from inspect import isclass
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 
-useful_models = [User, ESPUser, Program, RegistrationProfile, RegistrationType, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication, StudentRegistration, Event, ClassCategories, ClassSection, ClassSubject, EventType, ArchiveClass, FinancialAidRequest, QuestionType, Question, SurveyResponse, Survey, ContactInfo, EducatorInfo, GuardianInfo, K12School, StudentInfo, TeacherInfo, UserAvailability, UserBit, ZipCodeSearches, ZipCode]
+useful_models = [ESPUser, Program, RegistrationProfile, RegistrationType, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication, StudentRegistration, Event, ClassCategories, ClassSection, ClassSubject, EventType, ArchiveClass, FinancialAidRequest, QuestionType, Question, SurveyResponse, Survey, ContactInfo, EducatorInfo, GuardianInfo, K12School, StudentInfo, TeacherInfo, UserAvailability, UserBit, ZipCodeSearches, ZipCode]
 query_terms = QUERY_TERMS.keys()
 
 def path_v1(*args):
@@ -26,9 +26,15 @@ If the first is an instance and the second is a model, the function returns the 
         raise TypeError("path_v1 expected 2 arguments, got "+str(len(args)))
     instances = [None for i in range(2)]
     classes = [None for i in range(2)]
-    for i in range(2):
-        if (not (isclass(args[i]) and issubclass(args[i], Model))) and (not isinstance(args[i], Model)): 
-            raise TypeError("path_v1 argument "+str(i+1)+" must be a model or an instance of a model")
+    for i in range(2): 
+        is_useful_model = False
+        if (isclass(args[i]) and issubclass(args[i], Model)) or (isinstance(args[i], Model)): 
+            for model in useful_models:
+                if (isclass(args[i]) and issubclass(args[i], model)) or (isinstance(args[i], model)): 
+                    is_useful_model = True
+                    break
+        if not is_useful_model:
+            raise TypeError("path_v1 argument "+str(i+1)+" must be a usef model or an instance of a useful model")
         if isclass(args[i]):
             classes[i] = args[i]
         else:
@@ -40,7 +46,7 @@ If the first is an instance and the second is a model, the function returns the 
     paths = []
     while stack:
         (model, path) = stack.pop()
-        if issubclass(model, DataTree):
+        if not (model in useful_models):
             continue
         relatedObjects = {}
         if issubclass(model, classes[1]):
