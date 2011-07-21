@@ -8,7 +8,7 @@ from esp.customforms.models import Field
 from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
-from esp.customforms.linkfields import link_fields
+from esp.customforms.linkfields import link_fields, only_fkey_models
 from django.contrib.contenttypes.models import ContentType
 
 class DynamicModelHandler:
@@ -95,8 +95,15 @@ class DynamicModelHandler:
 		self.field_list.append( ('id', models.AutoField(primary_key=True) ) )
 		if not self.form.anonymous:
 			self.field_list.append( ('user', models.ForeignKey(ESPUser, null=True, blank=True, on_delete=models.SET_NULL) ) )
+			
+		#Checking for only_fkey links
+		if self.form.link_type!='-1':
+			app, model_name=only_fkey_models[self.form.link_type]['model'].split('.')
+			model_cls=ContentType.objects.get(app_label=app, model=model_name).model_class()
+			self.field_list.append( ('link_'+model_name, models.ForeignKey(model_cls, null=True, blank=True, on_delete=models.SET_NULL)) )
+			
+		#Check for linked fields
 		for field_id, field in self.fields:
-			#Check for linked fields
 			if field in link_fields:
 				if link_fields[field]['model'] not in link_models: link_models.append(link_fields[field]['model'])
 			

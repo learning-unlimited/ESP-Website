@@ -8,6 +8,8 @@ from customforms.models import *
 from esp.program.models import Program
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.customforms.DynamicForm import FormHandler
+from esp.customforms.linkfields import only_fkey_models
+from django.contrib.contenttypes.models import ContentType
 
 from esp.users.models import ESPUser
 from esp.middleware import ESPError
@@ -22,7 +24,7 @@ def formBuilder(request):
 	if request.user.is_authenticated():
 		prog_list=Program.objects.all()
 		form_list=Form.objects.filter(created_by=request.user)
-		return render_to_response('customforms/index.html',{'prog_list':prog_list, 'form_list':form_list}) 
+		return render_to_response('customforms/index.html',{'prog_list':prog_list, 'form_list':form_list, 'only_fkey_models':only_fkey_models.keys()}) 
 	return HttpResponseRedirect('/')
 	
 def getPerms(request):
@@ -180,7 +182,7 @@ def hasPerm(user, form):
 		Qlist=[]
 		Qlist.append(ESPUser.getAllOfType(main_perm))  #Check -> what to do with students?
 		if sub_perms:
-			if form.link_type=='program':
+			if form.link_type=='program' or form.link_type=='Program':
 				prog=Program.objects.get(pk=form.link_id)
 				all_Qs=prog.getLists()
 				for perm in sub_perms:
@@ -258,7 +260,28 @@ def getRebuildData(request):
 			fh=FormHandler(form=form)
 			metadata=json.dumps(fh.rebuildData())
 			return HttpResponse(metadata)
-	return HttpResponse(status=400)						
+	return HttpResponse(status=400)	
+	
+def get_links(request):
+	"""
+	Returns the instances for the specified model, to link to in the form builder.
+	"""
+	if request.is_ajax():
+		if request.method=='GET':
+			try:
+				link_model=only_fkey_models[request.GET['link_model']]
+			except KeyError:
+				return HttpResponse(status=400)
+			app, model_name=link_model['model'].split('.')
+			link_objects=ContentType.objects.get(app_label=app, model=model_name).model_class().objects.all()		
+			retval={}
+			for obj in link_objects:
+				name_attr=getattr(obj, link_model['disp_name'])
+				if callable(name_attr): retval[obj.id]=name_attr()
+				else: retval[obj.id]=name_attr
+				
+			return HttpResponse(json.dumps(retval))
+	return HttpResponse(status=400)										
 		
 def test():
 	f=Form.objects.get(pk=16)

@@ -53,4 +53,12 @@ link_fields={
 		'combo':['street', 'city', 'state', 'zip'],
 		'form_fld_props':{'typeMap':AddressField, 'attrs':{}, 'widget_attrs':{'class':''}},
 	},
-}	
+}
+
+only_fkey_models={
+	#Models that can only be foreign-keyed to, and not modified.
+	#Keys are displayed in the form builder.
+	#disp_name, used to show a nice name for instances, can be an attribute or a method (i.e. callable)
+	'Program':{'model':'program.program', 'disp_name':'niceName'},
+	'Course':{'model':'program.classsubject', 'disp_name':'title'},
+}

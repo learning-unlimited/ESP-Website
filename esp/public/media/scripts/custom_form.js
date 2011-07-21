@@ -72,6 +72,8 @@ $(document).ready(function() {
 	$('#input_form_description').bind('change', updateDesc);
 	$('#id_main_perm').change(onChangeMainPerm);
 	$('#id_prog_belong').change(onChangeProgBelong);
+	$('#links_id_main').change(onChangeMainLink);
+	$('#links_id_specify').change(onChangeLinksSpecify);
 	
 	$currSection=$('#section_0');
 	$currPage=$('#page_0');
@@ -152,6 +154,7 @@ var initUI=function(){
 	perms={};
 	clearPermsArea();
 	$('#id_modify_wrapper').hide();
+	clearLinksArea();
 };
 
 var clearPermsArea=function(){
@@ -159,6 +162,39 @@ var clearPermsArea=function(){
 	$('#id_prog_belong').attr('checked', false).parent().hide();
 	$('#id_sub_perm').children().remove();
 	$('#id_sub_perm').parent().hide();
+};
+
+var clearLinksArea=function(){
+	//Clears up the links area
+	$('#links_id_specify').val('userdef').parent().hide();
+	$('#links_id_pick').empty().parent().hide();
+};
+
+var onChangeMainLink=function(){
+	clearLinksArea();
+	if($('#links_id_main').val()!='-1')
+		$('#links_id_specify').parent().show();
+	else $('#links_id_specify').parent().hide();	
+};
+
+var onChangeLinksSpecify=function(){
+	if($('#links_id_specify').val()=='particular'){
+		$.ajax({
+			url:'/customforms/getlinks/',
+			data:{'link_model':$('#links_id_main').val()},
+			type:'GET',
+			dataType:'json',
+			async:false,
+			success: function(link_objects) {
+				var html_str='';
+				$.each(link_objects, function(id, name){
+					html_str+='<option value="'+id+'">'+name+'</option>';
+				});
+				$('#links_id_pick').html(html_str);
+				$('#links_id_pick').parent().show();
+			}
+		});
+	}
 };
 
 var getPerms=function(){
@@ -780,14 +816,10 @@ var submit=function() {
 	//submits the created form to the server
 	
 	var form={'title':$('#form_title').html(), 'desc':$('#form_description').html(), 'anonymous':$('#id_anonymous').attr('checked'), 'pages':[]}, section, elem, page, section_seq, page_seq=0;
-	if($('#id_assoc_prog').val()!="-1") {
-		form['link_type']='program';
-		form['link_id']=$('#id_assoc_prog').val();
-	}
-	else {
-		form['link_type']='none';
-		form['link_id']='-1';
-	}
+	form['link_type']=$('#links_id_main').val();
+	if(form['link_type']!='-1' && $('#links_id_specify').val()=='particular')
+		form['link_id']=$('#links_id_pick').val();
+	else form['link_id']=-1;	
 	
 	var form_perms='';
 	if($('#id_main_perm').val()!='none'){

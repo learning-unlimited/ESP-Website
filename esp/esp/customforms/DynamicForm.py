@@ -12,7 +12,7 @@ from esp.users.models import ContactInfo
 from esp.cache import cache_function
 from esp.program.models import Program
 
-from esp.customforms.linkfields import link_fields
+from esp.customforms.linkfields import link_fields, only_fkey_models
 from django.contrib.contenttypes.models import ContentType
 
 class BaseCustomForm(BetterForm):
@@ -108,6 +108,26 @@ class CustomFormHandler():
 			curr_fieldset=[]
 			curr_fieldset.extend([section[0]['section__title'], {'fields':[], 'classes':['section',]}])
 			curr_fieldset[1]['description']=section[0]['section__description']
+			
+			#Check for only_fkey models.
+			#If any, insert the relevant field into the first section of the fist page
+			if section[0]['section__seq']==0 and self.seq==0:
+				if self.form.link_type!='-1':
+					link_model=only_fkey_models[self.form.link_type]
+					app, model_name=link_model['model'].split('.')
+					label='Please pick the %s you want to fill the form for' % self.form.link_type
+					link_cls=ContentType.objects.get(app_label=app, model=model_name).model_class()
+					if self.form.link_id==-1:
+						#User needs to be shown a list of instances from which to select
+						queryset=link_cls.objects.all()
+						widget=forms.Select()
+					else:
+						queryset=link_cls.objects.filter(pk=self.form.link_id)
+						widget=forms.HiddenInput()	
+					fld=forms.ModelChoiceField(queryset=queryset, label=label, initial=queryset[0], widget=widget, required=True, empty_label=None)
+					self.fields.append(['link_'+model_name, fld ])
+					curr_fieldset[1]['fields'].append('link_'+model_name)		
+			
 			for field in section:
 				field_name='question_%d' % field['id']
 				field_attrs={'label':field['label'], 'help_text':field['help_text'], 'required':field['required']}
@@ -148,7 +168,7 @@ class CustomFormHandler():
 					
 				#Setting the queryset for a courses field
 				if field['field_type']=='courses':
-					if self.form.link_type=='program':
+					if self.form.link_type=='program' or self.form.link_type=='Program':
 						field_attrs['queryset']=Program.objects.get(pk=self.form.link_id).classsubject_set.all()
 						
 				#Initializing widget				
@@ -217,6 +237,10 @@ class ComboForm(FormWizard):
 		#Populating data with the values that need to be inserted
 		for form in form_list:
 			for k,v in form.cleaned_data.items():
+				#Check for only_fkey link models first
+				if k.split('_')[0]=='link':
+					data[k]=v
+					continue
 				field_id=int(k.split("_")[1])
 				ftype=fields[field_id]
 				if ftype in link_fields:

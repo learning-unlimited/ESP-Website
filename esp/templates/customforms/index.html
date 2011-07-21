@@ -117,7 +117,32 @@
 						<select id="id_sub_perm">
 						</select>		
 					</div>
+				</div>
+				
+				<h3><a href='#'>Links</a></h3>
+				<div>
+					<p>Link to -
+					<select id="links_id_main">
+						<option value="-1">None</option>
+						{% for model in only_fkey_models %}
+							<option value="{{model}}">{{model}}</option>
+						{% endfor %}	
+					</select>
+					</p>
+					
+					<p>Specify -
+					<select id="links_id_specify">
+						<option value="userdef">Let user pick</option>
+						<option value="particular">Particular Instance</option>
+					</select>
+					</p>
+					
+					<p>Pick -
+					<select id="links_id_pick">
+					</select>
+					</p>		
 				</div>	
+					
 				<input type="button" id="submit" value="Create Form"/>
 			</div>		
 		</div>	
