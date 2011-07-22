@@ -5,6 +5,7 @@ from django.template.context import RequestContext
 from dataviews import useful_models as all_usefull_models
 from dataviews import * 
 from django.forms.util import flatatt, ErrorDict, ErrorList
+from django.forms.forms import pretty_name
 from django.core.urlresolvers import get_callable, get_mod_func
 from django.utils.importlib import import_module
 from django.http import Http404, HttpResponseRedirect, HttpResponse
@@ -46,9 +47,14 @@ def pathchoiceform_factory(model, all_paths):
     name = "PathChoiceForm"
     base = (forms.Form,)
     fields = {}
-    for target_model, model_paths in all_paths:
-        for path in model_paths: 
-            fields[target_model.__name__ + LOOKUP_SEP + path] = forms.BooleanField(required=False, label=unicode(model.__name__)+ u' \u2192 ' + unicode(path).replace(unicode(LOOKUP_SEP), u' \u2192 '))
+    for target_model, model_paths, field in all_paths:
+        for (path, models, many) in model_paths: 
+            label = unicode(model.__name__)
+            if path: 
+                for i,n in enumerate(path):
+                    label += u' \u2192 ' + pretty_name(n) + u' (' + models[i+1].__name__ + u')'
+            label += u' \u2192 ' + pretty_name(unicode(field))
+            fields[target_model.__name__ + LOOKUP_SEP + LOOKUP_SEP.join(path)] = forms.BooleanField(required=False, label=label)
     return type(name, base, fields)
 
 class DataViewsWizard(FormWizard):
@@ -122,7 +128,7 @@ class DataViewsWizard(FormWizard):
                     continue
                 condition_model, condition_field = get_mod_func(form.cleaned_data['condition_'+str(i+1)])
                 condition_model = globals()[condition_model]
-                paths.append((condition_model, path_v1(model, condition_model)))
+                paths.append((condition_model, path_v1(model, condition_model), condition_field))
             self.form_list[2] = pathchoiceform_factory(model, paths)
         if step == 2:
             self.form_list[3] = displaycolumnsform_factory(form0.cleaned_data['num_columns'])
