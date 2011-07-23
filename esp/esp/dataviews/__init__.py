@@ -13,7 +13,7 @@ from collections import deque
 useful_models = [ESPUser, Program, RegistrationType, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication, StudentRegistration, Event, ClassCategories, ClassSection, ClassSubject, QuestionType, Question, SurveyResponse, Survey, ContactInfo, EducatorInfo, GuardianInfo, K12School, StudentInfo, TeacherInfo, ZipCodeSearches, ZipCode]
 query_terms = QUERY_TERMS.keys()
 
-def path_v1(begin, end, max_paths=6):
+def path_v1(begin, end, max_paths=100):
     '''
 Finds a path from begin to end, or returns [] if they aren't related.
 

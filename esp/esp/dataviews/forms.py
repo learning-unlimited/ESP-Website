@@ -30,7 +30,7 @@ def headingconditionsform_factory(num_conditions = 1):
     fields = {'model': forms.ChoiceField(choices=model_choices)}
     for i in range(num_conditions): 
         fields['condition_'+str(i+1)] = forms.ChoiceField(choices = model_field_choices, required=False)
-        fields['query_term_'+str(i+1)] = forms.ChoiceField(choices = [(query_term, query_term_symbol) for query_term, query_term_symbol in query_term_symbols.iteritems()], initial="exact")
+        fields['query_term_'+str(i+1)] = forms.ChoiceField(choices = [(query_term, query_term_symbols[query_term]) for query_term in query_terms], initial="exact")
         fields['text_'+str(i+1)] = forms.CharField(required=False)
     return type(name, base, fields)
 
@@ -39,7 +39,7 @@ def displaycolumnsform_factory(num_columns = 1):
     base = (forms.Form,)
     fields = {}
     for i in range(num_columns): 
-        fields['field_'+str(i+1)] = forms.CharField(required=(not i))
+        fields['field_'+str(i+1)] = forms.ChoiceField(choices = model_field_choices, required=(not i))
         fields['text_'+str(i+1)] = forms.CharField(required=(not i))
     return type(name, base, fields)
 
@@ -116,10 +116,15 @@ class DataViewsWizard(FormWizard):
     
     def process_step(self, request, form, step): 
         form0 = self.get_form(0, request.POST)
+        form1 = None
         if not form0.is_valid():
             return self.render_revalidation_failure(request, 0, form0)
         if not step: 
             self.form_list[1] = headingconditionsform_factory(form0.cleaned_data['num_conditions'])
+        else:
+            form1 = self.get_form(1, request.POST)
+            if not form1.is_valid():
+                return self.render_revalidation_failure(request, 1, form1)
         if step == 1: 
             model = globals()[form.cleaned_data['model']]
             paths = []
@@ -132,3 +137,13 @@ class DataViewsWizard(FormWizard):
             self.form_list[2] = pathchoiceform_factory(model, paths)
         if step == 2:
             self.form_list[3] = displaycolumnsform_factory(form0.cleaned_data['num_columns'])
+        if step == 3: 
+            model = globals()[form1.cleaned_data['model']]
+            paths = []
+            for i in range(form0.cleaned_data['num_columns']):
+                if not form.cleaned_data['field_'+str(i+1)]: 
+                    continue
+                field_model, field_field = get_mod_func(form.cleaned_data['field_'+str(i+1)])
+                field_model = globals()[field_model]
+                paths.append((field_model, path_v1(model, field_model), field_field))
+            self.form_list[4] = pathchoiceform_factory(model, paths)
