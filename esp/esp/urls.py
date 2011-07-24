@@ -195,5 +195,4 @@ urlpatterns +=patterns('esp.customforms.views',
 	(r'^customforms/metadata/$', 'getRebuildData'),
 	(r'^customforms/getperms/$', 'getPerms'),
 	(r'^customforms/getlinks/$', 'get_links'),
-	)
-	
+	)	

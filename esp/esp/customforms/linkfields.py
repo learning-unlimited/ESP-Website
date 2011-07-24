@@ -1,6 +1,40 @@
 from django import forms
+from django.db.models.loading import get_models
 from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.customforms.forms import NameField, AddressField
+
+class CustomFormsLinkModel(object):
+	#Dummy class to identify linked models with
+	pass
+	
+class CustomFormsCache:
+	#Holds a global cache of all models and fields
+	#available to customforms.
+	#Uses the Borg design pattern like Django's AppCache class
+	
+	__shared_state=dict(
+		only_fkey_models={},
+		link_fields={},
+		loaded=False,
+	)
+	
+	def __init__(self):
+		self.__dict__=self.__shared_state
+		
+	def _populate(self):
+		"""
+		Populates the cache with metadata about models
+		"""
+		if self.loaded:
+			return
+			
+		for model in get_models():
+			if CustomFormsLinkModel in model.__bases__:
+				self.only_fkey_models.update({model.form_link_name : model})
+		self.loaded=True		
+				
+cf_cache=CustomFormsCache()								
+		
 
 link_fields={
 	'first_name':{

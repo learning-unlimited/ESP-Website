@@ -12,7 +12,7 @@ from esp.users.models import ContactInfo
 from esp.cache import cache_function
 from esp.program.models import Program
 
-from esp.customforms.linkfields import link_fields, only_fkey_models
+from esp.customforms.linkfields import link_fields, only_fkey_models, cf_cache
 from django.contrib.contenttypes.models import ContentType
 
 class BaseCustomForm(BetterForm):
@@ -113,10 +113,8 @@ class CustomFormHandler():
 			#If any, insert the relevant field into the first section of the fist page
 			if section[0]['section__seq']==0 and self.seq==0:
 				if self.form.link_type!='-1':
-					link_model=only_fkey_models[self.form.link_type]
-					app, model_name=link_model['model'].split('.')
 					label='Please pick the %s you want to fill the form for' % self.form.link_type
-					link_cls=ContentType.objects.get(app_label=app, model=model_name).model_class()
+					link_cls=cf_cache.only_fkey_models[self.form.link_type]
 					if self.form.link_id==-1:
 						#User needs to be shown a list of instances from which to select
 						queryset=link_cls.objects.all()
@@ -125,8 +123,8 @@ class CustomFormHandler():
 						queryset=link_cls.objects.filter(pk=self.form.link_id)
 						widget=forms.HiddenInput()	
 					fld=forms.ModelChoiceField(queryset=queryset, label=label, initial=queryset[0], widget=widget, required=True, empty_label=None)
-					self.fields.append(['link_'+model_name, fld ])
-					curr_fieldset[1]['fields'].append('link_'+model_name)		
+					self.fields.append(['link_'+link_cls.__name__, fld ])
+					curr_fieldset[1]['fields'].append('link_'+link_cls.__name__)		
 			
 			for field in section:
 				field_name='question_%d' % field['id']

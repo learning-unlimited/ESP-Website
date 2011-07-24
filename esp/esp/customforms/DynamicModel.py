@@ -8,7 +8,7 @@ from esp.customforms.models import Field
 from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
-from esp.customforms.linkfields import link_fields, only_fkey_models
+from esp.customforms.linkfields import link_fields, only_fkey_models, cf_cache
 from django.contrib.contenttypes.models import ContentType
 
 class DynamicModelHandler:
@@ -98,9 +98,8 @@ class DynamicModelHandler:
 			
 		#Checking for only_fkey links
 		if self.form.link_type!='-1':
-			app, model_name=only_fkey_models[self.form.link_type]['model'].split('.')
-			model_cls=ContentType.objects.get(app_label=app, model=model_name).model_class()
-			self.field_list.append( ('link_'+model_name, models.ForeignKey(model_cls, null=True, blank=True, on_delete=models.SET_NULL)) )
+			model_cls=cf_cache.only_fkey_models[self.form.link_type]
+			self.field_list.append( ('link_'+model_cls.__name__, models.ForeignKey(model_cls, null=True, blank=True, on_delete=models.SET_NULL)) )
 			
 		#Check for linked fields
 		for field_id, field in self.fields:

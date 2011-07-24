@@ -75,6 +75,8 @@ from django.core.cache import cache  ## Yep, we do have to do some raw cache-man
 
 from esp.middleware.threadlocalrequest import get_current_request
 
+from esp.customforms.linkfields import CustomFormsLinkModel
+
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication', 'ClassSizeRange']
 
 class ClassSizeRange(models.Model):
@@ -1241,9 +1243,12 @@ class ClassSection(models.Model):
         app_label = 'program'
         ordering = ['anchor__name']
 
-class ClassSubject(models.Model):
+class ClassSubject(models.Model, CustomFormsLinkModel):
     """ An ESP course.  The course includes one or more ClassSections which may be linked by ClassImplications. """
     
+	#customforms info
+    form_link_name='Course'	
+	
     from esp.program.models import Program
     
     anchor = AjaxForeignKey(DataTree)

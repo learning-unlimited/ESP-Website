@@ -52,6 +52,8 @@ from esp.settings import DEFAULT_HOST
 
 import simplejson as json
 
+from esp.customforms.linkfields import CustomFormsLinkModel
+
 #   A function to lazily import models that is occasionally needed for cache dependencies.
 def get_model(module_name, model_name):
     parent_module_name = '.'.join(module_name.split('.')[:-1])
@@ -276,10 +278,13 @@ def _get_type_url(type):
     
 
     
-class Program(models.Model):
+class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     
     #from esp.program.models.class_ import ClassCategories
+
+	#customforms definitions
+    form_link_name='Program'
     
     anchor = AjaxForeignKey(DataTree,unique=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     grade_min = models.IntegerField()

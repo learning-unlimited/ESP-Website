@@ -8,7 +8,7 @@ from customforms.models import *
 from esp.program.models import Program
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.customforms.DynamicForm import FormHandler
-from esp.customforms.linkfields import only_fkey_models
+from esp.customforms.linkfields import only_fkey_models, cf_cache
 from django.contrib.contenttypes.models import ContentType
 
 from esp.users.models import ESPUser
@@ -24,7 +24,7 @@ def formBuilder(request):
 	if request.user.is_authenticated():
 		prog_list=Program.objects.all()
 		form_list=Form.objects.filter(created_by=request.user)
-		return render_to_response('customforms/index.html',{'prog_list':prog_list, 'form_list':form_list, 'only_fkey_models':only_fkey_models.keys()}) 
+		return render_to_response('customforms/index.html',{'prog_list':prog_list, 'form_list':form_list, 'only_fkey_models':cf_cache.only_fkey_models.keys()}) 
 	return HttpResponseRedirect('/')
 	
 def getPerms(request):
