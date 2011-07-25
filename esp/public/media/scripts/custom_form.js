@@ -17,13 +17,13 @@ var formElements={
 		page:{'disp_name':'Page', 'ques':'Page'}
 	},
 	'Personal':{
-		name:{'disp_name':'Name','ques':'Your name'},
-		gender:{'disp_name':'Gender','ques':'Gender'},
-		phone:{'disp_name':'Phone no.','ques':'Phone no.'},
-		email:{'disp_name':'Email','ques':'Email'},
-		address:{'disp_name':'Address','ques':'Address'},
-		state:{'disp_name':'State','ques':'State'},
-		city:{'disp_name':'City','ques':'City'}
+		name:{'disp_name':'Name','ques':'Your name', 'field_type':'combo', 'field_options':{}},
+		gender:{'disp_name':'Gender','ques':'Gender', 'field_type':'radio', 'field_options':{'options':'Male|Female'}},
+		phone:{'disp_name':'Phone no.','ques':'Phone no.', 'field_type':'textField', 'field_options':{}},
+		email:{'disp_name':'Email','ques':'Email', 'field_type':'textField', 'field_options':{}},
+		address:{'disp_name':'Address','ques':'Address', 'field_type':'combo', 'field_options':{}},
+		state:{'disp_name':'State','ques':'State', 'field_type':'dropdown', 'field_options':{'options':''}},
+		city:{'disp_name':'City','ques':'City', 'field_type':'textField', 'field_options':{}}
 	},
 	'Program':{}
 };
@@ -52,11 +52,6 @@ var elemTypes = {
 	'state':0,
 	'city':0,
 	'courses':0
-};
-
-var covenience = {
-	//A list of convenience methods
-	
 };
 
 var currElemType, currElemIndex, optionCount=1, formTitle="Form",currCategory='',$prevField, $currField, secCount=1, $currSection, pageCount=1, $currPage;
@@ -488,15 +483,359 @@ var deSelectField=function() {
 	$('#cat_selector').children('select[value=Generic]').attr('selected','selected');
 	onSelectCategory('Generic');
 	onSelectElem('textField');
-}
+};
 
 var insertField=function(item, $prevField){
 	//Handles addition of a field into the form, as well as other ancillary functions. Calls addElement()
 	
 	addElement(item,$prevField);
 	onSelectElem(item);
-}
+};
 
+var renderNormalField=function(item, field_options, data){
+	//Rendering code for simple fields (i.e. non-combo fields)
+	
+	var $new_elem, key;
+	if(item=="textField"){
+		$new_elem=$('<input/>', {
+			type:"text",
+			size:"30"
+		});
+		if($('#charOrWord').val()=='chars')
+			key='charlimits';
+		else key='wordlimits';	
+		data['attrs'][key]=$('#text_min').attr('value') + ',' + $('#text_max').attr('value');
+	}
+	else if(item=="longTextField"){
+		$new_elem=$('<input/>', {
+			type:"text",
+			size:"60"
+		});
+		if($('#charOrWord').val()=='chars')
+			key='charlimits';
+		else key='wordlimits';	
+		data['attrs'][key]=$('#text_min').attr('value') + ',' + $('#text_max').attr('value');
+	}
+	else if(item=="longAns") {
+		$new_elem=$('<textarea>', {
+			rows:"8",
+			cols:"50"
+		});
+		if($('#charOrWord').val()=='chars')
+			key='charlimits';
+		else key='wordlimits';	
+		data['attrs'][key]=$('#text_min').attr('value') + ',' + $('#text_max').attr('value');
+	}
+	else if(item=="reallyLongAns") {
+		$new_elem=$('<textarea>', {
+			rows:"14",
+			cols:"70"
+		});
+		if($('#charOrWord').val()=='chars')
+			key='charlimits';
+		else key='wordlimits';	
+		data['attrs'][key]=$('#text_min').attr('value') + ',' + $('#text_max').attr('value');
+	}
+	else if(item=="radio") {
+		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
+		$new_elem=$("<div>");
+		
+		if(!$.isEmptyObject(field_options)){
+			//Custom field, get options from definition
+			options_string=field_options['options'];
+		}
+		else {
+			//Normal field
+			$text_inputs.each(function(idx,el) {
+					options_string+=$(el).attr('value')+"|";	
+			});
+		}
+		$.each(options_string.split('|'), function(idx, el){
+			if(el!=''){
+				$one_option=$('<input>', {
+						type:"radio",
+						value:el
+				});
+				$new_elem.append($("<p>").append($one_option).append($("<span>"+el+"</span>")));
+			}
+		});
+		data['attrs']['options']=options_string;
+	}
+	else if(item=="dropdown") {
+		$new_elem=$('<select>');
+		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
+		if(!$.isEmptyObject(field_options))
+			options_string=field_options['options'];
+		else{
+			$text_inputs.each(function(idx,el) {
+				options_string+=$(el).attr('value')+"|";
+			});
+		}
+		$.each(options_string.split('|'), function(idx, el){
+			if(el!=''){
+				$one_option=$('<option>', {
+						value:el
+				});	
+				$one_option.html(el);
+				$new_elem.append($one_option);
+			}
+		});	
+		data['attrs']['options']=options_string;
+	}
+	else if(item=="multiselect") {
+		$new_elem=$('<select>',{
+			'multiple':'multiple'
+		});
+		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
+		if(!$.isEmptyObject(field_options))
+			options_string=field_options['options'];
+		else {
+			$text_inputs.each(function(idx,el) {
+				options_string+=$(el).attr('value')+"|";
+			});
+		}
+		$.each(options_string.split('|'), function(idx, el){
+			$one_option=$('<option>', {
+					value:el
+			});	
+			$one_option.html(el);
+			$new_elem.append($one_option);
+		});	
+		data['attrs']['options']=options_string;
+	}
+	else if(item=="checkboxes"){
+		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
+		$new_elem=$("<div>");
+		if(!$.isEmptyObject(field_options))
+			options_string=field_options['options'];
+		else {
+			$text_inputs.each(function(idx,el) {
+				options_string+=$(el).attr('value')+"|";
+			});
+		}
+		$.each(options_string.split('|'), function(idx, el){
+			$one_option=$('<input>', {
+					type:"checkbox",
+					value:el
+			});
+			$new_elem.append($("<p>").append($one_option).append($("<span>"+el+"</span>")));
+		});
+		data['attrs']['options']=options_string;
+	}
+	else if(item=="numeric"){
+		$new_elem=$('<input/>', {
+			type:"text",
+			size:"20"
+		});
+		data['attrs']['limits']=$('#id_minVal').attr('value') + ',' + $('#id_maxVal').attr('value');
+	}
+	else if(item=='date'){
+		$new_elem=$("<div>");
+		var $mm,$dd,$yyyy;
+		$mm=$('<input/>', {
+			type:"text",
+			size:"2",
+			value:"mm"
+		});
+		$dd=$('<input/>', {
+			type:"text",
+			size:"2",
+			value:"dd"
+		});
+		$yyyy=$('<input/>', {
+			type:"text",
+			size:"4",
+			value:"yyyy",
+		});
+		$new_elem.append($('<p>').append($mm).append($('<span> / </span>')).append($dd).append($('<span> / </span>')).append($yyyy));
+	}
+	else if(item=='time'){
+		$new_elem=$("<div>");
+		var $hh,$m,$ss,$ampm;
+		$hh=$('<input/>', {
+			type:"text",
+			size:"2",
+			value:"hh"
+		});
+		$m=$('<input/>', {
+			type:"text",
+			size:"2",
+			value:"mm"
+		});
+		$ss=$('<input/>', {
+			type:"text",
+			size:"2",
+			value:"ss"
+		});
+		$ampm=$('<select>').append($('<option value="AM">AM</option>')).append($('<option value="PM">PM</option>'));
+		$new_elem.append($('<p>').append($hh).append($('<span> : </span>')).append($m).append($('<span> : </span>')).append($ss).append('&nbsp;').append($ampm));
+	}
+	else if(item=="file"){
+		$new_elem=$('<input/>', {
+			type:"file",
+			size:"40"
+		});
+	}
+	
+	//Page and section are special-cased
+	else if(item=='section'){
+		//this one's processed differently from the others
+		
+		var $outline=$('<div class="outline"></div>');
+		$outline.append('<hr/>').append($('<h2 class="section_header">'+label_text+'</h2>')).append($('<p class="field_text">'+help_text+'</p>'));
+		$currSection=$('<div>', {
+			id:'section_'+secCount,
+			'class':'section'
+		});
+		$outline.append($currSection);
+		$('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($outline);
+		$outline.toggle(function() {
+			onSelectField($(this), $.data(this, 'data'));
+			$(this).children(".wrapper_button").addClass("wrapper_button_hover");
+		}, function(){
+			$(this).children(".wrapper_button").removeClass("wrapper_button_hover");
+			$(this).removeClass('field_selected');
+			$('#cat_selector').children('select[value=Generic]').attr('selected','selected');
+			onSelectCategory('Generic');
+			onSelectElem('textField');
+		});
+		$outline.appendTo($currPage).dblclick(function(){
+			$currSection=$(this).children('div.section');
+		});
+		$currPage.sortable();
+		secCount++;
+		$.data($outline[0],'data',data);
+		return $outline;
+	}
+	else if(item=='page'){
+		//First putting in the page break text
+		var $page_break = $('<div class="page_break"><span>** Page Break **</span></div>');
+		$page_break.dblclick(function(){
+			$currPage=$(this).next('div.form_preview'); 
+			//$currSection=$(this).children(":last").children("div.section");
+		}).toggle(function(){$(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");}, 
+				function(){$(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");}
+				).appendTo($('div.preview_area'));
+		
+		//Now putting in the page div
+		$currPage=$('<div class="form_preview"></div>');
+		$currSection=$('<div class="section"></div>');
+		$currPage.append($('<div class="outline"></div>').append($currSection));
+		$('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($currPage);
+		$currPage.toggle( function(){$(this).children(".wrapper_button").addClass("wrapper_button_hover");}, 
+						function(){$(this).children(".wrapper_button").removeClass("wrapper_button_hover");});
+		$currPage.dblclick(function(){
+			$currPage=$(this);
+			//$currSection=$(this).children(":last").children("div.section");
+		});
+		$currPage.appendTo($('div.preview_area'));
+		$.data(($currSection.parent())[0], 'data', {'question_text':'', 'help_text':'', 'parent_id':-1});
+		$.data($currPage[0], 'data', {'parent_id':-1});
+		return $currPage;
+	}
+	return $new_elem; 
+};
+
+var renderComboField=function(item, field_options, data){
+	//Rendering code for combo fields
+	
+	var $new_elem;
+	if(item=="name"){
+		$new_elem=$('<div>').css('display','inline-block');
+		var $first_div, $last_div;
+		$first_div=$('<div>').append($('<input/>',{
+			type:'text',
+			size:'20'
+		})).append($('<p class="field_text">First</p>')).css('float','left');
+		$last_div=$('<div>').append($('<input/>',{
+			type:'text',
+			size:'20'
+		})).append($('<p class="field_text">Last</p>')).css('float','left');
+		$new_elem.append($first_div).append($last_div).append('<br/>');
+	}
+	else if(item=='address'){
+		$new_elem=$('<div>');
+		$new_elem.append($('<p class="field_text">Street Address</p>')).append($('<textarea>',{
+			'rows':4,
+			'cols':22
+		}));
+		$new_elem.append($('<p>').append($('<span class="field_text">City&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>')).append($('<input/>', {
+			type:'text',
+			size:'20'
+		})).append('&nbsp;&nbsp;').append($('<span class="field_text">State</span>')).append($('<select>')));
+		$new_elem.append($('<p>').append($('<span class="field_text">Zip code</span>')).append($('<input/>',{
+			type:'text'
+		})));
+	}
+	
+	return $new_elem;
+};
+
+var addElement=function(item, $prevField) {
+	// This function adds the selected field to the form. 
+	//Data like help-text is stored in the wrapper div using jQuery's $.data
+	
+	var i,$new_elem_label, $new_elem, 
+	$wrap=$('<div></div>').addClass('field_wrapper').hover(function() {
+		if($(this).hasClass('field_selected'))
+			return;
+		$(this).toggleClass('field_hover');
+		$(this).find(".wrapper_button").toggleClass("wrapper_button_hover");
+	}).toggle(function(){onSelectField($(this), $.data(this, 'data'));}, deSelectField),
+	label_text=$.trim($('#id_question').attr('value')),
+	help_text=$.trim($('#id_instructions').attr('value')),
+	html_name=item+"_"+elemTypes[item], html_id="id_"+item+"_"+elemTypes[item],
+	data={};
+	
+	$new_elem_label=$(createLabel(label_text,$('#id_required').attr('checked'))).appendTo($wrap);
+	$('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($wrap);
+	
+	//Populating common data attributes
+	data.question_text=label_text;
+	data.help_text=help_text;
+	data.field_type=item;
+	data.required=$('#id_required').attr('checked');
+	data.parent_id=-1; //Useful for modifications
+	data.attrs={};
+	
+	//Special-casing page and section
+	if(item=='page' || item=='section')
+		return renderNormalField(item, {}, data);
+	else if(item in formElements['Generic'])
+		$new_elem=renderNormalField(item, {}, data);
+	else {
+		//Custom field
+		//First, get the options for this custom field
+		var custom_field;
+		$.each(formElements, function(cat, flds){
+			if(item in flds){
+				custom_field=flds[item];
+				return false; //break out
+			}
+		});
+		if(custom_field['field_type']=='combo')
+			$new_elem=renderComboField(item, custom_field['field_options'], data);
+		else{
+			$new_elem=renderNormalField(custom_field['field_type'], custom_field['field_options'], data);
+			data.attrs={}; //Setting attrs to empty, as everything should already by defined on the server
+		}	
+	}
+	
+	//Inserting field into preview area, and attaching data
+	$new_elem.appendTo($wrap);
+	$.data($wrap[0],'data',data);
+	
+	if($prevField.length==0)
+		$wrap.prependTo($currSection);
+	else
+		$wrap.insertAfter($prevField);
+	
+	//Making fields draggable
+	$currSection.sortable();
+	return $wrap;	
+};
+
+/*
 var addElement = function(item,$prevField) {
 	
 	// This function adds the selected field to the form. Data like help-text is stored in the wrapper div using jQuery's $.data
@@ -846,6 +1185,7 @@ var addElement = function(item,$prevField) {
 	$currSection.sortable();
 	return $wrap;
 };
+*/
 
 var submit=function() {
 	//submits the created form to the server
