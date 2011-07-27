@@ -269,16 +269,13 @@ def get_links(request):
 	if request.is_ajax():
 		if request.method=='GET':
 			try:
-				link_model=only_fkey_models[request.GET['link_model']]
+				link_model=cf_cache.only_fkey_models[request.GET['link_model']]
 			except KeyError:
 				return HttpResponse(status=400)
-			app, model_name=link_model['model'].split('.')
-			link_objects=ContentType.objects.get(app_label=app, model=model_name).model_class().objects.all()		
+			link_objects=link_model.objects.all()		
 			retval={}
 			for obj in link_objects:
-				name_attr=getattr(obj, link_model['disp_name'])
-				if callable(name_attr): retval[obj.id]=name_attr()
-				else: retval[obj.id]=name_attr
+				retval[obj.id]=unicode(obj)
 				
 			return HttpResponse(json.dumps(retval))
 	return HttpResponse(status=400)										
