@@ -15,21 +15,21 @@ var formElements={
 		//file:{'disp_name':'File Upload','ques':'Upload file'},
 		section:{'disp_name':'Section', 'ques':'Section'},
 		page:{'disp_name':'Page', 'ques':'Page'}
-	},
-	'Personal':{
-		name:{'disp_name':'Name','ques':'Your name', 'field_type':'combo', 'field_options':{}},
+	}
+	/*'Personal':{
+		name:{'disp_name':'Name','ques':'Your name', 'field_type':'custom', 'field_options':{}},
 		gender:{'disp_name':'Gender','ques':'Gender', 'field_type':'radio', 'field_options':{'options':'Male|Female'}},
 		phone:{'disp_name':'Phone no.','ques':'Phone no.', 'field_type':'textField', 'field_options':{}},
 		email:{'disp_name':'Email','ques':'Email', 'field_type':'textField', 'field_options':{}},
-		address:{'disp_name':'Address','ques':'Address', 'field_type':'combo', 'field_options':{}},
+		address:{'disp_name':'Address','ques':'Address', 'field_type':'custom', 'field_options':{}},
 		state:{'disp_name':'State','ques':'State', 'field_type':'dropdown', 'field_options':{'options':''}},
 		city:{'disp_name':'City','ques':'City', 'field_type':'textField', 'field_options':{}}
 	},
-	'Program':{}
+	'Program':{}*/
 };
-var program_fields={'fields':{
-	courses:{'disp_name':'Courses', 'ques':'Courses'}
-}};
+
+var only_fkey_models=[];
+
 var elemTypes = {
 	// Stores the available types of form objects, and their number in the form
 	'textField':0,
@@ -54,7 +54,7 @@ var elemTypes = {
 	'courses':0
 };
 
-var currElemType, currElemIndex, optionCount=1, formTitle="Form",currCategory='',$prevField, $currField, secCount=1, $currSection, pageCount=1, $currPage;
+var currElemType, currElemIndex, optionCount=1, formTitle="Form",$prevField, $currField, secCount=1, $currSection, pageCount=1, $currPage;
 var perms={};
 
 $(document).ready(function() {
@@ -74,6 +74,8 @@ $(document).ready(function() {
 			$('#submit').val('Modify Form');
 		else $('#submit').val('Create Form');	
 	});
+	$('#cat_selector').change(function(){onSelectCategory($(this).val());});
+	$('#elem_selector').change(function(){onSelectElem($('#elem_selector').val());});
 	
 	$currSection=$('#section_0');
 	$currPage=$('#page_0');
@@ -131,24 +133,51 @@ $(document).ready(function() {
 	}).toggle(function(){$(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");}, 
 			function(){$(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");}
 			);
-			
+	
+	//Getting field information from server, and constructing the form-builder
+	constructBuilder();		
+	
 	//Initializing UI
-	initUI();		
+	//initUI();
 });
+
+var constructBuilder = function(){
+	//Constructs the form builder with field information from the server
+	
+	$.ajax({
+		url:'/customforms/builddata/',
+		type:'GET',
+		dataType:'json',
+		async:false,
+		success: function(field_data) {
+			only_fkey_models.push.apply(only_fkey_models, field_data['only_fkey_models']);
+			//Putting in link fields
+			$.each(field_data['link_fields'], function(category, fields){
+				formElements[category]={};
+				$.extend(formElements[category], fields);
+			});
+			initUI();
+		}
+	});
+};
 
 var initUI=function(){
 	//Sets up the initial options
 	var options_html="";
-	if($('#id_assoc_prog').val()!="-1"){
-		formElements['Program']=program_fields['fields'];
-	}
-	else formElements['Program']={};
 	//Generating options for the category selector
 	$.each(formElements,function(idx,el){
 			if(!$.isEmptyObject(el))
 				options_html+="<option value="+idx+">"+idx+"</option>";
 	});
 	$('#cat_selector').html(options_html);
+	
+	//Putting in options for the "Links" tab
+	options_html='<option value="-1">None</option>';
+	$.each(only_fkey_models, function(idx, el){
+		options_html+="<option value="+el+">"+el+"</option>";
+	});
+	$('#links_id_main').html(options_html);
+	
 	onSelectCategory('Generic');
 	onSelectElem('textField');
 	perms={};
@@ -304,15 +333,11 @@ var generateOptions=function() {
 };	
 
 var getFirst=function(category){
-	//returns the first item corresponding to category
+	//returns some item corresponding to category
 	
-	if(category=='Generic')
-		return 'textField';
-	else if(category=='Personal')
-		return 'name';
-	else if(category=='Program')
-		return 'courses';
-	else return '';	
+	var retval="";
+	$.each(formElements[category], function(idx, el){retval=idx; return false;});
+	return retval;
 };
 
 var onSelectCategory=function(category) {
@@ -321,7 +346,6 @@ var onSelectCategory=function(category) {
 	var fields_list=formElements[category], options_html="";
 	if(fields_list.length ==0)
 		return;
-	currCategory=category;
 	//Generating Options list
 	$.each(fields_list, function(index,elem){
 		options_html+="<option value="+index+">"+elem['disp_name']+"</option>";
@@ -387,8 +411,8 @@ var onSelectElem = function(item) {
 	$('#id_required').attr('checked','');
 	
 	$('div.field_selected').removeClass('field_selected');
-		
-	var $option,$wrap_option,i, question_text=formElements[currCategory][item]['ques'], $button=$('#button_add');;
+	var currCategory=$('#cat_selector').val();	
+	var $option,$wrap_option,i, question_text=formElements[currCategory][item]['ques'], $button=$('#button_add');
 	
 	//Defining actions for generic elements
 	if(item=='textField' || item=='longTextField' || item=='longAns' || item=='reallyLongAns')
@@ -404,13 +428,33 @@ var onSelectElem = function(item) {
 		$('#id_instructions').attr('value','Not required');
 	}
 	
-	//Defining actions for 'personal' fields
-	
-	//Defining actions for custom fields	
+	//Set 'Required' to a sensible default
+	setRequired(item);	
+		
 	$('#id_question').attr('value',question_text);
 	$prevField=$currSection.children(":last");
 	if($button.attr('value')!='Add to Form')
 		$button.attr('value','Add to Form').unbind('click').click(function(){insertField($('#elem_selector').attr('value'),$prevField)});
+};
+
+var setRequired=function(item){
+	//Sets the 'Required' option according to item
+	
+	$('#id_required').attr('disabled', false);
+	//For 'section' and 'page', disable 'Required'
+	if(item=='page' || item=='section')
+		$('#id_required').attr('disabled', true);
+	//Set 'Required' as checked for custom fields that are required on the model
+	if(!item in formElements['Generic']){
+		//Get the options for this item, and set 'Required' accordingly
+		$.each(formElements, function(cat, flds){
+			if(item in flds){
+				if(flds[item]['required'])
+					$('#id_required').attr('checked', true).attr('disabled', true);
+				return false; //break out
+			}
+		});
+	}	
 };
 
 var updateField=function() {
@@ -472,6 +516,9 @@ var onSelectField=function($elem, field_data) {
 	}
 	if($button.attr('value')=='Add to Form')
 		$button.attr('value','Update').unbind('click').click(updateField);
+		
+	//Set 'Required' depending on item
+	setRequired(ftype);	
 };
 
 var deSelectField=function() {
@@ -493,7 +540,7 @@ var insertField=function(item, $prevField){
 };
 
 var renderNormalField=function(item, field_options, data){
-	//Rendering code for simple fields (i.e. non-combo fields)
+	//Rendering code for simple fields (i.e. non-custom fields)
 	
 	var $new_elem, key;
 	if(item=="textField"){
@@ -680,8 +727,9 @@ var renderNormalField=function(item, field_options, data){
 	//Page and section are special-cased
 	else if(item=='section'){
 		//this one's processed differently from the others
-		
-		var $outline=$('<div class="outline"></div>');
+	
+		var $outline=$('<div class="outline"></div>'), label_text=$.trim($('#id_question').attr('value')),
+			help_text=$.trim($('#id_instructions').attr('value'));
 		$outline.append('<hr/>').append($('<h2 class="section_header">'+label_text+'</h2>')).append($('<p class="field_text">'+help_text+'</p>'));
 		$currSection=$('<div>', {
 			id:'section_'+secCount,
@@ -736,8 +784,8 @@ var renderNormalField=function(item, field_options, data){
 	return $new_elem; 
 };
 
-var renderComboField=function(item, field_options, data){
-	//Rendering code for combo fields
+var renderCustomField=function(item, field_options, data){
+	//Rendering code for custom fields
 	
 	var $new_elem;
 	if(item=="name"){
@@ -813,8 +861,11 @@ var addElement=function(item, $prevField) {
 				return false; //break out
 			}
 		});
-		if(custom_field['field_type']=='combo')
-			$new_elem=renderComboField(item, custom_field['field_options'], data);
+		//Fields that are required on the model must necessarily be required in the form
+		if(custom_field['required'])
+			data.required=true;
+		if(custom_field['field_type']=='custom')
+			$new_elem=renderCustomField(item, custom_field['field_options'], data);
 		else{
 			$new_elem=renderNormalField(custom_field['field_type'], custom_field['field_options'], data);
 			data.attrs={}; //Setting attrs to empty, as everything should already by defined on the server

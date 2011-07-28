@@ -38,6 +38,7 @@ from collections import defaultdict
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
+from django.contrib.localflavor.us.forms import USStateSelect
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
@@ -60,6 +61,7 @@ from esp.middleware import ESPError
 from esp.settings import DEFAULT_HOST, DEFAULT_EMAIL_ADDRESSES, ORGANIZATION_SHORT_NAME, INSTITUTION_NAME
 
 import simplejson as json
+from esp.customforms.linkfields import CustomFormsLinkModel
 
 try:
     import cPickle as pickle
@@ -1437,8 +1439,16 @@ class ZipCodeSearches(models.Model):
         return '%s Zip Codes that are less than %s miles from %s' % \
                (len(self.zipcodes.split(',')), self.distance, self.zip_code)
 
-class ContactInfo(models.Model):
+class ContactInfo(models.Model, CustomFormsLinkModel):
     """ ESP-specific contact information for (possibly) a specific user """
+
+	#customforms definitions
+    form_link_name='Personal'
+    link_fields_list=[('phone_day','Phone'), ('e_mail','Email'), ('address_state','State'), ('address_zip','Zip'), ('address_city','City')]
+    link_fields_widgets={
+		'address_state':USStateSelect,
+	}
+
     user = AjaxForeignKey(User, blank=True, null=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)

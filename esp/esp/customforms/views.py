@@ -27,6 +27,19 @@ def formBuilder(request):
 		return render_to_response('customforms/index.html',{'prog_list':prog_list, 'form_list':form_list, 'only_fkey_models':cf_cache.only_fkey_models.keys()}) 
 	return HttpResponseRedirect('/')
 	
+def formBuilderData(request):
+	if request.is_ajax():
+		if request.method=='GET':
+			data={}
+			data['only_fkey_models']=cf_cache.only_fkey_models.keys()
+			data['link_fields']={}
+			for category, category_info in cf_cache.link_fields.items():
+				data['link_fields'][category]={}
+				data['link_fields'][category].update(category_info['fields'])
+			
+			return HttpResponse(json.dumps(data))
+	return HttpResponse(status=400)				
+	
 def getPerms(request):
 	"""
 	Returns the various permissions available for the current program via AJAX.
