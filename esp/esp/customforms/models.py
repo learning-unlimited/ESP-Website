@@ -35,7 +35,7 @@ class Section(models.Model):
 class Field(models.Model):
 	form=models.ForeignKey(Form)
 	section=models.ForeignKey(Section)
-	field_type=models.CharField(max_length=20)
+	field_type=models.CharField(max_length=50)
 	seq=models.IntegerField()
 	label=models.CharField(max_length=200)
 	help_text=models.CharField(max_length=200, blank=True)

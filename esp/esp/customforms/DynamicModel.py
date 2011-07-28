@@ -34,18 +34,7 @@ class DynamicModelHandler:
 		'numeric':{'typeMap':models.IntegerField, 'attrs':{'null':True, }, 'args':[]},
 		'date':{'typeMap':models.CharField, 'attrs':{'max_length':10, }, 'args':[]},
 		'time':{'typeMap':models.CharField, 'attrs':{'max_length':10, }, 'args':[]},
-		'first_name':{'typeMap':models.CharField, 'attrs':{'max_length':64,}, 'args':[]},
-		'last_name':{'typeMap':models.CharField, 'attrs':{'max_length':64,}, 'args':[]},
-		'gender':{'typeMap':models.CharField, 'attrs':{'max_length':1,}, 'args':[]},
-		'phone':{'typeMap':models.CharField, 'attrs':{'max_length':20,}, 'args':[]},
-		'email':{'typeMap':models.CharField, 'attrs':{'max_length':30,}, 'args':[]},
-		'street':{'typeMap':models.CharField, 'attrs':{'max_length':100,}, 'args':[]},
-		'state':{'typeMap':models.CharField, 'attrs':{'max_length':2,}, 'args':[]},
-		'city':{'typeMap':models.CharField, 'attrs':{'max_length':50,}, 'args':[]},
-		'zip':{'typeMap':models.CharField, 'attrs':{'max_length':5,}, 'args':[]},
-		'courses':{'typeMap':models.ForeignKey, 'attrs':{'blank':True, 'null':True, 'on_delete':models.SET_NULL}, 'args':[ClassSubject]},
 	}
-	
 	_foreign_key_fields=['courses',]
 	
 	_customFields={
@@ -101,22 +90,19 @@ class DynamicModelHandler:
 			model_cls=cf_cache.only_fkey_models[self.form.link_type]
 			self.field_list.append( ('link_'+model_cls.__name__, models.ForeignKey(model_cls, null=True, blank=True, on_delete=models.SET_NULL)) )
 			
-		#Check for linked fields
+		#Check for linked fields-
+		#Insert a foreign-key to the parent model for link fields
+		#Insert a regular column for non-link fields
 		for field_id, field in self.fields:
-			if field in link_fields:
-				if link_fields[field]['model'] not in link_models: link_models.append(link_fields[field]['model'])
-			
-			elif field in self._customFields:
-				for f in self._customFields[field]:
-					self.field_list.append( ('question_'+str(field_id)+'_'+f, self._getModelField(f) ) )
+			if cf_cache.isLinkField(field):
+				lm=cf_cache.modelForLinkField(field)
+				if lm not in link_models: link_models.append(lm)
 			else:
 				self.field_list.append( ('question_'+str(field_id), self._getModelField(field) ) )
 		
-		#Adding foreign key fields for linked models
-		for lm in link_models:
-			app, model_name=lm.split(".")
-			model_cls=ContentType.objects.get(app_label=app, model=model_name).model_class()
-			self.field_list.append( (model_name, models.ForeignKey(model_cls, null=True, blank=True, on_delete=models.SET_NULL) ) )
+		#Adding foreign key fields for link-field models
+		for model in link_models:
+			self.field_list.append( ('link_'+model.__name__, models.ForeignKey(model, null=True, blank=True, on_delete=models.SET_NULL) ) )
 					
 		return self.field_list
 		

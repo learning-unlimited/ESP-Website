@@ -88,7 +88,28 @@ class CustomFormsCache:
 			except AttributeError:
 				if v['attrs']['widget'] in widget.__class__.__bases__:
 					return k		
-		return 'custom'		
+		return 'custom'
+	
+	def isLinkField(self, field):
+		"""
+		Convenience method to get check if 'field' is a link field
+		"""	
+		if field not in generic_fields: return True	
+		else: return False 
+	
+	def getLinkFieldData(self, field):
+		"""
+		Convenience method to get data for a particular linked field
+		"""
+		for category, options in self.link_fields.items():
+			if field in options['fields']: return options['fields'][field]
+				
+	def modelForLinkField(self, field):
+		"""
+		Returns the model associated with a particular link field.
+		"""
+		for category, options in self.link_fields.items():
+			if field in options['fields']: return options['model']					
 				
 cf_cache=CustomFormsCache()								
 		
