@@ -196,7 +196,6 @@ INSTALLED_APPS = (
     'esp.dbmail',
     'esp.cal',
     'esp.lib',
-    'esp.setup',
     'esp.qsd',
     'esp.qsdmedia',
     'esp.resources',
