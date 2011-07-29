@@ -162,6 +162,10 @@ class InPlaceTestSuiteRunner(DjangoTestSuiteRunner, BaseDatabaseCreation):
     def setup_databases(self, **kwargs):
         from django.db import connections, DEFAULT_DB_ALIAS
 
+        #   Tell datatree not to worry about transactions
+        import esp.datatree.sql.set_isolation_level
+        esp.datatree.sql.set_isolation_level.DISABLE_TRANSACTIONS = True 
+
         # First pass -- work out which databases actually need to be created,
         # and which ones are test mirrors or duplicate entries in DATABASES
         mirrored_aliases = {}
