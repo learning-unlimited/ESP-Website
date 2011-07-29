@@ -1,5 +1,6 @@
 from esp.customforms.models import Field, Attribute, Section, Page, Form
 from django import forms
+from django.forms.models import fields_for_model
 from form_utils.forms import BetterForm
 from django.utils.datastructures import SortedDict
 from django.contrib.formtools.wizard import FormWizard
@@ -48,16 +49,16 @@ class CustomFormHandler():
 		'numeric':{'typeMap': forms.IntegerField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'digits'},},
 		'date':{'typeMap': forms.DateField,'attrs':{'widget':forms.DateInput,}, 'widget_attrs':{'class':'ddate', 'format':'%m-%d-%Y'},},
 		'time':{'typeMap': forms.TimeField, 'attrs':{'widget':forms.TimeInput,}, 'widget_attrs':{'class':'time'},},
-		'name':{'typeMap':NameField, 'attrs':{}, 'widget_attrs':{'class':''}},
-		'gender':{'typeMap': forms.ChoiceField, 'attrs':{'widget':forms.RadioSelect, 'choices':[('M','Male'), ('F', 'Female')]}, 'widget_attrs':{'class':''}},
-		'phone':{'typeMap': USPhoneNumberField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'USPhone'}},
-		'email':{'typeMap': forms.EmailField, 'attrs':{'max_length':30, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'email'}},
-		'address':{'typeMap':AddressField, 'attrs':{}, 'widget_attrs':{'class':''}},
-		'street':{'typeMap': forms.CharField, 'attrs':{'max_length':100, 'widget':forms.TextInput,}, 'widget_attrs':{'class':''}},
-		'state':{'typeMap': USStateField, 'attrs':{'widget': USStateSelect}, 'widget_attrs':{'class':''}},
-		'city':{'typeMap': forms.CharField, 'attrs':{'max_length':50, 'widget':forms.TextInput,}, 'widget_attrs':{'class':''},},
-		'zip':{'typeMap': forms.CharField, 'attrs':{'max_length':5, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'USZip'}},
-		'courses':{'typeMap': forms.ModelChoiceField, 'attrs':{'widget':forms.Select, 'empty_label':None}, 'widget_attrs':{'class':'courses'}},
+		#'name':{'typeMap':NameField, 'attrs':{}, 'widget_attrs':{'class':''}},
+		#'gender':{'typeMap': forms.ChoiceField, 'attrs':{'widget':forms.RadioSelect, 'choices':[('M','Male'), ('F', 'Female')]}, 'widget_attrs':{'class':''}},
+		#'phone':{'typeMap': USPhoneNumberField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'USPhone'}},
+		#'email':{'typeMap': forms.EmailField, 'attrs':{'max_length':30, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'email'}},
+		#'address':{'typeMap':AddressField, 'attrs':{}, 'widget_attrs':{'class':''}},
+		#'street':{'typeMap': forms.CharField, 'attrs':{'max_length':100, 'widget':forms.TextInput,}, 'widget_attrs':{'class':''}},
+		#'state':{'typeMap': USStateField, 'attrs':{'widget': USStateSelect}, 'widget_attrs':{'class':''}},
+		#'city':{'typeMap': forms.CharField, 'attrs':{'max_length':50, 'widget':forms.TextInput,}, 'widget_attrs':{'class':''},},
+		#'zip':{'typeMap': forms.CharField, 'attrs':{'max_length':5, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'USZip'}},
+		#'courses':{'typeMap': forms.ModelChoiceField, 'attrs':{'widget':forms.Select, 'empty_label':None}, 'widget_attrs':{'class':'courses'}},
 	}
 	
 	_field_attrs=['label', 'help_text', 'required']
@@ -111,6 +112,7 @@ class CustomFormHandler():
 		"""
 		Sets self.fields and self.fieldsets for this page
 		"""
+		model_fields_cache={}
 		for section in self.page:
 			curr_fieldset=[]
 			curr_fieldset.extend([section[0]['section__title'], {'fields':[], 'classes':['section',]}])
@@ -138,8 +140,10 @@ class CustomFormHandler():
 				field_attrs={'label':field['label'], 'help_text':field['help_text'], 'required':field['required']}
 				
 				#Setting the 'name' attribute for combo fields
+				"""
 				if field['field_type'] in self._combo_fields:
 					field_attrs['name']=field_name
+				"""	
 				
 				#TODO: Change for multiple attributes - could be possible
 				other_attrs=[]
@@ -149,15 +153,30 @@ class CustomFormHandler():
 				if other_attrs:
 					field_attrs.update(self._getAttrs(other_attrs))
 					
+				#First, check for link fields.
+				if cf_cache.isLinkField(field['field_type']):
+					#Get all form fields for this model, if it hasn't already been done
+					link_model=cf_cache.modelForLinkField(field['field_type'])
+					if link_model.__name__ not in model_fields_cache:
+						model_fields_cache[link_model.__name__]={}
+						model_fields_cache[link_model.__name__].update(fields_for_model(link_model, widgets=getattr(link_model, 'link_fields_widgets', None)))
+					model_field=cf_cache.getLinkFieldData(field['field_type'])['model_field']
+					form_field=model_fields_cache[link_model.__name__][model_field]
+					#TODO -> enforce "Required" constraint server-side as well, or trust the client-side code?
+					form_field.__dict__.update(field_attrs)
+					if form_field.required:
+						#Add a class 'required' to the widget
+						form_field.widget.attrs.update({'class':'required'})
+					#Adding to field list
+					self.fields.append([field_name, form_field])
+					curr_fieldset[1]['fields'].append(field_name)
+					continue	
+				
+				#Generic field								
 				widget_attrs={}	
-				if field['field_type'] in link_fields:
-					field_attrs.update(link_fields[field['field_type']]['form_fld_props']['attrs'])
-					widget_attrs.update(link_fields[field['field_type']]['form_fld_props']['widget_attrs'])
-					typeMap=link_fields[field['field_type']]['form_fld_props']['typeMap']
-				else:	
-					field_attrs.update(self._field_types[field['field_type']]['attrs'])
-					widget_attrs.update(self._field_types[field['field_type']]['widget_attrs'])
-					typeMap=self._field_types[field['field_type']]['typeMap']
+				field_attrs.update(self._field_types[field['field_type']]['attrs'])
+				widget_attrs.update(self._field_types[field['field_type']]['widget_attrs'])
+				typeMap=self._field_types[field['field_type']]['typeMap']
 				
 				#Setting classes required for front-end validation
 				if field['required']:
