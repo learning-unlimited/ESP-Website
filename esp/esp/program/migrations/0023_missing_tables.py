@@ -4,31 +4,36 @@ from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 
+from esp.utils.migration import db_table_exists
+
 class Migration(DataMigration):
 
     def forwards(self, orm):
         "Write your forwards methods here."
         
-        # Adding ManyToManyField 'StudentApplication.questions'
-        db.create_table('program_junctionstudentapp_questions', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('studentapplication', models.ForeignKey(orm['program.StudentApplication'], null=False)),
-            ('studentappquestion', models.ForeignKey(orm['program.StudentAppQuestion'], null=False))
-        ))
+        if not db_table_exists('program_junctionstudentapp_questions'):
+            # Adding ManyToManyField 'StudentApplication.questions'
+            db.create_table('program_junctionstudentapp_questions', (
+                ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+                ('studentapplication', models.ForeignKey(orm['program.StudentApplication'], null=False)),
+                ('studentappquestion', models.ForeignKey(orm['program.StudentAppQuestion'], null=False))
+            ))
         
-        # Adding ManyToManyField 'StudentApplication.responses'
-        db.create_table('program_junctionstudentapp_responses', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('studentapplication', models.ForeignKey(orm['program.StudentApplication'], null=False)),
-            ('studentappresponse', models.ForeignKey(orm['program.StudentAppResponse'], null=False))
-        ))
-        
-        # Adding ManyToManyField 'StudentApplication.reviews'
-        db.create_table('program_junctionstudentapp_reviews', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('studentapplication', models.ForeignKey(orm['program.StudentApplication'], null=False)),
-            ('studentappreview', models.ForeignKey(orm['program.StudentAppReview'], null=False))
-        ))
+        if not db_table_exists('program_junctionstudentapp_responses'):
+            # Adding ManyToManyField 'StudentApplication.responses'
+            db.create_table('program_junctionstudentapp_responses', (
+                ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+                ('studentapplication', models.ForeignKey(orm['program.StudentApplication'], null=False)),
+                ('studentappresponse', models.ForeignKey(orm['program.StudentAppResponse'], null=False))
+            ))
+            
+        if not db_table_exists('program_junctionstudentapp_reviews'):
+            # Adding ManyToManyField 'StudentApplication.reviews'
+            db.create_table('program_junctionstudentapp_reviews', (
+                ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+                ('studentapplication', models.ForeignKey(orm['program.StudentApplication'], null=False)),
+                ('studentappreview', models.ForeignKey(orm['program.StudentAppReview'], null=False))
+            ))
         
     def backwards(self, orm):
         "Write your backwards methods here."
