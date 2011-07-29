@@ -55,12 +55,43 @@ This code is under development.  Status history:
     data.
 """
 
-from django.test.simple import DjangoTestSuiteRunner, dependency_ordered
+from django.test.simple import DjangoTestSuiteRunner, dependency_ordered, build_suite, build_test, reorder_suite
 from django.db import connections
 from django.db.utils import ConnectionHandler
 from django.db.backends.creation import BaseDatabaseCreation
+from django.utils import unittest
+from django.test.testcases import TestCase
+from django.db.models import get_app, get_apps
+import sys
 
 class InPlaceTestSuiteRunner(DjangoTestSuiteRunner, BaseDatabaseCreation):
+
+    def build_suite(self, test_labels, extra_tests=None, **kwargs):
+        suite = unittest.TestSuite()
+
+        if test_labels:
+            print test_labels
+            for label in test_labels:
+                print label
+                if '.' in label:
+                    suite.addTest(build_test(label))
+                else:
+                    app = get_app(label)
+                    suite.addTest(build_suite(app))
+        else:
+            print 'Filtering applications to test...'
+            for app in get_apps():
+                if isinstance(app.__package__, basestring) and app.__package__.startswith('esp.'):
+                    print '  Adding: %s' % app.__package__
+                    suite.addTest(build_suite(app))
+                else:
+                    print '  Skipping: %s' % app.__package__
+
+        if extra_tests:
+            for test in extra_tests:
+                suite.addTest(test)
+
+        return reorder_suite(suite, (TestCase,))
 
     def _create_test_db(self, verbosity, autoclobber):
         "Internal implementation - creates the test db tables."
