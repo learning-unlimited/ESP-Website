@@ -86,8 +86,21 @@ class NavbarTest(TestCase):
         re_results = re.findall(navbaritem_re, response.content)
         return re_results
 
+    def navbars_enabled(self):
+        #   Check that the main template uses navbars
+        from esp.utils.models import TemplateOverride
+        qs = TemplateOverride.objects.filter(name='main.html').order_by('-id')
+        if qs.exists():
+            if qs[0].content.find('{% navbar_gen') < 0:
+                return False
+        return True
+
     def testNavbarBehavior(self):
         home_category, created = NavBarCategory.objects.get_or_create(name='home')
+
+        #   Don't bother testing this if the site doesn't have navbars showing.
+        if not navbars_enabled():
+            return
 
         #   Clear navbars and ensure we get nothing
         NavBarEntry.objects.all().delete()
