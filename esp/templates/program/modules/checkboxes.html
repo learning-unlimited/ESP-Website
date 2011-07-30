@@ -1,3 +1,5 @@
+{% load render_qsd %}
+
 <table style="text-align: center" align="center" width="400">
 <tr><th>Steps for Registration</th><th>Done?</th></tr>
 {% for module in modules %}
@@ -29,4 +31,6 @@
 </tr>
 {% endif %}
 {% endfor %}
+{% inline_qsd_block program.anchor "learn:extra_steps" request.user %}<tr><td></td><td></td></tr>{% end_inline_qsd_block %}
 </table>
+
