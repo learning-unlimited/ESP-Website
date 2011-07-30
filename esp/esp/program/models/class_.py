@@ -94,7 +94,7 @@ class ClassSizeRange(models.Model):
                 k = cls()
                 k.range_min = range.range_min
                 k.range_max = range.range_max
-                k.program = None
+                k.program = prog
                 k.save()
             return cls.objects.filter(program=prog)
 

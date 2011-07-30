@@ -80,7 +80,7 @@ def ajax_login(request, *args, **kwargs):
     if user is not None:
         if user.is_active:
             result_str = 'Login successful'
-            user, forwarded = UserForwarder.follow(user)
+            user, forwarded = UserForwarder.follow(ESPUser(user))
             if forwarded:
                 result_str = 'Logged in as "%s" ("%s" is marked as a duplicate account)' % (user.username, username)
             auth_login(request, user)
