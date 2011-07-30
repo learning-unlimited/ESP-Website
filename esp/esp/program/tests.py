@@ -322,6 +322,8 @@ class ProgramHappenTest(TestCase):
         # Make rooms & times, since I'm too lazy to do that as a test just yet.
         from esp.cal.models import EventType, Event
         from esp.resources.models import Resource, ResourceType, ResourceAssignment
+        from esp.program.controllers.classreg import get_custom_fields
+        from django import forms
         from datetime import datetime
 
         self.failUnless( self.prog.classes().count() == 0, 'Website thinks empty program has classes')
@@ -362,7 +364,10 @@ class ProgramHappenTest(TestCase):
             'allow_lateness': 'False',
             'message_for_directors': 'Hi chairs!',
             'class_reg_page': '1',
-            #   Resource forms in default configuration
+            'hardness_rating': '**',
+        }
+        """
+            #   Additional keys to test resource forms:
             'request-TOTAL_FORMS': '2',
             'request-INITIAL_FORMS': '2',
             'request-0-resource_type': str(ResourceType.get_or_create('Classroom').id),
@@ -371,9 +376,22 @@ class ProgramHappenTest(TestCase):
             'request-1-desired_value': 'LCD projector',
             'restype-TOTAL_FORMS': '0',
             'restype-INITIAL_FORMS': '0',
-            'hardness_rating': "**",
-        }
-        self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)    
+        """
+        
+        #   Fill in required fields from any custom forms used by the program
+        #   This should be improved in the future (especially if we have dynamic forms)
+        custom_fields_dict = get_custom_fields()
+        for field in custom_fields_dict:
+            if isinstance(custom_fields_dict[field], forms.ChoiceField):
+                class_dict[field] = custom_fields_dict[field].choices[0][0]
+            else:
+                class_dict[field] = 'foo'
+
+        print 'Submitting teacher reg form:'
+        print class_dict
+
+        response = self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)    
+        print response.content
 
         # Check that stuff went through correctly
         
