@@ -386,14 +386,9 @@ class ProgramHappenTest(TestCase):
                 class_dict[field] = custom_fields_dict[field].choices[0][0]
             else:
                 class_dict[field] = 'foo'
-
-        print 'Submitting teacher reg form:'
-        print class_dict
-
-        response = self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)    
-        print response.content
-
+        
         # Check that stuff went through correctly
+        response = self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)  
         
         # check prog.classes
         classes = self.prog.classes()
