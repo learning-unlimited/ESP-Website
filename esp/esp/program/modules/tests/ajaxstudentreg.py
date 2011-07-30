@@ -41,6 +41,9 @@ from esp.program.tests import ProgramFrameworkTest
 import random
 import simplejson as json
 
+from esp.utils.selenium_auto import selenium_test
+
+
 class AjaxStudentRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
@@ -177,8 +180,15 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
         response = self.client.get('/learn/%s/ajax_clearslot/%d' % (program.getUrlBase(), sec2.meeting_times.all()[0].id), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_empty_schedule(response)
 
+    @selenium_test
+    def test_lottery(driver, url):
+        program = self.program
+        
+        driver.get(url + '/learn/%s/lotterystudentreg' % program.getUrlBase())
+
     def runTest(self):
         self.test_ajax_schedule()
         self.test_ajax_addclass()
         self.test_ajax_clearslot()
+        self.test_lottery()
 
