@@ -48,10 +48,14 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
+        import random
+
         """ Set up a bunch of user accounts to play with """
         self.password = "pass1234"
         
-        self.user, created = ESPUser.objects.get_or_create(first_name="Test", last_name="User", username="testuser123543", email="server@esp.mit.edu")
+        #   May fail once in a while, but it's not critical.
+        self.unique_name = 'Test_UNIQUE%06d' % random.randint(0, 999999)
+        self.user, created = ESPUser.objects.get_or_create(first_name=self.unique_name, last_name="User", username="testuser123543", email="server@esp.mit.edu")
         if created:
             self.user.set_password(self.password)
             self.user.save()
@@ -97,7 +101,7 @@ class ViewUserInfoTest(TestCase):
 
         # Try some fuzzy searches
         # First name only, unique
-        response = c.get("/manage/usersearch", { "userstr": "Test" })
+        response = c.get("/manage/usersearch", { "userstr": self.unique_name })
         self.assertEqual(response.status_code, 302)
         self.assertStringContains(response['location'], "/manage/userview?username=testuser123543")
 
