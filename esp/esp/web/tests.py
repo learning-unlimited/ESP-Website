@@ -99,7 +99,7 @@ class NavbarTest(TestCase):
         home_category, created = NavBarCategory.objects.get_or_create(name='home')
 
         #   Don't bother testing this if the site doesn't have navbars showing.
-        if not navbars_enabled():
+        if not self.navbars_enabled():
             return
 
         #   Clear navbars and ensure we get nothing
