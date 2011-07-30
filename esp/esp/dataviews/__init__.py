@@ -10,10 +10,10 @@ from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from inspect import isclass
 from collections import deque
 
-useful_models = [ESPUser, Program, RegistrationType, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication, StudentRegistration, Event, ClassCategories, ClassSection, ClassSubject, QuestionType, Question, SurveyResponse, Survey, ContactInfo, EducatorInfo, GuardianInfo, K12School, StudentInfo, TeacherInfo, ZipCodeSearches, ZipCode]
+useful_models = [ESPUser, Program, RegistrationProfile, RegistrationType, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication, StudentRegistration, Event, ClassCategories, ClassSection, ClassSubject, EventType, ArchiveClass, FinancialAidRequest, QuestionType, Question, SurveyResponse, Survey, ContactInfo, EducatorInfo, GuardianInfo, K12School, StudentInfo, TeacherInfo, UserAvailability, UserBit, ZipCodeSearches, ZipCode]
 query_terms = QUERY_TERMS.keys()
 
-def path_v1(begin, end, max_paths=100):
+def path_v1(begin, end):
     '''
 Finds a path from begin to end, or returns [] if they aren't related.
 
@@ -34,13 +34,12 @@ Returns the first max_path paths encountered in the BFS (i.e., the first max_pat
             raise TypeError("path_v1 argument "+str(i+1)+" must be a useful model")
     queue = deque([((),(begin,),False,set())])
     paths = []
-    while queue and len(paths) < max_paths:
+    while queue:
         (path, models, many, visited) = queue.popleft()
         model = models[-1]
         if issubclass(model, end):
             paths.append((path, models, many))
             continue
-        print visited
         if model in visited or not (model in useful_models):
             continue
         for name, field in model._meta.init_name_map().iteritems():
@@ -283,4 +282,4 @@ path_v1() is used outside of the scope of this function, to determine paths. The
     for i in iter_conditions:
         for path in paths[models[i]]: 
             kwargs[LOOKUP_SEP.join((path, fields[i], lookup_type[i])).strip(LOOKUP_SEP)] = values[i]
-    return model.objects.filter(**kwargs)
+    return model.objects.filter(**kwargs).distinct()
