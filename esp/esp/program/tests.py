@@ -936,6 +936,8 @@ class ModuleControlTest(ProgramFrameworkTest):
         
         #   Remove the module and make sure we are not shown it anymore.
         self.program.program_modules.remove(sat_module)
+        self.program.save()
+        
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
         self.assertTrue('Steps for Registration' in response.content)
         
