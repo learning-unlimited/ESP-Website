@@ -16,6 +16,7 @@ class DynamicModelHandler:
 		-Uses South for db operations
 		- __init__() takes as input two arguments -> 'form', the current Form instance, and 'fields', 
 			a list of (field_id, field_type) tuples
+		-'fields' is optional. If not provided, it is computed automatically.	
 	"""
 	
 	_app_label='customforms'

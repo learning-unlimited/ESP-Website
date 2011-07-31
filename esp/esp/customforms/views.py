@@ -218,7 +218,7 @@ def viewForm(request, form_id):
 	perm, error_text=hasPerm(request.user, form)
 	if not perm:
 		return render_to_response('customforms/error.html', {'error_text': error_text}, context_instance=RequestContext(request))	
-	fh=FormHandler(form=form, user=request.user)
+	fh=FormHandler(form=form, request=request, user=request.user)
 	wizard=fh.getWizard()
 	extra_context={'form_title':form.title, 'form_description':form.description}
 	return wizard(request, extra_context=extra_context)	

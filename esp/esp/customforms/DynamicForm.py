@@ -213,7 +213,7 @@ class CustomFormHandler():
 				curr_fieldset[1]['fields'].append(field_name)			
 			self.fieldsets.append(tuple(curr_fieldset))
 			
-	def getInitialDataFields(self):
+	def getInitialLinkDataFields(self):
 		"""
 		Returns a dict mapping fields to be pre-populated with the corresponding model and model-field
 		"""
@@ -221,15 +221,17 @@ class CustomFormHandler():
 		for section in self.page:
 			for field in section:
 				ftype=field['field_type']
-				if ftype in link_fields:
+				if cf_cache.isLinkField(ftype):
 					field_name='question_%d' % field['id']
-					initial[field_name]={'model':link_fields[ftype]['model']}
+					initial[field_name]={'model':cf_cache.modelForLinkField(ftype)}
+					"""
 					if 'combo' in link_fields[ftype]:
 						initial[field_name]['field']=[]
 						for f in link_fields[ftype]['combo']:
 							initial[field_name]['field'].append(link_fields[f]['model_field'])
 					else:
-						initial[field_name]['field']=link_fields[ftype]['model_field']		
+					"""	
+					initial[field_name]['model_field']=cf_cache.getLinkFieldData(ftype)['model_field']	
 		return initial						
 	
 	def getForm(self):
@@ -302,11 +304,11 @@ class FormHandler:
 		'address':['street', 'state', 'city', 'zip'],
 	}
 	
-	def __init__(self, form, user=None):
+	def __init__(self, form, request, user=None):
 		self.form=form
+		self.request=request
 		self.wizard=None
 		self.user=user
-		self.user_info={}
 		self.handlers=[]
 		
 	def __marinade__(self):
@@ -372,31 +374,26 @@ class FormHandler:
 		Returns the initial data for this form, according to the format that FormWizard expects.
 		"""
 		initial_data={}
-		link_models={} #Stores data from a particular model
+		link_models_cache={} #Stores data from a particular model
+		"""
 		if form.anonymous or user is None:
 			return {}
+		"""	
 		if not self.handlers:
 			self._getHandlers()
 		for handler in self.handlers:
-			initial=handler.getInitialDataFields()
+			initial=handler.getInitialLinkDataFields()
 			if initial:
 				initial_data[handler.seq]={}
-				if not self.user_info:
-					try:
-						self.user_info=ContactInfo.objects.filter(user=user).values()[0]
-					except:
-						return {}
 				for k,v in initial.items():
-					if v['model'] not in link_models:
-						app, model_name=v['model'].split(".")
-						model_cls=ContentType.objects.get(app_label=app, model=model_name).model_class()
-						link_models[v['model']]=model_cls.objects.filter(user=user).values()[0]
-					if not isinstance(v['field'], list):
+					if v['model'].__name__ not in link_models_cache:
+						link_models_cache[v['model'].__name__]=getattr(v['model'], 'cf_link_instance')(self.request).__dict__
+					if not isinstance(v['model_field'], list):
 						#Simple field
-						initial_data[handler.seq].update({ k:link_models[v['model']][v['field']] })
+						initial_data[handler.seq].update({ k:link_models_cache[v['model'].__name__][v['model_field']] })
 					else:
 						#Compound field. Needs to be passed a list of values.
-						initial_data[handler.seq].update({k:[link_models[v['model']][val] for val in v['field'] ]})		
+						initial_data[handler.seq].update({k:[link_models[v['model']][val] for val in v['model_field'] ]})		
 									
 		return initial_data				
 	

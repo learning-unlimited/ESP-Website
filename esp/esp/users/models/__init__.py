@@ -1448,6 +1448,14 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
     link_fields_widgets={
 		'address_state':USStateSelect,
 	}
+	
+    @classmethod
+    def cf_link_instance(cls, request):
+        """
+        Ues the request object to return the appropriate instance for this model,
+        for use by custom-forms.
+        """
+        return cls.objects.filter(user=request.user)[0]
 
     user = AjaxForeignKey(User, blank=True, null=True)
     first_name = models.CharField(max_length=64)
