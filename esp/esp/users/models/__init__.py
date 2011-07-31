@@ -1454,8 +1454,11 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         """
         Ues the request object to return the appropriate instance for this model,
         for use by custom-forms.
+        It should either return the instance, or 'None', if the corresponding instance doesn't exist.
         """
-        return cls.objects.filter(user=request.user)[0]
+        queryset=cls.objects.filter(user=request.user)
+        if queryset: return queryset[0] 
+        else: return None
 
     user = AjaxForeignKey(User, blank=True, null=True)
     first_name = models.CharField(max_length=64)

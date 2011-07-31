@@ -256,13 +256,13 @@ class ComboForm(FormWizard):
 	
 	def get_template(self, step):
 		return 'customforms/form.html'
-	
+	    
 	def done(self, request, form_list):
 		data={}
 		dyn=DMH(form=self.form)
 		dynModel=dyn.createDynModel()
 		fields=dict(dyn.fields)
-		link_models=[]
+		link_models_cache={}
 		
 		#Plonking in user_id if the form is non-anonymous
 		if not self.form.anonymous:
@@ -275,17 +275,35 @@ class ComboForm(FormWizard):
 				if k.split('_')[0]=='link':
 					data[k]=v
 					continue
+					
 				field_id=int(k.split("_")[1])
 				ftype=fields[field_id]
-				if ftype in link_fields:
-					if link_fields[ftype]['model'] not in link_models: link_models.append(link_fields[ftype]['model'])
+				
+				#Now check for link fields
+				if cf_cache.isLinkField(ftype):
+					model=cf_cache.modelForLinkField(ftype)
+					if model.__name__ not in link_models_cache:
+						link_models_cache[model.__name__]={'model': model, 'data':{}}
+						link_models_cache[model.__name__]['instance']=getattr(model, 'cf_link_instance')(request)
+					model_field=cf_cache.getLinkFieldData(ftype)['model_field']
+					#Not handling combo fields for now
+					link_models_cache[model.__name__]['data'].update({model_field: v})	
 				else:
 					data[k]=v
-					
-		#Populating data with foreign keys that need to be inserted
-		for lm in link_models:
-			app, model_name=lm.split('.')
-			data[model_name]=ContentType.objects.get(app_label=app, model=model_name).get_object_for_this_type(user=request.user)				
+		
+		#Create/update instances corresponding to link fields
+		#Also, populate 'data' with foreign-keys that need to be inserted into the response table
+		for k,v in link_models_cache.items():
+			if v['instance'] is not None:
+				#TODO-> the following update won't work for fk fields.
+				v['instance'].__dict__.update(v['data'])
+				v['instance'].save()
+			else:
+				#TODO-> new instance creation. Ignoring for now.	
+				pass
+			
+			if v['instance'] is not None:
+				data['link_%s' % v['model'].__name__]=v['instance']				
 		
 		#Saving response
 		dynModel.objects.create(**data)	
@@ -371,7 +389,7 @@ class FormHandler:
 
 	def _getInitialData(self, form, user):
 		"""
-		Returns the initial data for this form, according to the format that FormWizard expects.
+		Returns the initial data, if any, for this form according to the format that FormWizard expects.
 		"""
 		initial_data={}
 		link_models_cache={} #Stores data from a particular model
@@ -387,13 +405,19 @@ class FormHandler:
 				initial_data[handler.seq]={}
 				for k,v in initial.items():
 					if v['model'].__name__ not in link_models_cache:
-						link_models_cache[v['model'].__name__]=getattr(v['model'], 'cf_link_instance')(self.request).__dict__
-					if not isinstance(v['model_field'], list):
-						#Simple field
-						initial_data[handler.seq].update({ k:link_models_cache[v['model'].__name__][v['model_field']] })
-					else:
-						#Compound field. Needs to be passed a list of values.
-						initial_data[handler.seq].update({k:[link_models[v['model']][val] for val in v['model_field'] ]})		
+						#Get the corresponding instance, and get its values
+						link_models_cache[v['model'].__name__]=getattr(v['model'], 'cf_link_instance')(self.request)
+						if link_models_cache[v['model'].__name__] is not None:
+							link_models_cache[v['model'].__name__]=link_models_cache[v['model'].__name__].__dict__
+					if link_models_cache[v['model'].__name__] is not None:		
+						if not isinstance(v['model_field'], list):
+							#Simple field
+							initial_data[handler.seq].update({ k:link_models_cache[v['model'].__name__][v['model_field']] })
+						"""	
+						else:
+							#Compound field. Needs to be passed a list of values.
+							initial_data[handler.seq].update({k:[link_models[v['model']][val] for val in v['model_field'] ]})
+						"""				
 									
 		return initial_data				
 	
