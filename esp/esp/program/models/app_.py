@@ -223,7 +223,9 @@ class StudentApplication(models.Model):
         
         #   Get forms for already existing responses.
         forms = []
-        for r in self.responses.all():
+        new_user = ESPUser(self.user)
+        applied_classes = new_user.getAppliedClasses(self.program)
+        for r in self.responses.filter(question__subject__in=applied_classes):
             f = r.get_form(data)
             f.target = r
             forms.append(f)
