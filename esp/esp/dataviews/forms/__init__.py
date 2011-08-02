@@ -25,6 +25,11 @@ class ModeForm(Form):
 class DataViewsWizard(FormWizard):
     
     mode = 0
+    first_form = ModeForm
+    steps = 1
+    
+    def __init__(self, initial=None):
+        super(DataViewsWizard, self).__init__(form_list=[self.first_form]*self.steps, initial=initial)
     
     @method_decorator(admin_required)
     def __call__(self, request, *args, **kwargs):

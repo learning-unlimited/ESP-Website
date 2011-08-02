@@ -39,37 +39,41 @@ def pathchoiceform_factory(model, all_paths):
     return type(name, base, fields)
 
 class ModeWizard(DataViewsWizard): 
-
-    def __init__(self, initial=None): 
-        super(ModeWizard, self).__init__(form_list=[headingconditionsform_factory()]*4, initial=initial)
+    
+    mode = 1
+    first_form = headingconditionsform_factory()
+    steps = 4
     
     def done(self, request, form_list):
-        model = globals()[form_list[1].cleaned_data['model']]
+        model = globals()[form_list[0].cleaned_data['model']]
         args = []
-        for i in range(form_list[1].cleaned_data['num_conditions']):
-            if not form_list[1].cleaned_data['condition_'+str(i+1)]: 
+        for i in range(form_list[0].cleaned_data['num_conditions']):
+            if not form_list[0].cleaned_data['condition_'+str(i+1)]: 
                 continue
-            condition_model, condition_field = get_mod_func(form_list[1].cleaned_data['condition_'+str(i+1)])
+            condition_model, condition_field = get_mod_func(form_list[0].cleaned_data['condition_'+str(i+1)])
             condition_model = globals()[condition_model]
-            query_term = form_list[1].cleaned_data['query_term_'+str(i+1)]
-            text = form_list[1].cleaned_data['text_'+str(i+1)]
+            query_term = form_list[0].cleaned_data['query_term_'+str(i+1)]
+            text = form_list[0].cleaned_data['text_'+str(i+1)]
             val = condition_model._meta.init_name_map()[condition_field][0].to_python(text)
             args.append((condition_model, str(condition_field), str(query_term), val))
         paths = defaultdict(list)
         view_paths = []
         headers = []
-        for model_and_path, value in form_list[2].cleaned_data.iteritems():
+        for model_and_path, value in form_list[1].cleaned_data.iteritems():
             if value: 
                 _, _, model_and_path = model_and_path.partition('|')
                 condition_model, _, path = model_and_path.partition(LOOKUP_SEP)
                 path, _, _ = path.rpartition(LOOKUP_SEP)
                 paths[globals()[condition_model]].append(path)
-        for model_and_path, value in form_list[4].cleaned_data.iteritems():
+        headers = defaultdict(list)
+        for model_and_path, value in form_list[3].cleaned_data.iteritems():
             if value: 
                 I, _, model_and_path = model_and_path.partition('|')
                 _, _, path = model_and_path.partition(LOOKUP_SEP)
                 view_paths.append(path)
-                headers.append([path, form_list[3].cleaned_data['text_'+I]])
+                # headers.append([path, form_list[2].cleaned_data['text_'+I]])
+                headers[int(I)].append(path)
+        headers = [[path, form_list[2].cleaned_data['text_'+str(I+1)]] for I in range(int(form_list[2].cleaned_data['num_columns'])) for path in headers[I+1]]
         queryset = path_v5(model, paths, *args).select_related(*view_paths)
         fields = [header[0] for header in headers]
         data = {}
@@ -98,18 +102,13 @@ class ModeWizard(DataViewsWizard):
         return response
     
     def process_step(self, request, form, step): 
-        form1 = None
-        model = None
-        num_conditions = int(request.POST.get('%s-num_conditions' % self.prefix_for_step(1), 3))
-        num_columns = int(request.POST.get('%s-num_columns' % self.prefix_for_step(3), 3))
+        form0 = self.get_form(0, request.POST)
+        if not form0.is_valid():
+            return self.render_revalidation_failure(request, 0, form0)
+        model = globals()[form0.cleaned_data['model']]
+        num_conditions = int(request.POST.get('%s-num_conditions' % self.prefix_for_step(0), 3))
+        num_columns = int(request.POST.get('%s-num_columns' % self.prefix_for_step(2), 3))
         if not step: 
-            self.form_list[1] = headingconditionsform_factory(num_conditions)
-        else:
-            form1 = self.get_form(1, request.POST)
-            if not form1.is_valid():
-                return self.render_revalidation_failure(request, 1, form1)
-            model = globals()[form1.cleaned_data['model']]
-        if step == 1: 
             paths = []
             for i in range(num_conditions):
                 if not form.cleaned_data['condition_'+str(i+1)]: 
@@ -117,10 +116,10 @@ class ModeWizard(DataViewsWizard):
                 condition_model, condition_field = get_mod_func(form.cleaned_data['condition_'+str(i+1)])
                 condition_model = globals()[condition_model]
                 paths.append((i+1, condition_model, path_v1(model, condition_model), condition_field))
-            self.form_list[2] = pathchoiceform_factory(model, paths)
-        if step == 2:
-            self.form_list[3] = displaycolumnsform_factory(num_conditions)
-        if step == 3: 
+            self.form_list[step+1] = pathchoiceform_factory(model, paths)
+        elif step == 1: 
+            self.form_list[step+1] = displaycolumnsform_factory(num_columns)
+        elif step == 2:
             paths = []
             for i in range(num_columns):
                 if not form.cleaned_data['field_'+str(i+1)]: 
@@ -128,4 +127,4 @@ class ModeWizard(DataViewsWizard):
                 field_model, field_field = get_mod_func(form.cleaned_data['field_'+str(i+1)])
                 field_model = globals()[field_model]
                 paths.append((i+1, field_model, path_v1(model, field_model), field_field))
-            self.form_list[4] = pathchoiceform_factory(model, paths)
+            self.form_list[step+1] = pathchoiceform_factory(model, paths)
