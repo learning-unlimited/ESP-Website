@@ -284,7 +284,10 @@ def get_links(request):
 			try:
 				link_model=cf_cache.only_fkey_models[request.GET['link_model']]
 			except KeyError:
-				return HttpResponse(status=400)
+				try:
+					link_model=cf_cache.link_fields[request.GET['link_model']]['model']
+				except KeyError:
+					return HttpResponse(status=400)	
 			link_objects=link_model.objects.all()		
 			retval={}
 			for obj in link_objects:

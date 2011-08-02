@@ -69,7 +69,6 @@
 								</td>
 								<td>
 									<select id="cat_selector">
-										
 									</select>
 								</td>
 							</tr>
@@ -79,11 +78,27 @@
 								</td>
 								<td>
 									<select id="elem_selector">
-										
 									</select>
 								</td>
 							</tr>		
-						</table>					
+						</table>
+						<br/>
+						<div id="cat_spec_options">
+							<p>Fields marked with a '**' are <b>required</b> on the server. If you're not sure what you're doing, 				  <i>please make sure to include them in the form.</i>
+							</p>
+							<p>These fields will modify existing values in the database, or create new ones. Please select how you want
+								this to happen.
+							</p>
+							<select id="main_cat_spec">
+								<option value="automatic">Automatic</option>
+								<option value="particular">Choose particular instance to modify</option>
+							</select>
+							<br/>
+							<select id="cat_instance_sel">
+							</select>
+							<br/>				
+						</div>
+												
 					</div>
 					
 					<div id="field_properties">
