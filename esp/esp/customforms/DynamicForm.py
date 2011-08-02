@@ -250,8 +250,9 @@ class CustomFormHandler():
 		
 class ComboForm(FormWizard):
 	
-	def __init__(self, form_list, form, initial=None):
+	def __init__(self, form_list, form, form_handler,initial=None):
 		self.form=form
+		self.form_handler=form_handler
 		super(ComboForm, self).__init__(form_list, initial)
 	
 	def get_template(self, step):
@@ -284,7 +285,11 @@ class ComboForm(FormWizard):
 					model=cf_cache.modelForLinkField(ftype)
 					if model.__name__ not in link_models_cache:
 						link_models_cache[model.__name__]={'model': model, 'data':{}}
-						link_models_cache[model.__name__]['instance']=getattr(model, 'cf_link_instance')(request)
+						pre_instance=self.form_handler.getInstanceForLinkField(k, model)
+						if pre_instance is not None:
+							link_models_cache[model.__name__]['instance']=pre_instance
+						else:	
+							link_models_cache[model.__name__]['instance']=getattr(model, 'cf_link_instance')(request)
 					model_field=cf_cache.getLinkFieldData(ftype)['model_field']
 					#Not handling combo fields for now
 					link_models_cache[model.__name__]['data'].update({model_field: v})	
@@ -298,10 +303,13 @@ class ComboForm(FormWizard):
 				#TODO-> the following update won't work for fk fields.
 				v['instance'].__dict__.update(v['data'])
 				v['instance'].save()
+				curr_instance=v['instance']
 			else:
-				#TODO-> new instance creation. Ignoring for now.	
-				pass
-			
+				try:
+					new_instance=v['model'].objects.create(**v['data'])
+				except:	
+					#show some error message
+					pass
 			if v['instance'] is not None:
 				data['link_%s' % v['model'].__name__]=v['instance']				
 		
@@ -448,7 +456,7 @@ class FormHandler:
 	
 	def getWizard(self):
 		"""Returns the ComboForm instance for this form"""
-		self.wizard=ComboForm(self._getFormList(), self.form, self._getInitialData(self.form, self.user))	
+		self.wizard=ComboForm(self._getFormList(), self.form, self, self._getInitialData(self.form, self.user))	
 		return self.wizard
 		
 	def deleteForm(self):
