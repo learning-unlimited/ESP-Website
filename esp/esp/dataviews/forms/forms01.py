@@ -1,50 +1,32 @@
-from django import forms
-from django.shortcuts import render_to_response
-from django.contrib.formtools.wizard import FormWizard
-from django.template.context import RequestContext
-from dataviews import useful_models as all_usefull_models
+from django.forms import *
 from dataviews import * 
-from django.forms.util import flatatt, ErrorDict, ErrorList
 from django.forms.forms import pretty_name
-from django.forms import widgets
-from django.core.urlresolvers import get_callable, get_mod_func
-from django.utils.importlib import import_module
+from django.core.urlresolvers import get_mod_func
 from django.http import Http404, HttpResponseRedirect, HttpResponse
-from django.utils.decorators import method_decorator
-
-useful_models = all_usefull_models
-modes = ["Rows represent instances of a model, columns represent attributes of that model."]
-model_choices = [(model.__name__, model.__name__) for model in useful_models]
-model_field_choices = [('', "None")]+[(model.__name__,list([(model.__name__+'.'+fieldname, fieldname) for fieldname, field in model._meta.init_name_map().iteritems() if not (isinstance(field[0], RelatedField) or isinstance(field[0], RelatedObject))])) for model in useful_models]
-query_term_symbols = {'exact': '[case-sensitive] ==', 'iexact': 'case-insensitive ==', 'contains': 'case-sensitive contains', 'icontains': 'case-insesitive contains', 'gt': '>', 'gte': '>=', 'lt': '<', 'lte': '<=', 'in': 'in',
-    'startswith': 'case-sensitive starts with', 'istartswith': 'case-insensitive starts with', 'endswith': 'case-sensitive ends with', 'iendswith': 'case-insensitive ends with', 'range': 'range', 'year': 'year',
-    'month': 'month', 'day': 'day', 'week_day': 'week day', 'isnull': 'is null', 'search': 'search', 'regex': 'case-sensitive regex', 'iregex': 'case-insensitive regex'}
-
-class ModeForm(forms.Form):
-    mode = forms.ChoiceField(choices=[(i, modes[i]) for i in range(len(modes))])
+from esp.dataviews.forms import *
 
 def headingconditionsform_factory(num_conditions = 3): 
     name = "HeadingConditionsForm"
-    base = (forms.Form,)
-    fields = {'model': forms.ChoiceField(choices=model_choices), 'num_conditions': forms.IntegerField(initial=num_conditions, widget=widgets.HiddenInput)}
+    base = (Form,)
+    fields = {'model': ChoiceField(choices=model_choices), 'num_conditions': IntegerField(initial=num_conditions, widget=widgets.HiddenInput)}
     for i in range(num_conditions): 
-        fields['condition_'+str(i+1)] = forms.ChoiceField(choices = model_field_choices, required=False)
-        fields['query_term_'+str(i+1)] = forms.ChoiceField(choices = [(query_term, query_term_symbols[query_term]) for query_term in query_terms], initial="exact")
-        fields['text_'+str(i+1)] = forms.CharField(required=False)
+        fields['condition_'+str(i+1)] = ChoiceField(choices = model_field_choices, required=False)
+        fields['query_term_'+str(i+1)] = ChoiceField(choices = [(query_term, query_term_symbols[query_term]) for query_term in query_terms], initial="exact")
+        fields['text_'+str(i+1)] = CharField(required=False)
     return type(name, base, fields)
 
 def displaycolumnsform_factory(num_columns = 3): 
     name = "DisplayColumnsForm"
-    base = (forms.Form,)
-    fields = {'num_columns': forms.IntegerField(initial=num_columns, widget=widgets.HiddenInput)}
+    base = (Form,)
+    fields = {'num_columns': IntegerField(initial=num_columns, widget=widgets.HiddenInput)}
     for i in range(num_columns): 
-        fields['field_'+str(i+1)] = forms.ChoiceField(choices = model_field_choices, required=(not i))
-        fields['text_'+str(i+1)] = forms.CharField(required=(not i))
+        fields['field_'+str(i+1)] = ChoiceField(choices = model_field_choices, required=(not i))
+        fields['text_'+str(i+1)] = CharField(required=(not i))
     return type(name, base, fields)
 
 def pathchoiceform_factory(model, all_paths): 
     name = "PathChoiceForm"
-    base = (forms.Form,)
+    base = (Form,)
     fields = {}
     for I, target_model, model_paths, field in all_paths:
         for (path, models, many) in model_paths: 
@@ -53,14 +35,13 @@ def pathchoiceform_factory(model, all_paths):
                 for i,n in enumerate(path):
                     label += u' \u2192 ' + pretty_name(n) + u' (' + models[i+1].__name__ + u')'
             label += u' \u2192 ' + pretty_name(unicode(field))
-            fields[LOOKUP_SEP.join((str(I)+'|'+target_model.__name__,)+path+(field,))] = forms.BooleanField(required=False, label=label)
+            fields[LOOKUP_SEP.join((str(I)+'|'+target_model.__name__,)+path+(field,))] = BooleanField(required=False, label=label)
     return type(name, base, fields)
 
-class DataViewsWizard(FormWizard):
-    
-    @method_decorator(admin_required)
-    def __call__(self, request, *args, **kwargs):
-        return super(DataViewsWizard, self).__call__(request, *args, **kwargs)
+class ModeWizard(DataViewsWizard): 
+
+    def __init__(self, initial=None): 
+        super(ModeWizard, self).__init__(form_list=[headingconditionsform_factory()]*4, initial=initial)
     
     def done(self, request, form_list):
         model = globals()[form_list[1].cleaned_data['model']]
@@ -115,11 +96,6 @@ class DataViewsWizard(FormWizard):
         response['Content-Disposition'] = 'attachment; filename=%s' % 'DataViews.xls'
         book.save(response)
         return response
-
-        # return HttpResponseRedirect('/page-to-redirect-to-when-done/')
-    
-    def get_template(self, step):
-        return 'dataviews/forms/wizard.html'
     
     def process_step(self, request, form, step): 
         form1 = None

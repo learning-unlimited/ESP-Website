@@ -183,4 +183,4 @@ urlpatterns += patterns('esp.web.views.navBar',
     (r'^navbar/edit.scm', 'updateNavBar') )
     
 urlpatterns += patterns('', 
-    (r'^dataviews/?', include('esp.dataviews.urls')) )
+    (r'^dataviews/', include('esp.dataviews.urls')) )
