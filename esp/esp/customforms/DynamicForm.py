@@ -386,7 +386,26 @@ class FormHandler:
 		for handler in self.handlers:
 			form_list.append(handler.getForm())
 		return form_list
-
+		
+	def getInstanceForLinkField(self, field_name, model):
+		"""
+		Checks the link_id attribute for this field, and returns the corresponding model
+		instance if one has been specified by the form creator.
+		Returns None otherwise.
+		"""
+		master_struct=self._getFormMetadata(self.form)
+		field_id=int(field_name.split("_")[1])
+		for page in master_struct:
+			for section in page:
+				for field in section:
+					if field['id']==field_id:
+						if field['attribute__value']=="-1":
+							return None
+						else:
+							instance_id=int(field['attribute__value'])
+							instance=model.objects.get(pk=instance_id)
+							return instance
+		
 	def _getInitialData(self, form, user):
 		"""
 		Returns the initial data, if any, for this form according to the format that FormWizard expects.
@@ -406,7 +425,13 @@ class FormHandler:
 				for k,v in initial.items():
 					if v['model'].__name__ not in link_models_cache:
 						#Get the corresponding instance, and get its values
-						link_models_cache[v['model'].__name__]=getattr(v['model'], 'cf_link_instance')(self.request)
+						#First, check for pre-specified instances
+						pre_instance=self.getInstanceForLinkField(k, v['model'])
+						if pre_instance is not None:
+							link_models_cache[v['model'].__name__]=pre_instance
+						else:
+							#Get the instance from the model method that should have been defined	
+							link_models_cache[v['model'].__name__]=getattr(v['model'], 'cf_link_instance')(self.request)
 						if link_models_cache[v['model'].__name__] is not None:
 							link_models_cache[v['model'].__name__]=link_models_cache[v['model'].__name__].__dict__
 					if link_models_cache[v['model'].__name__] is not None:		
