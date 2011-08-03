@@ -1055,9 +1055,12 @@ class StudentInfo(models.Model):
 
         if regProfile.student_info is None:
             studentInfo = StudentInfo()
-            studentInfo.user = curUser
         else:
             studentInfo = regProfile.student_info
+        if not studentInfo.user:
+            studentInfo.user = curUser
+        elif studentInfo.user != curUser: # this should never happen, but you never know....
+            raise ESPError(), "Your registration profile is corrupted. Please contact esp-web@mit.edu, with your name and username in the message, to correct this issue."
 
         studentInfo.graduation_year = new_data['graduation_year']
         try:
