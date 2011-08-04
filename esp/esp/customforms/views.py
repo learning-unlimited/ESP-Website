@@ -254,7 +254,7 @@ def getData(request):
 			except ValueError:
 				return HttpResponse(status=400)
 			form=Form.objects.get(pk=form_id)	
-			fh=FormHandler(form=form)
+			fh=FormHandler(form=form, request=request)
 			resp_data=json.dumps(fh.getResponseData(form))
 			return HttpResponse(resp_data)
 	return HttpResponse(status=400)

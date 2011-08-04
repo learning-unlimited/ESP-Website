@@ -325,11 +325,6 @@ class ComboForm(FormWizard):
 class FormHandler:
 	"""Handles creation of a form (single page or multi-page). Uses Django's FormWizard."""
 	
-	_customFields={
-		'name':['first_name', 'last_name'],
-		'address':['street', 'state', 'city', 'zip'],
-	}
-	
 	def __init__(self, form, request, user=None):
 		self.form=form
 		self.request=request
@@ -484,44 +479,41 @@ class FormHandler:
 		#response data from these linked models.
 		#And since we're already iterating over fields,
 		#let's also set the questions in the process.
-		link_models={}
 		add_fields={}
 		
 		for field in fields:
 			#I'll do a lot of merging here later
 			qname='question_%d' % field['id']
-			ftype=field['field_type']
-			if ftype in self._customFields:
-				for f in self._customFields[field['field_type']]:
-					response_data['questions'].append([qname+'_'+f, field['label'] + '_'+f])
-			else:
-				response_data['questions'].append([qname, field['label']])
-			
-			if ftype in link_fields:
+			ftype=field['field_type']	
+			response_data['questions'].append([qname, field['label']])
+			if cf_cache.isLinkField(ftype):
 				#Let's grab the model first
-				if link_fields[ftype]['model']	not in link_models:
-					app, model_name=link_fields[ftype]['model'].split('.')
-					link_models[link_fields[ftype]['model']]=ContentType.objects.get(app_label=app, model=model_name).model_class()
+				model=cf_cache.modelForLinkField(ftype)
 				
 				#Now let's see what fields need to be set
-				if 'combo' not in link_fields[ftype]:
-					#Simple field
-					add_fields[qname]=[link_fields[ftype]['model'], link_fields[ftype]['model_field']]
-				else:
-					#Combo field
-					for f in link_fields[ftype]['combo']:
-						add_fields[qname+'_'+f]=[link_fields[f]['model'], link_fields[f]['model_field']]
+				add_fields[qname]=[model, cf_cache.getLinkFieldData(ftype)['model_field']]
 		
 		#Now let's set up the responses
 		for response in responses:
-			#First, grab the values dict from all linked instances. The id is stored in response.
-			link_instances={}
-			for model, model_cls in link_models.items():
-				link_instances[model]=model_cls.objects.filter(pk=response[ model.split('.')[1]+'_id' ]).values()[0]
+			link_instances_cache={}
 			
+			#Add in user if form is not anonymous
+			if not form.anonymous:
+				response['user_id']=unicode(response['user_id'])
+				response_data['questions'].append(['user_id', 'User'])
+				
+			#Add in links
+			if form.link_type!="-1":
+				model=cf_cache.only_fkey_models[form.link_type]
+				inst=model.objects.get(pk=response["link_%s_id" % model.__name__])
+				response["link_%s_id" % model.__name__]	= unicode(inst)
+				response_data['questions'].append(["link_%s_id" % model.__name__, form.link_type])
+
 			#Now, put in the additional fields in response
 			for qname, data in add_fields.items():
-				response[qname]=link_instances[data[0]][data[1]]
+				if data[0].__name__ not in link_instances_cache:
+					link_instances_cache[data[0].__name__]=data[0].objects.get(pk=response["link_%s_id" % data[0].__name__])
+				response[qname]=link_instances_cache[data[0].__name__].__dict__[data[1]]	
 				
 		#Add responses to response_data
 		response_data['answers'].extend(responses)									
@@ -541,31 +533,7 @@ class FormHandler:
 			'link_id':self.form.link_id,
 			'pages':self._getFormMetadata(self.form)
 		}
-		return metadata					
-		
-def test():
-	f=Form.objects.get(id=13)
-	fh=FormHandler(form=f)
-	a=fh.getResponseData(f)
-	
-@cache_function
-def rd(dyn, f):
-	"""
-	Returns the response data for this form, along with the questions
-	"""
-	a=FormHandler(form=f)
-	response_data={'questions':[], 'answers':[]}
-	responses=dyn.objects.all().order_by('id')
-	fields=Field.objects.filter(form=f).order_by('section__page__seq', 'section__seq', 'seq').values('id', 'field_type', 'label')
-	
-	for field in fields:
-		qname='question_%d' % field['id']
-		if field['field_type'] in a._customFields:
-			for f in a._customFields[field['field_type']]:
-				response_data['questions'].append([qname+'_'+f, field['label'] + '_'+f])
-		else:
-			response_data['questions'].append([qname, field['label']])
-	return response_data	
+		return metadata	
 
 					
 						
