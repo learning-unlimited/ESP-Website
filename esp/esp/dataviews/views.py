@@ -5,5 +5,5 @@ def wizard_view(request):
     return DataViewsWizard()(request)
 
 def mode_view(request, mode, **kwargs): 
-    form = '%02d_forms' % int(mode)
+    form = 'forms_%02d' % int(mode)
     return getattr(__import__('dataviews.forms', globals(), locals(), [form], -1), form).ModeWizard(**kwargs)(request)

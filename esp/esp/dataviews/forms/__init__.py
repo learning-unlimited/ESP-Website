@@ -37,8 +37,8 @@ class DataViewsWizard(FormWizard):
     
     def get_template(self, step): 
         def format_for_mode(s): 
-            return s % {'mode': self.mode, 'step': step}
-        return map(format_for_mode, ('dataviews/%(mode)02d_forms/%(step)02d_wizard.html', 'dataviews/%(mode)02d_forms/wizard.html', 'dataviews/forms/%(step)02d_wizard.html', 'dataviews/forms/wizard.html'))
+            return s % {'mode': self.mode, 'step': step+1}
+        return map(format_for_mode, ('dataviews/forms_%(mode)02d/%(step)02d_wizard.html', 'dataviews/forms_%(mode)02d/wizard.html', 'dataviews/forms/%(step)02d_wizard.html', 'dataviews/forms/wizard.html'))
     
     def done(self, request, form_list): 
         return HttpResponseRedirect('/dataviews/mode%02d/' % int(form_list[0].cleaned_data['mode']))
