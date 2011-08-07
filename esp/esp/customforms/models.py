@@ -8,7 +8,7 @@ class Form(models.Model):
 	description=models.CharField(max_length=140, blank=True)
 	date_created=models.DateField(auto_now_add=True)
 	created_by=models.ForeignKey(User)
-	link_type=models.CharField(max_length=10, choices=( ('program', 'Program'), ('course', 'Course'), ('none','None') ), blank=True)
+	link_type=models.CharField(max_length=50, blank=True)
 	link_id=models.IntegerField(default=-1)
 	anonymous=models.BooleanField(default=False)
 	perms=models.CharField(max_length=200, default='')
