@@ -126,7 +126,14 @@
 						<option value="Teacher">Teachers</option>
 						<option value="Student">Students</option>
 					</select></p>
-					<p><input type="checkbox" id="id_prog_belong" /> Belonging to current program</p>
+					<p><input type="checkbox" id="id_prog_belong" /> Belonging to program </p>
+					<select id="id_perm_program">
+						<option value="-1">None</option>
+						{% for prog in prog_list %}
+							<option value="{{ prog.id }}">{{ prog.niceName }}</option>
+						{% endfor %}
+					</select>
+					<br/>	
 					<div>
 						<p>Filter</p>
 						<select id="id_sub_perm">

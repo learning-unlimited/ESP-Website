@@ -79,13 +79,11 @@ $(document).ready(function() {
 	$('#cat_selector').change(function(){onSelectCategory($(this).val());});
 	$('#elem_selector').change(function(){onSelectElem($('#elem_selector').val());});
 	$('#main_cat_spec').change(onChangeMainCatSpec);
+	$('#id_perm_program').change(onChangePermProg);
 	
 	$currSection=$('#section_0');
 	$currPage=$('#page_0');
-	$('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($currPage);
-	
-	$('#id_assoc_prog').change(initUI);
-	
+	$('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($currPage);	
 	
 	//csrf stuff
 	$(document).ajaxSend(function(event, xhr, settings) {
@@ -199,6 +197,7 @@ var initUI=function(){
 var clearPermsArea=function(){
 	//Initializes the permissions area
 	$('#id_prog_belong').attr('checked', false).parent().hide();
+	$('#id_perm_program').val("-1").hide();
 	$('#id_sub_perm').children().remove();
 	$('#id_sub_perm').parent().hide();
 };
@@ -236,9 +235,8 @@ var onChangeLinksSpecify=function(){
 	}
 };
 
-var getPerms=function(){
+var getPerms=function(prog_id){
 	//Queries the server for perms related to the currently selected program
-	var prog_id=$('#id_assoc_prog').val();
 	if(prog_id!="-1"){
 		$.ajax({
 			url:'/customforms/getperms/',
@@ -247,6 +245,7 @@ var getPerms=function(){
 			dataType:'json',
 			async:false,
 			success: function(retval) {
+				console.log(retval);
 				perms=retval;
 				populatePerms(perms);
 			}
@@ -258,10 +257,11 @@ var getPerms=function(){
 var setPerms=function(){
 	//Sets the permission options based on selected values
 	
-	if($('#id_assoc_prog').val()=="-1")
+	var prog_id=$('#id_perm_program').val();
+	if(prog_id=="-1")
 		return;
 	if($.isEmptyObject(perms))
-		getPerms();
+		getPerms(prog_id);
 	else populatePerms(perms);	
 };
 
@@ -282,7 +282,7 @@ var populatePerms=function(perm_opts){
 var onChangeMainPerm=function(){
 	clearPermsArea();
 	var main_perm=$(this).val();
-	if(main_perm!='none' && $('#id_assoc_prog').val()!="-1"){
+	if(main_perm!='none'){
 		$('#id_prog_belong').parent().show();
 	}
 };
@@ -290,10 +290,23 @@ var onChangeMainPerm=function(){
 var onChangeProgBelong=function(){
 	var belongs=$(this).attr('checked');
 	if(belongs){
-		setPerms();
+		$('#id_perm_program').show();
 	}
-	else $('#id_sub_perm').parent().hide();
-}
+	else {
+		$('#id_sub_perm').parent().hide();
+		$('#id_perm_program').val("-1").hide();
+	}
+};
+
+var onChangePermProg=function(){
+	var prog=$('#id_perm_program');
+	if(prog!="-1"){
+		setPerms();
+		$('#id_sub_perm').parent().show();
+	}
+	else
+		$('#id_sub_perm').parent().hide();
+};
 
 var onChangeMainCatSpec=function() {
 	//Fetches instances from the server, populates values etc.
@@ -1357,6 +1370,8 @@ var submit=function() {
 	var form_perms='';
 	if($('#id_main_perm').val()!='none'){
 		form_perms+=$('#id_main_perm').val();
+		if(!('#id_perm_program').is(':hidden'))
+			form_perms+=","+$('#id_perm_program').val();
 		if(!$('#id_sub_perm').is(':hidden'))
 			form_perms+=","+$('#id_sub_perm').val();
 	}
