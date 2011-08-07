@@ -13,7 +13,7 @@ from esp.users.models import ContactInfo
 from esp.cache import cache_function
 from esp.program.models import Program
 
-from esp.customforms.linkfields import link_fields, only_fkey_models, cf_cache
+from esp.customforms.linkfields import link_fields, only_fkey_models, cf_cache, generic_fields
 from django.contrib.contenttypes.models import ContentType
 
 class BaseCustomForm(BetterForm):
@@ -37,6 +37,7 @@ class BaseCustomForm(BetterForm):
 class CustomFormHandler():
 	"""Handles creation of 'one' Django form (=one page)"""
 	
+	"""
 	_field_types={
 		'textField':{'typeMap': forms.CharField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'size':'30', 'class':''}},
 		'longTextField':{'typeMap': forms.CharField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'size':'60', 'class':''}},
@@ -46,20 +47,22 @@ class CustomFormHandler():
 		'dropdown':{'typeMap': forms.ChoiceField, 'attrs':{'widget': forms.Select, }, 'widget_attrs':{'class':''}},
 		'multiselect':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.SelectMultiple, }, 'widget_attrs':{'class':''}},
 		'checkboxes':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.CheckboxSelectMultiple, }, 'widget_attrs':{'class':''}},
-		'numeric':{'typeMap': forms.IntegerField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'digits'},},
-		'date':{'typeMap': forms.DateField,'attrs':{'widget':forms.DateInput,}, 'widget_attrs':{'class':'ddate', 'format':'%m-%d-%Y'},},
-		'time':{'typeMap': forms.TimeField, 'attrs':{'widget':forms.TimeInput,}, 'widget_attrs':{'class':'time'},},
+		'numeric':{'typeMap': forms.IntegerField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'digits '},},
+		'date':{'typeMap': forms.DateField,'attrs':{'widget':forms.DateInput,}, 'widget_attrs':{'class':'ddate ', 'format':'%m-%d-%Y'},},
+		'time':{'typeMap': forms.TimeField, 'attrs':{'widget':forms.TimeInput,}, 'widget_attrs':{'class':'time '},},
 		#'name':{'typeMap':NameField, 'attrs':{}, 'widget_attrs':{'class':''}},
 		#'gender':{'typeMap': forms.ChoiceField, 'attrs':{'widget':forms.RadioSelect, 'choices':[('M','Male'), ('F', 'Female')]}, 'widget_attrs':{'class':''}},
-		#'phone':{'typeMap': USPhoneNumberField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'USPhone'}},
-		#'email':{'typeMap': forms.EmailField, 'attrs':{'max_length':30, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'email'}},
+		#'phone':{'typeMap': USPhoneNumberField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'USPhone '}},
+		#'email':{'typeMap': forms.EmailField, 'attrs':{'max_length':30, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'email '}},
 		#'address':{'typeMap':AddressField, 'attrs':{}, 'widget_attrs':{'class':''}},
 		#'street':{'typeMap': forms.CharField, 'attrs':{'max_length':100, 'widget':forms.TextInput,}, 'widget_attrs':{'class':''}},
 		#'state':{'typeMap': USStateField, 'attrs':{'widget': USStateSelect}, 'widget_attrs':{'class':''}},
 		#'city':{'typeMap': forms.CharField, 'attrs':{'max_length':50, 'widget':forms.TextInput,}, 'widget_attrs':{'class':''},},
-		#'zip':{'typeMap': forms.CharField, 'attrs':{'max_length':5, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'USZip'}},
-		#'courses':{'typeMap': forms.ModelChoiceField, 'attrs':{'widget':forms.Select, 'empty_label':None}, 'widget_attrs':{'class':'courses'}},
+		#'zip':{'typeMap': forms.CharField, 'attrs':{'max_length':5, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'USZip '}},
+		#'courses':{'typeMap': forms.ModelChoiceField, 'attrs':{'widget':forms.Select, 'empty_label':None}, 'widget_attrs':{'class':'courses '}},
 	}
+	"""
+	_field_types=generic_fields
 	
 	_field_attrs=['label', 'help_text', 'required']
 	
@@ -153,7 +156,7 @@ class CustomFormHandler():
 				if other_attrs:
 					field_attrs.update(self._getAttrs(other_attrs))
 					
-				#First, check for link fields.
+				#First, check for link fields
 				if cf_cache.isLinkField(field['field_type']):
 					#Get all form fields for this model, if it hasn't already been done
 					link_model=cf_cache.modelForLinkField(field['field_type'])
@@ -164,9 +167,14 @@ class CustomFormHandler():
 					form_field=model_fields_cache[link_model.__name__][model_field]
 					#TODO -> enforce "Required" constraint server-side as well, or trust the client-side code?
 					form_field.__dict__.update(field_attrs)
+					form_field.widget.attrs.update({'class':''})
 					if form_field.required:
 						#Add a class 'required' to the widget
-						form_field.widget.attrs.update({'class':'required'})
+						form_field.widget.attrs['class']+='required ' 
+						form_field.widget.is_required=True
+					#Add in other classes for validation
+					generic_type=cf_cache.getGenericType(form_field)
+					form_field.widget.attrs['class']+=self._field_types[generic_type]['widget_attrs']['class']	
 					#Adding to field list
 					self.fields.append([field_name, form_field])
 					curr_fieldset[1]['fields'].append(field_name)

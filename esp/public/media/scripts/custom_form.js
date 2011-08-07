@@ -12,7 +12,9 @@ var formElements={
 		numeric:{'disp_name':'Numeric Field','ques':''},
 		date:{'disp_name':'Date','ques':'Date'},
 		time:{'disp_name':'Time','ques':'Time'},
-		//file:{'disp_name':'File Upload','ques':'Upload file'},
+		phone:{'disp_name':'Phone no.','ques':'Your phone no.'},
+		email:{'disp_name':'Email','ques':'Your email'},
+		state:{'disp_name':'State','ques':'Your state'},
 		section:{'disp_name':'Section', 'ques':'Section'},
 		page:{'disp_name':'Page', 'ques':'Page'}
 	}
@@ -836,13 +838,15 @@ var renderNormalField=function(item, field_options, data){
 		$ampm=$('<select>').append($('<option value="AM">AM</option>')).append($('<option value="PM">PM</option>'));
 		$new_elem.append($('<p>').append($hh).append($('<span> : </span>')).append($m).append($('<span> : </span>')).append($ss).append('&nbsp;').append($ampm));
 	}
-	else if(item=="file"){
+	else if(item=='phone' || item=='email'){
 		$new_elem=$('<input/>', {
-			type:"file",
-			size:"40"
+			type:"text",
+			size:"30"
 		});
 	}
-	
+	else if(item=='state'){
+		$new_elem=$('<select></select>');
+	}
 	//Page and section are special-cased
 	else if(item=='section'){
 		//this one's processed differently from the others
