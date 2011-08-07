@@ -531,6 +531,7 @@ class FormHandler:
 			'anonymous':self.form.anonymous, 
 			'link_type':self.form.link_type,
 			'link_id':self.form.link_id,
+			'perms':self.form.perms,
 			'pages':self._getFormMetadata(self.form)
 		}
 		return metadata	

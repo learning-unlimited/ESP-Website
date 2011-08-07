@@ -142,6 +142,18 @@ $(document).ready(function() {
 	//initUI();
 });
 
+var getFieldCategory=function(field_type) {
+	//Returns the category for this field
+	var cat="";
+	$.each(formElements, function(category, fields){
+		if(field_type in fields){
+			cat=category;
+			return false; //break out
+		}
+	});
+	return cat;
+}
+
 var constructBuilder = function(){
 	//Constructs the form builder with field information from the server
 	
@@ -431,7 +443,7 @@ var populateFieldsSelector=function(category){
 	//Generating Options list
 	$.each(fields_list, function(index,elem){
 		var disp_name="";
-		if(elem['required'])
+		if(category!="Generic" && elem['required'])
 			disp_name=elem['disp_name']+"**";
 		else disp_name=elem['disp_name'];	
 		options_html+="<option value="+index+">"+disp_name+"</option>";
@@ -578,17 +590,12 @@ var onSelectField=function($elem, field_data) {
 	//Select the current field and category in the field and category selectors
 	if(ftype in formElements['Generic']){
 		$('#cat_selector').val('Generic');
+		populateFieldsSelector('Generic');
 		$('#elem_selector').val(ftype);
 	}
 	else {
 		//link field
-		var curr_cat;
-		$.each(formElements, function(cat, fields){
-			if(ftype in fields){
-				curr_cat=cat;
-				return false;
-			}
-		});
+		var curr_cat=getFieldCategory(ftype);
 		$('#cat_selector').val(curr_cat);
 		populateFieldsSelector(curr_cat);
 		showCategorySpecificOptions(curr_cat);
@@ -1486,7 +1493,6 @@ var createFromBase=function(){
 		$('#input_form_title').attr('value', '').change();
 		$('#input_form_description').attr('value','').change();
 		$('#id_anonymous').attr('checked', false);
-		$('#id_assoc_prog').val('-1');
 	}
 };
 
@@ -1501,9 +1507,16 @@ var rebuild=function(metadata) {
 	//Setting other form options
 	if(metadata['anonymous'])
 		$('#id_anonymous').attr('checked', true);
-	if(metadata['link_type']=='program')
-		$('#id_assoc_prog').val(metadata['link_id'])
-		
+	//Setting fkey-only links
+	$('#link_id_main').val(metadata['link_type']);
+	onChangeMainLink();
+	if(metadata['link_id']!="-1"){
+		$('#links_id_specify').val('particular');
+		onChangeLinksSpecify();
+		$('#links_id_pick').val(metadata['link_id']);
+	}
+	else $('#links_id_specify').val('userdef');
+	console.log("1");	
 	//Putting in pages, sections and fields
 	$.each(metadata['pages'], function(pidx, page){
 		addElement('page',[]);
@@ -1534,9 +1547,23 @@ var rebuild=function(metadata) {
 					attrs:{}
 				};
 				
-				
-				if($.inArray(field['attribute__attr_type'], ['options', 'limits'])!=-1)
+				if($.inArray(field['attribute__attr_type'], ['options', 'limits', 'link_id'])!=-1)
 					field_data.attrs[field['attribute__attr_type']]=field['attribute__value'];	
+				//Checking for link fields
+				var category=getFieldCategory(field_data['field_type']);
+				if(category!='Generic') {
+					$('#cat_selector').val(category);
+					if(field_data.attrs['link_id']=="-1"){
+						$('#main_cat_spec').val('automatic');
+						onChangeMainCatSpec();
+					}
+					else {
+						$('#main_cat_spec').val('particular');
+						onChangeMainCatSpec();
+						$('#cat_instance_sel').val(field_data.attrs['link_id']);
+					}
+				}
+					
 				onSelectField([], field_data);	
 				$prevField=addElement(field['field_type'], $prevField);
 				$.data($prevField[0], 'data')['parent_id']=field['id'];	

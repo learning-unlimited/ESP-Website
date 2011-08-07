@@ -271,7 +271,7 @@ def getRebuildData(request):
 			except ValueError:
 				return HttpResponse(status=400)
 			form=Form.objects.get(pk=form_id)
-			fh=FormHandler(form=form)
+			fh=FormHandler(form=form, request=request)
 			metadata=json.dumps(fh.rebuildData())
 			return HttpResponse(metadata)
 	return HttpResponse(status=400)	
