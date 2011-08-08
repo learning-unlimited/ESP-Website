@@ -13,9 +13,12 @@ generic_fields={
 	'dropdown':{'typeMap': forms.ChoiceField, 'attrs':{'widget': forms.Select, }, 'widget_attrs':{'class':''}},
 	'multiselect':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.SelectMultiple, }, 'widget_attrs':{'class':''}},
 	'checkboxes':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.CheckboxSelectMultiple, }, 'widget_attrs':{'class':''}},
-	'numeric':{'typeMap': forms.IntegerField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'digits'},},
-	'date':{'typeMap': forms.DateField,'attrs':{'widget':forms.DateInput,}, 'widget_attrs':{'class':'ddate', 'format':'%m-%d-%Y'},},
-	'time':{'typeMap': forms.TimeField, 'attrs':{'widget':forms.TimeInput,}, 'widget_attrs':{'class':'time'},},
+	'numeric':{'typeMap': forms.IntegerField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'digits '},},
+	'date':{'typeMap': forms.DateField,'attrs':{'widget':forms.DateInput,}, 'widget_attrs':{'class':'ddate ', 'format':'%m-%d-%Y'},},
+	'time':{'typeMap': forms.TimeField, 'attrs':{'widget':forms.TimeInput,}, 'widget_attrs':{'class':'time '},},
+	'phone':{'typeMap': USPhoneNumberField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'USPhone '}},
+	'email':{'typeMap': forms.EmailField, 'attrs':{'max_length':30, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'email '}},
+	'state':{'typeMap': USStateField, 'attrs':{'widget': USStateSelect}, 'widget_attrs':{'class':''}},
 }
 
 class CustomFormsLinkModel(object):
@@ -57,7 +60,7 @@ class CustomFormsCache:
 					for field, display_name in sublist:
 						field_name=model.__name__ + "_" + field
 						field_instance=all_form_fields[field]
-						generic_field_type=self._getGenericType(field_instance.widget)
+						generic_field_type=self.getGenericType(field_instance)
 						self.link_fields[model.form_link_name]['fields'].update({ field_name:{
 							'model_field':field,
 							'disp_name':display_name,
@@ -69,16 +72,25 @@ class CustomFormsCache:
 		
 		self.loaded=True				
 						
-	def _getGenericType(self, widget):
+	def getGenericType(self, field_instance):
 		"""
 		Returns the generic field type (e.g. textField) corresponding to this widget.
-		This information is useful for rendering this field in the form builder.
+		This information is useful for rendering this field in the form builder, and for 
+		setting classes on link fields when they are rendered in the form.
 		If this field doesn't resemble any of the generic fields, we return 'custom'.
-		A match is taken if the widget is the same as that of a generic field, or is a subclass.
-		TODO -> USStateField ???
-		Note-> It's not currently accurate, as it only compares widgets, but since it's only used for preview purposes in
-		the form builder, it shouldn't matter.
-		"""					
+		We first try to match the field class and widget. If there's no match, we just
+		try to macth the widget.
+		"""	
+		widget=field_instance.widget				
+		for k,v in generic_fields.items():
+			#First, try and match the field class and corresponding widget
+			if field_instance.__class__ is v['typeMap']:
+				if widget.__class__ is v['attrs']['widget']:
+					return k
+		
+		#Now try to match widgets. Only useful for rendering in the form builder.
+		#Check -> does this break for any case? We'll get the wrong classes matched up
+		#with the wrong field, and correspondingly the wrong client-side validation.				
 		for k,v in generic_fields.items():
 			if widget is v['attrs']['widget'] or (widget.__class__ is v['attrs']['widget']):
 				return k
@@ -113,7 +125,7 @@ class CustomFormsCache:
 				
 cf_cache=CustomFormsCache()								
 		
-
+#The following is redundant for now
 link_fields={
 	'first_name':{
 		'model':'users.contactinfo',

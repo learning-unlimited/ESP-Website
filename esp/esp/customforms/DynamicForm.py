@@ -13,7 +13,7 @@ from esp.users.models import ContactInfo
 from esp.cache import cache_function
 from esp.program.models import Program
 
-from esp.customforms.linkfields import link_fields, only_fkey_models, cf_cache
+from esp.customforms.linkfields import link_fields, only_fkey_models, cf_cache, generic_fields
 from django.contrib.contenttypes.models import ContentType
 
 class BaseCustomForm(BetterForm):
@@ -37,6 +37,7 @@ class BaseCustomForm(BetterForm):
 class CustomFormHandler():
 	"""Handles creation of 'one' Django form (=one page)"""
 	
+	"""
 	_field_types={
 		'textField':{'typeMap': forms.CharField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'size':'30', 'class':''}},
 		'longTextField':{'typeMap': forms.CharField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'size':'60', 'class':''}},
@@ -46,20 +47,22 @@ class CustomFormHandler():
 		'dropdown':{'typeMap': forms.ChoiceField, 'attrs':{'widget': forms.Select, }, 'widget_attrs':{'class':''}},
 		'multiselect':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.SelectMultiple, }, 'widget_attrs':{'class':''}},
 		'checkboxes':{'typeMap': forms.MultipleChoiceField, 'attrs':{'widget': forms.CheckboxSelectMultiple, }, 'widget_attrs':{'class':''}},
-		'numeric':{'typeMap': forms.IntegerField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'digits'},},
-		'date':{'typeMap': forms.DateField,'attrs':{'widget':forms.DateInput,}, 'widget_attrs':{'class':'ddate', 'format':'%m-%d-%Y'},},
-		'time':{'typeMap': forms.TimeField, 'attrs':{'widget':forms.TimeInput,}, 'widget_attrs':{'class':'time'},},
+		'numeric':{'typeMap': forms.IntegerField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'digits '},},
+		'date':{'typeMap': forms.DateField,'attrs':{'widget':forms.DateInput,}, 'widget_attrs':{'class':'ddate ', 'format':'%m-%d-%Y'},},
+		'time':{'typeMap': forms.TimeField, 'attrs':{'widget':forms.TimeInput,}, 'widget_attrs':{'class':'time '},},
 		#'name':{'typeMap':NameField, 'attrs':{}, 'widget_attrs':{'class':''}},
 		#'gender':{'typeMap': forms.ChoiceField, 'attrs':{'widget':forms.RadioSelect, 'choices':[('M','Male'), ('F', 'Female')]}, 'widget_attrs':{'class':''}},
-		#'phone':{'typeMap': USPhoneNumberField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'USPhone'}},
-		#'email':{'typeMap': forms.EmailField, 'attrs':{'max_length':30, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'email'}},
+		#'phone':{'typeMap': USPhoneNumberField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'USPhone '}},
+		#'email':{'typeMap': forms.EmailField, 'attrs':{'max_length':30, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'email '}},
 		#'address':{'typeMap':AddressField, 'attrs':{}, 'widget_attrs':{'class':''}},
 		#'street':{'typeMap': forms.CharField, 'attrs':{'max_length':100, 'widget':forms.TextInput,}, 'widget_attrs':{'class':''}},
 		#'state':{'typeMap': USStateField, 'attrs':{'widget': USStateSelect}, 'widget_attrs':{'class':''}},
 		#'city':{'typeMap': forms.CharField, 'attrs':{'max_length':50, 'widget':forms.TextInput,}, 'widget_attrs':{'class':''},},
-		#'zip':{'typeMap': forms.CharField, 'attrs':{'max_length':5, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'USZip'}},
-		#'courses':{'typeMap': forms.ModelChoiceField, 'attrs':{'widget':forms.Select, 'empty_label':None}, 'widget_attrs':{'class':'courses'}},
+		#'zip':{'typeMap': forms.CharField, 'attrs':{'max_length':5, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'USZip '}},
+		#'courses':{'typeMap': forms.ModelChoiceField, 'attrs':{'widget':forms.Select, 'empty_label':None}, 'widget_attrs':{'class':'courses '}},
 	}
+	"""
+	_field_types=generic_fields
 	
 	_field_attrs=['label', 'help_text', 'required']
 	
@@ -153,7 +156,7 @@ class CustomFormHandler():
 				if other_attrs:
 					field_attrs.update(self._getAttrs(other_attrs))
 					
-				#First, check for link fields.
+				#First, check for link fields
 				if cf_cache.isLinkField(field['field_type']):
 					#Get all form fields for this model, if it hasn't already been done
 					link_model=cf_cache.modelForLinkField(field['field_type'])
@@ -164,9 +167,14 @@ class CustomFormHandler():
 					form_field=model_fields_cache[link_model.__name__][model_field]
 					#TODO -> enforce "Required" constraint server-side as well, or trust the client-side code?
 					form_field.__dict__.update(field_attrs)
+					form_field.widget.attrs.update({'class':''})
 					if form_field.required:
 						#Add a class 'required' to the widget
-						form_field.widget.attrs.update({'class':'required'})
+						form_field.widget.attrs['class']+='required ' 
+						form_field.widget.is_required=True
+					#Add in other classes for validation
+					generic_type=cf_cache.getGenericType(form_field)
+					form_field.widget.attrs['class']+=self._field_types[generic_type]['widget_attrs']['class']	
 					#Adding to field list
 					self.fields.append([field_name, form_field])
 					curr_fieldset[1]['fields'].append(field_name)
@@ -250,8 +258,9 @@ class CustomFormHandler():
 		
 class ComboForm(FormWizard):
 	
-	def __init__(self, form_list, form, initial=None):
+	def __init__(self, form_list, form, form_handler,initial=None):
 		self.form=form
+		self.form_handler=form_handler
 		super(ComboForm, self).__init__(form_list, initial)
 	
 	def get_template(self, step):
@@ -284,7 +293,11 @@ class ComboForm(FormWizard):
 					model=cf_cache.modelForLinkField(ftype)
 					if model.__name__ not in link_models_cache:
 						link_models_cache[model.__name__]={'model': model, 'data':{}}
-						link_models_cache[model.__name__]['instance']=getattr(model, 'cf_link_instance')(request)
+						pre_instance=self.form_handler.getInstanceForLinkField(k, model)
+						if pre_instance is not None:
+							link_models_cache[model.__name__]['instance']=pre_instance
+						else:	
+							link_models_cache[model.__name__]['instance']=getattr(model, 'cf_link_instance')(request)
 					model_field=cf_cache.getLinkFieldData(ftype)['model_field']
 					#Not handling combo fields for now
 					link_models_cache[model.__name__]['data'].update({model_field: v})	
@@ -298,10 +311,13 @@ class ComboForm(FormWizard):
 				#TODO-> the following update won't work for fk fields.
 				v['instance'].__dict__.update(v['data'])
 				v['instance'].save()
+				curr_instance=v['instance']
 			else:
-				#TODO-> new instance creation. Ignoring for now.	
-				pass
-			
+				try:
+					new_instance=v['model'].objects.create(**v['data'])
+				except:	
+					#show some error message
+					pass
 			if v['instance'] is not None:
 				data['link_%s' % v['model'].__name__]=v['instance']				
 		
@@ -316,11 +332,6 @@ class ComboForm(FormWizard):
 		
 class FormHandler:
 	"""Handles creation of a form (single page or multi-page). Uses Django's FormWizard."""
-	
-	_customFields={
-		'name':['first_name', 'last_name'],
-		'address':['street', 'state', 'city', 'zip'],
-	}
 	
 	def __init__(self, form, request, user=None):
 		self.form=form
@@ -386,7 +397,26 @@ class FormHandler:
 		for handler in self.handlers:
 			form_list.append(handler.getForm())
 		return form_list
-
+		
+	def getInstanceForLinkField(self, field_name, model):
+		"""
+		Checks the link_id attribute for this field, and returns the corresponding model
+		instance if one has been specified by the form creator.
+		Returns None otherwise.
+		"""
+		master_struct=self._getFormMetadata(self.form)
+		field_id=int(field_name.split("_")[1])
+		for page in master_struct:
+			for section in page:
+				for field in section:
+					if field['id']==field_id:
+						if field['attribute__value']=="-1":
+							return None
+						else:
+							instance_id=int(field['attribute__value'])
+							instance=model.objects.get(pk=instance_id)
+							return instance
+		
 	def _getInitialData(self, form, user):
 		"""
 		Returns the initial data, if any, for this form according to the format that FormWizard expects.
@@ -406,7 +436,13 @@ class FormHandler:
 				for k,v in initial.items():
 					if v['model'].__name__ not in link_models_cache:
 						#Get the corresponding instance, and get its values
-						link_models_cache[v['model'].__name__]=getattr(v['model'], 'cf_link_instance')(self.request)
+						#First, check for pre-specified instances
+						pre_instance=self.getInstanceForLinkField(k, v['model'])
+						if pre_instance is not None:
+							link_models_cache[v['model'].__name__]=pre_instance
+						else:
+							#Get the instance from the model method that should have been defined	
+							link_models_cache[v['model'].__name__]=getattr(v['model'], 'cf_link_instance')(self.request)
 						if link_models_cache[v['model'].__name__] is not None:
 							link_models_cache[v['model'].__name__]=link_models_cache[v['model'].__name__].__dict__
 					if link_models_cache[v['model'].__name__] is not None:		
@@ -423,7 +459,7 @@ class FormHandler:
 	
 	def getWizard(self):
 		"""Returns the ComboForm instance for this form"""
-		self.wizard=ComboForm(self._getFormList(), self.form, self._getInitialData(self.form, self.user))	
+		self.wizard=ComboForm(self._getFormList(), self.form, self, self._getInitialData(self.form, self.user))	
 		return self.wizard
 		
 	def deleteForm(self):
@@ -451,44 +487,41 @@ class FormHandler:
 		#response data from these linked models.
 		#And since we're already iterating over fields,
 		#let's also set the questions in the process.
-		link_models={}
 		add_fields={}
 		
 		for field in fields:
 			#I'll do a lot of merging here later
 			qname='question_%d' % field['id']
-			ftype=field['field_type']
-			if ftype in self._customFields:
-				for f in self._customFields[field['field_type']]:
-					response_data['questions'].append([qname+'_'+f, field['label'] + '_'+f])
-			else:
-				response_data['questions'].append([qname, field['label']])
-			
-			if ftype in link_fields:
+			ftype=field['field_type']	
+			response_data['questions'].append([qname, field['label']])
+			if cf_cache.isLinkField(ftype):
 				#Let's grab the model first
-				if link_fields[ftype]['model']	not in link_models:
-					app, model_name=link_fields[ftype]['model'].split('.')
-					link_models[link_fields[ftype]['model']]=ContentType.objects.get(app_label=app, model=model_name).model_class()
+				model=cf_cache.modelForLinkField(ftype)
 				
 				#Now let's see what fields need to be set
-				if 'combo' not in link_fields[ftype]:
-					#Simple field
-					add_fields[qname]=[link_fields[ftype]['model'], link_fields[ftype]['model_field']]
-				else:
-					#Combo field
-					for f in link_fields[ftype]['combo']:
-						add_fields[qname+'_'+f]=[link_fields[f]['model'], link_fields[f]['model_field']]
+				add_fields[qname]=[model, cf_cache.getLinkFieldData(ftype)['model_field']]
 		
 		#Now let's set up the responses
 		for response in responses:
-			#First, grab the values dict from all linked instances. The id is stored in response.
-			link_instances={}
-			for model, model_cls in link_models.items():
-				link_instances[model]=model_cls.objects.filter(pk=response[ model.split('.')[1]+'_id' ]).values()[0]
+			link_instances_cache={}
 			
+			#Add in user if form is not anonymous
+			if not form.anonymous:
+				response['user_id']=unicode(response['user_id'])
+				response_data['questions'].append(['user_id', 'User'])
+				
+			#Add in links
+			if form.link_type!="-1":
+				model=cf_cache.only_fkey_models[form.link_type]
+				inst=model.objects.get(pk=response["link_%s_id" % model.__name__])
+				response["link_%s_id" % model.__name__]	= unicode(inst)
+				response_data['questions'].append(["link_%s_id" % model.__name__, form.link_type])
+
 			#Now, put in the additional fields in response
 			for qname, data in add_fields.items():
-				response[qname]=link_instances[data[0]][data[1]]
+				if data[0].__name__ not in link_instances_cache:
+					link_instances_cache[data[0].__name__]=data[0].objects.get(pk=response["link_%s_id" % data[0].__name__])
+				response[qname]=link_instances_cache[data[0].__name__].__dict__[data[1]]	
 				
 		#Add responses to response_data
 		response_data['answers'].extend(responses)									
@@ -506,33 +539,10 @@ class FormHandler:
 			'anonymous':self.form.anonymous, 
 			'link_type':self.form.link_type,
 			'link_id':self.form.link_id,
+			'perms':self.form.perms,
 			'pages':self._getFormMetadata(self.form)
 		}
-		return metadata					
-		
-def test():
-	f=Form.objects.get(id=13)
-	fh=FormHandler(form=f)
-	a=fh.getResponseData(f)
-	
-@cache_function
-def rd(dyn, f):
-	"""
-	Returns the response data for this form, along with the questions
-	"""
-	a=FormHandler(form=f)
-	response_data={'questions':[], 'answers':[]}
-	responses=dyn.objects.all().order_by('id')
-	fields=Field.objects.filter(form=f).order_by('section__page__seq', 'section__seq', 'seq').values('id', 'field_type', 'label')
-	
-	for field in fields:
-		qname='question_%d' % field['id']
-		if field['field_type'] in a._customFields:
-			for f in a._customFields[field['field_type']]:
-				response_data['questions'].append([qname+'_'+f, field['label'] + '_'+f])
-		else:
-			response_data['questions'].append([qname, field['label']])
-	return response_data	
+		return metadata	
 
 					
 						

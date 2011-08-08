@@ -12,7 +12,9 @@ var formElements={
 		numeric:{'disp_name':'Numeric Field','ques':''},
 		date:{'disp_name':'Date','ques':'Date'},
 		time:{'disp_name':'Time','ques':'Time'},
-		//file:{'disp_name':'File Upload','ques':'Upload file'},
+		phone:{'disp_name':'Phone no.','ques':'Your phone no.'},
+		email:{'disp_name':'Email','ques':'Your email'},
+		state:{'disp_name':'State','ques':'Your state'},
 		section:{'disp_name':'Section', 'ques':'Section'},
 		page:{'disp_name':'Page', 'ques':'Page'}
 	}
@@ -29,6 +31,8 @@ var formElements={
 };
 
 var only_fkey_models=[];
+
+var model_instance_cache={};
 
 var elemTypes = {
 	// Stores the available types of form objects, and their number in the form
@@ -76,13 +80,12 @@ $(document).ready(function() {
 	});
 	$('#cat_selector').change(function(){onSelectCategory($(this).val());});
 	$('#elem_selector').change(function(){onSelectElem($('#elem_selector').val());});
+	$('#main_cat_spec').change(onChangeMainCatSpec);
+	$('#id_perm_program').change(onChangePermProg);
 	
 	$currSection=$('#section_0');
 	$currPage=$('#page_0');
-	$('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($currPage);
-	
-	$('#id_assoc_prog').change(initUI);
-	
+	$('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($currPage);	
 	
 	//csrf stuff
 	$(document).ajaxSend(function(event, xhr, settings) {
@@ -141,6 +144,18 @@ $(document).ready(function() {
 	//initUI();
 });
 
+var getFieldCategory=function(field_type) {
+	//Returns the category for this field
+	var cat="";
+	$.each(formElements, function(category, fields){
+		if(field_type in fields){
+			cat=category;
+			return false; //break out
+		}
+	});
+	return cat;
+}
+
 var constructBuilder = function(){
 	//Constructs the form builder with field information from the server
 	
@@ -154,11 +169,17 @@ var constructBuilder = function(){
 			//Putting in link fields
 			$.each(field_data['link_fields'], function(category, fields){
 				formElements[category]={};
+				model_instance_cache[category]={'options':{}, 'selected_inst':"-1", 'selected_cat':'-1'};
 				$.extend(formElements[category], fields);
 			});
 			initUI();
 		}
 	});
+};
+
+var clearCatOptions=function() {
+	$('#cat_instance_sel').html('').hide();
+	$('#cat_spec_options').hide();
 };
 
 var initUI=function(){
@@ -184,11 +205,13 @@ var initUI=function(){
 	clearPermsArea();
 	$('#id_modify_wrapper').hide();
 	clearLinksArea();
+	clearCatOptions();
 };
 
 var clearPermsArea=function(){
 	//Initializes the permissions area
 	$('#id_prog_belong').attr('checked', false).parent().hide();
+	$('#id_perm_program').val("-1").hide();
 	$('#id_sub_perm').children().remove();
 	$('#id_sub_perm').parent().hide();
 };
@@ -226,9 +249,8 @@ var onChangeLinksSpecify=function(){
 	}
 };
 
-var getPerms=function(){
+var getPerms=function(prog_id){
 	//Queries the server for perms related to the currently selected program
-	var prog_id=$('#id_assoc_prog').val();
 	if(prog_id!="-1"){
 		$.ajax({
 			url:'/customforms/getperms/',
@@ -237,6 +259,7 @@ var getPerms=function(){
 			dataType:'json',
 			async:false,
 			success: function(retval) {
+				console.log(retval);
 				perms=retval;
 				populatePerms(perms);
 			}
@@ -248,10 +271,11 @@ var getPerms=function(){
 var setPerms=function(){
 	//Sets the permission options based on selected values
 	
-	if($('#id_assoc_prog').val()=="-1")
+	var prog_id=$('#id_perm_program').val();
+	if(prog_id=="-1")
 		return;
 	if($.isEmptyObject(perms))
-		getPerms();
+		getPerms(prog_id);
 	else populatePerms(perms);	
 };
 
@@ -272,7 +296,7 @@ var populatePerms=function(perm_opts){
 var onChangeMainPerm=function(){
 	clearPermsArea();
 	var main_perm=$(this).val();
-	if(main_perm!='none' && $('#id_assoc_prog').val()!="-1"){
+	if(main_perm!='none'){
 		$('#id_prog_belong').parent().show();
 	}
 };
@@ -280,10 +304,62 @@ var onChangeMainPerm=function(){
 var onChangeProgBelong=function(){
 	var belongs=$(this).attr('checked');
 	if(belongs){
-		setPerms();
+		$('#id_perm_program').show();
 	}
-	else $('#id_sub_perm').parent().hide();
-}
+	else {
+		$('#id_sub_perm').parent().hide();
+		$('#id_perm_program').val("-1").hide();
+	}
+};
+
+var onChangePermProg=function(){
+	var prog=$('#id_perm_program');
+	if(prog!="-1"){
+		setPerms();
+		$('#id_sub_perm').parent().show();
+	}
+	else
+		$('#id_sub_perm').parent().hide();
+};
+
+var onChangeMainCatSpec=function() {
+	//Fetches instances from the server, populates values etc.
+	//Used to set up options for non-generic categories
+	$("#cat_instance_sel").html('');
+	
+	var main_cat_spec=$("#main_cat_spec").val(), curr_category=$("#cat_selector").val(), options_html="";
+	if(main_cat_spec != "automatic") {
+		if($.isEmptyObject(model_instance_cache[curr_category]['options'])){
+			//Fetch values from the server, and store in the cache
+			$.ajax({
+				url:'/customforms/getlinks/',
+				data:{'link_model':curr_category},
+				type:'GET',
+				dataType:'json',
+				async:false,
+				success: function(link_objects) {
+					$.each(link_objects, function(id, name){
+						model_instance_cache[curr_category]['options'][id]=name;
+					});
+				}
+			});
+		}	
+		
+		//Set options from the cache
+		$.each(model_instance_cache[curr_category]['options'], function(idx, el){
+			options_html+="<option value="+idx+">"+el+"</option>";
+		});
+		$("#cat_instance_sel").html(options_html);
+		//If this option has been set previously, fetch it from the cache and set it
+		if(model_instance_cache[curr_category]['selected_inst'] != "-1")
+			$("#cat_instance_sel").val(model_instance_cache[curr_category]['selected_inst']);
+			
+		//Show the instance selector
+		$("#cat_instance_sel").show();	
+	}
+	else
+		$("#cat_instance_sel").hide();
+};	
 
 var createLabel=function(labeltext, required) {
 	//Returns an HTML-formatted label, with a red * if the question is required
@@ -340,7 +416,27 @@ var getFirst=function(category){
 	return retval;
 };
 
-var onSelectCategory=function(category) {
+
+var showCategorySpecificOptions=function(category){
+	//Shows options related to the current category.
+	//For instance, for linked fields, it shows options for selecting the queryset.
+	clearCatOptions();
+	
+	if (category!='Generic'){
+		//Show the category-specific options
+		$('#cat_spec_options').show();
+		
+		//Set any-predefined values
+		if(category in model_instance_cache){
+			if(model_instance_cache[category]['selected_cat']!="-1"){
+				$('#main_cat_spec').val(model_instance_cache[category]['selected_cat']);
+				onChangeMainCatSpec();
+			}
+		}
+	}
+};
+
+var populateFieldsSelector=function(category){
 	//Populates the Field selector with the appropriate form fields
 	
 	var fields_list=formElements[category], options_html="";
@@ -348,13 +444,24 @@ var onSelectCategory=function(category) {
 		return;
 	//Generating Options list
 	$.each(fields_list, function(index,elem){
-		options_html+="<option value="+index+">"+elem['disp_name']+"</option>";
+		var disp_name="";
+		if(category!="Generic" && elem['required'])
+			disp_name=elem['disp_name']+"**";
+		else disp_name=elem['disp_name'];	
+		options_html+="<option value="+index+">"+disp_name+"</option>";
 	});
 	//Populating options for the Field Selector
 	$("#elem_selector").html(options_html);
+};
+
+var onSelectCategory=function(category) {
+	//Handles selection of a particular category
+	
+	populateFieldsSelector(category);
 	
 	//'Initializing' form builder with first field element
 	onSelectElem(getFirst(category));
+	showCategorySpecificOptions(category);
 };
 
 var clearSpecificOptions=function() {
@@ -479,8 +586,22 @@ var onSelectField=function($elem, field_data) {
 	clearSpecificOptions();
 	//De-selecting any previously selected field
 	$('div.field_selected').removeClass('field_selected');
-	
+		
 	var $wrap=$elem, $button=$('#button_add'), options, ftype=field_data.field_type;
+	
+	//Select the current field and category in the field and category selectors
+	if(ftype in formElements['Generic']){
+		$('#cat_selector').val('Generic');
+		populateFieldsSelector('Generic');
+		$('#elem_selector').val(ftype);
+	}
+	else {
+		//link field
+		var curr_cat=getFieldCategory(ftype);
+		$('#cat_selector').val(curr_cat);
+		populateFieldsSelector(curr_cat);
+		showCategorySpecificOptions(curr_cat);
+	}
 	
 	if($wrap.length !=0){
 		$wrap.removeClass('field_hover').addClass('field_selected');
@@ -527,7 +648,7 @@ var deSelectField=function() {
 	$(this).removeClass('field_selected');
 	$(this).addClass('field_hover');
 	$(this).find(".wrapper_button").toggleClass("wrapper_button_hover");
-	$('#cat_selector').children('select[value=Generic]').attr('selected','selected');
+	$('#cat_selector').children('option[value=Generic]').attr('selected','selected');
 	onSelectCategory('Generic');
 	onSelectElem('textField');
 };
@@ -717,13 +838,15 @@ var renderNormalField=function(item, field_options, data){
 		$ampm=$('<select>').append($('<option value="AM">AM</option>')).append($('<option value="PM">PM</option>'));
 		$new_elem.append($('<p>').append($hh).append($('<span> : </span>')).append($m).append($('<span> : </span>')).append($ss).append('&nbsp;').append($ampm));
 	}
-	else if(item=="file"){
+	else if(item=='phone' || item=='email'){
 		$new_elem=$('<input/>', {
-			type:"file",
-			size:"40"
+			type:"text",
+			size:"30"
 		});
 	}
-	
+	else if(item=='state'){
+		$new_elem=$('<select></select>');
+	}
 	//Page and section are special-cased
 	else if(item=='section'){
 		//this one's processed differently from the others
@@ -854,10 +977,11 @@ var addElement=function(item, $prevField) {
 	else {
 		//Custom field
 		//First, get the options for this custom field
-		var custom_field;
+		var custom_field, curr_category;
 		$.each(formElements, function(cat, flds){
 			if(item in flds){
 				custom_field=flds[item];
+				curr_category=cat;
 				return false; //break out
 			}
 		});
@@ -868,8 +992,15 @@ var addElement=function(item, $prevField) {
 			$new_elem=renderCustomField(item, custom_field['field_options'], data);
 		else{
 			$new_elem=renderNormalField(custom_field['field_type'], custom_field['field_options'], data);
-			data.attrs={}; //Setting attrs to empty, as everything should already by defined on the server
-		}	
+			data.attrs={}; //Setting attrs to empty, as everything except links should already by defined on the server
+		}
+		
+		//Set options for linked instances if not defined previously
+		model_instance_cache[curr_category]['selected_cat']=$('#main_cat_spec').val();
+		if(model_instance_cache[curr_category]['selected_cat'] != 'automatic')
+			model_instance_cache[curr_category]['selected_inst']=$('#cat_instance_sel').val();
+		else
+			model_instance_cache[curr_category]['selected_inst']="-1";
 	}
 	
 	//Inserting field into preview area, and attaching data
@@ -1250,6 +1381,8 @@ var submit=function() {
 	var form_perms='';
 	if($('#id_main_perm').val()!='none'){
 		form_perms+=$('#id_main_perm').val();
+		if(!('#id_perm_program').is(':hidden'))
+			form_perms+=","+$('#id_perm_program').val();
 		if(!$('#id_sub_perm').is(':hidden'))
 			form_perms+=","+$('#id_sub_perm').val();
 	}
@@ -1269,6 +1402,18 @@ var submit=function() {
 				if( $(fel).hasClass('field_wrapper')){
 					elem={'data':$.data(fel,'data')};
 					elem['data']['seq']=fidx;
+					if(!(elem['data']['field_type'] in formElements['Generic'])){
+						//Set link_id for link fields
+						//First, figure out the category
+						var curr_cat;
+						$.each(formElements, function(cat, flds){
+							if(elem['data']['field_type'] in flds){
+								curr_cat=cat;
+								return false
+							}
+						});
+						elem['data']['attrs']['link_id']=model_instance_cache[curr_cat]['selected_inst'];
+					}
 					section['fields'].push(elem);
 				}
 			});
@@ -1352,7 +1497,6 @@ var createFromBase=function(){
 		$('#input_form_title').attr('value', '').change();
 		$('#input_form_description').attr('value','').change();
 		$('#id_anonymous').attr('checked', false);
-		$('#id_assoc_prog').val('-1');
 	}
 };
 
@@ -1367,9 +1511,16 @@ var rebuild=function(metadata) {
 	//Setting other form options
 	if(metadata['anonymous'])
 		$('#id_anonymous').attr('checked', true);
-	if(metadata['link_type']=='program')
-		$('#id_assoc_prog').val(metadata['link_id'])
-		
+	//Setting fkey-only links
+	$('#link_id_main').val(metadata['link_type']);
+	onChangeMainLink();
+	if(metadata['link_id']!="-1"){
+		$('#links_id_specify').val('particular');
+		onChangeLinksSpecify();
+		$('#links_id_pick').val(metadata['link_id']);
+	}
+	else $('#links_id_specify').val('userdef');
+	console.log("1");	
 	//Putting in pages, sections and fields
 	$.each(metadata['pages'], function(pidx, page){
 		addElement('page',[]);
@@ -1400,9 +1551,23 @@ var rebuild=function(metadata) {
 					attrs:{}
 				};
 				
-				
-				if($.inArray(field['attribute__attr_type'], ['options', 'limits'])!=-1)
+				if($.inArray(field['attribute__attr_type'], ['options', 'limits', 'link_id'])!=-1)
 					field_data.attrs[field['attribute__attr_type']]=field['attribute__value'];	
+				//Checking for link fields
+				var category=getFieldCategory(field_data['field_type']);
+				if(category!='Generic') {
+					$('#cat_selector').val(category);
+					if(field_data.attrs['link_id']=="-1"){
+						$('#main_cat_spec').val('automatic');
+						onChangeMainCatSpec();
+					}
+					else {
+						$('#main_cat_spec').val('particular');
+						onChangeMainCatSpec();
+						$('#cat_instance_sel').val(field_data.attrs['link_id']);
+					}
+				}
+					
 				onSelectField([], field_data);	
 				$prevField=addElement(field['field_type'], $prevField);
 				$.data($prevField[0], 'data')['parent_id']=field['id'];	

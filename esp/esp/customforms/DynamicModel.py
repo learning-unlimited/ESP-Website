@@ -35,6 +35,9 @@ class DynamicModelHandler:
 		'numeric':{'typeMap':models.IntegerField, 'attrs':{'null':True, }, 'args':[]},
 		'date':{'typeMap':models.CharField, 'attrs':{'max_length':10, }, 'args':[]},
 		'time':{'typeMap':models.CharField, 'attrs':{'max_length':10, }, 'args':[]},
+		'phone':{'typeMap':models.CharField, 'attrs':{'max_length':15}, 'args':[]},
+		'email':{'typeMap':models.CharField, 'attrs':{'max_length':30,}, 'args':[]},
+		'state':{'typeMap':models.CharField, 'attrs':{'max_length':2}, 'args':[]},
 	}
 	_foreign_key_fields=['courses',]
 	

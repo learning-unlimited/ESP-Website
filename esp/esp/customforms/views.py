@@ -191,12 +191,13 @@ def hasPerm(user, form):
 	else:
 		perms_list=form.perms.strip(',').split(',')
 		main_perm=perms_list[0]
-		sub_perms=perms_list[1:]
+		prog_id=perms_list[1]
+		sub_perms=perms_list[2:]
 		Qlist=[]
 		Qlist.append(ESPUser.getAllOfType(main_perm))  #Check -> what to do with students?
 		if sub_perms:
-			if form.link_type=='program' or form.link_type=='Program':
-				prog=Program.objects.get(pk=form.link_id)
+			if prog_id!="":
+				prog=Program.objects.get(pk=int(prog_id))
 				all_Qs=prog.getLists()
 				for perm in sub_perms:
 					Qlist.append(all_Qs[perm])
@@ -254,7 +255,7 @@ def getData(request):
 			except ValueError:
 				return HttpResponse(status=400)
 			form=Form.objects.get(pk=form_id)	
-			fh=FormHandler(form, request)
+			fh=FormHandler(form=form, request=request)
 			resp_data=json.dumps(fh.getResponseData(form))
 			return HttpResponse(resp_data)
 	return HttpResponse(status=400)
@@ -270,7 +271,7 @@ def getRebuildData(request):
 			except ValueError:
 				return HttpResponse(status=400)
 			form=Form.objects.get(pk=form_id)
-			fh=FormHandler(form=form)
+			fh=FormHandler(form=form, request=request)
 			metadata=json.dumps(fh.rebuildData())
 			return HttpResponse(metadata)
 	return HttpResponse(status=400)	
@@ -284,7 +285,10 @@ def get_links(request):
 			try:
 				link_model=cf_cache.only_fkey_models[request.GET['link_model']]
 			except KeyError:
-				return HttpResponse(status=400)
+				try:
+					link_model=cf_cache.link_fields[request.GET['link_model']]['model']
+				except KeyError:
+					return HttpResponse(status=400)	
 			link_objects=link_model.objects.all()		
 			retval={}
 			for obj in link_objects:
