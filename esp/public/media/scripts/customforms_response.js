@@ -55,10 +55,21 @@ dojo.addOnLoad(function() {
 	});
 });
 
-
 var getStore=function(answers) {
 	//Returns the ItemFileReadStore object for this grid
 	console.log('in getStore');
+    
+    //  Join together segments of compound fields (perhaps they should be displayed as separate columns)
+    for (var i = 0; i < answers.length; i++)
+    {
+        var item = answers[i];
+        for (var key in item)
+        {
+            if (item[key] instanceof Array)
+                answers[i][key] = item[key].join(" ");
+        }
+    }
+
 	console.log(answers);
 	var store=new dojo.data.ItemFileReadStore({data:{'items':answers}});
 	console.log('out getStore');
