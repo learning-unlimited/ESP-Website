@@ -100,19 +100,18 @@ class CustomFormsCache:
         We first try to match the field class and widget. If there's no match, we just
         try to macth the widget.
         """    
-        widget=field_instance.widget                
+        widget=field_instance.widget
         for k,v in generic_fields.items():
             #First, try and match the field class and corresponding widget
             if field_instance.__class__ is v['typeMap']:
-                if widget.__class__ is v['attrs']['widget']:
-                    return k
-                else:
-                    #   print 'Warning: Widget mismatch; %s has %s, generic type says %s' % (v['typeMap'], v['attrs']['widget'], widget.__class__)
-                    pass
+                if widget.__class__ is not v['attrs']['widget']:
+                    print 'Warning: Widget mismatch; %s has %s, generic type says %s' % (v['typeMap'], v['attrs']['widget'], widget.__class__)
+                return k
         
         #Now try to match widgets. Only useful for rendering in the form builder.
         #Check -> does this break for any case? We'll get the wrong classes matched up
-        #with the wrong field, and correspondingly the wrong client-side validation.                
+        #with the wrong field, and correspondingly the wrong client-side validation.
+        backup_type = 'custom'
         for k,v in generic_fields.items():
             if widget is v['attrs']['widget'] or (widget.__class__ is v['attrs']['widget']):
                 return k
@@ -121,11 +120,11 @@ class CustomFormsCache:
                     return k
             except AttributeError:
                 if v['attrs']['widget'] in widget.__class__.__bases__:
-                    return k        
+                    backup_type = k       
         
         #   Hm, maybe we should actually check if a custom field has been defined here.
-        print 'Warning: Could not find generic type for %s, with attrs %s; assuming custom field has been defined' % (field_instance, field_instance.widget.attrs)
-        return 'custom'
+        print 'Warning: Could not find generic type for %s, with attrs %s' % (field_instance, field_instance.widget.attrs)
+        return backup_type
     
     def getCustomFieldInstance(self, field, field_name):
         if field in custom_fields:
