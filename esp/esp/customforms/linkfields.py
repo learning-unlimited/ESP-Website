@@ -24,6 +24,12 @@ generic_fields={
     'boolean': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.CheckboxInput}}
 }
 
+custom_fields = {
+    #   field_name: (FieldClass, args, kwargs) for constructing instance of FieldClass
+    'address': (AddressField, (), {'class': ''}),
+    'name': (NameField, (), {'class': ''})
+}
+
 class CustomFormsLinkModel(object):
     #Dummy class to identify linked models with
     pass
@@ -62,8 +68,18 @@ class CustomFormsCache:
                     sublist=getattr(model, 'link_fields_list')
                     for field, display_name in sublist:
                         field_name=model.__name__ + "_" + field
-                        field_instance=all_form_fields[field]
-                        generic_field_type=self.getGenericType(field_instance)
+                        
+                        if field in all_form_fields:
+                            field_instance=all_form_fields[field]
+                            generic_field_type=self.getGenericType(field_instance)
+                        else:
+                            field_instance = self.getCustomFieldInstance(field, '%s_%s' % (model.form_link_name, field))
+                            generic_field_type = 'custom'
+
+                        model_field = field
+                        if hasattr(model, 'link_compound_fields') and field_name in model.link_compound_fields:
+                            model_field = model.link_compound_fields[field_name]
+                            
                         self.link_fields[model.form_link_name]['fields'].update({ field_name:{
                             'model_field':field,
                             'disp_name':display_name,
@@ -90,6 +106,9 @@ class CustomFormsCache:
             if field_instance.__class__ is v['typeMap']:
                 if widget.__class__ is v['attrs']['widget']:
                     return k
+                else:
+                    #   print 'Warning: Widget mismatch; %s has %s, generic type says %s' % (v['typeMap'], v['attrs']['widget'], widget.__class__)
+                    pass
         
         #Now try to match widgets. Only useful for rendering in the form builder.
         #Check -> does this break for any case? We'll get the wrong classes matched up
@@ -103,8 +122,22 @@ class CustomFormsCache:
             except AttributeError:
                 if v['attrs']['widget'] in widget.__class__.__bases__:
                     return k        
+        
+        #   Hm, maybe we should actually check if a custom field has been defined here.
+        print 'Warning: Could not find generic type for %s, with attrs %s; assuming custom field has been defined' % (field_instance, field_instance.widget.attrs)
         return 'custom'
     
+    def getCustomFieldInstance(self, field, field_name):
+        if field in custom_fields:
+            field_class = custom_fields[field][0]
+            args = custom_fields[field][1]
+            kwargs = custom_fields[field][2]
+            if 'name' not in kwargs:
+                kwargs['name'] = field_name
+            return field_class(*args, **kwargs)
+        else:
+            raise Exception('Cannot understand field type: %s' % field)
+
     def isLinkField(self, field):
         """
         Convenience method to get check if 'field' is a link field
@@ -112,6 +145,18 @@ class CustomFormsCache:
         if field not in generic_fields: return True    
         else: return False 
     
+    def isCompoundLinkField(self, model, field):
+        if hasattr(model, 'link_compound_fields') and field in model.link_compound_fields:
+            return True
+        else:
+            return False
+
+    def getCompoundLinkFields(self, model, field):
+        if hasattr(model, 'link_compound_fields') and field in model.link_compound_fields:
+            return model.link_compound_fields[field]
+        else:
+            raise Exception('%s is not a compound field on %s' % (field, model))
+
     def getLinkFieldData(self, field):
         """
         Convenience method to get data for a particular linked field

@@ -13,7 +13,7 @@ from esp.users.models import ContactInfo
 from esp.cache import cache_function
 from esp.program.models import Program
 
-from esp.customforms.linkfields import link_fields, only_fkey_models, cf_cache, generic_fields
+from esp.customforms.linkfields import link_fields, only_fkey_models, cf_cache, generic_fields, custom_fields
 from django.contrib.contenttypes.models import ContentType
 
 class BaseCustomForm(BetterForm):
@@ -163,8 +163,20 @@ class CustomFormHandler():
                     if link_model.__name__ not in model_fields_cache:
                         model_fields_cache[link_model.__name__]={}
                         model_fields_cache[link_model.__name__].update(fields_for_model(link_model, widgets=getattr(link_model, 'link_fields_widgets', None)))
+
                     model_field=cf_cache.getLinkFieldData(field['field_type'])['model_field']
-                    form_field=model_fields_cache[link_model.__name__][model_field]
+                    
+                    field_is_custom = False
+                    if model_field in model_fields_cache[link_model.__name__]:
+                        form_field=model_fields_cache[link_model.__name__][model_field]
+                    else:
+                        #   See if there's a custom field
+                        if model_field in custom_fields:
+                            form_field = cf_cache.getCustomFieldInstance(model_field, field['field_type'])
+                            field_is_custom = True
+                        else:
+                            raise Exception('Could not find linked field: %s' % model_field)
+
                     #TODO -> enforce "Required" constraint server-side as well, or trust the client-side code?
                     form_field.__dict__.update(field_attrs)
                     form_field.widget.attrs.update({'class':''})
@@ -172,9 +184,12 @@ class CustomFormHandler():
                         #Add a class 'required' to the widget
                         form_field.widget.attrs['class']+='required ' 
                         form_field.widget.is_required=True
-                    #Add in other classes for validation
-                    generic_type=cf_cache.getGenericType(form_field)
-                    form_field.widget.attrs['class']+=self._field_types[generic_type]['widget_attrs']['class']    
+
+                    if not field_is_custom:
+                        #Add in other classes for validation
+                        generic_type=cf_cache.getGenericType(form_field)
+                        form_field.widget.attrs['class']+=self._field_types[generic_type]['widget_attrs']['class']    
+
                     #Adding to field list
                     self.fields.append([field_name, form_field])
                     curr_fieldset[1]['fields'].append(field_name)
@@ -219,6 +234,7 @@ class CustomFormHandler():
                     
                 self.fields.append([field_name, typeMap(**field_attrs) ])
                 curr_fieldset[1]['fields'].append(field_name)            
+
             self.fieldsets.append(tuple(curr_fieldset))
             
     def getInitialLinkDataFields(self):
@@ -239,7 +255,10 @@ class CustomFormHandler():
                             initial[field_name]['field'].append(link_fields[f]['model_field'])
                     else:
                     """    
-                    initial[field_name]['model_field']=cf_cache.getLinkFieldData(ftype)['model_field']    
+                    model_field = cf_cache.getLinkFieldData(ftype)['model_field']
+                    if cf_cache.isCompoundLinkField(initial[field_name]['model'], model_field):
+                        model_field = cf_cache.getCompoundLinkFields(initial[field_name]['model'], model_field)
+                    initial[field_name]['model_field'] = model_field
         return initial                        
     
     def getForm(self):
@@ -281,7 +300,7 @@ class ComboForm(FormWizard):
         for form in form_list:
             for k,v in form.cleaned_data.items():
                 #Check for only_fkey link models first
-                if k.split('_')[0]=='link':
+                if k.split('_')[0] in cf_cache.link_fields:
                     data[k]=v
                     continue
                     
@@ -322,6 +341,10 @@ class ComboForm(FormWizard):
                 data['link_%s' % v['model'].__name__]=v['instance']                
         
         #Saving response
+        initial_keys = data.keys()
+        for key in initial_keys:
+            if key.split('_')[0] in cf_cache.link_fields:
+                del data[key]
         dynModel.objects.create(**data)    
         return HttpResponseRedirect('/customforms/success/')
         
@@ -449,12 +472,9 @@ class FormHandler:
                         if not isinstance(v['model_field'], list):
                             #Simple field
                             initial_data[handler.seq].update({ k:link_models_cache[v['model'].__name__][v['model_field']] })
-                        """    
                         else:
                             #Compound field. Needs to be passed a list of values.
-                            initial_data[handler.seq].update({k:[link_models[v['model']][val] for val in v['model_field'] ]})
-                        """                
-                                    
+                            initial_data[handler.seq].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
         return initial_data                
     
     def getWizard(self):
@@ -521,7 +541,10 @@ class FormHandler:
             for qname, data in add_fields.items():
                 if data[0].__name__ not in link_instances_cache:
                     link_instances_cache[data[0].__name__]=data[0].objects.get(pk=response["link_%s_id" % data[0].__name__])
-                response[qname]=link_instances_cache[data[0].__name__].__dict__[data[1]]    
+                if cf_cache.isCompoundLinkField(data[0], data[1]):
+                    response[qname] = [link_instances_cache[data[0].__name__].__dict__[x] for x in cf_cache.getCompoundLinkFields(data[0], data[1])]
+                else:
+                    response[qname]=link_instances_cache[data[0].__name__].__dict__[data[1]]    
                 
         #Add responses to response_data
         response_data['answers'].extend(responses)                                    
