@@ -59,7 +59,7 @@ from esp.db.models.prepared import ProcedureManager
 from esp.dblog.models import error
 from esp.tagdict.models import Tag
 from esp.middleware import ESPError
-from esp.utils.widgets import NullRadioSelect
+from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
 from esp.settings import DEFAULT_HOST, DEFAULT_EMAIL_ADDRESSES, ORGANIZATION_SHORT_NAME, INSTITUTION_NAME
 
 import simplejson as json
@@ -1157,7 +1157,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     ]
     link_fields_widgets = {
         'from_here': NullRadioSelect, 
-        'is_graduate_student': forms.CheckboxInput,
+        'is_graduate_student': NullCheckboxSelect,
         'mail_reimbursement': forms.CheckboxInput,
     }
     

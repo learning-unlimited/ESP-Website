@@ -172,5 +172,20 @@ class BlankSelectWidget(forms.Select):
 class NullRadioSelect(forms.RadioSelect):
     def __init__(self, *args, **kwargs):
         kwargs['choices'] = ((True, u'Yes'), (False, u'No'))
-        print 'NullRadioSelect args="%s" kwargs="%s"' % (args, kwargs)
         super(NullRadioSelect, self).__init__(*args, **kwargs)
+
+
+class NullCheckboxSelect(forms.CheckboxInput):
+    def __init__(self, *args, **kwargs):
+        super(NullCheckboxSelect, self).__init__(*args, **kwargs)
+
+    def value_from_datadict(self, data, files, name):
+        """ Slightly modified from Django's version to accept "on" as True. """
+        if name not in data:
+            return False
+        value = data.get(name)
+        values =  {'on': True, 'true': True, 'false': False}
+        if isinstance(value, basestring):
+            value = values.get(value.lower(), value)
+        print 'NullCheckboxSelect converted %s to %s' % (data.get(name), value)
+        return value
