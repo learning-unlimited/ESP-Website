@@ -162,6 +162,7 @@ class DynamicModelHandler:
         Depending on db_func, this can be used to ADD COLUMN or ALTER COLUMN
         """
         field_name=self.get_field_name(field)
+        #   TODO: Return early if this is a linked field
         if field.field_type in self._customFields:
             for f in self._customFields[field.field_type]:
                 db_func(self._tname, field_name+'_'+f, self._getFieldToAdd(f), **kwargs)
@@ -179,6 +180,7 @@ class DynamicModelHandler:
         Removes a column (or columns) corresponding to a particular field
         """
         field_name=self.get_field_name(field)
+        #   TODO: Return early if this is a linked field
         if field.field_type in self._foreign_key_fields:
             field_name+='_id'
         if field.field_type in self._customFields:
