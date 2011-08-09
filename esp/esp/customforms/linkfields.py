@@ -105,7 +105,8 @@ class CustomFormsCache:
             #First, try and match the field class and corresponding widget
             if field_instance.__class__ is v['typeMap']:
                 if widget.__class__ is not v['attrs']['widget']:
-                    print 'Warning: Widget mismatch; %s has %s, generic type says %s' % (v['typeMap'], v['attrs']['widget'], widget.__class__)
+                    pass
+                    #   print 'Warning: Widget mismatch; %s has %s, generic type says %s' % (v['typeMap'], v['attrs']['widget'], widget.__class__)
                 return k
         
         #Now try to match widgets. Only useful for rendering in the form builder.
@@ -131,7 +132,7 @@ class CustomFormsCache:
             field_class = custom_fields[field][0]
             args = custom_fields[field][1]
             kwargs = custom_fields[field][2]
-            if 'name' not in kwargs:
+            if field_name or 'name' not in kwargs:
                 kwargs['name'] = field_name
             return field_class(*args, **kwargs)
         else:

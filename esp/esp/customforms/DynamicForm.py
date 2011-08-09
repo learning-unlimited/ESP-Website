@@ -172,7 +172,7 @@ class CustomFormHandler():
                     else:
                         #   See if there's a custom field
                         if model_field in custom_fields:
-                            form_field = cf_cache.getCustomFieldInstance(model_field, field['field_type'])
+                            form_field = cf_cache.getCustomFieldInstance(model_field, field_name)
                             field_is_custom = True
                         else:
                             raise Exception('Could not find linked field: %s' % model_field)
@@ -306,7 +306,7 @@ class ComboForm(FormWizard):
                     
                 field_id=int(k.split("_")[1])
                 ftype=fields[field_id]
-                
+
                 #Now check for link fields
                 if cf_cache.isLinkField(ftype):
                     model=cf_cache.modelForLinkField(ftype)
@@ -317,9 +317,18 @@ class ComboForm(FormWizard):
                             link_models_cache[model.__name__]['instance']=pre_instance
                         else:    
                             link_models_cache[model.__name__]['instance']=getattr(model, 'cf_link_instance')(request)
-                    model_field=cf_cache.getLinkFieldData(ftype)['model_field']
-                    #Not handling combo fields for now
-                    link_models_cache[model.__name__]['data'].update({model_field: v})    
+                    ftype_parts = ftype.split('_')
+                    if len(ftype_parts) > 1 and cf_cache.isCompoundLinkField(model, '_'.join(ftype_parts[1:])):
+                        #   Try to match a model field to the last part of the key we have.
+                        partial_field_name = str(field_id).join(k.split(str(field_id))[1:]).lstrip('_')
+                        target_fields = cf_cache.getCompoundLinkFields(model, '_'.join(ftype_parts[1:]))
+                        for f in target_fields:
+                            if f.endswith(partial_field_name):
+                                model_field = f
+                                break
+                    else:
+                        model_field=cf_cache.getLinkFieldData(ftype)['model_field']
+                    link_models_cache[model.__name__]['data'].update({model_field: v}) 
                 else:
                     data[k]=v
         
