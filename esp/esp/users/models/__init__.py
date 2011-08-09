@@ -62,6 +62,7 @@ from esp.settings import DEFAULT_HOST, DEFAULT_EMAIL_ADDRESSES, ORGANIZATION_SHO
 
 import simplejson as json
 from esp.customforms.linkfields import CustomFormsLinkModel
+from esp.customforms.forms import AddressWidget, NameWidget
 
 try:
     import cPickle as pickle
@@ -1441,14 +1442,27 @@ class ZipCodeSearches(models.Model):
 
 class ContactInfo(models.Model, CustomFormsLinkModel):
     """ ESP-specific contact information for (possibly) a specific user """
+    
+    #customforms definitions
+    form_link_name = 'ContactInfo'
+    link_fields_list = [
+        ('phone_day','Phone number'),
+        ('e_mail','E-mail address'),
+        ('address', 'Address'),
+        ('name', 'Name'),
+        ('receive_txt_message', 'Text message request'),
+        #   Commented out since it may cause confusion: ('phone_cell', 'Cell phone number')
+    ]
+    link_fields_widgets = {
+        'address_state': USStateSelect,
+        'address': AddressWidget,
+        'name': NameWidget,
+    }
+    link_compound_fields = {
+        'address': ['address_street', 'address_city', 'address_state', 'address_zip'],
+        'name': ['first_name', 'last_name'],
+    }
 
-	#customforms definitions
-    form_link_name='Personal'
-    link_fields_list=[('phone_day','Phone'), ('e_mail','Email'), ('address_state','State'), ('address_zip','Zip'), ('address_city','City')]
-    link_fields_widgets={
-		'address_state':USStateSelect,
-	}
-	
     @classmethod
     def cf_link_instance(cls, request):
         """
