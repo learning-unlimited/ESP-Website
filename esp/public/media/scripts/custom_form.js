@@ -66,7 +66,6 @@ $(document).ready(function() {
 	//Assigning event handlers
     $('#button_add').click(function(){insertField($('#elem_selector').attr('value'),$prevField)});
 	$('#submit').click(submit);
-	$('#button_title').click(updateTitle);
 	$('#input_form_title').bind('change', updateTitle);
 	$('#input_form_description').bind('change', updateDesc);
 	$('#id_main_perm').change(onChangeMainPerm);
