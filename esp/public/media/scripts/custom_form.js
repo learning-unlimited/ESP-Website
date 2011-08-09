@@ -57,7 +57,8 @@ var elemTypes = {
 	'city':0,
 	'courses':0,
     'radio_yesno': 0,
-    'boolean': 0
+    'boolean': 0,
+    'null_boolean': 0
 };
 
 var currElemType, currElemIndex, optionCount=1, formTitle="Form",$prevField, $currField, secCount=1, $currSection, pageCount=1, $currPage;
@@ -512,7 +513,7 @@ var addSpecificOptions=function(elem, options, limtype) {
 
 var onSelectElem = function(item) {
 	//Generates the properties fields when a form item is selected from the list
-	
+
 	//Remove previous field-specific options, if any
 	clearSpecificOptions();
 	$('#id_instructions').attr('value','');
@@ -663,7 +664,6 @@ var insertField=function(item, $prevField){
 
 var renderNormalField=function(item, field_options, data){
 	//Rendering code for simple fields (i.e. non-custom fields)
-	
 	var $new_elem, key;
 	if(item=="textField"){
 		$new_elem=$('<input/>', {
@@ -848,7 +848,7 @@ var renderNormalField=function(item, field_options, data){
 	else if(item=='state'){
 		$new_elem=$('<select></select>');
 	}
-    else if(item=="boolean") {
+    else if((item=="boolean") || (item == "null_boolean")) {
 		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
 		$new_elem=$("<div>");
         options_string = 'Yes';
@@ -975,7 +975,7 @@ var renderCustomField=function(item, field_options, data){
 var addElement=function(item, $prevField) {
 	// This function adds the selected field to the form. 
 	//Data like help-text is stored in the wrapper div using jQuery's $.data
-	
+
 	var i,$new_elem_label, $new_elem, 
 	$wrap=$('<div></div>').addClass('field_wrapper').hover(function() {
 		if($(this).hasClass('field_selected'))
@@ -1015,6 +1015,7 @@ var addElement=function(item, $prevField) {
 				return false; //break out
 			}
 		});
+        
 		//Fields that are required on the model must necessarily be required in the form
 		if(custom_field['required'])
 			data.required=true;

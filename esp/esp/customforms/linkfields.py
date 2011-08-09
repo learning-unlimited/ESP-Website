@@ -19,9 +19,9 @@ generic_fields={
     'phone':{'typeMap': USPhoneNumberField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'USPhone '}},
     'email':{'typeMap': forms.EmailField, 'attrs':{'max_length':30, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'email '}},
     'state':{'typeMap': USStateField, 'attrs':{'widget': USStateSelect}, 'widget_attrs':{'class':''}},
-    #   This doesn't work since fields_for_model creates a default BooleanField, which has a mismatched widget, so it isn't picked up by CustomFormsCache.getGenericType()
-    #'radio_yesno': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.RadioSelect, 'choices': ((True, 'Yes'), (False, 'No'))}},
-    'boolean': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.CheckboxInput}}
+    'radio_yesno': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.RadioSelect, 'choices': ((True, 'Yes'), (False, 'No'))}},
+    'boolean': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs':{'class':''}},
+    'null_boolean': {'typeMap': forms.NullBooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs':{'class':''}},
 }
 
 custom_fields = {
