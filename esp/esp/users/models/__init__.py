@@ -47,6 +47,7 @@ from django.db.models.base import ModelState
 from django.db.models.query import Q, QuerySet
 from django.http import HttpRequest
 from django.template import loader, Context as DjangoContext
+from django import forms
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
 from django.template.defaultfilters import urlencode
 
@@ -58,6 +59,7 @@ from esp.db.models.prepared import ProcedureManager
 from esp.dblog.models import error
 from esp.tagdict.models import Tag
 from esp.middleware import ESPError
+from esp.utils.widgets import NullRadioSelect
 from esp.settings import DEFAULT_HOST, DEFAULT_EMAIL_ADDRESSES, ORGANIZATION_SHORT_NAME, INSTITUTION_NAME
 
 import simplejson as json
@@ -1153,7 +1155,11 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
         ('student_id', 'Student ID number'),
         ('mail_reimbursement', 'Reimbursement checkbox'),
     ]
-    link_fields_widgets = {}
+    link_fields_widgets = {
+        'from_here': NullRadioSelect, 
+        'is_graduate_student': forms.CheckboxInput,
+        'mail_reimbursement': forms.CheckboxInput,
+    }
     
     user = AjaxForeignKey(User, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)

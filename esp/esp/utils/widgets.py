@@ -169,3 +169,8 @@ class BlankSelectWidget(forms.Select):
         return mark_safe(u'\n'.join(output))
     
 
+class NullRadioSelect(forms.RadioSelect):
+    def __init__(self, *args, **kwargs):
+        kwargs['choices'] = ((True, u'Yes'), (False, u'No'))
+        print 'NullRadioSelect args="%s" kwargs="%s"' % (args, kwargs)
+        super(NullRadioSelect, self).__init__(*args, **kwargs)
