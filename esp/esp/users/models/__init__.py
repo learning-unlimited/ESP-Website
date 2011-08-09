@@ -1470,7 +1470,7 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
         for use by custom-forms.
         It should either return the instance, or 'None', if the corresponding instance doesn't exist.
         """
-        queryset=cls.objects.filter(user=request.user)
+        queryset=cls.objects.filter(user=request.user).order_by('-id')
         if queryset: return queryset[0] 
         else: return None
 
