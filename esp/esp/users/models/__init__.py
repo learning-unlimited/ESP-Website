@@ -1134,8 +1134,27 @@ class StudentInfo(models.Model):
             username = self.user.username
         return 'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
-class TeacherInfo(models.Model):
+class TeacherInfo(models.Model, CustomFormsLinkModel):
     """ ESP Teacher-specific contact information """
+    
+    #customforms definitions
+    form_link_name = 'TeacherInfo'
+    link_fields_list = [
+        ('graduation_year', 'Graduation year'), 
+        ('from_here', 'Current student checkbox'), 
+        ('is_graduate_student', 'Graduate student status'),
+        ('college', 'School/employer'),
+        ('major', 'Major/department'),
+        ('bio', 'Biography'),
+        ('shirt_size', 'Shirt size'),
+        ('shirt_type', 'Shirt type'),
+        ('full_legal_name', 'Legal name'),
+        ('university_email', 'University e-mail address'),
+        ('student_id', 'Student ID number'),
+        ('mail_reimbursement', 'Reimbursement checkbox'),
+    ]
+    link_fields_widgets = {}
+    
     user = AjaxForeignKey(User, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     from_here = models.NullBooleanField(null=True)
@@ -1151,7 +1170,17 @@ class TeacherInfo(models.Model):
     student_id = models.CharField(max_length=128, blank=True, null=True)
     mail_reimbursement = models.NullBooleanField(blank=True, null=True)
 
-
+    @classmethod
+    def cf_link_instance(cls, request):
+        """
+        Ues the request object to return the appropriate instance for this model,
+        for use by custom-forms.
+        It should either return the instance, or 'None', if the corresponding instance doesn't exist.
+        """
+        queryset=cls.objects.filter(user=request.user).order_by('-id')
+        if queryset: return queryset[0] 
+        else: return None
+        
     @classmethod
     def ajax_autocomplete(cls, data):
         names = data.strip().split(',')
