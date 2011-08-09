@@ -55,7 +55,9 @@ var elemTypes = {
 	'address':0,
 	'state':0,
 	'city':0,
-	'courses':0
+	'courses':0,
+    'radio_yesno': 0,
+    'boolean': 0
 };
 
 var currElemType, currElemIndex, optionCount=1, formTitle="Form",$prevField, $currField, secCount=1, $currSection, pageCount=1, $currPage;
@@ -845,6 +847,35 @@ var renderNormalField=function(item, field_options, data){
 	}
 	else if(item=='state'){
 		$new_elem=$('<select></select>');
+	}
+    else if(item=="boolean") {
+		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
+		$new_elem=$("<div>");
+        options_string = 'Yes';
+		$.each(options_string.split('|'), function(idx, el){
+			$one_option=$('<input>', {
+					type:"checkbox",
+					value:el
+			});
+			$new_elem.append($("<p>").append($one_option).append($("<span>"+el+"</span>")));
+		});
+		data['attrs']['options']=options_string;
+	}
+    else if(item=="radio_yesno") {
+		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
+		$new_elem=$("<div>");
+		
+		options_string = 'Yes|No';
+		$.each(options_string.split('|'), function(idx, el){
+			if(el!=''){
+				$one_option=$('<input>', {
+						type:"radio",
+						value:el
+				});
+				$new_elem.append($("<p>").append($one_option).append($("<span>"+el+"</span>")));
+			}
+		});
+		data['attrs']['options']=options_string;
 	}
 	//Page and section are special-cased
 	else if(item=='section'){
