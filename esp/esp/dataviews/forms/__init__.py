@@ -28,8 +28,21 @@ class DataViewsWizard(FormWizard):
     first_form = ModeForm
     steps = 1
     
+    def title(self, step = 0): 
+        if not step: 
+            return u'Mode Selection'
+  
+    def instructions(self, step = 0):
+        if not step:
+            return [u'Select the type of output you would like to generate.',]
+    
+    def setExtraContext(self, step = 0):
+        self.extra_context['title'] = u'%s - DataViews Mode %02d' % (self.title(step), self.mode)
+        self.extra_context['instructions'] = self.instructions(step)
+    
     def __init__(self, initial=None):
         super(DataViewsWizard, self).__init__(form_list=[self.first_form]*self.steps, initial=initial)
+        self.setExtraContext()
     
     @method_decorator(admin_required)
     def __call__(self, request, *args, **kwargs):
@@ -42,3 +55,6 @@ class DataViewsWizard(FormWizard):
     
     def done(self, request, form_list): 
         return HttpResponseRedirect('/dataviews/mode%02d/' % int(form_list[0].cleaned_data['mode']))
+    
+    def process_step(self, request, form, step):
+        self.setExtraContext(step+1)

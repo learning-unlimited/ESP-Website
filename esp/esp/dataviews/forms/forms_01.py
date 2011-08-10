@@ -21,8 +21,8 @@ class SplitConditionWidget(widgets.MultiWidget):
         else:
             return [u'']*3
 
-    def format_output(self, rendered_widgets):
-        return u"\n<br />\n<div>\n" + u''.join(rendered_widgets) + u"\n<input type='button' value='Delete' />\n</div>\n<br />\n<hr />\n"
+    def format_output(self, rendered_widgets): 
+        return u''.join(rendered_widgets) + u"\n<input type='button' value='Delete' onclick='deleteFieldEvent(event);return 0;' />\n"
 
 class SplitHiddenConditionWidget(SplitConditionWidget):
     is_hidden = True
@@ -51,7 +51,16 @@ def headingconditionsform_factory(num_conditions = 3):
     base = (Form,)
     fields = {'model': ChoiceField(choices=model_choices), 'num_conditions': IntegerField(initial=num_conditions, widget=widgets.HiddenInput)}
     for i in range(num_conditions): 
-        fields['condition_'+str(i+1)] = SplitConditionField(initial=[u'', u'exact', u''], required=False)
+        fields['condition_'+str(i+1)] = SplitConditionField(initial=[u'', u'exact', u''], required=False, label=u'')
+    def as_p(self):
+        "Returns this form rendered as HTML <p>s."
+        return self._html_output(
+            normal_row = u'<p%(html_class_attr)s>%(label)s %(field)s%(help_text)s</p><br /><hr />',
+            error_row = u'%s',
+            row_ender = '</p><br /><hr />',
+            help_text_html = u' <span class="helptext">%s</span>',
+            errors_on_separate_row = True)
+    fields['as_p'] = as_p
     return type(name, base, fields)
 
 class SplitColumnFieldWidget(widgets.MultiWidget):
@@ -67,7 +76,7 @@ class SplitColumnFieldWidget(widgets.MultiWidget):
             return [u'']*2
 
     def format_output(self, rendered_widgets):
-        return u"\n<br />\n<div>\n" + u''.join(rendered_widgets) + u"\n<input type='button' value='Delete' />\n</div>\n<br />\n<hr />\n"
+        return u"\n" + u''.join(rendered_widgets) + u"\n<input type='button' value='Delete' onclick='deleteFieldEvent(event);return 0;' />\n"
 
 class SplitHiddenColumnFieldWidget(SplitColumnFieldWidget):
     is_hidden = True
@@ -96,7 +105,16 @@ def displaycolumnsform_factory(num_columns = 3):
     base = (Form,)
     fields = {'num_columns': IntegerField(initial=num_columns, widget=widgets.HiddenInput)}
     for i in range(num_columns): 
-        fields['field_'+str(i+1)] = SplitColumnFieldField(initial=[u'', u''], required=(not i))
+        fields['column_'+str(i+1)] = SplitColumnFieldField(initial=[u'', u''], required=(not i), label=u'')
+    def as_p(self):
+        "Returns this form rendered as HTML <p>s."
+        return self._html_output(
+            normal_row = u'<p%(html_class_attr)s>%(label)s %(field)s%(help_text)s</p><br /><hr />',
+            error_row = u'%s',
+            row_ender = '</p><br /><hr />',
+            help_text_html = u' <span class="helptext">%s</span>',
+            errors_on_separate_row = True)
+    fields['as_p'] = as_p
     return type(name, base, fields)
 
 def pathchoiceform_factory(model, all_paths): 
@@ -119,6 +137,42 @@ class ModeWizard(DataViewsWizard):
     first_form = headingconditionsform_factory()
     steps = 4
     
+    def title(self, step): 
+        if not step: 
+            return u'Model and Condition Selection'
+        elif step == 1:
+            return u'Condition Path Selection'
+        elif step == 2: 
+            return u'Column Selection'
+        elif step == 3: 
+            return u'Column Path Selection'
+    
+    def instructions(self, step): 
+        if step in (1,3):
+            def format_for_step(s):
+                return s % {1: {'field': 'conditions', 'verb': 'conditioned'}, 3: {'field': 'columns', 'verb': 'displayed'}}[step]
+            instructions = map(format_for_step, [
+u'In the previous step, you selected generic %(field)s, by specifying fields that should be %(verb)s, but not specifying how those fields are related to the base model you selected. Now you must choose the relationships that make the most sense for the output you are trying to generate.', 
+# u'In cases where there is only one possible relationship between the base and the selected field, nothing is displayed. Therefore, it is possible for this form to be blank; in this case, just ignore this page and continue.',
+])
+            if step == 1:
+                return instructions + [u'If you selected no conditions, this form will be blank. In this case, just ignore this page and continue.',]
+            elif step == 3:
+                return instructions + [u'After you complete this page, a spreadsheet of your data will be generated. Depending on the size of your query set, this process may take a while, so please be patient!',]
+        elif not step:
+            return [
+u'Select the conditions of your database query.', 
+u'The result of the database query will contain some number of instances of the model you select at the top of this form. In the final output, each row will correspond to exactly one of these instances. For example, if you select ESPUser as the model, each there will be a row of output for every user of the website that matched the query.', 
+u'Each subsequent row of this form represents a single condition you may specify. The first drop-down box allows you to select the attribute to condition. The second drop-down box allows you to select the type of condition to apply (the default is equals, but you can apply other relations, as well as text and date searches). The textbox allows you to specify the value to condition on.', 
+u'At the end, all conditions are ANDed together (there is currently no support for [(Condition 1) OR (Condition 2)]). Rows can be left blank, and will be ignored. To delete a condition, press \'Delete\', and the row will be cleared of your previous selection. To add more conditions, press \'Add Condition\' at the bottom to add a new row.',
+]
+        elif step == 2:
+            return [
+u'Select the columns of your output.', 
+u'Each row of this form represents a single column you may specify. The first drop-down box allows you to select the attribute to display. The textbox allows you to specify the text to display in the header of the column.', 
+u'All rows except the first (you have to display something!) can be left blank, and will be ignored. To delete a column, press \'Delete\', and the row will be cleared of your previous selection. To add more columns, press \'Add Column\' at the bottom to add a new row.',
+]
+        
     def done(self, request, form_list):
         model = globals()[form_list[0].cleaned_data['model']]
         args = []
@@ -148,7 +202,7 @@ class ModeWizard(DataViewsWizard):
                 _, _, path = model_and_path.partition(LOOKUP_SEP)
                 view_paths.append(path)
                 headers[int(I)].append(path)
-        headers = [[path, form_list[2].cleaned_data['field_'+str(I+1)].split(u'|')[1]] for I in range(self.num_columns) for path in headers[I+1]]
+        headers = [[path, form_list[2].cleaned_data['column_'+str(I+1)].split(u'|')[1]] for I in range(self.num_columns) for path in headers[I+1]]
         queryset = path_v5(model, paths, *args).select_related(*view_paths)
         fields = [header[0] for header in headers]
         data = {}
@@ -183,6 +237,7 @@ class ModeWizard(DataViewsWizard):
         self.form_list[2] = displaycolumnsform_factory(self.num_columns)
     
     def process_step(self, request, form, step): 
+        super(ModeWizard, self).process_step(request, form, step)
         form0 = self.get_form(0, request.POST)
         if not form0.is_valid():
             return self.render_revalidation_failure(request, 0, form0)
@@ -200,7 +255,7 @@ class ModeWizard(DataViewsWizard):
         elif step == 2:
             paths = []
             for i in range(self.num_columns): 
-                values = form.cleaned_data['field_'+str(i+1)].split('|')
+                values = form.cleaned_data['column_'+str(i+1)].split('|')
                 if not values[0]: 
                     continue
                 field_model, field_field = get_mod_func(values[0])

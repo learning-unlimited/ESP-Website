@@ -1,13 +1,10 @@
-{% extends "main.html" %}
-
-{% block content %}
-<p>Step {{ step }} of {{ step_count }}</p>
-<form action="." method="post">{% csrf_token %}
-<table>
-{{ form.as_p }}
-</table>
-<input type="hidden" name="{{ step_field }}" value="{{ step0 }}" />
-{{ previous_fields|safe }}
-<input type="button" value="Add Column" /><input type="submit">
-</form>
+{% extends "dataviews/forms_01/wizard.html" %}
+{% block javascript %}
+{{ block.super}}
+<script type="text/javascript">
+{% include "dataviews/forms_01/add_and_remove_fields.js" %}
+</script>
+{% endblock %}
+{% block form_end %}
+<input type="button" value="Add Column" onclick="addField('column_');" />
 {% endblock %}
