@@ -190,7 +190,8 @@ class CustomFormHandler():
                     if not field_is_custom:
                         #Add in other classes for validation
                         generic_type=cf_cache.getGenericType(form_field)
-                        form_field.widget.attrs['class']+=self._field_types[generic_type]['widget_attrs']['class']    
+                        if 'widget_attrs' in self._field_types[generic_type] and 'class' in self._field_types[generic_type]['widget_attrs']:
+                            form_field.widget.attrs['class']+=self._field_types[generic_type]['widget_attrs']['class']    
 
                     #Adding to field list
                     self.fields.append([field_name, form_field])
@@ -446,7 +447,7 @@ class FormHandler:
             for section in page:
                 for field in section:
                     if field['id']==field_id:
-                        if field['attribute__value']=="-1":
+                        if field['attribute__value'] == "-1" or not field['attribute__value']:
                             return None
                         else:
                             instance_id=int(field['attribute__value'])
