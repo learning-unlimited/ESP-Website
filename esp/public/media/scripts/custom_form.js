@@ -1047,8 +1047,11 @@ var addElement=function(item, $prevField) {
         if (item in formElements[category])
         {
             $new_elem=renderNormalField(item, {}, data);
-            item_handled = true;
-            break;
+            if ($new_elem)
+            {
+                item_handled = true;
+                break;
+            }
         }
     }
 	
