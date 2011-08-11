@@ -9,6 +9,7 @@ from django.http import HttpResponseRedirect
 from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.customforms.forms import NameField, AddressField
 from esp.customforms.DynamicModel import DMH
+from esp.utils.forms import DummyField
 from esp.users.models import ContactInfo
 from esp.cache import cache_function
 from esp.program.models import Program
@@ -357,7 +358,11 @@ class ComboForm(FormWizard):
         #Saving response
         initial_keys = data.keys()
         for key in initial_keys:
+            #   Check that we didn't already handle this value as a linked field
             if key.split('_')[0] in cf_cache.link_fields:
+                del data[key]
+            #   Check that this value didn't come from a dummy field
+            if key.split('_')[0] == 'question' and generic_fields[fields[int(key.split('_')[1])]]['typeMap'] == DummyField:
                 del data[key]
         dynModel.objects.create(**data)    
         return HttpResponseRedirect('/customforms/success/')
