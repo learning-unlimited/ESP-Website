@@ -912,7 +912,7 @@ var renderNormalField=function(item, field_options, data){
 		data['attrs']['options']=options_string;
 	}
     else if(item=="instructions") {
-		$new_elem=$('<div class="instructions">HERY </div>');
+		$new_elem=$('<div class="instructions">' + $('#id_instructions').attr('value') + '</div>');
 	}
 	//Page and section are special-cased
 	else if(item=='section'){
