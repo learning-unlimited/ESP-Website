@@ -531,15 +531,18 @@ class FormHandler:
         for field in fields:
             #I'll do a lot of merging here later
             qname='question_%d' % field['id']
-            ftype=field['field_type']    
-            response_data['questions'].append([qname, field['label']])
+            ftype=field['field_type']
             if cf_cache.isLinkField(ftype):
                 #Let's grab the model first
                 model=cf_cache.modelForLinkField(ftype)
                 
                 #Now let's see what fields need to be set
                 add_fields[qname]=[model, cf_cache.getLinkFieldData(ftype)['model_field']]
-        
+                response_data['questions'].append([qname, field['label']])
+            #   Include this field only if it isn't a dummy field
+            elif generic_fields[ftype]['typeMap'] != DummyField:
+                response_data['questions'].append([qname, field['label']])
+            
         #Now let's set up the responses
         for response in responses:
             link_instances_cache={}
