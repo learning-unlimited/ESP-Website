@@ -160,6 +160,8 @@ class CustomFormHandler():
                 if cf_cache.isLinkField(field['field_type']):
                     #Get all form fields for this model, if it hasn't already been done
                     link_model=cf_cache.modelForLinkField(field['field_type'])
+                    if not link_model:
+                        continue
                     if link_model.__name__ not in model_fields_cache:
                         model_fields_cache[link_model.__name__]={}
                         model_fields_cache[link_model.__name__].update(fields_for_model(link_model, widgets=getattr(link_model, 'link_fields_widgets', None)))
@@ -197,8 +199,10 @@ class CustomFormHandler():
                 
                 #Generic field                                
                 widget_attrs={}    
-                field_attrs.update(self._field_types[field['field_type']]['attrs'])
-                widget_attrs.update(self._field_types[field['field_type']]['widget_attrs'])
+                if 'attrs' in self._field_types[field['field_type']]:
+                    field_attrs.update(self._field_types[field['field_type']]['attrs'])
+                if 'widget_attrs' in self._field_types[field['field_type']]:
+                    widget_attrs.update(self._field_types[field['field_type']]['widget_attrs'])
                 typeMap=self._field_types[field['field_type']]['typeMap']
                 
                 #Setting classes required for front-end validation

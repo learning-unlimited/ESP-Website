@@ -70,8 +70,10 @@ class DynamicModelHandler:
     
     def _getModelField(self, field_type):
         """Returns the appropriate Django Model Field based on field_type"""
-        
-        return self._field_types[field_type]['typeMap'](*self._field_types[field_type]['args'], **self._field_types[field_type]['attrs'])
+        if self._field_types[field_type]['typeMap']:
+            return self._field_types[field_type]['typeMap'](*self._field_types[field_type]['args'], **self._field_types[field_type]['attrs'])
+        else:
+            return None
             
     def _getModelFieldList(self):
         """Returns a list of Model Field tuples given a list of field_types (from the metadata)
@@ -102,11 +104,14 @@ class DynamicModelHandler:
                 lm=cf_cache.modelForLinkField(field)
                 if lm not in link_models: link_models.append(lm)
             else:
-                self.field_list.append( ('question_'+str(field_id), self._getModelField(field) ) )
+                new_field = self._getModelField(field)
+                if new_field:
+                    self.field_list.append( ('question_'+str(field_id), new_field) )
         
         #Adding foreign key fields for link-field models
         for model in link_models:
-            self.field_list.append( ('link_'+model.__name__, models.ForeignKey(model, null=True, blank=True, on_delete=models.SET_NULL) ) )
+            if model:
+                self.field_list.append( ('link_'+model.__name__, models.ForeignKey(model, null=True, blank=True, on_delete=models.SET_NULL) ) )
                     
         return self.field_list
         
