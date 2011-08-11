@@ -5,7 +5,7 @@ from esp.program.models import Program
 
 class Form(models.Model):
     title=models.CharField(max_length=40, blank=True)
-    description=models.CharField(max_length=140, blank=True)
+    description=models.TextField(blank=True)
     date_created=models.DateField(auto_now_add=True)
     created_by=models.ForeignKey(User)
     link_type=models.CharField(max_length=50, blank=True)
