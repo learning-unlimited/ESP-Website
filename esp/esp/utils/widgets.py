@@ -4,6 +4,9 @@
 
 from django.conf import settings
 from django import forms
+from django.forms import widgets
+from django.utils.safestring import mark_safe
+
 import datetime
 import time
 
@@ -189,3 +192,16 @@ class NullCheckboxSelect(forms.CheckboxInput):
             value = values.get(value.lower(), value)
         print 'NullCheckboxSelect converted %s to %s' % (data.get(name), value)
         return value
+
+class DummyWidget(widgets.Input):
+    input_type = 'text'
+    
+    def value_from_datadict(self, data, files, name):
+        return True
+    
+    def render(self, name, value, attrs=None, choices=()):
+        output = u''
+        if attrs and 'text' in attrs:
+            output += attrs['text']
+        return mark_safe(output)
+        

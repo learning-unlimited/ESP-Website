@@ -3,6 +3,7 @@ from django.forms.models import fields_for_model
 from django.db.models.loading import get_models
 from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.customforms.forms import NameField, AddressField
+from esp.utils.forms import DummyField
 
 generic_fields={
     'textField':{'typeMap': forms.CharField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'size':'30', 'class':''}},
@@ -22,6 +23,7 @@ generic_fields={
     'radio_yesno': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.RadioSelect, 'choices': ((True, 'Yes'), (False, 'No'))}},
     'boolean': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs':{'class':''}},
     'null_boolean': {'typeMap': forms.NullBooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs':{'class':''}},
+    'instructions': {'typeMap': DummyField},
 }
 
 custom_fields = {

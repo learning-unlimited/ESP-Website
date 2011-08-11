@@ -12,12 +12,19 @@ var formElements={
 		numeric:{'disp_name':'Numeric Field','ques':''},
 		date:{'disp_name':'Date','ques':'Date'},
 		time:{'disp_name':'Time','ques':'Time'},
-		phone:{'disp_name':'Phone no.','ques':'Your phone no.'},
-		email:{'disp_name':'Email','ques':'Your email'},
-		state:{'disp_name':'State','ques':'Your state'},
 		section:{'disp_name':'Section', 'ques':'Section'},
 		page:{'disp_name':'Page', 'ques':'Page'}
-	}
+	},
+    'Personal':
+    {
+    	phone:{'disp_name':'Phone no.','ques':'Your phone no.'},
+		email:{'disp_name':'Email','ques':'Your email'},
+		state:{'disp_name':'State','ques':'Your state'},
+        gender:{'disp_name':'Gender','ques':'Your gender'}
+    },  
+    'NotReallyFields': {
+        instructions: {'disp_name': 'Instructions', 'ques': ''}
+    },
 	/*'Personal':{
 		name:{'disp_name':'Name','ques':'Your name', 'field_type':'custom', 'field_options':{}},
 		gender:{'disp_name':'Gender','ques':'Gender', 'field_type':'radio', 'field_options':{'options':'Male|Female'}},
@@ -29,6 +36,27 @@ var formElements={
 	},
 	'Program':{}*/
 };
+
+var getKeys = function(obj){
+   var keys = [];
+   for(var key in obj){
+      keys.push(key);
+   }
+   return keys;
+}
+var default_categories = getKeys(formElements);
+
+var inDefaultCategory = function(field_type) {
+    for (var catname in formElements)
+    {
+        for (var catlabel in formElements[catname])
+        {
+            if (field_type == catlabel)
+                return true;
+        }
+    }
+    return false;
+}
 
 var only_fkey_models=[];
 
@@ -58,7 +86,8 @@ var elemTypes = {
 	'courses':0,
     'radio_yesno': 0,
     'boolean': 0,
-    'null_boolean': 0
+    'null_boolean': 0,
+    'instructions': 0
 };
 
 var currElemType, currElemIndex, optionCount=1, formTitle="Form",$prevField, $currField, secCount=1, $currSection, pageCount=1, $currPage;
@@ -424,18 +453,23 @@ var showCategorySpecificOptions=function(category){
 	//For instance, for linked fields, it shows options for selecting the queryset.
 	clearCatOptions();
 	
-	if (category!='Generic'){
-		//Show the category-specific options
-		$('#cat_spec_options').show();
-		
-		//Set any-predefined values
-		if(category in model_instance_cache){
-			if(model_instance_cache[category]['selected_cat']!="-1"){
-				$('#main_cat_spec').val(model_instance_cache[category]['selected_cat']);
-				onChangeMainCatSpec();
-			}
-		}
-	}
+    //  Don't show anything unless the selected category came from a linked model
+    for (var c in default_categories)
+    {
+        if (default_categories[c] == category)
+            return;
+    }
+
+    //Show the category-specific options
+    $('#cat_spec_options').show();
+    
+    //Set any-predefined values
+    if(category in model_instance_cache){
+        if(model_instance_cache[category]['selected_cat']!="-1"){
+            $('#main_cat_spec').val(model_instance_cache[category]['selected_cat']);
+            onChangeMainCatSpec();
+        }
+    }
 };
 
 var populateFieldsSelector=function(category){
@@ -877,6 +911,9 @@ var renderNormalField=function(item, field_options, data){
 		});
 		data['attrs']['options']=options_string;
 	}
+    else if(item=="instructions") {
+		$new_elem=$('<div class="instructions">HERY </div>');
+	}
 	//Page and section are special-cased
 	else if(item=='section'){
 		//this one's processed differently from the others
@@ -1002,9 +1039,20 @@ var addElement=function(item, $prevField) {
 	//Special-casing page and section
 	if(item=='page' || item=='section')
 		return renderNormalField(item, {}, data);
-	else if(item in formElements['Generic'])
-		$new_elem=renderNormalField(item, {}, data);
-	else {
+        
+    //  Try rendering the new element using any of the default categories
+    item_handled = false;
+    for (var category in formElements)
+    {
+        if (item in formElements[category])
+        {
+            $new_elem=renderNormalField(item, {}, data);
+            item_handled = true;
+            break;
+        }
+    }
+	
+	if (!item_handled) {
 		//Custom field
 		//First, get the options for this custom field
 		var custom_field, curr_category;
@@ -1433,7 +1481,8 @@ var submit=function() {
 				if( $(fel).hasClass('field_wrapper')){
 					elem={'data':$.data(fel,'data')};
 					elem['data']['seq']=fidx;
-					if(!(elem['data']['field_type'] in formElements['Generic'])){
+                    
+					if(!inDefaultCategory(elem['data']['field_type'])){
 						//Set link_id for link fields
 						//First, figure out the category
 						var curr_cat;

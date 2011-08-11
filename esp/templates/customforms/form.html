@@ -37,10 +37,15 @@
 	    {% else %}
 	      <p{{ field.row_attrs }}>
 	        {{ field.errors }}
-			{% if field.help_text %}
-				<img src="/media/default_images/question_mark.jpg" class="qmark" title="{{field.help_text}}">
-			{% endif %}
-			{{ field.label_tag }}
+            {% if field.field.is_dummy_field %}
+                <div class="dummy_field_heading">{{ field.label_tag }}</div>
+                <div class="dummy_field_text">{{ field.help_text }}</div>
+            {% else %}
+                {{ field.label_tag }}
+                {% if field.help_text %}
+                    <img src="/media/default_images/question_mark.jpg" class="qmark" title="{{field.help_text}}">
+                {% endif %}
+            {% endif %}
 	        {{ field }}
 	      </p>
 	    {% endif %}
