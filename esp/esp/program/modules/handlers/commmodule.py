@@ -116,7 +116,6 @@ class CommModule(ProgramModuleObj):
         contextdict = {'user'   : ActionHandler(esp_firstuser, esp_firstuser),
                        'program': ActionHandler(self.program, esp_firstuser) }
         renderedtext = Template(htmlbody).render(Context(contextdict))
-        renderedtext = renderedtext.replace('\n', '<br />')
         
         return render_to_response(self.baseDir()+'preview.html', request,
                                   (prog, tl), {'filterid': filterid,
