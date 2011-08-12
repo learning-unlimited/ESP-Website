@@ -8,10 +8,24 @@ from django.utils.encoding import StrAndUnicode, smart_unicode, force_unicode
 from django.utils.safestring import mark_safe
 from esp.dataviews.forms import *
 from django.utils.translation import ugettext_lazy as _
+from django.db.models.aggregates import * 
+
+def model_field_choices(model, include_Count = False): 
+    choices = []
+    if include_Count: 
+        choices += [(model.__name__+'.Count', 'Count')]
+    choices += [(model.__name__+'.'+fieldname, fieldname) for fieldname, field in model._meta.init_name_map().iteritems() if not (isinstance(field[0], RelatedField) or isinstance(field[0], RelatedObject))]
+    return choices
+
+def all_field_choices(base_model = None, include_Count = False): 
+    choices = defaultdict(list)
+    for model in useful_models: 
+        choices[model] = model_field_choices(model, include_Count = (include_Count and (base_model != model)))
+    return [('', "None")]+[(model.__name__, choices[model]) for model in useful_models]
 
 class SplitConditionWidget(widgets.MultiWidget):
     def __init__(self, attrs=None):
-        super(SplitConditionWidget, self).__init__((widgets.Select(choices = model_field_choices), widgets.Select(choices = [(query_term, query_term_symbols[query_term]) for query_term in query_terms]), widgets.TextInput), attrs)
+        super(SplitConditionWidget, self).__init__((widgets.Select(choices = all_field_choices()), widgets.Select(choices = [(query_term, query_term_symbols[query_term]) for query_term in query_terms]), widgets.TextInput), attrs)
 
     def decompress(self, value): 
         if value and isinstance(value, list):
@@ -41,7 +55,7 @@ class SplitConditionField(fields.MultiValueField):
     hidden_widget = SplitHiddenConditionWidget
     
     def __init__(self, *args, **kwargs): 
-        super(SplitConditionField, self).__init__((ChoiceField(choices = model_field_choices), ChoiceField(choices = [(query_term, query_term_symbols[query_term]) for query_term in query_terms]), CharField()), *args, **kwargs)
+        super(SplitConditionField, self).__init__((ChoiceField(choices = all_field_choices()), ChoiceField(choices = [(query_term, query_term_symbols[query_term]) for query_term in query_terms]), CharField()), *args, **kwargs)
     
     def compress(self, data_list): 
         return u'|'.join(data_list)
@@ -64,8 +78,8 @@ def headingconditionsform_factory(num_conditions = 3):
     return type(name, base, fields)
 
 class SplitColumnFieldWidget(widgets.MultiWidget):
-    def __init__(self, attrs=None):
-        super(SplitColumnFieldWidget, self).__init__((widgets.Select(choices = model_field_choices), widgets.TextInput), attrs)
+    def __init__(self, base_model=None, attrs=None):
+        super(SplitColumnFieldWidget, self).__init__((widgets.Select(choices = all_field_choices(base_model=base_model, include_Count=True)), widgets.TextInput), attrs)
 
     def decompress(self, value): 
         if value and isinstance(value, list):
@@ -91,21 +105,21 @@ class SplitHiddenColumnFieldWidget(SplitColumnFieldWidget):
         return super(SplitColumnFieldWidget, self).format_output(rendered_widgets)
 
 class SplitColumnFieldField(fields.MultiValueField): 
-    widget = SplitColumnFieldWidget
     hidden_widget = SplitHiddenColumnFieldWidget
     
-    def __init__(self, *args, **kwargs): 
-        super(SplitColumnFieldField, self).__init__((ChoiceField(choices = model_field_choices), CharField()), *args, **kwargs)
+    def __init__(self, base_model=None, *args, **kwargs): 
+        super(SplitColumnFieldField, self).__init__((ChoiceField(choices = all_field_choices(base_model=base_model, include_Count=True)), CharField()), *args, **kwargs)
+        self.widget = SplitColumnFieldWidget(base_model=base_model)
     
     def compress(self, data_list): 
         return u'|'.join(data_list)
 
-def displaycolumnsform_factory(num_columns = 3): 
+def displaycolumnsform_factory(base_model=None, num_columns = 3): 
     name = "DisplayColumnsForm"
     base = (Form,)
     fields = {'num_columns': IntegerField(initial=num_columns, widget=widgets.HiddenInput)}
     for i in range(num_columns): 
-        fields['column_'+str(i+1)] = SplitColumnFieldField(initial=[u'', u''], required=(not i), label=u'')
+        fields['column_'+str(i+1)] = SplitColumnFieldField(base_model=base_model, initial=[u'', u''], required=(not i), label=u'')
     def as_p(self):
         "Returns this form rendered as HTML <p>s."
         return self._html_output(
@@ -127,7 +141,8 @@ def pathchoiceform_factory(model, all_paths):
             if path: 
                 for i,n in enumerate(path):
                     label += u' \u2192 ' + pretty_name(n) + u' (' + models[i+1].__name__ + u')'
-            label += u' \u2192 ' + pretty_name(unicode(field))
+            if field:
+                label += u' \u2192 ' + pretty_name(unicode(field))
             fields[LOOKUP_SEP.join((str(I)+'|'+target_model.__name__,)+path+(field,))] = BooleanField(required=False, label=label)
     return type(name, base, fields)
 
@@ -174,7 +189,6 @@ u'All rows except the first (you have to display something!) can be left blank, 
 ]
         
     def done(self, request, form_list):
-        model = globals()[form_list[0].cleaned_data['model']]
         args = []
         for i in range(self.num_conditions): 
             values = form_list[0].cleaned_data['condition_'+str(i+1)].split(u'|')
@@ -187,7 +201,6 @@ u'All rows except the first (you have to display something!) can be left blank, 
             val = condition_model._meta.init_name_map()[condition_field][0].to_python(text)
             args.append((condition_model, str(condition_field), str(query_term), val))
         paths = defaultdict(list)
-        view_paths = []
         headers = []
         for model_and_path, value in form_list[1].cleaned_data.iteritems():
             if value: 
@@ -196,18 +209,27 @@ u'All rows except the first (you have to display something!) can be left blank, 
                 path, _, _ = path.rpartition(LOOKUP_SEP)
                 paths[globals()[condition_model]].append(path)
         headers = defaultdict(list)
+        view_paths = []
+        counts = {}
         for model_and_path, value in form_list[3].cleaned_data.iteritems():
             if value: 
                 I, _, model_and_path = model_and_path.partition('|')
-                _, _, path = model_and_path.partition(LOOKUP_SEP)
+                path = model_and_path.partition(LOOKUP_SEP)[2]
+                if 'Count' in path:
+                    actual_path = path.rpartition(LOOKUP_SEP)[0]
+                    path = path.replace(LOOKUP_SEP, u'_')
+                    counts[path] = Count(actual_path, distinct=True)
                 view_paths.append(path)
                 headers[int(I)].append(path)
-        headers = [[path, form_list[2].cleaned_data['column_'+str(I+1)].split(u'|')[1]] for I in range(self.num_columns) for path in headers[I+1]]
-        queryset = path_v5(model, paths, *args).select_related(*view_paths)
+        if not ('pk' in view_paths or 'id' in view_paths):
+            headers[0].append('pk')
+        headers = [[path, form_list[2].cleaned_data['column_'+str(I)].split(u'|')[1] if I else self.base_model.__name__ + u' Primary Key ID#'] for I in range(self.num_columns+1) for path in headers[I]]
+        queryset = path_v5(self.base_model, paths, *args).annotate(**counts)
+        
         fields = [header[0] for header in headers]
         data = {}
         for field in fields:
-            data[field] = list(queryset.values_list('id', field))
+            data[field] = list(queryset.values_list('pk', field))
         pks = queryset.values_list('pk', flat=True)
         for pk in pks:
             data[pk] = defaultdict(list)
@@ -233,15 +255,17 @@ u'All rows except the first (you have to display something!) can be left blank, 
     def parse_params(self, request, *args, **kwargs):
         self.num_conditions = int(request.POST.get('%s-num_conditions' % self.prefix_for_step(0), 3))
         self.num_columns = int(request.POST.get('%s-num_columns' % self.prefix_for_step(2), 3))
+        self.base_model = request.POST.get('%s-model' % self.prefix_for_step(0), None)
+        if self.base_model: 
+            self.base_model = globals()[self.base_model]
         self.form_list[0] = headingconditionsform_factory(self.num_conditions)
-        self.form_list[2] = displaycolumnsform_factory(self.num_columns)
+        self.form_list[2] = displaycolumnsform_factory(base_model = self.base_model, num_columns = self.num_columns)
     
     def process_step(self, request, form, step): 
         super(ModeWizard, self).process_step(request, form, step)
         form0 = self.get_form(0, request.POST)
         if not form0.is_valid():
             return self.render_revalidation_failure(request, 0, form0)
-        model = globals()[form0.cleaned_data['model']]
         if not step: 
             paths = []
             for i in range(self.num_conditions):
@@ -250,8 +274,8 @@ u'All rows except the first (you have to display something!) can be left blank, 
                     continue
                 condition_model, condition_field = get_mod_func(values[0])
                 condition_model = globals()[condition_model]
-                paths.append((i+1, condition_model, path_v1(model, condition_model), condition_field))
-            self.form_list[step+1] = pathchoiceform_factory(model, paths)
+                paths.append((i+1, condition_model, path_v1(self.base_model, condition_model), condition_field))
+            self.form_list[step+1] = pathchoiceform_factory(self.base_model, paths)
         elif step == 2:
             paths = []
             for i in range(self.num_columns): 
@@ -260,5 +284,5 @@ u'All rows except the first (you have to display something!) can be left blank, 
                     continue
                 field_model, field_field = get_mod_func(values[0])
                 field_model = globals()[field_model]
-                paths.append((i+1, field_model, path_v1(model, field_model), field_field))
-            self.form_list[step+1] = pathchoiceform_factory(model, paths)
+                paths.append((i+1, field_model, path_v1(self.base_model, field_model), field_field))
+            self.form_list[step+1] = pathchoiceform_factory(self.base_model, paths)
