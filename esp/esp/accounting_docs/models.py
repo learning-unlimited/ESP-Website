@@ -84,7 +84,7 @@ class Document(models.Model):
 
     # Document header
     anchor = AjaxForeignKey(DataTree)
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     txn = models.ForeignKey(Transaction)
     doctype = models.IntegerField(choices=TYPE_CHOICES)
 

@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 """ Models for Resources application """
 
 from esp.cal.models import Event
-from esp.users.models import User
+from esp.users.models import User, ESPUser
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError_Log
 from esp.cache import cache_function
@@ -179,7 +179,7 @@ class Resource(models.Model):
     num_students = models.IntegerField(blank=True, default=-1)
     group_id = models.IntegerField(default=-1) # Default value of -1 means ungrouped, or at least so I'm assuming for now in grouped_resources(). -ageng 2008-05-13
     is_unique = models.BooleanField(default=False)
-    user = AjaxForeignKey(User, null=True, blank=True)
+    user = AjaxForeignKey(ESPUser, null=True, blank=True)
     event = models.ForeignKey(Event)
     
     def __unicode__(self):

@@ -12,7 +12,8 @@
 Your profile has now been successfully completed.
 </p>
 
-{% if userrole %}
+{% if userrole and progs %}
+{% if not progs|length_is:0 %}
 <p>
 Continue on to:<br />
 {% for prog in progs %}
@@ -21,7 +22,7 @@ Continue on to:<br />
 </span>
 <br />
 {% endfor %}
-
+{% endif %}
 {% endif %}
 <br />
 <br />

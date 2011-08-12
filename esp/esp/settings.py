@@ -42,6 +42,23 @@ from django_settings import *
 # Import system-specific settings
 from local_settings import *
 
+# Ensure database settings are set properly
+if len(DATABASES['default']['USER']) == 0:
+    try:
+        DATABASES['default']['USER'] = DATABASE_USER
+    except:
+        raise Exception("You need to supply either DATABASES['default']['USER'] or DATABASE_USER in database_settings.py")
+if len(DATABASES['default']['PASSWORD']) == 0:
+    try:
+        DATABASES['default']['PASSWORD'] = DATABASE_PASSWORD
+    except:
+        raise Exception("You need to supply either DATABASES['default']['PASSWORD'] or DATABASE_PASSWORD in database_settings.py")
+if len(DATABASES['default']['NAME']) == 0:
+    try:
+        DATABASES['default']['NAME'] = DATABASE_NAME
+    except:
+        raise Exception("You need to supply either DATABASES['default']['NAME'] or DATABASE_NAME in local_settings.py")
+
 SERVER_EMAIL = 'server@%s' % EMAIL_HOST_SENDER
 
 ############################################

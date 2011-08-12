@@ -89,3 +89,7 @@ class AdminMorph(ProgramModuleObj):
 
         return HttpResponseRedirect('/')
 
+
+    class Meta:
+        abstract = True
+

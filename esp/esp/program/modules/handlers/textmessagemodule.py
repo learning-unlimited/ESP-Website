@@ -77,3 +77,7 @@ class TextMessageModule(ProgramModuleObj):
             profile.text_reminder = False
             profile.save()
             
+
+    class Meta:
+        abstract = True
+

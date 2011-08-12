@@ -47,6 +47,7 @@ class SCRMIAdmin(admin.ModelAdmin):
 admin.site.register(StudentClassRegModuleInfo, SCRMIAdmin)
 
 class CRMIAdmin(admin.ModelAdmin):
+    exclude = ['display_times']
     pass
 admin.site.register(ClassRegModuleInfo, CRMIAdmin)
 

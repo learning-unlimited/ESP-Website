@@ -94,7 +94,7 @@ class ClassSizeRange(models.Model):
                 k = cls()
                 k.range_min = range.range_min
                 k.range_max = range.range_max
-                k.program = None
+                k.program = prog
                 k.save()
             return cls.objects.filter(program=prog)
 
@@ -324,13 +324,13 @@ class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
     
-    anchor = models.ForeignKey(DataTree)
+    anchor = AjaxForeignKey(DataTree)
     status = models.IntegerField(default=0)                 #   -10 = rejected, 0 = unreviewed, 10 = accepted
     registration_status = models.IntegerField(default=0)    #   0 = open, 10 = closed
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
-    max_class_capacity = models.IntegerField(null=True)
+    max_class_capacity = models.IntegerField(blank=True, null=True)
     
     cache = SectionCacheHelper
     checklist_progress_all_cached = checklist_progress_base('ClassSection')
@@ -1059,7 +1059,7 @@ class ClassSection(models.Model):
     def time_blocks(self):
         return self.friendly_times(raw=True)
 
-    def friendly_times(self, use_cache=False, raw=False):
+    def friendly_times(self, use_cache=False, raw=False, include_date=False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun"
         """ Return a friendlier, prettier format for the times.
 
         If the events of this class are next to each other (within 10-minute overlap,
@@ -1095,13 +1095,16 @@ class ClassSection(models.Model):
         if raw:
             txtTimes = Event.collapse(events, tol=datetime.timedelta(minutes=15))
         else:
-            txtTimes = [ event.pretty_time() for event
+            txtTimes = [ event.pretty_time(include_date=include_date) for event
                      in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
 
         self.cache['friendly_times_%s' % raw] = txtTimes
 
         return txtTimes
-            
+    
+    def friendly_times_with_date(self, use_cache=False, raw=False): 
+        return self.friendly_times(use_cache=use_cache, raw=raw, include_date=True)
+    
     def isAccepted(self): return self.status == 10
     def isReviewed(self): return self.status != 0
     def isRejected(self): return self.status == -10

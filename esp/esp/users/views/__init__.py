@@ -16,7 +16,7 @@ from esp.users.models.forwarder import UserForwarder
 def filter_username(username, password):
     #   Allow login by e-mail address if so specified
     if username and '@' in username and Tag.getTag('login_by_email'):
-        accounts = User.objects.filter(email = username)
+        accounts = ESPUser.objects.filter(email = username)
         matches = []
         for u in accounts:
             if u.check_password(password):
@@ -35,7 +35,7 @@ def login_checked(request, *args, **kwargs):
     # Check for user forwarders
     if request.user.is_authenticated():
         old_username = request.user.username
-        user, forwarded = UserForwarder.follow(request.user)
+        user, forwarded = UserForwarder.follow(ESPUser(request.user))
         if forwarded:
             auth_logout(request)
             auth_login(request, user)
@@ -80,7 +80,7 @@ def ajax_login(request, *args, **kwargs):
     if user is not None:
         if user.is_active:
             result_str = 'Login successful'
-            user, forwarded = UserForwarder.follow(user)
+            user, forwarded = UserForwarder.follow(ESPUser(user))
             if forwarded:
                 result_str = 'Logged in as "%s" ("%s" is marked as a duplicate account)' % (user.username, username)
             auth_login(request, user)

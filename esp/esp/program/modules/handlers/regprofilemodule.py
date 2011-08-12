@@ -62,7 +62,7 @@ class RegProfileModule(ProgramModuleObj):
         if QObject:
             return {'student_profile': self.getQForUser(Q(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False))
                     }
-        students = User.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
+        students = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__student_info__isnull = False).distinct()
         return {'student_profile': students }
 
     def studentDesc(self):
@@ -72,7 +72,7 @@ class RegProfileModule(ProgramModuleObj):
         if QObject:
             return {'teacher_profile': self.getQForUser(Q(registrationprofile__program = self.program) & \
                                Q(registrationprofile__teacher_info__isnull = False))}
-        teachers = User.objects.filter(registrationprofile__program = self.program, registrationprofile__teacher_info__isnull = False).distinct()
+        teachers = ESPUser.objects.filter(registrationprofile__program = self.program, registrationprofile__teacher_info__isnull = False).distinct()
         return {'teacher_profile': teachers }
 
     def teacherDesc(self):
@@ -81,7 +81,7 @@ class RegProfileModule(ProgramModuleObj):
     @needs_account
     @main_call
     @meets_deadline("/Profile")
-    def profile(self, request, tl, one, two, module, extra, prog):
+    def profile(self, request, tl, one, two, module, extra, prog, check_role=True):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
 
         from esp.web.views.myesp import profile_editor
@@ -96,11 +96,13 @@ class RegProfileModule(ProgramModuleObj):
         else:
             role = user_roles[0]
 
-        # Make sure we are editing the right type of profile
-        if role == 'teacher' and not request.user.isTeacher():
-            return needs_teacher(self.profile)(self, request, tl, one, two, module, extra)
-        if role == 'student' and not request.user.isStudent():
-            return needs_student(self.profile)(self, request, tl, one, two, module, extra)
+        # Make sure we are editing the right type of profile, otherwise 
+        # display a helpful "wrong user type" message
+        if check_role:
+            if role == 'teacher' and not request.user.isTeacher():
+                return needs_teacher(RegProfileModule.profile)(self, request, tl, one, two, module, extra, prog, False)
+            if role == 'student' and not request.user.isStudent():
+                return needs_student(RegProfileModule.profile)(self, request, tl, one, two, module, extra, prog, False)
 
         #   Reset e-mail address for program registrations.
         if prog is None:
@@ -124,4 +126,8 @@ class RegProfileModule(ProgramModuleObj):
         regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
         return regProf.id is not None
 
+
+
+    class Meta:
+        abstract = True
 

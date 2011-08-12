@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 from django.db import models
 from django.contrib.auth.models import User
+from esp.users.models import ESPUser
 from esp.middleware import ESPError
 from datetime import datetime
 from esp.db.fields import AjaxForeignKey
@@ -52,11 +53,13 @@ from django.core.mail import SMTPConnection
 def send_mail(subject, message, from_email, recipient_list, fail_silently=False, bcc=settings.DEFAULT_EMAIL_ADDRESSES['archive'],
               return_path=settings.DEFAULT_EMAIL_ADDRESSES['bounces'], extra_headers={},
               *args, **kwargs):
+    from_email = from_email.strip()
+    if 'Reply-To' in extra_headers:
+        extra_headers['Reply-To'] = extra_headers['Reply-To'].strip()
     if type(recipient_list) == str or type(recipient_list) == unicode:
         new_list = [ recipient_list ]
     else:
         new_list = [ x for x in recipient_list ]
-    
     from django.core.mail import EmailMessage #send_mail as django_send_mail
     print "Sent mail to %s" % str(new_list)
     
@@ -101,7 +104,7 @@ class MessageRequest(models.Model):
     special_headers = models.TextField(blank=True, null=True) 
     recipients = models.ForeignKey(PersistentQueryFilter) # We will get the user from a query filter
     sender = models.TextField(blank=True, null=True) # E-mail sender; should be a valid SMTP sender string 
-    creator = AjaxForeignKey(User) # the person who sent this message
+    creator = AjaxForeignKey(ESPUser) # the person who sent this message
     processed = models.BooleanField(default=False, db_index=True) # Have we made EmailRequest objects from this MessageRequest yet?
     processed_by = models.DateTimeField(null=True, default=None, db_index=True) # When should this be processed by?
     email_all = models.BooleanField(default=True) # do we just want to create an emailrequest for each user?
@@ -242,7 +245,7 @@ class TextOfEmail(models.Model):
                   self.msgtext,
                   self.send_from,
                   self.send_to,
-                  True,
+                  False,
                   extra_headers=extra_headers)
 
         #send_mail(str(self.subject),
@@ -376,7 +379,7 @@ class MessageVars(models.Model):
 
 class EmailRequest(models.Model):
     """ Each e-mail is sent to all users in a category.  This a one-to-many that binds a message to the users that it will be sent to. """
-    target = AjaxForeignKey(User)
+    target = AjaxForeignKey(ESPUser)
     msgreq = models.ForeignKey(MessageRequest)
     textofemail = AjaxForeignKey(TextOfEmail, blank=True, null=True)
 

@@ -91,6 +91,8 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
     for (datum, (mod, created)) in mods:
         #   If the module exists but the provided data adds fields that 
         #   are null or blank, go ahead and add them.
+        #   If aux_calls are changed, merge the values from the code and the
+        #   database so that everyone's happy.
         #   This simplifies data migrations where the default module properties
         #   are changed.
         for key in datum:
@@ -98,6 +100,27 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
                 if datum[key] is not None and datum[key] != u'':
                     print 'Setting field %s=%s on existing ProgramModule %s' % (key, datum[key], mod.handler)
                     mod.__dict__[key] = datum[key] 
+            elif mod.__dict__[key] != datum[key]:
+                if key == 'aux_calls':
+                    print 'Module %s matching on %s' % (mod, key)
+                    db_list = mod.__dict__[key].strip().split(',')
+                    db_list.sort()
+                    code_list = datum[key].strip().split(',')
+                    code_list.sort()
+                    #   print '  Values in database: %s' % db_list
+                    #   print '  Values in code: %s' % code_list
+                    if db_list == code_list:
+                        print '-> Values are equal and differ by ordering'
+                    else:
+                        print '-> Values are truly different'
+                        db_set = set(db_list)
+                        code_set = set(code_list)
+                        print '  Items in code but not DB: %s' % (code_set - db_set,)
+                        print '  Items in DB but not code: %s' % (db_set - code_set,)
+                        new_set = db_set | code_set
+                        #   Save union of what's in DB and code
+                        mod.__dict__[key] = ','.join(list(new_set))
+                
         mod.save()
 
 

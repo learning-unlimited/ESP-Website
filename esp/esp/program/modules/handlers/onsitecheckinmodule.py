@@ -220,3 +220,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'checkin.html', request, (prog, tl), {'module': self})
 
+
+    class Meta:
+        abstract = True
+

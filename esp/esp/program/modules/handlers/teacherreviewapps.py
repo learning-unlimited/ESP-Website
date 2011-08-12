@@ -104,6 +104,19 @@ class TeacherReviewApps(ProgramModuleObj):
 
         students = list(students)
         students.sort(lambda x,y: cmp(x.added_class,y.added_class))
+        
+        if 'prev' in request.GET:
+            prev_id = int(request.GET.get('prev'))
+            prev = students[0]
+            current = None
+            for current in students[1:]:
+                if prev.id == prev_id and current.app_completed:
+                    from django.shortcuts import redirect
+                    url = "/%s/%s/%s/review_student/%s/?student=%s" % (tl, one, two, extra, current.id)
+                    return redirect(url)
+                if prev.id != prev_id: 
+                    prev = current
+            
 
         return render_to_response(self.baseDir()+'roster.html',
                                   request,
@@ -184,7 +197,7 @@ class TeacherReviewApps(ProgramModuleObj):
             student = request.POST.get('student','')
 
         try:
-            student = ESPUser(User.objects.get(id = student))
+            student = ESPUser(User.objects.get(id = int(student)))
         except ESPUser.DoesNotExist:
             raise ESPError(False), 'Cannot find student, %s' % student
 
@@ -212,6 +225,14 @@ class TeacherReviewApps(ProgramModuleObj):
             form = this_review.get_form(request.POST)
             if form.is_valid():
                 form.target.update(form)
+                if 'submit_next' in request.POST or 'submit_return' in request.POST: 
+                    url = '/%s/%s/%s/review_students/%s/' % (tl, one, two, extra)
+                    if 'submit_next' in request.POST:
+                        url += '?prev=%s' % student.id
+                    from django.shortcuts import redirect
+                    return redirect(url) # self.review_students(request, tl, one, two, module, extra, prog)
+                    
+                
         else:
             form = this_review.get_form()
 
@@ -232,4 +253,8 @@ class TeacherReviewApps(ProgramModuleObj):
 
     def isStep(self):
         return True
+
+
+    class Meta:
+        abstract = True
 

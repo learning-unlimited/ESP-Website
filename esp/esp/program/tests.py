@@ -39,6 +39,7 @@ from esp.program.models import ClassSection, RegistrationProfile
 from esp.resources.models import ResourceType
 
 from django.contrib.auth.models import User, Group
+from esp.users.models import ESPUser
 import datetime, random, hashlib
 
 from django.test.client import Client
@@ -47,20 +48,24 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
+        import random
+
         """ Set up a bunch of user accounts to play with """
         self.password = "pass1234"
         
-        self.user, created = User.objects.get_or_create(first_name="Test", last_name="User", username="testuser123543", email="server@esp.mit.edu")
+        #   May fail once in a while, but it's not critical.
+        self.unique_name = 'Test_UNIQUE%06d' % random.randint(0, 999999)
+        self.user, created = ESPUser.objects.get_or_create(first_name=self.unique_name, last_name="User", username="testuser123543", email="server@esp.mit.edu")
         if created:
             self.user.set_password(self.password)
             self.user.save()
 
-        self.admin, created = User.objects.get_or_create(first_name="Admin", last_name="User", username="adminuser124353", email="server@esp.mit.edu")
+        self.admin, created = ESPUser.objects.get_or_create(first_name="Admin", last_name="User", username="adminuser124353", email="server@esp.mit.edu")
         if created:
             self.admin.set_password(self.password)
             self.admin.save()
 
-        self.fake_admin, created = User.objects.get_or_create(first_name="Not An Admin", last_name="User", username="notanadminuser124353", email="server@esp.mit.edu")
+        self.fake_admin, created = ESPUser.objects.get_or_create(first_name="Not An Admin", last_name="User", username="notanadminuser124353", email="server@esp.mit.edu")
         if created:
             self.fake_admin.set_password(self.password)
             self.fake_admin.save()
@@ -96,7 +101,7 @@ class ViewUserInfoTest(TestCase):
 
         # Try some fuzzy searches
         # First name only, unique
-        response = c.get("/manage/usersearch", { "userstr": "Test" })
+        response = c.get("/manage/usersearch", { "userstr": self.unique_name })
         self.assertEqual(response.status_code, 302)
         self.assertStringContains(response['location'], "/manage/userview?username=testuser123543")
 
@@ -174,7 +179,7 @@ class ProfileTest(TestCase):
         self.salt = hashlib.sha1(str(random.random())).hexdigest()[:5]
 
     def testAcctCreate(self):
-        self.u=User(
+        self.u=ESPUser(
             first_name='bob',
             last_name='jones',
             username='bjones',
@@ -186,7 +191,7 @@ class ProfileTest(TestCase):
         self.group=Group(name='Test Group')
         self.group.save()
         self.u.groups.add(self.group)
-        self.assertEquals(User.objects.get(username='bjones'), self.u)
+        self.assertEquals(ESPUser.objects.get(username='bjones'), self.u)
         self.assertEquals(Group.objects.get(name='Test Group'), self.group)
         #print self.u.__dict__
         #print self.u.groups.all()
@@ -217,7 +222,7 @@ class ProgramHappenTest(TestCase):
         self.program_type_anchor.save()
         
         def makeuser(f, l, un, email, p):
-            u = User(first_name=f, last_name=l, username=un, email=email)
+            u = ESPUser(first_name=f, last_name=l, username=un, email=email)
             u.set_password(p)
             u.save()
             return ESPUser(u)
@@ -317,6 +322,8 @@ class ProgramHappenTest(TestCase):
         # Make rooms & times, since I'm too lazy to do that as a test just yet.
         from esp.cal.models import EventType, Event
         from esp.resources.models import Resource, ResourceType, ResourceAssignment
+        from esp.program.controllers.classreg import get_custom_fields
+        from django import forms
         from datetime import datetime
 
         self.failUnless( self.prog.classes().count() == 0, 'Website thinks empty program has classes')
@@ -357,7 +364,10 @@ class ProgramHappenTest(TestCase):
             'allow_lateness': 'False',
             'message_for_directors': 'Hi chairs!',
             'class_reg_page': '1',
-            #   Resource forms in default configuration
+            'hardness_rating': '**',
+        }
+        """
+            #   Additional keys to test resource forms:
             'request-TOTAL_FORMS': '2',
             'request-INITIAL_FORMS': '2',
             'request-0-resource_type': str(ResourceType.get_or_create('Classroom').id),
@@ -366,11 +376,19 @@ class ProgramHappenTest(TestCase):
             'request-1-desired_value': 'LCD projector',
             'restype-TOTAL_FORMS': '0',
             'restype-INITIAL_FORMS': '0',
-            'hardness_rating': "**",
-        }
-        self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)    
-
+        """
+        
+        #   Fill in required fields from any custom forms used by the program
+        #   This should be improved in the future (especially if we have dynamic forms)
+        custom_fields_dict = get_custom_fields()
+        for field in custom_fields_dict:
+            if isinstance(custom_fields_dict[field], forms.ChoiceField):
+                class_dict[field] = custom_fields_dict[field].choices[0][0]
+            else:
+                class_dict[field] = 'foo'
+        
         # Check that stuff went through correctly
+        response = self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)  
         
         # check prog.classes
         classes = self.prog.classes()
@@ -537,19 +555,19 @@ class ProgramFrameworkTest(TestCase):
         self.students = []
         self.admins = []
         for i in range(settings['num_students']):
-            new_student, created = User.objects.get_or_create(username='student%04d' % i)
+            new_student, created = ESPUser.objects.get_or_create(username='student%04d' % i)
             new_student.set_password('password')
             new_student.save()
             role_bit, created = UserBit.objects.get_or_create(user=new_student, verb=GetNode('V/Flags/UserRole/Student'), qsc=GetNode('Q'), recursive=False)
             self.students.append(ESPUser(new_student)) 
         for i in range(settings['num_teachers']):
-            new_teacher, created = User.objects.get_or_create(username='teacher%04d' % i)
+            new_teacher, created = ESPUser.objects.get_or_create(username='teacher%04d' % i)
             new_teacher.set_password('password')
             new_teacher.save()
             role_bit, created = UserBit.objects.get_or_create(user=new_teacher, verb=GetNode('V/Flags/UserRole/Teacher'), qsc=GetNode('Q'), recursive=False)
             self.teachers.append(ESPUser(new_teacher))
         for i in range(settings['num_admins']):
-            new_admin, created = User.objects.get_or_create(username='admin%04d' % i)
+            new_admin, created = ESPUser.objects.get_or_create(username='admin%04d' % i)
             new_admin.set_password('password')
             new_admin.save()
             role_bit, created = UserBit.objects.get_or_create(user=new_admin, verb=GetNode('V/Flags/UserRole/Administrator'), qsc=GetNode('Q'), recursive=False)
@@ -918,6 +936,8 @@ class ModuleControlTest(ProgramFrameworkTest):
         
         #   Remove the module and make sure we are not shown it anymore.
         self.program.program_modules.remove(sat_module)
+        self.program.save()
+        
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
         self.assertTrue('Steps for Registration' in response.content)
         

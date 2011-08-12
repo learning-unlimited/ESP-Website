@@ -53,7 +53,7 @@ class TeacherBioModule(ProgramModuleObj):
         if QObject:
             return {'teacher_biographies': self.getQForUser(Q(teacherbio__program = self.program))}
                     
-        teachers = User.objects.filter(teacherbio__program = self.program).distinct()
+        teachers = ESPUser.objects.filter(teacherbio__program = self.program).distinct()
         return {'teacher_biographies': teachers }
 
     def teacherDesc(self):
@@ -74,4 +74,8 @@ class TeacherBioModule(ProgramModuleObj):
     def isCompleted(self):
         lastBio = TeacherBio.getLastForProgram(self.user, self.program)
         return lastBio.id is not None
+
+
+    class Meta:
+        abstract = True
 
