@@ -15,13 +15,11 @@ body {
 /* Form Preview Area */
 .preview_area {
 	width:586px;
-	height:800px;
+	min-height:800px;
 	background-color:#FFF;
 	float:left;
 	border:2px solid;
 	padding:5px;
-	min-height:800px;
-	overflow-y:auto;
 }
 
 .form_preview {
@@ -123,7 +121,7 @@ body {
 /* Form Toolbox */
 #form_toolbox {
 	width:360px;
-	height:800px;
+	min-height:800px;
 	background-color:#d2f8ff;
 	float:right;
 	

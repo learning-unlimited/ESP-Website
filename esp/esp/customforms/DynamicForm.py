@@ -233,10 +233,11 @@ class CustomFormHandler():
                         field_attrs['queryset']=Program.objects.get(pk=self.form.link_id).classsubject_set.all()
                         
                 #Initializing widget                
-                try:
-                    field_attrs['widget']=field_attrs['widget'](attrs=widget_attrs)
-                except KeyError:
-                    pass
+                if field_attrs['widget'] is not None:
+                    try:
+                        field_attrs['widget']=field_attrs['widget'](attrs=widget_attrs)
+                    except KeyError:
+                        pass
                     
                 self.fields.append([field_name, typeMap(**field_attrs) ])
                 curr_fieldset[1]['fields'].append(field_name)            
@@ -306,7 +307,7 @@ class ComboForm(FormWizard):
         for form in form_list:
             for k,v in form.cleaned_data.items():
                 #Check for only_fkey link models first
-                if k.split('_')[0] in cf_cache.link_fields:
+                if k.split('_')[1] in cf_cache.only_fkey_models:
                     data[k]=v
                     continue
                     

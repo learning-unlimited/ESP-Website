@@ -278,6 +278,10 @@ var onChangeLinksSpecify=function(){
 			}
 		});
 	}
+	else{
+		$('#links_id_pick').html('');
+		$('#links_id_pick').parent().hide();
+	}
 };
 
 var getPerms=function(prog_id){
@@ -629,6 +633,11 @@ var onSelectField=function($elem, field_data) {
 	if(ftype in formElements['Generic']){
 		$('#cat_selector').val('Generic');
 		populateFieldsSelector('Generic');
+		$('#elem_selector').val(ftype);	
+	}
+	else if(ftype in formElements['Personal']){
+		$('#cat_selector').val('Personal');
+		populateFieldsSelector('Personal');
 		$('#elem_selector').val(ftype);
 	}
 	else {
@@ -1569,7 +1578,6 @@ var createFromBase=function(){
 			dataType:'json',
 			async:false,
 			success: function(metadata) {
-				console.log(metadata);
 				rebuild(metadata);
 			}
 		});
@@ -1591,20 +1599,21 @@ var rebuild=function(metadata) {
 	//Setting form's title and description
 	$('#input_form_title').attr('value', metadata['title']).change();
 	$('#input_form_description').attr('value',metadata['desc']).change();
-	
+	console.log(metadata);
 	//Setting other form options
 	if(metadata['anonymous'])
 		$('#id_anonymous').attr('checked', true);
 	//Setting fkey-only links
-	$('#link_id_main').val(metadata['link_type']);
+	$('#links_id_main').val(metadata['link_type']);
+	console.log($('#links_id_main').val());
 	onChangeMainLink();
-	if(metadata['link_id']!="-1"){
+	if(metadata['link_id']!=-1){
 		$('#links_id_specify').val('particular');
 		onChangeLinksSpecify();
 		$('#links_id_pick').val(metadata['link_id']);
 	}
 	else $('#links_id_specify').val('userdef');
-	console.log("1");	
+	
 	//Putting in pages, sections and fields
 	$.each(metadata['pages'], function(pidx, page){
 		addElement('page',[]);
@@ -1635,11 +1644,11 @@ var rebuild=function(metadata) {
 					attrs:{}
 				};
 				
-				if($.inArray(field['attribute__attr_type'], ['options', 'limits', 'link_id'])!=-1)
+				if($.inArray(field['attribute__attr_type'], ['options', 'limits', 'link_id', 'charlimits', 'wordlimits'])!=-1)
 					field_data.attrs[field['attribute__attr_type']]=field['attribute__value'];	
 				//Checking for link fields
 				var category=getFieldCategory(field_data['field_type']);
-				if(category!='Generic') {
+				if(category!='Generic' && category!='Personal') {
 					$('#cat_selector').val(category);
 					if(field_data.attrs['link_id']=="-1"){
 						$('#main_cat_spec').val('automatic');
@@ -1651,8 +1660,7 @@ var rebuild=function(metadata) {
 						$('#cat_instance_sel').val(field_data.attrs['link_id']);
 					}
 				}
-					
-				onSelectField([], field_data);	
+				onSelectField([], field_data);		
 				$prevField=addElement(field['field_type'], $prevField);
 				$.data($prevField[0], 'data')['parent_id']=field['id'];	
 			});
