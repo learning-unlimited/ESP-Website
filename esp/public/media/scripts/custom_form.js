@@ -636,6 +636,7 @@ var onSelectField=function($elem, field_data) {
 		var curr_cat=getFieldCategory(ftype);
 		$('#cat_selector').val(curr_cat);
 		populateFieldsSelector(curr_cat);
+		$('#elem_selector').val(ftype);
 		showCategorySpecificOptions(curr_cat);
 	}
 	

@@ -1179,7 +1179,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
     @classmethod
     def cf_link_instance(cls, request):
         """
-        Ues the request object to return the appropriate instance for this model,
+        Uses the request object to return the appropriate instance for this model,
         for use by custom-forms.
         It should either return the instance, or 'None', if the corresponding instance doesn't exist.
         """
