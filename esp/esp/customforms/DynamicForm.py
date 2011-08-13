@@ -14,7 +14,7 @@ from esp.users.models import ContactInfo
 from esp.cache import cache_function
 from esp.program.models import Program
 
-from esp.customforms.linkfields import link_fields, only_fkey_models, cf_cache, generic_fields, custom_fields
+from esp.customforms.linkfields import cf_cache, generic_fields, custom_fields
 from django.contrib.contenttypes.models import ContentType
 
 class BaseCustomForm(BetterForm):

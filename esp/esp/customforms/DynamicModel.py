@@ -8,7 +8,7 @@ from esp.customforms.models import Field
 from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
-from esp.customforms.linkfields import link_fields, only_fkey_models, cf_cache
+from esp.customforms.linkfields import cf_cache
 from django.contrib.contenttypes.models import ContentType
 
 class DynamicModelHandler:
