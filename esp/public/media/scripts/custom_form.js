@@ -1648,7 +1648,7 @@ var rebuild=function(metadata) {
 					field_data.attrs[field['attribute__attr_type']]=field['attribute__value'];	
 				//Checking for link fields
 				var category=getFieldCategory(field_data['field_type']);
-				if(category!='Generic' && category!='Personal') {
+				if(category!='Generic' && category!='Personal' && category!='NotReallyFields') {
 					$('#cat_selector').val(category);
 					if(field_data.attrs['link_id']=="-1"){
 						$('#main_cat_spec').val('automatic');
