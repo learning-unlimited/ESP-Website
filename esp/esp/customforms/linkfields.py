@@ -23,7 +23,7 @@ generic_fields={
     'radio_yesno': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.RadioSelect, 'choices': ((True, 'Yes'), (False, 'No'))}},
     'boolean': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs':{'class':''}},
     'null_boolean': {'typeMap': forms.NullBooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs':{'class':''}},
-    'instructions': {'typeMap': DummyField},
+    'instructions': {'typeMap': DummyField, 'attrs':{'widget':None}, 'widget_attrs':{}},
 }
 
 custom_fields = {
@@ -106,10 +106,8 @@ class CustomFormsCache:
         for k,v in generic_fields.items():
             #First, try and match the field class and corresponding widget
             if field_instance.__class__ is v['typeMap']:
-                if widget.__class__ is not v['attrs']['widget']:
-                    pass
-                    #   print 'Warning: Widget mismatch; %s has %s, generic type says %s' % (v['typeMap'], v['attrs']['widget'], widget.__class__)
-                return k
+                if widget.__class__ is v['attrs']['widget']:
+                    return k
         
         #Now try to match widgets. Only useful for rendering in the form builder.
         #Check -> does this break for any case? We'll get the wrong classes matched up
