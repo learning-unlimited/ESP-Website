@@ -227,11 +227,19 @@ def viewForm(request, form_id):
     extra_context={'form_title':form.title, 'form_description':form.description}
     return wizard(request, extra_context=extra_context)    
 
-def success(request):
+def success(request, form_id):
     """
     Successful form submission
     """
-    return render_to_response('customforms/success.html',{})
+    try:
+        form_id=int(form_id)
+    except ValueError:
+        raise Http404
+    
+    form=Form.objects.get(pk=form_id)        
+    return render_to_response('customforms/success.html',{'success_message': form.success_message, 
+                                                            'success_url': form.success_url}, 
+                                                            context_instance=RequestContext(request))
 
 def viewResponse(request, form_id):
     """

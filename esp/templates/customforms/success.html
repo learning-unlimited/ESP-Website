@@ -1,9 +1,21 @@
-<html>
-	<head>
-		<title>Custom Forms Example</title>
-	</head>
+{% extends 'main.html' %}
+
+{% block stylesheets %}
+	<link rel="stylesheet" href="{{ MEDIA_URL }}styles/main.css" type="text/css" />
+	<link rel="stylesheet" type="text/css" href="/media/default_styles/customforms-landing.css" />
+{% endblock %}	
+
+{% block javascript %}
+	<script src="/media/scripts/jquery-1.5.1.min.js"></script>
+{% endblock %}
+
+{% block content %}
+	<h3 class="title">Thank you!</h3>
+	<br/><br/>
+	<p class="desc">{{ success_message }}</p>
+	<br/><br/>
+	{% if success_url %}
+		<p class="desc">Click <a href="{{success_url}}">here</a> to proceed.</p>
+	{% endif %}	
 	
-	<body>
-		<h2>Submitted Successfully</h2>
-	</body>
-</html>			
+{% endblock %}

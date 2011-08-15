@@ -366,7 +366,7 @@ class ComboForm(FormWizard):
             if key.split('_')[0] == 'question' and generic_fields[fields[int(key.split('_')[1])]]['typeMap'] == DummyField:
                 del data[key]
         dynModel.objects.create(**data)    
-        return HttpResponseRedirect('/customforms/success/')
+        return HttpResponseRedirect('/customforms/success/%d/' % self.form.id)
         
     def prefix_for_step(self, step):
         """The FormWizard implements a form prefix for each step. Setting the prefix to an empty string, 
