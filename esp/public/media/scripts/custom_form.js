@@ -1470,6 +1470,8 @@ var submit=function() {
 		form['link_id']=$('#links_id_pick').val();
 	else form['link_id']=-1;	
 	
+	form['success_message']=$('#input_form_sucmsg').val();
+    form['success_url']=$('#input_suc_url').val();
 	var form_perms='';
 	if($('#id_main_perm').val()!='none'){
 		form_perms+=$('#id_main_perm').val();

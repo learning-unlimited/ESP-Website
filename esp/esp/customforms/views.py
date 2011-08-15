@@ -75,7 +75,10 @@ def onSubmit(request):
             fields=[]
             
         #Creating form
-        form=Form.objects.create(title=metadata['title'], description=metadata['desc'], created_by=request.user, link_type=metadata['link_type'], link_id=int(metadata['link_id']), anonymous=metadata['anonymous'], perms=metadata['perms'])
+        form=Form.objects.create(title=metadata['title'], 
+            description=metadata['desc'], created_by=request.user, link_type=metadata['link_type'], 
+            link_id=int(metadata['link_id']), anonymous=metadata['anonymous'], perms=metadata['perms'],
+            success_message=metadata['success_message'], success_url=metadata['success_url'])
         
         #Inserting pages
         for page in metadata['pages']:

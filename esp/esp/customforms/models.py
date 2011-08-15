@@ -12,6 +12,8 @@ class Form(models.Model):
     link_id=models.IntegerField(default=-1)
     anonymous=models.BooleanField(default=False)
     perms=models.CharField(max_length=200, default='')
+    success_message=models.CharField(max_length=500, default='')
+    success_url=models.CharField(max_length=200, default='')
     
     def __unicode__(self):
         return u'%s (created by %s)' % (self.title, self.created_by.username)
