@@ -86,11 +86,15 @@ def onSubmit(request):
             
             #inserting sections
             for section in page['sections']:
-                new_section=Section.objects.create(page=new_page, title=section['data']['question_text'], description=section['data']['help_text'], seq=int(section['data']['seq']))
+                new_section=Section.objects.create(page=new_page, title=section['data']['question_text'], 
+                    description=section['data']['help_text'], seq=int(section['data']['seq']))
                 
                 #inserting fields
                 for field in section['fields']:
-                    new_field=Field.objects.create(form=form, section=new_section, field_type=field['data']['field_type'], seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], required=field['data']['required'])
+                    new_field=Field.objects.create(form=form, section=new_section, field_type=field['data']['field_type'], 
+                        seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], 
+                        required=field['data']['required'])
+                    
                     fields.append( (new_field.id, new_field.field_type) ) 
                     
                     #inserting other attributes, if any
@@ -129,7 +133,11 @@ def onModify(request):
             except:
                 raise ESPError(False), 'Form %s not found' % metadata['form_id']
             dmh=DMH(form=form)
-            form.__dict__.update(title=metadata['title'], description=metadata['desc'], link_type=metadata['link_type'], link_id=int(metadata['link_id']), anonymous=metadata['anonymous'])
+            
+            form.__dict__.update(title=metadata['title'], description=metadata['desc'], link_type=metadata['link_type'], 
+                link_id=int(metadata['link_id']), anonymous=metadata['anonymous'], perms=metadata['perms'],
+                success_message=metadata['success_message'], success_url=metadata['success_url'])
+            
             form.save()
             curr_keys={'pages':[], 'sections':[], 'fields':[]}
             old_pages=Page.objects.filter(form=form)
@@ -254,6 +262,23 @@ def viewResponse(request, form_id):
         return render_to_response('customforms/view_results.html', {'form':form})
     else:
         return HttpResponseRedirect('/')
+        
+def getExcelData(request, form_id):
+    """
+    Returns the response data as an excel spreadsheet
+    """
+    
+    try:
+        form_id=int(form_id)
+    except ValueError:
+        return HttpResponse(status=400)
+        
+    form=Form.objects.get(pk=form_id)
+    fh=FormHandler(form=form, request=request)
+    wbk=fh.getResponseExcel()
+    response=HttpResponse(wbk.getvalue(), mimetype="application/vnd.ms-excel")
+    response['Content-Disposition']='attachment; filename=%s.xls' % form.title
+    return response                   
         
 def getData(request):
     """

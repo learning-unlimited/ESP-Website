@@ -575,6 +575,53 @@ class FormHandler:
         return response_data
     #getResponseData.depend_on_row(lambda: Field, lambda field: {'form': field.form})
     
+    def getResponseExcel(self):
+        """
+        Returns the response data as excel data.
+        """
+        import xlwt
+        try:
+            from cStringIO import StringIO
+        except:
+            from StringIO import StringIO
+            
+        response_data=self.getResponseData(self.form)
+        wbk=xlwt.Workbook()
+        sheet=wbk.add_sheet('sheet 1')
+        
+        # Adding in styles for the column headers
+        style = xlwt.XFStyle()
+        font=xlwt.Font()
+        font.name="Times New Roman"
+        font.bold=True
+        style.font=font
+        
+        # write the questions first
+        for i in range(0, len(response_data['questions'])):
+            sheet.write(0,i, response_data['questions'][i][1], style)
+            
+        # Build up a simple dict storing question_name and question_index (=column number)
+        ques_cols={}
+        for qid, ques in enumerate(response_data['questions']):
+            ques_cols.update({ques[0]:qid})     
+            
+        # Now writing the answers
+        for idx, response in enumerate(response_data['answers']):
+            for ques, ans in response.items():
+                try:
+                    col=ques_cols[ques]
+                except KeyError:
+                    continue
+                #Join together responses from compound fields
+                if isinstance(ans, list):
+                    write_ans=" ".join(ans)
+                else: write_ans=ans            
+                sheet.write(idx+1, col, write_ans)
+        
+        output=StringIO()
+        wbk.save(output)    
+        return output   
+    
     def rebuildData(self):
         """
         Returns the metadata so that a form can be re-built in the form builder
