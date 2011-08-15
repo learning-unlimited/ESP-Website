@@ -5,7 +5,7 @@ from esp.survey.models import *
 from esp.datatree.models import DataTree
 from django.db.models import Model
 from django.db.models.related import RelatedObject
-from django.db.models.fields.related import RelatedField, ManyToManyField
+from django.db.models.fields.related import RelatedField, ForeignKey, ManyToManyField
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
 from inspect import isclass
 from collections import deque
@@ -18,8 +18,6 @@ def path_v1(begin, end):
 Finds a path from begin to end, or returns [] if they aren't related.
 
 Returns a list of strings, which represent valid field lookup paths that can filter the first based on the second. For example, path_v1(StudentRegistration, User) would return ['user'], and path_v1(StudentRegistration, ClassSubject) would return ['section__parent_class']. 
-
-Returns the first max_path paths encountered in the BFS (i.e., the first max_path shortest paths).
     '''
     global useful_models
     classes = [begin, end]
@@ -57,6 +55,43 @@ Returns the first max_path paths encountered in the BFS (i.e., the first max_pat
                 new_model = field[0].field.model
             queue.append((path+(name,), models+(new_model,), new_many, new_visited))
     # return [(LOOKUP_SEP.join(path), models, many) for (path,models,many) in paths][:max_paths]
+    return paths
+
+def many_to_one_path(begin, end):
+    '''
+Finds a path from begin to end, using only forward ForeignKey relationships, or returns [] if they aren't related in this way.
+
+Returns a list of strings, which represent valid field lookup paths that can filter the first based on the second. For example, many_to_one_path(StudentRegistration, User) would return ['user'], and path_v1(StudentRegistration, ClassSubject) would return ['section__parent_class']. 
+    '''
+    global useful_models
+    classes = [begin, end]
+    for (i,cls) in enumerate(classes): 
+        is_useful_model = False
+        if isclass(cls) and issubclass(cls, Model): 
+            for model in useful_models:
+                if issubclass(cls, model): 
+                    is_useful_model = True
+                    break
+        if not is_useful_model:
+            raise TypeError("path_v1 argument "+str(i+1)+" must be a useful model")
+    queue = deque([((),(begin,),False,set())])
+    paths = []
+    while queue:
+        (path, models, visited) = queue.popleft()
+        model = models[-1]
+        if issubclass(model, end):
+            paths.append((path, models))
+            continue
+        if model in visited or not (model in useful_models):
+            continue
+        for name, field in model._meta.init_name_map().iteritems():
+            if not isinstance(field[0], ForeignKey):
+                continue
+            new_model = None
+            new_visited = set(visited)
+            new_visited.add(model)
+            new_model = field[0].rel.to
+            queue.append((path+(name,), models+(new_model,), new_visited))
     return paths
 
 def path_v2(model, *conditions):
