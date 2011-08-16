@@ -135,7 +135,8 @@ def pathchoiceform_factory(model, all_paths):
     name = "PathChoiceForm"
     base = (Form,)
     fields = {}
-    for I, target_model, model_paths, field in all_paths:
+    for I, target_model, model_paths, field in all_paths: 
+        choices = []
         for (path, models, many) in model_paths: 
             label = unicode(model.__name__)
             if path: 
@@ -143,7 +144,12 @@ def pathchoiceform_factory(model, all_paths):
                     label += u' \u2192 ' + pretty_name(n) + u' (' + models[i+1].__name__ + u')'
             if field:
                 label += u' \u2192 ' + pretty_name(unicode(field))
-            fields[LOOKUP_SEP.join((str(I)+'|'+target_model.__name__,)+path+(field,))] = BooleanField(required=False, label=label)
+            choices.append([LOOKUP_SEP.join(path+(field,)), label])
+        field_name = str(I)+'|'+target_model.__name__ + '.' + field
+        if len(choices) == 1: 
+            fields[field_name] = MultipleChoiceField(choices=choices, widget=widgets.MultipleHiddenInput, label=u'', initial=[choices[0][0]])
+        else: 
+            fields[field_name] = MultipleChoiceField(choices=choices, widget=widgets.CheckboxSelectMultiple, label=u'')
     return type(name, base, fields)
 
 class ModeWizard(DataViewsWizard): 
@@ -200,31 +206,32 @@ u'All rows except the first (you have to display something!) can be left blank, 
             text = values[2]
             val = condition_model._meta.init_name_map()[condition_field][0].to_python(text)
             args.append((condition_model, str(condition_field), str(query_term), val))
-        paths = defaultdict(list)
+        condition_paths = defaultdict(list)
         headers = []
-        for model_and_path, value in form_list[1].cleaned_data.iteritems():
-            if value: 
-                _, _, model_and_path = model_and_path.partition('|')
-                condition_model, _, path = model_and_path.partition(LOOKUP_SEP)
-                path, _, _ = path.rpartition(LOOKUP_SEP)
-                paths[globals()[condition_model]].append(path)
+        for field_name, paths in form_list[1].cleaned_data.iteritems():
+            condition_model = globals()[get_mod_func(field_name.partition('|')[2])[0]]
+            for path in paths: 
+                condition_paths[condition_model].append(path.rpartition(LOOKUP_SEP)[0])
         headers = defaultdict(list)
         view_paths = []
         counts = {}
-        for model_and_path, value in form_list[3].cleaned_data.iteritems():
-            if value: 
-                I, _, model_and_path = model_and_path.partition('|')
-                path = model_and_path.partition(LOOKUP_SEP)[2]
+        for field_name, paths in form_list[3].cleaned_data.iteritems():
+            I = int(field_name.partition('|')[0])
+            for path in paths:
                 if 'Count' in path:
+                    path
                     actual_path = path.rpartition(LOOKUP_SEP)[0]
+                    print actual_path
                     path = path.replace(LOOKUP_SEP, u'_')
+                    print path
                     counts[path] = Count(actual_path, distinct=True)
                 view_paths.append(path)
-                headers[int(I)].append(path)
+                headers[I].append(path)
         if not ('pk' in view_paths or 'id' in view_paths):
             headers[0].append('pk')
         headers = [[path, form_list[2].cleaned_data['column_'+str(I)].split(u'|')[1] if I else self.base_model.__name__ + u' Primary Key ID#'] for I in range(self.num_columns+1) for path in headers[I]]
-        queryset = path_v5(self.base_model, paths, *args).annotate(**counts)
+        print headers
+        queryset = path_v5(self.base_model, condition_paths, *args).annotate(**counts)
         
         fields = [header[0] for header in headers]
         data = {}
