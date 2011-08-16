@@ -140,16 +140,32 @@ def pathchoiceform_factory(model, all_paths):
         for (path, models, many) in model_paths: 
             label = unicode(model.__name__)
             if path: 
-                for i,n in enumerate(path):
-                    label += u' \u2192 ' + pretty_name(n) + u' (' + models[i+1].__name__ + u')'
+                for i,n in enumerate(path): 
+                    basic_n = u''.join(pretty_name(n).split()).lower()
+                    basic_modelname = u''.join(pretty_name(models[i+1].__name__).split()).lower()
+                    if unicode(n).lower() == unicode(models[i+1].__name__).lower(): 
+                        label += u' \u2192 ' + models[i+1].__name__
+                    elif basic_n == basic_modelname or basic_n in basic_modelname or basic_modelname in basic_n:
+                        label += u' \u2192 ' + pretty_name(n)
+                    else: 
+                        label += u' \u2192 ' + pretty_name(n) + u' (' + models[i+1].__name__ + u')'
             if field:
                 label += u' \u2192 ' + pretty_name(unicode(field))
             choices.append([LOOKUP_SEP.join(path+(field,)), label])
         field_name = str(I)+'|'+target_model.__name__ + '.' + field
         if len(choices) == 1: 
-            fields[field_name] = MultipleChoiceField(choices=choices, widget=widgets.MultipleHiddenInput, label=u'', initial=[choices[0][0]])
+            fields[field_name] = MultipleChoiceField(choices=choices, widget=widgets.MultipleHiddenInput, initial=[choices[0][0]])
         else: 
-            fields[field_name] = MultipleChoiceField(choices=choices, widget=widgets.CheckboxSelectMultiple, label=u'')
+            fields[field_name] = MultipleChoiceField(choices=choices, widget=widgets.CheckboxSelectMultiple, label=target_model.__name__ + '.' + field)
+    def as_div(self): 
+        more = u'<input type="button" value="Show More" onclick="more(event);" />'
+        return self._html_output(
+            normal_row = u'<div class="pathgroup" dojoType="dijit.layout.ContentPane" title="&nbsp;">%(label)s %(field)s%(help_text)s'+more+u'</div>',
+            error_row = u'%s',
+            row_ender = more+u'</div>',
+            help_text_html = u' <span class="helptext">%s</span>',
+            errors_on_separate_row = True)
+    fields['as_div'] = as_div
     return type(name, base, fields)
 
 class ModeWizard(DataViewsWizard): 

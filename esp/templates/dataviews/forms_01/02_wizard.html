@@ -1,0 +1,33 @@
+{% extends "dataviews/forms/wizard.html" %}
+{% block javascript %}
+{{ block.super }}
+<script type="text/javascript">
+dojo.require("dijit.layout.TabContainer");
+dojo.require("dijit.layout.ContentPane");
+function nameTabs() {
+    labels = document.querySelectorAll("div>label");
+    tabs = document.getElementsByClassName("tabLabel");
+    for (var i = 0; i < labels.length; ++i) {
+        tabs[i].innerHTML = labels[i].innerHTML + tabs[i].innerHTML;
+        tabs[i].style.fontSize="x-small";
+        labels[i].innerHTML = "";
+    }
+}
+window.onload = setTimeout("nameTabs()", 1000);
+</script>
+{% endblock %}
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/dojo/1.6/dijit/themes/claro/claro.css" />
+<style type="text/css">
+div.pathgroup>ul {
+    list-style-type: none;
+    margin: 0px;
+    padding: 0px;
+}
+</style>
+{% endblock %}
+{% block form_div %}<div id="id_{{ step0 }}-form_div" dojoType="dijit.layout.TabContainer" style="width: 100%; height: 275px;">{% endblock %}
+{% block form_as %}{{ form.as_div }}{% endblock %}
+{% block form_end %}
+{% endblock %}
