@@ -5,66 +5,111 @@ from esp.survey.models import *
 from esp.datatree.models import DataTree
 from django.db.models import Model
 from django.db.models.related import RelatedObject
-from django.db.models.fields.related import RelatedField, ManyToManyField
-from inspect import isclass
+from django.db.models.fields.related import RelatedField, ForeignKey, ManyToManyField
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
+from inspect import isclass
+from collections import deque
+from datetime import datetime
 
-useful_models = [User, ESPUser, Program, RegistrationProfile, RegistrationType, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication, StudentRegistration, Event, ClassCategories, ClassSection, ClassSubject, EventType, ArchiveClass, FinancialAidRequest, QuestionType, Question, SurveyResponse, Survey, ContactInfo, EducatorInfo, GuardianInfo, K12School, StudentInfo, TeacherInfo, UserAvailability, UserBit, ZipCodeSearches, ZipCode]
-query_terms = QUERY_TERMS.keys()
+useful_models = [ESPUser, Program, RegistrationProfile, RegistrationType, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication, StudentRegistration, Event, ClassCategories, ClassSection, ClassSubject, EventType, ArchiveClass, FinancialAidRequest, QuestionType, Question, SurveyResponse, Survey, ContactInfo, EducatorInfo, GuardianInfo, K12School, StudentInfo, TeacherInfo, UserAvailability, UserBit, ZipCodeSearches, ZipCode]
+query_terms = ('exact', 'iexact', 'contains', 'icontains', 'gt', 'gte', 'lt', 'lte', 'in', 'startswith', 'istartswith', 'endswith', 'iendswith', 'range', 'year', 'month', 'day', 'week_day', 'isnull', 'search', 'regex', 'iregex', )
 
-def path_v1(*args):
+def is_useful_model(cls): 
+    is_useful_model = False
+    if isclass(cls) and issubclass(cls, Model): 
+        for model in useful_models:
+            if issubclass(cls, model): 
+                is_useful_model = True
+                break
+    return is_useful_model
+
+
+def next_model(field, model = None): 
+    if not isinstance(field, (RelatedField, RelatedObject, basestring)):
+        raise TypeError("next_model argument 1 must be either a RelatedField, a RelatedObject, or a string")
+    elif isinstance(field, basestring) and not is_useful_model(model): 
+        raise TypeError("next_model argument 2 must be a useful model")
+    elif isinstance(field, basestring) and is_useful_model(model) and not field in model._meta.init_name_map().keys(): 
+        raise TypeError("when next_model argument 1 is a string, next_model argument 2 must be a useful model with it as a field name")
+    elif isinstance(field, basestring) and is_useful_model(model) and field in model._meta.init_name_map().keys(): 
+        field = model._meta.init_name_map()[field][0]
+    if isinstance(field, RelatedField):
+        return field.rel.to
+    elif isinstance(field, RelatedObject):
+        return field.field.model
+
+def path_v1(begin, end):
     '''
-Finds a path from args[0] to args[1], or returns [] if they aren't related in the forward direction.
+Finds a path from begin to end, or returns [] if they aren't related.
 
-If they are both models, returns a list of strings, which represent valid field lookup paths that can filter the first based on the second. For example, path_v1(StudentRegistration, User) would return ['user'], and path_v1(StudentRegistration, ClassSubject) would return ['section__parent_class'].
-
-If the first is a model and the second is an instance, a filter is applied to the model, subject to the constaint of the instance. Roughly, this means that path_v1(model, instance)[i] is equivalent to model.objects.filter(path_v1(model, type(instance))[i]=instance).
-
-If the first is an instance and the second is a model, the function returns the instance of the model that is linked to the given instance. For example, path_v1(sr, User) would return sr.user, and path_v1(sr, ClassSubject) would return sr.section.parent_class (where sr is an instance of StudentRegistration).
+Returns a list of strings, which represent valid field lookup paths that can filter the first based on the second. For example, path_v1(StudentRegistration, User) would return ['user'], and path_v1(StudentRegistration, ClassSubject) would return ['section__parent_class']. 
     '''
-    if 2 != len(args):
-        raise TypeError("path_v1 expected 2 arguments, got "+str(len(args)))
-    instances = [None for i in range(2)]
-    classes = [None for i in range(2)]
-    for i in range(2):
-        if (not (isclass(args[i]) and issubclass(args[i], Model))) and (not isinstance(args[i], Model)): 
-            raise TypeError("path_v1 argument "+str(i+1)+" must be a model or an instance of a model")
-        if isclass(args[i]):
-            classes[i] = args[i]
-        else:
-            instances[i] = args[i]
-            classes[i] = type(args[i])
-    if instances[0] and instances[1]:
-        raise TypeError("at least one of the path_v1 arguments must be a model")
-    stack = [(classes[0],())]
+    global useful_models
+    classes = [begin, end]
+    for (i,cls) in enumerate(classes): 
+        if not is_useful_model(cls):
+            raise TypeError("path_v1 argument "+str(i+1)+" must be a useful model")
+    queue = deque([((),(begin,),False,set())])
     paths = []
-    while stack:
-        (model, path) = stack.pop()
-        if issubclass(model, DataTree):
+    while queue:
+        (path, models, many, visited) = queue.popleft()
+        model = models[-1]
+        if issubclass(model, end):
+            paths.append((path, models, many))
             continue
-        relatedObjects = {}
-        if issubclass(model, classes[1]):
-            paths.append(path)
+        if model in visited or not (model in useful_models):
+            continue
         for name, field in model._meta.init_name_map().iteritems():
-            if not isinstance(field[0], RelatedObject) and not isinstance(field[0], ManyToManyField):
-                if isinstance(field[0], RelatedField):
-                    stack.append((field[0].rel.to, path+(name,)))
-            else:
-                relatedObjects[name] = field
-    results = [None for i in range(len(paths))]
-    if instances[0]:
-        for i in range(len(paths)):
-            obj = instances[0]
-            for attr in paths[i]:
-                obj = getattr(obj, attr)
-            results[i] = obj
-    elif instances[1] and not instances[0]:
-        results = [classes[0].objects.filter(**{LOOKUP_SEP.join(path): instances[1]}) for path in paths if path]
-        if not paths[0]:
-            results += [instances[1]]
-    else:
-        results = [LOOKUP_SEP.join(path) for path in paths]
-    return results
+            field = field[0]
+            if not isinstance(field, (RelatedField, RelatedObject)):
+                continue
+            new_model = None
+            new_many = many | False
+            new_visited = set(visited)
+            new_visited.add(model)
+            if isinstance(field, (ManyToManyField, RelatedObject)):
+                new_many = True
+            new_model = next_model(field, model)
+            queue.append((path+(name,), models+(new_model,), new_many, new_visited))
+    # return [(LOOKUP_SEP.join(path), models, many) for (path,models,many) in paths][:max_paths]
+    return paths
+
+def many_to_one_path(begin, end):
+    '''
+Finds a path from begin to end, using only forward ForeignKey relationships, or returns [] if they aren't related in this way.
+
+Returns a list of strings, which represent valid field lookup paths that can filter the first based on the second. For example, many_to_one_path(StudentRegistration, User) would return ['user'], and many_to_one_path(StudentRegistration, ClassSubject) would return ['section__parent_class']. 
+    '''
+    global useful_models
+    classes = [begin, end]
+    for (i,cls) in enumerate(classes): 
+        is_useful_model = False
+        if isclass(cls) and issubclass(cls, Model): 
+            for model in useful_models:
+                if issubclass(cls, model): 
+                    is_useful_model = True
+                    break
+        if not is_useful_model:
+            raise TypeError("many_to_one_path argument "+str(i+1)+" must be a useful model")
+    queue = deque([((),(begin,),False,set())])
+    paths = []
+    while queue:
+        (path, models, visited) = queue.popleft()
+        model = models[-1]
+        if issubclass(model, end):
+            paths.append((path, models))
+            continue
+        if model in visited or not (model in useful_models):
+            continue
+        for name, field in model._meta.init_name_map().iteritems():
+            if not isinstance(field[0], ForeignKey):
+                continue
+            new_model = None
+            new_visited = set(visited)
+            new_visited.add(model)
+            new_model = field[0].rel.to
+            queue.append((path+(name,), models+(new_model,), new_visited))
+    return paths
 
 def path_v2(model, *conditions):
     '''
@@ -95,8 +140,9 @@ If there is more than one path from model to conditions[i], the function asks th
     use = None
     for i in range(len(conditions)):
         paths = path_v1(model, models[i])
-        for path in paths: 
+        for (path, _, _) in paths: 
             repeat = True
+            path = LOOKUP_SEP.join(path)
             while repeat:
                 use = raw_input("Include the path "+path+" as a condition ([y]/n)? ")
                 repeat = False
@@ -170,7 +216,7 @@ The function asks the user (via the raw_input() function) which path(s) to filte
     paths = []
     num_paths = 0
     for i in iter_conditions:
-        for path in [LOOKUP_SEP.join((path, fields[i])).strip(LOOKUP_SEP) for path in path_v1(model, models[i])]: 
+        for path in [LOOKUP_SEP.join(path+(fields[i],)).strip(LOOKUP_SEP) for (path,_,_) in path_v1(model, models[i])]: 
             repeat = True
             while repeat:
                 use = raw_input("Include the path "+path+" as a condition ([y]/n)? ")
@@ -229,7 +275,7 @@ The function asks the user (via the raw_input() function) which path(s) to filte
     paths = []
     num_paths = 0
     for i in iter_conditions:
-        for path in [LOOKUP_SEP.join((path, fields[i], lookup_type[i])).strip(LOOKUP_SEP) for path in path_v1(model, models[i])]: 
+        for path in [LOOKUP_SEP.join(path+(fields[i],)).strip(LOOKUP_SEP) for (path,_,_) in path_v1(model, models[i])]: 
             repeat = True
             while repeat:
                 use = raw_input("Include the path "+path+" as a condition ([y]/n)? ")
@@ -256,8 +302,8 @@ The list of conditions can be arbitrarily long, but each condition must be one o
 path_v1() is used outside of the scope of this function, to determine paths. Then path_v5 applies the appropriate filter.
     '''
     conditions = list(conditions)
-    if not (isclass(model) and issubclass(model, Model)):
-        raise TypeError("path_v4 argument 1 must be a model")
+    if not is_useful_model(model): 
+        raise TypeError("path_v5 argument 1 must be a useful model")
     iter_conditions = range(len(conditions))
     models = [None for i in iter_conditions]
     fields = ['' for i in iter_conditions]
@@ -268,7 +314,7 @@ path_v1() is used outside of the scope of this function, to determine paths. The
             conditions[i] = conditions[i][-1]
         if isinstance(conditions[i], Model): 
             if isinstance(conditions[i], model):
-                raise TypeError("path_v4 argument 2 must not contain any instances of argument 1")
+                raise TypeError("path_v5 argument 3 must not contain any instances of argument 1")
             values[i] = conditions[i]
             models[i] = type(conditions[i])
         elif isinstance(conditions[i], tuple) and iscorrecttuple(conditions[i]):
@@ -280,12 +326,45 @@ path_v1() is used outside of the scope of this function, to determine paths. The
                 values[i] = conditions[i][3]
                 lookup_type[i] = conditions[i][2]
         else:
-            raise TypeError("path_v4 argument 2 must be a list, with each item being either an instance of a model or valid (model, field, value) 3-tuple")
+            raise TypeError("path_v5 argument 3 must be a list, with each item being either an instance of a model or valid (model, field, value) 3-tuple")
     
     repeat = False
     use = ''
     kwargs = {}
+    all_paths = []
     for i in iter_conditions:
         for path in paths[models[i]]: 
             kwargs[LOOKUP_SEP.join((path, fields[i], lookup_type[i])).strip(LOOKUP_SEP)] = values[i]
-    return model.objects.filter(**kwargs)
+            all_paths.append(path)
+    automatic_conditions_for_registrations = []
+    for path in all_paths:
+        new_path = passes_through(model, path, StudentRegistration, 'end_date')
+        if new_path and isinstance(new_path, basestring):
+            automatic_conditions_for_registrations.append(new_path)
+    for condition in automatic_conditions_for_registrations: 
+        condition_being_used = False
+        for path in all_paths:
+            if condition in path: 
+                condition_being_used = True
+                break
+        if not condition_being_used: 
+            kwargs[condition + LOOKUP_SEP + 'gte'] = datetime.now()
+    return model.objects.filter(**kwargs).distinct()
+
+def passes_through(base_model, path, target, addition = ''): 
+    if not path: 
+        return False
+    if base_model == target and addition: 
+        return addition
+    elif base_model == target and not addition: 
+        return True
+    steps = path.split(LOOKUP_SEP)
+    model = base_model
+    new_path = ()
+    for step in steps: 
+        model = next_model(step, model)
+        new_path += (step,)
+        if model == target:
+            return LOOKUP_SEP.join(new_path + (addition,))
+    return ''
+
