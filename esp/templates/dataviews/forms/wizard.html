@@ -41,8 +41,8 @@ function showInstructions() {
 {% block form %}
 <form action="." method="post" id="id_{{ step }}-form">{% csrf_token %}
 {% block form_begin %}{% endblock %}
-<div id="id_{{ step0 }}-form_div">
-{{ form.as_p }}
+{% block form_div %}<div id="id_{{ step0 }}-form_div">{% endblock %}
+{% block form_as %}{{ form.as_p }}{% endblock %}
 </div>
 <input type="hidden" name="{{ step_field }}" value="{{ step0 }}" />
 {{ previous_fields|safe }}
@@ -53,4 +53,5 @@ function showInstructions() {
 {% block return_to_beginning %}
 <p><br /><a href="/dataviews/">Return to the beginning</a> (note: you will lose all of your current selections if you do this!)</p>
 {% endblock %}
+{% block after_load_scripts %}{% endblock %}
 {% endblock %}
