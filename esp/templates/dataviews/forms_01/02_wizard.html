@@ -5,12 +5,19 @@
 dojo.require("dijit.layout.TabContainer");
 dojo.require("dijit.layout.ContentPane");
 function nameTabs() {
-    labels = document.querySelectorAll("div>label");
-    tabs = document.getElementsByClassName("tabLabel");
+    var labels = document.querySelectorAll("div>label");
+    var tabs = document.getElementsByClassName("tabLabel");
+    var anchors = document.querySelectorAll("a.pathlink");
     for (var i = 0; i < labels.length; ++i) {
-        tabs[i].innerHTML = labels[i].innerHTML + tabs[i].innerHTML;
+        var label = labels[i].innerHTML;
+        var s = label.split('/');
+        var base_model = s[0];
+        var model_and_field_and_query_term = s[1];
+        var model = model_and_field_and_query_term.split('.')[0];
+        tabs[i].innerHTML = model_and_field_and_query_term + tabs[i].innerHTML;
         tabs[i].style.fontSize="x-small";
         labels[i].innerHTML = "";
+        anchors[i].href = "/dataviews/" + base_model + "/" + model + "/";
     }
 }
 window.onload = setTimeout("nameTabs()", 1000);
@@ -24,6 +31,9 @@ div.pathgroup>ul {
     list-style-type: none;
     margin: 0px;
     padding: 0px;
+}
+div.pathgroup>ul>li {
+    padding-bottom: 10px;
 }
 </style>
 {% endblock %}

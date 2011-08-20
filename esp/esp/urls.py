@@ -53,6 +53,7 @@ urlpatterns = patterns('django.views.static',
 
 # Admin stuff
 urlpatterns += patterns('',
+                     (r'^admin/doc/', include('django.contrib.admindocs.urls')),
                      (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
                      (r'^admin/ajax_children/?', 'esp.datatree.views.ajax_children'),
