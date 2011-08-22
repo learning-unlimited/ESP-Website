@@ -19,7 +19,7 @@ query_term_symbols = {'exact': '[case-sensitive] ==', 'iexact': 'case-insensitiv
     'month': 'month', 'day': 'day', 'week_day': 'week day', 'isnull': 'is null', 'search': 'search', 'regex': 'case-sensitive regex', 'iregex': 'case-insensitive regex'}
 
 class ModeForm(Form):
-    mode = ChoiceField(choices=[(i+1, modes[i]) for i in range(len(modes))])
+    mode = ChoiceField(choices=([('', 'Choose a mode. Note: there is currently only one mode.')]+[(i+1, modes[i]) for i in range(len(modes))]), required=True)
 
 class DataViewsWizard(FormWizard):
     
