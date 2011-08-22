@@ -135,32 +135,17 @@ def pathchoiceform_factory(model, all_paths):
     name = "PathChoiceForm"
     base = (Form,)
     fields = {}
-    for I, target_model, model_paths, field in all_paths: 
-        choices = []
-        for (path, models, many) in model_paths: 
-            label = unicode(model.__name__)
-            if path: 
-                for i,n in enumerate(path): 
-                    basic_n = u''.join(pretty_name(n).split()).lower()
-                    basic_modelname = u''.join(pretty_name(models[i+1].__name__).split()).lower()
-                    if unicode(n).lower() == unicode(models[i+1].__name__).lower(): 
-                        label += u' \u2192 ' + models[i+1].__name__
-                    elif basic_n == basic_modelname or basic_n in basic_modelname or basic_modelname in basic_n:
-                        label += u' \u2192 ' + pretty_name(n)
-                    else: 
-                        label += u' \u2192 ' + pretty_name(n) + u' (' + models[i+1].__name__ + u')'
-            if field:
-                label += u' \u2192 ' + pretty_name(unicode(field))
-            choices.append([LOOKUP_SEP.join(path+(field,)), label])
+    for I, target_model, model_paths, field, query_term in all_paths: 
+        choices = [[LOOKUP_SEP.join(path+(field,)), label_for_path(model,path,models,many,field=field,links=True)] for (path,models,many) in model_paths]
         field_name = str(I)+'|'+target_model.__name__ + '.' + field
         if len(choices) == 1: 
             fields[field_name] = MultipleChoiceField(choices=choices, widget=widgets.MultipleHiddenInput, initial=[choices[0][0]])
         else: 
-            fields[field_name] = MultipleChoiceField(choices=choices, widget=widgets.CheckboxSelectMultiple, label=target_model.__name__ + '.' + field)
+            fields[field_name] = MultipleChoiceField(choices=choices, widget=widgets.CheckboxSelectMultiple, label=model.__name__+u'/'+target_model.__name__ + u'.' + field + u'_' + query_term)
     def as_div(self): 
         more = u'<input type="button" value="Show More" onclick="more(event);" />'
         return self._html_output(
-            normal_row = u'<div class="pathgroup" dojoType="dijit.layout.ContentPane" title="&nbsp;">%(label)s %(field)s%(help_text)s'+more+u'</div>',
+            normal_row = u'<div class="pathgroup" dojoType="dijit.layout.ContentPane" title="&nbsp;"><a class="pathlink" href="" target="_blank">Click here to see a version of this page with links to documenation.</a><br /><br />%(label)s %(field)s%(help_text)s'+more+u'</div>',
             error_row = u'%s',
             row_ender = more+u'</div>',
             help_text_html = u' <span class="helptext">%s</span>',
@@ -297,7 +282,7 @@ u'All rows except the first (you have to display something!) can be left blank, 
                     continue
                 condition_model, condition_field = get_mod_func(values[0])
                 condition_model = globals()[condition_model]
-                paths.append((i+1, condition_model, path_v1(self.base_model, condition_model), condition_field))
+                paths.append((i+1, condition_model, path_v1(self.base_model, condition_model), condition_field, values[1]))
             self.form_list[step+1] = pathchoiceform_factory(self.base_model, paths)
         elif step == 2:
             paths = []
@@ -307,5 +292,5 @@ u'All rows except the first (you have to display something!) can be left blank, 
                     continue
                 field_model, field_field = get_mod_func(values[0])
                 field_model = globals()[field_model]
-                paths.append((i+1, field_model, path_v1(self.base_model, field_model), field_field))
+                paths.append((i+1, field_model, path_v1(self.base_model, field_model), field_field, values[1]))
             self.form_list[step+1] = pathchoiceform_factory(self.base_model, paths)

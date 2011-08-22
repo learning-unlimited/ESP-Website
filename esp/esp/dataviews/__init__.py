@@ -7,6 +7,8 @@ from django.db.models import Model
 from django.db.models.related import RelatedObject
 from django.db.models.fields.related import RelatedField, ForeignKey, ManyToManyField
 from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
+from django.forms.forms import pretty_name
+from django.utils.safestring import mark_safe
 from inspect import isclass
 from collections import deque
 from datetime import datetime
@@ -73,6 +75,35 @@ Returns a list of strings, which represent valid field lookup paths that can fil
             queue.append((path+(name,), models+(new_model,), new_many, new_visited))
     # return [(LOOKUP_SEP.join(path), models, many) for (path,models,many) in paths][:max_paths]
     return paths
+
+def label_for_path(base_model, path, models, many, field='', links=False): 
+    label = label_for_model(base_model, links=True)
+    if path: 
+        for i,n in enumerate(path): 
+            basic_n = u''.join(pretty_name(n).split()).lower()
+            basic_modelname = u''.join(pretty_name(models[i+1].__name__).split()).lower()
+            if unicode(n).lower() == unicode(models[i+1].__name__).lower(): 
+                label += u' \u2192 ' + label_for_model(models[i+1], links=links)
+            elif basic_n == basic_modelname or basic_n in basic_modelname or basic_modelname in basic_n:
+                label += u' \u2192 ' + label_for_model(models[i+1], name=pretty_name(n), links=links)
+            else: 
+                label += u' \u2192 ' + label_for_model(models[i], name=pretty_name(n), h=n, links=links) + u' (' + label_for_model(models[i+1], links=links) + u')'
+    if field:
+        label += u' \u2192 ' + label_for_model(models[-1], name=pretty_name(field), h=field, links=links)
+    return mark_safe(label)
+
+def label_for_model(model, name=u'', h=u'', links=False): 
+    label = u''
+    if name: 
+        label += unicode(name)
+    else: 
+        label += unicode(model.__name__)
+    if h: 
+        h = u'#%s' % h
+    if links: 
+        return mark_safe(u'<a href="/dataviews/%s/%s" target="_blank">%s</a>' % (model.__name__, h, label))
+    else: 
+        return label
 
 def many_to_one_path(begin, end):
     '''
