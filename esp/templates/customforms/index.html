@@ -6,6 +6,7 @@
 		<script src="/media/scripts/json2.js"></script>
 		<script src="/media/scripts/custom_form.js"></script> 
 		 
+		<link rel="stylesheet" type="text/css" href="/media/default_styles/reset-min.css">
 		<link rel="stylesheet" type="text/css" href="/media/default_styles/jquery-ui-1.8.13.custom.css">
 		<link rel="stylesheet" type="text/css" href="/media/default_styles/customforms-style.css">
 		
@@ -32,13 +33,13 @@
 			<div id="form_toolbox">
 				<h3><a href='#'>Form information</a></h3>
 				<div id="form_information">
-					<p>Form Title <input type='text' id='input_form_title' size='40'/></p>
+					<p>Form Title</p> <input type='text' id='input_form_title' size='30'/>
 					<p>Description</p>
 					<textarea rows='3' cols='30' id='input_form_description'></textarea>
 					<p>Message on Success</p>
 					<textarea rows='3' cols='30' id='input_form_sucmsg'></textarea>
 					<p>Redirect URL for successful completion</p>
-					<input type="text" id="input_suc_url" />
+					<input type="text" id="input_suc_url" size="30"/>
 					<p>Anonymous Form <input type='checkbox' id='id_anonymous'/></p>
 					<p>Create from existing form</p>
 					<select id="base_form">
@@ -103,7 +104,7 @@
 						<p class="toolboxText">Field label</p>
 						<textarea name="question" id="id_question" rows=4 cols=30></textarea>
 						<p class="toolboxText">Instructions for user</p>
-						<textarea name="instructions" id="id_instructions" rows=4 cols=40></textarea>
+						<textarea name="instructions" id="id_instructions" rows=4 cols=30></textarea>
 						<p class="toolboxText">Required&nbsp;
 							<input type="checkbox" id="id_required" name="required" /></p><br/>
 						<form id="elem_properties">

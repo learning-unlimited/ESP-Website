@@ -56,10 +56,6 @@ ul.errorlist {
 	padding:0;
 }
 
-.field_list p{
-	margin-top:10px;
-}
-
 .error { 
 	padding-left: 16px;
 	padding-bottom: 2px;
@@ -67,10 +63,6 @@ ul.errorlist {
 	color: #EA5200;
 	background:url(../default_images/unchecked.gif) no-repeat;
 	font-size:12px; 
-}
-
-input.required, select.required, textarea.required {
-	border:solid 2px green;
 }
 
 table.combo_field {
@@ -85,7 +77,7 @@ table.combo_field td.small_field{
 }
 
 .req_text{
-	font-size:0.6em;
+	font-size:1em;
 	font-style:italic;
 }
 
@@ -114,4 +106,33 @@ table.combo_field td.small_field{
     font-family: Arial, Helvetica, sans-serif;
 }
 
+.form_field {
+	margin:0;
+	padding:5px;
+	padding-top:0;
+	margin-bottom:15px;
+}
+
+form.form-stacked label {
+	display:inline;
+	margin-left:5px;
+}	
+
+form.form_stacked fieldset{
+    margin-left:5px;
+}
+
+form input[type="text"], form input[type="password"], form textarea, form select, form .uneditable-input {
+	width:auto;
+}
+
+div.required {
+	background-color:rgba(0, 100, 205, 0.1);
+}
+
+ul {
+    margin-left:10px;
+    margin-bottom:0;
+    padding-bottom:0;
+}
 /* End of Form view*/

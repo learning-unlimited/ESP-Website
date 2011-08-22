@@ -38,6 +38,11 @@ body {
 	position:relative;
 }
 
+.section_header {
+	font-size:22px;
+	font-weight:bold;
+}
+
 .field_wrapper p{
 	margin:0px;
 	padding:0px;
@@ -116,6 +121,11 @@ body {
 	cursor:pointer;
 }
 
+#form_title{
+	font-size:32px;
+	font-weight:bold;
+}
+
 /* End Form Preview Area */
 
 /* Form Toolbox */
@@ -180,6 +190,15 @@ body {
 #submit {
 	margin:15px 10px;
 }
+
+#base_form {
+	display:inline-block;
+	width:260px;
+}
+
+#cat_selector, #elem_selector{
+	width:230px;
+}
 /* End Form Toolbox */
 
 .results {
@@ -198,8 +217,4 @@ td, th {
 
 th {
 	border-bottom:2px solid #6678B1;
-}
-
-td {
-	border-bottom:1px solid #6678B1;;
 }

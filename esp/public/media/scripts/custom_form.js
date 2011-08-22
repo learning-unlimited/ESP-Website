@@ -742,7 +742,7 @@ var renderNormalField=function(item, field_options, data){
 	else if(item=="reallyLongAns") {
 		$new_elem=$('<textarea>', {
 			rows:"14",
-			cols:"70"
+			cols:"60"
 		});
 		if($('#charOrWord').val()=='chars')
 			key='charlimits';

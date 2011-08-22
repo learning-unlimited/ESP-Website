@@ -23,7 +23,7 @@ generic_fields={
     'radio_yesno': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.RadioSelect, 'choices': ((True, 'Yes'), (False, 'No'))}},
     'boolean': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs':{'class':''}},
     'null_boolean': {'typeMap': forms.NullBooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs':{'class':''}},
-    'instructions': {'typeMap': DummyField, 'attrs':{'widget':None}, 'widget_attrs':{}},
+    'instructions': {'typeMap': DummyField, 'attrs':{'widget':None}, 'widget_attrs':{'class':''}},
 }
 
 custom_fields = {
