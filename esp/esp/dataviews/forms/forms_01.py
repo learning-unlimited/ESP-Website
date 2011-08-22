@@ -50,15 +50,33 @@ class SplitHiddenConditionWidget(SplitConditionWidget):
     def format_output(self, rendered_widgets):
         return super(SplitConditionWidget, self).format_output(rendered_widgets)
 
+class FieldValidator(object):
+    clean   = lambda self, x: x
+    message = _(u'Ensure that you enter a value.')
+    code = 'require_value'
+
+    def __call__(self, value):
+        cleaned = self.clean(value)
+        if cleaned.split(u'|')[0] and not cleaned.split(u'|')[-1]:
+            raise ValidationError(
+                self.message,
+                code=self.code,
+                params={},
+            )
+
 class SplitConditionField(fields.MultiValueField): 
     widget = SplitConditionWidget
     hidden_widget = SplitHiddenConditionWidget
+    default_validators = [FieldValidator()]
     
     def __init__(self, *args, **kwargs): 
         super(SplitConditionField, self).__init__((ChoiceField(choices = all_field_choices()), ChoiceField(choices = [(query_term, query_term_symbols[query_term]) for query_term in query_terms]), CharField()), *args, **kwargs)
     
     def compress(self, data_list): 
         return u'|'.join(data_list)
+    
+    def validate(self, value): 
+        self.run_validators(value)
    
 def headingconditionsform_factory(num_conditions = 3): 
     name = "HeadingConditionsForm"
@@ -106,6 +124,7 @@ class SplitHiddenColumnFieldWidget(SplitColumnFieldWidget):
 
 class SplitColumnFieldField(fields.MultiValueField): 
     hidden_widget = SplitHiddenColumnFieldWidget
+    default_validators = [FieldValidator()]
     
     def __init__(self, base_model=None, *args, **kwargs): 
         super(SplitColumnFieldField, self).__init__((ChoiceField(choices = all_field_choices(base_model=base_model, include_Count=True)), CharField()), *args, **kwargs)
@@ -113,6 +132,9 @@ class SplitColumnFieldField(fields.MultiValueField):
     
     def compress(self, data_list): 
         return u'|'.join(data_list)
+    
+    def validate(self, value): 
+        self.run_validators(value)
 
 def displaycolumnsform_factory(base_model=None, num_columns = 3): 
     name = "DisplayColumnsForm"
@@ -224,16 +246,13 @@ u'All rows except the first (you have to display something!) can be left blank, 
                 if 'Count' in path:
                     path
                     actual_path = path.rpartition(LOOKUP_SEP)[0]
-                    print actual_path
                     path = path.replace(LOOKUP_SEP, u'_')
-                    print path
                     counts[path] = Count(actual_path, distinct=True)
                 view_paths.append(path)
                 headers[I].append(path)
         if not ('pk' in view_paths or 'id' in view_paths):
             headers[0].append('pk')
         headers = [[path, form_list[2].cleaned_data['column_'+str(I)].split(u'|')[1] if I else self.base_model.__name__ + u' Primary Key ID#'] for I in range(self.num_columns+1) for path in headers[I]]
-        print headers
         queryset = path_v5(self.base_model, condition_paths, *args).annotate(**counts)
         
         fields = [header[0] for header in headers]
