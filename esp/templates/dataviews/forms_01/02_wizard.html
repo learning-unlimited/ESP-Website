@@ -41,6 +41,9 @@ div.pathgroup>ul>li {
 {% if not form.visible_fields|length %}
 All your data is from the same table; nothing to do here.  Just click 'Submit' to continue.
 {% endif %}
+{% if form.errors|length %}
+Invalid selection! (Please make sure to pick at least one thing on <b>each tab</b>!)
+{% endif %}
 {% endblock %}
 {% block form_div %}<div id="id_{{ step0 }}-form_div" dojoType="dijit.layout.TabContainer" style="width: 100%; height: 275px;">{% endblock %}
 {% block form_as %}{{ form.as_div }}{% endblock %}

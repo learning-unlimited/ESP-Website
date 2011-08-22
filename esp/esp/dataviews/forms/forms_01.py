@@ -138,7 +138,9 @@ def pathchoiceform_factory(model, all_paths):
     for I, target_model, model_paths, field, query_term in all_paths: 
         choices = [[LOOKUP_SEP.join(path+(field,)), label_for_path(model,path,models,many,field=field,links=True)] for (path,models,many) in model_paths]
         field_name = str(I)+'|'+target_model.__name__ + '.' + field
-        if len(choices) == 1: 
+        if not len(choices): 
+            pass
+        elif len(choices) == 1: 
             fields[field_name] = MultipleChoiceField(choices=choices, widget=widgets.MultipleHiddenInput, initial=[choices[0][0]])
         else: 
             fields[field_name] = MultipleChoiceField(choices=choices, widget=widgets.CheckboxSelectMultiple, label=model.__name__+u'/'+target_model.__name__ + u'.' + field + u'_' + query_term)
