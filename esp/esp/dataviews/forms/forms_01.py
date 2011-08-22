@@ -11,10 +11,10 @@ from django.utils.translation import ugettext_lazy as _
 from django.db.models.aggregates import * 
 
 def model_field_choices(model, include_Count = False): 
-    choices = []
+    choices = [(model.__name__+'.id', 'id')]
     if include_Count: 
         choices += [(model.__name__+'.Count', 'Count')]
-    choices += [(model.__name__+'.'+fieldname, fieldname) for fieldname, field in model._meta.init_name_map().iteritems() if not (isinstance(field[0], RelatedField) or isinstance(field[0], RelatedObject))]
+    choices += sorted([(model.__name__+'.'+fieldname, fieldname) for fieldname, field in model._meta.init_name_map().iteritems() if not (fieldname=='id' or isinstance(field[0], RelatedField) or isinstance(field[0], RelatedObject))], key=lambda choice: choice[0])
     return choices
 
 def all_field_choices(base_model = None, include_Count = False): 
