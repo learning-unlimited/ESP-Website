@@ -18,6 +18,9 @@
 <script type="text/javascript" src='/media/scripts/lottery_student_reg/extjs/adapter/ext/ext-base.js'></script>
 <script type='text/javascript' src='/media/scripts/lottery_student_reg/extjs/ext-all.js'></script>
 <script type="text/javascript" src="/media/scripts/jquery.js"> </script>
+
+<script type='text/javascript' src='/media/scripts/lottery_student_reg/extjs/ext-all.js'></script>
+<script type="text/javascript" src="/media/scripts/jquery.js"> </script>
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
 <!-- End of libraries -->
 
@@ -40,8 +43,30 @@ else
     alert("Could not determine your grade!  Please fill out the profile and then return to this page.");
 }
 </script>
+<script type='text/javascript' src='/media/scripts/lottery_student_reg/TimeslotPanel.js'></script>
 <script type='text/javascript' src='/media/scripts/lottery_student_reg/StudentRegInterface.js'></script>
+<script type='text/javascript'>
+var win;
 
+//Ext.onReady(function() {
+    win = new Ext.Panel({
+        renderTo: Ext.get("reg_panel"),
+        monitorResize: true,
+        items: 
+        [
+            { 
+                xtype: 'lottery_student_reg', 
+	            id: 'sri'
+        	}
+        ],
+        title: nice_name + ' Class Lottery - ' + esp_user["cur_first_name"] + ' ' + esp_user["cur_last_name"] + ' (grade ' + grade + ')',
+        autoWidth: true,
+        autoHeight: true
+    });
+
+    win.show();
+//});
+</script>
 <!--script type="text/javascript">
 Ext.Msg.alert('message','stuff!')
 </script-->

@@ -26,110 +26,110 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
     
     reg_instructions: instructions,
 
-    initComponent: function () {
-    
-    Ext.Ajax.request({
-	    url: '/learn/'+url_base+'/timeslots_json',
-	    success: function (response, opts) {
-		//alert('opts '+ opts);
-		//alert('response '+response);
-		rt = Ext.decode(response.responseText);
-		this.tab_names = rt;
-		this.num_tabs = this.tab_names.length;
-	    },
-	    scope: this
-    });
+    initComponent: function () 
+    {
+        Ext.Ajax.request({
+	        url: '/learn/'+url_base+'/timeslots_json',
+	        success: function (response, opts) 
+            {
+		        rt = Ext.decode(response.responseText);
+		        this.tab_names = rt;
+		        this.num_tabs = this.tab_names.length;
+	        },
+	        scope: this
+        });
 
-    num_opened_tabs = 0;
-
-	var config = {
-	    id: 'sri',
-	    //width: 800,
-	    //height: 450,
-	    autoHeight: true,
-	    //autoScroll: true,
-	    deferredRender: true,
-	    //forceLayout: true,
-	    closeable: false,
-	    tabWidth: 20,
-	    enableTabScroll: true,
-	    activeTab: 'instructions',
-	    monitorResize: true,
-	    items: [
-	        {
-		    title: 'Instructions',
-		    xtype: 'panel',
-		    items: [
-	                {
-			    xtype: 'displayfield',
-			    //height: 600,
-			    autoHeight: true,
-			    value: this.reg_instructions,
-			    preventScrollbars: true
-			}
-        	    ],
-		    id: 'instructions'
-		}
-            ]
-	};
+	    var config = {
+            id: 'sri',
+            autoHeight: true,
+            deferredRender: true,
+            closeable: false,
+            tabWidth: 20,
+            enableTabScroll: true,
+            activeTab: 'instructions',
+            monitorResize: true,
+            items: [
+            {
+	            title: 'Instructions',
+	            xtype: 'panel',
+	            items: 
+                [
+                    {
+		                xtype: 'displayfield',
+		                //height: 600,
+		                autoHeight: true,
+		                value: this.reg_instructions,
+		                preventScrollbars: true
+		            }
+            	],
+	            id: 'instructions'
+	        }]
+	    };
  
-	this.loadCatalog();
-	this.store.load({});	
+	    this.loadCatalog();
+	    this.store.load({});	
 
-	Ext.apply(this, Ext.apply(this.initialConfig, config));
-	StudentRegInterface.superclass.initComponent.apply(this, arguments); 
+	    Ext.apply(this, Ext.apply(this.initialConfig, config));
+	    StudentRegInterface.superclass.initComponent.apply(this, arguments); 
     },
 
     loadPrepopulate: function () {
 	    this.oldPreferences = new Ext.data.JsonStore({
 		    id: 'preference_store',
 		    root: '',
-		    fields: [
+		    fields: 
+            [
 	            {
-			name: 'section_id'
+			        name: 'section_id'
 	            },
 	            {
-			name: 'type'
+			        name: 'type'
 	            }
 		    ],
 		    proxy: new Ext.data.HttpProxy({ url: '/learn/'+url_base+'/catalog_registered_classes_json' }),
 		    listeners: {
-			load: {
-			    scope: this,
-			    fn: this.prepopulateData
-			}
+			    load: 
+                {
+			        scope: this,
+    			    fn: this.prepopulateData
+    			}
 		    }
 		});
-	    this.oldPreferences.load();
+	    
+        this.oldPreferences.load();
 	},
     
-    prepopulateData: function (store, records, options) {
-        for (i = 0; i<records.length; i++){
-		r = records[i];
-		if(r.data.type == 'Interested'){
-		    Ext.getCmp(r.data.section_id).setValue(true);
-		}
-		if((! r.data.type.indexOf('Priority/')) && (r.data.type.length == 'Priority/'.length + 1) && (parseInt(r.data.type.substring(r.data.type.length-1))) && (parseInt(r.data.type.substring(r.data.type.length-1)) <= priority_limit)){
-		    if (priority_limit == 1) {
-		        Ext.getCmp('flag_'+r.data.section_id).setValue(true);
-		    }
-		    else{
-		        Ext.getCmp('combo_' + r.data.section_id).setValue(parseInt(r.data.type.substring(r.data.type.length-1)));
-	        }
-		}
+    prepopulateData: function (store, records, options) 
+    {
+        for (i = 0; i<records.length; i++)
+        {
+    		r = records[i];
+    		if(r.data.type == 'Interested'){
+    		    Ext.getCmp(r.data.section_id).setValue(true);
+    		}
+    		if((! r.data.type.indexOf('Priority/')) && (r.data.type.length == 'Priority/'.length + 1) && (parseInt (r.data.type.substring(r.data.type.length-1))) && (parseInt(r.data.type.substring(r.data.type.length-1)) <= priority_limit)){
+	    	    if (priority_limit == 1) {
+	    	        Ext.getCmp('flag_'+r.data.section_id).setValue(true);
+	    	    }
+	    	    else{
+	    	        Ext.getCmp('combo_' + r.data.section_id).setValue(parseInt(r.data.type.substring(r.data.type.length-1)));
+	            }
+	    	}
 	    }
 	},
 
     loadCatalog: function () {
-	    this.store =  new Ext.data.JsonStore({
-		id: 'store',
+	    this.store =  new Ext.data.JsonStore
+        ({
+    		id: 'store',
 	        root: '',
-		success: true,
-	        fields: [
-	        {
-		    name: 'id'
-		},  
-		{
+    		success: true,
+	        fields: 
+            [
+	            {
+		            name: 'id'
+		        },  
+        		{
                     name: 'title'
                 },
                 {
@@ -138,250 +138,99 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 {
                     name: 'grade_min'
                 },
-	        {
-		    name: 'get_sections'
-	        },
-	        {
-		    name: 'category'
-		},
-	        {
-		    name: 'description'
-	        },
-	        {
-	        name: 'num_questions'
-	        }
+    	        {
+        		    name: 'get_sections'
+    	        },
+    	        {
+        		    name: 'category'
+        		},
+    	        {
+        		    name: 'description'
+      	        },
+	            {
+	                name: 'num_questions'
+	            }
 		//fields needed for class id generation
-		],
-		proxy: new Ext.data.HttpProxy({ url: '/learn/'+url_base+'/catalog_json' }),
-		listeners: {
-		    load: {
-			scope: this,
-			fn: this.makeTabs
-		    }
-		}		
-	    });
+	    	],
+	    	proxy: new Ext.data.HttpProxy({ url: '/learn/'+url_base+'/catalog_json' }),
+	    	listeners: 
+            {
+    		    load: 
+                {
+        			scope: this,
+        			fn: this.makeTabs
+    		    }
+    		}		
+   	    });
     },
     
-    makeTabs: function (store, records, options) {
-	    //alert(len(records));
+    makeTabs: function (store, records, options) 
+    {
 	    //make a tab for each class period
 	    //num_tabs and tab_names need to be modified for a particular program
-	tabs = [];
-	flag_added = [];
+        classLists = []	    
+        tabs = [];
+	    flag_added = [];
 
-	//makes tabs with id = short_description of timeblock
-	for(i = 0; i < this.num_tabs; i++) {
-	    checkbox_ids_by_timeblock[this.tab_names[i][0]] = "";
-		//alert(this.tab_names[i]);
-		tabs[this.tab_names[i][0]] = 
-		    {
-			xtype: 'form',
-			id: this.tab_names[i][0],
-			title: this.tab_names[i][1],
-			items: [],
-			height: 800,
-			autoScroll: true,
-			monitorResize: true,
-			listeners: {
-			    render: function() { num_opened_tabs++; }, 
-			    beforehide: function(tab) {
-			        var priorities = new Array(priority_limit + 1);
-			        for(i=0; i <= priority_limit; ++i) {
-			            priorities[i] = 0;
-			        }
-			        /*
-			        if (!Ext.iterate(tab.items, function(key, value, it) {
-			            alert(key);
-			            alert(value);
-			            if (++priorities[Ext.getCmp('combo_'+value.getId().split('_')[1]).getValue()] > 1) {
-			                return false;
-			            } 
-			            return true;
-			        })) {
-			            alert("You assigned multiple classes to have the same priority. Please fix this.");
-		                return false;
-			        }*/
-			        var ids = checkbox_ids_by_timeblock[tab.getId()].split('_');
-			        for(i=0; i < ids.length - 1; ++i) {
-			            //if (++priorities[parseInt(tab.items[i].items[0].getValue())] > 1) {
-			            if (parseInt(Ext.getCmp("combo_"+ids[i]).getValue()) && ++priorities[Ext.getCmp("combo_"+ids[i]).getValue()] > 1) {
-			                alert("You assigned multiple classes to have the same priority. Please fix this.");
-			                tab.show();
-			                return false;
-			            }
-			        }
-			        return true;
-			    }
-			}
-			}
-		if (priority_limit == 1) {
-		    tabs[this.tab_names[i][0]].items.push({
-				xtype: 'fieldset',
-				layout: 'column',
-				id: this.tab_names[i][1]+'no_class',
-				name: this.tab_names[i][1]+'no_class',
-				items: 
-				[
-				    {
-				        xtype: 'radio',
-					    id: 'flag_'+this.tab_names[i][0],
-					    name: 'flag_'+this.tab_names[i][0]
-			        },{ 
-					    xtype: 'displayfield',
-					    value: "I would not like to flag a priority class for this timeblock."
-			        }
-		        ]
-		    });
-		}
-		}
-		// this will be needed later, when making dropdown boxes
-		var dropdown_states_data = [];
-		dropdown_states_data.push(['0','none']);
+	    //itterate through records (classes)
+    	for (i = 0; i < records.length; i++)
+       	{ 
+	    	r = records[i];    	
+		    //no walk-in seminars
+		    if (r.data.category.category != 'Walk-in Seminar'){
+                //will put in clever stuff for displaying walk-ins here                
+                continue;
+            }
+
+		    //grade check
+		    if (r.data.grade_min <= grade && r.data.grade_max >= grade ) {
+                continue;
+            }
+
+    		num_sections = r.data.get_sections.length;
+	    	//itterate through times a class is offered
+	    	for (j = 0; j < num_sections; j ++)
+	    	{
+	    	    if(r.data.get_sections[j].get_meeting_times.length >0)
+	    	    {
+	    		    timeblock = r.data.get_sections[j].get_meeting_times[0];
+                    if(!classLists[timeblock.id]){
+                        classLists[timeblock.id] = []
+                    }
+                    classLists[timeblock.id].push(r);                    
+                }
+            }
+	    }
+
+	    //makes tabs with id = short_description of timeblock
+	    for(i = 0; i < this.num_tabs; i++) 
+        {
+	        checkbox_ids_by_timeblock[this.tab_names[i][0]] = "";
+
+            var tab_name = this.tab_names[i][0];
+            var long_tab_name = this.tab_names[i][1];
+            var classList = classLists[long_tab_name];
+    		this.add(
+    		{
+                    classes: classList,
+                    xtype: 'timeslot_panel',
+                    id: tab_name,
+                    priorityLimit: priority_limit,
+                    title: long_tab_name
+    		});
+    	}
+
+    	// this will be needed later, when making dropdown boxes
+    	var dropdown_states_data = [];
+    	dropdown_states_data.push(['0','none']);
         for (i = 1; i <= priority_limit; ++i) {
             dropdown_states_data.push([String(i),String(i)]);
         }
-		
-	    //itterate through records (classes)
-	    for (i = 0; i < records.length; i++)
-	    { 
-		r = records[i];
-		
-		//no walk-in seminars
-		if (r.data.category.category != 'Walk-in Seminar'){
 
-		//grade check
-		if (r.data.grade_min <= grade && r.data.grade_max >= grade ) {
-
-		num_sections = r.data.get_sections.length;
-		//itterate through times a class is offered
-		for (j = 0; j < num_sections; j ++)
-		{
-		    if(r.data.get_sections[j].get_meeting_times.length >0)
-		    {
-			timeblock = r.data.get_sections[j].get_meeting_times[0];
-			//alert()
-
-			//puts id of checkbox in the master list
-			checkbox_id = r.data.get_sections[j].id;
-			checkbox_ids.push(checkbox_id);
-
-			//comes up with label for checkboxes
-			text = '';
-			text = text + r.data.category.symbol + r.data.id + ': ' + r.data.title + ', ';
-			end_timeblock = r.data.get_sections[j].get_meeting_times[r.data.get_sections[j].get_meeting_times.length-1];
-			text = text + timeblock.start.substring(11,16) + ' - ' + end_timeblock.end.substring(11,16);
-	        
-	        if (priority_limit == 1) {
-			    tabs[timeblock.id].items.push({
-				        xtype: 'fieldset',
-				        layout: 'column',
-				        id: timeblock.short_description+r.data.title,
-				        name: timeblock.short_description+r.data.title,
-				        items: 
-				        [
-			                   {
-					       xtype: 'radio',
-					       id: 'flag_'+checkbox_id,
-					       name: 'flag_'+timeblock.id,
-					       inputValue: r.data.id,
-					       listeners: { //listener changes the flagged classes box at the top when the flagged class changes
-					           
-					       }
-				           }, 
-			                   {
-					       xtype: 'checkbox',
-					       name: checkbox_id,
-					       id: checkbox_id
-				           }, 
-			                   { 
-					       xtype: 'displayfield',
-					       value: text,
-					       autoHeight: true,
-					       id: 'title_'+ checkbox_id 
-				           }
-				        ]
-			
-			    });
-		    }
-            else {
-	            new_column = {
-				        xtype: 'fieldset',
-				        layout: 'column',
-				        id: 'column_'+checkbox_id,
-				        name: timeblock.short_description+r.data.title,
-				        items: []
-		        }/*
-		        for (k = 1; k <= priority_limit; ++k) {
-		            new_column.items.push({
-					       xtype: 'radio',
-					       id: 'flag_'+k+'_'+checkbox_id,
-					       name: 'flag_'+k+'_'+timeblock.id,
-					       listeners: { //listener changes the flagged classes box at the top when the flagged class changes
-					           
-					       }
-	                });
-                }*/
-                new_column.items.push({
-                    xtype: 'combo',
-                    hiddenName: 'priority_' + checkbox_id,
-                    hiddenID: 'priority_' + checkbox_id,
-                    id: 'combo_' + checkbox_id,
-                    name: 'combo_' + checkbox_id,
-                    store: dropdown_states_data,
-                    queryMode: 'local',
-                    submitValue: true,
-                    width: 70,
-                    editable: false,
-                    triggerAction: 'all',
-                    value: '0'
-                });
-                /*
-                new_column.items.push({
-                    xtype: 'checkbox',
-			        name: checkbox_id,
-			        id: checkbox_id
-                });
-                */
-                var keys = [];
-                for (var key in r.data) {
-                    keys.push(key);
-                }
-                if (r.data.num_questions) {
-                    text += " <b>(this class has " + r.data.num_questions + " application question";
-                    if (r.data.num_questions > 1) {
-                        text += "s";
-                    }
-                    text += ")</b>"
-                }
-                new_column.items.push({
-		            xtype: 'displayfield',
-		            value: " &nbsp; &nbsp; &nbsp; &nbsp; " + text,
-		            autoHeight: true,
-		            id: 'title_'+ checkbox_id 
-			    });
-			    tabs[timeblock.id].items.push(new_column)
-			    checkbox_ids_by_timeblock[timeblock.id] += (checkbox_id+"_");
-		    }
-		    }
-		}
-		}//end if for walk in seminars
-		}//end if for grade check
-	    }
-	
-	    //adds tabs to tabpanel
-	    for (i = 0; i < this.num_tabs; i ++)
-	    {
-		//alert('add');
-		Ext.getCmp('sri').add(tabs[this.tab_names[i][0]]);
-	    }
-
-	/*
-	    if (grade == 7 || grade == 8){
-		for(i = 9; i<=11; i++){
-		    Ext.getCmp(this.tab_names[i][0]).hide();
-		    Ext.getCmp('sri').hideTabStripItem(this.tab_names[i][0]);
-		}
-		}*/
+	    /*adds tabs to tabpanel
+	    for (i = 0; i < this.num_tabs; i ++){
+		    this.add(tabs[this.tab_names[i][0]]);
+	    }*/
 
 	    //creates "confirm registration" tab
 	     //creates fields for all first choice classes
@@ -391,8 +240,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	     flagged_classes.push({
 		     xtype: 'displayfield',
 		     height: 40,
-		   //width: '600',
-		     value: '<font size=3">To register for the ' + nice_name + ' class lottery, click "Show me my priority classes!" and then, if everything appears correct, press "Enter me in the lottery!"</font>'//<br><br>  If you like what you see, click "Show me my priority classes!"'
+		     value: '<font size=3">To register for the ' + nice_name + ' class lottery, click "Show me my priority classes!" and then, if everything appears correct, press "Enter me in the lottery!"</font>'
 	     });
 
 	     //adds "confirm registration" button
@@ -409,12 +257,14 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 		     height: 200,
 		     items: flagged_classes
 		     });
-	Ext.getCmp('sri').loadPrepopulate();
+	     Ext.getCmp('sri').loadPrepopulate();
      },
 
-    allTabsCheck: function() {
+    allTabsCheck: function() 
+    {
 	    var priorities_per_timeblock = new Array();
-        for(i=0; i < this.num_tabs; ++i) {
+        for(i=0; i < this.num_tabs; ++i) 
+        {
             priorities_per_timeblock[i] = 0;
             var ids = checkbox_ids_by_timeblock[this.tab_names[i][0]].split('_');
             for(j=0; j < ids.length - 1; ++j) {
@@ -494,24 +344,17 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 		         classes[flag_id] = flag.getValue();
 		     }
 	    }
+
         else {
             for(i = 0; i < this.num_tabs; i++) {
                 var ids = checkbox_ids_by_timeblock[this.tab_names[i][0]].split('_');
-                //alert(ids);
                 for (j = 0; j < ids.length - 1; ++j) {
                     if (val = parseInt(Ext.getCmp("combo_"+ids[j]).getValue())) {
 		                classes[ids[j]] = new Array(val, this.tab_names[i][0]);
-		                //alert(classes[ids[j]]);
 		            }
                 }
             }    
         }
-
-	     /*
-	     for(i=0; i<flag_ids.length; i++){
-	         flag = Ext.getCmp(flag_ids[i]);
-		 classes[flag_ids[i]] = flag.getValue();
-		 }*/
 
         var handle_submit_response = function (data) {
             //  console.log("Got response: " + JSON.stringify(data));
@@ -572,23 +415,3 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 });
 
 Ext.reg('lottery_student_reg', StudentRegInterface);
-
-
-var win;
-Ext.onReady(function() {
-win = new Ext.Panel({
-  renderTo: Ext.get("reg_panel"),
-      //	closable: false,
-      monitorResize: true,
-      items: [{ xtype: 'lottery_student_reg', 
-	  id: 'sri'
-	  }],
-      title: nice_name + ' Class Lottery - ' + esp_user["cur_first_name"] + ' ' + esp_user["cur_last_name"] + ' (grade ' + grade + ')',
-      autoWidth: true,
-      autoHeight: true
-      });
-
-
-    win.show();
-    //submitForm.getForm().submit({url: 'lsr_submit'});
-});
