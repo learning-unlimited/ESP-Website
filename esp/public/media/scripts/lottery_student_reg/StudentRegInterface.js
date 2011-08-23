@@ -310,17 +310,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 				        id: 'column_'+checkbox_id,
 				        name: timeblock.short_description+r.data.title,
 				        items: []
-		        }/*
-		        for (k = 1; k <= priority_limit; ++k) {
-		            new_column.items.push({
-					       xtype: 'radio',
-					       id: 'flag_'+k+'_'+checkbox_id,
-					       name: 'flag_'+k+'_'+timeblock.id,
-					       listeners: { //listener changes the flagged classes box at the top when the flagged class changes
-					           
-					       }
-	                });
-                }*/
+		        }
                 new_column.items.push({
                     xtype: 'combo',
                     hiddenName: 'priority_' + checkbox_id,
