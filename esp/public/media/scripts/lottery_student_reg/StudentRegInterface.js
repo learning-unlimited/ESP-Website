@@ -175,7 +175,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 		//alert(this.tab_names[i]);
 		tabs[this.tab_names[i][0]] = 
 		    {
-			xtype: 'form',
+			xtype: 'timeslotpanel',
 			id: this.tab_names[i][0],
 			title: this.tab_names[i][1],
 			items: [],
@@ -372,7 +372,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	    for (i = 0; i < this.num_tabs; i ++)
 	    {
 		//alert('add');
-		Ext.getCmp('sri').add(tabs[this.tab_names[i][0]]);
+		this.add(tabs[this.tab_names[i][0]]);
 	    }
 
 	/*

@@ -1,4 +1,4 @@
-TimeslotPanel = Ext.extend(Ext.formPanel, { 
+TimeslotPanel = Ext.extend(Ext.FormPanel, { 
     initComponent: function() {
         
     }
