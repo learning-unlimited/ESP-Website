@@ -22,7 +22,7 @@ class NameWidget(forms.MultiWidget):
         return [None, None]
         
     def format_output(self, rendered_widgets):
-        html_string=u'<table class="combo_field">'
+        html_string=u'<table class="combo_field name_field">'
         html_string+=u'<tr><td class="small_field">'+rendered_widgets[0]+u'</td><td class="small_field">'+rendered_widgets[1]+u'</td></tr>'
         html_string+=u'<tr class="subtext_row"><td>'+u'First'+u'</td><td>'+u'Last'+u'</td></tr>'
         html_string+=u'</table>'
@@ -69,7 +69,7 @@ class AddressWidget(forms.MultiWidget):
     Custom widget for the 'Address' compound field type
     """
     def __init__(self, wclass='', *args, **kwargs):
-        widgets=(forms.TextInput(attrs={'size':'100', 'class':wclass}), forms.TextInput(attrs={'size':'30', 'class':wclass}), USStateSelect(attrs={'class':wclass}), forms.TextInput(attrs={'size':'5', 'class':wclass+' USZip'}))    
+        widgets=(forms.TextInput(attrs={'size':'70', 'class':wclass}), forms.TextInput(attrs={'size':'30', 'class':wclass}), USStateSelect(attrs={'class':wclass}), forms.TextInput(attrs={'size':'5', 'class':wclass+' USZip'}))    
         super(AddressWidget, self).__init__(widgets, *args, **kwargs)
         
     def decompress(self, value):
@@ -78,9 +78,9 @@ class AddressWidget(forms.MultiWidget):
         return [None, None, None, None]
         
     def format_output(self, rendered_widgets):
-        html_string=u'<table class="combo_field">'
+        html_string=u'<table class="combo_field address_field">'
         html_string+=u'<tr><td>Street&nbsp;'+rendered_widgets[0]+'</td></tr>'
-        html_string+=u'<tr><td>City&nbsp;'+rendered_widgets[1]+u'</td><td>State&nbsp;'+rendered_widgets[2]+u'</td></tr>'
+        html_string+=u'<tr><td>City&nbsp;'+rendered_widgets[1]+u'</td></tr><tr><td>State&nbsp;'+rendered_widgets[2]+u'</td></tr>'
         html_string+=u'<tr><td>Zip&nbsp;&nbsp;'+rendered_widgets[3]+u'</td></tr>'
         html_string+=u'</table>'
         return html_string

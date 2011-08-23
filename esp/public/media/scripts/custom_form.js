@@ -589,7 +589,7 @@ var setRequired=function(item){
 	
 	$('#id_required').attr('disabled', false);
 	//For 'section' and 'page', disable 'Required'
-	if(item=='page' || item=='section')
+	if(item=='page' || item=='section' || item in formElements['NotReallyFields'])
 		$('#id_required').attr('disabled', true);
 	//Set 'Required' as checked for custom fields that are required on the model
 	if(!item in formElements['Generic']){
