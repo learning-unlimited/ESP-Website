@@ -20,6 +20,7 @@ generic_fields={
     'phone':{'typeMap': USPhoneNumberField, 'attrs':{'widget':forms.TextInput,}, 'widget_attrs':{'class':'USPhone '}},
     'email':{'typeMap': forms.EmailField, 'attrs':{'max_length':30, 'widget':forms.TextInput,}, 'widget_attrs':{'class':'email '}},
     'state':{'typeMap': USStateField, 'attrs':{'widget': USStateSelect}, 'widget_attrs':{'class':''}},
+    'gender':{'typeMap': forms.ChoiceField, 'attrs':{'widget':forms.RadioSelect, 'choices':[('F', 'Female'), ('M', 'Male')]}, 'widget_attrs':{'class':'gender '}, },
     'radio_yesno': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.RadioSelect, 'choices': ((True, 'Yes'), (False, 'No'))}},
     'boolean': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs':{'class':''}},
     'null_boolean': {'typeMap': forms.NullBooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs':{'class':''}},

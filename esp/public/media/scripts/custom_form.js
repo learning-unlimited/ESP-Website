@@ -892,6 +892,18 @@ var renderNormalField=function(item, field_options, data){
 	else if(item=='state'){
 		$new_elem=$('<select></select>');
 	}
+	else if(item=='gender'){
+		$new_elem=$('<p>');
+		$new_elem.append($('<input/>', {
+			type:'radio',
+			value:'Male',
+			name:'gender'
+		})).append($('<span class="field_text">Male&nbsp;&nbsp;</span>')).append($('<input/>', {
+				type:'radio',
+				value:'Female',
+				name:'gender'
+		})).append($('<span class="field_text">Female</span>'));
+	}
     else if((item=="boolean") || (item == "null_boolean")) {
 		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";
 		$new_elem=$("<div>");

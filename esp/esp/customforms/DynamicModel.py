@@ -38,6 +38,7 @@ class DynamicModelHandler:
         'phone':{'typeMap':models.CharField, 'attrs':{'max_length':15}, 'args':[]},
         'email':{'typeMap':models.CharField, 'attrs':{'max_length':30,}, 'args':[]},
         'state':{'typeMap':models.CharField, 'attrs':{'max_length':2}, 'args':[]},
+        'gender':{'typeMap':models.CharField, 'attrs':{'max_length':2}, 'args':[]},
         'instructions': {'typeMap': None},
     }
     _foreign_key_fields=['courses',]
