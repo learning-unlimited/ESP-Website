@@ -171,176 +171,70 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
     },
     
     makeTabs: function (store, records, options) {
-	    //alert(len(records));
 	    //make a tab for each class period
 	    //num_tabs and tab_names need to be modified for a particular program
     	tabs = [];
-        tabItems = [];
+        classLists = [];
     	flag_added = [];
+
+	    //itterate through records (classes)
+    	for (i = 0; i < records.length; i++)
+       	{ 
+	    	r = records[i];    	
+		    //no walk-in seminars
+		    if (r.data.category.category == 'Walk-in Seminar'){
+                //will put in clever stuff for displaying walk-ins here                
+                continue;
+            }
+
+		    //grade check
+		    if (r.data.grade_min >= grade || r.data.grade_max <= grade ) {
+                continue;
+            }
+
+    		num_sections = r.data.get_sections.length;
+	    	//itterate through times a class is offered
+	    	for (j = 0; j < num_sections; j ++)
+	    	{
+	    	    if(r.data.get_sections[j].get_meeting_times.length >0)
+	    	    {
+	    		    timeblock = r.data.get_sections[j].get_meeting_times[0];
+                    if(!classLists[timeblock.id]){
+                        classLists[timeblock.id] = []
+                    }
+                    classLists[timeblock.id].push(r);                    
+                }
+            }
+	    }
 
     	//makes tabs with id = short_description of timeblock
     	for(i = 0; i < this.num_tabs; i++) 
         {
-    	    checkbox_ids_by_timeblock[this.tab_names[i][0]] = "";
-    		//alert(this.tab_names[i]);
-    		tabs[this.tab_names[i][0]] = 
+    		//alert(classLists[this.tab_names[i][0]].length);
+    		this.add( new TimeslotPanel(
 		    {
     			xtype: 'timeslotpanel',
     			id: this.tab_names[i][0],
     			title: this.tab_names[i][1],
-    			listeners: 
-                {
-		            beforehide: function(tab) 
-                    {
-		                var priorities = new Array(priority_limit + 1);
-		                for(i=0; i <= priority_limit; ++i) {
-		                    priorities[i] = 0;
-		                }
-
-		                var ids = checkbox_ids_by_timeblock[tab.getId()].split('_');
-		                for(i=0; i < ids.length - 1; ++i) 
-                        {
-		                    //if (++priorities[parseInt(tab.items[i].items[0].getValue())] > 1) {
-		                    if (parseInt(Ext.getCmp("combo_"+ids[i]).getValue()) && ++priorities[Ext.getCmp("combo_"+ids[i]).getValue()] > 1) 
-                            {
-			                    alert("You assigned multiple classes to have the same priority. Please fix this.");
-		                        tab.show();
-           		                return false;
-		                    }
-		                }
-		                return true;
-		            }
-			    }
-	        }
+                ESPclasses: classLists[this.tab_names[i][0]],
+                timeblock: this.tab_names[i],
+	        }));
 	    }
 
-	    //adds tabs to tabpanel
-	    for (i = 0; i < this.num_tabs; i ++)
-	    {
-	    	//alert('add');
-    		this.add(tabs[this.tab_names[i][0]]);
-	    }
 	    // this will be needed later, when making dropdown boxes
 	    var dropdown_states_data = [];
 	    dropdown_states_data.push(['0','none']);
         for (i = 1; i <= priority_limit; ++i) {
             dropdown_states_data.push([String(i),String(i)]);
         }
-		
-	        //itterate through records (classes)
-	        for (i = 0; i < records.length; i++)
-	        { 
-		    r = records[i];
-		
-		    //no walk-in seminars
-		    if (r.data.category.category != 'Walk-in Seminar'){
-                continue;
-            }
+		addConfirmTab();
 
-		    //grade check
-		    if (r.data.grade_min <= grade && r.data.grade_max >= grade ) {
-                continue;
-            }
+	     Ext.getCmp('sri').loadPrepopulate();
+     },
 
-		    num_sections = r.data.get_sections.length;
-		    //itterate through times a class is offered
-		    for (j = 0; j < num_sections; j ++)
-		    {
-		        if(r.data.get_sections[j].get_meeting_times.length >0)
-		        {
-		    	    timeblock = r.data.get_sections[j].get_meeting_times[0];
-
-    			    //puts id of checkbox in the master list
-	    		    checkbox_id = r.data.get_sections[j].id;
-	    		    checkbox_ids.push(checkbox_id);
-    
-	    		    //comes up with label for checkboxes
-	    		    text = '';
-	    		    text = text + r.data.category.symbol + r.data.id + ': ' + r.data.title + ', ';
-	    		    end_timeblock = r.data.get_sections[j].get_meeting_times[r.data.get_sections[j].get_meeting_times.length-1];
-	    		    text = text + timeblock.start.substring(11,16) + ' - ' + end_timeblock.end.substring(11,16);
-	            
-	                if (priority_limit == 1) {
-	    		        tabs[timeblock.id].items.push({
-	   			            xtype: 'fieldset',
-	   			            layout: 'column',
-	   			            id: timeblock.short_description+r.data.title,
-	   			            name: timeblock.short_description+r.data.title,
-				            items: 
-				            [
-			                       {
-            					       xtype: 'radio',
-		            			       id: 'flag_'+checkbox_id,
-		            			       name: 'flag_'+timeblock.id,
-		            			       inputValue: r.data.id,
-		            			       listeners: { //listener changes the flagged classes box at the top when the flagged class changes
-			        			       }
-				                   }, 
-			                       {
-				            	       xtype: 'checkbox',
-				            	       name: checkbox_id,
-				            	       id: checkbox_id
-				                   }, 
-			                       { 
-				            	       xtype: 'displayfield',
-				                	       value: text,
-				            	       autoHeight: true,
-				            	       id: 'title_'+ checkbox_id 
-				                   }
-				                ]
-			
-			            });
-		            }
-
-                    else 
-                    {
-	                    new_column = {
-				                xtype: 'fieldset',
-				                layout: 'column',
-				                id: 'column_'+checkbox_id,
-				                name: timeblock.short_description+r.data.title,
-				                items: []
-		                }
-                        new_column.items.push({
-                            xtype: 'combo',
-                            hiddenName: 'priority_' + checkbox_id,
-                            hiddenID: 'priority_' + checkbox_id,
-                            id: 'combo_' + checkbox_id,
-                            name: 'combo_' + checkbox_id,
-                            store: dropdown_states_data,
-                            queryMode: 'local',
-                            submitValue: true,
-                            width: 70,
-                            editable: false,
-                            triggerAction: 'all',
-                            value: '0'
-                        });
-
-                        var keys = [];
-                        for (var key in r.data) {
-                            keys.push(key);
-                        }
-                        if (r.data.num_questions) {
-                            text += " <b>(this class has " + r.data.num_questions + " application question";
-                            if (r.data.num_questions > 1) {
-                                text += "s";
-                            }
-                            text += ")</b>"
-                        }
-                        new_column.items.push({
-		                    xtype: 'displayfield',
-		                    value: " &nbsp; &nbsp; &nbsp; &nbsp; " + text,
-		                    autoHeight: true,
-		                    id: 'title_'+ checkbox_id 
-			            });
-			            tabs[timeblock.id].items.push(new_column)
-			            checkbox_ids_by_timeblock[timeblock.id] += (checkbox_id+"_");
-		            }
-		        }
-		    }
-	    }
-
-    	    //creates "confirm registration" tab
+    addConfirmTab: function () 
+    {
+    	 //creates "confirm registration" tab
 	     //creates fields for all first choice classes
 	     flagged_classes = [];
 
@@ -366,8 +260,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 		     height: 200,
 		     items: flagged_classes
 		 });
-	     Ext.getCmp('sri').loadPrepopulate();
-     },
+    }
 
     allTabsCheck: function() {
 	    var priorities_per_timeblock = new Array();
