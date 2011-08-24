@@ -41,12 +41,7 @@ class DynamicModelHandler:
         'gender':{'typeMap':models.CharField, 'attrs':{'max_length':2}, 'args':[]},
         'instructions': {'typeMap': None},
     }
-    _foreign_key_fields=['courses',]
     
-    _customFields={
-        'name':['first_name', 'last_name'],
-        'address':['street', 'state', 'city', 'zip'],
-    }
     
     def __init__(self, form, fields=[]):
         self.form=form
@@ -156,11 +151,17 @@ class DynamicModelHandler:
         """
         attrs=self._field_types[ftype]['attrs'].copy()
         args=self._field_types[ftype]['args']
-        if ftype!="numeric" and ftype!='courses':
+        if ftype!="numeric":
             attrs['default']=''
         return self._field_types[ftype]['typeMap'](*args, **attrs)    
     
     def get_field_name(self, field):
+        """
+        Returns the field name for this field.
+        Returns the field name corresponding to the linked model for link fields.
+        """
+        if cf_cache.isLinkField(field.field_type):
+            return 'link_'+model.__name__
         return "question_%d" % field.id
     
     def addOrUpdateField(self, field, db_func, **kwargs):
@@ -170,11 +171,7 @@ class DynamicModelHandler:
         """
         field_name=self.get_field_name(field)
         #   TODO: Return early if this is a linked field
-        if field.field_type in self._customFields:
-            for f in self._customFields[field.field_type]:
-                db_func(self._tname, field_name+'_'+f, self._getFieldToAdd(f), **kwargs)
-        else:
-            db_func(self._tname, field_name, self._getFieldToAdd(field.field_type), **kwargs)
+        db_func(self._tname, field_name, self._getFieldToAdd(field.field_type), **kwargs)
         
     def addField(self, field):
         self.addOrUpdateField(field, db.add_column, keep_default=False)
@@ -188,13 +185,25 @@ class DynamicModelHandler:
         """
         field_name=self.get_field_name(field)
         #   TODO: Return early if this is a linked field
-        if field.field_type in self._foreign_key_fields:
-            field_name+='_id'
-        if field.field_type in self._customFields:
-            for f in self._customFields[field.field_type]:
-                db.delete_column(self._tname, field_name+'_'+f)
-        else:
-            db.delete_column(self._tname, field_name)                                    
+        db.delete_column(self._tname, field_name)
+
+    def change_only_fkey(self, old_link_type, new_link_type):
+        """
+        Used to change the foreign key corresponding to only_fkey_links when a 
+        form is modified.
+        """
+        
+        if old_link_type != new_link_type and old_link_type!="-1":
+            #Old FK column needs to go
+            old_model_cls=cf_cache.only_fkey_models[old_link_type]
+            old_field_name='link_'+old_model_cls.__name__
+            db.delete_column(self._tname, old_field_name+"_id")
+            
+        if old_link_type!=new_link_type and new_link_type!="-1":
+            #New FK column needs to be inserted
+            new_model_cls=cf_cache.only_fkey_models[new_link_type]
+            new_field_name='link_'+new_model_cls.__name__
+            db.add_column(self._tname, new_field_name, models.ForeignKey(new_model_cls, null=True, blank=True, on_delete=models.SET_NULL))
     
     def createDynModel(self):
         """Creates and returns the dynamic model for this form"""
