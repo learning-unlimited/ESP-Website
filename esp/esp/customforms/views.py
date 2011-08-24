@@ -134,6 +134,10 @@ def onModify(request):
                 raise ESPError(False), 'Form %s not found' % metadata['form_id']
             dmh=DMH(form=form)
             
+            #First, check if only_fkey links have changed
+            if form.link_type!=metadata['link_type']:
+                dmh.change_only_fkey(form.link_type, metadata['link_type'])
+            
             form.__dict__.update(title=metadata['title'], description=metadata['desc'], link_type=metadata['link_type'], 
                 link_id=int(metadata['link_id']), anonymous=metadata['anonymous'], perms=metadata['perms'],
                 success_message=metadata['success_message'], success_url=metadata['success_url'])
@@ -150,7 +154,10 @@ def onModify(request):
                     curr_sect = get_new_or_altered_obj(Section, section['data']['parent_id'], page=curr_page, title=section['data']['question_text'], description=section['data']['help_text'], seq=int(section['data']['seq']))
                     curr_keys['sections'].append(curr_sect.id)
                     for field in section['fields']:
-                        (curr_field, field_created) = get_or_create_altered_obj(Field, field['data']['parent_id'], form=form, section=curr_sect, field_type=field['data']['field_type'], seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], required=field['data']['required'])
+                        (curr_field, field_created) = get_or_create_altered_obj(Field, field['data']['parent_id'], 
+                                                    form=form, section=curr_sect, field_type=field['data']['field_type'], 
+                                                    seq=int(field['data']['seq']), label=field['data']['question_text'], 
+                                                    help_text=field['data']['help_text'], required=field['data']['required'])
                         if field_created:
                             dmh.addField(curr_field)
                         else:
@@ -165,29 +172,7 @@ def onModify(request):
             del_fields.delete()
                 
             old_sections.exclude(id__in=curr_keys['sections']).delete()
-            old_pages.exclude(id__in=curr_keys['pages']).delete()                
-            
-            #Removing obsolete items
-            """for f in to_delete['fields']:
-                dmh.removeField(f)
-                f.delete()
-                
-            for s in to_delete['sections']:
-                s.delete()
-                
-            for p in to_delete['pages']:
-                p.delete()"""        
-                
-            """for old_page in old_pages:
-                old_sections=Section.objects.filter(page=old_page)
-                for old_section in old_sections:
-                    old_fields=Field.objects.filter(section=old_section)
-                    for old_field in old_fields:
-                        if old_field.id not in curr_keys['fields']:
-                            dmh.removeField(old_field)
-                            old_field.delete()
-                    if old_section.id not in curr_keys['sections']: old_section.delete()
-                if old_page.id not in curr_keys['pages']: old_page.delete()"""
+            old_pages.exclude(id__in=curr_keys['pages']).delete()
             
             return HttpResponse('OK')                                                 
                     
