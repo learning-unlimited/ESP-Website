@@ -48,6 +48,7 @@ class DynamicModelHandler:
         self.field_list=[]
         self.fields=fields
         self._tname='customforms\".\"customforms_response_%d' % form.id
+        self.link_models_list=[]     #Used to store the names of models that are currently linked to via link fields
     
     def __marinade__(self):
         """
@@ -109,6 +110,7 @@ class DynamicModelHandler:
         for model in link_models:
             if model:
                 self.field_list.append( ('link_'+model.__name__, models.ForeignKey(model, null=True, blank=True, on_delete=models.SET_NULL) ) )
+                self.link_models_list.append(model.__name__)
                     
         return self.field_list
         
@@ -161,7 +163,9 @@ class DynamicModelHandler:
         Returns the field name corresponding to the linked model for link fields.
         """
         if cf_cache.isLinkField(field.field_type):
+            model=cf_cache.modelForLinkField(field.field_type)
             return 'link_'+model.__name__
+            
         return "question_%d" % field.id
     
     def addOrUpdateField(self, field, db_func, **kwargs):
@@ -186,7 +190,33 @@ class DynamicModelHandler:
         field_name=self.get_field_name(field)
         #   TODO: Return early if this is a linked field
         db.delete_column(self._tname, field_name)
-
+        
+    def removeLinkField(self, field):
+        """
+        Removes the FK-column corresponding to a link field if present.
+        """
+        if not cf_cache.isLinkField(field.field_type):
+            return
+        model_cls=cf_cache.modelForLinkField(field.field_type)
+        if model_cls.__name__ in self.link_models_list:
+            field_name='link_'+model_cls.__name__
+            db.delete_column(self._tname, field_name+"_id")
+            self.link_models_list.remove(model_cls.__name__)
+        
+    def addLinkFieldColumn(self, field):
+        """
+        Checks if the FK-column corresponding to this link field is already present.
+        If not, it adds in the column.
+        """
+        if not cf_cache.isLinkField(field.field_type):
+            return    
+        model_cls=cf_cache.modelForLinkField(field.field_type)
+        if model_cls.__name__ not in self.link_models_list:
+            # Add in the FK-column for this model
+            field_name=self.get_field_name(field)
+            db.add_column(self._tname, field_name, models.ForeignKey(model_cls, null=True, blank=True, on_delete=models.SET_NULL))
+            self.link_models_list.append(model_cls.__name__)
+        
     def change_only_fkey(self, old_link_type, new_link_type):
         """
         Used to change the foreign key corresponding to only_fkey_links when a 

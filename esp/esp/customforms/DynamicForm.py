@@ -529,6 +529,17 @@ class FormHandler:
         #let's also set the questions in the process.
         add_fields={}
         
+        # Add in the user column if form is not anonymous
+        if not form.anonymous:
+            response_data['questions'].append(['user_id', 'User'])
+            
+        # Add in the column for link fields, if any
+        if form.link_type!="-1":
+            only_fkey_model= cf_cache.only_fkey_models[form.link_type]
+            response_data['questions'].append(["link_%s_id" % only_fkey_model.__name__, form.link_type])
+        else:
+            only_fkey_model=None      
+        
         for field in fields:
             #I'll do a lot of merging here later
             qname='question_%d' % field['id']
@@ -541,7 +552,7 @@ class FormHandler:
                 add_fields[qname]=[model, cf_cache.getLinkFieldData(ftype)['model_field']]
                 response_data['questions'].append([qname, field['label']])
             #   Include this field only if it isn't a dummy field
-            elif generic_fields[ftype]['typeMap'] != DummyField:
+            elif generic_fields[ftype]['typeMap'] is not DummyField:
                 response_data['questions'].append([qname, field['label']])
             
         #Now let's set up the responses
@@ -551,23 +562,32 @@ class FormHandler:
             #Add in user if form is not anonymous
             if not form.anonymous:
                 response['user_id']=unicode(response['user_id'])
-                response_data['questions'].append(['user_id', 'User'])
                 
             #Add in links
-            if form.link_type!="-1":
-                model=cf_cache.only_fkey_models[form.link_type]
-                inst=model.objects.get(pk=response["link_%s_id" % model.__name__])
-                response["link_%s_id" % model.__name__]    = unicode(inst)
-                response_data['questions'].append(["link_%s_id" % model.__name__, form.link_type])
+            if only_fkey_model is not None:
+                if only_fkey_model.objects.filter(pk=response["link_%s_id" % only_fkey_model.__name__]).exists():
+                    inst=only_fkey_model.objects.get(pk=response["link_%s_id" % only_fkey_model.__name__])
+                else: inst=None    
+                response["link_%s_id" % only_fkey_model.__name__]    = unicode(inst)
 
             #Now, put in the additional fields in response
             for qname, data in add_fields.items():
                 if data[0].__name__ not in link_instances_cache:
-                    link_instances_cache[data[0].__name__]=data[0].objects.get(pk=response["link_%s_id" % data[0].__name__])
+                    if data[0].objects.filter(pk=response["link_%s_id" % data[0].__name__]).exists():
+                        link_instances_cache[data[0].__name__]=data[0].objects.get(pk=response["link_%s_id" % data[0].__name__])
+                    else:
+                        link_instances_cache[data[0].__name__]=None
+                            
                 if cf_cache.isCompoundLinkField(data[0], data[1]):
-                    response[qname] = [link_instances_cache[data[0].__name__].__dict__[x] for x in cf_cache.getCompoundLinkFields(data[0], data[1])]
+                    if link_instances_cache[data[0].__name__] is None:
+                        response[qname]=[]
+                    else:    
+                        response[qname] = [link_instances_cache[data[0].__name__].__dict__[x] for x in cf_cache.getCompoundLinkFields(data[0], data[1])]
                 else:
-                    response[qname]=link_instances_cache[data[0].__name__].__dict__[data[1]]    
+                    if link_instances_cache[data[0].__name__] is None:
+                        response[qname]=''
+                    else:    
+                        response[qname]=link_instances_cache[data[0].__name__].__dict__[data[1]]    
                 
         #Add responses to response_data
         response_data['answers'].extend(responses)                                    

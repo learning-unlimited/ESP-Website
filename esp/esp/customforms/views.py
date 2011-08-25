@@ -133,13 +133,18 @@ def onModify(request):
             except:
                 raise ESPError(False), 'Form %s not found' % metadata['form_id']
             dmh=DMH(form=form)
+            link_models_list=[]     # Stores a cache of link models that should not be removed
             
-            #First, check if only_fkey links have changed
+            #Populating the old fields list
+            dmh._getModelFieldList()
+            
+            #Check if only_fkey links have changed
             if form.link_type!=metadata['link_type']:
                 dmh.change_only_fkey(form.link_type, metadata['link_type'])
             
+            # NOT updating 'anonymous'
             form.__dict__.update(title=metadata['title'], description=metadata['desc'], link_type=metadata['link_type'], 
-                link_id=int(metadata['link_id']), anonymous=metadata['anonymous'], perms=metadata['perms'],
+                link_id=int(metadata['link_id']), perms=metadata['perms'],
                 success_message=metadata['success_message'], success_url=metadata['success_url'])
             
             form.save()
@@ -159,16 +164,32 @@ def onModify(request):
                                                     seq=int(field['data']['seq']), label=field['data']['question_text'], 
                                                     help_text=field['data']['help_text'], required=field['data']['required'])
                         if field_created:
-                            dmh.addField(curr_field)
-                        else:
+                            # Check for link field
+                            if cf_cache.isLinkField(curr_field.field_type):
+                                dmh.addLinkFieldColumn(curr_field)
+                            else: dmh.addField(curr_field)
+                        elif not cf_cache.isLinkField(curr_field.field_type):
                             dmh.updateField(curr_field)
+                            
+                        # Store a reference to the linked model so that we don't drop it from the table.
+                        if cf_cache.isLinkField(curr_field.field_type):
+                            model_cls=cf_cache.modelForLinkField(curr_field.field_type)
+                            if model_cls.__name__ not in link_models_list: link_models_list.append(model_cls.__name__)
+                            
                         for atype, aval in field['data']['attrs'].items():
                             curr_field.set_attribute(atype, aval)
                         curr_keys['fields'].append(curr_field.id)
                         
             del_fields=old_fields.exclude(id__in=curr_keys['fields'])
             for df in del_fields:
-                dmh.removeField(df)
+                # Check for link fields
+                if cf_cache.isLinkField(df.field_type):
+                    model_cls=cf_cache.modelForLinkField(df.field_type)
+                    if model_cls.__name__ not in link_models_list:
+                        # This column needs to be dropped
+                        dmh.removeLinkField(df)
+                else:        
+                    dmh.removeField(df)
             del_fields.delete()
                 
             old_sections.exclude(id__in=curr_keys['sections']).delete()
