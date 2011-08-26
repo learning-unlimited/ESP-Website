@@ -586,7 +586,11 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
             
-        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values()}
+        # Allow tag configuration of whether class descriptions get collapsed
+        # when the class is full (default: yes)
+        collapse_full = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
+            
+        context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'collapse_full': collapse_full}
         
         return render_to_response(self.baseDir()+'catalog.html', request, (prog, tl), context)
 

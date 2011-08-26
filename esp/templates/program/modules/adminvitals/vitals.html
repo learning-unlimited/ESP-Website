@@ -115,4 +115,27 @@
 </table>
 </div>
 
+<!-- Counts of classes registered by each category -->
+<br /><br />
+<div id="program_form">
+<table>
+
+<tr><th colspan="3">Subject categories</th></tr>
+<tr><td colspan="3">(Note: Totals include unreviewed classes)</td></tr>
+<tr>
+    <td><b>Category</b></th>
+    <th class="smaller"># of subjects</th>
+    <th class="smaller"># of sections</th>
+</tr>
+{% for cat in categories %}
+<tr>
+    <th class="smaller">{{ cat.category }}</th>
+    <td>{{ cat.num_subjects }}</td>
+    <td>{{ cat.num_sections }}</td>
+</tr>
+{% endfor %}
+
+</table>
+</div>
+
 </center>

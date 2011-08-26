@@ -3,6 +3,7 @@ from esp.web.util.template import cache_inclusion_tag
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion
 from esp.cache.key_set import wildcard
+from esp.tagdict.models import Tag
     
 register = template.Library()
 
@@ -45,7 +46,12 @@ def render_class_core(cls):
         for sec in cls._sections:
             sec.num_apps = sec.num_students(verbs=['Applied'])
 
+    # Allow tag configuration of whether class descriptions get collapsed
+    # when the class is full (default: yes)
+    collapse_full = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
+
     return {'class': cls,
+            'collapse_full': collapse_full,
             'colorstring': colorstring,
             'show_enrollment': scrmi.visible_enrollments,
             'show_emailcodes': scrmi.show_emailcodes,

@@ -156,37 +156,19 @@ function hideClassesOutOfGradeRange(stu_grade) {
       maxes[clsid] = grade;
     }
   }
-
-  arr = document.getElementsByClassName("classcontent");
-  for (var clsnum in arr) {
-    cls = arr[clsnum];
-    if (cls && cls.id) {
-      clsid = cls.id.split("_")[0];
-      if (stu_grade < mins[clsid] || stu_grade > maxes[clsid]) {
-        cls.style.display = 'none';
-      }
-    }
-  }
-
-  arr = document.getElementsByClassName("classdetails");
-  for (var clsnum in arr) {
-    cls = arr[clsnum];
-    if (cls && cls.id) {
-      clsid = cls.id.split("_")[0];
-      if (stu_grade < mins[clsid] || stu_grade > maxes[clsid]) {
-        cls.style.display = 'none';
-      }
-    }
-  }
-
-  arr = document.getElementsByClassName("classregbuttons");
-  for (var clsnum in arr) {
-    cls = arr[clsnum];
-    if (cls && cls.id) {
-      clsid = cls.id.split("_")[0];
-      if (stu_grade < mins[clsid] || stu_grade > maxes[clsid]) {
-        cls.style.display = 'none';
-      }
+  
+  class_arrays = ["classcontent", "classdetails", "classregbuttons"];
+  for (var i = 0; i < class_arrays.length; i++)
+  {
+    arr = document.getElementsByClassName(class_arrays[i]);
+    for (var clsnum in arr) {
+        cls = arr[clsnum];
+        if (cls && cls.id) {
+          clsid = cls.id.split("_")[0];
+          if (stu_grade < mins[clsid] || stu_grade > maxes[clsid]) {
+            cls.style.display = 'none';
+          }
+        }
     }
   }
 
