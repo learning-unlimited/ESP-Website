@@ -45,12 +45,8 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
     
     	var config = {
     	    id: 'sri',
-    	    //width: 800,
-    	    //height: 450,
     	    autoHeight: true,
-    	    //autoScroll: true,
     	    deferredRender: true,
-    	    //forceLayout: true,
     	    closeable: false,
     	    tabWidth: 20,
     	    enableTabScroll: true,
@@ -227,7 +223,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
         for (i = 1; i <= priority_limit; ++i) {
             dropdown_states_data.push([String(i),String(i)]);
         }
-		addConfirmTab();
+		this.addConfirmTab();
 
 	     Ext.getCmp('sri').loadPrepopulate();
      },
@@ -260,24 +256,20 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 		     height: 200,
 		     items: flagged_classes
 		 });
-    }
+    },
 
     allTabsCheck: function() {
-	    var priorities_per_timeblock = new Array();
-        for(i=0; i < this.num_tabs; ++i) {
-            priorities_per_timeblock[i] = 0;
-            var ids = checkbox_ids_by_timeblock[this.tab_names[i][0]].split('_');
-            for(j=0; j < ids.length - 1; ++j) {
-	            if (parseInt(Ext.getCmp("combo_"+ids[j]).getValue())) {
-	                ++priorities_per_timeblock[i];
+        var missing = false;
+        for(i = 0; i < this.items.items.length; i++)
+        {
+            tab = this.items.items[i];
+            if(tab.xtype == "timeslotpanel")
+            {
+                if(!tab.timeslotCompleted())
+                {
+                    missing = true;
+                    break;
                 }
-	        }
-        }
-        for(i=0; i < this.num_tabs; ++i) {
-            var missing = false
-            if (!priorities_per_timeblock[i]) {
-                missing = true;
-                break;
             }
         }
         if (missing) {
@@ -339,36 +331,34 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
      confirmRegistration: function() {
 	     tabpanel = Ext.getCmp('sri');
 	    //submitForm.getForm().submit({url: 'lsr_submit'})
-	     classes = new Object;
-	     count = 0;
-	     var val = 0;
-         if (priority_limit == 1) {
-	        for(i=0; i<checkbox_ids.length; i++) {
-		         checkbox = Ext.getCmp(checkbox_ids[i]);
-	             classes[checkbox_ids[i]] = checkbox.getValue();
-		         flag_id = 'flag_'+checkbox_ids[i];
-		         flag = Ext.getCmp(flag_id);
-		         classes[flag_id] = flag.getValue();
-		     }
-	    }
+        if(priority_limit == 1)
+        {
+            var ESPclasses = new Object();
+            for(i = 1; i < tabpanel.items.items.length; i++)
+            {
+                var tab = tabpanel.items.items[i];
+                if(tab.xtype == 'timeslotpanel')
+                {
+                    var tabPreferences = tab.getPreferences();
+                    for(var preference in tabPreferences)
+                    {
+                        ESPclasses[preference] = tabPreferences[preference];
+                    }
+                }
+            }
+        }
         else {
             for(i = 0; i < this.num_tabs; i++) {
                 var ids = checkbox_ids_by_timeblock[this.tab_names[i][0]].split('_');
                 //alert(ids);
                 for (j = 0; j < ids.length - 1; ++j) {
                     if (val = parseInt(Ext.getCmp("combo_"+ids[j]).getValue())) {
-		                classes[ids[j]] = new Array(val, this.tab_names[i][0]);
+		                ESPclasses[ids[j]] = new Array(val, this.tab_names[i][0]);
 		                //alert(classes[ids[j]]);
 		            }
                 }
             }    
         }
-
-	     /*
-	     for(i=0; i<flag_ids.length; i++){
-	         flag = Ext.getCmp(flag_ids[i]);
-		 classes[flag_ids[i]] = flag.getValue();
-		 }*/
 
         var handle_submit_response = function (data) {
             //  console.log("Got response: " + JSON.stringify(data));
@@ -414,7 +404,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
             }
         };
 
-	     data = Ext.encode(classes);
+	     data = Ext.encode(ESPclasses);
 	     Ext.Ajax.request({
 		     url: '/learn/'+url_base+'/lsr_submit',
 		     success: handle_submit_response,
@@ -433,13 +423,11 @@ Ext.reg('lottery_student_reg', StudentRegInterface);
 
 var win;
 Ext.onReady(function() {
-win = new Ext.Panel({
+win = new StudentRegInterface({
   renderTo: Ext.get("reg_panel"),
       //	closable: false,
       monitorResize: true,
-      items: [{ xtype: 'lottery_student_reg', 
-	  id: 'sri'
-	  }],
+      id: "sri",
       title: nice_name + ' Class Lottery - ' + esp_user["cur_first_name"] + ' ' + esp_user["cur_last_name"] + ' (grade ' + grade + ')',
       autoWidth: true,
       autoHeight: true

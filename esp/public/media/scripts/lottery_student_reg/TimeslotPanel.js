@@ -7,23 +7,25 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         var config =
         {
             items:
-            {
-                xtype: 'fieldset',
-                layout: 'column',
-                id: this.id+'no_class',
-                name: this.id+'no_class',
-                items: 
-                [
-                    {
-                        xtype: 'radio',
-	                    id: 'flag_'+this.id,
-	                    name: 'flag_'+this.id
-                    },{ 
-	                    xtype: 'displayfield',
-	                    value: "I would not like to flag a priority class for this timeblock."
-                    }
-                ]
-            },
+            [
+                {
+                    xtype: 'fieldset',
+                    layout: 'column',
+                    id: this.id+'no_class',
+                    name: this.id+'no_class',
+                    items: 
+                    [
+                        {
+                            xtype: 'radio',
+	                        id: 'flag_'+this.id,
+	                        name: 'flag_'+this.id
+                        },{ 
+	                        xtype: 'displayfield',
+	                        value: "I would not like to flag a priority class for this timeblock."
+                        }
+                    ]
+                }
+            ],
             height: 800,
             priorityLimit: 1,
             autoScroll: true,
@@ -33,15 +35,15 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
                 //beforehide: this.checkPriorities
             }
         };
-
     	Ext.apply(this, Ext.apply(this.initialConfig, config));
-        TimeslotPanel.superclass.initComponent.apply(this, arguments); 
+        TimeslotPanel.superclass.initComponent.apply(this, arguments);
     },
 
     makeCheckBoxes: function() {
         for(i = 1; i < this.ESPclasses.length; i++)
         {
             var r = this.ESPclasses[i];
+            var checkbox_id = r.data.id;
 
 		    //comes up with label for checkboxes
 		    text = '';
@@ -51,33 +53,10 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         
             if (priority_limit == 1) {
 		        this.add({
-		            xtype: 'fieldset',
-		            layout: 'column',
-		            id: timeblock[0] + r.data.title,
-		            name: timeblock[1] + r.data.title,
-		            items: 
-		            [
-	                       {
-    					       xtype: 'radio',
-            			       id: 'flag_'+r.data.id,
-            			       name: 'flag_'+timeblock[0],
-            			       inputValue: r.data.id,
-            			       listeners: { //listener changes the flagged classes box at the top when the flagged class changes
-	        			       }
-		                   }, 
-	                       {
-		            	       xtype: 'checkbox',
-		            	       name: r.data.id,
-		            	       id: r.data.id
-		                   }, 
-	                       { 
-		            	       xtype: 'displayfield',
-		                	       value: text,
-		            	       autoHeight: true,
-		            	       id: 'title_'+ r.data.id 
-		                   }
-		                ]
-	
+                    xtype: 'class_checkboxes',
+                    ESPClassInfo: r,
+                    timeblockId: this.timeblock[1],
+                    id: this.timeblock[1] + r.id,
 	            });
             }
 
@@ -125,6 +104,37 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 	            this.add(new_column)
             }
         }
+    },
+
+    flaggedClass: function () {
+        return ;
+    },
+
+    //return true if a class is flagged.
+    timeslotCompleted: function () {
+        for(i = 1; i < this.items.items.length; i ++)
+        {
+            var classFieldSet = this.items.items[i];
+            if(classFieldSet.items.items[0].getValue() == true)
+            {
+                return true;
+            }
+        }
+        return false;
+    },
+
+    getPreferences: function () {
+        classPreferences = new Object();
+        noPreferenceRadio = this.items.items[0].items.items[0];
+        classPreferences[noPreferenceRadio.id] = noPreferenceRadio.getValue();
+        for(j=1; j<this.items.items.length; j++) {
+	         var checkbox = this.items.items[j];
+             console.log(checkbox);
+             console.log(checkbox.id);
+             classPreferences[checkbox.id] = checkbox.items.items[1].getValue();
+	         classPreferences["flag_" + checkbox.id] = checkbox.items.items[0].getValue();
+	     }
+        return classPreferences;
     },
 
     checkPriorities: function () {
