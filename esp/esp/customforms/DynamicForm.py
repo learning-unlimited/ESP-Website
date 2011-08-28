@@ -164,7 +164,7 @@ class CustomFormHandler():
                     
                     #   Create dynamic validators to check results if the correct answer has
                     #   been specified by the form author
-                    if attr_name == 'correct_answer':
+                    if attr_name == 'correct_answer' and len(field['attributes'][attr_name].strip()) > 0:
                         if field['field_type'] in ['dropdown', 'radio']:
                             value_choices = field['attributes']['options'].split('|')
                             target_value = value_choices[int(field['attributes'][attr_name])]
@@ -173,6 +173,7 @@ class CustomFormHandler():
                             target_value = [value_choices[int(index)] for index in field['attributes'][attr_name].split(',')]
                         else:
                             target_value = field['attributes'][attr_name]
+
                         field_attrs['validators'] = [matches_answer(target_value)]
 
                 if other_attrs:
