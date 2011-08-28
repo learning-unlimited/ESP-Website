@@ -40,7 +40,7 @@ class Field(models.Model):
     field_type=models.CharField(max_length=50)
     seq=models.IntegerField()
     label=models.CharField(max_length=200)
-    help_text=models.CharField(max_length=200, blank=True)
+    help_text=models.TextField(blank=True)
     required=models.BooleanField()
     
     def __unicode__(self):
@@ -59,7 +59,7 @@ class Field(models.Model):
 class Attribute(models.Model):
     field=models.ForeignKey(Field)
     attr_type=models.CharField(max_length=80)
-    value=models.CharField(max_length=256)                
+    value=models.TextField()                
 
 from esp.customforms.DynamicForm import *
 from esp.customforms.DynamicModel import *

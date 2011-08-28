@@ -10,10 +10,13 @@ class Migration(SchemaMigration):
     def forwards(self, orm):
         
         # Changing field 'Attribute.value'
-        db.alter_column('customforms_attribute', 'value', self.gf('django.db.models.fields.CharField')(max_length=256))
+        db.alter_column('customforms_attribute', 'value', self.gf('django.db.models.fields.TextField')())
 
         # Changing field 'Attribute.attr_type'
         db.alter_column('customforms_attribute', 'attr_type', self.gf('django.db.models.fields.CharField')(max_length=80))
+
+        # Changing field 'Field.help_text'
+        db.alter_column('customforms_field', 'help_text', self.gf('django.db.models.fields.TextField')())
 
     def backwards(self, orm):
         
@@ -22,6 +25,9 @@ class Migration(SchemaMigration):
 
         # Changing field 'Attribute.attr_type'
         db.alter_column('customforms_attribute', 'attr_type', self.gf('django.db.models.fields.CharField')(max_length=15))
+
+        # Changing field 'Field.help_text'
+        db.alter_column('customforms_field', 'help_text', self.gf('django.db.models.fields.CharField')(max_length=200))
 
     models = {
         'auth.group': {
@@ -65,13 +71,13 @@ class Migration(SchemaMigration):
             'attr_type': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
             'field': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['customforms.Field']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'value': ('django.db.models.fields.CharField', [], {'max_length': '256'})
+            'value': ('django.db.models.fields.TextField', [], {})
         },
         'customforms.field': {
             'Meta': {'object_name': 'Field'},
             'field_type': ('django.db.models.fields.CharField', [], {'max_length': '50'}),
             'form': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['customforms.Form']"}),
-            'help_text': ('django.db.models.fields.CharField', [], {'max_length': '200', 'blank': 'True'}),
+            'help_text': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'label': ('django.db.models.fields.CharField', [], {'max_length': '200'}),
             'required': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
