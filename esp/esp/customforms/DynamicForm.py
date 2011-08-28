@@ -16,6 +16,7 @@ from esp.program.models import Program
 
 from esp.customforms.linkfields import cf_cache, generic_fields, custom_fields
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 
 class BaseCustomForm(BetterForm):
     """
@@ -34,6 +35,15 @@ class BaseCustomForm(BetterForm):
                 del cleaned_data[k]
         return cleaned_data        
         
+
+""" A simple validator that checks whether you have provided the right answer. """
+def matches_answer(target_val):
+    def func(value):
+        print 'Comparing actual value %s to reference %s' % (value, target_val)
+        if value != target_val:
+            raise ValidationError('Incorrect answer.') #  'Expected: %s' % target_val
+    print 'Created validator to match target value %s' % target_val
+    return func
 
 class CustomFormHandler():
     """Handles creation of 'one' Django form (=one page)"""
@@ -148,12 +158,25 @@ class CustomFormHandler():
                 if field['field_type'] in self._combo_fields:
                     field_attrs['name']=field_name
                 """    
-                
-                #TODO: Change for multiple attributes - could be possible
+
+                #   Extract form attributes for further use below
                 other_attrs=[]
-                if field['attribute__attr_type'] is not None:
-                    other_attrs.append({'attr_type':field['attribute__attr_type'], 'value':field['attribute__value']})
-                
+                for attr_name in field['attributes']:
+                    other_attrs.append({'attr_type':attr_name, 'value':field['attributes'][attr_name]})
+                    
+                    #   Create dynamic validators to check results if the correct answer has
+                    #   been specified by the form author
+                    if attr_name == 'correct_answer':
+                        if field['field_type'] in ['dropdown', 'radio']:
+                            value_choices = field['attributes']['options'].split('|')
+                            target_value = value_choices[int(field['attributes'][attr_name])]
+                        elif field['field_type'] in ['checkboxes']:
+                            value_choices = field['attributes']['options'].split('|')
+                            target_value = [value_choices[int(index)] for index in field['attributes'][attr_name].split(',')]
+                        else:
+                            target_value = field['attributes'][attr_name]
+                        field_attrs['validators'] = [matches_answer(target_value)]
+
                 if other_attrs:
                     field_attrs.update(self._getAttrs(other_attrs))
                     
@@ -402,8 +425,10 @@ class FormHandler:
         
         #Generating the 'master' struct for metadata
         #master_struct is a nested list of the form (pages(sections(fields)))
+        field_dict = {}
         master_struct=[]
         for field in fields:
+            
             try:
                 page=master_struct[field['section__page__seq']]
             except IndexError:
@@ -414,7 +439,12 @@ class FormHandler:
             except IndexError:
                 section=[]
                 page.append(section)
-            section.append(field)
+            if field['id'] not in field_dict:
+                section.append(field)
+                field_dict[field['id']] = field
+                field_dict[field['id']]['attributes'] = {field['attribute__attr_type']: field['attribute__value']}
+            else:
+                field_dict[field['id']]['attributes'].update({field['attribute__attr_type']: field['attribute__value']})
         return master_struct
     _getFormMetadata.depend_on_row(lambda: Field, lambda field: {'form': field.form})
     _getFormMetadata.depend_on_row(lambda: Attribute, lambda attr: {'form': attr.field.form})

@@ -516,7 +516,7 @@ var clearSpecificOptions=function() {
 
 var addSpecificOptions=function(elem, options, limtype) {
 	//Adds in specific options for some fields
-	
+
 	var limits, frag, $div;
 	if(elem=='numeric'){
 		if(options!='')
@@ -549,6 +549,50 @@ var addSpecificOptions=function(elem, options, limtype) {
 	}
 };
 
+var addCorrectnessOptions = function(elem) {
+    /*  Display a field that lets the form author specify a "correct" answer
+        for supported field types   */
+
+    //  TODO: Convert the correct answer selector into a replica of the field
+    //  that the user will see.  For now, they have to know kung fu.
+    if (elem == 'dropdown')
+    {
+        frag = '<div id="dropdown_correctness_options" class="toolboxText">';
+        frag += '<p>Correct answer index: ';
+        frag += '<input type="text" id="dropdown_correct_answer" value=""/>';
+        frag += '</p></div>';
+        var $div = $(frag);
+        $div.appendTo($('#other_options'));
+    }
+    else if (elem == 'radio')
+    {
+        frag = '<div id="radio_correctness_options" class="toolboxText">';
+        frag += '<p>Correct answer index: ';
+        frag += '<input type="text" id="radio_correct_answer" value=""/>';
+        frag += '</p></div>';
+        var $div = $(frag);
+        $div.appendTo($('#other_options'));
+    }
+    else if (elem == 'textField')
+    {
+        frag = '<div id="textField_correctness_options" class="toolboxText">';
+        frag += '<p>Correct answer: ';
+        frag += '<input type="text" id="textField_correct_answer" value=""/>';
+        frag += '</p></div>';
+        var $div = $(frag);
+        $div.appendTo($('#other_options'));
+    }
+    else if (elem == 'checkboxes')
+    {
+        frag = '<div id="checkboxes_correctness_options" class="toolboxText">';
+        frag += '<p>Correct answer indices (comma-separated): ';
+        frag += '<input type="text" id="checkboxes_correct_answer" value=""/>';
+        frag += '</p></div>';
+        var $div = $(frag);
+        $div.appendTo($('#other_options'));
+    }
+}
+
 var onSelectElem = function(item) {
 	//Generates the properties fields when a form item is selected from the list
 
@@ -561,6 +605,12 @@ var onSelectElem = function(item) {
 	var currCategory=$('#cat_selector').val();	
 	var $option,$wrap_option,i, question_text=formElements[currCategory][item]['ques'], $button=$('#button_add');
 	
+    //  Add validation options
+    if (item in formElements['Generic'])
+    {
+        addCorrectnessOptions(item);
+    }
+    
 	//Defining actions for generic elements
 	if(item=='textField' || item=='longTextField' || item=='longAns' || item=='reallyLongAns')
 		addSpecificOptions(item, '', '');
@@ -718,6 +768,7 @@ var renderNormalField=function(item, field_options, data){
 			key='charlimits';
 		else key='wordlimits';	
 		data['attrs'][key]=$('#text_min').attr('value') + ',' + $('#text_max').attr('value');
+        data['attrs']['correct_answer']=$('#textField_correct_answer').attr('value');
 	}
 	else if(item=="longTextField"){
 		$new_elem=$('<input/>', {
@@ -773,6 +824,7 @@ var renderNormalField=function(item, field_options, data){
 			}
 		});
 		data['attrs']['options']=options_string;
+        data['attrs']['correct_answer']=$('#radio_correct_answer').attr('value');
 	}
 	else if(item=="dropdown") {
 		$new_elem=$('<select>');
@@ -793,6 +845,7 @@ var renderNormalField=function(item, field_options, data){
 				$new_elem.append($one_option);
 			}
 		});	
+        data['attrs']['correct_answer']=$('#dropdown_correct_answer').attr('value');
 		data['attrs']['options']=options_string;
 	}
 	else if(item=="multiselect") {
@@ -834,6 +887,7 @@ var renderNormalField=function(item, field_options, data){
 			$new_elem.append($("<p>").append($one_option).append($("<span>"+el+"</span>")));
 		});
 		data['attrs']['options']=options_string;
+        data['attrs']['correct_answer']=$('#checkboxes_correct_answer').attr('value');
 	}
 	else if(item=="numeric"){
 		$new_elem=$('<input/>', {
