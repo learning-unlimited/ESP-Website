@@ -39,10 +39,8 @@ class BaseCustomForm(BetterForm):
 """ A simple validator that checks whether you have provided the right answer. """
 def matches_answer(target_val):
     def func(value):
-        print 'Comparing actual value %s to reference %s' % (value, target_val)
         if value != target_val:
             raise ValidationError('Incorrect answer.') #  'Expected: %s' % target_val
-    print 'Created validator to match target value %s' % target_val
     return func
 
 class CustomFormHandler():
