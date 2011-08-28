@@ -218,3 +218,11 @@ td, th {
 th {
 	border-bottom:2px solid #6678B1;
 }
+
+input {
+    border: 1px solid #999999;
+}
+
+textarea {
+    border: 1px solid #999999;
+}
