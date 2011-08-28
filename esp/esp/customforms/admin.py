@@ -33,7 +33,7 @@ class SectionAdmin(admin.ModelAdmin):
 admin.site.register(Section, SectionAdmin)
 
 class FieldAdmin(admin.ModelAdmin):
-    list_display = ['__unicode__', 'form', 'label', 'field_type', 'section', 'seq']
+    list_display = ['__unicode__', 'form', 'label', 'field_type', 'section', 'seq', 'required']
     list_editable = list_display[2:]
 admin.site.register(Field, FieldAdmin)
 
