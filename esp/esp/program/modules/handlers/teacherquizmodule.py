@@ -44,6 +44,9 @@ from django.db.models.query import Q
 from esp.datatree.models import GetNode, DataTree
 #from esp.cal.models import Event
 from esp.users.models import ESPUser, UserBit, User
+from esp.customforms.models import Form
+from esp.customforms.DynamicForm import FormHandler
+from esp.tagdict.models import Tag
 #from datetime import datetime
 import re
 
@@ -84,75 +87,6 @@ class TeacherQuizController(object):
         if self._bitsByUser(user):
             return True
         return False
-
-    def find_errors(self, answer_dict):
-        """
-        Check quiz answers for errors.
-
-        Not yet ready for programs besides Spark 2011.
-        """
-        question_numbers = {
-            'prog_month': 1,
-            'prog_day': 1,
-            'prog_year': 1,
-            'photo_exists': 5,
-            'call_911': 6,
-            'teacher_lunch': 7,
-            'check_in': 8,
-            'sec1': 3,
-            'sec2': 3,
-            'sec3': 3,
-            'sec4': 3,
-            'sec5': 3,
-            'sec6': 3,
-            
-            'reimburse1': 4,
-            'reimburse2': 4,
-            'reimburse3': 4,
-            'reimburse4': 4,
-            'reimburse5': 4,
-
-            'security_number': 2,
-        }
-        correct_answers = {
-            'prog_month': '3',
-            'prog_day': '12',
-            'prog_year': '2011',
-            'photo_exists': 'True',
-            'call_911': 'False',
-            'teacher_lunch': 'True',
-            'check_in': 'True',
-        }
-        checkboxes = {
-            'sec1': True,
-            'sec2': False,
-            'sec3': True,
-            'sec4': False,
-            'sec5': True,
-            'sec6': True,
-            
-            'reimburse1': True,
-            'reimburse2': False,
-            'reimburse3': False,
-            'reimburse4': True,
-            'reimburse5': True,
-        }
-        errors = []
-        for key in correct_answers:
-            if answer_dict.get(key, '') != correct_answers[key]:
-                errors.append(question_numbers[key])
-        for key in checkboxes:
-            if bool(answer_dict.get(key, False)) != checkboxes[key]:
-                errors.append(question_numbers[key])
-        # Check the day of the program
-        # m = self.twoday_pattern.match(answer_dict.get('prog_day'))
-        # if not m or set(m.groups()) != set(['12']):
-        #     errors.append(question_numbers['prog_day'])
-        # Check the security number
-        ans = answer_dict.get('security_number', '')
-        if ''.join([x for x in ans if x.isdigit()]) != '6172534941':
-            errors.append(question_numbers['security_number'])
-        return set(errors)
 
 class TeacherQuizModule(ProgramModuleObj):
     # Initialization
@@ -209,13 +143,22 @@ class TeacherQuizModule(ProgramModuleObj):
     @needs_teacher
     @meets_deadline('/Quiz')
     def quiz(self, request, tl, one, two, module, extra, prog):
+    
+        custom_form_id = Tag.getProgramTag('quiz_form_id', prog, None)
+        if custom_form_id:
+            cf = Form.objects.get(id=int(custom_form_id))
+        else:
+            raise ESPError('Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the quiz_form_id Tag.')
+        
+        form_wizard = FormHandler(cf, request, self.user).getWizard()
+        form_class = form_wizard.form_list[0]
+    
         if request.method == 'POST':
-            errors = self.controller.find_errors(request.POST)
-            if not errors:
+            form = form_class(request.POST)
+            if form.is_valid():
                 self.controller.markCompleted(self.user)
                 return self.goToCore(tl)
-            return render_to_response(self.baseDir()+'quiz_tryagain.html', request, (prog, tl), {'prog':prog, 'errors': errors})
         else:
-            data = {}
-            form = None  # SomeFormOrOther(self, initial=data)
-            return render_to_response(self.baseDir()+'quiz.html', request, (prog, tl), {'prog':prog, 'form': form})
+            form = form_class()
+            
+        return render_to_response(self.baseDir()+'quiz.html', request, (prog, tl), {'prog':prog, 'form': form})
