@@ -5,7 +5,7 @@
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }}</a>
           {% else %}
-           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }} {% if class.isFull %}<font color="#990000" style="font-size: 14px">Full!</font>{% endif %}
+           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }} {% if class.isFull and collapse_full %}<font color="#990000" style="font-size: 14px">Full!</font>{% else %}{% if class.isRegClosed %}<font color="#990000" style="font-size: 14px">Closed!</font>{% endif %}{% endif %}
           {% endif %}
 	 
 	 {% ifnotequal class.hardness_rating "Normal"  %} <br />
@@ -58,13 +58,13 @@
       <td style="width: 50%;" colspan="2">
          <strong>Grades:</strong>
            <span class="gradelisting grademin" id="class_{{ class.id }}_grade_min">
-           {% if 'Summer' not in class.parent_program.anchor.friendly_name or 'HSSP' not in class.parent_program.anchor.parent.name %}
+           {% if not class.parent_program.incrementGrade %}
            {{ class.grade_min }}</span> -
            {% else %}
            Rising {{ class.grade_min }}<sup>th</sup> graders to <br />
            {% endif %}
            <span class="gradelisting grademax" id="class_{{ class.id }}_grade_max">
-           {% if 'Summer' not in class.parent_program.anchor.friendly_name or 'HSSP' not in class.parent_program.anchor.parent.name %}
+           {% if not class.parent_program.incrementGrade %}
            {{ class.grade_max }}</span>
            {% else %}
            {% if class.grade_max == 13 %}
@@ -111,11 +111,14 @@
     {% endif %}
     {% endwith %}
 
-{% if class.isFull %}
+{% if collapse_full %}
+{% if class.isFull or class.isRegClosed %}
 <!-- This class is already full; start it off as invisible -->
 <script language="JavaScript" type="text/javascript">
 swap_visible('class_{{ class.id }}_details');
 swap_visible('class_{{ class.id }}_content');
 </script>
 {% endif %}
+{% endif %}
+
 

@@ -123,3 +123,7 @@ class TeacherPreviewModule(ProgramModuleObj):
     
     def isStep(self):
         return False
+
+    class Meta:
+        abstract = True
+

@@ -69,7 +69,7 @@ class SurveyModule(ProgramModuleObj):
 
         if QObject:
             return {'student_survey': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb))}
-        return {'student_survey': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct()}
+        return {'student_survey': ESPUser.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct()}
 
     def teachers(self, QObject = False):
         verb = GetNode('V/Flags/TeacherSurvey/Filed')
@@ -77,7 +77,7 @@ class SurveyModule(ProgramModuleObj):
 
         if QObject:
             return {'teacher_survey': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb))}
-        return {'teacher_survey': User.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct()}
+        return {'teacher_survey': ESPUser.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct()}
 
     def studentDesc(self):
         return {'student_survey': """Students who filled out the survey"""}
@@ -117,3 +117,7 @@ class SurveyModule(ProgramModuleObj):
         elif extra == 'review_single':
             return survey_review_single(request, tl, one, two)
         
+
+    class Meta:
+        abstract = True
+

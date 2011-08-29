@@ -79,7 +79,7 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         if QObject:
             return {'creditcard': QObj}
         else:
-            return {'creditcard':User.objects.filter(QObj).distinct()}
+            return {'creditcard':ESPUser.objects.filter(QObj).distinct()}
 
     def studentDesc(self):
         return {'creditcard': """Students who have filled out the credit card form."""}
@@ -177,3 +177,7 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         context['invoice'] = invoice
         
         return render_to_response(self.baseDir() + 'cardpay.html', request, (prog, tl), context)
+
+    class Meta:
+        abstract = True
+

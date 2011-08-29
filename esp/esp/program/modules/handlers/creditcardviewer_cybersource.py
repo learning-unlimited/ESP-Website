@@ -56,7 +56,7 @@ class CreditCardViewer_Cybersource(ProgramModuleObj):
     @main_call
     @needs_admin
     def viewpay_cybersource(self, request, tl, one, two, module, extra, prog):
-        student_list = User.objects.filter(document__anchor=self.program_anchor_cached(), document__txn__lineitem__isnull=False).distinct()
+        student_list = ESPUser.objects.filter(document__anchor=self.program_anchor_cached(), document__txn__lineitem__isnull=False).distinct()
 
         if request.GET.has_key('only_completed'):
             student_list = student_list.filter(document__txn__complete=True)
@@ -70,3 +70,7 @@ class CreditCardViewer_Cybersource(ProgramModuleObj):
         context = { 'payment_table': payment_table }
         
         return render_to_response(self.baseDir() + 'viewpay_cybersource.html', request, (prog, tl), context)
+
+    class Meta:
+        abstract = True
+

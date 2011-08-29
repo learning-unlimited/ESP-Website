@@ -126,12 +126,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         else:
             return {
-                'class_approved': User.objects.filter(Q_approved_teacher).distinct(),
-                'class_proposed': User.objects.filter(Q_proposed_teacher).distinct(),
-                'class_rejected': User.objects.filter(Q_rejected_teacher).distinct(),
-                'class_nearly_full': User.objects.filter(Q_nearly_full_teacher).distinct(),
-                'class_full': User.objects.filter(Q_full_teacher).distinct(),
-                'taught_before': User.objects.filter(Q_taught_before).distinct(),
+                'class_approved': ESPUser.objects.filter(Q_approved_teacher).distinct(),
+                'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct(),
+                'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct(),
+                'class_nearly_full': ESPUser.objects.filter(Q_nearly_full_teacher).distinct(),
+                'class_full': ESPUser.objects.filter(Q_full_teacher).distinct(),
+                'taught_before': ESPUser.objects.filter(Q_taught_before).distinct(),
             }
 
 
@@ -753,7 +753,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         if not request.GET.has_key('name') or request.POST.has_key('name'):
             return self.goToCore(tl)
 
-        queryset = User.objects.filter(Q_teacher)
+        queryset = ESPUser.objects.filter(Q_teacher)
         
         if not request.GET.has_key('name'):
             startswith = request.POST['name']
@@ -797,3 +797,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             return user.getFullClasses_pretty(self.program)
 
         return 'No classes.'
+
+    class Meta:
+        abstract = True
+

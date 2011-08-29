@@ -38,6 +38,7 @@ from django.contrib.auth.models import User
 from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.db.models.prepared import ProcedureManager
+from esp.users.models import ESPUser
 
 from datetime import datetime
 from decimal import Decimal
@@ -81,7 +82,7 @@ class Balance(models.Model):
         history of a ledger need not be explored to determine the balance on
         that ledger. """
     anchor = AjaxForeignKey(DataTree, related_name='balance')
-    user = AjaxForeignKey(User, related_name='balance')
+    user = AjaxForeignKey(ESPUser, related_name='balance')
     timestamp = models.DateTimeField()
     amount = models.DecimalField(max_digits=16, decimal_places=2)
     past = models.ForeignKey('self', null=True)
@@ -257,7 +258,7 @@ class LineItemManager(ProcedureManager):
 class LineItem(models.Model):
     """ A transaction line item """
     transaction = models.ForeignKey(Transaction)
-    user = AjaxForeignKey(User,related_name='accounting_lineitem')
+    user = AjaxForeignKey(ESPUser,related_name='accounting_lineitem')
     anchor = AjaxForeignKey(DataTree,related_name='accounting_lineitem')
     amount = models.DecimalField(max_digits=9, decimal_places=2)
     text = models.TextField()

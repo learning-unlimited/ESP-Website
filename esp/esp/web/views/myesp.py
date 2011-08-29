@@ -70,18 +70,6 @@ def myesp_passwd(request, module):
                                                     'form': form,
                                                     'Success': False})
 
-
-def myesp_home(request, module):
-	""" Draw the ESP home page """
-	curUser = request.user
-	sub = GetNode('V/Subscribe')
-	entries = Entry.find_posts_by_perms(curUser, sub)
-	annlinks = AnnouncementLink.find_posts_by_perms(curUser, sub)
-	entries = [x.html() for x in entries.filter(Q(highlight_expire__isnull=True) | Q(highlight_expire__gte=datetime.datetime.now()))]
-	annlinks = [x.html() for x in annlinks.filter(Q(highlight_expire__isnull=True) | Q(highlight_expire__gte=datetime.datetime.now()))]
-	ann = entries + annlinks
-	return render_to_response('display/battlescreen', request, GetNode('Q/Web/myesp'), {'announcements': ann})
-
 @login_required
 def myesp_switchback(request, module):
 	user = request.user
@@ -126,7 +114,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
 
     if prog_input is None:
-        prog = Program.getDummy()
+        prog = None
         navnode = GetNode('Q/Web/myesp')
     else:
         prog = prog_input
@@ -273,7 +261,6 @@ def myesp_onsite(request, module):
 		return render_to_response('program/pickonsite.html', request, navnode, {'progs': progs})
 
 myesp_handlers = {
-		   'home': myesp_home,
 		   'switchback': myesp_switchback,
 		   'onsite': myesp_onsite,
 		   'passwd': myesp_passwd,

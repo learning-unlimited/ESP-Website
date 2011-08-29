@@ -4,6 +4,7 @@ from django.contrib.auth.models import User, AnonymousUser
 
 # esp dependencies
 from esp.db.fields import AjaxForeignKey
+from esp.users.models import ESPUser
 
 MAX_DEPTH = 5
 
@@ -12,8 +13,8 @@ class UserForwarder(models.Model):
     Links source user to target user, to make all login sessions under target.
 
     """
-    source = AjaxForeignKey(User, related_name='forwarders_out', unique=True)
-    target = AjaxForeignKey(User, related_name='forwarders_in')
+    source = AjaxForeignKey(ESPUser, related_name='forwarders_out', unique=True)
+    target = AjaxForeignKey(ESPUser, related_name='forwarders_in')
 
     # Django tries to figure out the correct app label by going one level up.
     # Since we've had to shard users.models, this isn't quite enough.

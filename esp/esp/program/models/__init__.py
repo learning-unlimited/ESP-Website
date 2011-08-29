@@ -219,7 +219,7 @@ class ArchiveClass(models.Model):
     def __unicode__(self):
         from esp.middleware.threadlocalrequest import AutoRequestContext as Context
         from django.template import loader
-        t = loader.get_template('models/ArchiveClass.html')
+        t = loader.get_template('program/archive_class.html')
         return t.render(Context({'class': self}, autoescape=True))
 
     def num_students(self):
@@ -309,15 +309,6 @@ class Program(models.Model, CustomFormsLinkModel):
         from esp.program.models.app_ import StudentAppQuestion
         return StudentAppQuestion
     isUsingStudentApps.depend_on_model(_SAQ)
-
-    @cache_function
-    def getDummy():
-        try:
-            return Program.objects.get(anchor = GetNode("Q/Programs/Dummy_Programs/Profile_Storage"))
-        except:
-            raise ESPError(), 'Error: There needs to exist an administrive program anchored at Q/Programs/Dummy_Programs/Profile_Storage.'
-    getDummy.depend_on_model(lambda: Program)
-    getDummy = staticmethod(getDummy)
 
     @cache_function
     def checkitems_all_cached(self):
@@ -1025,6 +1016,21 @@ class Program(models.Model, CustomFormsLinkModel):
             print 'Archived: %s' % c.title()
         
         return archived_classes
+
+    @cache_function
+    def incrementGrade(self): 
+        incrementTag = Tag.getProgramTag('increment_default_grade_levels', self)
+        if incrementTag: 
+            return 1
+        return 0
+    incrementGrade.depend_on_row(lambda: Tag, lambda tag: {'self' :  tag.target})
+    
+    def priorityLimit(self):
+        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        if studentregmodule and studentregmodule.use_priority and studentregmodule.priority_limit > 0:
+            return studentregmodule.priority_limit
+        else: 
+            return 1
     
     @staticmethod
     def find_by_perms(user, verb):
@@ -1057,7 +1063,7 @@ class BusSchedule(models.Model):
     
 class TeacherParticipationProfile(models.Model):
     """ Profile properties associated with a teacher in a program """
-    teacher = AjaxForeignKey(User)
+    teacher = AjaxForeignKey(ESPUser)
     program = models.ForeignKey(Program)
     unique_together = (('teacher', 'program'),)
     bus_schedule = models.ManyToManyField(BusSchedule)
@@ -1076,7 +1082,7 @@ class SplashInfo(models.Model):
         The data is manipulated by a separate program module, SplashInfoModule,
         which produces an additional registration step if enabled.
     """
-    student = AjaxForeignKey(User)
+    student = AjaxForeignKey(ESPUser)
     #   Program field may be empty for backwards compatibility with Stanford data
     program = AjaxForeignKey(Program, null=True)
     lunchsat = models.CharField(max_length=32, blank=True, null=True)
@@ -1146,7 +1152,7 @@ class SATPrepRegInfo(models.Model):
     prac_verb_score = models.IntegerField(blank=True, null=True)
     prac_writ_score = models.IntegerField(blank=True, null=True)    
     heard_by = models.CharField(max_length=128, blank=True, null=True)
-    user = AjaxForeignKey(User)
+    user = AjaxForeignKey(ESPUser)
     program = models.ForeignKey(Program)
 
     class Meta:
@@ -1171,8 +1177,8 @@ class SATPrepRegInfo(models.Model):
 
 class RegistrationProfile(models.Model):
     """ A student registration form """
-    user = AjaxForeignKey(User)
-    program = models.ForeignKey(Program, null=True)
+    user = AjaxForeignKey(ESPUser)
+    program = models.ForeignKey(Program, blank=True, null=True)
     contact_user = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_user')
     contact_guardian = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_guardian')
     contact_emergency = AjaxForeignKey(ContactInfo, blank=True, null=True, related_name='as_emergency')
@@ -1253,8 +1259,11 @@ class RegistrationProfile(models.Model):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
         regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
         if len(regProfList) < 1:
-            # Has this user already filled out a profile for the parent program?
-            parent_program = program.getParentProgram()
+            if program:
+                # Has this user already filled out a profile for the parent program?
+                parent_program = program.getParentProgram()
+            else:
+                parent_program = None
             if parent_program is not None:
                 regProf = RegistrationProfile.getLastForProgram(user, parent_program)
                 regProf.program = program
@@ -1312,8 +1321,8 @@ class RegistrationProfile(models.Model):
 class TeacherBio(models.Model):
     """ This is the biography of a teacher."""
 
-    program = models.ForeignKey(Program)
-    user    = AjaxForeignKey(User)
+    program = models.ForeignKey(Program, blank=True, null=True)
+    user    = AjaxForeignKey(ESPUser)
     bio     = models.TextField(blank=True, null=True)
     slugbio = models.CharField(max_length=50, blank=True, null=True)
     picture = models.ImageField(height_field = 'picture_height', width_field = 'picture_width', upload_to = "uploaded/bio_pictures/%y_%m/",blank=True, null=True)
@@ -1338,14 +1347,10 @@ class TeacherBio(models.Model):
     def save(self, *args, **kwargs):
         """ update the timestamp """
         self.last_ts = datetime.now()
-        if self.program_id is None:
-            self.program = Program.getDummy()
         super(TeacherBio, self).save(*args, **kwargs)
 
     def url(self):
         return '/teach/teachers/%s/bio.html' % self.user.username
-
-
 
     def edit_url(self):
         return '/teach/teachers/%s/bio.edit.html' % self.user.username
@@ -1369,7 +1374,7 @@ class FinancialAidRequest(models.Model):
     """
 
     program = models.ForeignKey(Program, editable = False)
-    user    = AjaxForeignKey(User, editable = False)
+    user    = AjaxForeignKey(ESPUser, editable = False)
 
     approved = models.DateTimeField(blank=True, null=True)
 
@@ -1796,7 +1801,7 @@ class VolunteerOffer(models.Model):
     confirmed = models.BooleanField()
 
     #   Fill out this if you're logged in...
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     
     #   ...or this if you haven't.
     email = models.EmailField(blank=True, null=True)
@@ -1886,8 +1891,3 @@ from esp.program.models.app_ import *
 # The following are only so that we can refer to them in caching Program.getModules.
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo
-
-def install():
-    """ Setup for program. """
-    from esp.program.dummy_program import init_dummy_program
-    init_dummy_program()

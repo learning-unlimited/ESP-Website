@@ -201,3 +201,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
     
  
 
+
+    class Meta:
+        abstract = True
+

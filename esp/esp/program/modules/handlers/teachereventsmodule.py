@@ -93,8 +93,8 @@ class TeacherEventsModule(ProgramModuleObj):
             }
         else:
             return {
-                'interview': User.objects.filter( userbit__qsc__parent = self.qscs['interview'] ).distinct(),
-                'training': User.objects.filter( userbit__qsc__parent = self.qscs['training'] ).distinct()
+                'interview': ESPUser.objects.filter( userbit__qsc__parent = self.qscs['interview'] ).distinct(),
+                'training': ESPUser.objects.filter( userbit__qsc__parent = self.qscs['training'] ).distinct()
             }
 
     def teacherDesc(self):
@@ -183,4 +183,8 @@ class TeacherEventsModule(ProgramModuleObj):
         return render_to_response( self.baseDir()+'teacher_events.html', request, (prog, tl), {'prog': prog, 'interview_times': interview_times, 'training_times': training_times} )
 
 
+
+
+    class Meta:
+        abstract = True
 

@@ -52,8 +52,6 @@ def post_syncdb(sender, app, **kwargs):
                 return
             #   Run installation
             have_already_installed = True
-            print "Installing esp.program initial data..."
-            program.install()
             print "Installing esp.program.class initial data..."
             class_models.install()
         

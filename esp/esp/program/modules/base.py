@@ -131,41 +131,6 @@ class ProgramModuleObj(models.Model):
         else:
             return Q(id__in = ids)
 
-    @staticmethod
-    def renderMyESP():
-        """
-        Returns a rendered myESP home template, with content from all relevant modules
-
-        Renders the page based on content from all 
-        """
-        all_modules = []
-        context = {}
-
-        for x in ProgramModules.objects.all():
-            try:
-                thisClass = x.getPythonClass()
-
-                try:
-                    page = thisClass.summaryPage()
-                    context = thisClass.prepareSummary(context)
-                except:
-                    page = None
-
-                
-                    subpages = [ { 'name': i.__name__, 'link_title': i.__doc__.split('\n')[0], 'function': i } for i in thisClass.getSummaryCalls() ]
-                    if subpages == []:
-                        subpages = None
-
-               
-                    all_modules.append({ 'module': thisClass,
-                                         'page': page,
-                                         'subpages': subpages })
-            except:
-                pass
-
-        context['modules'] = all_modules
-        return render_to_response("myesp/mainpage.html", context)
-            
     #   This function caches the customized (augmented) program module objects
     @cache_function
     def findModuleObject(tl, call_txt, prog):
@@ -174,24 +139,21 @@ class ProgramModuleObj(models.Model):
         for module in modules:
             ProgramModuleObj.getFromProgModule(prog, module)
 
-        modules = ProgramModule.objects.filter(main_call = call_txt, module_type = tl).select_related()[:1]
-        module = None
-
-        if len(modules) == 0:
-            modules = ProgramModule.objects.filter(aux_calls__contains = call_txt, module_type = tl).select_related()
-            for module in modules:
-                if call_txt in module.aux_calls.strip().split(','):
-                    return ProgramModuleObj.getFromProgModule(prog, module)
-        else:
-            module = modules[0]
-            return ProgramModuleObj.getFromProgModule(prog, module)
-
+        #   Start with the program's cached list of modules
+        moduleobjs = filter(lambda mod: mod.module.module_type == tl, prog.getModules())
+        #   Check for a module that has a matching main_call
+        for modobj in moduleobjs:
+            if modobj.module.main_call == call_txt:
+                return modobj
+        #   Check for a module that has a matching aux_call
+        for modobj in moduleobjs:
+            if isinstance(modobj.module.aux_calls, basestring) and call_txt in modobj.module.aux_calls.strip().split(','):
+                return modobj
+        #   If no module matched those criteria, we are looking for a page that does not exist.
         raise Http404
         
-    #   Invalidate cache when any program module related data is saved
-    #   Technically this should include the options (StudentClassRegModuleInfo, etc.)
-    findModuleObject.depend_on_model(lambda: ProgramModule)
-    findModuleObject.depend_on_model(lambda: ProgramModuleObj)
+    #   Program.getModules cache takes care of our dependencies
+    findModuleObject.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
     findModuleObject = staticmethod(findModuleObject)
     
     #   The list of modules in a particular category (student reg, teacher reg)
@@ -200,21 +162,13 @@ class ProgramModuleObj(models.Model):
     def findCategoryModules(self, include_optional):
         prog = self.program
         module_type = self.module.module_type
-
+        moduleobjs = filter(lambda mod: mod.module.module_type == module_type, prog.getModules())
         if not include_optional:
-            other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=module_type, required=True).select_related(depth=1).order_by('seq')
-        else:
-            other_modules = ProgramModuleObj.objects.filter(program=prog, module__module_type=module_type).select_related(depth=1).order_by('seq')
-        
-        result_modules = list(other_modules)
-        for mod in result_modules:
-            mod.__class__ = mod.module.getPythonClass()
-            mod.fixExtensions()
-            
-        return result_modules
-        
-    findCategoryModules.depend_on_model(lambda: ProgramModule)
-    findCategoryModules.depend_on_model(lambda: ProgramModuleObj)
+            moduleobjs = filter(lambda mod: mod.required == True, moduleobjs)
+        moduleobjs.sort(key=lambda mod: mod.seq)
+        return moduleobjs
+    #   Program.getModules cache takes care of our dependencies
+    findCategoryModules.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
     
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
@@ -409,20 +363,22 @@ class ProgramModuleObj(models.Model):
         per_program_template = baseDir+'per_program/'+str(self.program.id)+ \
             '_'+ mainCallTemp
 
+        if self.module.inline_template:
+            return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
+
+        #   Iterate over a bunch of reasons to return a template;
+        #   if none of them come up true, return None.
         try:
             get_template(per_program_template)
-            if not self.useTemplate():
-                return None
-            return per_program_template
+            if self.useTemplate():
+                return per_program_template
         except TemplateDoesNotExist:
             try:
                 get_template(base_template)
-                if not self.useTemplate():
-                    return None
-                return base_template
+                if self.useTemplate():
+                    return base_template
             except TemplateDoesNotExist:
-                if self.module.inline_template:
-                    return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
+                pass
 
         return None
 

@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
+from esp.program.controllers.consistency import ConsistencyChecker
 
 from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem
 from esp.users.models import UserBit, ESPUser, User
@@ -187,7 +188,7 @@ class AdminClass(ProgramModuleObj):
             if ids:
                 Q_Users |= Q(id__in = ids)
                     
-            users = User.objects.filter( Q_Users )
+            users = ESPUser.objects.filter( Q_Users )
 
             if request.POST['class_id'] == 'program':
                 already_registered_users = prog.students()['attended']
@@ -197,12 +198,12 @@ class AdminClass(ProgramModuleObj):
 
             already_registered_ids = [ i.id for i in already_registered_users ]
                                                
-            new_attendees = User.objects.filter( Q_Users )
+            new_attendees = ESPUser.objects.filter( Q_Users )
             if already_registered_ids != []:
                 new_attendees = new_attendees.exclude( id__in = already_registered_ids )
             new_attendees = new_attendees.distinct()
 
-            no_longer_attending = User.objects.filter( id__in = already_registered_ids )
+            no_longer_attending = ESPUser.objects.filter( id__in = already_registered_ids )
             if ids != [] or usernames != []:
                 no_longer_attending = no_longer_attending.exclude( Q_Users )
             no_longer_attending = no_longer_attending.distinct()
@@ -316,6 +317,14 @@ class AdminClass(ProgramModuleObj):
                 cls_form.save_data(cls_alter)
 
                 return HttpResponseRedirect('/manage/%s/%s/dashboard' % (one, two))            
+            
+        consistency_checker = ConsistencyChecker(self.program)
+        context['errors'] = []
+        for teacher in cls.teachers():
+            context['errors'] += consistency_checker.check_teacher_conflict(teacher)
+        for section in sections:
+            context['errors'] += consistency_checker.check_expected_duration(section)
+            context['errors'] += consistency_checker.check_resource_consistency(section)
             
         context['class'] = cls
         context['sections'] = sections
@@ -560,7 +569,7 @@ class AdminClass(ProgramModuleObj):
         if not request.GET.has_key('name') or request.POST.has_key('name'):
             return self.goToCore(tl)
 
-        queryset = User.objects.filter(Q_teacher)
+        queryset = ESPUser.objects.filter(Q_teacher)
         
         if not request.GET.has_key('name'):
             startswith = request.POST['name']
@@ -621,4 +630,8 @@ class AdminClass(ProgramModuleObj):
 
 
         return render_to_response(self.baseDir()+"mass_approve_form.html", request, (prog, tl), {})
+
+
+    class Meta:
+        abstract = True
 

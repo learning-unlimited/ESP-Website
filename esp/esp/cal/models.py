@@ -182,8 +182,11 @@ class Event(models.Model):
         
         return grouped_list
 
-    def pretty_time(self):
-        return self.start.strftime('%a') + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
+    def pretty_time(self, include_date = False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun")
+        s = self.start.strftime('%a')
+        if include_date:
+            s += self.start.strftime(', %b %d,')
+        return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
                + self.end.strftime('%I:%M%p').lower().strip('0')
     
     def pretty_date(self):

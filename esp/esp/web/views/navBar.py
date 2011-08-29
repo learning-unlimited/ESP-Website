@@ -57,6 +57,10 @@ def nav_category(node, section=''):
     while (cur_node is not top_node) and (cur_node is not None):
         categories = NavBarCategory.objects.filter(anchor=cur_node).exclude(anchor__isnull=True)
         if categories.count() > 0:
+            if len(section) and categories.count() > 1:
+                categories2 = categories.filter(name__icontains=section)
+                if categories2.count() > 0:
+                    categories = categories2
             return categories[0]
         cur_node = cur_node.parent
 

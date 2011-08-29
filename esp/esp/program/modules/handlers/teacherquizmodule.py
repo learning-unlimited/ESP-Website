@@ -125,7 +125,7 @@ class TeacherQuizModule(ProgramModuleObj):
             }
         else:
             return {
-                'quiz_done': User.objects.filter(qo).distinct(),
+                'quiz_done': ESPUser.objects.filter(qo).distinct(),
             }
 
     def teacherDesc(self):
@@ -162,3 +162,7 @@ class TeacherQuizModule(ProgramModuleObj):
             form = form_class()
             
         return render_to_response(self.baseDir()+'quiz.html', request, (prog, tl), {'prog':prog, 'form': form})
+
+    class Meta:
+        abstract = True
+

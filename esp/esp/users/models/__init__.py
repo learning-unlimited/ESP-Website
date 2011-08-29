@@ -103,7 +103,7 @@ class FakeState(object):
     db = None
 
 class UserAvailability(models.Model):
-    user = AjaxForeignKey(User)
+    user = AjaxForeignKey('ESPUser')
     event = models.ForeignKey(Event)
     role = AjaxForeignKey(DataTree)
     priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
@@ -260,10 +260,7 @@ class ESPUser(User, AnonymousUser):
                       'retTitle': retTitle,
                       'onsite'  : onsite}
 
-        if type(user) == ESPUser:
-            user = user.getOld()
-
-        if ESPUser(user).isAdministrator():
+        if user.isAdministrator():
             # Disallow morphing into Administrators.
             # It's too broken, from a security perspective.
             # -- aseering 1/29/2010
@@ -298,11 +295,7 @@ class ESPUser(User, AnonymousUser):
         del request.session['user_morph']
         logout(request)
 
-        if type(new_user) == ESPUser:
-            old_user = new_user.getOld()
-        else:
-            old_user = new_user
-
+        old_user = new_user
         old_user.backend = 'django.contrib.auth.backends.ModelBackend'
         
         login(request, old_user)
@@ -444,11 +437,11 @@ class ESPUser(User, AnonymousUser):
             num = int(num)
         except:
             raise ESPError(), 'Could not find user "%s %s"' % (first, last)
-        users = User.objects.filter(last_name__iexact = last,
+        users = ESPUser.objects.filter(last_name__iexact = last,
                                     first_name__iexact = first).order_by('id')
         if len(users) <= num:
             raise ESPError(False), '"%s %s": Unknown User' % (first, last)
-        return ESPUser(users[num])
+        return users[num]
 
     @staticmethod
     def getTypes():
@@ -472,7 +465,7 @@ class ESPUser(User, AnonymousUser):
             return Q_useroftype
 
         else:
-            return User.objects.filter(Q_useroftype)
+            return ESPUser.objects.filter(Q_useroftype)
 
     @cache_function
     def getAvailableTimes(self, program, ignore_classes=False):
@@ -933,9 +926,8 @@ class ESPUser(User, AnonymousUser):
             if regProf and regProf.student_info:
                 if regProf.student_info.graduation_year:
                     grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year)
-                    # necessary if HSSP wants grades to reflect the incoming grades of the students - Jordan M 5/23/2011
-                    if program is not None and "Summer" in program.anchor.friendly_name and "HSSP" in program.anchor.parent.name:
-                        grade += 1
+                    if program:
+                        grade += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
                         
 
         self._grade = grade
@@ -943,6 +935,7 @@ class ESPUser(User, AnonymousUser):
         return grade
     #   The cache will need to be cleared once per academic year.
     getGrade.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
+    getGrade.depend_on_row(lambda: Tag, lambda tag: {'program' :  tag.target})
 
     def currentSchoolYear(self):
         return ESPUser.current_schoolyear()-1
@@ -977,7 +970,7 @@ food_choices = zip(food_choices, food_choices)
 
 class StudentInfo(models.Model):
     """ ESP Student-specific contact information """
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     graduation_year = models.PositiveIntegerField(blank=True, null=True)
     k12school = AjaxForeignKey('K12School', help_text='Begin to type your school name and select your school if it comes up.', blank=True, null=True)
     school = models.CharField(max_length=256,blank=True, null=True)
@@ -1067,9 +1060,12 @@ class StudentInfo(models.Model):
 
         if regProfile.student_info is None:
             studentInfo = StudentInfo()
-            studentInfo.user = curUser
         else:
             studentInfo = regProfile.student_info
+        if not studentInfo.user:
+            studentInfo.user = curUser
+        elif studentInfo.user != curUser: # this should never happen, but you never know....
+            raise ESPError(), "Your registration profile is corrupted. Please contact esp-web@mit.edu, with your name and username in the message, to correct this issue."
 
         studentInfo.graduation_year = new_data['graduation_year']
         try:
@@ -1262,7 +1258,7 @@ class TeacherInfo(models.Model, CustomFormsLinkModel):
 
 class GuardianInfo(models.Model):
     """ ES Guardian-specific contact information """
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     year_finished = models.PositiveIntegerField(blank=True, null=True)
     num_kids = models.PositiveIntegerField(blank=True, null=True)
 
@@ -1325,7 +1321,7 @@ class GuardianInfo(models.Model):
 
 class EducatorInfo(models.Model):
     """ ESP Educator-specific contact information """
-    user = AjaxForeignKey(User, blank=True, null=True)
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
     subject_taught = models.CharField(max_length=64,blank=True, null=True)
     grades_taught = models.CharField(max_length=16,blank=True, null=True)
     school = models.CharField(max_length=128,blank=True, null=True)
@@ -1748,7 +1744,7 @@ class PersistentQueryFilter(models.Model):
         foo.save()
         return foo
 
-    def get_Q(self):
+    def get_Q(self, restrict_to_active = True):
         """ This will return the Q object that was passed into it. """
         try:
             QObj = pickle.loads(str(self.q_filter))
@@ -1756,7 +1752,7 @@ class PersistentQueryFilter(models.Model):
             raise ESPError(), 'Invalid Q object stored in database.'
 
         #   Do not include users if they have disabled their account.
-        if self.item_model.find('auth.models.User') >= 0:
+        if restrict_to_active and self.item_model.find('auth.models.User') >= 0:
             QObj = QObj & Q(is_active=True)
 
         return QObj
@@ -1806,7 +1802,7 @@ class PersistentQueryFilter(models.Model):
 
 
 class ESPUser_Profile(models.Model):
-    user = AjaxForeignKey(User, unique=True)
+    user = AjaxForeignKey(ESPUser, unique=True)
 
     class Meta:
         app_label = 'users'
@@ -1926,12 +1922,12 @@ class DBList(object):
         if self.QObject: # if there is a q object we can just
             if not self.totalnum:
                 if override:
-                    self.totalnum = User.objects.filter(self.QObject).distinct().count()
+                    self.totalnum = ESPUser.objects.filter(self.QObject).distinct().count()
                     cache.set(cache_id, self.totalnum, 60)
                 else:
                     cachedval = cache.get(cache_id)
                     if cachedval is None:
-                        self.totalnum = User.objects.filter(self.QObject).distinct().count()
+                        self.totalnum = ESPUser.objects.filter(self.QObject).distinct().count()
                         cache.set(cache_id, self.totalnum, 60)
                     else:
                         self.totalnum = cachedval
@@ -1975,9 +1971,9 @@ def install():
     from esp.users.initial_userbits import populateInitialUserBits
     populateInitialUserBits()
 
-    if User.objects.count() == 1: # We just did a syncdb;
+    if ESPUser.objects.count() == 1: # We just did a syncdb;
                                   # the one account is the admin account
-        user = User.objects.all()[0]
+        user = ESPUser.objects.all()[0]
         AdminUserBits = ( { "user": user,
                             "verb": GetNode("V/Administer"),
                             "qsc": GetNode("Q") },
