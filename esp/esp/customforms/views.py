@@ -215,9 +215,9 @@ def hasPerm(user, form):
         if sub_perms:
             if prog_id!="":
                 prog=Program.objects.get(pk=int(prog_id))
-                all_Qs=prog.getLists()
+                all_Qs=prog.getLists(QObjects=True)
                 for perm in sub_perms:
-                    Qlist.append(all_Qs[perm])
+                    Qlist.append(all_Qs[perm]['list'])
         if ESPUser.objects.filter(id=user.id).filter(*Qlist).exists():
             return True, ""
         else:
