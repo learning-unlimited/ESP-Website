@@ -1541,7 +1541,7 @@ var submit=function() {
 	var form_perms='';
 	if($('#id_main_perm').val()!='none'){
 		form_perms+=$('#id_main_perm').val();
-		if(!('#id_perm_program').is(':hidden'))
+		if(!$('#id_perm_program').is(':hidden'))
 			form_perms+=","+$('#id_perm_program').val();
 		if(!$('#id_sub_perm').is(':hidden'))
 			form_perms+=","+$('#id_sub_perm').val();
