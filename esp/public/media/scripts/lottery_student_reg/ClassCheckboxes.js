@@ -6,8 +6,13 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
     initComponent: function ()
     {
         checkbox_id = this.ESPClassInfo.id;
+
+		//comes up with label for checkboxes
+		classText = '';
+		classText = classText + this.ESPClassInfo.data.category.symbol + this.ESPClassInfo.data.id + ': ' + this.ESPClassInfo.data.title;
         var config = 
         {
+            id: this.timeblockId + this.ESPClassInfo.id,
             items: 
             [
                 {
@@ -25,27 +30,32 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
                 }, 
                 { 
         	       xtype: 'displayfield',
-            	   value: text,
+            	   value: classText,
         	       autoHeight: true,
         	       id: 'title_'+ checkbox_id 
                 }
             ],
             layout: 'column',
-            id: this.timeblockId + checkbox_id,
-            listeners: {
-               // render: this.addCheckboxes
-            }
+            classFullTitle: classText,
         };
     	Ext.apply(this, Ext.apply(this.initialConfig, config));
         ClassCheckboxes.superclass.initComponent.apply(this, arguments); 
     },
 
-    addCheckboxes: function ()
+    classNumber: function () 
     {
-        this.add(
-);
-    }
+        return this.ESPClassInfo.data.id;
+    },
 
+    isChecked: function () 
+    {
+        return this.items.items[1].getValue();
+    },
+
+    isFlagged: function ()
+    {
+        return this.items.items[0].getValue();
+    }
 });
 
 Ext.reg('class_checkboxes', ClassCheckboxes);

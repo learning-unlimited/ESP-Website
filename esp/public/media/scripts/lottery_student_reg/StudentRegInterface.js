@@ -230,32 +230,44 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 
     addConfirmTab: function () 
     {
-    	 //creates "confirm registration" tab
-	     //creates fields for all first choice classes
-	     flagged_classes = [];
-
-	     //adds textarea with some explanation
-	     flagged_classes.push({
-		     xtype: 'displayfield',
-		     height: 40,
-		   //width: '600',
-		     value: '<font size=3">To register for the ' + nice_name + ' class lottery, click "Show me my priority classes!" and then, if everything appears correct, press "Enter me in the lottery!"</font>'//<br><br>  If you like what you see, click "Show me my priority classes!"'
-	     });
-
-	     //adds "confirm registration" button
-	     flagged_classes.push({
-		     xtype: 'button',
-		     text: 'Show me my priority classes!',
-		     handler: this.promptCheck
-	     });
-
-	     //adds above to a form
 	     Ext.getCmp('sri').add({
+             id: "confirm",
 		     xtype: 'form',
 		     title: 'Confirm Registration',
-		     height: 200,
-		     items: flagged_classes
+             listeners: {
+                show: this.getPreferences
+             },
+
 		 });
+    },
+
+    getPreferences: function () {
+        confirmPanel = Ext.getCmp("confirm");
+        confirmPanel.removeAll();
+        confirmPanel.add(
+                {
+		            xtype: 'displayfield',
+		            height: 40,
+		            value: '<font size=3">To register for the ' + nice_name + ' class lottery, click "Show me my priority classes!" and then, if everything appears correct, press "Enter me in the lottery!"</font>'//<br><br>  If you like what you see, click "Show me my priority classes!"'
+	            });
+        confirmPanel.add({
+	    	        xtype: 'button',
+    		        text: 'Show me my priority classes!',
+	    	        handler: this.promptCheck
+	            });
+
+        for(k = 1; k < Ext.getCmp("sri").items.items.length; k++){
+            var tab = Ext.getCmp("sri").items.items[k];
+            if(tab.xtype == "timeslotpanel"){
+                console.log("add");
+                confirmPanel.add({
+                    xtype: "displayfield",
+                    value: tab.getSummary()
+                });  
+            }
+        }
+        confirmPanel.doLayout();
+        return;
     },
 
     allTabsCheck: function() {
@@ -291,11 +303,8 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
     promptCheck: function() {
 	    flagged_classes = 'Please check to see that these are the classes you intended to flag:<br />';
 	    if (priority_limit == 1) {
-	        for(i = 0; i<checkbox_ids.length; i++){
-	            if (Ext.getCmp('flag_'+checkbox_ids[i]).getValue() == true){
-		            title = Ext.getCmp('title_'+checkbox_ids[i]).getValue();
-		            flagged_classes = flagged_classes + title + '<br />';
-		        }
+	        for(var timeslot in this.items.items){
+                timeslot.getSummary();
 	        }
 	    }
         else {

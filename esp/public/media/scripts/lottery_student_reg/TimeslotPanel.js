@@ -44,20 +44,13 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         {
             var r = this.ESPclasses[i];
             var checkbox_id = r.data.id;
-
-		    //comes up with label for checkboxes
-		    text = '';
-		    text = text + r.data.category.symbol + r.data.id + ': ' + r.data.title + ', ';
-		    //end_timeblock = r.data.get_sections[j].get_meeting_times[r.data.get_sections[j].get_meeting_times.length-1];
-		    //text = text + timeblock.start.substring(11,16) //+ ' - ' + end_timeblock.end.substring(11,16);
         
             if (priority_limit == 1) {
 		        this.add({
                     xtype: 'class_checkboxes',
                     ESPClassInfo: r,
-                    timeblockId: this.timeblock[1],
-                    id: this.timeblock[1] + r.id,
-	            });
+                    timeblockId: this.timeblock[1]
+	            }); 
             }
 
             else 
@@ -107,7 +100,23 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
     },
 
     flaggedClass: function () {
-        return ;
+        for(j=1; j<this.items.items.length; j++) {
+	         var checkbox = this.items.items[j];
+	         if(checkbox.isFlagged()){
+                return checkbox;
+             }
+	     }
+    },
+
+    checkedClasses: function () {
+        var checked = [];
+        for(j=1; j<this.items.items.length; j++) {
+	         var checkbox = this.items.items[j];
+	         if(checkbox.isChecked()){
+                checked.push(checkbox);
+             }
+	     }
+        return checked;
     },
 
     //return true if a class is flagged.
@@ -129,12 +138,41 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         classPreferences[noPreferenceRadio.id] = noPreferenceRadio.getValue();
         for(j=1; j<this.items.items.length; j++) {
 	         var checkbox = this.items.items[j];
-             console.log(checkbox);
-             console.log(checkbox.id);
-             classPreferences[checkbox.id] = checkbox.items.items[1].getValue();
-	         classPreferences["flag_" + checkbox.id] = checkbox.items.items[0].getValue();
+             classPreferences[checkbox.classNumber()] = checkbox.isChecked();
+	         classPreferences["flag_" + checkbox.classNumber()] = checkbox.isFlagged();
 	     }
         return classPreferences;
+    },
+
+    getSummary: function () {
+        var summaryParts =  [];
+        var flagged = this.flaggedClass();
+        summaryParts.push("Flagged class:");
+        if (!flagged){
+            summaryParts.push("None");
+        }
+        else{
+            summaryParts.push("Flagged Class: " + flagged.classFullTitle);
+        }
+
+        summaryParts.push("Classes with interest:");
+        var checked = this.checkedClasses()
+        if(checked.length == 0)
+        {
+            summaryParts.push("None");
+        }        
+        for(j = 0; j < checked.length; j++)
+        {
+            checkbox = checked[j];
+            summaryParts.push("    " + checkbox.classFullTitle);
+        }      
+
+        var summary = "";
+        for(j = 0; j < summaryParts.length; j++){
+            part = summaryParts[j];
+            summary = summary + part + "<br />";
+        }
+        return summary;
     },
 
     checkPriorities: function () {
