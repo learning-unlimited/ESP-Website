@@ -35,6 +35,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
         	       id: 'title_'+ checkbox_id 
                 }
             ],
+            width: 400,
             layout: 'column',
             classFullTitle: classText,
         };

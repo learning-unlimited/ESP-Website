@@ -146,20 +146,21 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     getSummary: function () {
         var summaryParts =  [];
+        summaryParts.push("<font size=\"5\">" + this.timeblock[1] + "</font>");
         var flagged = this.flaggedClass();
-        summaryParts.push("Flagged class:");
+        summaryParts.push("<b>Flagged Class: </b>");
         if (!flagged){
-            summaryParts.push("None");
+            summaryParts.push("<font color=\"red\">None</font>");
         }
         else{
-            summaryParts.push("Flagged Class: " + flagged.classFullTitle);
+            summaryParts.push(flagged.classFullTitle);
         }
 
-        summaryParts.push("Classes with interest:");
+        summaryParts.push("<b>Classes with interest: </b>");
         var checked = this.checkedClasses()
         if(checked.length == 0)
         {
-            summaryParts.push("None");
+            summaryParts.push("<font color=\"red\">None</font>");
         }        
         for(j = 0; j < checked.length; j++)
         {

@@ -252,14 +252,14 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	            });
         confirmPanel.add({
 	    	        xtype: 'button',
-    		        text: 'Show me my priority classes!',
-	    	        handler: this.promptCheck
+    		        text: 'Enter my preferences in the Splash! Lottery',
+	    	        handler: Ext.getCmp("sri").allTabsCheck,
+                    scope: Ext.getCmp("sri")
 	            });
 
         for(k = 1; k < Ext.getCmp("sri").items.items.length; k++){
             var tab = Ext.getCmp("sri").items.items[k];
             if(tab.xtype == "timeslotpanel"){
-                console.log("add");
                 confirmPanel.add({
                     xtype: "displayfield",
                     value: tab.getSummary()
@@ -300,54 +300,19 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
         else {  Ext.getCmp('sri').confirmRegistration();  }
 	},
 
-    promptCheck: function() {
-	    flagged_classes = 'Please check to see that these are the classes you intended to flag:<br />';
-	    if (priority_limit == 1) {
-	        for(var timeslot in this.items.items){
-                timeslot.getSummary();
-	        }
-	    }
-        else {
-            for(j = 1; j <= priority_limit; ++j) {
-                flagged_classes = flagged_classes + '<br /><b>Priority ' + j + '</b><br />';
-                for(i = 0; i<checkbox_ids.length; i++){
-                    if (Ext.getCmp('combo_'+checkbox_ids[i]).getValue() == j){
-                        title = Ext.getCmp('title_'+checkbox_ids[i]).getValue();
-                        flagged_classes = flagged_classes + title + '<br />';
-                    }
-                }
-            }
-	    }
-	    flagged_classes = flagged_classes + '<br><br><b> After you enter the lottery, remember to finish registering on the main registration page.</b>'
-	    Ext.Msg.show({
-		    title:  'Priority Classes',
-		    msg: flagged_classes,
-		    buttons: {ok:'These look good.  Enter me into the ' + nice_name + ' lottery!', cancel:'Wait!  No!  Let me go back and edit them!'},
-		    fn: function(button) 
-            {
-			    if (button == 'ok')
-                {
-                    Ext.getCmp('sri').allTabsCheck();
-                }
-			    if (button == 'cancel')
-                {
-                    Ext.Msg.hide();
-                }
-		    }
-		});
-    },
-
      confirmRegistration: function() {
 	     tabpanel = Ext.getCmp('sri');
 	    //submitForm.getForm().submit({url: 'lsr_submit'})
         if(priority_limit == 1)
         {
             var ESPclasses = new Object();
+            console.log(tabpanel.items.items.length);
             for(i = 1; i < tabpanel.items.items.length; i++)
             {
                 var tab = tabpanel.items.items[i];
                 if(tab.xtype == 'timeslotpanel')
                 {
+                    console.log("timeslotpanel");
                     var tabPreferences = tab.getPreferences();
                     for(var preference in tabPreferences)
                     {
@@ -412,8 +377,9 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 }
             }
         };
-
+         console.log(ESPclasses);
 	     data = Ext.encode(ESPclasses);
+        console.log(data);
 	     Ext.Ajax.request({
 		     url: '/learn/'+url_base+'/lsr_submit',
 		     success: handle_submit_response,
