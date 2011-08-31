@@ -8,7 +8,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
         var i;
         for(i = 0; i < this.ESPClassInfo.data.get_sections.length; i ++)
         {
-            section = this.ESPClassInfo.data.get_sections[i];       
+            section = this.ESPClassInfo.data.get_sections[i];      
             if(section.get_meeting_times[0].id == this.timeblockId)
             {
                 return section.id;
@@ -20,8 +20,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
 
     initComponent: function ()
     {
-        console.log(this.ESPClassInfo);
-        checkbox_id = this.getSectionId();
+        section_id = this.getSectionId();
 		//comes up with label for checkboxes
 		classText = '';
 		classText = classText + this.ESPClassInfo.data.category.symbol + this.ESPClassInfo.data.id + ': ' + this.ESPClassInfo.data.title;
@@ -32,26 +31,27 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
             [
                 {
 			       xtype: 'radio',
-			       id: 'flag_'+checkbox_id,
+			       id: 'flag_'+section_id,
 			       name: 'flag_'+this.timeblockId,
-			       inputValue: checkbox_id,
+			       inputValue: section_id,
 			       listeners: { //listener changes the flagged classes box at the top when the flagged class changes
 			       }
                 },
                 {
         	       xtype: 'checkbox',
-        	       name: checkbox_id,
-        	       id: checkbox_id
+        	       name: section_id,
+        	       id: section_id
                 }, 
                 { 
         	       xtype: 'displayfield',
             	   value: classText,
         	       autoHeight: true,
-        	       id: 'title_'+ checkbox_id 
+        	       id: 'title_'+ section_id 
                 }
             ],
             width: 400,
             layout: 'column',
+            sectionId: section_id,
             classFullTitle: classText,
         };
     	Ext.apply(this, Ext.apply(this.initialConfig, config));
@@ -60,7 +60,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
 
     classNumber: function () 
     {
-        return this.ESPClassInfo.data.id;
+        return this.sectionId;
     },
 
     isChecked: function () 

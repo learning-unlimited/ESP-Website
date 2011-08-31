@@ -49,7 +49,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 		        this.add({
                     xtype: 'class_checkboxes',
                     ESPClassInfo: r,
-                    timeblockId: this.timeblock[1]
+                    timeblockId: this.timeblock[0]
 	            }); 
             }
 

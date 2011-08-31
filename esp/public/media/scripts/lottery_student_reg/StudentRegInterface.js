@@ -85,6 +85,9 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 		    root: '',
 		    fields: 
             [
+                {
+                    name: 'classs_id'
+                },
 	            {
         			name: 'section_id'
 	            },
@@ -97,7 +100,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
             {
     			load: {
     			    scope: this,
-    			    fn: this.prepopulateData
+    			    fn: Ext.getCmp("sri").prepopulateData
     			}
 		    }
 		});
@@ -105,11 +108,14 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	},
     
     prepopulateData: function (store, records, options) {
-        /*for (i = 0; i<records.length; i++)
+        console.log(records.length);
+        for (i = 0; i<records.length; i++)
         {
     		r = records[i];
+            console.log(r);
     		if(r.data.type == 'Interested'){
-    		    Ext.getCmp(r.data.section_id).setValue(true);
+                console.log(r.data.class_id)
+    		    this.store.getById(r.data.class_id);
     		}
     		if((! r.data.type.indexOf('Priority/')) && (r.data.type.length == 'Priority/'.length + 1)   &&    (parseInt(r.data.type.substring(r.data.type.length-1))) && (parseInt(r.data.type.substring(r.data.type.length-1)) <= priority_limit)){
     		    if (priority_limit == 1) {
@@ -119,7 +125,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
     		        Ext.getCmp('combo_' + r.data.section_id).setValue(parseInt(r.data.type.substring    (r.data.type.length-1)));
     	        }
     		}
-	    }*/
+	    }
 	},
 
     loadCatalog: function () {
@@ -306,13 +312,11 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
         if(priority_limit == 1)
         {
             var ESPclasses = new Object();
-            console.log(tabpanel.items.items.length);
             for(i = 1; i < tabpanel.items.items.length; i++)
             {
                 var tab = tabpanel.items.items[i];
                 if(tab.xtype == 'timeslotpanel')
                 {
-                    console.log("timeslotpanel");
                     var tabPreferences = tab.getPreferences();
                     for(var preference in tabPreferences)
                     {
@@ -377,9 +381,9 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 }
             }
         };
-         console.log(ESPclasses);
+         //console.log(ESPclasses);
 	     data = Ext.encode(ESPclasses);
-        console.log(data);
+        //console.log(data);
 	     Ext.Ajax.request({
 		     url: '/learn/'+url_base+'/lsr_submit',
 		     success: handle_submit_response,
