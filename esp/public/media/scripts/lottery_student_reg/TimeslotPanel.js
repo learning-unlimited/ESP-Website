@@ -134,8 +134,6 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     getPreferences: function () {
         classPreferences = new Object();
-        noPreferenceRadio = this.items.items[0].items.items[0];
-        classPreferences[noPreferenceRadio.id] = noPreferenceRadio.getValue();
         for(j=1; j<this.items.items.length; j++) {
 	         var checkbox = this.items.items[j];
              classPreferences[checkbox.classNumber()] = checkbox.isChecked();

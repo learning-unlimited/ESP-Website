@@ -105,7 +105,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	},
     
     prepopulateData: function (store, records, options) {
-        for (i = 0; i<records.length; i++)
+        /*for (i = 0; i<records.length; i++)
         {
     		r = records[i];
     		if(r.data.type == 'Interested'){
@@ -119,7 +119,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
     		        Ext.getCmp('combo_' + r.data.section_id).setValue(parseInt(r.data.type.substring    (r.data.type.length-1)));
     	        }
     		}
-	    }
+	    }*/
 	},
 
     loadCatalog: function () {

@@ -3,10 +3,25 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
     ESPClassInfo: {},
     timeblockId: "",
 
+    getSectionId: function ()
+    {
+        var i;
+        for(i = 0; i < this.ESPClassInfo.data.get_sections.length; i ++)
+        {
+            section = this.ESPClassInfo.data.get_sections[i];       
+            if(section.get_meeting_times[0].id == this.timeblockId)
+            {
+                return section.id;
+            }
+        }
+        //there should be error handling here
+        return 0;
+    },
+
     initComponent: function ()
     {
-        checkbox_id = this.ESPClassInfo.id;
-
+        console.log(this.ESPClassInfo);
+        checkbox_id = this.getSectionId();
 		//comes up with label for checkboxes
 		classText = '';
 		classText = classText + this.ESPClassInfo.data.category.symbol + this.ESPClassInfo.data.id + ': ' + this.ESPClassInfo.data.title;
