@@ -151,15 +151,15 @@ class TeacherQuizModule(ProgramModuleObj):
             raise ESPError('Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the quiz_form_id Tag.')
         
         form_wizard = FormHandler(cf, request, self.user).getWizard()
-        form_class = form_wizard.form_list[0]
     
         if request.method == 'POST':
-            form = form_class(request.POST)
+            form = form_wizard.get_form(0, request.POST)
             if form.is_valid():
+                form_wizard.done(request, [form])
                 self.controller.markCompleted(self.user)
                 return self.goToCore(tl)
         else:
-            form = form_class()
+            form = form_wizard.get_form(0)
             
         return render_to_response(self.baseDir()+'quiz.html', request, (prog, tl), {'prog':prog, 'form': form})
 

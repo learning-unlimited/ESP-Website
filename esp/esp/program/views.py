@@ -809,6 +809,7 @@ def statistics(request, program=None):
     form = StatisticsQueryForm(program=program)
     form.hide_unwanted_fields()
     context = {'form': form}
+    context['clear_first'] = False
     context['field_ids'] = get_field_ids(form)
 
     if request.is_ajax():
