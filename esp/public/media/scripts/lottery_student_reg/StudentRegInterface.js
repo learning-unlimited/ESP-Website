@@ -72,6 +72,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
             ]
     	};
      
+        this.loadPrepopulate();
     	this.loadCatalog();
     	this.store.load({});	
 
@@ -80,14 +81,11 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
     },
 
     loadPrepopulate: function () {
-	    this.oldPreferences = new Ext.data.JsonStore({
+	    Ext.getCmp("sri").oldPreferences = new Ext.data.JsonStore({
 		    id: 'preference_store',
 		    root: '',
 		    fields: 
             [
-                {
-                    name: 'classs_id'
-                },
 	            {
         			name: 'section_id'
 	            },
@@ -96,36 +94,8 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
   	            }
 		    ],
 		    proxy: new Ext.data.HttpProxy({ url: '/learn/'+url_base+'/catalog_registered_classes_json' }),
-		    listeners: 
-            {
-    			load: {
-    			    scope: this,
-    			    fn: Ext.getCmp("sri").prepopulateData
-    			}
-		    }
 		});
 	    this.oldPreferences.load();
-	},
-    
-    prepopulateData: function (store, records, options) {
-        console.log(records.length);
-        for (i = 0; i<records.length; i++)
-        {
-    		r = records[i];
-            console.log(r);
-    		if(r.data.type == 'Interested'){
-                console.log(r.data.class_id)
-    		    this.store.getById(r.data.class_id);
-    		}
-    		if((! r.data.type.indexOf('Priority/')) && (r.data.type.length == 'Priority/'.length + 1)   &&    (parseInt(r.data.type.substring(r.data.type.length-1))) && (parseInt(r.data.type.substring(r.data.type.length-1)) <= priority_limit)){
-    		    if (priority_limit == 1) {
-    		        Ext.getCmp('flag_'+r.data.section_id).setValue(true);
-    		    }
-    		    else{
-    		        Ext.getCmp('combo_' + r.data.section_id).setValue(parseInt(r.data.type.substring    (r.data.type.length-1)));
-    	        }
-    		}
-	    }
 	},
 
     loadCatalog: function () {
@@ -209,6 +179,8 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
             }
 	    }
 
+        console.log(this.oldPreferences);
+
     	//makes tabs with id = short_description of timeblock
     	for(i = 0; i < this.num_tabs; i++) 
         {
@@ -220,6 +192,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
     			title: this.tab_names[i][1],
                 ESPclasses: classLists[this.tab_names[i][0]],
                 timeblock: this.tab_names[i],
+                oldPreferences: this.oldPreferences
 	        }));
 	    }
 
@@ -230,8 +203,6 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
             dropdown_states_data.push([String(i),String(i)]);
         }
 		this.addConfirmTab();
-
-	     Ext.getCmp('sri').loadPrepopulate();
      },
 
     addConfirmTab: function () 
@@ -317,7 +288,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 var tab = tabpanel.items.items[i];
                 if(tab.xtype == 'timeslotpanel')
                 {
-                    var tabPreferences = tab.getPreferences();
+                    var tabPreferences = tab.getNewPreferences();
                     for(var preference in tabPreferences)
                     {
                         ESPclasses[preference] = tabPreferences[preference];

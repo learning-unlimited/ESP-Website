@@ -2,6 +2,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     ESPclasses: [],
     timeblock: [],
+    oldPreferences: {},
 
     initComponent: function() {
         var config =
@@ -43,13 +44,17 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         for(i = 1; i < this.ESPclasses.length; i++)
         {
             var r = this.ESPclasses[i];
-            var checkbox_id = r.data.id;
-        
+            section_id = this.getSectionId(r);
+            status = this.enrollmentStatus(section_id);
+            console.log("status = " + status);
+
             if (priority_limit == 1) {
 		        this.add({
                     xtype: 'class_checkboxes',
                     ESPClassInfo: r,
-                    timeblockId: this.timeblock[0]
+                    timeblockId: this.timeblock[0],
+                    sectionId: section_id,
+                    initialStatus: status
 	            }); 
             }
 
@@ -99,6 +104,31 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         }
     },
 
+    getSectionId: function (r)
+    {
+        var i;
+        for(i = 0; i < r.data.get_sections.length; i ++)
+        {
+            section = r.data.get_sections[i];      
+            if(section.get_meeting_times[0].id == this.timeblock[0])
+            {
+                return section.id;
+            }
+        }
+        //there should be error handling here
+        return 0;
+    },
+
+    enrollmentStatus: function (sectionId) 
+    {
+        preferenceIndex = this.oldPreferences.findExact("section_id", sectionId);
+        if(preferenceIndex >= 0 )
+        {
+            preference = this.oldPreferences.getAt(preferenceIndex);
+            return preference.data.type;
+        }
+    },
+
     flaggedClass: function () {
         for(j=1; j<this.items.items.length; j++) {
 	         var checkbox = this.items.items[j];
@@ -132,7 +162,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         return false;
     },
 
-    getPreferences: function () {
+    getNewPreferences: function () {
         classPreferences = new Object();
         for(j=1; j<this.items.items.length; j++) {
 	         var checkbox = this.items.items[j];

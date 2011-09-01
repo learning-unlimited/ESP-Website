@@ -2,25 +2,11 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
 
     ESPClassInfo: {},
     timeblockId: "",
-
-    getSectionId: function ()
-    {
-        var i;
-        for(i = 0; i < this.ESPClassInfo.data.get_sections.length; i ++)
-        {
-            section = this.ESPClassInfo.data.get_sections[i];      
-            if(section.get_meeting_times[0].id == this.timeblockId)
-            {
-                return section.id;
-            }
-        }
-        //there should be error handling here
-        return 0;
-    },
+    sectionId: 0,
+    initialStatus: "",
 
     initComponent: function ()
     {
-        section_id = this.getSectionId();
 		//comes up with label for checkboxes
 		classText = '';
 		classText = classText + this.ESPClassInfo.data.category.symbol + this.ESPClassInfo.data.id + ': ' + this.ESPClassInfo.data.title;
@@ -54,8 +40,20 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
             sectionId: section_id,
             classFullTitle: classText,
         };
+
     	Ext.apply(this, Ext.apply(this.initialConfig, config));
         ClassCheckboxes.superclass.initComponent.apply(this, arguments); 
+
+        if(this.initialStatus == "Priority/1")
+        {
+            console.log("Priority/1");
+            this.items.items[0].checked = true;
+        }
+        else if(this.initialStatus == "Interested")
+        {
+            console.log("interested");
+            this.items.items[1].checked = true;
+        }
     },
 
     classNumber: function () 
