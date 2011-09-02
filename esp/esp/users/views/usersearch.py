@@ -339,16 +339,19 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
             if request.GET.has_key('grade_min'):
                 yog = ESPUser.YOGFromGrade(request.GET['grade_min'])
                 if yog != 0:
-                    print "YOG filtering; grade_min:", yog
                     update = True
                     Q_include &= Q(registrationprofile__student_info__graduation_year__lte = yog, registrationprofile__most_recent_profile=True)
 
             if request.GET.has_key('grade_max'):
                 yog = ESPUser.YOGFromGrade(request.GET['grade_max'])
                 if yog != 0:
-                    print "YOG filtering; grade_max:", yog
                     update = True                    
                     Q_include &= Q(registrationprofile__student_info__graduation_year__gte = yog, registrationprofile__most_recent_profile=True)
+        
+            if request.GET.has_key('school'):
+                school = request.GET['school']
+                Q_include &= (Q(studentinfo__school__icontains=school) | Q(studentinfo__k12school__name__icontains=school))
+                update = True
         
             #   Filter by graduation years if specifically looking for teachers.
             possible_gradyears = range(1920, 2020)
