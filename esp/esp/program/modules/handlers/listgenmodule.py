@@ -273,7 +273,9 @@ class ListGenModule(ProgramModuleObj):
                             lists_indices[ua.get(split_by)] = len(lists) - 1
                         lists[lists_indices[ua.get(split_by)]]['users'].append(u)
 
-                if not split_by:
+                if split_by:
+                    lists.sort(key=lambda x: x['value'])
+                else:
                     lists.append({'users': users})
 
                 if output_type == 'csv':

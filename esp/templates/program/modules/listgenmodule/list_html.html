@@ -37,7 +37,9 @@ body { font-family: georgia; }
 <center>
 {% for list in lists %}
 <div style="page-break-after: always;">
+{% if list.key %}
 <h2>Users with {{ list.key }} = {{ list.value }}</h2>
+{% endif %}
 <p>
     <table class="pretty sortable" cellspacing="0">
     <tr>
