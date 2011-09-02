@@ -215,6 +215,7 @@ class ListGenForm(forms.Form):
     attr_choices.sort(key=lambda x: x[0])
 
     fields = forms.MultipleChoiceField(choices=attr_choices, initial=['id','fullname','address','cellphone','school'], widget=forms.CheckboxSelectMultiple)
+    split_by = forms.ChoiceField(choices=[('', '')] + attr_choices, required=False)
     output_type = forms.ChoiceField(choices=(('csv', 'CSV format'), ('html', 'HTML format')), initial='html')
 
 class ListGenModule(ProgramModuleObj):
@@ -248,9 +249,15 @@ class ListGenModule(ProgramModuleObj):
         if request.method == 'POST' and 'fields' in request.POST:
             form = ListGenForm(request.POST)
             if form.is_valid():
-
+                lists = []
+                lists_indices = {}
+                split_by = form.cleaned_data['split_by']
+                
                 labels_dict = UserAttributeGetter.getFunctions()
                 fields = [labels_dict[f] for f in form.cleaned_data['fields']]
+                #   If a split field is specified, make sure we fetch its data
+                if split_by and labels_dict[split_by] not in fields:
+                    fields.append(labels_dict[split_by])
                 output_type = form.cleaned_data['output_type']
             
                 users = list(ESPUser.objects.filter(filterObj.get_Q()).filter(is_active=True).distinct())
@@ -259,6 +266,15 @@ class ListGenModule(ProgramModuleObj):
                     ua = UserAttributeGetter(u, self.program)
                     user_fields = [ua.get(x) for x in form.cleaned_data['fields']]
                     u.fields = user_fields
+                    #   Add information for split lists if desired
+                    if split_by:
+                        if ua.get(split_by) not in lists_indices:
+                            lists.append({'key': labels_dict[split_by], 'value': ua.get(split_by), 'users': []})
+                            lists_indices[ua.get(split_by)] = len(lists) - 1
+                        lists[lists_indices[ua.get(split_by)]]['users'].append(u)
+
+                if not split_by:
+                    lists.append({'users': users})
 
                 if output_type == 'csv':
                     # properly speaking, this should be text/csv, but that
@@ -274,7 +290,7 @@ class ListGenModule(ProgramModuleObj):
                     self.baseDir()+('list_%s.html' % output_type),
                     request,
                     (prog, tl),
-                    {'users': users, 'fields': fields, 'listdesc': filterObj.useful_name},
+                    {'users': users, 'lists': lists, 'fields': fields, 'listdesc': filterObj.useful_name},
                     mimetype=mimetype,
                 )
             else:
