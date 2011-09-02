@@ -218,6 +218,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
     graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
+    unmatched_school = forms.BooleanField(required=False)
     school = forms.CharField(max_length=128, required=False)
     dob = forms.DateField(widget=SplitDateWidget())
     studentrep = forms.BooleanField(required=False)
@@ -319,6 +320,11 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 self.fields['schoolsystem_id'].required = False
                 self.data['schoolsystem_id'] = ''
                 
+        #   The unmatched_school field is for students to opt out of selecting a K12School.
+        #   If we don't require a K12School to be selected, don't bother showing that field.
+        if not Tag.getTag('require_school_field', default=False):
+            del self.fields['unmatched_school']
+        
         self._user = user
 
     def repress_studentrep_expl_error(self):
@@ -395,8 +401,8 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         
         if Tag.getTag('require_school_field'):
-            if not cleaned_data['k12school'] and (not cleaned_data['school'] or cleaned_data['school'] == 'None'):
-                raise forms.ValidationError("Please enter your school.  If you see the name of your school come up as you're typing, please click on it.  Otherwise, simply type the full name of your school.")
+            if not cleaned_data['k12school'] and not cleaned_data['unmatched_school']:
+                raise forms.ValidationError("Please select your school from the dropdown list that appears as you type its name.  You will need to click on an entry to select it.  If you cannot find your school, please type in its full name and check the box below; we will do our best to add it to our database.")
 
         return cleaned_data
         
