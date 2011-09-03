@@ -220,7 +220,7 @@ class SchedulingModule(ProgramModuleObj):
 
     @aux_call
     @needs_admin
-    def securityschedule(self, request, tl, one, two, module, extra, prog):
+    def securityschedule_old(self, request, tl, one, two, module, extra, prog):
         """ Display a list of classes (by classroom) for each timeblock in a program """
         events = Event.objects.filter(anchor=prog.anchor).order_by('start')
         events_ctxt = [ { 'event': e, 'classes': ClassSection.objects.filter(meeting_times=e).select_related() } for e in events ]
