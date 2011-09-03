@@ -30,7 +30,7 @@ tr {
 {% for c in e.classes %}
 <table width="100%" border="0">
 <tr><td bgcolor="{% cycle lightgrey,grey %}">
-<b>{% for r in c.prettyrooms %}{{ r }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}</b> <small>({{ c.anchor.friendly_name }})</small>
+<b>{% for r in c.prettyrooms %}{{ r }}{% if forloop.last %}{% else %}, {% endif %}{% endfor %}</b> <small>{{ c.title }} (Section {{ c.index }})</small>
 </td></tr>
 </table>
 {% endfor %}
