@@ -34,22 +34,10 @@
 {% endblock %}
 
 {% block stylesheets %}
+<link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
 <style type="text/css">
         @import "https://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css";
 </style>
-
-<style type="text/css">
-.admin_hidden {
-  display: none;
-}
-.logged_in_hidden {
-  display: none;
-}
-.not_logged_in_hidden {
-  display: none;
-}
-</style>
-
 <script language="JavaScript">
 $j = $.noConflict();
 $j(document).ready(function() {
@@ -60,6 +48,14 @@ $j(document).ready(function() {
   if (esp_user.cur_username != null) {
     $j(".not_logged_in").addClass("not_logged_in_hidden");
     $j(".logged_in").removeClass("logged_in_hidden");
+  }
+
+  var type_name = '';
+  var hidden_name = '';
+  for (var i = 0; i < esp_user.cur_roles.length; i++) {
+    type_name = "." + esp_user.cur_roles[i];
+    hidden_name = esp_user.cur_roles[i] + "_hidden";
+    $j(type_name).removeClass(hidden_name);
   }
 });
 </script>

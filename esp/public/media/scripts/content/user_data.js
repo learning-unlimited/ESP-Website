@@ -10,7 +10,7 @@ if (typeof(window["$"]) == "undefined") {
 }
 
 var esp_user = {};
-var esp_user_keys = new Array('cur_username','cur_email','cur_first_name','cur_last_name','cur_other_user','cur_retTitle', 'cur_admin','cur_grade');
+var esp_user_keys = new Array('cur_username','cur_email','cur_first_name','cur_last_name','cur_other_user','cur_retTitle', 'cur_admin','cur_grade','cur_roles');
 
 for (var i=0; i < esp_user_keys.length; i++) {
     var tmp = $.cookie(esp_user_keys[i]);
@@ -24,7 +24,12 @@ for (var i=0; i < esp_user_keys.length; i++) {
 esp_user['cur_email'] = unescape(esp_user['cur_email']);
 esp_user['cur_first_name'] = unescape(esp_user['cur_first_name']);
 esp_user['cur_last_name'] = unescape(esp_user['cur_last_name']);
-esp_user['cur_grade'] = parseInt(esp_user['cur_grade'])
+esp_user['cur_grade'] = parseInt(esp_user['cur_grade']);
+if (esp_user['cur_roles']) {
+    esp_user['cur_roles'] = unescape(esp_user['cur_roles']).split(',');
+} else {
+    esp_user['cur_roles'] = [];
+}
 
 var esp_user_login = null;
 
