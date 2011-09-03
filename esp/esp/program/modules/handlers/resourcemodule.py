@@ -208,7 +208,7 @@ class ResourceModule(ProgramModuleObj):
                         context['equipment_form'] = form
 
         #   Group contiguous blocks of time for the program
-        time_options = self.program.getTimeSlots()
+        time_options = self.program.getTimeSlots(exclude_types=[])
         time_groups = Event.group_contiguous(list(time_options))
 
         #   Retrieve remaining context information
