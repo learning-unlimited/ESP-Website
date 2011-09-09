@@ -140,7 +140,7 @@ LANGUAGE_CODE = 'en-us'
 ################################################################################
 
 # Default cache timeout in seconds
-DEFAULT_CACHE_TIMEOUT = 86400
+DEFAULT_CACHE_TIMEOUT = 120 # 86400
 
 SITE_ID = 1
 
