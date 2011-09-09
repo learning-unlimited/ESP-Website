@@ -63,7 +63,7 @@ render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lam
 render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_row(StudentAppQuestion, lambda ques: {'cls': ques.subject})
 
-@cache_inclusion_tag(register, 'inclusion/program/class_catalog.html')
+@cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', disable=True)
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     errormsg = None
     
