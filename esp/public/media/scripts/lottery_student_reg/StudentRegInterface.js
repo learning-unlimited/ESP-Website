@@ -120,11 +120,17 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
     	        {
         		    name: 'get_sections'
     	        },
+                {
+                    name: 'teachers'
+                },
+                {
+                    name: 'class_size_max'
+                },
     	        {
         		    name: 'category'
         		},
     	        {
-        		    name: 'description'
+        		    name: 'class_info'
     	        },
     	        {
         	        name: 'num_questions'
@@ -147,6 +153,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	    //num_tabs and tab_names need to be modified for a particular program
     	tabs = [];
         classLists = [];
+        walkinLists = [];
     	flag_added = [];
 
 	    //itterate through records (classes)
@@ -155,7 +162,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	    	r = records[i];    	
 		    //no walk-in seminars
 		    if (r.data.category.category == 'Walk-in Seminar'){
-                //will put in clever stuff for displaying walk-ins here                
+                this.addSectionsToList(r, walkinLists);                
                 continue;
             }
 
@@ -164,22 +171,8 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 continue;
             }
 
-    		num_sections = r.data.get_sections.length;
-	    	//itterate through times a class is offered
-	    	for (j = 0; j < num_sections; j ++)
-	    	{
-	    	    if(r.data.get_sections[j].get_meeting_times.length >0)
-	    	    {
-	    		    timeblock = r.data.get_sections[j].get_meeting_times[0];
-                    if(!classLists[timeblock.id]){
-                        classLists[timeblock.id] = []
-                    }
-                    classLists[timeblock.id].push(r);                    
-                }
-            }
+            this.addSectionsToList(r, classLists);
 	    }
-
-        console.log(this.oldPreferences);
 
     	//makes tabs with id = short_description of timeblock
     	for(i = 0; i < this.num_tabs; i++) 
@@ -191,6 +184,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
     			id: this.tab_names[i][0],
     			title: this.tab_names[i][1],
                 ESPclasses: classLists[this.tab_names[i][0]],
+                ESPwalkins: walkinLists[this.tab_names[i][0]],       
                 timeblock: this.tab_names[i],
                 oldPreferences: this.oldPreferences
 	        }));
@@ -204,6 +198,23 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
         }
 		this.addConfirmTab();
      },
+
+    addSectionsToList: function (ESPClass, lists)
+    {
+		num_sections = ESPClass.data.get_sections.length;
+    	//itterate through times a class is offered
+    	for (j = 0; j < num_sections; j ++)
+    	{
+    	    if(ESPClass.data.get_sections[j].get_meeting_times.length >0)
+    	    {
+    		    timeblock = ESPClass.data.get_sections[j].get_meeting_times[0];
+                if(!lists[timeblock.id]){
+                    lists[timeblock.id] = []
+                }
+                lists[timeblock.id].push(r);                    
+            }
+        }
+    },  
 
     addConfirmTab: function () 
     {

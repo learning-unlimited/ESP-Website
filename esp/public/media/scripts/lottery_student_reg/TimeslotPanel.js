@@ -1,6 +1,7 @@
 TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     ESPclasses: [],
+    ESPwalkins: [],
     timeblock: [],
     oldPreferences: {},
 
@@ -8,7 +9,19 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         var config =
         {
             items:
-            [
+            [        
+                {
+                    xtype: "fieldset",
+                    border: true,
+                    items: 
+                    [
+                        {
+                            xtype: "displayfield",
+                            value: "The following walkins are available during this time period: <br>",
+                        }
+                    ]
+                },
+
                 {
                     xtype: 'fieldset',
                     layout: 'column',
@@ -18,11 +31,11 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
                     [
                         {
                             xtype: 'radio',
-	                        id: 'flag_'+this.id,
-	                        name: 'flag_'+this.id
+                            id: 'flag_'+this.id,
+                            name: 'flag_'+this.id
                         },{ 
-	                        xtype: 'displayfield',
-	                        value: "I would not like to flag a priority class for this timeblock."
+                            xtype: 'displayfield',
+                            value: "I would not like to flag a priority class for this timeblock."
                         }
                     ]
                 }
@@ -40,13 +53,29 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         TimeslotPanel.superclass.initComponent.apply(this, arguments);
     },
 
+    makeWalkinsList: function() 
+    {
+        var walkinsDisplay = this.items.items[0]
+        var i;
+        for(i = 0; i< this.ESPwalkins.length; i++)
+        {
+            var walkin = this.ESPwalkins[i];
+            walkinsDisplay.add(
+            {
+                xtype: "class_checkboxes",
+                isWalkin: true,
+                ESPClassInfo: walkin     
+            });
+        };
+        walkinsDisplay.doLayout();
+    },
+
     makeCheckBoxes: function() {
-        for(i = 1; i < this.ESPclasses.length; i++)
+        this.makeWalkinsList();
+        for(i = 0; i < this.ESPclasses.length; i++)
         {
             var r = this.ESPclasses[i];
             section_id = this.getSectionId(r);
-            status = this.enrollmentStatus(section_id);
-            console.log("status = " + status);
 
             if (priority_limit == 1) {
 		        this.add({
@@ -54,7 +83,8 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
                     ESPClassInfo: r,
                     timeblockId: this.timeblock[0],
                     sectionId: section_id,
-                    initialStatus: status
+                    alreadyChecked: this.alreadyPreferred(section_id, "Interested"),
+                    alreadyFlagged: this.alreadyPreferred(section_id, "Priority/1")
 	            }); 
             }
 
@@ -119,18 +149,18 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         return 0;
     },
 
-    enrollmentStatus: function (sectionId) 
+    alreadyPreferred: function (sectionId, type)
     {
         preferenceIndex = this.oldPreferences.findExact("section_id", sectionId);
         if(preferenceIndex >= 0 )
         {
             preference = this.oldPreferences.getAt(preferenceIndex);
-            return preference.data.type;
-        }
+            return preference.data.type == type;
+        } 
     },
 
     flaggedClass: function () {
-        for(j=1; j<this.items.items.length; j++) {
+        for(j=2; j<this.items.items.length; j++) {
 	         var checkbox = this.items.items[j];
 	         if(checkbox.isFlagged()){
                 return checkbox;
@@ -140,7 +170,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     checkedClasses: function () {
         var checked = [];
-        for(j=1; j<this.items.items.length; j++) {
+        for(j=2; j<this.items.items.length; j++) {
 	         var checkbox = this.items.items[j];
 	         if(checkbox.isChecked()){
                 checked.push(checkbox);
@@ -151,7 +181,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     //return true if a class is flagged.
     timeslotCompleted: function () {
-        for(i = 1; i < this.items.items.length; i ++)
+        for(i = 2; i < this.items.items.length; i ++)
         {
             var classFieldSet = this.items.items[i];
             if(classFieldSet.items.items[0].getValue() == true)
@@ -164,7 +194,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     getNewPreferences: function () {
         classPreferences = new Object();
-        for(j=1; j<this.items.items.length; j++) {
+        for(j=2; j<this.items.items.length; j++) {
 	         var checkbox = this.items.items[j];
              classPreferences[checkbox.classNumber()] = checkbox.isChecked();
 	         classPreferences["flag_" + checkbox.classNumber()] = checkbox.isFlagged();
