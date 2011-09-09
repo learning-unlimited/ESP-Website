@@ -1,0 +1,14 @@
+{% extends "main.html" %}
+{% block title %}{{program.niceName}} Teacher Acknowledgement{% endblock %}
+{% block content %}
+<h2>Teacher Acknowledgement for {{program.niceName}} </h2>
+<br />
+<p>
+{{ prog.niceName }} will be on {{ prog.date_range }}! Please acknowledge that you are aware of this and commit to teaching at one of the times you have specified for your availability. You may not cancel your classes after student registration opens. In the case of illness or a serious emergency, you must notify the directors ASAP at <a href="mailto:{{ prog.director_email }}">{{ prog.director_email }}</a> and find a substitute for your classes. If you do not do these things, it is unfair for the students who registered for your class, and make things difficult for us. Note that not being responsible for your classes will affect your ability to teach for us in the future.
+</p>
+<br />
+<form action="acknowledgement" method="post">{% csrf_token %}
+{{ form.as_p }}
+<input type="submit" value="Submit" />
+</form>
+{% endblock %}

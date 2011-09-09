@@ -732,7 +732,10 @@ class Program(models.Model):
         d2 = max(dates).end
         if d1.year == d2.year:
             if d1.month == d2.month:
-                return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
+                if d1.day == d2.day:
+                    return '%s' % d1.strftime('%b. %d, %Y')
+                else:
+                    return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
             else:
                 return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
         else:
