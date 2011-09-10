@@ -3,8 +3,8 @@ from django import forms
 from django.db import models
 from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
-from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser
-from django.contrib.auth.admin import UserAdmin
+from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School
+
 
 class UserBitAdmin(admin.ModelAdmin):
     list_display = [ 'id', 'user', 'qsc', 'verb', 'startdate', 'enddate', 'recursive', ]
@@ -23,7 +23,6 @@ admin.site.register(UserForwarder)
 admin.site.register(ZipCode)
 admin.site.register(ZipCodeSearches)
 admin.site.register(UserAvailability)
-admin.site.register(ESPUser, UserAdmin)
 
 class ContactInfoAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'e_mail', 'phone_day', 'address_postal']

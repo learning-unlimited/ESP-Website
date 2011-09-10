@@ -133,7 +133,6 @@ class ESPUser(User, AnonymousUser):
 
     class Meta:
         proxy = True
-        verbose_name = 'ESP User'
         
     objects = ESPUserManager()
     # this will allow a casting from User to ESPUser:

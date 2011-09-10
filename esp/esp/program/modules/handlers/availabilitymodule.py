@@ -73,7 +73,6 @@ class AvailabilityModule(ProgramModuleObj):
 
     def isCompleted(self):
         """ Make sure that they have indicated sufficient availability for all classes they have signed up to teach. """
-        self.user = ESPUser(self.user)
         available_slots = self.user.getAvailableTimes(self.program, ignore_classes=False)
         
         #   Check number of timeslots against Tag-specified minimum
@@ -138,22 +137,19 @@ class AvailabilityModule(ProgramModuleObj):
             #   Process form
             post_vars = request.POST
             
-            if len(post_vars.getlist('timeslots')) > 0:
-                #   Reset teacher's availability
-                teacher.clearAvailableTimes(self.program)
+            #   Reset teacher's availability
+            teacher.clearAvailableTimes(self.program)
             
-                #   Add in resources for the checked available times.
-                for ts_id in post_vars.getlist('timeslots'):
+            #   Add in resources for the checked available times.
+            for ts_id in post_vars.getlist('timeslots'):
                     ts = Event.objects.filter(id=int(ts_id))
                     if len(ts) != 1:
                         raise ESPError('Found %d matching events for input %s' % (len(ts), key))
                     
                     teacher.addAvailableTime(self.program, ts[0])
                     
-                return self.goToCore(tl)
-            else:
-                available_slots = [Event.objects.get(id=int(x)) for x in post_vars.getlist('timeslots')]
-
+            return self.goToCore(tl)
+                
         else:
             #   Show new form
             available_slots = teacher.getAvailableTimes(self.program)
