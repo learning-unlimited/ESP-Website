@@ -253,7 +253,7 @@ class ProgramHappenTest(TestCase):
         ClassCategories.objects.create(symbol='N', category='Nothing')
         ProgramModule.objects.create(link_title='Default Module', admin_title='Default Module (do stuff)', module_type='learn', handler='StudentRegCore', seq=0, required=False)
         ProgramModule.objects.create(link_title='Register Your Classes', admin_title='Teacher Class Registration', module_type='teach', handler='TeacherClassRegModule',
-            main_call='makeaclass', aux_calls='class_students,section_students,editclass,deleteclass,coteachers,teacherlookup,class_status,class_docs,select_students,makeopenclass',
+            main_call='makeaclass',inline_template='listclasses.html', aux_calls='class_students,section_students,editclass,deleteclass,coteachers,teacherlookup,class_status,class_docs,select_students,makeopenclass',
             seq=10, required=False)
         ProgramModule.objects.create(link_title='Sign up for Classes', admin_title='Student Class Registration', module_type='learn', handler='StudentClassRegModule',
             main_call='classlist', aux_calls='catalog,clearslot,fillslot,changeslot,addclass,swapclass,class_docs',
