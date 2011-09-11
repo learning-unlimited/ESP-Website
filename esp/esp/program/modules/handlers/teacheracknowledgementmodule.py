@@ -9,10 +9,12 @@ from django.db.models.query import Q
 GetNode('V/Flags/Registration/Teacher/Acknowledgement')
 GetNode('V/Deadline/Registration/Teacher/Acknowledgement')
 
-class TeacherAcknowledgementForm(forms.Form):
-    label = u'''I have read and agree to the terms and conditions above.'''
-    acknowledgement = forms.BooleanField(required=True, label=label)
-
+def teacheracknowledgementform_factory(prog):
+    name = "TeacherAcknowledgementForm"
+    bases = (forms.Form,)
+    label = u"I have read the above, and commit to teaching my %s class on %s." % (prog.anchor.parent.friendly_name, prog.date_range())
+    d = dict(acknowledgement=forms.BooleanField(required=True, label=label))
+    return type(name, bases, d)
 
 class TeacherAcknowledgementModule(ProgramModuleObj):
     @classmethod
@@ -43,7 +45,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
     def acknowledgement(self, request, tl, one, two, module, extra, prog):
         context = {'prog': prog}
         if request.method == 'POST':
-            context['form'] = TeacherAcknowledgementForm(request.POST)
+            context['form'] = teacheracknowledgementform_factory(prog)(request.POST)
             ub, created = UserBit.objects.get_or_create(user=self.user, qsc=self.program.anchor, verb=self.flags_verb)
             if context['form'].is_valid():
                 ub.renew()
@@ -51,9 +53,9 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             else:
                 ub.expire()
         elif self.isCompleted():
-            context['form'] = TeacherAcknowledgementForm({'acknowledgement': True})
+            context['form'] = teacheracknowledgementform_factory(prog)({'acknowledgement': True})
         else:
-            context['form'] = TeacherAcknowledgementForm()
+            context['form'] = teacheracknowledgementform_factory(prog)()
         return render_to_response(self.baseDir()+'acknowledgement.html', request, (prog, tl), context)
 
 
