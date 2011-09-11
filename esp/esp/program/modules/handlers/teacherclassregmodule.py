@@ -759,6 +759,22 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             startswith = request.POST['name']
         else:
             startswith = request.GET['name']
+        s = ''
+        spaces = ''
+        after_comma = False
+        for char in startswith:
+            if char == ' ':
+                if not after_comma:
+                    spaces += ' '
+            elif char == ',':
+                s += ','
+                spaces = ''
+                after_comma = True
+            else:
+                s += spaces + char
+                spaces = ''
+                after_comma = False
+        startswith = s
         parts = [x.strip('*') for x in startswith.split(',')]
         
         #   Don't return anything if there's no input.
