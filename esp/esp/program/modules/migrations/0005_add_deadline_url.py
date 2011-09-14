@@ -7,10 +7,13 @@ class Migration:
     
     def forwards(self, orm):
         from esp.program.models import ProgramModule
-        this_module, created = ProgramModule.objects.get_or_create(handler='AdminCore')
-        this_module.aux_calls = 'main,deadline_management,deadlines'
-        this_module.save()        
-        print 'Added /manage/[program]/[instance]/deadlines/ alias for deadline management page'
+        try:
+            this_module, created = ProgramModule.objects.get(handler='AdminCore')
+            this_module.aux_calls = 'main,deadline_management,deadlines'
+            this_module.save()        
+            print 'Added /manage/[program]/[instance]/deadlines/ alias for deadline management page'
+        except:  ## Module doesn't exist yet; should be auto-added later
+            pass
 
     def backwards(self, orm):
         pass
