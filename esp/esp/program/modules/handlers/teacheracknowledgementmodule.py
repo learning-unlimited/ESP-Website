@@ -6,8 +6,8 @@ from esp.datatree.models import GetNode
 from django import forms
 from django.db.models.query import Q
 
-GetNode('V/Flags/Registration/Teacher/Acknowledgement')
-GetNode('V/Deadline/Registration/Teacher/Acknowledgement')
+#GetNode('V/Flags/Registration/Teacher/Acknowledgement')
+#GetNode('V/Deadline/Registration/Teacher/Acknowledgement')
 
 def teacheracknowledgementform_factory(prog):
     name = "TeacherAcknowledgementForm"
