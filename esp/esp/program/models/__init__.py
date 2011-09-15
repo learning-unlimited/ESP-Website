@@ -342,7 +342,10 @@ class Program(models.Model):
 
     @cache_function
     def _niceName_memcache(self):
-        return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
+        if Tag.getProgramTag(key='ignore_parent_name', program=self):
+            return str(self.anchor.friendly_name)
+        else:
+            return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
     # this stuff never really changes
 
     def niceSubName(self):
