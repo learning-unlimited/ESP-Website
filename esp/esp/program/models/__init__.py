@@ -1227,7 +1227,7 @@ class RegistrationProfile(models.Model):
             return regProf
         
         regProf = RegistrationProfile()
-        regProf.user = user
+        regProf.user = ESPUser(user)
 
         return regProf
     getLastProfile.depend_on_row(lambda:RegistrationProfile, lambda profile: {'user': profile.user})
