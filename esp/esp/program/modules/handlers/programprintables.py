@@ -937,8 +937,10 @@ class ProgramPrintables(ProgramModuleObj):
 
             # check financial aid
             student.has_financial_aid = student.hasFinancialAid(prog.anchor)
-            if student.has_financial_aid:
-                student.itemizedcosttotal = 0
+            if student.has_financial_aid and not student.itemizedcosts.filter(li_type__text=u'Financial Aid', amount__gt=0).distinct().count() and not student.itemizedcosts.filter(anchor__uri=prog.anchor.uri+"/Accounts/FinancialAid", amount__gt=0).distinct().count():
+                apps = FinancialAidRequest.objects.filter(user=student, program=prog, approved=True).distinct()
+                aid = max(list(apps.values_list('amount_received', flat=True).distinct()))
+                student.itemizedcosttotal -= aid
             student.has_paid = ( student.itemizedcosttotal == 0 )
             
             # MIT Splash purchase counts; temporary, should be harmless
