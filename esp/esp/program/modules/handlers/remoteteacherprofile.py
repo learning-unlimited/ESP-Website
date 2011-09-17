@@ -68,8 +68,11 @@ class RemoteTeacherProfile(ProgramModuleObj):
         return {'teacher_remoteprofile': """Teachers who have completed the remote volunteer profile."""}
 
     def isCompleted(self):
-        regProf, created = module_ext.RemoteProfile.objects.get_or_create(user = self.user, program = self.program)
-        return not created
+        if module_ext.RemoteProfile.objects.filter(user = self.user, program = self.program).exists():
+            return True
+        else:
+            regProf, created = module_ext.RemoteProfile.objects.get_or_create(user = self.user, program = self.program)
+            return False
 
     @main_call
     @meets_deadline()
@@ -78,8 +81,11 @@ class RemoteTeacherProfile(ProgramModuleObj):
  
         context = {'module': self}
         
-        profile, created  = module_ext.RemoteProfile.objects.get_or_create(user = self.user, program = self.program)
-        if created:
+        profile_qs = module_ext.RemoteProfile.objects.filter(user = self.user, program = self.program)
+        if profile_qs.exists():
+            profile = profile_qs.order_by('-id')[0]
+        else:
+            profile, created = module_ext.RemoteProfile.objects.get_or_create(user=self.user, program=self.program)
             profile.save()
         if request.method == 'POST':
             form = RemoteTeacherProfileForm(self, request.POST)
