@@ -1898,9 +1898,9 @@ def install():
     from esp.users.initial_userbits import populateInitialUserBits
     populateInitialUserBits()
 
-    if User.objects.count() == 1: # We just did a syncdb;
+    if ESPUser.objects.count() == 1: # We just did a syncdb;
                                   # the one account is the admin account
-        user = User.objects.all()[0]
+        user = ESPUser.objects.all()[0]
         AdminUserBits = ( { "user": user,
                             "verb": GetNode("V/Administer"),
                             "qsc": GetNode("Q") },
