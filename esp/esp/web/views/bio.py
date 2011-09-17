@@ -150,7 +150,7 @@ def bio_user(request, founduser):
     
     teacherbio = TeacherBio.getLastBio(founduser)
     if not teacherbio.picture:
-        teacherbio.picture = 'uploaded/not-available.jpg'
+        teacherbio.picture = 'images/not-available.jpg'
         
     if teacherbio.slugbio is None or len(teacherbio.slugbio.strip()) == 0:
         teacherbio.slugbio = 'ESP Teacher'
