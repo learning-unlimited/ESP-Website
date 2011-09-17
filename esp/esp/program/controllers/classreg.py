@@ -268,7 +268,7 @@ class ClassCreationController(object):
     def send_class_mail_to_directors(self, cls, user):
         mail_ctxt = self.generate_director_mail_context(cls, user)
         
-        recipients = [teacher.email for teacher in cls.teachers().distinct()]        
+        recipients = [teacher.email for teacher in cls.teachers()]        
         if recipients:
             send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
