@@ -132,7 +132,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             "seq": 10,
             "required": True,
             "main_call": "classlist",
-            "aux_calls": "ajax_schedule,addclass,ajax_addclass,catalog,fillslot,clearslot,ajax_clearslot,class_docs,swapclass"
+            "aux_calls": "ajax_schedule,addclass,ajax_addclass,catalog,fillslot,clearslot,ajax_clearslot,class_docs,swapclass,catalog_student_count_json,catalog_registered_classes_json"
             }]
 
     def extensions(self):

@@ -4,15 +4,15 @@ from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 from esp.program.models import ProgramModule
+from esp.program.modules import models as modules
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
         "Write your forwards methods here."
-        mod = ProgramModule.objects.get(handler='StudentClassRegModule', main_call='classlist')
-        if not 'catalog_registered_classes_json' in mod.aux_calls:
-            mod.aux_calls += ',catalog_registered_classes_json,catalog_allowed_reg_verbs'
-            mod.save()
+        
+        #   Synchronize module_properties in DB with those in the code
+        modules.install()
 
     def backwards(self, orm):
         "Write your backwards methods here."
