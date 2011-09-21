@@ -2,6 +2,7 @@ from esp.users.views.usersearch import *
 from esp.users.views.registration import *
 from esp.users.views.password_reset import *
 from esp.users.views.emailpref import *
+from esp.users.views.make_admin import *
 from esp.users.models import ESPUser
 
 from django.http import HttpResponseRedirect, HttpResponse
