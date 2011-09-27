@@ -453,6 +453,7 @@ class ProgramPrintables(ProgramModuleObj):
 
 
         scheditems = []
+        resource_types = prog.getResourceTypes().values_list('name', flat=True)
 
         for teacher in teachers:
             # get list of valid classes
@@ -473,8 +474,6 @@ class ProgramPrintables(ProgramModuleObj):
 
                 classes = new_classes
 
-                
-
             # aseering 9-29-2007, 1:30am: There must be a better way to do this...
             ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False).exclude(phone_cell='').order_by('id')
             if ci.count() > 0:
@@ -489,11 +488,13 @@ class ProgramPrintables(ProgramModuleObj):
                                'user': teacher,
                                'phone_day': phone_day,
                                'phone_cell': phone_cell,
-                               'cls' : classes[0]})
+                               'cls' : classes[0],
+                               'res_values': [classes[0].resourcerequest_set.filter(res_type__name=x).values_list('desired_value', flat=True) for x in resource_types]})
         
         scheditems = filter(filt_exp, scheditems)
         scheditems.sort(sort_exp)
 
+        context['res_types'] = resource_types
         context['scheditems'] = scheditems
 
         return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
