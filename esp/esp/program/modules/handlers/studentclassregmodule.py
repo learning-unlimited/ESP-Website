@@ -145,13 +145,14 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         now = datetime.now()
 
+        Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = Q(studentregistration__end_date__gte=now, studentregistration__start_date__lte=now) # Assumes that, for all still-valid registrations, we don't care about startdate, and enddate is null.
         
         if QObject:
-            retVal = {'classreg': self.getQForUser(Par & Unexpired)}
+            retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser(Par & Unexpired)}
         else:
-            retVal = {'classreg': ESPUser.objects.filter(Par & Unexpired).distinct()}
+            retVal = {'enrolled': ESPUser.objects.filter(Enrolled & Par & Unexpired).distinct(), 'classreg': ESPUser.objects.filter(Par & Unexpired).distinct()}
 
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
@@ -173,7 +174,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         for item in role_choices:
             role_dict[item[0]] = item[1]
     
-        result = {'classreg': """Students who have have signed up for at least one class."""}
+        result = {'classreg': """Students who have have signed up for at least one class.""",
+                  'enrolled': """Students who are enrolled in at least one class."""}
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
             allowed_student_types = allowed_student_types.split(",")
