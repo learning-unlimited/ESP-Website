@@ -215,3 +215,7 @@ class ClassroomForm(forms.Form):
             # Delete furnishings that we don't have any more
             for f in Resource.objects.filter(group_id=room.group_id).exclude(id=room.id).exclude(res_type__in=furnishings):
                 f.delete()
+
+class ClassroomImportForm(forms.Form):
+    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    
