@@ -98,7 +98,7 @@ class OnSiteRegister(ProgramModuleObj):
                     while User.objects.filter(username = username).count() > 0:
                         i += 1
                         username = base_uname + str(i)
-                new_user = User(username = username,
+                new_user = ESPUser(username = username,
                                 first_name = new_data['first_name'],
                                 last_name  = new_data['last_name'],
                                 email      = new_data['email'],
@@ -107,8 +107,6 @@ class OnSiteRegister(ProgramModuleObj):
                 new_user.save()
 
                 self.student = new_user
-
-                new_user.save()
 
                 regProf = RegistrationProfile.getLastForProgram(new_user,
                                                                 self.program)
@@ -124,8 +122,6 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.student_info = student_info
 
                 regProf.save()
-
-                new_user = ESPUser(new_user)
                 
                 if new_data['paid']:
                     self.createBit('Paid')

@@ -102,21 +102,22 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
                     mod.__dict__[key] = datum[key] 
             elif mod.__dict__[key] != datum[key]:
                 if key == 'aux_calls':
-                    print 'Module %s matching on %s' % (mod, key)
+                    #   print 'Module %s matching on %s' % (mod, key)
                     db_list = mod.__dict__[key].strip().split(',')
                     db_list.sort()
                     code_list = datum[key].strip().split(',')
                     code_list.sort()
-                    #   print '  Values in database: %s' % db_list
-                    #   print '  Values in code: %s' % code_list
+                    #   Values in database: db_list
+                    #   Values in code: code_list
                     if db_list == code_list:
-                        print '-> Values are equal and differ by ordering'
+                        #   Values are equal and differ by ordering
+                        pass
                     else:
-                        print '-> Values are truly different'
+                        #   Values are truly different
                         db_set = set(db_list)
                         code_set = set(code_list)
-                        print '  Items in code but not DB: %s' % (code_set - db_set,)
-                        print '  Items in DB but not code: %s' % (db_set - code_set,)
+                        #   Items in code but not DB: code_set - db_set
+                        #   Items in DB but not code: db_set - code_set
                         new_set = db_set | code_set
                         #   Save union of what's in DB and code
                         mod.__dict__[key] = ','.join(list(new_set))

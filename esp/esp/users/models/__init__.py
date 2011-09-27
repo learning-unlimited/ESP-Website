@@ -138,6 +138,7 @@ class ESPUser(User, AnonymousUser):
 
     class Meta:
         proxy = True
+        verbose_name = 'ESP User'
         
     objects = ESPUserManager()
     # this will allow a casting from User to ESPUser:
@@ -1069,11 +1070,18 @@ class StudentInfo(models.Model):
 
         studentInfo.graduation_year = new_data['graduation_year']
         try:
-            studentInfo.k12school       = K12School.objects.get(id=int(new_data['k12school']))
-        except K12School.DoesNotExist:
+            if isinstance(new_data['k12school'], K12School):
+                studentInfo.k12school = new_data['k12school']
+            else:
+                if isinstance(new_data['k12school'], int):
+                    studentInfo.k12school = K12School.objects.get(id=int(new_data['k12school']))
+                else:
+                    studentInfo.k12school = K12School.objects.filter(name__icontains=new_data['k12school'])[0]
+                    
+        except:
+            print 'Error, could not find k12school for "%s"' % new_data['k12school']
             studentInfo.k12school = None
-        except TypeError:
-            studentInfo.k12school = None
+            
         studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
         studentInfo.dob             = new_data['dob']
         

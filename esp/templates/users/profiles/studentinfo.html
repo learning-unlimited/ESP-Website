@@ -47,12 +47,24 @@ detailed explanation of our age and grade level policy, please click
 
 <tr>
  <td><label for="id_k12school">School:</label>
- <br /><span style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school if it comes up.)</span></td>
+ <br /><span style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school when it comes up.)</span></td>
  <td>{{ form.k12school }} {% if form.k12school.errors %}
    <br /><span class="form_error">{{ form.k12school.errors|join:", " }}</span>
    {% endif %}
  </td>
 </tr>
+
+{% if form.unmatched_school %}
+<tr>
+ <td><label for="id_unmatched_school"></label>
+ </td>
+ <td>{{ form.unmatched_school }} {% if form.unmatched_school.errors %}
+   <br /><span class="form_error">{{ form.unmatched_school.errors|join:", " }}</span>
+   {% endif %}
+   <span style="font-size: 0.8em;">Check this box only if you've tried searching but could not find your school.</span>
+ </td>
+</tr>
+{% endif %}
 
 {% if form.schoolsystem_id %}
 <tr>

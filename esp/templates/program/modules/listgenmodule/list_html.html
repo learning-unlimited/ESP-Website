@@ -35,22 +35,31 @@ body { font-family: georgia; }
 <br />
 <br />
 <center>
-<table class="pretty sortable" cellspacing="0">
-<tr>
-<td>#</td>
-{% for field in fields %}
-    <th>{{ field }}</th>
-{% endfor %}
-</tr>
-{% for user in users %}
+{% for list in lists %}
+<div style="page-break-after: always;">
+{% if list.key %}
+<h2>Users with {{ list.key }} = {{ list.value }}</h2>
+{% endif %}
+<p>
+    <table class="pretty sortable" cellspacing="0">
     <tr>
-    <td>{{ forloop.counter }}</td>
-    {% for field in user.fields %}
-        <td>{{ field }}</td>
+    <td>#</td>
+    {% for field in fields %}
+        <th>{{ field }}</th>
     {% endfor %}
     </tr>
+    {% for user in list.users %}
+        <tr>
+        <td>{{ forloop.counter }}</td>
+        {% for field in user.fields %}
+            <td>{{ field }}</td>
+        {% endfor %}
+        </tr>
+    {% endfor %}
+    </table>
+</p>
+</div>
 {% endfor %}
-</table>
 </center>
 </body>
 </html>

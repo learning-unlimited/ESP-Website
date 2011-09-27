@@ -347,7 +347,10 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def _niceName_memcache(self):
-        return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
+        if Tag.getProgramTag(key='ignore_parent_name', program=self):
+            return str(self.anchor.friendly_name)
+        else:
+            return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
     # this stuff never really changes
 
     def niceSubName(self):
@@ -737,7 +740,10 @@ class Program(models.Model, CustomFormsLinkModel):
         d2 = max(dates).end
         if d1.year == d2.year:
             if d1.month == d2.month:
-                return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
+                if d1.day == d2.day:
+                    return '%s' % d1.strftime('%b. %d, %Y')
+                else:
+                    return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
             else:
                 return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
         else:
@@ -1229,7 +1235,7 @@ class RegistrationProfile(models.Model):
             return regProf
         
         regProf = RegistrationProfile()
-        regProf.user = user
+        regProf.user = ESPUser(user)
 
         return regProf
     getLastProfile.depend_on_row(lambda:RegistrationProfile, lambda profile: {'user': profile.user})

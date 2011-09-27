@@ -55,7 +55,7 @@ DISABLED = Disabled_Cache()
 
 class InclusionTagCacheDecorator(object):
 
-    def __init__(self, register, file_name, context_class=AutoRequestContext,  takes_context=False, **kwargs):
+    def __init__(self, register, file_name, context_class=AutoRequestContext, takes_context=False, disable=False, **kwargs):
         """
         This function will cache the rendering and output of a inclusion tag for cache_time seconds.
         You may use the caching API to add dependencies for automatic invalidation by accessing the
@@ -112,23 +112,24 @@ class InclusionTagCacheDecorator(object):
                         in_self.nodelist = t.nodelist
                     return in_self.nodelist.render(context_class(dict, autoescape=in_self._context.autoescape))
 
-                render_given_args = cache_function(render_given_args, uid_extra='*'+describe_func(func))
-                render_given_args.get_or_create_token(('args',))
-                def render_map(**kwargs):
-                    #   Reconstruct argument list in proper order
-                    result_args = []
-                    for key in params:
-                        if key in kwargs:
-                            result_args.append(kwargs[key])
-                        else:
-                            result_args.append(None)
-                    result = {'args': result_args}
-                    #   Flush everything if we got a wildcard
-                    for key in kwargs:
-                        if is_wildcard(kwargs[key]):
-                            result = {}
-                    return result
-                render_given_args.depend_on_cache(cached_function, render_map)
+                if not disable:
+                    render_given_args = cache_function(render_given_args, uid_extra='*'+describe_func(func))
+                    render_given_args.get_or_create_token(('args',))
+                    def render_map(**kwargs):
+                        #   Reconstruct argument list in proper order
+                        result_args = []
+                        for key in params:
+                            if key in kwargs:
+                                result_args.append(kwargs[key])
+                            else:
+                                result_args.append(None)
+                        result = {'args': result_args}
+                        #   Flush everything if we got a wildcard
+                        for key in kwargs:
+                            if is_wildcard(kwargs[key]):
+                                result = {}
+                        return result
+                    render_given_args.depend_on_cache(cached_function, render_map)
 
                 def render(in_self, context):
                     resolved_vars = []
