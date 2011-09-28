@@ -891,7 +891,13 @@ class ESPUser(User, AnonymousUser):
                 i += 1
                 username = base_uname + str(i)
         return username
-
+        
+    def makeVolunteer(self):
+        ub, created = UserBit.objects.get_or_create(user=self,
+                                qsc=GetNode('Q'),
+                                verb=GetNode('V/Flags/UserRole/Volunteer'))
+        ub.renew()
+        
     def canEdit(self, nodeObj):
         """Returns True or False if the user can edit the node object"""
         # Axiak
