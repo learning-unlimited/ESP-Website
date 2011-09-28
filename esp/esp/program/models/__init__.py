@@ -392,23 +392,19 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return ''
     
-    def teachers(self, QObjects = False):
-        modules = self.getModules(None)
-        teachers = {}
-        for module in modules:
-            tmpteachers = module.teachers(QObjects)
-            if tmpteachers is not None:
-                teachers.update(tmpteachers)
-        return teachers
-
-    def students(self, QObjects=False):
-        modules = self.getModules(None)
-        students = {}
-        for module in modules:
-            tmpstudents = module.students(QObjects)
-            if tmpstudents is not None:
-                students.update(tmpstudents)
-        return students
+    def get_users_from_module(method_name):
+        def get_users(self, QObjects=False):
+            modules = self.getModules(None)
+            users = {}
+            for module in modules:
+                tmpusers = getattr(module, method_name)(QObjects)
+                if tmpusers is not None:
+                    users.update(tmpusers)
+            return users
+        return get_users
+    teachers = get_users_from_module('teachers')
+    students = get_users_from_module('students')
+    volunteers = get_users_from_module('volunteers')
 
     def counts_from_query_dict(query_func):
         def _get_num(self, QObjects=True):
@@ -485,6 +481,7 @@ class Program(models.Model, CustomFormsLinkModel):
         
         lists = self.students(QObjects)
         lists.update(self.teachers(QObjects))
+        lists.update(self.volunteers(QObjects))
         learnmodules = self.getModules(None)
         teachmodules = self.getModules(None)
 
@@ -502,7 +499,11 @@ class Program(models.Model, CustomFormsLinkModel):
             tmpdict = module.teacherDesc()
             if tmpdict is not None:
                 desc.update(tmpdict)
-
+        for module in teachmodules:
+            tmpdict = module.volunteerDesc()
+            if tmpdict is not None:
+                desc.update(tmpdict)
+                
         for k, v in desc.items():
             lists[k]['description'] = v
         usertypes = ['Student', 'Teacher', 'Guardian', 'Educator', 'Volunteer']
