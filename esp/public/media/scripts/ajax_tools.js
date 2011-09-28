@@ -214,35 +214,11 @@ var register_fragment = function(fragment_attrs)
 dojo.addOnLoad(reset_forms); 
 dojo.addOnLoad(fetch_fragments);
 
-function read_cookie(name)
-{
-    prefix = name + "=";
-    cookie_array = document.cookie.split(';');
-    for(var i = 0; i < cookie_array.length; i++)
-    {
-        var cookie = cookie_array[i];
-        var cookie_name = cookie.substr(0, cookie.indexOf("="));
-        var cookie_value = cookie.substr(cookie.indexOf("=")+1);
-        cookie_name = cookie_name.replace(/^\s+|\s+$/g,"");
-        if (cookie_name == name)
-        {
-            return unescape(cookie_value);
-        }
-    }
-
-    return null;
-}
-
-function strip_tags(str)
-{
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-} 
-
 var check_csrf_cookie = function()
 {
     csrf_token = document.loginform.csrfmiddlewaretoken.value;
     //alert(csrf_token);
-    csrf_cookie = read_cookie("csrftoken");
+    csrf_cookie = $.cookie("csrftoken");
     //alert(csrf_cookie);
     if (csrf_cookie == null)
     {
@@ -251,6 +227,6 @@ var check_csrf_cookie = function()
     else if (csrf_cookie != csrf_token)
     {
         //alert("Don't match!");
-        document.loginform.csrfmiddlewaretoken.value = strip_tags(csrf_cookie);
+        document.loginform.csrfmiddlewaretoken.value = $(csrf_cookie).text();
     }
 }
