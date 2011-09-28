@@ -76,6 +76,7 @@ DEFAULT_USER_TYPES = [
     ['Teacher', {'label': 'Volunteer Teacher', 'profile_form': 'TeacherProfileForm'}],
     ['Guardian', {'label': 'Guardian of Student', 'profile_form': 'GuardianProfileForm'}],
     ['Educator', {'label': 'K-12 Educator', 'profile_form': 'EducatorProfileForm'}],
+    ['Volunteer', {'label': 'On-site Volunteer', 'profile_form': 'VolunteerProfileForm'}]
 ]
 
 def user_get_key(user):
@@ -449,11 +450,11 @@ class ESPUser(User, AnonymousUser):
         """ Get a list of the different roles an ESP user can have. By default there are four rols,
             but there can be more. (Returns ['Student','Teacher','Educator','Guardian']. """
 
-        return ['Student','Teacher','Educator','Guardian']
+        return ['Student','Teacher','Educator','Guardian','Volunteer']
 
     @staticmethod
     def getAllOfType(strType, QObject = True):
-        types = ['Student', 'Teacher','Guardian','Educator']
+        types = ['Student', 'Teacher','Guardian','Educator','Volunteer']
 
         if strType not in types:
             raise ESPError(), "Invalid type to find all of."
@@ -860,7 +861,7 @@ class ESPUser(User, AnonymousUser):
         Creates the methods such as isTeacher that determins whether
         or not the user is a member of that user class.
         """
-        user_classes = ('Teacher','Guardian','Educator','Officer','Student')
+        user_classes = ('Teacher','Guardian','Educator','Officer','Student','Volunteer')
         overrides = {'Officer': 'Administrator'}
         for user_class in user_classes:
             method_name = 'is%s' % user_class

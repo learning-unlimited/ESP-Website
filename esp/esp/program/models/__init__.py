@@ -505,7 +505,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         for k, v in desc.items():
             lists[k]['description'] = v
-        usertypes = ['Student', 'Teacher', 'Guardian', 'Educator']
+        usertypes = ['Student', 'Teacher', 'Guardian', 'Educator', 'Volunteer']
 
         
 
