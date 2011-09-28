@@ -881,6 +881,17 @@ class ESPUser(User, AnonymousUser):
 
             setattr(cls, method_name, method_gen(bit_name, property_name))
 
+    @classmethod
+    def get_unused_username(cls, first_name, last_name):
+        username = base_uname = (first_name[0] + last_name).lower()
+        if cls.objects.filter(username = username).count() > 0:
+            i = 2
+            username = base_uname + str(i)
+            while cls.objects.filter(username = username).count() > 0:
+                i += 1
+                username = base_uname + str(i)
+        return username
+
     def canEdit(self, nodeObj):
         """Returns True or False if the user can edit the node object"""
         # Axiak
