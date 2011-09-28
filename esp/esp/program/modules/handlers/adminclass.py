@@ -42,7 +42,7 @@ from esp.datatree.models import *
 from esp.cal.models              import Event
 
 from esp.web.util        import render_to_response
-from esp.program.modules.forms.management import ClassManageForm, SectionManageForm
+from esp.program.modules.forms.management import ClassManageForm, SectionManageForm, ClassCancellationForm, SectionCancellationForm
 
 from django import forms
 from django.http import HttpResponseRedirect, HttpResponse
@@ -277,10 +277,29 @@ class AdminClass(ProgramModuleObj):
             return ESPError(False), 'Unable to find the requested class.'
         context = {}
         
+        cls_cancel_form = ClassCancellationForm(subject=cls)
+        sec_cancel_forms = [SectionCancellationForm(section=sec, prefix='sec'+str(sec.index())) for sec in sections]
+        
+        action = request.GET.get('action', None)
+        
+        if request.method == 'POST' and action == 'cancel':
+            form_list = [cls_cancel_form] + sec_cancel_forms
+            form_success = False
+            for i in range(len(form_list)):
+                form_list[i].data = request.POST
+                form_list[i].is_bound = True
+                if form_list[i].is_valid():
+                    #   Call the Class{Subject,Section}.cancel() method to e-mail and remove students, etc.
+                    form_list[i].cleaned_data['target'].cancel(email_students=True, explanation=form_list[i].cleaned_data['explanation'])
+                    form_success = True
+            if not form_success:
+                cls_cancel_form = form_list[0]
+                sec_cancel_forms = form_list[1:]
+        
         cls_form = ClassManageForm(self, subject=cls)
         sec_forms = [SectionManageForm(self, section=sec, prefix='sec'+str(sec.index())) for sec in sections]
-        
-        if request.method == 'POST':
+
+        if request.method == 'POST' and action == 'modify':
             cls_form.data = request.POST
             cls_form.is_bound = True
             valid = cls_form.is_valid()
@@ -330,6 +349,8 @@ class AdminClass(ProgramModuleObj):
         context['sections'] = sections
         context['cls_form'] = cls_form
         context['sec_forms'] = sec_forms
+        context['cls_cancel_form'] = cls_cancel_form
+        context['sec_cancel_forms'] = sec_cancel_forms
         context['program'] = self.program
         context['module'] = self
         
