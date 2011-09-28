@@ -73,6 +73,11 @@ class ESPAuthMiddleware(object):
     def process_request(self, request):
         assert hasattr(request, 'session'), "The Django authentication middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
         request.__class__.user = ESPLazyUser()
+        
+        #Call get_token to make sure the CSRF cookie is set on any request
+        from django.middleware.csrf import get_token
+        get_token(request)
+
         return None
 
     def process_response(self, request, response):

@@ -98,7 +98,7 @@ def ajax_login(request, *args, **kwargs):
         admin_home_url = Tag.getTag('admin_home_page')
         if admin_home_url:
             result_dict['script'] = render_to_string('users/loginbox_redirect.js', {'target': admin_home_url})
-        
+
     return HttpResponse(json.dumps(result_dict))
 
 def signed_out_message(request):
