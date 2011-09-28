@@ -14,6 +14,24 @@ if (document.cookie.length>0)
 return "";
 }
 var csrfmiddlewaretoken = getCookie("csrftoken");
+if (csrfmiddlewaretoken == "")
+{
+  var xmlhttp;
+  if (window.XMLHttpRequest) //Do we have XMLHttp Request (Non IE-5/6)
+  {
+    xmlhttp = new XMLHttpRequest();
+  }
+  else //IE-5 or 6
+  {
+    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+  }
+
+  //Block on this because it's a small view and not having the cookie
+  //set before the rest of the page loads would not resolve the issue
+  xmlhttp.open("GET", "/set_csrf_token", true);
+  xmlhttp.send();
+}
+
 function csrftoken() {
   document.write("<input type='hidden' name='csrfmiddlewaretoken' value='" + csrfmiddlewaretoken + "' />");
 }

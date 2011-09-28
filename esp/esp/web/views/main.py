@@ -477,3 +477,9 @@ META:
     mail_admins("[ESP] JS Error: %s" % msg[:100].replace("\n", "").replace("\r", ""), err_txt)
 
     return HttpResponse('')  ## Return something, so we don't trigger an error
+
+def set_csrf_token(request):
+    # Call get_token to set the CSRF cookie
+    from django.middleware.csrf import get_token
+    get_token(request)
+    return HttpResponse('') # Return the minimum possible 
