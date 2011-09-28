@@ -214,6 +214,11 @@ var register_fragment = function(fragment_attrs)
 dojo.addOnLoad(reset_forms); 
 dojo.addOnLoad(fetch_fragments);
 
+function strip_tags(str)
+{
+    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt");
+}
+
 var check_csrf_cookie = function()
 {
     csrf_token = document.loginform.csrfmiddlewaretoken.value;
@@ -227,6 +232,6 @@ var check_csrf_cookie = function()
     else if (csrf_cookie != csrf_token)
     {
         //alert("Don't match!");
-        document.loginform.csrfmiddlewaretoken.value = $(csrf_cookie).text();
+        document.loginform.csrfmiddlewaretoken.value = strip_tags(csrf_cookie);
     }
 }
