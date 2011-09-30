@@ -14,40 +14,67 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
 		classText = this.getClassFullTitle();
         var config = 
         {
+            layout: 'column',
             border: false,
             id: this.timeblockId + this.ESPClassInfo.id,
             items: 
             [
                 {
-                    xtype: 'button',
-                    text: "Catalog info",
-                    onClick: this.showCatalogInfo,
+                    id: 'column1',
+                    border: false,
+                    columnWidth: 0.05,
+                    items:
+                    [
+                        {
+                            xtype: 'button',
+                            text: "Catalog info",
+                            padding: 2,
+                            onClick: this.showCatalogInfo,
+                        }                    
+                    ]
                 },
                 {
-			       xtype: 'radio',
-			       id: 'flag_'+ this.sectionId,
-                   hidden: this.isWalkin,
-			       name: 'flag_'+this.timeblockId,
-			       inputValue: this.sectionId,
-                   checked: this.alreadyFlagged,
-			       listeners: { //listener changes the flagged classes box at the top when the flagged class changes
-			       }
+                    id: 'column2',
+                    border: false,
+                    columnWidth: 0.05,
+                    layout: 'column',
+                    items:
+                    [
+                        {
+			                xtype: 'radio',
+			                id: 'flag_'+ this.sectionId,
+                            hidden: this.isWalkin,
+			                name: 'flag_'+this.timeblockId,
+			                inputValue: this.sectionId,
+                            checked: this.alreadyFlagged,
+			                listeners: { } //listener changes the flagged classes box at the top when the flagged class changes
+                        },
+                        {
+        	                xtype: 'checkbox',
+                            hidden: this.isWalkin,
+        	                name: this.sectionId,
+                            checked: this.alreadyChecked,
+        	                id: this.sectionId
+                        } 
+			        ]
                 },
-                {
-        	       xtype: 'checkbox',
-                   hidden: this.isWalkin,
-        	       name: this.sectionId,
-                   checked: this.alreadyChecked,
-        	       id: this.sectionId
-                }, 
+
                 { 
-        	       xtype: 'displayfield',
-            	   value: classText,
-        	       autoHeight: true,
-        	       id: 'title_'+ this.sectionId 
+                    id: 'column3',
+                    columnWidth: 0.9,
+                    border: false,
+                    items:
+                    [
+                        {
+        	                xtype: 'displayfield',
+            	            value: classText,
+        	                autoHeight: true,
+        	                id: 'title_'+ this.sectionId
+                        }
+                    ] 
                 }
             ],
-            width: 400,
+            //width: ,
             layout: 'column'
         };
 
@@ -111,12 +138,12 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
 
     isChecked: function () 
     {
-        return this.items.items[1].getValue();
+        return this.items.items[1][1].getValue();
     },
 
     isFlagged: function ()
     {
-        return this.items.items[0].getValue();
+        return this.items.items[1][0].getValue();
     }
 });
 

@@ -17,32 +17,13 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
                     [
                         {
                             xtype: "displayfield",
-                            value: "The following walkins are available during this time period: <br>",
+                            value: walkins_text
                         }
                     ]
                 },
-
-                {
-                    xtype: 'fieldset',
-                    layout: 'column',
-                    id: this.id+'no_class',
-                    name: this.id+'no_class',
-                    items: 
-                    [
-                        {
-                            xtype: 'radio',
-                            id: 'flag_'+this.id,
-                            name: 'flag_'+this.id
-                        },{ 
-                            xtype: 'displayfield',
-                            value: "I would not like to flag a priority class for this timeblock."
-                        }
-                    ]
-                }
             ],
-            height: 800,
             priorityLimit: 1,
-            autoScroll: true,
+            scroll: false,
             monitorResize: true,
             listeners: { 
                 render: this.makeCheckBoxes,
@@ -70,8 +51,50 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         walkinsDisplay.doLayout();
     },
 
+    addNoClassRadio: function () 
+    {
+        this.add({
+            width: 600,
+            xtype: 'fieldset',
+            layout: 'column',
+            id: this.id+'no_class',
+            name: this.id+'no_class',
+            items: 
+            [
+                {
+                    columnWidth: 0.1,
+                    border: false,
+                    items:
+                    [
+                        {
+                            xtype: 'radio',
+                            id: 'flag_'+this.id,
+                            name: 'flag_'+this.id
+                        }
+                    ]
+                },{
+                    columnWidth: 0.9,
+                    border: false,
+                    items:
+                    [
+                        { 
+                            xtype: 'displayfield',
+                            value: "I would not like to flag a priority class for this timeblock."
+                        }
+                    ]
+                }
+            ]
+        });
+    },
+
     makeCheckBoxes: function() {
         this.makeWalkinsList();
+        this.add({
+            xtype: "displayfield",
+            value: "<font size=24> Classes </font> <br>",
+        });
+        this.addNoClassRadio();
+
         for(i = 0; i < this.ESPclasses.length; i++)
         {
             var r = this.ESPclasses[i];
@@ -160,7 +183,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
     },
 
     flaggedClass: function () {
-        for(j=2; j<this.items.items.length; j++) {
+        for(j=3; j<this.items.items.length; j++) {
 	         var checkbox = this.items.items[j];
 	         if(checkbox.isFlagged()){
                 return checkbox;
