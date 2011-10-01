@@ -350,8 +350,9 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
         
             if request.GET.has_key('school'):
                 school = request.GET['school']
-                Q_include &= (Q(studentinfo__school__icontains=school) | Q(studentinfo__k12school__name__icontains=school))
-                update = True
+                if school:
+                    Q_include &= (Q(studentinfo__school__icontains=school) | Q(studentinfo__k12school__name__icontains=school))
+                    update = True
         
             #   Filter by graduation years if specifically looking for teachers.
             possible_gradyears = range(1920, 2020)
