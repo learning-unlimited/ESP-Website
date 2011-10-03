@@ -30,7 +30,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
                 //beforehide: this.checkPriorities
             }
         };
-    	Ext.apply(this, Ext.apply(this.initialConfig, config));
+        Ext.apply(this, Ext.apply(this.initialConfig, config));
         TimeslotPanel.superclass.initComponent.apply(this, arguments);
     },
 
@@ -101,24 +101,24 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
             section_id = this.getSectionId(r);
 
             if (priority_limit == 1) {
-		        this.add({
+                this.add({
                     xtype: 'class_checkboxes',
                     ESPClassInfo: r,
                     timeblockId: this.timeblock[0],
                     sectionId: section_id,
                     alreadyChecked: this.alreadyPreferred(section_id, "Interested"),
                     alreadyFlagged: this.alreadyPreferred(section_id, "Priority/1")
-	            }); 
+                }); 
             }
 
             else 
             {
                 new_column = {
-		                xtype: 'fieldset',
-		                layout: 'column',
-		                id: 'column_'+r.data.id,
-		                name: timeblock[1]+r.data.title,
-		                items: []
+                        xtype: 'fieldset',
+                        layout: 'column',
+                        id: 'column_'+r.data.id,
+                        name: timeblock[1]+r.data.title,
+                        items: []
                 }
                 new_column.items.push({
                     xtype: 'combo',
@@ -151,8 +151,8 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
                     value: " &nbsp; &nbsp; &nbsp; &nbsp; " + text,
                     autoHeight: true,
                     id: 'title_'+ r.data.id 
-	            });
-	            this.add(new_column)
+                });
+                this.add(new_column)
             }
         }
     },
@@ -184,21 +184,21 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     flaggedClass: function () {
         for(j=3; j<this.items.items.length; j++) {
-	         var checkbox = this.items.items[j];
-	         if(checkbox.isFlagged()){
+             var checkbox = this.items.items[j];
+             if(checkbox.isFlagged()){
                 return checkbox;
              }
-	     }
+         }
     },
 
     checkedClasses: function () {
         var checked = [];
         for(j=3; j<this.items.items.length; j++) {
-	         var checkbox = this.items.items[j];
-	         if(checkbox.isChecked()){
+             var checkbox = this.items.items[j];
+             if(checkbox.isChecked()){
                 checked.push(checkbox);
              }
-	     }
+         }
         return checked;
     },
 
@@ -218,10 +218,10 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
     getNewPreferences: function () {
         classPreferences = new Object();
         for(j=3; j<this.items.items.length; j++) {
-	         var checkbox = this.items.items[j];
+             var checkbox = this.items.items[j];
              classPreferences[checkbox.classNumber()] = checkbox.isChecked();
-	         classPreferences["flag_" + checkbox.classNumber()] = checkbox.isFlagged();
-	     }
+             classPreferences["flag_" + checkbox.classNumber()] = checkbox.isFlagged();
+         }
         return classPreferences;
     },
 
