@@ -39,8 +39,6 @@ def render_inline_qsd(input_anchor, qsd, user=None):
     
     return {'qsdrec': qsd_obj, 'edit_bits': edit_bits}
 
-    
-
 class InlineQSDNode(template.Node):
     def __init__(self, nodelist, input_anchor, qsd_name, user_variable):
         self.nodelist = nodelist
@@ -78,8 +76,8 @@ class InlineQSDNode(template.Node):
 
             qsd_obj = new_qsd
 
-        return render_to_response("inclusion/qsd/render_qsd_inline.html", {'qsdrec': qsd_obj, 'edit_bits': edit_bits}, context_instance=context).content
-        
+        return render_to_response("inclusion/qsd/render_qsd_inline.html", {'qsdrec': qsd_obj, 'edit_bits': edit_bits}, context_instance=context).content    
+
 @register.tag
 def inline_qsd_block(parser, token):
     tokens = token.split_contents()
@@ -95,4 +93,32 @@ def inline_qsd_block(parser, token):
     parser.delete_first_token()
     
     return InlineQSDNode(nodelist, input_anchor, qsd_name, user_variable)
+
+
+class QSDStringNode(template.Node):
+    def __init__(self, input_anchor, input_qsd_name):
+        self.qsd_name = input_qsd_name
+        self.input_anchor = input_anchor
+      
+    def render(self, context):
+        try:
+            anchor = template.Variable(self.input_anchor)
+            anchor = anchor.resolve(context)
+        except:
+            anchor = GetNode(self.input_anchor)
+        qsd = str(self.qsd_name)[1:-1]
+        try:
+            qsd_obj = QuasiStaticData.objects.get_by_path__name(anchor, qsd)
+            result = qsd_obj.content
+        except AttributeError:
+            result = "QSD Does Not Exist"        
+        return result
+
+#def replaceSpacesQuotes(text):
+    
+
+@register.tag
+def qsd_string(parser, token):
+    tag, anchor, name = token.split_contents()
+    return QSDStringNode(anchor, name)
     

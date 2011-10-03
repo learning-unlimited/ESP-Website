@@ -184,8 +184,10 @@ def program(request, tl, one, two, module, extra = None):
 	raise Http404
 
 def classchangerequest(request, tl, one, two):
-    from esp.program.models import Program, StudentAppResponse, ClassSubject, ClassSection, StudentRegistration, RegistrationType
-    
+    #raise ESPError(False), "Class change request form will open at approximately 9pm today (Sunday July 10)."
+    from esp.program.models import Program, StudentAppResponse, StudentRegistration, RegistrationType
+    from esp.program.models.class_ import * 
+    #from urllib import quote
     try:
         prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
     except Program.DoesNotExist:
@@ -195,7 +197,7 @@ def classchangerequest(request, tl, one, two):
         raise Http404
 
     if not request.user or not request.user.is_authenticated():
-        return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+        return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path()) ))
 
     if not request.user.isStudent() and not request.user.isAdmin(prog):
         allowed_student_types = Tag.getTag("allowed_student_types", prog, default='')

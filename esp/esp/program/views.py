@@ -95,7 +95,7 @@ def lottery_student_reg(request, program = None):
 def lsr_submit(request, program = None): 
     
     priority_limit = program.priorityLimit()
-    
+
     # First check whether the user is actually a student.
     if not request.user.isStudent():
         raise ESPError(False), "You must be a student in order to access student registration."
@@ -138,9 +138,10 @@ def lsr_submit(request, program = None):
     flagworthy_sections = ClassSection.objects.filter(id__in=flag_related_sections-already_flagged_secids).select_related('anchor').annotate(first_block=Min('meeting_times__start'))
     
     sections_by_block = defaultdict(list)
-    sections_by_id = {}
+    sections_by_id = {}   
     for s in list(flagworthy_sections) + list(already_flagged_sections):
         sections_by_id[int(s.id)] = s
+        print s.first_block
         if int(s.id) not in classes_not_flagged:
             sections_by_block[s.first_block].append(s)
 
@@ -167,6 +168,7 @@ def lsr_submit(request, program = None):
     for s_id in (already_interested_secids - classes_interest):
         sections_by_id[s_id].unpreregister_student(request.user, prereg_verb=reg_interested.name)
     for s_id in classes_interest - already_interested_secids:
+        print s_id
         if not sections_by_id[s_id].preregister_student(request.user, prereg_verb=reg_interested.name, overridefull=True):
             errors.append({"text": "Unable to add interested class", "cls_sections": [s_id], "emailcode": sections_by_id[s_id].emailcode(), "block": None, "flagged": False})
 
