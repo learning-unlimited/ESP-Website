@@ -23,6 +23,10 @@
 \begin{document}
 \begin{multicols}{2}
 \vspace{.05in}
+{% if sections|length_is:0 %}
+No classes have yet been approved and scheduled!
+{% endif %}
+
 {% for sec in sections %}
 {% with sec.parent_class as cls %}
   {% ifchanged %}

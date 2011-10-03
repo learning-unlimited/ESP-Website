@@ -72,15 +72,15 @@ def get_user_list(request, listDict2, extra=''):
         lists = request.POST.getlist('select_mailman')
 
         all_list_members = reduce(operator.or_, (list_members(x) for x in lists))
-        filterObj = PersistentQueryFilter.getFilterFromQ(Q(id__in=[x.id for x in all_list_members]), User, 'Custom Mailman filter: ' + ", ".join(lists))
+        filterObj = PersistentQueryFilter.getFilterFromQ(Q(id__in=[x.id for x in all_list_members]), ESPUser, 'Custom Mailman filter: ' + ", ".join(lists))
 
         if request.POST['submitform'] == 'I want to search within this list':
             getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
             if found:
                 if type(getUser) == User or type(getUser) == ESPUser:
-                    newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
+                    newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), ESPUser, 'User %s' % getUser.username)
                 else:
-                    newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, User, 'Custom user filter')
+                    newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, ESPUser, 'Custom user filter')
                 return (newfilterObj, True)
             else:
                 return (getUser, False)
@@ -88,7 +88,7 @@ def get_user_list(request, listDict2, extra=''):
         elif request.POST['submitform'] == 'I want a subset of this list':
             getUsers, found = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
             if found:
-                newfilterObj = PersistentQueryFilter.getFilterFromQ(getUsers, User, 'Custom list')
+                newfilterObj = PersistentQueryFilter.getFilterFromQ(getUsers, ESPUser, 'Custom list')
                 return (newfilterObj, True)
             else:
                 return (getUsers, False)
@@ -100,11 +100,11 @@ def get_user_list(request, listDict2, extra=''):
             request.POST['submit_checklist'] == 'true':
 
         # If we're coming back after having checked off users from a checklist...
-        filterObj = PersistentQueryFilter.getFilterFromID(request.POST['extra'], User)
+        filterObj = PersistentQueryFilter.getFilterFromID(request.POST['extra'], ESPUser)
         getUsers, found = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
         if found:
             # want to make a PersistentQueryFilter out of this returned query
-            newfilterObj = PersistentQueryFilter.getFilterFromQ(getUsers, User, 'Custom list')
+            newfilterObj = PersistentQueryFilter.getFilterFromQ(getUsers, ESPUser, 'Custom list')
             return (newfilterObj, True)
         else:
             return (getUsers, False)
@@ -160,16 +160,16 @@ def get_user_list(request, listDict2, extra=''):
             curList = opmapping['or'](curList, List)
 
 
-        filterObj = PersistentQueryFilter.getFilterFromQ(curList, User, request.POST['finalsent'])
+        filterObj = PersistentQueryFilter.getFilterFromQ(curList, ESPUser, request.POST['finalsent'])
 
 
         if request.POST['submitform'] == 'I want to search within this list':
             getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
             if found:
                 if type(getUser) == User or type(getUser) == ESPUser:
-                    newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
+                    newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), ESPUser, 'User %s' % getUser.username)
                 else:
-                    newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, User, 'Custom user filter')
+                    newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, ESPUser, 'Custom user filter')
                 return (newfilterObj, True)
             else:
                 return (getUser, False)
@@ -177,7 +177,7 @@ def get_user_list(request, listDict2, extra=''):
         elif request.POST['submitform'] == 'I want a subset of this list':
             getUsers, found = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id)
             if found:
-                newfilterObj = PersistentQueryFilter.getFilterFromQ(getUsers, User, 'Custom list')
+                newfilterObj = PersistentQueryFilter.getFilterFromQ(getUsers, ESPUser, 'Custom list')
                 return (newfilterObj, True)
             else:
                 return (getUsers, False)
@@ -187,13 +187,13 @@ def get_user_list(request, listDict2, extra=''):
 
     # if we found a single user:
     if request.method == 'GET' and request.GET.has_key('op') and request.GET['op'] == 'usersearch':
-        filterObj = PersistentQueryFilter.getFilterFromID(request.GET['extra'], User)
+        filterObj = PersistentQueryFilter.getFilterFromID(request.GET['extra'], ESPUser)
         getUser, found = search_for_user(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, True)
         if found:
             if type(getUser) == User or type(getUser) == ESPUser:
-                newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), User, 'User %s' % getUser.username)
+                newfilterObj = PersistentQueryFilter.getFilterFromQ(Q(id = getUser.id), ESPUser, 'User %s' % getUser.username)
             else:
-                newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, User, 'Custom user filter')         
+                newfilterObj = PersistentQueryFilter.getFilterFromQ(filterObj.get_Q() & getUser, ESPUser, 'Custom user filter')         
 
             if 'usersearch_containers' in request.session:
                 request.POST, request.GET = request.session['usersearch_containers']
@@ -339,16 +339,20 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
             if request.GET.has_key('grade_min'):
                 yog = ESPUser.YOGFromGrade(request.GET['grade_min'])
                 if yog != 0:
-                    print "YOG filtering; grade_min:", yog
                     update = True
                     Q_include &= Q(registrationprofile__student_info__graduation_year__lte = yog, registrationprofile__most_recent_profile=True)
 
             if request.GET.has_key('grade_max'):
                 yog = ESPUser.YOGFromGrade(request.GET['grade_max'])
                 if yog != 0:
-                    print "YOG filtering; grade_max:", yog
                     update = True                    
                     Q_include &= Q(registrationprofile__student_info__graduation_year__gte = yog, registrationprofile__most_recent_profile=True)
+        
+            if request.GET.has_key('school'):
+                school = request.GET['school']
+                if school:
+                    Q_include &= (Q(studentinfo__school__icontains=school) | Q(studentinfo__k12school__name__icontains=school))
+                    update = True
         
             #   Filter by graduation years if specifically looking for teachers.
             possible_gradyears = range(1920, 2020)

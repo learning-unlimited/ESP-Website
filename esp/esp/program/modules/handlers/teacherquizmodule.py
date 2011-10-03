@@ -89,16 +89,17 @@ class TeacherQuizController(object):
         """
         Check quiz answers for errors.
 
-        Not yet ready for programs besides Spark 2011.
+        Not yet ready for programs besides MIT Splash! 2011.
         """
         question_numbers = {
             'prog_month': 1,
-            'prog_day': 1,
+            'prog_day1': 1,
+            'prog_day2': 1,
             'prog_year': 1,
-            'photo_exists': 5,
-            'call_911': 6,
-            'teacher_lunch': 7,
-            'check_in': 8,
+#            'photo_exists': 5,
+            'call_911': 5,
+            'teacher_lunch': 6,
+            'check_in': 7,
             'sec1': 3,
             'sec2': 3,
             'sec3': 3,
@@ -115,10 +116,11 @@ class TeacherQuizController(object):
             'security_number': 2,
         }
         correct_answers = {
-            'prog_month': '3',
-            'prog_day': '12',
+            'prog_month': '11',
+            'prog_day1': '19',
+            'prog_day2': '20',
             'prog_year': '2011',
-            'photo_exists': 'True',
+#            'photo_exists': 'True',
             'call_911': 'False',
             'teacher_lunch': 'True',
             'check_in': 'True',

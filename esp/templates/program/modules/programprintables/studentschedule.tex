@@ -55,7 +55,7 @@
 \multicolumn{1}{|c|}{\textbf{Class Time} } & \textbf{Room} & \multicolumn{1}{c|}{\textbf{Class} } \\
 {% for cls in student.classes %}\hline
 {% ifequal cls.event_type.description "Compulsory" %}
-  \multicolumn{3}{|c|}{ \textbf{\textit{ {{ cls.description }} } } }
+  \multicolumn{1}{|c|}{ {{ cls.start|date:"f" }} -- {{ cls.end|date:"f A" }} } & \multicolumn{2}{|c|}{ \textbf{\textit{ {{ cls.description }} } } }
 {% else %}
   {% ifequal cls.event_type.description "Class" %}
   \multicolumn{1}{|c|}{ {{ cls.start|date:"f" }} -- {{ cls.end|date:"f A" }} } & \multicolumn{2}{c|}{[NO CLASS]}

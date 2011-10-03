@@ -48,10 +48,14 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
+        import random
+
         """ Set up a bunch of user accounts to play with """
         self.password = "pass1234"
         
-        self.user, created = ESPUser.objects.get_or_create(first_name="Test", last_name="User", username="testuser123543", email="server@esp.mit.edu")
+        #   May fail once in a while, but it's not critical.
+        self.unique_name = 'Test_UNIQUE%06d' % random.randint(0, 999999)
+        self.user, created = ESPUser.objects.get_or_create(first_name=self.unique_name, last_name="User", username="testuser123543", email="server@esp.mit.edu")
         if created:
             self.user.set_password(self.password)
             self.user.save()
@@ -97,7 +101,7 @@ class ViewUserInfoTest(TestCase):
 
         # Try some fuzzy searches
         # First name only, unique
-        response = c.get("/manage/usersearch", { "userstr": "Test" })
+        response = c.get("/manage/usersearch", { "userstr": self.unique_name })
         self.assertEqual(response.status_code, 302)
         self.assertStringContains(response['location'], "/manage/userview?username=testuser123543")
 
@@ -249,7 +253,7 @@ class ProgramHappenTest(TestCase):
         ClassCategories.objects.create(symbol='N', category='Nothing')
         ProgramModule.objects.create(link_title='Default Module', admin_title='Default Module (do stuff)', module_type='learn', handler='StudentRegCore', seq=0, required=False)
         ProgramModule.objects.create(link_title='Register Your Classes', admin_title='Teacher Class Registration', module_type='teach', handler='TeacherClassRegModule',
-            main_call='listclasses', aux_calls='class_students,section_students,makeaclass,editclass,deleteclass,coteachers,teacherlookup,class_status,class_docs,select_students',
+            main_call='makeaclass',inline_template='listclasses.html', aux_calls='class_students,section_students,editclass,deleteclass,coteachers,teacherlookup,class_status,class_docs,select_students,makeopenclass',
             seq=10, required=False)
         ProgramModule.objects.create(link_title='Sign up for Classes', admin_title='Student Class Registration', module_type='learn', handler='StudentClassRegModule',
             main_call='classlist', aux_calls='catalog,clearslot,fillslot,changeslot,addclass,swapclass,class_docs',
@@ -318,6 +322,8 @@ class ProgramHappenTest(TestCase):
         # Make rooms & times, since I'm too lazy to do that as a test just yet.
         from esp.cal.models import EventType, Event
         from esp.resources.models import Resource, ResourceType, ResourceAssignment
+        from esp.program.controllers.classreg import get_custom_fields
+        from django import forms
         from datetime import datetime
 
         self.failUnless( self.prog.classes().count() == 0, 'Website thinks empty program has classes')
@@ -358,7 +364,10 @@ class ProgramHappenTest(TestCase):
             'allow_lateness': 'False',
             'message_for_directors': 'Hi chairs!',
             'class_reg_page': '1',
-            #   Resource forms in default configuration
+            'hardness_rating': '**',
+        }
+        """
+            #   Additional keys to test resource forms:
             'request-TOTAL_FORMS': '2',
             'request-INITIAL_FORMS': '2',
             'request-0-resource_type': str(ResourceType.get_or_create('Classroom').id),
@@ -367,11 +376,19 @@ class ProgramHappenTest(TestCase):
             'request-1-desired_value': 'LCD projector',
             'restype-TOTAL_FORMS': '0',
             'restype-INITIAL_FORMS': '0',
-            'hardness_rating': "**",
-        }
-        self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)    
-
+        """
+        
+        #   Fill in required fields from any custom forms used by the program
+        #   This should be improved in the future (especially if we have dynamic forms)
+        custom_fields_dict = get_custom_fields()
+        for field in custom_fields_dict:
+            if isinstance(custom_fields_dict[field], forms.ChoiceField):
+                class_dict[field] = custom_fields_dict[field].choices[0][0]
+            else:
+                class_dict[field] = 'foo'
+        
         # Check that stuff went through correctly
+        response = self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)  
         
         # check prog.classes
         classes = self.prog.classes()
@@ -919,6 +936,8 @@ class ModuleControlTest(ProgramFrameworkTest):
         
         #   Remove the module and make sure we are not shown it anymore.
         self.program.program_modules.remove(sat_module)
+        self.program.save()
+        
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
         self.assertTrue('Steps for Registration' in response.content)
         

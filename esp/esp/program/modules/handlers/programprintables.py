@@ -38,7 +38,7 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import *
-from esp.program.models  import ClassSubject, ClassSection, SplashInfo
+from esp.program.models  import ClassSubject, ClassSection, SplashInfo, FinancialAidRequest
 from esp.users.views     import get_user_list, search_for_user
 from esp.web.util.latex  import render_to_latex
 from esp.accounting_docs.models import Document, MultipleDocumentError
@@ -896,6 +896,18 @@ class ProgramPrintables(ProgramModuleObj):
                             times.remove(t)
                     times.insert(index, cls)
                 classes = times
+
+            #   Insert entries for the compulsory timeblocks into the schedule
+            min_index = 0
+            times_compulsory = Event.objects.filter(anchor=prog.anchor, event_type__description='Compulsory').order_by('start')
+            for t in times_compulsory:
+                i = min_index
+                while i < len(classes):
+                    if classes[i].start_time().start > t.start:
+                        classes.insert(i, t)
+                        break
+                    i += 1
+                min_index = i
                 
             # note whether student is in parent program
             student.in_parent_program = False
@@ -937,8 +949,10 @@ class ProgramPrintables(ProgramModuleObj):
 
             # check financial aid
             student.has_financial_aid = student.hasFinancialAid(prog.anchor)
-            if student.has_financial_aid:
-                student.itemizedcosttotal = 0
+            if student.has_financial_aid and not student.itemizedcosts.filter(li_type__text=u'Financial Aid', amount__gt=0).distinct().count() and not student.itemizedcosts.filter(anchor__uri=prog.anchor.uri+"/Accounts/FinancialAid", amount__gt=0).distinct().count():
+                apps = FinancialAidRequest.objects.filter(user=student, program=prog, approved__isnull=False).distinct()
+                aid = max(list(apps.values_list('amount_received', flat=True).distinct()))
+                student.itemizedcosttotal -= aid
             student.has_paid = ( student.itemizedcosttotal == 0 )
             
             # MIT Splash purchase counts; temporary, should be harmless

@@ -40,6 +40,7 @@ from esp.program.models import ClassSubject, ClassSection, Program
 from esp.users.models import UserBit, ESPUser, shirt_sizes, shirt_types
 from django.contrib.auth.models import User
 from django.core.cache import cache
+from django.db.models import Count
 import math
 
 class KeyDoesNotExist(Exception):
@@ -141,6 +142,9 @@ class AdminVitals(ProgramModuleObj):
        
         context['classhours'] = chours
         context['classpersonhours'] = shours
+        context['categories'] = self.program.class_categories.filter(cls__parent_program=self.program, cls__status__gte=0).annotate(num_subjects=Count('cls')).order_by('-num_subjects').values()
+        for i in range(len(context['categories'])):
+            context['categories'][i].update({'num_sections': ClassSection.objects.filter(status__gte=0, parent_class__parent_program=self.program, parent_class__category__id=context['categories'][i]['id']).distinct().count()})
         
         return context
     

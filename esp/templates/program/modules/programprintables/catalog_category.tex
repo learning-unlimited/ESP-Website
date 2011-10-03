@@ -29,6 +29,10 @@
 \begin{document}
 \begin{multicols}{2}
 \vspace{.05in}
+{% if classes|length_is:0 %}
+No classes have yet been approved and scheduled!
+{% endif %}
+
 {% for cls in classes %}
   {% ifchanged %}
 \end{multicols}

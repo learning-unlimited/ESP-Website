@@ -22,6 +22,7 @@ urlpatterns = patterns('esp.users.views',
                        (r'^disableaccount/?$', 'disable_account'),
                        (r'^emailpref/?$', 'emailpref'),
                        (r'^emailpref/(success)?/?$', 'emailpref'),
+                       (r'^makeadmin/?$', 'make_admin'),
                        )
 
 urlpatterns += patterns('esp.web.views.main',

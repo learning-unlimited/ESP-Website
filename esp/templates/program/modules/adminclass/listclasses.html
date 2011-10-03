@@ -25,7 +25,7 @@ var checks = {
 {% endfor %}
 };
 
-function clickCheckMark(class,check,id) {
+function clickCheckMark(clsid,check,id) {
 
   var callback = {
       failure:function(o){},
@@ -41,7 +41,7 @@ function clickCheckMark(class,check,id) {
   };
 
   var url='/manage/{{program.getUrlBase}}/alter_checkmark/';
-  var post='class_id='+class+'&check_id='+check;
+  var post='class_id='+clsid+'&check_id='+check;
 
   /* make the ajax call */
   YAHOO.util.Connect.asyncRequest('POST', url, callback, post);

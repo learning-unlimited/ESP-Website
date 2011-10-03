@@ -37,6 +37,7 @@
  </td>
 </tr>
 
+{% if form.address_street %}
 <tr>
   <td colspan="2"><label>Address:</label></td>
 </tr>
@@ -84,6 +85,7 @@
  </table>
  </td>
 </tr>
+{% endif %}
 
 <tr>
  <td><label>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:</label></td>

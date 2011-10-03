@@ -6,6 +6,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.datatree.models import GetNode
 from django.contrib.auth import logout, login, authenticate
 from esp.middleware import ESPError
+from esp.users.views import make_user_admin
 
 class ESPUserTest(TestCase):
     def testInit(self):
@@ -224,6 +225,29 @@ class UserForwarderTest(TestCase):
         self.assertTrue(UserForwarder.follow(self.ub) == (self.ub, False), fwd_info(self.ub))
         self.assertTrue(UserForwarder.follow(self.uc) == (self.ub, True), fwd_info(self.uc))
 
+class MakeAdminTest(TestCase):
+    def setUp(self):
+        self.user, created = ESPUser.objects.get_or_create(username='admin_test')
+    def runTest(self):
+        # Make sure user starts off with no administrator priviliges
+        self.assertFalse(self.user.is_staff)        
+        self.assertFalse(self.user.is_superuser)
+        self.assertFalse(UserBit.objects.UserHasPerms(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Administer')))
+        self.assertFalse(UserBit.objects.UserHasPerms(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Flags/UserRole/Administrator')))
+
+        # Now make admin_test into an admin using make_admin
+        make_user_admin(self.user)
+
+        # Make sure user now has administrator privileges
+        self.assertTrue(self.user.is_staff)
+        self.assertTrue(self.user.is_superuser)
+        self.assertTrue(UserBit.objects.UserHasPerms(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Administer')))
+        self.assertTrue(UserBit.objects.UserHasPerms(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Flags/UserRole/Administrator')))
+
+        # Make sure that an unprivileged access to /myesp/makeadmin/ returns 403 Forbidden
+        response = self.client.get('/myesp/makeadmin/')
+        self.assertEqual(response.status_code, 403)
+
 class AjaxExistenceChecker(TestCase):
     """ Check that an Ajax view is there by trying to retrieve it and checking for the desired keys
         in the response. 
@@ -254,5 +278,3 @@ class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
         user=self.students[0]
         self.assertTrue(self.client.login(username=user.username, password='password'))
         super(AjaxScheduleExistenceTest, self).runTest()
-        
-        

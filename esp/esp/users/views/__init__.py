@@ -2,6 +2,7 @@ from esp.users.views.usersearch import *
 from esp.users.views.registration import *
 from esp.users.views.password_reset import *
 from esp.users.views.emailpref import *
+from esp.users.views.make_admin import *
 from esp.users.models import ESPUser
 
 from django.http import HttpResponseRedirect, HttpResponse
@@ -80,7 +81,7 @@ def ajax_login(request, *args, **kwargs):
     if user is not None:
         if user.is_active:
             result_str = 'Login successful'
-            user, forwarded = UserForwarder.follow(user)
+            user, forwarded = UserForwarder.follow(ESPUser(user))
             if forwarded:
                 result_str = 'Logged in as "%s" ("%s" is marked as a duplicate account)' % (user.username, username)
             auth_login(request, user)
@@ -91,8 +92,14 @@ def ajax_login(request, *args, **kwargs):
         
     request.user = ESPUser(user)
     content = render_to_string('users/loginbox_content.html', {'request': request, 'login_result': result_str})
+    result_dict = {'loginbox_html': content}
     
-    return HttpResponse(json.dumps({'loginbox_html': content}))
+    if request.user.isAdministrator():
+        admin_home_url = Tag.getTag('admin_home_page')
+        if admin_home_url:
+            result_dict['script'] = render_to_string('users/loginbox_redirect.js', {'target': admin_home_url})
+
+    return HttpResponse(json.dumps(result_dict))
 
 def signed_out_message(request):
     if request.user.is_authenticated():

@@ -69,8 +69,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             "link_title": "Register Your Classes",
             "module_type": "teach",
             "seq": 10,
-            "main_call": "listclasses",
-            "aux_calls": "class_students,section_students,makeaclass,editclass,deleteclass,coteachers,teacherlookup,class_status,class_docs,select_students,ajax_restypes,ajax_requests,makeopenclass"
+            "main_call": "makeaclass",
+            "inline_template": "listclasses.html",
+            "aux_calls": "class_students,section_students,editclass,deleteclass,coteachers,teacherlookup,class_status,class_docs,select_students,ajax_restypes,ajax_requests,makeopenclass"
             }
 
     def extensions(self):
@@ -759,6 +760,22 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             startswith = request.POST['name']
         else:
             startswith = request.GET['name']
+        s = ''
+        spaces = ''
+        after_comma = False
+        for char in startswith:
+            if char == ' ':
+                if not after_comma:
+                    spaces += ' '
+            elif char == ',':
+                s += ','
+                spaces = ''
+                after_comma = True
+            else:
+                s += spaces + char
+                spaces = ''
+                after_comma = False
+        startswith = s
         parts = [x.strip('*') for x in startswith.split(',')]
         
         #   Don't return anything if there's no input.
