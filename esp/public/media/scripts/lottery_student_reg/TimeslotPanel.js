@@ -193,7 +193,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     checkedClasses: function () {
         var checked = [];
-        for(j=2; j<this.items.items.length; j++) {
+        for(j=3; j<this.items.items.length; j++) {
 	         var checkbox = this.items.items[j];
 	         if(checkbox.isChecked()){
                 checked.push(checkbox);
@@ -204,10 +204,10 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     //return true if a class is flagged.
     timeslotCompleted: function () {
-        for(i = 2; i < this.items.items.length; i ++)
+        for(i = 3; i < this.items.items.length; i ++)
         {
             var classFieldSet = this.items.items[i];
-            if(classFieldSet.items.items[0].getValue() == true)
+            if(classFieldSet.isFlagged() == true)
             {
                 return true;
             }
@@ -217,7 +217,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     getNewPreferences: function () {
         classPreferences = new Object();
-        for(j=2; j<this.items.items.length; j++) {
+        for(j=3; j<this.items.items.length; j++) {
 	         var checkbox = this.items.items[j];
              classPreferences[checkbox.classNumber()] = checkbox.isChecked();
 	         classPreferences["flag_" + checkbox.classNumber()] = checkbox.isFlagged();
@@ -234,7 +234,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
             summaryParts.push("<font color=\"red\">None</font>");
         }
         else{
-            summaryParts.push(flagged.classFullTitle);
+            summaryParts.push(flagged.getClassFullTitle());
         }
 
         summaryParts.push("<b>Classes with interest: </b>");
@@ -246,7 +246,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         for(j = 0; j < checked.length; j++)
         {
             checkbox = checked[j];
-            summaryParts.push("    " + checkbox.classFullTitle);
+            summaryParts.push("    " + checkbox.getClassFullTitle());
         }      
 
         var summary = "";

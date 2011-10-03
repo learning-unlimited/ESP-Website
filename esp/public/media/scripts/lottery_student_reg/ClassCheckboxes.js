@@ -84,7 +84,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
 
     showCatalogInfo: function () 
     {
-        Ext.Msg.alert(this.ownerCt.getClassFullTitle(), this.ownerCt.catalogText());
+        Ext.Msg.alert(this.ownerCt.ownerCt.getClassFullTitle(), this.ownerCt.ownerCt.catalogText());
     },
 
     catalogText: function ()
@@ -98,8 +98,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
         var i;
         for(i = 0; i < this.ESPClassInfo.data.teachers.length; i ++)
         {
-            var teacher = this.ESPClassInfo.data.teachers[i];
-            console.log(teacher);         
+            var teacher = this.ESPClassInfo.data.teachers[i];         
             text = text + tabText + teacher.first_name + " " + teacher.last_name + "<br>";
         }
         
@@ -138,12 +137,12 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
 
     isChecked: function () 
     {
-        return this.items.items[1][1].getValue();
+        return this.items.items[1].items.items[1].getValue();
     },
 
     isFlagged: function ()
     {
-        return this.items.items[1][0].getValue();
+        return this.items.items[1].items.items[0].getValue();
     }
 });
 
