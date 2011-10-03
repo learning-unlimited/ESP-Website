@@ -59,6 +59,10 @@ class Media(models.Model):
     #def get_target_file_relative_url(self):a
     #    return str(self.target_file)[ len(root_file_path): ]
 
+    def get_target_file_url(self):
+        return str(self.target_file.url)
+    target_url = property(get_target_file_url)
+
     def handle_file(self, file, filename):
         """ Saves a file from request.FILES. """
         from os.path import basename, dirname

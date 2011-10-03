@@ -318,7 +318,10 @@ class ProgramPrintables(ProgramModuleObj):
     def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
         sections = self.program.sections()
                    
-        sections = filter(lambda z: (z.isAccepted() and z.meeting_times.count() > 0), sections)
+        if 'cancelled' in request.GET:
+            sections = filter(lambda z: (z.isCancelled() and z.meeting_times.count() > 0), sections)
+        else:
+            sections = filter(lambda z: (z.isAccepted() and z.meeting_times.count() > 0), sections)
         sections = filter(filt_exp, sections)                  
 
         if request.GET.has_key('grade_min'):
@@ -453,6 +456,7 @@ class ProgramPrintables(ProgramModuleObj):
 
 
         scheditems = []
+        resource_types = prog.getResourceTypes().values_list('name', flat=True)
 
         for teacher in teachers:
             # get list of valid classes
@@ -473,8 +477,6 @@ class ProgramPrintables(ProgramModuleObj):
 
                 classes = new_classes
 
-                
-
             # aseering 9-29-2007, 1:30am: There must be a better way to do this...
             ci = ContactInfo.objects.filter(user=teacher, phone_cell__isnull=False).exclude(phone_cell='').order_by('id')
             if ci.count() > 0:
@@ -489,11 +491,13 @@ class ProgramPrintables(ProgramModuleObj):
                                'user': teacher,
                                'phone_day': phone_day,
                                'phone_cell': phone_cell,
-                               'cls' : classes[0]})
+                               'cls' : classes[0],
+                               'res_values': [classes[0].resourcerequest_set.filter(res_type__name=x).values_list('desired_value', flat=True) for x in resource_types]})
         
         scheditems = filter(filt_exp, scheditems)
         scheditems.sort(sort_exp)
 
+        context['res_types'] = resource_types
         context['scheditems'] = scheditems
 
         return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
@@ -1500,6 +1504,83 @@ class ProgramPrintables(ProgramModuleObj):
                                time_values)
                                
         response['Content-Disposition'] = 'attachment; filename=ok_times.csv'
+        return response
+
+    @aux_call
+    @needs_admin
+    def concise_oktimes_spr(self, request, tl, one, two, module, extra, prog):
+        """
+        Create a concise spreadsheet with one row per class (not per section), with info and the times
+        at which they can be scheduled to start.  This is useful for printing out for scheduling.
+
+        class number
+        hours
+        sections
+        classroom and equipment requests
+        viable starting times
+        conflicts (other classes taught by same teacher)
+        room requests and comments
+        """
+        import csv
+        from django.http import HttpResponse
+        from esp.resources.models import ResourceType
+
+        response = HttpResponse(mimetype="text/csv")
+        write_csv = csv.writer(response)
+
+        # get first section of each class
+        sections = [section for section in prog.sections().order_by('parent_class') if section.index() == 1]
+
+        # get only the unscheduled sections, rather than all of them
+        # also, only approved classes in the spreadsheet; can be changed
+        #if extra == "unscheduled":
+        #    sections = sections.filter(meeting_times__isnull=True, status=10)
+
+        times = prog.getTimeSlots()
+        if extra == "unscheduled":
+            sections_possible_times = [(section, section.viable_times(True)) for section in sections]
+        else:
+            sections_possible_times = [(section, section.viable_times(False)) for section in sections]
+
+        # functions to determine what will fill in the spreadsheet cell for each thing
+        def time_possible(time, sections_list):
+            if time in sections_list:
+                return 'X'
+            else:
+                return ' '
+
+        time_headers = [str(time) for time in times]
+
+        # get all resource types
+        resource_types = ResourceType.objects.filter(program=prog)
+        resource_headers = [resource_type.description for resource_type in resource_types]
+
+        # header row, naming each column
+        write_csv.writerow(['Code', 'Hours'] + ['Sections'] + ['Size'] + resource_headers +\
+                           time_headers +  \
+                           ['Conflicts'] + \
+                           ['Comments'])
+
+        # this writes each row associated with a section, for the columns determined above.
+        for section, timeslist in sections_possible_times:
+            time_values = [time_possible(time, timeslist) for time in times]
+
+            # get conflicts
+            teachers = section.parent_class.teachers()
+            conflicts = []
+            for teacher in teachers:
+                conflicts.extend(filter(lambda x: x not in conflicts and x != section.parent_class, teacher.getTaughtClassesFromProgram(prog)))
+            conflicts = sorted(conflicts, key = lambda x: x.id)
+
+            write_csv.writerow([section.parent_class.emailcode(), int(round(section.duration))] + \
+                               [str(len(section.parent_class.get_sections()))] + \
+                               [section.parent_class.class_size_max] + \
+                               [', '.join([r.desired_value for r in section.getResourceRequests() if r.res_type == rt]) for rt in resource_types]+ \
+                               time_values + \
+                               [', '.join([conflict.emailcode() for conflict in conflicts])]  + \
+                               [smart_str(((section.parent_class.requested_room + '. ') if section.parent_class.requested_room != '' else '') + section.parent_class.message_for_directors)])
+
+        response['Content-Disposition'] = 'attachment; filename=ok_times_concise.csv'
         return response
 
     class Meta:

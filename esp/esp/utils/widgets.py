@@ -4,6 +4,9 @@
 
 from django.conf import settings
 from django import forms
+from django.forms import widgets
+from django.utils.safestring import mark_safe
+
 import datetime
 import time
 
@@ -169,3 +172,36 @@ class BlankSelectWidget(forms.Select):
         return mark_safe(u'\n'.join(output))
     
 
+class NullRadioSelect(forms.RadioSelect):
+    def __init__(self, *args, **kwargs):
+        kwargs['choices'] = ((True, u'Yes'), (False, u'No'))
+        super(NullRadioSelect, self).__init__(*args, **kwargs)
+
+
+class NullCheckboxSelect(forms.CheckboxInput):
+    def __init__(self, *args, **kwargs):
+        super(NullCheckboxSelect, self).__init__(*args, **kwargs)
+
+    def value_from_datadict(self, data, files, name):
+        """ Slightly modified from Django's version to accept "on" as True. """
+        if name not in data:
+            return False
+        value = data.get(name)
+        values =  {'on': True, 'true': True, 'false': False}
+        if isinstance(value, basestring):
+            value = values.get(value.lower(), value)
+        print 'NullCheckboxSelect converted %s to %s' % (data.get(name), value)
+        return value
+
+class DummyWidget(widgets.Input):
+    input_type = 'text'
+    
+    def value_from_datadict(self, data, files, name):
+        return True
+    
+    def render(self, name, value, attrs=None, choices=()):
+        output = u''
+        if attrs and 'text' in attrs:
+            output += attrs['text']
+        return mark_safe(output)
+        

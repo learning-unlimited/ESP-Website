@@ -393,6 +393,12 @@ class ProgramModuleObj(models.Model):
 
     def students(self,QObject=False):
         return {}
+        
+    def volunteerDesc(self):
+        return {}
+
+    def volunteers(self,QObject=False):
+        return {}
 
     def isStep(self):
         return True

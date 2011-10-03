@@ -46,7 +46,7 @@ from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 
-from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, EquipmentForm
+from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, EquipmentForm, ClassroomImportForm
 
 class ResourceModule(ProgramModuleObj):
     doc = """ Manage the resources used by a program.  This includes classrooms and LCD equipment.
@@ -58,6 +58,7 @@ class ResourceModule(ProgramModuleObj):
             "admin_title": "Resource Management",
             "link_title": "Manage Times and Rooms",
             "module_type": "manage",
+            "main_call": "resources",
             "seq": 10
             }
 
@@ -176,6 +177,53 @@ class ResourceModule(ProgramModuleObj):
                     else:
                         context['classroom_form'] = form
 
+        elif extra == 'classroom_import':
+            import_mode = 'preview'
+            if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
+                import_mode = 'save'
+                
+            import_form = ClassroomImportForm(request.POST)
+            if not import_form.is_valid():
+                context['import_form'] = import_form
+            else:
+                #   Attempt to match timeslots for the programs
+                past_program = import_form.cleaned_data['program']
+                ts_old = past_program.getTimeSlots().filter(event_type__description__icontains='class').order_by('start')
+                ts_new = self.program.getTimeSlots().filter(event_type__description__icontains='class').order_by('start')
+                ts_map = {}
+                for i in range(len(ts_old)):
+                    ts_map[ts_old[i].id] = ts_new[i]
+                
+                resource_list = []
+                #   Iterate over the resources in the previous program
+                for res in past_program.getClassrooms():
+                    #   If we know what timeslot to put it in, make a copy
+                    if res.event.id in ts_map:
+                        new_res = Resource()
+                        new_res.name = res.name
+                        new_res.res_type = res.res_type
+                        new_res.num_students = res.num_students
+                        new_res.is_unique = res.is_unique
+                        new_res.user = res.user
+                        new_res.event = ts_map[res.event.id]
+                        #   Check to avoid duplicating rooms (so the process is idempotent)
+                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
+                            new_res.save()
+                        #   Note: furnishings are messed up, so don't bother copying those yet.
+                        resource_list.append(new_res)
+                
+                #   Render a preview page showing the resources for the previous program if desired
+                context['past_program'] = past_program
+                if import_mode == 'preview':
+                    context['prog'] = self.program
+                    result = self.program.collapsed_dict(resource_list)
+                    key_list = result.keys()
+                    key_list.sort()
+                    context['new_rooms'] = [result[key] for key in key_list]
+                    return render_to_response(self.baseDir()+'classroom_import.html', request, (prog, tl), context)
+                else:
+                    extra = 'classroom'
+
         elif extra == 'equipment':
             if request.GET.has_key('op') and request.GET['op'] == 'edit':
                 #   pre-fill form
@@ -230,6 +278,9 @@ class ResourceModule(ProgramModuleObj):
         
         if 'equipment_form' not in context:
             context['equipment_form'] = EquipmentForm(self.program)
+        
+        if 'import_form' not in context:
+            context['import_form'] = ClassroomImportForm()
         
         context['open_section'] = extra
         context['prog'] = self.program

@@ -1,5 +1,7 @@
 {% extends "main.html" %}
 
+{% load render_qsd %}
+
 {% block title %}Teacher Registration{% endblock %}
 
 {% block subsection_name %}Teach for {{one}} <br>{% endblock %}
@@ -44,6 +46,12 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
 <center>
 <table width="550">
     <tr><th colspan="2">Course Creation/Editing Form</th></tr>
+    <tr>
+        <td colspan="2">
+        {% inline_qsd_block program.anchor classroom_form_advisories request.user %}
+        {% end_inline_qsd_block %}
+        </td>
+    </tr>
     {{ form }}
     <tr>
         <td colspan="2">&nbsp;</td>
@@ -51,6 +59,12 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
     {% if not formset.forms|length_is:0 %}
     <tr>
         <th colspan="2">Classroom Requests</th>
+    </tr>
+    <tr>
+        <td colspan="2">
+        {% inline_qsd_block program.anchor classroom_requests_advisories request.user %}
+        {% end_inline_qsd_block %}
+        </td>
     </tr>
     <!--
     <tr>

@@ -148,8 +148,8 @@ class Event(models.Model):
             
     @staticmethod
     def contiguous(event1, event2):
-        """ Returns true if the second argument is less than 15 minutes apart from the first one. """
-        tol = timedelta(minutes=15)
+        """ Returns true if the second argument is less than 20 minutes apart from the first one. """
+        tol = timedelta(minutes=20)
         
         if (event2.start - event1.end) < tol:
             return True

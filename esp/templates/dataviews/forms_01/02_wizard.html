@@ -1,0 +1,51 @@
+{% extends "dataviews/forms/wizard.html" %}
+{% block javascript %}
+{{ block.super }}
+<script type="text/javascript">
+dojo.require("dijit.layout.TabContainer");
+dojo.require("dijit.layout.ContentPane");
+function nameTabs() {
+    var labels = document.querySelectorAll("div>label");
+    var tabs = document.getElementsByClassName("tabLabel");
+    var anchors = document.querySelectorAll("a.pathlink");
+    for (var i = 0; i < labels.length; ++i) {
+        var label = labels[i].innerHTML;
+        var s = label.split('/');
+        var base_model = s[0];
+        var model_and_field_and_query_term = s[1];
+        var model = model_and_field_and_query_term.split('.')[0];
+        tabs[i].innerHTML = model_and_field_and_query_term + tabs[i].innerHTML;
+        tabs[i].style.fontSize="x-small";
+        labels[i].innerHTML = "";
+        anchors[i].href = "/dataviews/" + base_model + "/" + model + "/";
+    }
+}
+window.onload = setTimeout("nameTabs()", 1000);
+</script>
+{% endblock %}
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/dojo/1.6/dijit/themes/claro/claro.css" />
+<style type="text/css">
+div.pathgroup>ul {
+    list-style-type: none;
+    margin: 0px;
+    padding: 0px;
+}
+div.pathgroup>ul>li {
+    padding-bottom: 10px;
+}
+</style>
+{% endblock %}
+{% block form_begin %}
+{% if not form.visible_fields|length %}
+All your data is from the same table; nothing to do here.  Just click 'Submit' to continue.
+{% endif %}
+{% if form.errors|length %}
+Invalid selection! (Please make sure to pick at least one thing on <b>each tab</b>!)
+{% endif %}
+{% endblock %}
+{% block form_div %}<div id="id_{{ step0 }}-form_div" dojoType="dijit.layout.TabContainer" style="width: 100%; height: 275px;">{% endblock %}
+{% block form_as %}{{ form.as_div }}{% endblock %}
+{% block form_end %}
+{% endblock %}

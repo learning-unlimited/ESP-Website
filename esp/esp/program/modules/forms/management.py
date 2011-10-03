@@ -5,6 +5,8 @@ from esp.cal.models import Event
 from esp.resources.models import ResourceType, Resource
 from esp.program.models import ProgramCheckItem
 
+from esp.program.models.class_ import ClassSubject, ClassSection
+
 """ Forms for the new class management module.  Can be used elsewhere. """
 
 #   Does anyone have a better idea for handling prefixes then copying the code into the __init__
@@ -150,3 +152,26 @@ class SectionManageForm(ManagementForm):
                 sec.parent_program.getFloatingResources(timeslot=ts, queryset=True).filter(name=r)[0].assign_to_section(sec)
         sec.max_class_capacity = self.cleaned_data['class_size']
         sec.save()
+
+class ClassCancellationForm(forms.Form):
+    target = forms.ModelChoiceField(queryset=ClassSubject.objects.all(), widget=forms.HiddenInput)
+    explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}))
+    acknowledgement = forms.BooleanField(help_text='By checking this box, I acknowledge that all students in the class will be e-mailed and then removed from the class.  This operation cannot be undone.')
+    
+    def __init__(self, *args, **kwargs):
+        initial = kwargs.pop('initial', {})
+        initial['target'] = kwargs.pop('subject', None)
+        kwargs['initial'] = initial
+        super(ClassCancellationForm, self).__init__(*args, **kwargs)
+    
+class SectionCancellationForm(forms.Form):
+    target = forms.ModelChoiceField(queryset=ClassSection.objects.all(), widget=forms.HiddenInput)
+    explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}))
+    acknowledgement = forms.BooleanField(help_text='By checking this box, I acknowledge that all students in the section will be e-mailed and then removed from the class.  This operation cannot be undone.')
+    
+    def __init__(self, *args, **kwargs):
+        initial = kwargs.pop('initial', {})
+        initial['target'] = kwargs.pop('section', None)
+        kwargs['initial'] = initial
+        super(SectionCancellationForm, self).__init__(*args, **kwargs)
+    

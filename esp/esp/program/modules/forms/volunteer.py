@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
+from django.contrib.auth.models import User
 from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
 from esp.utils.widgets import DateTimeWidget
@@ -149,14 +150,35 @@ class VolunteerOfferForm(forms.Form):
             user = ESPUser.objects.get(id=self.cleaned_data['user'])
             user.volunteeroffer_set.all().delete()
         
+        #   Create user if one doesn't already exist, otherwise associate a user.
+        #   Note that this will create a new user account if they enter an e-mail
+        #   address different from the one on file.
+        if not self.cleaned_data['user']:
+            user_data = {'first_name': self.cleaned_data['name'].split()[0],
+                         'last_name': ' '.join(self.cleaned_data['name'].split()[1:]),
+                         'email': self.cleaned_data['email'],
+                        }
+            existing_users = ESPUser.objects.filter(**user_data).order_by('-id')
+            if existing_users.exists():
+                #   Arbitrarily pick the most recent account
+                #   This is not too important, we just need a link to an e-mail address.
+                user = existing_users[0]
+            else:
+                auto_username = ESPUser.get_unused_username(user_data['first_name'], user_data['last_name'])
+                user = ESPUser(User.objects.create_user(auto_username, user_data['email']))
+                user.__dict__.update(user_data)
+                user.save()
+                
+        #   Record this user account as a volunteer
+        user.makeVolunteer()
+
         #   Remove offers with the same exact contact info
         VolunteerOffer.objects.filter(email=self.cleaned_data['email'], phone=self.cleaned_data['phone'], name=self.cleaned_data['name']).delete()
         
         offer_list = []
         for req in self.cleaned_data['requests']:
             o = VolunteerOffer()
-            if 'user' in self.cleaned_data:
-                o.user_id = self.cleaned_data['user']
+            o.user_id = user.id
             o.email = self.cleaned_data['email']
             o.phone = self.cleaned_data['phone']
             o.name = self.cleaned_data['name']

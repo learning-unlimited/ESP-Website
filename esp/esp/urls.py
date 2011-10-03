@@ -53,6 +53,7 @@ urlpatterns = patterns('django.views.static',
 
 # Admin stuff
 urlpatterns += patterns('',
+                     (r'^admin/doc/', include('django.contrib.admindocs.urls')),
                      (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
                      (r'^admin/ajax_children/?', 'esp.datatree.views.ajax_children'),
@@ -182,3 +183,22 @@ urlpatterns += patterns('',
 urlpatterns += patterns('esp.web.views.navBar',
     # Update navbar
     (r'^navbar/edit.scm', 'updateNavBar') )
+    
+urlpatterns += patterns('', 
+    (r'^dataviews/', include('esp.dataviews.urls')) )
+
+urlpatterns +=patterns('esp.customforms.views',
+	(r'^customforms/$','landing'),
+	(r'^customforms/create/$','formBuilder'),
+	(r'^customforms/submit/$','onSubmit'),
+	(r'^customforms/modify/$','onModify'),
+	(r'^customforms/view/(?P<form_id>\d{1,6})/$','viewForm'),
+	(r'^customforms/success/(?P<form_id>\d{1,6})/$', 'success'),
+	(r'^customforms/responses/(?P<form_id>\d{1,6})/$', 'viewResponse'),
+	(r'^customforms/getData/$', 'getData'),
+	(r'^customforms/metadata/$', 'getRebuildData'),
+	(r'^customforms/getperms/$', 'getPerms'),
+	(r'^customforms/getlinks/$', 'get_links'),
+	(r'^customforms/builddata/$', 'formBuilderData'),
+	(r'^customforms/exceldata/(?P<form_id>\d{1,6})/$', 'getExcelData'),
+	)	

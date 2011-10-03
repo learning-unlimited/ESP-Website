@@ -96,6 +96,17 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     def isCompleted(self):
         return not self.noclasses()
 
+    def get_resource_pairs(self):
+        items = []
+        for res_type in self.program.getResourceTypes():
+            possible_values = res_type.resourcerequest_set.values_list('desired_value', flat=True).distinct()
+            for i in range(len(possible_values)):
+                val = possible_values[i]
+                label = 'teacher_res_%d_%d' % (res_type.id, i)
+                full_description = 'Teachers who requested "%s" for their %s' % (val, res_type.name)
+                query = Q(userbit__qsc__classsubject__sections__resourcerequest__res_type=res_type, userbit__qsc__classsubject__sections__resourcerequest__desired_value=val, userbit__qsc__classsubject__sections__parent_class__parent_program=self.program)
+                items.append((label, full_description, query))
+        return items
 
     def teachers(self, QObject = False):
         #   New approach: Pile the class datatree anchor IDs into the appropriate lists.
@@ -115,8 +126,13 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         Q_taught_before = Q_isteacher & Q(userbit__qsc__classsubject__status=10, userbit__qsc__classsubject__parent_program__in=Program.objects.exclude(pk=self.program.pk))
 
+        #   Add dynamic queries for checking for teachers with particular resource requests
+        additional_qs = {}
+        for item in self.get_resource_pairs():
+            additional_qs[item[0]] = Q_isteacher & (Q_rejected_teacher | Q_approved_teacher | Q_proposed_teacher) & item[2]
+
         if QObject:
-            return {
+            result = {
                 'class_approved': self.getQForUser(Q_approved_teacher),
                 'class_proposed': self.getQForUser(Q_proposed_teacher),
                 'class_rejected': self.getQForUser(Q_rejected_teacher),
@@ -124,9 +140,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_full': self.getQForUser(Q_full_teacher),
                 'taught_before': self.getQForUser(Q_taught_before),
             }
-
+            for key in additional_qs:
+                result[key] = self.getQForUser(additional_qs[key])
         else:
-            return {
+            result = {
                 'class_approved': ESPUser.objects.filter(Q_approved_teacher).distinct(),
                 'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct(),
                 'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct(),
@@ -134,11 +151,14 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_full': ESPUser.objects.filter(Q_full_teacher).distinct(),
                 'taught_before': ESPUser.objects.filter(Q_taught_before).distinct(),
             }
-
+            for key in additional_qs:
+                result[key] = ESPUser.objects.filter(additional_qs[key]).distinct()
+                
+        return result
 
     def teacherDesc(self):
         capacity_factor = ClassSubject.get_capacity_factor()
-        return {
+        result = {
             'class_approved': """Teachers teaching an approved class.""",
             'class_proposed': """Teachers teaching a class which has yet to be reviewed.""",
             'class_rejected': """Teachers teaching a rejected class.""",
@@ -146,7 +166,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             'class_nearly_full': """Teachers teaching a nearly-full class (>%d%% of capacity).""" % (100 * capacity_factor),
             'taught_before': """Teachers who have taught for a previous program.""",
         }
-
+        for item in self.get_resource_pairs():
+            result[item[0]] = item[1]
+        return result
     
     def deadline_met(self, extension=''):
         if self.user.isAdmin(self.program):

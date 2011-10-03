@@ -311,6 +311,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
             return response            
         
         if action == 'deletereg':
+            # raise ESPError(), "Tried to delete a class via AJAX-Scheduling!"
+
             cls.clearRooms()
             cls.clear_meeting_times()
 
