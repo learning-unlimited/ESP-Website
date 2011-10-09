@@ -221,17 +221,20 @@ function strip_tags(str)
 
 var check_csrf_cookie = function()
 {
-    csrf_token = document.loginform.csrfmiddlewaretoken.value;
-    //alert(csrf_token);
+    csrf_tokens = document.getElementsByName("csrfmiddlewaretoken");
     csrf_cookie = $.cookie("csrftoken");
     //alert(csrf_cookie);
     if (csrf_cookie == null)
     {
         alert("Oops! It appears your session has become disconnected. Please make sure cookies are enabled and try again.");
     }
-    else if (csrf_cookie != csrf_token)
+    else
     {
-        //alert("Don't match!");
-        document.loginform.csrfmiddlewaretoken.value = strip_tags(csrf_cookie);
+        //alert("Changing csrftoken values");
+        for(var i = 0; i < csrf_tokens.length; i++)
+        {
+            csrf_tokens[i].value = strip_tags(csrf_cookie);
+            //alert("Changed to: " + strip_tags(csrf_cookie));
+        }
     }
 }
