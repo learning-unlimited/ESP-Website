@@ -100,6 +100,8 @@ class VolunteerOfferForm(forms.Form):
     
     requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text='Sign up for one or more shifts; remember to avoid conflicts with your classes if you\'re teaching!', widget=forms.CheckboxSelectMultiple)
     
+    comments = forms.CharField(widget=forms.Textarea(attrs={'rows': 3, 'cols': 60}), help_text='Any comments or special circumstances you would like us to know about?', required=False)
+    
     confirm = forms.BooleanField(help_text='<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>')
     
     def __init__(self, *args, **kwargs):
@@ -119,6 +121,9 @@ class VolunteerOfferForm(forms.Form):
             del self.fields['shirt_type']
         elif not Tag.getTag('volunteer_tshirt_type_selection'):
             del self.fields['shirt_type']
+        
+        if not Tag.getTag('volunteer_allow_comments'):
+            del self.fields['comments']
 
     def load(self, user):
         user = ESPUser(user)
@@ -135,6 +140,8 @@ class VolunteerOfferForm(forms.Form):
                 self.fields['shirt_size'].initial = previous_offers[0].shirt_size 
             if 'shirt_type' in self.fields:
                 self.fields['shirt_type'].initial = previous_offers[0].shirt_type
+            if 'comments' in self.fields:
+                self.fields['comments'].initial = previous_offers[0].comments
 
     def save(self):
         #   Reset user's offers
@@ -158,6 +165,8 @@ class VolunteerOfferForm(forms.Form):
                 o.shirt_size = self.cleaned_data['shirt_size']
             if 'shirt_type' in self.cleaned_data:
                 o.shirt_type = self.cleaned_data['shirt_type']
+            if 'comments' in self.cleaned_data:
+                o.comments = self.cleaned_data['comments']
             o.request_id = req
             o.save()
             offer_list.append(o)
