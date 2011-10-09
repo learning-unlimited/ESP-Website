@@ -900,6 +900,18 @@ class ProgramPrintables(ProgramModuleObj):
                             times.remove(t)
                     times.insert(index, cls)
                 classes = times
+
+            #   Insert entries for the compulsory timeblocks into the schedule
+            min_index = 0
+            times_compulsory = Event.objects.filter(anchor=prog.anchor, event_type__description='Compulsory').order_by('start')
+            for t in times_compulsory:
+                i = min_index
+                while i < len(classes):
+                    if classes[i].start_time().start > t.start:
+                        classes.insert(i, t)
+                        break
+                    i += 1
+                min_index = i
                 
             # note whether student is in parent program
             student.in_parent_program = False

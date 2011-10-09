@@ -77,6 +77,7 @@ urlpatterns += patterns('esp.web.views.main',
                         (r'^web$', 'home'), # index
                         (r'^esp_web', 'home'), # index
                         (r'.php$', 'home'), # index
+                        (r'set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
                         )
 
 # program stuff

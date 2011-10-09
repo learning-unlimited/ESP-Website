@@ -1,19 +1,11 @@
-function getCookie(c_name)
+var csrfmiddlewaretoken = $.cookie("csrftoken");
+if (csrfmiddlewaretoken == "")
 {
-if (document.cookie.length>0)
-  {
-  c_start=document.cookie.indexOf(c_name + "=");
-  if (c_start!=-1)
-    {
-    c_start=c_start + c_name.length+1;
-    c_end=document.cookie.indexOf(";",c_start);
-    if (c_end==-1) c_end=document.cookie.length;
-    return unescape(document.cookie.substring(c_start,c_end));
-    }
-  }
-return "";
+  //Block on this because it's a small view and not having the cookie
+  //set before the rest of the page loads would not resolve the issue
+  $.ajax("/set_csrf_token", {asyc: false});
 }
-var csrfmiddlewaretoken = getCookie("csrftoken");
+
 function csrftoken() {
   document.write("<input type='hidden' name='csrfmiddlewaretoken' value='" + csrfmiddlewaretoken + "' />");
 }
