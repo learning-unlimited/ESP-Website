@@ -57,17 +57,6 @@ class CommModule(ProgramModuleObj):
             "module_type": "manage",
             "seq": 10
             }
-    
-    #   TODO: What the heck?
-    def students(self,QObject = False):
-        if QObject:
-            return {'satprepinfo': Q(satprepreginfo__program = self.program)}
-        students = ESPUser.objects.filter(satprepreginfo__program = self.program).distinct()
-        return {'satprepinfo': students }
-
-    def isCompleted(self):
-        satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)
-        return satPrep.id is not None
 
     @aux_call
     @needs_admin
@@ -99,7 +88,7 @@ class CommModule(ProgramModuleObj):
         except:
             raise ESPError(), "Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it."
 
-        userlist = PersistentQueryFilter.getFilterFromID(filterid, User).getList(User)
+        userlist = PersistentQueryFilter.getFilterFromID(filterid, ESPUser).getList(ESPUser)
 
         try:
             firstuser = userlist[0]
@@ -146,7 +135,7 @@ class CommModule(ProgramModuleObj):
         except:
             raise ESPError(), "Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it."
         
-        filterobj = PersistentQueryFilter.getFilterFromID(filterid, User)
+        filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
 
         variable_modules = {'user': self.user, 'program': self.program}
 
@@ -167,7 +156,7 @@ class CommModule(ProgramModuleObj):
         # nah, we'll do this later.
         #newmsg_request.process()
 
-        numusers = filterobj.getList(User).count()
+        numusers = filterobj.getList(ESPUser).count()
 
         from django.conf import settings
         if hasattr(settings, 'EMAILTIMEOUT') and \

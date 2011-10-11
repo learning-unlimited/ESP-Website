@@ -144,17 +144,12 @@ class MessageRequest(models.Model):
         text = unicode(text)
         user = ESPUser(user)
 
-        
-
         context = MessageVars.getContext(self, user)
 
         newtext = ''
         template = Template(text)
 
         return template.render(context)
-
-                
-        
 
     def process(self, processoverride = False):
         """ Process this request...if it's an email, create all the necessary email requests. """
@@ -180,8 +175,7 @@ class MessageRequest(models.Model):
             else:
                 send_from = 'ESP Web Site <esp@mit.edu>'
 
-
-        users = self.recipients.getList(User)
+        users = self.recipients.getList(ESPUser)
         try:
             users = users.distinct()
         except:
