@@ -41,7 +41,7 @@ from django.template import loader
 from django.core.mail import send_mail
 
 from esp.tagdict.models import Tag
-from esp.utils.widgets import CaptchaWidget
+from esp.utils.widgets import CaptchaWidget, DummyWidget
 
 class EmailModelForm(forms.ModelForm):
     """ An extension of Django's ModelForms that e-mails when
@@ -177,7 +177,17 @@ class CaptchaModelForm(forms.ModelForm):
 
         if local_request and not local_request.user.is_authenticated():
             self.fields['captcha'] = CaptchaField(request=local_request, required=True)
-    
+
+class DummyField(forms.Field):
+    widget = DummyWidget
+    def __init__(self, *args, **kwargs):
+        super(DummyField, self).__init__(*args, **kwargs)
+        #   Set a flag that can be checked in Python code or template rendering
+        #   to alter behavior
+        #   self.is_dummy_field = True
+
+    def is_dummy_field(self):
+        return True
 
 def new_callback(exclude=None, include=None):
     """

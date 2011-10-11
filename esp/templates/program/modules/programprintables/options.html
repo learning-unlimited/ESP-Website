@@ -61,6 +61,8 @@ Please select from options below.
     <li><a href="./classesbytime?grade_min=9&grade_max=12" title="Classes by Time">Limit to high school (grades 9-12)</a></li>
     </ul>
 </li>
+<li><a href="./classesbytime?cancelled" title="Classes by Time">Cancelled Class Sections</a></li>
+{% if not li_types|length_is:0 %}
 <li>Students who have ordered/reserved line items:
     <ul>
     {% for li_type in li_types %}
@@ -68,9 +70,10 @@ Please select from options below.
     {% endfor %}
     </ul>
 </li>
+{% endif %}
 <li><a href="./classesbytitle" title="Classes by Name">Class Subjects</a></li>
 <li><a href="./classprereqs" title="Class Prerequisites">Class Prerequisites</a></li>
-<li><a href="./teachersbyname" title="Teacher List">Teachers by Name</a> (by teachers)</li>
+<li><a href="./teachersbyname" title="Teacher List">Teacher List</a> (can be sorted by name, class, or start time); <a href="./teachersbyname/secondday">teachers for second day of classes only</a></li>
 <li><a href="./roomsbytime" title="Room List">Open Rooms by Time</a></li>
 <li><a href="./studentsbyname" title="Student List">Students by Name</a> (by students)</li>
 <li><a href="./emergencycontacts" title="Student List">Students' Emergency Contact Info</a> (by students)</li>

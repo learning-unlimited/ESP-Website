@@ -15,6 +15,10 @@ from esp.cache.signals import m2m_removed, m2m_added
 
 # Make sure everything's already imported
 
+#Initializing the model cache for customforms
+from esp.customforms.linkfields import cf_cache
+cf_cache._populate()
+
 # Import views files from INSTALLED_APPS
 for app_name in settings.INSTALLED_APPS:
     if app_name != 'esp.cache_loader':

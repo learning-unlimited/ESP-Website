@@ -1,0 +1,166 @@
+<html>
+	<head>
+		<title>Custom Forms</title>
+		<script src="/media/scripts/jquery-1.5.1.min.js"></script>
+		<script src="/media/scripts/jquery-ui-1.8.13.custom.min.js"></script>
+		<script src="/media/scripts/json2.js"></script>
+		<script src="/media/scripts/custom_form.js"></script> 
+		 
+		<link rel="stylesheet" type="text/css" href="/media/default_styles/reset-min.css">
+		<link rel="stylesheet" type="text/css" href="/media/default_styles/jquery-ui-1.8.13.custom.css">
+		<link rel="stylesheet" type="text/css" href="/media/default_styles/customforms-style.css">
+		
+	</head>
+	
+	<body>
+		<div class="wrapper">
+			<input type="hidden" id="base_form_id" value="{{ base_form_id }}"/>
+			<div class="preview_area">
+				<h2 id='form_title'>Form Title</h2>
+				<p id='form_description' class="field_text"></p>
+				<hr />
+				<br /><br/>
+				<div class="page_break" id="page_break_0"><span>** Page Break **</span></div>
+				<div class="form_preview" id="page_0">
+					<div class="outline" id="outline_0">
+						<div id="section_0" class="section">
+						</div>
+					</div>		
+				</div>
+				<!--<input type="button" value="Create form" id="sbmt"/>-->
+			</div>
+			
+			<div id="form_toolbox">
+				<h3><a href='#'>Form information</a></h3>
+				<div id="form_information">
+					<p>Form Title</p> <input type='text' id='input_form_title' size='30'/>
+					<p>Description</p>
+					<textarea rows='3' cols='30' id='input_form_description'></textarea>
+					<p>Message on Success</p>
+					<textarea rows='3' cols='30' id='input_form_sucmsg'></textarea>
+					<p>Redirect URL for successful completion</p>
+					<input type="text" id="input_suc_url" size="30"/>
+					<p>Anonymous Form <input type='checkbox' id='id_anonymous'/></p>
+					<p>Create from existing form</p>
+					<select id="base_form">
+						<option value="-1">None (Blank Form)</option>
+						{% for form in form_list %}
+							<option value="{{form.id}}">{{form.title}}</option>
+						{% endfor %}	
+					</select>
+					<input type="button" value="Create from previous form" onclick="createFromBase()"/>
+					<div id="id_modify_wrapper"><p>Modify this form <input type="checkbox" id="id_modify"/></p>
+					<p>(Please check this off <b>only</b> if you want to modify this form. If you just want to create a form that
+						resembles this one, leave this unchecked.)</p>
+					</div> 		
+				</div>
+					
+				<h3 id="header_fields"><a href='#'>Fields</a></h3>
+				<div id="toolbox_content">
+				
+					<div id="field_selector">
+						<br/>
+						<table border="0">
+							<tr>
+								<td>
+									<p>Field Category</p>
+								</td>
+								<td>
+									<select id="cat_selector">
+									</select>
+								</td>
+							</tr>
+							<tr>
+								<td>
+									<p>Field</p>
+								</td>
+								<td>
+									<select id="elem_selector">
+									</select>
+								</td>
+							</tr>		
+						</table>
+						<br/>
+						<div id="cat_spec_options">
+							<p>Fields marked with a '**' are <b>required</b> on the server. If you're not sure what you're doing, 				  <i>please make sure to include them in the form.</i>
+							</p>
+							<p>These fields will modify existing values in the database, or create new ones. Please select how you want
+								this to happen.
+							</p>
+							<select id="main_cat_spec">
+								<option value="automatic">Automatic</option>
+								<option value="particular">Choose particular instance to modify</option>
+							</select>
+							<br/>
+							<select id="cat_instance_sel">
+							</select>
+							<br/>				
+						</div>
+												
+					</div>
+					
+					<div id="field_properties">
+						
+						<p class="toolboxText">Field label</p>
+						<textarea name="question" id="id_question" rows=4 cols=30></textarea>
+						<p class="toolboxText">Instructions for user</p>
+						<textarea name="instructions" id="id_instructions" rows=4 cols=30></textarea>
+						<p class="toolboxText">Required&nbsp;
+							<input type="checkbox" id="id_required" name="required" /></p><br/>
+						<form id="elem_properties">
+							<div id="multi_options"></div>
+						</form>
+						<div id="other_options"></div>		
+						<br/><br/>
+						<input type="button" id="button_add" value="Add to Form"/> &nbsp;&nbsp;
+					</div>
+					
+				</div>
+				<h3><a href='#'>Form Permissions</a></h3>
+				<div>
+					<p>Restrict to -
+					<select id="id_main_perm">
+						<option value="none">None</option>
+						<option value="Teacher">Teachers</option>
+						<option value="Student">Students</option>
+					</select></p>
+					<p><input type="checkbox" id="id_prog_belong" /> Belonging to program </p>
+					<select id="id_perm_program">
+						<option value="-1">None</option>
+						{% for prog in prog_list %}
+							<option value="{{ prog.id }}">{{ prog.niceName }}</option>
+						{% endfor %}
+					</select>
+					<br/>	
+					<div>
+						<p>Filter</p>
+						<select id="id_sub_perm">
+						</select>		
+					</div>
+				</div>
+				
+				<h3><a href='#'>Links</a></h3>
+				<div>
+					<p>Link to -
+					<select id="links_id_main">	
+					</select>
+					</p>
+					
+					<p>Specify -
+					<select id="links_id_specify">
+						<option value="userdef">Let user pick</option>
+						<option value="particular">Particular Instance</option>
+					</select>
+					</p>
+					
+					<p>Pick -
+					<select id="links_id_pick">
+					</select>
+					</p>		
+				</div>	
+					
+				<input type="button" id="submit" value="Create Form"/>
+			</div>		
+		</div>	
+	</body>
+</html>			

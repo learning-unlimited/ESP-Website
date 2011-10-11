@@ -25,6 +25,7 @@ ESP.declare('ESP.Scheduling.DragDrop', function(){
 			    b._temp_accept = (b.section == section) || ESP.Scheduling.validate_block_assignment(b, section);
 			}
 			target.data('section', section);
+			// 	console.log("Started to drag section " + section.code);
 			ESP.Utilities.evm.fire('drag_started',{ event: e, ui: ui});
 		    },
 		    stop:  function(e,ui) { ESP.Utilities.evm.fire('drag_stopped',{ event: e, ui: ui}); }

@@ -43,6 +43,8 @@ from django.db.models.query import Q
 from django.db.models import signals
 from django.core.cache import cache
 from django.utils.datastructures import SortedDict
+from django.template.loader import render_to_string
+from django.template import Template, Context
 
 # ESP Util
 from esp.db.models.prepared import ProcedureManager
@@ -74,6 +76,8 @@ from django.core.cache import cache  ## Yep, we do have to do some raw cache-man
 #from pylibmc import NotFound as CacheNotFound
 
 from esp.middleware.threadlocalrequest import get_current_request
+
+from esp.customforms.linkfields import CustomFormsLinkModel
 
 __all__ = ['ClassSection', 'ClassSubject', 'ProgramCheckItem', 'ClassManager', 'ClassCategories', 'ClassImplication', 'ClassSizeRange']
 
@@ -1008,6 +1012,30 @@ class ClassSection(models.Model):
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
 
+    def cancel(self, email_students=True, explanation=None):
+        from esp.settings import INSTITUTION_NAME, ORGANIZATION_SHORT_NAME
+        from django.contrib.sites.models import Site
+        from django.core.mail import send_mail
+
+        if email_students:
+            context = {'sec': self, 'prog': self.parent_program, 'explanation': explanation}
+            context['full_group_name'] = Tag.getTag('full_group_name') or '%s %s' % (INSTITUTION_NAME, ORGANIZATION_SHORT_NAME)
+            context['site_url'] = Site.objects.get_current().domain
+            email_title = 'Class Cancellation at %s - Section %s' % (self.parent_program.niceName(), self.emailcode())
+            email_content = render_to_string('email/class_cancellation.txt', context)
+            template = Template(email_content)
+            for student in self.students():
+                to_email = ['%s <%s>' % (student.name(), student.email)]
+                from_email = '%s at %s <%s>' % (self.parent_program.anchor.parent.friendly_name, INSTITUTION_NAME, self.parent_program.director_email)
+                msgtext = template.render(Context({'user': student}))
+                send_mail(email_title, msgtext, from_email, to_email)
+        
+        self.clearStudents()
+    
+        self.status = -20
+        self.save()
+
+        print 'Successfully cancelled %s' % self.emailcode()
 
     def clearStudents(self):
         from esp.program.models import StudentRegistration
@@ -1243,9 +1271,12 @@ class ClassSection(models.Model):
         app_label = 'program'
         ordering = ['anchor__name']
 
-class ClassSubject(models.Model):
+class ClassSubject(models.Model, CustomFormsLinkModel):
     """ An ESP course.  The course includes one or more ClassSections which may be linked by ClassImplications. """
     
+	#customforms info
+    form_link_name='Course'	
+	
     from esp.program.models import Program
     
     anchor = AjaxForeignKey(DataTree)
@@ -1817,15 +1848,13 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         self.status = -10
         self.save()
 
-    def cancel(self):
+    def cancel(self, email_students=True, explanation=None):
         """ Cancel this class. Has yet to do anything useful. """
         for sec in self.sections.all():
-            sec.status = -20
-            sec.save()
-        self.clearStudents()
+            sec.cancel(email_students, explanation)
         self.status = -20
         self.save()
-            
+        
     def clearStudents(self):
         for sec in self.sections.all():
             sec.clearStudents()

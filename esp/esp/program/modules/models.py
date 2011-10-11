@@ -121,6 +121,8 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
                         new_set = db_set | code_set
                         #   Save union of what's in DB and code
                         mod.__dict__[key] = ','.join(list(new_set))
+                elif key == 'main_call':
+                    mod.__dict__[key] = datum[key]
                 
         mod.save()
 

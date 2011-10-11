@@ -90,14 +90,7 @@ class OnSiteRegister(ProgramModuleObj):
             
             if form.is_valid():
                 new_data = form.cleaned_data
-                username = base_uname = (new_data['first_name'][0]+ \
-                                         new_data['last_name']).lower()
-                if User.objects.filter(username = username).count() > 0:
-                    i = 2
-                    username = base_uname + str(i)
-                    while User.objects.filter(username = username).count() > 0:
-                        i += 1
-                        username = base_uname + str(i)
+                username = ESPUser.get_unused_username(new_data['first_name'], new_data['last_name'])
                 new_user = ESPUser(username = username,
                                 first_name = new_data['first_name'],
                                 last_name  = new_data['last_name'],

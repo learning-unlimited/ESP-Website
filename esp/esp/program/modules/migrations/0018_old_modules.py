@@ -5,11 +5,16 @@ from south.v2 import DataMigration
 from django.db import models
 
 from esp.program.models import *
+from esp.utils.migration import db_table_exists
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
         "Write your forwards methods here."
+
+        #   Delete settings structures for unsupported program module types
+        if db_table_exists('modules_creditcardmoduleinfo'):
+            db.delete_table('modules_creditcardmoduleinfo')
 
         #   Delete old, unsupported program module types
         pm = ProgramModule.objects.filter(handler='CreditCardModule')
