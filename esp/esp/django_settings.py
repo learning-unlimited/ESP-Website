@@ -215,6 +215,7 @@ INSTALLED_APPS = (
     'south',
     'sslauth',
     'form_utils',
+    'esp.seltests',
 )
 import os
 for app in ('django_evolution', 'django_command_extensions'):
@@ -251,7 +252,10 @@ DEFAULT_REDIRECT = '/myesp/redirect'
 USE_MAILMAN = False
 MAILMAN_PATH = '/usr/lib/mailman/bin/'
 
-TEST_RUNNER = 'esp.utils.custom_test_runner.custom_test_runner'
+TEST_RUNNER = 'esp.utils.custom_test_runner.CustomSeleniumTestRunner'
+
+# Change this to the path to your selenium server
+SELENIUM_PATH = '/path/to/selenium/selenium-server-standalone-2.7.0.jar'
 
 if False:
     import logging
