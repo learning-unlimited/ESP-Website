@@ -105,12 +105,15 @@ class ClassCreationController(object):
         self.update_class_sections(cls, int(reg_form.cleaned_data['num_sections']))
         #   If someone is editing the class, we assume they don't want to be
         #   added as a teacher if they aren't already one.
-        if anchor_modified or not editing:
-            self.associate_teacher_with_class(cls, user)
+        if anchor_modified:
+            for teacher in cls.teachers():
+                self.associate_teacher_with_class(cls, teacher)
+            if not editing:
+                self.associate_teacher_with_class(cls, user)
         self.add_rsrc_requests_to_class(cls, resource_formset, restype_formset)
         cls.propose()
         cls.update_cache()
-                
+        
     def set_class_data(self, cls, reg_form):
         custom_fields = get_custom_fields()
         custom_data = {}

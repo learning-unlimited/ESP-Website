@@ -1812,6 +1812,8 @@ class VolunteerOffer(models.Model):
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
     
+    comments = models.TextField(blank=True, null=True)
+    
     def __unicode__(self):
         return u'%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)
     
