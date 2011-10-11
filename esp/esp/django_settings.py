@@ -186,6 +186,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.admin',
+    'django.contrib.admindocs',
     'esp.datatree',
     'esp.users',
     'esp.membership',
@@ -217,6 +218,7 @@ INSTALLED_APPS = (
     'sslauth',
     'form_utils',
     'esp.seltests',
+    'esp.dataviews',
 )
 
 import os
