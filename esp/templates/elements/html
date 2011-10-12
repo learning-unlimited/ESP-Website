@@ -31,6 +31,13 @@
     <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.5/dojo/dojo.xd.js" djConfig="parseOnLoad: true"></script>
+
+    <script language="JavaScript">
+    $(document).ready(function() {
+        $.getScript("/media/scripts/csrf_init.js");
+        $.getScript("/media/scripts/csrf_check.js");
+    });
+    </script>
 {% endblock %}
 
 {% block stylesheets %}
@@ -57,8 +64,6 @@ $j(document).ready(function() {
     hidden_name = esp_user.cur_roles[i] + "_hidden";
     $j(type_name).removeClass(hidden_name);
   }
-
-  $j.getScript("/media/scripts/csrf_init.js");
 });
 </script>
 {% endblock %}

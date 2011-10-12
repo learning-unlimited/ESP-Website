@@ -213,28 +213,3 @@ var register_fragment = function(fragment_attrs)
 
 dojo.addOnLoad(reset_forms); 
 dojo.addOnLoad(fetch_fragments);
-
-function strip_tags(str)
-{
-    return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt");
-}
-
-var check_csrf_cookie = function()
-{
-    csrf_tokens = document.getElementsByName("csrfmiddlewaretoken");
-    csrf_cookie = $.cookie("csrftoken");
-    //alert(csrf_cookie);
-    if (csrf_cookie == null)
-    {
-        alert("Oops! It appears your session has become disconnected. Please make sure cookies are enabled and try again.");
-    }
-    else
-    {
-        //alert("Changing csrftoken values");
-        for(var i = 0; i < csrf_tokens.length; i++)
-        {
-            csrf_tokens[i].value = strip_tags(csrf_cookie);
-            //alert("Changed to: " + strip_tags(csrf_cookie));
-        }
-    }
-}
