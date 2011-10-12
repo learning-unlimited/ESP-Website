@@ -741,6 +741,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request', static_resource_requests=static_resource_requests, )
                 restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
+        context['tl'] = 'teach'
         context['one'] = one
         context['two'] = two
         context['form'] = reg_form
@@ -749,18 +750,26 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['allow_restype_creation'] = Tag.getProgramTag('allow_restype_creation', program=self.program, )
         context['static_resource_requests'] = static_resource_requests
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
+        context['classroom_form_advisories'] = 'classroom_form_advisories'
         
         if newclass is None:
             context['addoredit'] = 'Add'
         else:
             context['addoredit'] = 'Edit'
 
+        context['classes'] = {
+            0: {'type': 'class', 'link': 'makeaclass'}, 
+            1: {'type': 'walk-in seminar', 'link': 'makeopenclass'}
+        }
         if action == 'create' or action == 'edit':
-            template_name = 'classedit.html'
+            context['isopenclass'] = 0
         elif action == 'createopenclass' or action == 'editopenclass':
-            template_name = 'openclassedit.html'
+            context['isopenclass'] = 1
+            context['classroom_form_advisories'] += '__open_class'
+        context['classtype'] = context['classes'][context['isopenclass']]['type']
+        context['otherclass'] = context['classes'][1 - context['isopenclass']]
 
-        return render_to_response(self.baseDir() + template_name, request, (prog, tl), context)
+        return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
 
 
     @aux_call
