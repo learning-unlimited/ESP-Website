@@ -48,9 +48,8 @@ class VolunteerManage(ProgramModuleObj):
             "link_title": "Manage Volunteers",
             "module_type": "manage",
             "seq": 0,
-            "main_call": "volunteers",
+            "main_call": "volunteering",
             }
-
 
     """
         Create/delete timeslots for volunteers
@@ -60,7 +59,7 @@ class VolunteerManage(ProgramModuleObj):
     """
 
     @needs_admin
-    def volunteers(self, request, tl, one, two, module, extra, prog):
+    def volunteering(self, request, tl, one, two, module, extra, prog):
         context = {}
         
         if extra == 'csv':

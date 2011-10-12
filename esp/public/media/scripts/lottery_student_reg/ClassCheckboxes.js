@@ -10,8 +10,8 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
     initComponent: function ()
     {
         Ext.QuickTips.init();
-		//comes up with label for checkboxes
-		classText = this.getClassFullTitle();
+        //comes up with label for checkboxes
+        classText = this.getClassFullTitle();
         var config = 
         {
             layout: 'column',
@@ -41,22 +41,22 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
                     items:
                     [
                         {
-			                xtype: 'radio',
-			                id: 'flag_'+ this.sectionId,
+                            xtype: 'radio',
+                            id: 'flag_'+ this.sectionId,
                             hidden: this.isWalkin,
-			                name: 'flag_'+this.timeblockId,
-			                inputValue: this.sectionId,
+                            name: 'flag_'+this.timeblockId,
+                            inputValue: this.sectionId,
                             checked: this.alreadyFlagged,
-			                listeners: { } //listener changes the flagged classes box at the top when the flagged class changes
+                            listeners: { } //listener changes the flagged classes box at the top when the flagged class changes
                         },
                         {
-        	                xtype: 'checkbox',
+                            xtype: 'checkbox',
                             hidden: this.isWalkin,
-        	                name: this.sectionId,
+                            name: this.sectionId,
                             checked: this.alreadyChecked,
-        	                id: this.sectionId
+                            id: this.sectionId
                         } 
-			        ]
+                    ]
                 },
 
                 { 
@@ -66,10 +66,10 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
                     items:
                     [
                         {
-        	                xtype: 'displayfield',
-            	            value: classText,
-        	                autoHeight: true,
-        	                id: 'title_'+ this.sectionId
+                            xtype: 'displayfield',
+                            value: classText,
+                            autoHeight: true,
+                            id: 'title_'+ this.sectionId
                         }
                     ] 
                 }
@@ -78,7 +78,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
             layout: 'column'
         };
 
-    	Ext.apply(this, Ext.apply(this.initialConfig, config));
+        Ext.apply(this, Ext.apply(this.initialConfig, config));
         ClassCheckboxes.superclass.initComponent.apply(this, arguments); 
     },
 

@@ -63,6 +63,32 @@ theme = {
 def extract_theme(str):
     str = (str + '//').split('/')
     return theme.get(str[2],False) or theme.get(str[1],False) or 'yellowgreen'
+
+
+@register.filter
+def truncatewords_char(value, arg):
+    """
+    Truncates a string before a certain number of characters, 
+    using as many complete words as possible.
+
+    Argument: Number of characters to truncate before.
+    """
+    from django.utils.text import truncate_words
+    try:
+        length = int(arg)
+    except ValueError: # Invalid literal for int().
+        return value # Fail silently.
+    
+    txt_spaces = value.split()
+    txt_result = ''
+    for item in txt_spaces:
+        if len(txt_result) + 1 + len(item) < length:
+            txt_result += ' ' + item
+        else:
+            txt_result += ' ...'
+            break
+            
+    return txt_result
     
 @register.filter
 def as_form_label(str):

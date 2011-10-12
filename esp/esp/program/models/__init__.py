@@ -52,6 +52,8 @@ from esp.settings import DEFAULT_HOST
 
 import simplejson as json
 
+from esp.customforms.linkfields import CustomFormsLinkModel
+
 #   A function to lazily import models that is occasionally needed for cache dependencies.
 def get_model(module_name, model_name):
     parent_module_name = '.'.join(module_name.split('.')[:-1])
@@ -276,10 +278,13 @@ def _get_type_url(type):
     
 
     
-class Program(models.Model):
+class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     
     #from esp.program.models.class_ import ClassCategories
+
+	#customforms definitions
+    form_link_name='Program'
     
     anchor = AjaxForeignKey(DataTree,unique=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     grade_min = models.IntegerField()
@@ -387,23 +392,19 @@ class Program(models.Model):
 
         return ''
     
-    def teachers(self, QObjects = False):
-        modules = self.getModules(None)
-        teachers = {}
-        for module in modules:
-            tmpteachers = module.teachers(QObjects)
-            if tmpteachers is not None:
-                teachers.update(tmpteachers)
-        return teachers
-
-    def students(self, QObjects=False):
-        modules = self.getModules(None)
-        students = {}
-        for module in modules:
-            tmpstudents = module.students(QObjects)
-            if tmpstudents is not None:
-                students.update(tmpstudents)
-        return students
+    def get_users_from_module(method_name):
+        def get_users(self, QObjects=False):
+            modules = self.getModules(None)
+            users = {}
+            for module in modules:
+                tmpusers = getattr(module, method_name)(QObjects)
+                if tmpusers is not None:
+                    users.update(tmpusers)
+            return users
+        return get_users
+    teachers = get_users_from_module('teachers')
+    students = get_users_from_module('students')
+    volunteers = get_users_from_module('volunteers')
 
     def counts_from_query_dict(query_func):
         def _get_num(self, QObjects=True):
@@ -480,6 +481,7 @@ class Program(models.Model):
         
         lists = self.students(QObjects)
         lists.update(self.teachers(QObjects))
+        lists.update(self.volunteers(QObjects))
         learnmodules = self.getModules(None)
         teachmodules = self.getModules(None)
 
@@ -497,10 +499,14 @@ class Program(models.Model):
             tmpdict = module.teacherDesc()
             if tmpdict is not None:
                 desc.update(tmpdict)
-
+        for module in teachmodules:
+            tmpdict = module.volunteerDesc()
+            if tmpdict is not None:
+                desc.update(tmpdict)
+                
         for k, v in desc.items():
             lists[k]['description'] = v
-        usertypes = ['Student', 'Teacher', 'Guardian', 'Educator']
+        usertypes = ['Student', 'Teacher', 'Guardian', 'Educator', 'Volunteer']
 
         
 
@@ -1811,6 +1817,8 @@ class VolunteerOffer(models.Model):
     
     shirt_size = models.CharField(max_length=5, blank=True, choices=shirt_sizes, null=True)
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
+    
+    comments = models.TextField(blank=True, null=True)
     
     def __unicode__(self):
         return u'%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)

@@ -21,7 +21,6 @@
 
 <div id="program_form">
 <br />
-<form name="classmanage" action="{{ request.path }}" method="POST">{% csrf_token %}
 
 <table align="center" width="500">
     <tr>
@@ -112,10 +111,54 @@
 <br />
 <br />
 
+<p>The table below allows you to cancel the class or any one of its sections.  Cancelling the class will cancel all of its sections.  It is recommended that you enter an explanation (which can be brief, such as "Teacher schedule conflict" or "No appropriate rooms available") to be included in an e-mail to the students.</p>
+
+<form name="class_cancel" action="{{ request.path }}?action=cancel" method="POST">{% csrf_token %}
+<table align="center" width="500">
+    <tr>
+        <th colspan="2" align="center">Cancel class {{ class.emailcode }}: {{ class.title }}</th>
+    </tr>
+    {{ cls_cancel_form }}
+    <tr>
+        <td class="smaller" colspan="2" align="center">
+        <input type="submit" class="fancybutton" value="Cancel Class">
+        </th>
+    </tr>
+</table>
+</form>
+    
+{% for form in sec_cancel_forms %}
+{% if form.initial.target.isCancelled %}
+    <table align="center" width="500">
+    <tr>
+        <th colspan="2" align="center">Section {{ class.emailcode }}s{{ forloop.counter }} is already cancelled</th>
+    </tr>
+    </table>
+{% else %}
+    <form name="sec{{ forloop.counter }}_cancel" action="{{ request.path }}?action=cancel" method="POST">{% csrf_token %}
+    <table align="center" width="500">
+    <tr>
+        <th colspan="2" align="center">Cancel section {{ class.emailcode }}s{{ forloop.counter }}: {{ class.title }}</th>
+    </tr>
+    {{ form }}
+    <tr>
+        <td class="smaller" colspan="2" align="center">
+        <input type="submit" class="fancybutton" value="Cancel Section">
+        </th>
+    </tr>
+    </table>
+    </form>
+{% endif %}
+{% endfor %}
+
+<br />
+<br />
+
 <p>
 Please use the form below to alter {{ class.title }}.  Note that changes made to the class will propagate to each of the sections, but you can later change each section independently.
 </p>
 
+<form name="classmanage" action="{{ request.path }}?action=modify" method="POST">{% csrf_token %}
 <table align="center" width="500">
 
 <tr>

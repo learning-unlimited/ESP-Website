@@ -186,6 +186,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.admin',
+    'django.contrib.admindocs',
     'esp.datatree',
     'esp.users',
     'esp.membership',
@@ -207,6 +208,7 @@ INSTALLED_APPS = (
     'esp.accounting_core',
     'esp.accounting_docs',
     'esp.shortterm',
+    'esp.customforms',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
     'esp.cache_loader',
@@ -215,7 +217,10 @@ INSTALLED_APPS = (
     'south',
     'sslauth',
     'form_utils',
+    'esp.seltests',
+    'esp.dataviews',
 )
+
 import os
 for app in ('django_evolution', 'django_command_extensions'):
     if os.path.exists(app):
@@ -251,7 +256,10 @@ DEFAULT_REDIRECT = '/myesp/redirect'
 USE_MAILMAN = False
 MAILMAN_PATH = '/usr/lib/mailman/bin/'
 
-TEST_RUNNER = 'esp.utils.custom_test_runner.custom_test_runner'
+TEST_RUNNER = 'esp.utils.custom_test_runner.CustomSeleniumTestRunner'
+
+# Change this to the path to your selenium server
+SELENIUM_PATH = '/path/to/selenium/selenium-server-standalone-2.7.0.jar'
 
 if False:
     import logging

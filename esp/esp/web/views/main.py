@@ -186,7 +186,7 @@ def program(request, tl, one, two, module, extra = None):
 def classchangerequest(request, tl, one, two):
     from esp.program.models import Program, StudentAppResponse, StudentRegistration, RegistrationType
     from esp.program.models.class_ import * 
-
+    from urllib import quote
     try:
         prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
     except Program.DoesNotExist:

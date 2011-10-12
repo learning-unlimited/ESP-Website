@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
+from django.contrib.auth.models import User
 from esp.cal.models import Event, EventType
 from esp.program.models import VolunteerRequest, VolunteerOffer
 from esp.utils.widgets import DateTimeWidget
@@ -100,6 +101,8 @@ class VolunteerOfferForm(forms.Form):
     
     requests = forms.MultipleChoiceField(choices=(), label='Timeslots', help_text='Sign up for one or more shifts; remember to avoid conflicts with your classes if you\'re teaching!', widget=forms.CheckboxSelectMultiple)
     
+    comments = forms.CharField(widget=forms.Textarea(attrs={'rows': 3, 'cols': 60}), help_text='Any comments or special circumstances you would like us to know about?', required=False)
+    
     confirm = forms.BooleanField(help_text='<span style="color: red; font-weight: bold;"> I agree to show up at the time(s) selected above.</span>')
     
     def __init__(self, *args, **kwargs):
@@ -119,6 +122,9 @@ class VolunteerOfferForm(forms.Form):
             del self.fields['shirt_type']
         elif not Tag.getTag('volunteer_tshirt_type_selection'):
             del self.fields['shirt_type']
+        
+        if not Tag.getTag('volunteer_allow_comments'):
+            del self.fields['comments']
 
     def load(self, user):
         user = ESPUser(user)
@@ -135,6 +141,8 @@ class VolunteerOfferForm(forms.Form):
                 self.fields['shirt_size'].initial = previous_offers[0].shirt_size 
             if 'shirt_type' in self.fields:
                 self.fields['shirt_type'].initial = previous_offers[0].shirt_type
+            if 'comments' in self.fields:
+                self.fields['comments'].initial = previous_offers[0].comments
 
     def save(self):
         #   Reset user's offers
@@ -142,14 +150,35 @@ class VolunteerOfferForm(forms.Form):
             user = ESPUser.objects.get(id=self.cleaned_data['user'])
             user.volunteeroffer_set.all().delete()
         
+        #   Create user if one doesn't already exist, otherwise associate a user.
+        #   Note that this will create a new user account if they enter an e-mail
+        #   address different from the one on file.
+        if not self.cleaned_data['user']:
+            user_data = {'first_name': self.cleaned_data['name'].split()[0],
+                         'last_name': ' '.join(self.cleaned_data['name'].split()[1:]),
+                         'email': self.cleaned_data['email'],
+                        }
+            existing_users = ESPUser.objects.filter(**user_data).order_by('-id')
+            if existing_users.exists():
+                #   Arbitrarily pick the most recent account
+                #   This is not too important, we just need a link to an e-mail address.
+                user = existing_users[0]
+            else:
+                auto_username = ESPUser.get_unused_username(user_data['first_name'], user_data['last_name'])
+                user = ESPUser(User.objects.create_user(auto_username, user_data['email']))
+                user.__dict__.update(user_data)
+                user.save()
+                
+        #   Record this user account as a volunteer
+        user.makeVolunteer()
+
         #   Remove offers with the same exact contact info
         VolunteerOffer.objects.filter(email=self.cleaned_data['email'], phone=self.cleaned_data['phone'], name=self.cleaned_data['name']).delete()
         
         offer_list = []
         for req in self.cleaned_data['requests']:
             o = VolunteerOffer()
-            if 'user' in self.cleaned_data:
-                o.user_id = self.cleaned_data['user']
+            o.user_id = user.id
             o.email = self.cleaned_data['email']
             o.phone = self.cleaned_data['phone']
             o.name = self.cleaned_data['name']
@@ -158,6 +187,8 @@ class VolunteerOfferForm(forms.Form):
                 o.shirt_size = self.cleaned_data['shirt_size']
             if 'shirt_type' in self.cleaned_data:
                 o.shirt_type = self.cleaned_data['shirt_type']
+            if 'comments' in self.cleaned_data:
+                o.comments = self.cleaned_data['comments']
             o.request_id = req
             o.save()
             offer_list.append(o)
