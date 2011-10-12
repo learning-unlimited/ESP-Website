@@ -1,0 +1,21 @@
+{% extends "customforms/form_base.html" %}
+
+{% block stylesheets %}
+    {{ block.super }}
+	<link rel="stylesheet" type="text/css" href="/media/default_styles/reset-min.css">
+	<link rel="stylesheet" type="text/css" href="/media/default_styles/bootstrap-1.0.0.min.css">
+    <link rel="stylesheet" href="{{ MEDIA_URL }}styles/main.css" type="text/css" /> 
+{% endblock %}	
+
+{% block content %}
+	<h1 class="form_title">{{form_title}} <small>{{form_description}}</small></h1>
+	<em class="step_count">Step {{ step }} of {{ step_count }}</em>
+	<em class="req_text">(Fields in blue are required)</em>
+	
+	<form action="." method="post" id="cstform" class="form-stacked">{% csrf_token %}
+    {% include "customforms/single_form_fragment.html" %}
+	<input type="hidden" name="{{ step_field }}" value="{{ step0 }}" />
+	{{ previous_fields|safe }}
+	<input type="submit" class="btn primary">
+	</form>
+{% endblock %}	

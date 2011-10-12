@@ -37,6 +37,7 @@ from esp.program.modules.base import ProgramModuleObj, CoreModule
 from esp.web.util        import render_to_response
 from esp.program.modules.forms.volunteer import VolunteerOfferForm
 from esp.users.models import ESPUser, AnonymousUser
+from django.db.models.query import Q
 
 class VolunteerSignup(ProgramModuleObj, CoreModule):
     @classmethod
@@ -78,6 +79,29 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             errors_on_separate_row = False)
         
         return render_to_response('program/modules/volunteersignup/signup.html', request, (prog, tl), context)
+
+    def volunteers(self, QObject=False):
+        requests = self.program.volunteerrequest_set.all()
+        queries = {'volunteer_all': Q(volunteeroffer__request__program=self.program)}
+        for req in requests:
+            key = 'volunteer_%d' % req.id
+            queries[key] = Q(volunteeroffer__request=req)
+        
+        result = {}
+        for key in queries:
+            if QObject:
+                result[key] = self.getQForUser(queries[key])
+            else:
+                result[key] = ESPUser.objects.filter(queries[key]).distinct()
+        return result
+        
+    def volunteerDesc(self):
+        base_dict = {'volunteer_all': 'On-site volunteers for %s' % self.program.niceName()}
+        requests = self.program.volunteerrequest_set.all()
+        for req in requests:
+            key = 'volunteer_%d' % req.id
+            base_dict[key] = 'Volunteers for shift "%s"' % req.timeslot.description
+        return base_dict
 
     class Meta:
         abstract = True

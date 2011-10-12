@@ -2,13 +2,11 @@ from django.test import TestCase
 from esp.datatree.models import DataTree
 from esp.utils.custom_cache import custom_cache
 
-class DataTree__randwordtest(TestCase):
-    def runTest(self):
-        assert DataTree.randwordtest(limit=50, quiet=True)
-
 class DataTreeTest(TestCase, custom_cache):
     def setUp(self):
-        pass
+        #   Force Datatree to not use transactions
+        import esp.datatree.sql.set_isolation_level
+        esp.datatree.sql.set_isolation_level.DISABLE_TRANSACTIONS = True
 
     def tearDown(self):
         pass
@@ -59,3 +57,7 @@ class DataTreeTest(TestCase, custom_cache):
             node = None
 
         self.assertEqual(node, None)
+
+    def test_random_words(self):    
+        assert DataTree.randwordtest(limit=50, quiet=True)
+    

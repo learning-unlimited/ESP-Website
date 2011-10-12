@@ -114,9 +114,11 @@ ESP.Scheduling = function(){
 	    // constructors for native classes can't be called via apply()... :-(
 	    var start = new Date(t.start[0],t.start[1],t.start[2],t.start[3],t.start[4],t.start[5]).getTime();
 	    var end = new Date(t.end[0],t.end[1],t.end[2],t.end[3],t.end[4],t.end[5]).getTime();
-	    processed_data.times.push(
+	    var r;
+	    processed_data.times.push(r =
 	            Resources.create('Time',
-				     { uid: t.id, text: t.short_description, start: start, end: end, length: end - start + 10*60000 }));
+				     { uid: t.id, text: t.short_description, start: start, end: end, length: end - start + 15*60000 }));
+	    // console.log("Added block " + r.text + " (" + r.length + " ms)");
 	}
 	processed_data.times.sort(function(x,y){
 		return x.start - y.start;
@@ -125,6 +127,7 @@ ESP.Scheduling = function(){
 	    var t = processed_data.times[i];
 	    var t2 = processed_data.times[i+1];
 	    t.seq = Resources.Time.sequential(t,t2) ? t2 : null;
+	    // console.log("Are " + t.text + " and " + t2.text + " sequential? " + t.seq);
 	}
 
 	// rooms / blocks
@@ -162,6 +165,7 @@ ESP.Scheduling = function(){
 	for (var i = 0; i < processed_data.blocks.length; i++) {
 	    var b = processed_data.blocks[i];
 	    b.seq = b.time.seq ? processed_data.block_index[b.room.uid][b.time.seq.uid] : null;
+	    // console.log("Block " + b.time + "/" + b.room + " seq is " + b.time.seq);
 	}
 	processed_data.rooms.sort(function(x,y){
 		return x.uid < y.uid ? -1 : x.uid == y.uid ? 0 : 1;
@@ -210,6 +214,7 @@ ESP.Scheduling = function(){
 		    optimal_class_size_range: c.optimal_class_size_range
 		    
 		    }));
+	    // console.log("Added section: " + s.code + " (time " + s.length + " = " + s.length_hr + " hr "); 
 	    s.teachers.map(function(x){ x.sections.push(s); });
 	}
 	
@@ -247,6 +252,7 @@ ESP.Scheduling = function(){
     var validate_block_assignment = function(block, section, str_err) {
 	// check status
 	if (block.status != ESP.Scheduling.Resources.BlockStatus.AVAILABLE) {
+	    console.log("Room " + block.room + " at " + block.time + " is not available"); 
 	    return false;
 	}
 
@@ -262,7 +268,10 @@ ESP.Scheduling = function(){
 		}
 	    }
 	    if (!valid)
+	    {
+		// console.log("Teacher '" + section.teachers[i].text + "' not available at time '" + time.text + "'");
 		return (str_err ? "Teacher '" + section.teachers[i].text + "' not available at time '" + time.text + "'" : false);
+	    }
 	}
 
 	// check for class over- or under-size
@@ -271,7 +280,7 @@ ESP.Scheduling = function(){
 	if (class_size && (class_size > room_size * 1.5 || class_size < room_size * 0.666)) {
 	    // This shouldn't be an actual error; sometimes it'll be the "right" thing to do
 	    //return (str_err ? "Class '" + section.text + "' (size: " + class_size + " students) not the right size for room '" + block.room.text + "' (max size: " + room_size + " students)" : false);
-	    console.log("Warning:  Class '" + section.text + "' (size: " + class_size + " students) not the right size for room '" + block.room.text + "' (max size: " + room_size + " students)");
+	    //console.log("Warning:  Class '" + section.text + "' (size: " + class_size + " students) not the right size for room '" + block.room.text + "' (max size: " + room_size + " students)");
 	}
 
 	// check for not scheduling across a time boundary
@@ -296,8 +305,10 @@ ESP.Scheduling = function(){
 		first = first.seq;
 	    }
 	    if (!inSeq) {
+		console.log("Class '" + section.text + "' is scheduled across a lunch boundary");
 		return (str_err ? "Class '" + section.text + "' is scheduled across a lunch boundary" : false)
 	    }
+	    
 	}
 	
 	// check for teacher class conflicts
@@ -316,6 +327,7 @@ ESP.Scheduling = function(){
 		for (var k = 0; k < other_section.blocks.length; k++) {
 		    var other_block = other_section.blocks[k];
 		    if (other_block.time == time) {
+			console.log("Teacher '" + teacher.text + "' cannot teach classes '" + section.code + "' and '" + other_section.code + "' simultaneously ('" + time.text + "')");
 			return (str_err ? ("Teacher '" + teacher.text + "' cannot teach classes '" + section.code + "' and '" + other_section.code + "' simultaneously ('" + time.text + "')") : false);
 		    }
 		    if (other_block.seq == block || block.seq == other_block) {
@@ -323,6 +335,7 @@ ESP.Scheduling = function(){
 			if (other_class_bldg.length > 1 && other_class_bldg[0].length < 4) {
 			    other_class_bldg = other_class_bldg[0];
 			    if (other_class_bldg != class_bldg) {
+				console.log("Teacher '" + teacher.text + "' running between bldg " + class_bldg + " (" + block.time.text + ") and bldg " + other_class_bldg + " (" + other_block.time.text + ")");
 				return (str_err ? ("Teacher '" + teacher.text + "' running between bldg " + class_bldg + " (" + block.time.text + ") and bldg " + other_class_bldg + " (" + other_block.time.text + ")") : false);
 			    }
 			}
@@ -350,6 +363,7 @@ ESP.Scheduling = function(){
 		}
 	    }
 	    if (!found_resource) {
+		console.log("Class '" + section.text + "' requested a resource ('" + section.resource_requests[j].text + "') not available in room '" + block.room.text + "' (note that the website's resource tracker is not fully functional at this time!)");
 		return (str_err ? "Class '" + section.text + "' requested a resource ('" + section.resource_requests[j].text + "') not available in room '" + block.room.text + "' (note that the website's resource tracker is not fully functional at this time!)" : true);
 	    }
 	}

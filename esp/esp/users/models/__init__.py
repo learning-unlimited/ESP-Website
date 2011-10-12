@@ -38,6 +38,7 @@ from collections import defaultdict
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
+from django.contrib.localflavor.us.forms import USStateSelect
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
@@ -46,6 +47,7 @@ from django.db.models.base import ModelState
 from django.db.models.query import Q, QuerySet
 from django.http import HttpRequest
 from django.template import loader, Context as DjangoContext
+from django import forms
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
 from django.template.defaultfilters import urlencode
 
@@ -57,9 +59,12 @@ from esp.db.models.prepared import ProcedureManager
 from esp.dblog.models import error
 from esp.tagdict.models import Tag
 from esp.middleware import ESPError
+from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
 from esp.settings import DEFAULT_HOST, DEFAULT_EMAIL_ADDRESSES, ORGANIZATION_SHORT_NAME, INSTITUTION_NAME
 
 import simplejson as json
+from esp.customforms.linkfields import CustomFormsLinkModel
+from esp.customforms.forms import AddressWidget, NameWidget
 
 try:
     import cPickle as pickle
@@ -71,6 +76,7 @@ DEFAULT_USER_TYPES = [
     ['Teacher', {'label': 'Volunteer Teacher', 'profile_form': 'TeacherProfileForm'}],
     ['Guardian', {'label': 'Guardian of Student', 'profile_form': 'GuardianProfileForm'}],
     ['Educator', {'label': 'K-12 Educator', 'profile_form': 'EducatorProfileForm'}],
+    ['Volunteer', {'label': 'On-site Volunteer', 'profile_form': 'VolunteerProfileForm'}]
 ]
 
 def user_get_key(user):
@@ -444,11 +450,11 @@ class ESPUser(User, AnonymousUser):
         """ Get a list of the different roles an ESP user can have. By default there are four rols,
             but there can be more. (Returns ['Student','Teacher','Educator','Guardian']. """
 
-        return ['Student','Teacher','Educator','Guardian']
+        return ['Student','Teacher','Educator','Guardian','Volunteer']
 
     @staticmethod
     def getAllOfType(strType, QObject = True):
-        types = ['Student', 'Teacher','Guardian','Educator']
+        types = ['Student', 'Teacher','Guardian','Educator','Volunteer']
 
         if strType not in types:
             raise ESPError(), "Invalid type to find all of."
@@ -855,7 +861,7 @@ class ESPUser(User, AnonymousUser):
         Creates the methods such as isTeacher that determins whether
         or not the user is a member of that user class.
         """
-        user_classes = ('Teacher','Guardian','Educator','Officer','Student')
+        user_classes = ('Teacher','Guardian','Educator','Officer','Student','Volunteer')
         overrides = {'Officer': 'Administrator'}
         for user_class in user_classes:
             method_name = 'is%s' % user_class
@@ -875,6 +881,23 @@ class ESPUser(User, AnonymousUser):
 
             setattr(cls, method_name, method_gen(bit_name, property_name))
 
+    @classmethod
+    def get_unused_username(cls, first_name, last_name):
+        username = base_uname = (first_name[0] + last_name).lower()
+        if cls.objects.filter(username = username).count() > 0:
+            i = 2
+            username = base_uname + str(i)
+            while cls.objects.filter(username = username).count() > 0:
+                i += 1
+                username = base_uname + str(i)
+        return username
+        
+    def makeVolunteer(self):
+        ub, created = UserBit.objects.get_or_create(user=self,
+                                qsc=GetNode('Q'),
+                                verb=GetNode('V/Flags/UserRole/Volunteer'))
+        ub.renew()
+        
     def canEdit(self, nodeObj):
         """Returns True or False if the user can edit the node object"""
         # Axiak
@@ -1135,9 +1158,32 @@ class StudentInfo(models.Model):
             username = self.user.username
         return 'ESP Student Info (%s) -- %s' % (username, unicode(self.school))
 
-class TeacherInfo(models.Model):
+class TeacherInfo(models.Model, CustomFormsLinkModel):
     """ ESP Teacher-specific contact information """
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    
+    #customforms definitions
+    form_link_name = 'TeacherInfo'
+    link_fields_list = [
+        ('graduation_year', 'Graduation year'), 
+        ('from_here', 'Current student checkbox'), 
+        ('is_graduate_student', 'Graduate student status'),
+        ('college', 'School/employer'),
+        ('major', 'Major/department'),
+        ('bio', 'Biography'),
+        ('shirt_size', 'Shirt size'),
+        ('shirt_type', 'Shirt type'),
+        ('full_legal_name', 'Legal name'),
+        ('university_email', 'University e-mail address'),
+        ('student_id', 'Student ID number'),
+        ('mail_reimbursement', 'Reimbursement checkbox'),
+    ]
+    link_fields_widgets = {
+        'from_here': NullRadioSelect, 
+        'is_graduate_student': NullCheckboxSelect,
+        'mail_reimbursement': forms.CheckboxInput,
+    }
+    
+    user = AjaxForeignKey(User, blank=True, null=True)
     graduation_year = models.CharField(max_length=4, blank=True, null=True)
     from_here = models.NullBooleanField(null=True)
     is_graduate_student = models.NullBooleanField(blank=True, null=True)
@@ -1152,7 +1198,17 @@ class TeacherInfo(models.Model):
     student_id = models.CharField(max_length=128, blank=True, null=True)
     mail_reimbursement = models.NullBooleanField(blank=True, null=True)
 
-
+    @classmethod
+    def cf_link_instance(cls, request):
+        """
+        Uses the request object to return the appropriate instance for this model,
+        for use by custom-forms.
+        It should either return the instance, or 'None', if the corresponding instance doesn't exist.
+        """
+        queryset=cls.objects.filter(user=request.user).order_by('-id')
+        if queryset: return queryset[0] 
+        else: return None
+        
     @classmethod
     def ajax_autocomplete(cls, data):
         names = data.strip().split(',')
@@ -1441,9 +1497,41 @@ class ZipCodeSearches(models.Model):
         return '%s Zip Codes that are less than %s miles from %s' % \
                (len(self.zipcodes.split(',')), self.distance, self.zip_code)
 
-class ContactInfo(models.Model):
+class ContactInfo(models.Model, CustomFormsLinkModel):
     """ ESP-specific contact information for (possibly) a specific user """
-    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+    
+    #customforms definitions
+    form_link_name = 'ContactInfo'
+    link_fields_list = [
+        ('phone_day','Phone number'),
+        ('e_mail','E-mail address'),
+        ('address', 'Address'),
+        ('name', 'Name'),
+        ('receive_txt_message', 'Text message request'),
+        #   Commented out since it may cause confusion: ('phone_cell', 'Cell phone number')
+    ]
+    link_fields_widgets = {
+        'address_state': USStateSelect,
+        'address': AddressWidget,
+        'name': NameWidget,
+    }
+    link_compound_fields = {
+        'address': ['address_street', 'address_city', 'address_state', 'address_zip'],
+        'name': ['first_name', 'last_name'],
+    }
+
+    @classmethod
+    def cf_link_instance(cls, request):
+        """
+        Ues the request object to return the appropriate instance for this model,
+        for use by custom-forms.
+        It should either return the instance, or 'None', if the corresponding instance doesn't exist.
+        """
+        queryset=cls.objects.filter(user=request.user).order_by('-id')
+        if queryset: return queryset[0] 
+        else: return None
+
+    user = AjaxForeignKey(User, blank=True, null=True)
     first_name = models.CharField(max_length=64)
     last_name = models.CharField(max_length=64)
     e_mail = models.EmailField('E-mail address', blank=True, null=True)

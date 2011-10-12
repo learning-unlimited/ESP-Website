@@ -93,7 +93,7 @@
        <b>Materials for this class include:</b>
 	<span class="doclist">
 	{% for doc in class.docs_summary %}
-	<a href="{{ doc.get_target_file_url}}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
+	<a href="{{ doc.target_url }}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
 	{% endfor %}
 	</span>
 	<br /><b><a href="{{ class.parent_program.get_learn_url }}class_docs/{{ class.id }}">Click here to view all {{ class.media_count }} documents for {{ class.title }}</a></b>

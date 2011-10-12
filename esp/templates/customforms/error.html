@@ -1,0 +1,13 @@
+{% extends 'main.html' %}
+
+{% block stylesheets %}
+	<link rel="stylesheet" href="{{ MEDIA_URL }}styles/main.css" type="text/css" />
+	<link rel="stylesheet" type="text/css" href="/media/default_styles/customforms-landing.css" />
+{% endblock %}	
+
+
+{% block content %}
+	<h3 class="title">Error</h3>
+	<p class="desc">{{ error_text }}</p>
+	
+{% endblock %}

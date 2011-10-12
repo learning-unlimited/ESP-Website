@@ -516,6 +516,10 @@ class ProgramFrameworkTest(TestCase):
         from esp.program.forms import ProgramCreationForm
         from datetime import datetime, timedelta
         
+        #   Force Datatree to not use transactions
+        import esp.datatree.sql.set_isolation_level
+        esp.datatree.sql.set_isolation_level.DISABLE_TRANSACTIONS = True
+        
         #   Default parameters
         settings = {'num_timeslots': 3,
                     'timeslot_length': 50,

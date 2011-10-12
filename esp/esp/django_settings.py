@@ -186,6 +186,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.admin',
+    'django.contrib.admindocs',
     'esp.datatree',
     'esp.users',
     'esp.membership',
@@ -207,6 +208,7 @@ INSTALLED_APPS = (
     'esp.accounting_core',
     'esp.accounting_docs',
     'esp.shortterm',
+    'esp.customforms',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
     'esp.cache_loader',
@@ -216,7 +218,9 @@ INSTALLED_APPS = (
     'sslauth',
     'form_utils',
     'esp.seltests',
+    'esp.dataviews',
 )
+
 import os
 for app in ('django_evolution', 'django_command_extensions'):
     if os.path.exists(app):
