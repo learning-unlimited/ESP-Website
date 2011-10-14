@@ -27,7 +27,7 @@ then   # Script needs at least one command-line argument.
   echo "Usage: $0 -(option) [-(option) ...] [sitedir]"
   echo "Type '$0 -h' for help."
   exit $E_OPTERR
-fi  
+fi
 
 eval set -- "$OPTSETTINGS"
 
@@ -332,6 +332,13 @@ then
 		wget http://launchpad.net/libmemcached/1.0/0.44/+download/libmemcached-0.44.tar.gz
 		tar -xzf libmemcached-0.44.tar.gz
 	fi
+	if [[ ! -d selenium-server-standalone-2.8.0 ]]
+	then
+		mkdir selenium-server-standalone-2.8.0
+		cd selenium-server-standalone-2.8.0
+		wget http://selenium.googlecode.com/files/selenium-server-standalone-2.8.0.jar
+		cd $DEPDIR
+	fi
 	while [[ ! -d dropbox ]]
 	do
         rm -f dropbox.tar.gz
@@ -377,6 +384,7 @@ then
 	python -m easy_install simplejson
 	python -m easy_install twill
 	python -m easy_install django-form-utils
+	python -m easy_install django-selenium-test-runner
 
 	#	Install sslauth
 	if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]
