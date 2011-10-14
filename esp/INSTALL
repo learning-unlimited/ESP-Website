@@ -49,6 +49,9 @@ form_utils      Python (easy_install)   https://bitbucket.org/carljm/django-form
 psycopg         Python (easy_install)   N/A    * Choose psycopg or psycopg2 and update local_settings.py DATABASE_BACKEND
 psycopg2        Python (easy_install)   N/A      (default is psycopg2)
 django-debug-toolbar    Python (easy_install)   N/A       * Optional
+django-selenium-test-runner	Python (easy_install)	N/A
+
+selenium-server-standalone	System	http://selenium.googlecode.com/files/selenium-server-standalone-2.8.0.jar
 
 LaTeX           System                  texlive, texlive-latex-extra
 libcurl         System                  libcurl4-openssl-dev

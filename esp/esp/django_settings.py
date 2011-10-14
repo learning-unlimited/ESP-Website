@@ -258,8 +258,7 @@ MAILMAN_PATH = '/usr/lib/mailman/bin/'
 
 TEST_RUNNER = 'esp.utils.custom_test_runner.CustomSeleniumTestRunner'
 
-# Change this to the path to your selenium server
-SELENIUM_PATH = '/path/to/selenium/selenium-server-standalone-2.7.0.jar'
+SELENIUM_PATH = os.path.join(os.path.dirname(__file__), '../../../dependencies/selenium-server-standalone-2.8.0/selenium-server-standalone-2.8.0.jar')
 
 if False:
     import logging
