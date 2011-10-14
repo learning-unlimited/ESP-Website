@@ -35,7 +35,7 @@ Have own space? {{ has_own_space }}
 Room request: {{ requested_room }}
 
 Equipment/resource requests:{% for res in global_resources %}
-{{ res.name }}{% endfor %}
+-{{ res.res_type.name }}: {{res.desired_value}}{% endfor %}
 
 Special Resources:
 {{ requested_special_resources }}
