@@ -1,7 +1,7 @@
 /* Get user data from the cookies. */
 
 
-if (typeof(window["$"]) == "undefined") {
+if (typeof(window["$j"]) == "undefined") {
     alert("JQuery and its cookie plugin are required for this page.");
     /* Hint:
        <script type="text/javascript" src="/media/scripts/jquery.js"></script>
@@ -13,7 +13,7 @@ var esp_user = {};
 var esp_user_keys = new Array('cur_username','cur_email','cur_first_name','cur_last_name','cur_other_user','cur_retTitle', 'cur_admin','cur_grade','cur_roles');
 
 for (var i=0; i < esp_user_keys.length; i++) {
-    var tmp = $.cookie(esp_user_keys[i]);
+    var tmp = $j.cookie(esp_user_keys[i]);
     if (tmp) {
 	esp_user[esp_user_keys[i]] = tmp;
     }

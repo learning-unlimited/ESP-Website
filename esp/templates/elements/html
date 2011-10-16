@@ -28,14 +28,20 @@
 
     <script type="text/javascript" src="/media/scripts/jquery.js"> </script>
     <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
+
+    <script language="JavaScript">
+    $j = $.noConflict();
+    </script>
+    
     <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.5/dojo/dojo.xd.js" djConfig="parseOnLoad: true"></script>
 
+
     <script language="JavaScript">
-    $(document).ready(function() {
-        $.getScript("/media/scripts/csrf_init.js");
-        $.getScript("/media/scripts/csrf_check.js");
+    $j(document).ready(function() {
+        $j.getScript("/media/scripts/csrf_init.js");
+        $j.getScript("/media/scripts/csrf_check.js");
     });
     </script>
 {% endblock %}
@@ -46,7 +52,6 @@
         @import "https://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css";
 </style>
 <script language="JavaScript">
-$j = $.noConflict();
 $j(document).ready(function() {
   if (esp_user.cur_admin == "1") {
     $j(".admin").removeClass("admin_hidden");

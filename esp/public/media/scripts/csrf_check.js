@@ -6,12 +6,12 @@ function strip_tags(str)
 var check_csrf_cookie = function()
 {
     csrf_tokens = document.getElementsByName("csrfmiddlewaretoken");
-    csrf_cookie = $.cookie("csrftoken");
+    csrf_cookie = $j.cookie("csrftoken");
     //alert(csrf_cookie);
     if (csrf_cookie == null)
     {
         alert("Oops! It appears your session has become disconnected. Please make sure cookies are enabled and try again.");
-        $.get("/set_csrf_token");
+        $j.get("/set_csrf_token");
         return false;
     }
     else
