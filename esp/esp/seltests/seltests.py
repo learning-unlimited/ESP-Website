@@ -12,7 +12,6 @@ class CsrfTestCase(SeleniumTestCase):
         user, created = ESPUser.objects.get_or_create(username='student', first_name='Student', last_name='Student')
         user.set_password('student')
         user.save()
-	print user.get_full_name()
 
     def try_login(self):
         elem = self.find_element_by_name("username") # Find the username field
