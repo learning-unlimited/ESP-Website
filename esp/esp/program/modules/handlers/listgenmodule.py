@@ -241,7 +241,7 @@ class ListGenModule(ProgramModuleObj):
             filterObj, found = get_user_list(request, self.program.getLists(True))
         else:
             filterid  = request.GET['filterid']
-            filterObj = PersistentQueryFilter.getFilterFromID(filterid, User)
+            filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
             found     = True
         if not found:
             return filterObj
