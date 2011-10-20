@@ -36,7 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.program.models import ClassSubject, ClassSection, Program
+from esp.program.models import ClassSubject, ClassSection, Program, ClassCategories
 from esp.users.models import UserBit, ESPUser, shirt_sizes, shirt_types
 from django.contrib.auth.models import User
 from django.core.cache import cache
@@ -144,12 +144,13 @@ class AdminVitals(ProgramModuleObj):
         context['classhours'] = chours
         context['classpersonhours'] = shours
         Q_categories = Q(program=self.program)
-        if self.open_class_registration:
+        crmi = self.program.getModuleExtension('ClassRegModuleInfo')
+        if crmi.open_class_registration:
             walkin_pk = ClassCategories.objects.get_or_create(category='Walk-in Seminar', symbol='W', seq=0)[0].pk
             Q_categories |= Q(pk=walkin_pk)
-        context['categories'] = ClassCategories.objects.filter(Q_categories, cls__parent_program=self.program, cls__status__gte=0).annotate(num_subjects=Count('cls')).order_by('-num_subjects').values()
+        context['categories'] = ClassCategories.objects.filter(Q_categories, cls__parent_program=self.program, cls__status__gte=0).distinct().annotate(num_subjects=Count('cls')).order_by('-num_subjects').values().distinct()
         for i in range(len(context['categories'])):
-            context['categories'][i].update({'num_sections': ClassSection.objects.filter(status__gte=0, parent_class__parent_program=self.program, parent_class__category__id=context['categories'][i]['id']).distinct().count()})
+            context['categories'][i].update({'num_sections': ClassSection.objects.filter(status__gte=0, parent_class__parent_program=self.program, parent_class__category__id=context['categories'][i]['id']).distinct().count(), 'num_subjects': ClassSubject.objects.filter(status__gte=0, parent_program=self.program, category__id=context['categories'][i]['id']).distinct().count()})
         
         return context
     
