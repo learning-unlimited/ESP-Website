@@ -245,7 +245,8 @@ class ClassCreationController(object):
         
         # Make some of the fields in new_data nicer for viewing.
         mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category_id']).category
-        mail_ctxt['global_resources'] = ResourceType.objects.filter(id__in=new_data['global_resources'])
+        #mail_ctxt['global_resources'] = ResourceType.objects.filter(id__in=new_data['global_resources'])
+        mail_ctxt['global_resources'] = cls.get_sections()[0].getResourceRequests()
 
         # Optimal and allowable class size ranges.
         if new_data.has_key('optimal_class_size_range_id') and (new_data['optimal_class_size_range_id'] is not None):

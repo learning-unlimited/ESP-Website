@@ -27,7 +27,7 @@ then   # Script needs at least one command-line argument.
   echo "Usage: $0 -(option) [-(option) ...] [sitedir]"
   echo "Type '$0 -h' for help."
   exit $E_OPTERR
-fi  
+fi
 
 eval set -- "$OPTSETTINGS"
 
@@ -319,7 +319,7 @@ then
 	cd $DEPDIR
 	
 	#	Get what we can using Ubuntu's package manager
-	apt-get install -y build-essential texlive imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-dns postgresql-8.4 python-psycopg2 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large ipython
+	apt-get install -y build-essential texlive imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-dns postgresql-8.4 python-psycopg2 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large ipython wget
 
 	#	Fetch and extract files
 	if [[ ! -d memcached-1.4.5 ]]
@@ -331,6 +331,13 @@ then
 	then
 		wget http://launchpad.net/libmemcached/1.0/0.44/+download/libmemcached-0.44.tar.gz
 		tar -xzf libmemcached-0.44.tar.gz
+	fi
+	if [[ ! -d selenium-server-standalone-2.8.0 ]]
+	then
+		mkdir selenium-server-standalone-2.8.0
+		cd selenium-server-standalone-2.8.0
+		wget http://selenium.googlecode.com/files/selenium-server-standalone-2.8.0.jar
+		cd $DEPDIR
 	fi
 	while [[ ! -d dropbox ]]
 	do
@@ -377,6 +384,9 @@ then
 	python -m easy_install simplejson
 	python -m easy_install twill
 	python -m easy_install django-form-utils
+	python -m easy_install selenium
+	python -m easy_install django-selenium
+	python -m easy_install django-selenium-test-runner
 
 	#	Install sslauth
 	if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]

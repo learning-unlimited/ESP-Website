@@ -44,10 +44,13 @@ from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from urllib import quote
 
+from Cookie import SimpleCookie
+
 #from icalendar import Calendar, Event as CalEvent, UTC
 
 import datetime
 import re
+from django.utils import simplejson as json
 
 from esp.web.models import NavBarCategory
 from esp.web.util.main import render_to_response
@@ -447,25 +450,74 @@ def error_reporter(request):
     pprint(dict(request.COOKIES), cookies)
     pprint(dict(request.GET), get)
     pprint(dict(request.META), meta)
-    if request.POST:
-        if request.raw_post_data.strip()[0] == '[':
-            pprint(request.raw_post_data, post)
-        else:
-            pprint(dict(request.POST), post)
+
+    user_str = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
+    user_agent_str = request.META.get('HTTP_USER_AGENT', "(not specified)")
 
     msg = request.GET.get('msg', "(no message)")
 
-    user_str = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
-    user_agent_str = request.META.get('HTTP_USER_AGENT', "(not specified")
+    json_flag = ""
+    
+    if request.POST:
+        if request.raw_post_data.strip()[0] == '[':
+            ## Probably a JSON error report
+            ## Let's try to decode it
+            try:
+                err = json.loads(request.raw_post_data)
+                json_flag = " (JSON-encoded)"
+
+                for e in err:
+                    try:
+                        c = SimpleCookie()
+                        c.load( str(e['data']['cookie']) )
+                        e['data']['cookie'] = dict((str(x), str(y)) for x, y in c.iteritems())
+                    except:  ## Whoops, don't have cookie data after all
+                        pass
+
+                    ## Also pull out some data, if we can
+                    ## 'err' is an array, and we don't need to do this more than once;
+                    ## but it should typically be an array of either 0 or 1 elements,
+                    ## and we don't want to do it for a 0-length array,
+                    ## so just do it in the loop
+                    try:
+                        if user_str == "(not authenticated)":
+                            user_str = "%s %s" % (user_str, e['data']['cookie'])
+                    except:
+                        pass
+
+                    try:
+                        if user_agent_str == "(not specified)":
+                            user_agent_str = e['env']['user_agent']
+                    except:
+                        pass
+
+                    try:
+                        if msg == "(no message)":
+                            msg = e['exception']['message']
+                    except:
+                        pass
+            except Exception, e:
+                print "*** Exception!", e
+                print json.__dict__
+                err = request.raw_post_data
+                    
+            pprint(err, post)
+
+        else:
+            pprint(dict(request.POST), post)
+
 
     err_txt = """A user reported an error!
 
 User: %s
 Path: %s
 UserAgent: %s
+Message:
+%s
+
 GET:
 %s
-POST:
+POST%s:
 %s
 
 Cookies:
@@ -473,10 +525,13 @@ Cookies:
 
 META:
 %s
-""" % (user_str, request.path, user_agent_str, get.getvalue(), post.getvalue(), cookies.getvalue(), meta.getvalue())
+""" % (user_str, request.path, user_agent_str, msg, get.getvalue(), json_flag, post.getvalue(), cookies.getvalue(), meta.getvalue())
 
-    mail_admins("[ESP] JS Error: %s" % msg[:100].replace("\n", "").replace("\r", ""), err_txt)
-
+    try:
+        mail_admins("[ESP] JS Error: %s" % msg[:100].replace("\n", "").replace("\r", ""), err_txt)
+    except:  ## For dev servers of people who don't have local SMTP
+        print "[ESP] JS Error: %s\n\n%s" % (msg[:100].replace("\n", "").replace("\r", ""), err_txt)
+    
     return HttpResponse('')  ## Return something, so we don't trigger an error
 
 def set_csrf_token(request):
