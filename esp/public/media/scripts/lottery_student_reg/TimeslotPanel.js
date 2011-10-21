@@ -163,7 +163,11 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         for(i = 0; i < r.data.get_sections.length; i ++)
         {
             section = r.data.get_sections[i];      
-            if(section.get_meeting_times[0].id == this.timeblock[0])
+	    if (!section.get_meeting_times[0])
+	    {
+		console.log("Warning, no meeting times for " + section.id);
+	    }
+            else if(section.get_meeting_times[0].id == this.timeblock[0])
             {
                 return section.id;
             }

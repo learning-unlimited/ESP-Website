@@ -132,11 +132,26 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
         classLists = [];
         walkinLists = [];
         flag_added = [];
+	var num_sections = 0;
 
         //itterate through records (classes)
         for (i = 0; i < records.length; i++)
            { 
             r = records[i];        
+
+	    //  Prepopulate walk-in and class lists
+	    num_sections = r.data.get_sections.length;
+	    for (var j = 0; j < num_sections; j++)
+	    {
+		if (r.data.get_sections[j].get_meeting_times.length > 0)
+		{
+		    if (!(r.data.get_sections[j].get_meeting_times[0].id in walkinLists))
+			walkinLists[r.data.get_sections[j].get_meeting_times[0].id] = [];
+		    if (!(r.data.get_sections[j].get_meeting_times[0].id in classLists))
+			classLists[r.data.get_sections[j].get_meeting_times[0].id] = [];
+		}
+	    }
+
             //no walk-in seminars
             if (r.data.category.category == 'Walk-in Seminar'){
                 this.addSectionsToList(r, walkinLists);                
@@ -148,6 +163,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 continue;
             }
 
+	    //   console.log("Adding " + r.data.id + " to class lists");
             this.addSectionsToList(r, classLists);
         }
 
@@ -185,11 +201,17 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
             if(ESPClass.data.get_sections[j].get_meeting_times.length >0)
             {
                 timeblock = ESPClass.data.get_sections[j].get_meeting_times[0];
-                if(!lists[timeblock.id]){
+                /*if(!lists[timeblock.id]){
                     lists[timeblock.id] = []
                 }
-                lists[timeblock.id].push(r);                    
+		*/
+		
+                lists[timeblock.id].push(ESPClass);                    
             }
+	    else
+	    {
+		//  console.log("Warning, no meeting times for " + ESPClass.data.id);
+	    }
         }
     },  
 
