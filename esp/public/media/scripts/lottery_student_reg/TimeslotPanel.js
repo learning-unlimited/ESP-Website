@@ -226,6 +226,9 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
     },
 
     getSummary: function () {
+        if(!this.rendered){
+            this.makeCheckBoxes();
+        }
         var summaryParts =  [];
         summaryParts.push("<font size=\"5\">" + this.timeblock[1] + "</font>");
         var flagged = this.flaggedClass();
