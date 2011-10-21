@@ -46,6 +46,7 @@ from django.contrib.auth.models import User
 from esp.accounting_docs.models import Document
 from esp.accounting_core.models import LineItem, LineItemType
 
+from collections import defaultdict
 
 class CostItem(forms.Form):
     cost = forms.BooleanField(required=False, label='')
@@ -54,6 +55,17 @@ class MultiCostItem(forms.Form):
     cost = forms.BooleanField(required=False, label='')
     count = forms.IntegerField(max_value=10, min_value=0)
 
+class MultiSelectCostItem(forms.Form):
+    cost = forms.ChoiceField(required=False, label='', widget=forms.RadioSelect, choices=[])
+    def __init__(self, *args, **kwargs):
+        choices = kwargs.pop('choices')
+        required = kwargs.pop('required')
+        super(MultiSelectCostItem, self).__init__(*args, **kwargs)
+        self.fields['cost'].choices = choices
+        self.fields['cost'].required = required
+
+        print "Field ", required
+        
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
 
@@ -115,24 +127,65 @@ class StudentExtraCosts(ProgramModuleObj):
         #costs_list = set(LineItemType.forAnchor(prog.anchor).filter(optional=True).filter(lineitem__transaction__isnull=False, lineitem__user=request.user)) | set([x for x in LineItemType.forAnchor(prog.anchor).filter(optional=True) if x.lineitem_set.count() == 0])
         costs_list = LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Optional/BuyOne'))
         multicosts_list = LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Optional/BuyMany'))
+        multiselect_list = LineItemType.objects.filter(anchor__parent__in=(GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required/BuyMultiSelect'), GetNode(prog.anchor.get_uri()+'/LineItemTypes/Optional/BuyMultiSelect'))).select_related('anchor', 'anchor__parent__parent')
+
+        multiselect_dict = defaultdict(list)
+        for elt in multiselect_list:
+            multiselect_dict[elt.anchor].append(elt)
+
+        for lst in multiselect_dict.itervalues():
+            lst.sort(key=lambda li: li.text)
         
         doc = self.get_invoice()
 
+        def first_if_any(lst):
+            try:
+                return lst[0]
+            except:
+                return None
+
+        ## Another dirty hack, left as an exercise to the reader
         if request.method == 'POST':
             costs_db = [ { 'LineItemType': x, 
                            'CostChoice': CostItem(request.POST, prefix="%s_" % x.id) }
                          for x in costs_list ] + \
                          [ x for x in \
-                               [ { 'LineItemType': x, 
-                                   'CostChoice': MultiCostItem(request.POST, prefix="%s_" % x.id) }
-                                 for x in multicosts_list ] \
-                               if x['CostChoice'].is_valid() and x['CostChoice'].cleaned_data.has_key('cost') ]
+                           [ { 'LineItemType': x, 
+                               'CostChoice': MultiCostItem(request.POST, prefix="%s_" % x.id) }
+                             for x in multicosts_list ] \
+                           if x['CostChoice'].is_valid() and x['CostChoice'].cleaned_data.has_key('cost') ] + \
+                           [ { 'LineItemType': l,
+                               'CostChoice': MultiSelectCostItem(request.POST, prefix="multi%s_" % l.anchor.id,
+                                                                 required=(l.anchor.parent.parent.name == 'Required'),
+                                                                 choices=[(li.id, str(li.text)) for li in multiselect_dict[l.anchor]]) }
+                             for l in multiselect_list ]
 
             for i in costs_db:
                 if not i['CostChoice'].is_valid():
-                    raise ESPError("A non-required boolean is invalid in the Cost module")               
+                    checked_ids = set( [ x.li_type_id for x in doc.txn.lineitem_set.all() ] )
+                    li = None  ## Ugly hack, left as an exercise to the reader
+                    forms = [ { 'form': CostItem( request.POST, prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ) } ),
+                                'LineItem': x }
+                              for x in costs_list ] + \
+                              [ { 'form': MultiCostItem( request.POST, prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ), 'count': max(1, doc.txn.lineitem_set.filter(li_type=x).count()) } ),
+                                  'LineItem': x }
+                                for x in multicosts_list ] + \
+                                [ { 'form': MultiSelectCostItem( request.POST, prefix="multi%s_" % anchor.id,
+                                                                 initial={'cost': first_if_any(list(checked_ids.intersection(set(li.id for li in li_list))))},
+                                                                 choices=[(li.id, str(li.text)) for li in li_list],
+                                                                 required=(li.anchor.parent.parent.name == 'Required' if li else False)),
+                                    'LineItem': {'text': anchor.name, 'description': anchor.friendly_name} }
+                                  for anchor, li_list in multiselect_dict.iteritems() ]
+        
 
-                if i['CostChoice'].cleaned_data['cost']:
+                    return render_to_response(self.baseDir()+'extracosts.html',
+                                              request,
+                                              (self.program, tl),
+                                              { 'errors': True, 'forms': forms, 'financial_aid': ESPUser(request.user).hasFinancialAid(prog.anchor), 'select_qty': len(multicosts_list) > 0 })
+                    break
+                
+                if i['CostChoice'].cleaned_data['cost'] and \
+                       ((not isinstance(i['CostChoice'], MultiSelectCostItem)) or int(i['CostChoice'].cleaned_data['cost']) == i['LineItemType'].id):
                     if i['CostChoice'].cleaned_data.has_key('count'):
                         try:
                             count = int(i['CostChoice'].cleaned_data['count'])
@@ -157,20 +210,26 @@ class StudentExtraCosts(ProgramModuleObj):
 
             return self.goToCore(tl)
 
-        else:
-            checked_ids = set( [ x.li_type_id for x in doc.txn.lineitem_set.all() ] )
-            forms = [ { 'form': CostItem( prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ) } ),
-                        'LineItem': x }
-                      for x in costs_list ] + \
-                      [ { 'form': MultiCostItem( prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ), 'count': max(1, doc.txn.lineitem_set.filter(li_type=x).count()) } ),
-                          'LineItem': x }
-                        for x in multicosts_list ]
-                
+        checked_ids = set( [ x.li_type_id for x in doc.txn.lineitem_set.all() ] )
+        li = None  ## Ugly hack, left as an exercise to the reader
+        forms = [ { 'form': CostItem( prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ) } ),
+                    'LineItem': x }
+                  for x in costs_list ] + \
+                  [ { 'form': MultiCostItem( prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ), 'count': max(1, doc.txn.lineitem_set.filter(li_type=x).count()) } ),
+                      'LineItem': x }
+                    for x in multicosts_list ] + \
+                    [ { 'form': MultiSelectCostItem( prefix="multi%s_" % anchor.id,
+                                                     initial={'cost': first_if_any(list(checked_ids.intersection(set(li.id for li in li_list))))},
+                                                     choices=[(li.id, str(li.text)) for li in li_list],
+                                                     required=(li.anchor.parent.parent.name == 'Required' if li else False)),
+                        'LineItem': {'text': anchor.name, 'description': anchor.friendly_name} }
+                      for anchor, li_list in multiselect_dict.iteritems() ]
+        
 
-            return render_to_response(self.baseDir()+'extracosts.html',
-                                      request,
-                                      (self.program, tl),
-                                      { 'forms': forms, 'financial_aid': ESPUser(request.user).hasFinancialAid(prog.anchor), 'select_qty': len(multicosts_list) > 0 })
+        return render_to_response(self.baseDir()+'extracosts.html',
+                                  request,
+                                  (self.program, tl),
+                                  { 'forms': forms, 'financial_aid': ESPUser(request.user).hasFinancialAid(prog.anchor), 'select_qty': len(multicosts_list) > 0 })
 
 
     class Meta:
