@@ -5,7 +5,6 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 
     initComponent: function () 
     {
-        console.log(confirm_text);
         Ext.Ajax.request({
             url: '/learn/'+url_base+'/timeslots_json',
             success: function (response, opts) {
@@ -136,7 +135,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 
         //itterate through records (classes)
         for (i = 0; i < records.length; i++)
-           { 
+        { 
             r = records[i];        
 
 	    //  Prepopulate walk-in and class lists
@@ -190,7 +189,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
             dropdown_states_data.push([String(i),String(i)]);
         }
         this.addConfirmTab();
-     },
+    },
 
     addSectionsToList: function (ESPClass, lists)
     {
@@ -246,6 +245,9 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
         for(k = 1; k < Ext.getCmp("sri").items.items.length; k++){
             var tab = Ext.getCmp("sri").items.items[k];
             if(tab.xtype == "timeslotpanel"){
+                if(!tab.rendered){
+
+                }
                 confirmPanel.add({
                     xtype: "displayfield",
                     value: tab.getSummary()

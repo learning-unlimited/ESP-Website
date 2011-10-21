@@ -25,6 +25,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
             priorityLimit: 1,
             scroll: false,
             monitorResize: true,
+            checkboxesMade: false,
             listeners: { 
                 render: this.makeCheckBoxes,
                 //beforehide: this.checkPriorities
@@ -88,6 +89,10 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
     },
 
     makeCheckBoxes: function() {
+        if(this.checkboxesMade){
+            return;
+        }
+        this.checkboxesMade = true;
         this.makeWalkinsList();
         this.add({
             xtype: "displayfield",
@@ -199,6 +204,10 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         var checked = [];
         for(j=3; j<this.items.items.length; j++) {
              var checkbox = this.items.items[j];
+            if(!typeof(checkbox) == "classCheckboxes"){
+                console.log(this);
+                console.log(checkboxes);
+            }
              if(checkbox.isChecked()){
                 checked.push(checkbox);
              }
@@ -230,6 +239,10 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
     },
 
     getSummary: function () {
+        if(!this.checkboxesMade){
+            this.makeCheckBoxes();
+        }
+
         var summaryParts =  [];
         summaryParts.push("<font size=\"5\">" + this.timeblock[1] + "</font>");
         var flagged = this.flaggedClass();
