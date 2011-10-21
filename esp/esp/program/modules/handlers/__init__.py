@@ -17,6 +17,9 @@ files = [os.path.basename(file) for file in files ]
 # this does some interesting comprehension
 
 files = [ name[:-3] for name in files if name != cur_file]
+import re
+prog = re.compile(r'^\w+$')
+files = [name for name in files if prog.match(name) is not None]
 base  = 'esp.program.modules.handlers.'
 
 oldglobals = globals()
