@@ -57,7 +57,21 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         else:
             context['form'] = teacheracknowledgementform_factory(prog)()
         return render_to_response(self.baseDir()+'acknowledgement.html', request, (prog, tl), context)
+    
+    def teachers(self, QObject = False):
+        """ Returns a list of teachers who have submitted the acknowledgement. """
+        from datetime import datetime
+        qf = Q(userbit__qsc=self.program_anchor_cached(), userbit__verb=GetNode('V/Flags/Registration/Teacher/Acknowledgement'), userbit__startdate__lte=datetime.now(), userbit__enddate__gte=datetime.now())
+        if QObject is True:
+            return {'acknowledgement': self.getQForUser(qf)}
+        
+        teacher_list = ESPUser.objects.filter(qf).distinct()
+        
+        return {'acknowledgement': teacher_list }#[t['user'] for t in teacher_list]}
 
+    def teacherDesc(self):
+        return {'acknowledgement': """Teachers who have submitted the acknowledgement for the program."""}    
+    
     class Meta:
         abstract = True
     

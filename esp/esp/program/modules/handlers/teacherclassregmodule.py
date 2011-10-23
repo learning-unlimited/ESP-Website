@@ -118,6 +118,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         Q_rejected_teacher = Q(userbit__qsc__in=rejected_list) & Q_isteacher
         Q_approved_teacher = Q(userbit__qsc__in=approved_list) & Q_isteacher
         Q_proposed_teacher = Q(userbit__qsc__in=proposed_list) & Q_isteacher
+        Q_all_teachers = Q_rejected_teacher | Q_approved_teacher | Q_proposed_teacher 
 
         nearly_full_classes = [x.anchor for x in self.program.classes().filter(status__gt=0) if x.is_nearly_full()]
         Q_nearly_full_teacher = Q(userbit__qsc__in=nearly_full_classes) & Q_isteacher
@@ -136,6 +137,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_approved': self.getQForUser(Q_approved_teacher),
                 'class_proposed': self.getQForUser(Q_proposed_teacher),
                 'class_rejected': self.getQForUser(Q_rejected_teacher),
+                'all_teachers': self.getQForUser(Q_all_teachers),
                 'class_nearly_full': self.getQForUser(Q_nearly_full_teacher),
                 'class_full': self.getQForUser(Q_full_teacher),
                 'taught_before': self.getQForUser(Q_taught_before),
@@ -147,6 +149,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_approved': ESPUser.objects.filter(Q_approved_teacher).distinct(),
                 'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct(),
                 'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct(),
+                'all_teachers': ESPUser.objects.filter(Q_all_teachers).distinct(),
                 'class_nearly_full': ESPUser.objects.filter(Q_nearly_full_teacher).distinct(),
                 'class_full': ESPUser.objects.filter(Q_full_teacher).distinct(),
                 'taught_before': ESPUser.objects.filter(Q_taught_before).distinct(),
@@ -162,6 +165,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             'class_approved': """Teachers teaching an approved class.""",
             'class_proposed': """Teachers teaching a class which has yet to be reviewed.""",
             'class_rejected': """Teachers teaching a rejected class.""",
+            'all_teachers': """All teachers (regardless of class status) for this program.""",
             'class_full': """Teachers teaching a completely full class.""",
             'class_nearly_full': """Teachers teaching a nearly-full class (>%d%% of capacity).""" % (100 * capacity_factor),
             'taught_before': """Teachers who have taught for a previous program.""",
@@ -741,6 +745,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 resource_formset = ResourceRequestFormSet(resource_type=resource_types, prefix='request', static_resource_requests=static_resource_requests, )
                 restype_formset = ResourceTypeFormSet(initial=[], prefix='restype')
 
+        context['tl'] = 'teach'
         context['one'] = one
         context['two'] = two
         context['form'] = reg_form
@@ -749,18 +754,26 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['allow_restype_creation'] = Tag.getProgramTag('allow_restype_creation', program=self.program, )
         context['static_resource_requests'] = static_resource_requests
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
+        context['classroom_form_advisories'] = 'classroom_form_advisories'
         
         if newclass is None:
             context['addoredit'] = 'Add'
         else:
             context['addoredit'] = 'Edit'
 
+        context['classes'] = {
+            0: {'type': 'class', 'link': 'makeaclass'}, 
+            1: {'type': 'walk-in seminar', 'link': 'makeopenclass'}
+        }
         if action == 'create' or action == 'edit':
-            template_name = 'classedit.html'
+            context['isopenclass'] = 0
         elif action == 'createopenclass' or action == 'editopenclass':
-            template_name = 'openclassedit.html'
+            context['isopenclass'] = 1
+            context['classroom_form_advisories'] += '__open_class'
+        context['classtype'] = context['classes'][context['isopenclass']]['type']
+        context['otherclass'] = context['classes'][1 - context['isopenclass']]
 
-        return render_to_response(self.baseDir() + template_name, request, (prog, tl), context)
+        return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
 
 
     @aux_call

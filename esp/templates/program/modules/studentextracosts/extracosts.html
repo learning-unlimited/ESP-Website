@@ -1,4 +1,4 @@
-4{% extends "main.html" %}
+{% extends "main.html" %}
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
@@ -32,26 +32,26 @@
 
 <br />
 
+{% if errors %}<div class="formerror">Please fill out the entire form</div>{% endif %}
+  
 <form action="" method="post">{% csrf_token %}
 <center>
 <table width="400" cellpadding="2" cellspacing="0">
-<tr><th colspan="{% if select_qty %}4{% else %}3{% endif %}">Additional Items for {{ program.niceName }}</th></tr>
+<tr><th colspan="{% if select_qty %}3{% else %}2{% endif %}">Additional Items for {{ program.niceName }}</th></tr>
 <tr>    
     <th class="small">Buy</th>
 {% if select_qty %}    <th class="small">Qty</th>{% endif %}
     <th class="small">Item</th>
-    <th class="small">Cost</th>
 </tr>
 {% for f in forms %}
-<tr>
-    <td>{{ f.form.cost }}</td>
+<tr style="border-bottom: 1px dashed grey;">
+    <td width="120px">{{ f.form.cost }} {% if f.LineItem.negative_amount %}<i>${{ f.LineItem.negative_amount|floatformat:2 }}</i>{% endif %}</td>
 {% if select_qty %}    <td>{{ f.form.count }}</td>{% endif %}
-    <td>{{ f.LineItem.text }} </td>
-    <td><i>${{ f.LineItem.negative_amount|floatformat:2 }}</i></td>
+    <td>{% if f.form.errors %}<font color="red">{{ f.form.errors }}</font>  {% endif %}<b>{{ f.LineItem.text }}</b>{% if not f.LineItem.negative_amount and f.LineItem.description %} {{ f.LineItem.description }}{% endif %}</td>
 </tr>
 {% endfor %}
 <tr>
-    <td colspan="3" align="center">
+    <td colspan="{% if select_qty %}3{% else %}2{% endif %}" align="center">
         <input type="submit" class="fancybutton" value="Save"/>
     </td>
 </tr>

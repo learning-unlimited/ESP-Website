@@ -127,7 +127,7 @@
     <th class="smaller"># of subjects</th>
     <th class="smaller"># of sections</th>
 </tr>
-{% for cat in categories %}
+{% for cat in categories|dictsortreversed:"num_subjects" %}
 <tr>
     <th class="smaller">{{ cat.category }}</th>
     <td>{{ cat.num_subjects }}</td>

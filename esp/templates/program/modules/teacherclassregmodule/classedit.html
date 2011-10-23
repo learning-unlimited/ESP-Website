@@ -17,15 +17,15 @@
 
 {% block content %}
 
-<h1>{{ addoredit }}ing a class for {{ program.niceName }}</h1>
+<h1>{{ addoredit }}ing a {{ classtype }} for {{ program.niceName }}</h1>
 
 <p>
-Thank you for your interest in teaching for {{ one }}!  Please ensure that you are available to teach your class at any of the times you have <a href="/teach/{{ program.url }}/availability">specified that you are available</a>.  If there is any chance that your plans may change and you won't be able to teach, please do not fill out this form; <a href="mailto:{{ program.director_email }}">contact the program directors</a>.<p>
+Thank you for your interest in teaching a {{ classtype }} for {{ one }}!  Please ensure that you are available to teach your class at any of the times you have <a href="/teach/{{ program.url }}/availability">specified that you are available</a>.  If there is any chance that your plans may change and you won't be able to teach, please do not fill out this form; <a href="mailto:{{ program.director_email }}">contact the program directors</a>.</p>
 
 <p>Please fill out or update the form below.  (The required fields are bordered in red.)  If you would like to co-teach this class with others, please click the "Modify Coteachers" button next to the appropriate class at the teacher registration page afterwards.</p>
 
 {% if module.open_class_registration %}
-<p style="font-weight:bold;">This page is for registering traditional classes <span style="text-decoration:underline;">only</span>. If you are trying to register a walk-in seminar, <a href="makeopenclass">click here</a>.</p>
+<p style="font-weight:bold;">This page is for registering a {{ classtype }} <span style="text-decoration:underline;">only</span>. If you are trying to register a {{ otherclass.type }}, <a href="{% url esp.web.views.main.program tl one two otherclass.link %}">click here</a>.</p>
 {% endif %}
 
 <p align="center"><div class="info">If you would like to teach multiple 
@@ -45,7 +45,7 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
 <div id="program_form">
 <center>
 <table width="550">
-    <tr><th colspan="2">Course Creation/Editing Form</th></tr>
+    <tr><th colspan="2">{{ classtype|title }} Creation/Editing Form</th></tr>
     <tr>
         <td colspan="2">
         {% inline_qsd_block program.anchor classroom_form_advisories request.user %}
@@ -56,7 +56,7 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
     <tr>
         <td colspan="2">&nbsp;</td>
     </tr>
-    {% if not formset.forms|length_is:0 %}
+    {% if not isopenclass and not formset.forms|length_is:0 %}
     <tr>
         <th colspan="2">Classroom Requests</th>
     </tr>
@@ -81,7 +81,6 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
             {% for rt in resource_types %}<a id="add_request_{{ rt.id }}" href="/teach/{{ program.getUrlBase }}/makeaclass">{{ rt.name }}</a>{% if not forloop.last %} | {% endif %}{% endfor %}{% if allow_restype_creation %} | <a id="add_restype" href="/teach/{{ program.getUrlBase }}/makeaclass">Other</a>{% endif %}
         </td>
     </tr>
-</table>
 <script type="text/javascript">
 <!--
     register_fragment({id: "request_forms_html", url: ""});
@@ -92,16 +91,10 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
 -->
 </script>
 {% endif %}
-<div id="request_forms">
 {% include "program/modules/teacherclassregmodule/requests_form_fragment.html" %}
-</div>
-<div id="restype_forms">
 {% with restype_formset as formset %}
 {% include "program/modules/teacherclassregmodule/restype_form_fragment.html" %}
 {% endwith %}
-</div>
-
-<table width="550">
     {% endif %}
     <tr>
         <td colspan="2">&nbsp;</td>

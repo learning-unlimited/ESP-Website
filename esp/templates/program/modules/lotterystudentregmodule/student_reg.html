@@ -21,8 +21,19 @@
 <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
 <!-- End of libraries -->
 
+<script language="JavaScript">
+      $j = $.noConflict();
+</script>
+
 <!-- ESP cookie info -->
 <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
+
+<script language="JavaScript">
+      $j(document).ready(function() {
+          $j.getScript("/media/scripts/csrf_init.js");
+          $j.getScript("/media/scripts/csrf_check.js");
+      });
+</script>
 
 <!-- Program info -->
 <script type='text/javascript'> var nice_name = '{{prog.niceName}}'</script>
