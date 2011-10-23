@@ -129,7 +129,13 @@ var dojo_handle = function(data,args)
 
 var handle_submit = function(mode, attrs, element)
 {
-    element.preventDefault(); 
+    element.preventDefault();
+
+    if(document.getElementById(attrs.id).csrfmiddlewaretoken && !check_csrf_cookie(document.getElementById(attrs.id)))
+    {
+        return false;
+    }
+
     //  console.log("Handling " + mode + " submission of object: " + JSON.stringify(attrs, null, '\t') + ", element: " + JSON.stringify(element, null, '\t'));
     if (attrs.post_form != null)
     {
