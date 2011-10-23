@@ -3,9 +3,9 @@ function strip_tags(str)
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt");
 }
 
-var check_csrf_cookie = function()
+var check_csrf_cookie = function(form)
 {
-    csrf_tokens = document.getElementsByName("csrfmiddlewaretoken");
+    csrf_token = form.csrfmiddlewaretoken;
     csrf_cookie = $j.cookie("csrftoken");
     //alert(csrf_cookie);
     if (csrf_cookie == null)
@@ -17,11 +17,9 @@ var check_csrf_cookie = function()
     else
     {
         //alert("Changing csrftoken values");
-        for(var i = 0; i < csrf_tokens.length; i++)
-        {
-            csrf_tokens[i].value = strip_tags(csrf_cookie);
-            //alert("Changed to: " + strip_tags(csrf_cookie));
-        }
+        csrf_token.value = strip_tags(csrf_cookie);
+        //alert("Changed to: " + strip_tags(csrf_cookie));
+        //alert("csrf_token = " + csrf_token.value + ", csrf_cookie = " + csrf_cookie);
         return true;
     }
 }

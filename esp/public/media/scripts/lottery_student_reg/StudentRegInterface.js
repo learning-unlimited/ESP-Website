@@ -156,9 +156,9 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 this.addSectionsToList(r, walkinLists);                
                 continue;
             }
-
+ 
             //grade check
-            if (r.data.grade_min >= grade || r.data.grade_max <= grade ) {
+            if (r.data.grade_min > grade || r.data.grade_max < grade ) {
                 continue;
             }
 
@@ -169,6 +169,9 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
         //makes tabs with id = short_description of timeblock
         for(i = 0; i < this.num_tabs; i++) 
         {
+            if(i >= 8 && i <= 10 && grade < 9){
+                continue;
+            }
             //alert(classLists[this.tab_names[i][0]].length);
             this.add( new TimeslotPanel(
             {

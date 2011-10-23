@@ -37,6 +37,9 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     makeWalkinsList: function() 
     {
+        if (!this.ESPwalkins){
+            this.ESPwalkins = [];
+        }
         var walkinsDisplay = this.items.items[0]
         var i;
         for(i = 0; i< this.ESPwalkins.length; i++)
