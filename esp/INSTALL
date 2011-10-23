@@ -9,6 +9,7 @@ modified:
     2009-04-21 (price)
     2010-08-22 (price)
     2011-10-17 (gurtej)
+    2011-10-22 (gurtej)
     
 You have presumably downloaded the source code for ESP's web site.
 Here are the steps to get the site operational on your computer:
@@ -51,7 +52,7 @@ psycopg         Python (easy_install)   N/A    * Choose psycopg or psycopg2 and 
 psycopg2        Python (easy_install)   N/A      (default is psycopg2)
 django-debug-toolbar    Python (easy_install)   N/A       * Optional
 selenium	Python (easy_install)	N/A
-django-selenium	Python (easy_install)	N/A
+django-selenium	Python (easy_install)	0.3
 django-selenium-test-runner	Python (easy_install)	N/A
 
 selenium-server-standalone	System	http://selenium.googlecode.com/files/selenium-server-standalone-2.8.0.jar
