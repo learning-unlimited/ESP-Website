@@ -169,7 +169,8 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
         //makes tabs with id = short_description of timeblock
         for(i = 0; i < this.num_tabs; i++) 
         {
-            if(i >= 8 && i <= 10 && grade < 9){
+	    //9 and 11 are hardcoded for Splash 2011.  AFAIK there's no general way to tell whether a block is high school only?  Will look into this later
+            if(i >= 9 && i <= 11 && grade < 9){
                 continue;
             }
             //alert(classLists[this.tab_names[i][0]].length);
