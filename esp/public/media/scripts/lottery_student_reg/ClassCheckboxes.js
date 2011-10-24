@@ -112,6 +112,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
         {
             section = this.ESPClassInfo.data.get_sections[i];
             var sectionText = tabText;
+            sectionText = sectionText + this.getDayOfWeekFromFullDate(section.get_meeting_times[0].start)
             sectionText = sectionText + this.getTimeOnlyFromFullDate(section.get_meeting_times[0].start);
             sectionText = sectionText + " - " + this.getTimeOnlyFromFullDate(section.get_meeting_times[section.get_meeting_times.length-1].end);
             text = text + sectionText + "<br>";
@@ -123,6 +124,15 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
     getTimeOnlyFromFullDate: function(full_date)
     {
         return full_date.substring(11, 16);
+    },
+
+    getDayOfWeekFromFullDate: function(full_date) {
+        if(full_date.substring(8, 10) == "19"){
+            return "Sat ";
+        }
+        else{
+            return "Sun ";
+        }
     },
 
     getClassFullTitle: function ()
