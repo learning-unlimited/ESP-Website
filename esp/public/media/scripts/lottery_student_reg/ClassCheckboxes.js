@@ -29,7 +29,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
                             xtype: 'button',
                             text: "Catalog info",
                             padding: 2,
-                            onClick: this.showCatalogInfo,
+                            onClick: this.showCatalogInfo
                         }                    
                     ]
                 },
