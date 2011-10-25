@@ -69,16 +69,16 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                     name: 'type'
                 }
             ],
-            proxy: new Ext.data.HttpProxy({ url: '/learn/'+url_base+'/catalog_registered_classes_json' }),
+            proxy: new Ext.data.HttpProxy({ url: '/learn/'+url_base+'/catalog_registered_classes_json' })
         });
         this.oldPreferences.load();
     },
 
     loadCatalog: function () {
         this.store =  new Ext.data.JsonStore({
-        id: 'store',
+            id: 'store',
             root: '',
-        success: true,
+            success: true,
             fields: 
             [
                 {
@@ -226,8 +226,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
              title: 'Confirm Registration',
              listeners: {
                 show: this.getPreferences
-             },
-
+             }
          });
     },
 
@@ -249,9 +248,6 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
         for(k = 1; k < Ext.getCmp("sri").items.items.length; k++){
             var tab = Ext.getCmp("sri").items.items[k];
             if(tab.xtype == "timeslotpanel"){
-                if(!tab.rendered){
-
-                }
                 confirmPanel.add({
                     xtype: "displayfield",
                     value: tab.getSummary()

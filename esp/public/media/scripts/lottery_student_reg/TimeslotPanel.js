@@ -99,7 +99,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         this.makeWalkinsList();
         this.add({
             xtype: "displayfield",
-            value: "<font size=24> Classes </font> <br>",
+            value: "<font size=24> Classes </font> <br>"
         });
         this.addNoClassRadio();
 
