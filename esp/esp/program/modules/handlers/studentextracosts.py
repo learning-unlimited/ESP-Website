@@ -38,6 +38,7 @@ from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
 from django.db.models.query import Q
+from django.utils.safestring import mark_safe
 from esp.datatree.sql.query_utils import QTree
 from django.template.loader import get_template
 from esp.program.models  import StudentApplication
@@ -174,7 +175,7 @@ class StudentExtraCosts(ProgramModuleObj):
                                                                  initial={'cost': first_if_any(list(checked_ids.intersection(set(li.id for li in li_list))))},
                                                                  choices=[(li.id, str(li.text)) for li in li_list],
                                                                  required=(li.anchor.parent.parent.name == 'Required' if li else False)),
-                                    'LineItem': {'text': anchor.name, 'description': anchor.friendly_name} }
+                                    'LineItem': {'text': anchor.name, 'description': mark_safe(anchor.friendly_name)} }
                                   for anchor, li_list in multiselect_dict.iteritems() ]
         
 
@@ -222,7 +223,7 @@ class StudentExtraCosts(ProgramModuleObj):
                                                      initial={'cost': first_if_any(list(checked_ids.intersection(set(li.id for li in li_list))))},
                                                      choices=[(li.id, str(li.text)) for li in li_list],
                                                      required=(li.anchor.parent.parent.name == 'Required' if li else False)),
-                        'LineItem': {'text': anchor.name, 'description': anchor.friendly_name} }
+                        'LineItem': {'text': anchor.name, 'description': mark_safe(anchor.friendly_name)} }
                       for anchor, li_list in multiselect_dict.iteritems() ]
         
 
