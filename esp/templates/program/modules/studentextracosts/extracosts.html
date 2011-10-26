@@ -14,14 +14,14 @@
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
+td>ul { list-style-type: none; padding: 0px }
 </style>
 <br /><br />
 <h1>Additional Purchases</h1>
 
 {% load render_qsd %}
 
-{% inline_qsd_block program.anchor "learn:extracosts" request.user %}
-<div id="program_form">
+{% inline_qsd_block program.anchor learn:extracosts request.user %}
 <h2>This program contains additional items that you can pay for online.</h2>
 <br />
 
