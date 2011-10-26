@@ -212,9 +212,22 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
         {
             if(ESPClass.data.get_sections[j].get_meeting_times.length >0)
             {
-                for (k = 0; k < ESPClass.data.get_sections[j].get_meeting_times.length; k++)
+                if(ESPClass.data.category.category == 'Walk-in Seminar')
                 {
-                    timeblock = ESPClass.data.get_sections[j].get_meeting_times[k];
+                    for (k = 0; k < ESPClass.data.get_sections[j].get_meeting_times.length; k++)
+                    {
+                        timeblock = ESPClass.data.get_sections[j].get_meeting_times[k];
+                        /*if(!lists[timeblock.id]){
+                            lists[timeblock.id] = []
+                        }
+		        */
+		
+                        lists[timeblock.id].push(ESPClass);
+                    }
+                }
+                else
+                {
+                    timeblock = ESPClass.data.get_sections[j].get_meeting_times[0];
                     /*if(!lists[timeblock.id]){
                         lists[timeblock.id] = []
                     }
@@ -222,14 +235,6 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 		
                     lists[timeblock.id].push(ESPClass);
                 }
-
-                //timeblock = ESPClass.data.get_sections[j].get_meeting_times[0];
-                ///*if(!lists[timeblock.id]){
-                //    lists[timeblock.id] = []
-                //}
-		//*/
-		
-                //lists[timeblock.id].push(ESPClass);                    
             }
 	    else
 	    {
@@ -353,6 +358,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                     fn: function(button) {
                         if (button == 'ok') 
                         {
+                            window.open('/learn/'+url_base+'/confirmreg','_blank');
                             window.location.href = '/learn/'+url_base+'/studentreg';
                         }
                     }
