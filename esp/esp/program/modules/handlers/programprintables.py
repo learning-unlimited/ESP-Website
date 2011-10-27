@@ -441,7 +441,7 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
         context = {'module': self     }
-        teachers = [ ESPUser(user) for user in filterObj.getList(User).distinct() ]
+        teachers = list(filterObj.getList(ESPUser).distinct())
         for t in teachers:
             extra_dict = extra_func(t)
             for key in extra_dict:
@@ -578,7 +578,7 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
         context = {'module': self     }
-        students = filter(filt_exp, [ ESPUser(user) for user in filterObj.getList(User).distinct() ])
+        students = filter(filt_exp, filterObj.getList(ESPUser).distinct())
         for s in students:
             extra_dict = extra_func(s)
             for key in extra_dict:
@@ -650,7 +650,7 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
         context = {'module': self     }
-        teachers = [ ESPUser(user) for user in filterObj.getList(User).distinct()]
+        teachers = list(filterObj.getList(ESPUser).distinct())
         teachers.sort()
 
         scheditems = []
