@@ -186,12 +186,20 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     alreadyPreferred: function (sectionId, type)
     {
-        preferenceIndex = this.oldPreferences.findExact("section_id", sectionId);
-        if(preferenceIndex >= 0 )
-        {
-            preference = this.oldPreferences.getAt(preferenceIndex);
-            return preference.data.type == type;
-        } 
+        preferences = this.oldPreferences.query("section_id", sectionId);
+        if(preferences.length > 0){
+            p1 = preferences.get(0);
+            if(p1.data.type == type){
+                return true;        
+            }
+            else if(preferences.length > 1){
+                p2 = preferences.get(1);
+                if(p2.data.type == type){
+                    return true;
+                }
+            }
+        }
+        return false;
     },
 
     flaggedClass: function () {
@@ -208,8 +216,8 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         for(j=3; j<this.items.items.length; j++) {
              var checkbox = this.items.items[j];
             if(!typeof(checkbox) == "classCheckboxes"){
-                console.log(this);
-                console.log(checkboxes);
+                //console.log(this);
+                //console.log(checkboxes);
             }
              if(checkbox.isChecked()){
                 checked.push(checkbox);
