@@ -50,7 +50,7 @@ class ConfirmationEmailController(object):
         confbit, created = UserBit.objects.get_or_create(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(program.anchor.tree_encode())+"/ConfEmail"))
         if (created or repeat) and (options.send_confirmation or override):
             try:
-                receipt_template = Template(DBReceipt.objects.get(program=self.program, action='confirmemail').receipt)
+                receipt_template = Template(DBReceipt.objects.get(program=program, action='confirmemail').receipt)
             except:
                 receipt_template = select_template(['program/confemails/%s_confemail.txt' %(program.id),'program/confirm_email.txt'])
             send_mail("Thank you for registering for %s!" %(program.niceName()), \
