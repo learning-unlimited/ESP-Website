@@ -91,6 +91,24 @@ def lottery_student_reg(request, program = None):
     
     return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, None, {})
 
+@login_required
+def lottery_student_reg_simple(request, program = None):
+    """
+    Serve the student reg page.
+
+    This is just a static page;
+    it gets all of its content from AJAX callbacks.
+    """
+
+    # First check whether the user is actually a student.
+    if not request.user.isStudent():
+        raise ESPError(False), "You must be a student in order to access Splash student registration."
+
+    context = {}
+    
+    return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, None, {})
+
+
 #@transaction.commit_manually
 @login_required
 def lsr_submit(request, program = None): 

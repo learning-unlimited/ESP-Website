@@ -29,7 +29,8 @@ Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call, meets_deadline, needs_student
-from esp.program.modules         import module_ext, LotteryStudentRegModule
+from esp.program.modules         import module_ext
+from esp.program.modules.handlers import lotterystudentregmodule
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.program.views           import lottery_student_reg, lsr_submit as lsr_view_submit
 from esp.datatree.models         import *
@@ -54,7 +55,7 @@ from django.views.decorators.cache import cache_control
     
 
 
-class LotteryStudentRegModuleSimple(ProgramModuleObj):
+class LotteryStudentRegModule_Simple(ProgramModuleObj):
 
     def students(self, QObject = False):
         q = Q(studentregistration__section__parent_class__parent_program=self.program, studentregistration__end_date__gte=datetime.now())
@@ -87,7 +88,7 @@ class LotteryStudentRegModuleSimple(ProgramModuleObj):
     @main_call
     @needs_student
     @meets_deadline('/Classes/Lottery')
-    def lotterystudentregsimple(self, request, tl, one, two, module, extra, prog):
+    def lotterystudentreg_simple(self, request, tl, one, two, module, extra, prog):
         """
         Serve the student reg page.
 
@@ -163,5 +164,5 @@ class LotteryStudentRegModuleSimple(ProgramModuleObj):
         return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, (prog, tl), context)
 
     class Meta:
-        abstract = True
+        abstract = True"""
 
