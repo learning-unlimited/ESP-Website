@@ -56,6 +56,7 @@ from esp.datatree.sql.query_utils import QTree
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
+from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import LineItemType, CompletedTransactionException
@@ -176,6 +177,9 @@ def lsr_submit(request, program = None):
         s = StringIO()
         pprint(errors, s)
         mail_admins('Error in class reg', s.getvalue(), fail_silently=True)
+
+    cfe = ConfirmationEmailController()
+    cfe.send_confirmation_email(request.user, program)
 
     return HttpResponse(json.dumps(errors), mimetype='application/json')
 

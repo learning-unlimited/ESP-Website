@@ -112,10 +112,17 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
         {
             section = this.ESPClassInfo.data.get_sections[i];
             var sectionText = tabText;
-            sectionText = sectionText + this.getDayOfWeekFromFullDate(section.get_meeting_times[0].start)
-            sectionText = sectionText + this.getTimeOnlyFromFullDate(section.get_meeting_times[0].start);
-            sectionText = sectionText + " - " + this.getTimeOnlyFromFullDate(section.get_meeting_times[section.get_meeting_times.length-1].end);
-            text = text + sectionText + "<br>";
+	    if (!section.get_meeting_times[0])
+	    {
+		console.log("Warning, no meeting times for section " + section.id);
+	    }
+	    else
+	    {
+		sectionText = sectionText + this.getDayOfWeekFromFullDate(section.get_meeting_times[0].start)
+                sectionText = sectionText + this.getTimeOnlyFromFullDate(section.get_meeting_times[0].start);
+                sectionText = sectionText + " - " + this.getTimeOnlyFromFullDate(section.get_meeting_times[section.get_meeting_times.length-1].end);
+                text = text + sectionText + "<br>";
+	    }
         }
         
         return text;
@@ -126,6 +133,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
         return full_date.substring(11, 16);
     },
 
+    //number 19 hardcoded for Splash 2011.  Will someday dehackify this method
     getDayOfWeekFromFullDate: function(full_date) {
         if(full_date.substring(8, 10) == "19"){
             return "Sat ";
