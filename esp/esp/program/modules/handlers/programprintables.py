@@ -318,7 +318,7 @@ class ProgramPrintables(ProgramModuleObj):
     def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
         sections = self.program.sections()
                    
-        if 'cancelled' in request.GET:
+        if 'cancelled' in request.GET or (extra and 'cancelled' in extra):
             sections = filter(lambda z: (z.isCancelled() and z.meeting_times.count() > 0), sections)
         else:
             sections = filter(lambda z: (z.isAccepted() and z.meeting_times.count() > 0), sections)
