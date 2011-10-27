@@ -131,7 +131,7 @@ var handle_submit = function(mode, attrs, element)
 {
     element.preventDefault();
 
-    if(document.getElementById(attrs.id).csrfmiddlewaretoken && !check_csrf_cookie(document.getElementById(attrs.id)))
+    if(document.getElementById(attrs.id) && document.getElementById(attrs.id).csrfmiddlewaretoken && !check_csrf_cookie(document.getElementById(attrs.id)))
     {
         return false;
     }

@@ -73,9 +73,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
                         }
                     ] 
                 }
-            ],
-            //width: ,
-            layout: 'column'
+            ]
         };
 
         Ext.apply(this, Ext.apply(this.initialConfig, config));

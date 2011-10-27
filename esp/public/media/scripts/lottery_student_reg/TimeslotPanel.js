@@ -20,14 +20,14 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
                             value: walkins_text
                         }
                     ]
-                },
+                }
             ],
             priorityLimit: 1,
             scroll: false,
             monitorResize: true,
             checkboxesMade: false,
             listeners: { 
-                render: this.makeCheckBoxes,
+                render: this.makeCheckBoxes
                 //beforehide: this.checkPriorities
             }
         };

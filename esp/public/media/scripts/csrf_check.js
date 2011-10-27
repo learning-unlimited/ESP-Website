@@ -5,6 +5,7 @@ function strip_tags(str)
 
 var check_csrf_cookie = function(form)
 {
+    if (!form || !form.csrfmiddlewaretoken) return false;
     csrf_token = form.csrfmiddlewaretoken;
     csrf_cookie = $j.cookie("csrftoken");
     //alert(csrf_cookie);
