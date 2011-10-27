@@ -22,7 +22,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
                 {
                     id: 'column1',
                     border: false,
-                    columnWidth: 0.05,
+                    columnWidth: 0.1,
                     items:
                     [
                         {
@@ -61,7 +61,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
 
                 { 
                     id: 'column3',
-                    columnWidth: 0.9,
+                    columnWidth: 0.85,
                     border: false,
                     items:
                     [

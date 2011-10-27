@@ -314,7 +314,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
     },
 
      confirmRegistration: function() {
-         tabpanel = Ext.getCmp('sri');
+        tabpanel = Ext.getCmp('sri');
         //submitForm.getForm().submit({url: 'lsr_submit'})
         if(priority_limit == 1)
         {
@@ -391,7 +391,8 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
         };
          //console.log(ESPclasses);
          data = Ext.encode(ESPclasses);
-        //console.log(data);
+
+         //console.log(data);
          Ext.Ajax.request({
              url: '/learn/'+url_base+'/lsr_submit',
              success: handle_submit_response,
