@@ -432,6 +432,26 @@ def registration_redirect(request):
             ctxt['prog'] = progs[0]
         ctxt['nextreg'] = list(nextreg)
         return render_to_response('users/profile_complete.html', request, GetNode('Q/Web'), ctxt)		    
+
+
+## QUIRKS
+## Errors that we ignore, because they're supposed to be there for whatever reason
+# If yo add something to this list, DOCUMENT why it's here!
+def quirk_NortonInternetSecurityEngine(err):
+    """ We seem to hit some sort of incompatibility with some JS-based Norton Security Engine extension on our login page.  I have no idea why, but there's not much we can do about it in the absence of someone with Norton Security Helper experiencing this bug. """
+    return ('rfhelper32.js' in err['exception']['message'])
+    
+
+QUIRKS = [quirk_NortonInternetSecurityEngine]
+
+def is_quirk_should_be_ignored(err):
+    for quirk in QUIRKS:
+        try:
+            if quirk(err):
+                return True
+        except:
+            pass
+    return False
     
 @csrf_exempt  ## We want this to work even (especially?) if something's borked with the CSRF cookie logic
 def error_reporter(request):
@@ -464,6 +484,11 @@ def error_reporter(request):
             ## Let's try to decode it
             try:
                 err = json.loads(request.raw_post_data)
+
+                ## Deal with messages that we don't want to deal with
+                if is_quirk_should_be_ignored(err):
+                    return HttpResponse('')
+                
                 json_flag = " (JSON-encoded)"
 
                 for e in err:
