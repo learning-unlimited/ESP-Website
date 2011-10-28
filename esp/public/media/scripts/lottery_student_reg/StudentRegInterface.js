@@ -144,10 +144,17 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	    {
 		if (r.data.get_sections[j].get_meeting_times.length > 0)
 		{
-		    if (!(r.data.get_sections[j].get_meeting_times[0].id in walkinLists))
-			walkinLists[r.data.get_sections[j].get_meeting_times[0].id] = [];
-		    if (!(r.data.get_sections[j].get_meeting_times[0].id in classLists))
-			classLists[r.data.get_sections[j].get_meeting_times[0].id] = [];
+                    for (var k = 0; k < r.data.get_sections[j].get_meeting_times.length; k++)
+                    {
+		        if (!(r.data.get_sections[j].get_meeting_times[k].id in walkinLists))
+			    walkinLists[r.data.get_sections[j].get_meeting_times[k].id] = [];
+		        if (!(r.data.get_sections[j].get_meeting_times[k].id in classLists))
+			    classLists[r.data.get_sections[j].get_meeting_times[k].id] = [];
+                    }
+		    //if (!(r.data.get_sections[j].get_meeting_times[0].id in walkinLists))
+			//walkinLists[r.data.get_sections[j].get_meeting_times[0].id] = [];
+		    //if (!(r.data.get_sections[j].get_meeting_times[0].id in classLists))
+			//classLists[r.data.get_sections[j].get_meeting_times[0].id] = [];
 		}
 	    }
 
@@ -165,6 +172,8 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	    //   console.log("Adding " + r.data.id + " to class lists");
             this.addSectionsToList(r, classLists);
         }
+
+        //console.log(walkinLists);
 
         //makes tabs with id = short_description of timeblock
         for(i = 0; i < this.num_tabs; i++) 
@@ -203,13 +212,29 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
         {
             if(ESPClass.data.get_sections[j].get_meeting_times.length >0)
             {
-                timeblock = ESPClass.data.get_sections[j].get_meeting_times[0];
-                /*if(!lists[timeblock.id]){
-                    lists[timeblock.id] = []
-                }
-		*/
+                if(ESPClass.data.category.category == 'Walk-in Seminar')
+                {
+                    for (k = 0; k < ESPClass.data.get_sections[j].get_meeting_times.length; k++)
+                    {
+                        timeblock = ESPClass.data.get_sections[j].get_meeting_times[k];
+                        /*if(!lists[timeblock.id]){
+                            lists[timeblock.id] = []
+                        }
+		        */
 		
-                lists[timeblock.id].push(ESPClass);                    
+                        lists[timeblock.id].push(ESPClass);
+                    }
+                }
+                else
+                {
+                    timeblock = ESPClass.data.get_sections[j].get_meeting_times[0];
+                    /*if(!lists[timeblock.id]){
+                        lists[timeblock.id] = []
+                    }
+		    */
+		
+                    lists[timeblock.id].push(ESPClass);
+                }
             }
 	    else
 	    {
@@ -333,6 +358,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                     fn: function(button) {
                         if (button == 'ok') 
                         {
+                            window.open('/learn/'+url_base+'/confirmreg','_blank');
                             window.location.href = '/learn/'+url_base+'/studentreg';
                         }
                     }
