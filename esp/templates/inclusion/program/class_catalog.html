@@ -3,6 +3,7 @@
     {% load smartypants %}
     {% load class_render %}
 
+    {% if not hide_full or not class.isFull %}
     <div class="show_class">
     <table cellpadding="0" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
     {% render_class_core class %}
@@ -90,5 +91,5 @@
       setTimeout(initialize_prereg_{{ class.id }}, Math.random()*1000);
     }
     </script>
-    
+    {% endif %}
 {% endif %}
