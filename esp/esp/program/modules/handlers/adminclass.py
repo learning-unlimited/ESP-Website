@@ -272,32 +272,45 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def manageclass(self, request, tl, one, two, module, extra, prog):
         cls, found = self.getClass(request,extra)
-        sections = cls.sections.all()
+        sections = cls.sections.all().order_by('id')
         if not found:
             return ESPError(False), 'Unable to find the requested class.'
         context = {}
         
-        cls_cancel_form = ClassCancellationForm(subject=cls)
-        sec_cancel_forms = [SectionCancellationForm(section=sec, prefix='sec'+str(sec.index())) for sec in sections]
+        if cls.isCancelled():
+            cls_cancel_form = None
+        else:
+            cls_cancel_form = ClassCancellationForm(subject=cls)
+        sec_cancel_forms = []
+        for sec in sections:
+            if sec.isCancelled():
+                sec_cancel_forms.append(None)
+            else:
+                sec_cancel_forms.append(SectionCancellationForm(section=sec, prefix='sec'+str(sec.index())))
         
         action = request.GET.get('action', None)
         
-        if request.method == 'POST' and action == 'cancel':
-            form_list = [cls_cancel_form] + sec_cancel_forms
-            form_success = False
-            for i in range(len(form_list)):
-                form_list[i].data = request.POST
-                form_list[i].is_bound = True
-                if form_list[i].is_valid():
+        if request.method == 'POST':
+            if action == 'cancel_cls':
+                cls_cancel_form.data = request.POST
+                cls_cancel_form.is_bound = True
+                if cls_cancel_form.is_valid():
                     #   Call the Class{Subject,Section}.cancel() method to e-mail and remove students, etc.
-                    form_list[i].cleaned_data['target'].cancel(email_students=True, explanation=form_list[i].cleaned_data['explanation'])
-                    form_success = True
-            if not form_success:
-                cls_cancel_form = form_list[0]
-                sec_cancel_forms = form_list[1:]
+                    cls_cancel_form.cleaned_data['target'].cancel(email_students=True, explanation=cls_cancel_form.cleaned_data['explanation'])
+                    cls_cancel_form = None
+            else:
+                j = 0
+                for i in [sec.index() for sec in sections]:
+                    if action == ('cancel_sec_%d' % i):
+                        sec_cancel_forms[j].data = request.POST
+                        sec_cancel_forms[j].is_bound = True
+                        if sec_cancel_forms[j].is_valid():
+                            sec_cancel_forms[j].cleaned_data['target'].cancel(email_students=True, explanation=sec_cancel_forms[j].cleaned_data['explanation'])
+                            sec_cancel_forms[j] = None
+                    j += 1
         
         cls_form = ClassManageForm(self, subject=cls)
-        sec_forms = [SectionManageForm(self, section=sec, prefix='sec'+str(sec.index())) for sec in sections]
+        sec_forms = [SectionManageForm(self, section=sec, prefix='sec'+str(sec.index())) for sec in cls.sections.all().order_by('id')]
 
         if request.method == 'POST' and action == 'modify':
             cls_form.data = request.POST

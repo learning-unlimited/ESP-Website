@@ -113,7 +113,8 @@
 
 <p>The table below allows you to cancel the class or any one of its sections.  Cancelling the class will cancel all of its sections.  It is recommended that you enter an explanation (which can be brief, such as "Teacher schedule conflict" or "No appropriate rooms available") to be included in an e-mail to the students.</p>
 
-<form name="class_cancel" action="{{ request.path }}?action=cancel" method="POST">{% csrf_token %}
+{% if cls_cancel_form %}
+<form name="class_cancel" action="{{ request.path }}?action=cancel_cls" method="POST">{% csrf_token %}
 <table align="center" width="500">
     <tr>
         <th colspan="2" align="center">Cancel class {{ class.emailcode }}: {{ class.title }}</th>
@@ -126,16 +127,24 @@
     </tr>
 </table>
 </form>
-    
-{% for form in sec_cancel_forms %}
-{% if form.initial.target.isCancelled %}
+{% else %}
     <table align="center" width="500">
     <tr>
-        <th colspan="2" align="center">Section {{ class.emailcode }}s{{ forloop.counter }} is already cancelled</th>
+        <th colspan="2" align="center">Class {{ class.emailcode }} is already cancelled.</th>
+    </tr>
+    </table>
+{% endif %}
+
+{% if cls_cancel_form %}
+{% for form in sec_cancel_forms %}
+{% if not form %}
+    <table align="center" width="500">
+    <tr>
+        <th colspan="2" align="center">Section {{ class.emailcode }}s{{ forloop.counter }} is already cancelled.</th>
     </tr>
     </table>
 {% else %}
-    <form name="sec{{ forloop.counter }}_cancel" action="{{ request.path }}?action=cancel" method="POST">{% csrf_token %}
+    <form name="sec{{ forloop.counter }}_cancel" action="{{ request.path }}?action=cancel_sec_{{ forloop.counter }}" method="POST">{% csrf_token %}
     <table align="center" width="500">
     <tr>
         <th colspan="2" align="center">Cancel section {{ class.emailcode }}s{{ forloop.counter }}: {{ class.title }}</th>
@@ -150,6 +159,7 @@
     </form>
 {% endif %}
 {% endfor %}
+{% endif %}
 
 <br />
 <br />

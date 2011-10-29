@@ -35,7 +35,7 @@
     
     <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
 
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.5/dojo/dojo.xd.js" djConfig="parseOnLoad: true"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo/dojo.xd.js" djConfig="parseOnLoad: true"></script>
 
 
     <script language="JavaScript">

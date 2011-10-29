@@ -315,10 +315,13 @@ class ProgramPrintables(ProgramModuleObj):
         return render_to_response(self.baseDir()+'classes_list.html', request, (prog, tl), context)
 
     @needs_admin
-    def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
+    def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file='sections_list.html'):
         sections = self.program.sections()
-                   
-        if 'cancelled' in request.GET:
+
+        if extra == 'csv':
+            template_file = 'sections_list.csv'
+
+        if 'cancelled' in request.GET or (extra and 'cancelled' in extra):
             sections = filter(lambda z: (z.isCancelled() and z.meeting_times.count() > 0), sections)
         else:
             sections = filter(lambda z: (z.isAccepted() and z.meeting_times.count() > 0), sections)
@@ -341,7 +344,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'sections': sections, 'program': self.program}
 
-        return render_to_response(self.baseDir()+'sections_list.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
 
     @aux_call
     @needs_admin
@@ -435,13 +438,16 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'teacherlist.html', extra_func = lambda x: {}):
         from esp.users.models import ContactInfo
+
+        if extra == 'csv':
+            template_file = 'teacherlist.csv'
         
         filterObj, found = get_user_list(request, self.program.getLists(True))
         if not found:
             return filterObj
 
         context = {'module': self     }
-        teachers = [ ESPUser(user) for user in filterObj.getList(User).distinct() ]
+        teachers = list(filterObj.getList(ESPUser).distinct())
         for t in teachers:
             extra_dict = extra_func(t)
             for key in extra_dict:
@@ -578,7 +584,7 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
         context = {'module': self     }
-        students = filter(filt_exp, [ ESPUser(user) for user in filterObj.getList(User).distinct() ])
+        students = filter(filt_exp, filterObj.getList(ESPUser).distinct())
         for s in students:
             extra_dict = extra_func(s)
             for key in extra_dict:
@@ -650,7 +656,7 @@ class ProgramPrintables(ProgramModuleObj):
             return filterObj
 
         context = {'module': self     }
-        teachers = [ ESPUser(user) for user in filterObj.getList(User).distinct()]
+        teachers = list(filterObj.getList(ESPUser).distinct())
         teachers.sort()
 
         scheditems = []
@@ -934,6 +940,16 @@ class ProgramPrintables(ProgramModuleObj):
             student.paid_online = student.itemizedcosts.filter(anchor__parent__name='Receivable').distinct()  # LineItems for having paid online.
             student.itemizedcosttotal = invoice.cost()
             
+            # check financial aid
+            student.has_financial_aid = student.hasFinancialAid(prog.anchor)
+            if student.has_financial_aid and not student.itemizedcosts.filter(li_type__text=u'Financial Aid', amount__gt=0).distinct().count() and not student.itemizedcosts.filter(anchor__uri=prog.anchor.uri+"/Accounts/FinancialAid", amount__gt=0).distinct().count():
+                apps = FinancialAidRequest.objects.filter(user=student, program=prog, approved__isnull=False).distinct()
+                aid = max(list(apps.values_list('amount_received', flat=True).distinct()))
+                if aid:
+                    student.itemizedcosttotal -= aid
+                else:
+                    student.itemizedcosttotal = 0.0
+
             # add cost/credit information from SplashInfo (looks in JSON Tag: splashinfo_costs)
             student.splashinfo = SplashInfo.getForUser(student, prog)
             if student.splashinfo:
@@ -943,20 +959,15 @@ class ProgramPrintables(ProgramModuleObj):
                     tag_struct = json.loads(tag_data)
                     for key in tag_struct:
                         val = getattr(student.splashinfo, key)
-                        if val in tag_struct[key]:
+                        if val in tag_struct[key] and not student.has_financial_aid:
                             student.itemizedcosttotal += Decimal(str(tag_struct[key][val]))
                 if student.splashinfo.siblingdiscount:
                     amt_str = Tag.getTag('splashinfo_sibling_discount')
                     if not amt_str:
                         amt_str = '20.0'
-                    student.itemizedcosttotal -= Decimal(amt_str)
+                    if not student.has_financial_aid:
+                        student.itemizedcosttotal -= Decimal(amt_str)
 
-            # check financial aid
-            student.has_financial_aid = student.hasFinancialAid(prog.anchor)
-            if student.has_financial_aid and not student.itemizedcosts.filter(li_type__text=u'Financial Aid', amount__gt=0).distinct().count() and not student.itemizedcosts.filter(anchor__uri=prog.anchor.uri+"/Accounts/FinancialAid", amount__gt=0).distinct().count():
-                apps = FinancialAidRequest.objects.filter(user=student, program=prog, approved__isnull=False).distinct()
-                aid = max(list(apps.values_list('amount_received', flat=True).distinct()))
-                student.itemizedcosttotal -= aid
             student.has_paid = ( student.itemizedcosttotal == 0 )
             
             # MIT Splash purchase counts; temporary, should be harmless
