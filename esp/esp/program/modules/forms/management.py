@@ -155,7 +155,7 @@ class SectionManageForm(ManagementForm):
 
 class ClassCancellationForm(forms.Form):
     target = forms.ModelChoiceField(queryset=ClassSubject.objects.all(), widget=forms.HiddenInput)
-    explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}))
+    explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}), required=False, help_text='Optional but recommended')
     acknowledgement = forms.BooleanField(help_text='By checking this box, I acknowledge that all students in the class will be e-mailed and then removed from the class.  This operation cannot be undone.')
     
     def __init__(self, *args, **kwargs):
@@ -166,7 +166,7 @@ class ClassCancellationForm(forms.Form):
     
 class SectionCancellationForm(forms.Form):
     target = forms.ModelChoiceField(queryset=ClassSection.objects.all(), widget=forms.HiddenInput)
-    explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}))
+    explanation = forms.CharField(widget=forms.Textarea(attrs={'rows': 4, 'cols': 60}), required=False, help_text='Optional but recommended')
     acknowledgement = forms.BooleanField(help_text='By checking this box, I acknowledge that all students in the section will be e-mailed and then removed from the class.  This operation cannot be undone.')
     
     def __init__(self, *args, **kwargs):
