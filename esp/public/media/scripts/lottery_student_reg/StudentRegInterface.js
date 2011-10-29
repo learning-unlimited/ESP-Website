@@ -33,6 +33,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 {
                     title: 'Instructions',
                     xtype: 'panel',
+		    autoHeight: true,
                     items: 
                     [
                         {
@@ -47,7 +48,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 }
             ]
         };
-     
+
         this.loadPrepopulate();
         this.loadCatalog();
         this.store.load({});    
@@ -249,6 +250,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
              id: "confirm",
              xtype: 'form',
              title: 'Confirm Registration',
+	     autoHeight: true,
              listeners: {
                 show: this.getPreferences
              }
