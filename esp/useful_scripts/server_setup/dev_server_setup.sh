@@ -504,6 +504,9 @@ email_addresses = {
     'web':     '$SITENAME-websupport@lists.learningu.org',
     }
 
+SELENIUM_TEST_RUNNER = 'esp.utils.custom_test_runner.CustomSeleniumTestRunner'
+SELENIUM_DRIVERS = 'Firefox'
+
 EOF
 
     /etc/init.d/memcached restart
