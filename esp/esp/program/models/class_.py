@@ -587,11 +587,12 @@ class ClassSection(models.Model):
                 return False
             
     def already_passed(self):
+        from datetime import timedelta
         start_time = self.start_time()
         if start_time is None:
             return True
-        time_passed = datetime.now() - start_time.start
-        if self.allow_lateness:
+        time_passed = datetime.datetime.now() - start_time.start
+        if self.parent_class.allow_lateness:
             if time_passed > timedelta(0, 1200):
                 return True
         else:
@@ -1032,14 +1033,14 @@ class ClassSection(models.Model):
                 from_email = '%s at %s <%s>' % (self.parent_program.anchor.parent.friendly_name, INSTITUTION_NAME, self.parent_program.director_email)
                 msgtext = template.render(Context({'user': student}))
                 send_mail(email_title, msgtext, from_email, to_email)
-                send_mail(email_title, msgtext, from_email, DEFAULT_EMAIL_ADDRESSES['archive'])
+                send_mail(email_title, msgtext, from_email, [DEFAULT_EMAIL_ADDRESSES['archive']])
 
         #   Send e-mail to administrators as well
         email_content = render_to_string('email/class_cancellation_admin.txt', context)
         to_email = ['Directors <%s>' % (self.parent_program.director_email)]
         from_email = '%s Web Site <%s>' % (self.parent_program.anchor.parent.friendly_name, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
-        send_mail(email_title, msgtext, from_email, DEFAULT_EMAIL_ADDRESSES['archive'])
+        send_mail(email_title, msgtext, from_email, [DEFAULT_EMAIL_ADDRESSES['archive']])
 
         self.clearStudents()
     
