@@ -36,6 +36,7 @@ from esp.cache           import cache_function
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.program.models  import Program
+from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.web.util        import render_to_response
 from esp.users.models    import UserBit, ESPUser, User
 from esp.datatree.models import *
@@ -203,20 +204,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         else:
             raise ESPError(False), "You must finish all the necessary steps first, then click on the Save button to finish registration."
 
-        options = prog.getModuleExtension('StudentClassRegModuleInfo')
-
-        ## Get or create a userbit indicating whether or not email's been sent.
-        confbit, created = UserBit.objects.get_or_create(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode())+"/ConfEmail"))
-        if created and options.send_confirmation:
-            # Email has not been sent before, send an email
-            try:
-                receipt_template = Template(DBReceipt.objects.get(program=self.program, action='confirmemail').receipt)
-            except:
-                receipt_template = select_template(['program/confemails/%s_confemail.txt' %(self.program.id),'program/confirm_email.txt'])
-            send_mail("Thank you for registering for %s!" %(self.program.niceName()), \
-                      receipt_template.render(Context({'user': self.user, 'program': self.program}, autoescape=False)), \
-                      ("%s <%s>" %(self.program.niceName() + " Directors", self.program.director_email)), \
-                      [self.user.email, DEFAULT_EMAIL_ADDRESSES['archive']], True)
+        cfe = ConfirmationEmailController()
+        cfe.send_confirmation_email(self.user, self.program)
 
         try:
             receipt_text = DBReceipt.objects.get(program=self.program, action='confirm').receipt

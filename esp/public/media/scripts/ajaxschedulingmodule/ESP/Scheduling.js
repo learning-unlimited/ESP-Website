@@ -282,7 +282,7 @@ ESP.Scheduling = function(){
 	    //return (str_err ? "Class '" + section.text + "' (size: " + class_size + " students) not the right size for room '" + block.room.text + "' (max size: " + room_size + " students)" : false);
 	    //console.log("Warning:  Class '" + section.text + "' (size: " + class_size + " students) not the right size for room '" + block.room.text + "' (max size: " + room_size + " students)");
 	}
-
+	/*
 	// check for not scheduling across a time boundary
 	if (section.blocks && (section.blocks.length > 0)) {
 	    var cmpBlock = section.blocks[0];
@@ -310,7 +310,7 @@ ESP.Scheduling = function(){
 	    }
 	    
 	}
-	
+	*/
 	// check for teacher class conflicts
 	// also check for making this class's teachers run all over campus (horrible dirty hack)
 	var class_bldg = block.room.text.split('-');

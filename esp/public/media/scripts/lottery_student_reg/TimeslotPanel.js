@@ -37,6 +37,9 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     makeWalkinsList: function() 
     {
+        if (!this.ESPwalkins){
+            this.ESPwalkins = [];
+        }
         var walkinsDisplay = this.items.items[0]
         var i;
         for(i = 0; i< this.ESPwalkins.length; i++)
@@ -96,7 +99,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         this.makeWalkinsList();
         this.add({
             xtype: "displayfield",
-            value: "<font size=24> Classes </font> <br>",
+            value: "<font size=24> Classes </font> <br>"
         });
         this.addNoClassRadio();
 
@@ -168,7 +171,11 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         for(i = 0; i < r.data.get_sections.length; i ++)
         {
             section = r.data.get_sections[i];      
-            if(section.get_meeting_times[0].id == this.timeblock[0])
+	    if (!section.get_meeting_times[0])
+	    {
+		console.log("Warning, no meeting times for " + section.id);
+	    }
+            else if(section.get_meeting_times[0].id == this.timeblock[0])
             {
                 return section.id;
             }
@@ -179,12 +186,20 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     alreadyPreferred: function (sectionId, type)
     {
-        preferenceIndex = this.oldPreferences.findExact("section_id", sectionId);
-        if(preferenceIndex >= 0 )
-        {
-            preference = this.oldPreferences.getAt(preferenceIndex);
-            return preference.data.type == type;
-        } 
+        preferences = this.oldPreferences.query("section_id", sectionId);
+        if(preferences.length > 0){
+            p1 = preferences.get(0);
+            if(p1.data.type == type){
+                return true;        
+            }
+            else if(preferences.length > 1){
+                p2 = preferences.get(1);
+                if(p2.data.type == type){
+                    return true;
+                }
+            }
+        }
+        return false;
     },
 
     flaggedClass: function () {
@@ -201,8 +216,8 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         for(j=3; j<this.items.items.length; j++) {
              var checkbox = this.items.items[j];
             if(!typeof(checkbox) == "classCheckboxes"){
-                console.log(this);
-                console.log(checkboxes);
+                //console.log(this);
+                //console.log(checkboxes);
             }
              if(checkbox.isChecked()){
                 checked.push(checkbox);

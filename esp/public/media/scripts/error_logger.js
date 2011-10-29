@@ -32,8 +32,8 @@ window.onerror = function(msg, url, line)
 	} else {
 	    uri = "/error_reporter?url=" + encodeURIComponent(url) + "&lineNum=" + line + "&msg=" + encodeURIComponent(msg);
 	}
-        var img = new Image();
-        img.src = uri;
+        //var img = new Image();
+        //img.src = uri;
     }
 
     if (window._orig_onerror_errorlog) {
