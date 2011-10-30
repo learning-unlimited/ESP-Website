@@ -457,7 +457,15 @@ def quirk_ScriptError(err):
                                  and err['exception']['stack'][0].get('line',0) == 0)))
 
 
-QUIRKS = [quirk_NortonInternetSecurityEngine, quirk_ScriptError]
+def quirk_SearchGUIToolbar(err):
+    """
+    I'm pretty sure that this is the Google Toolbar for Firefox,
+    and I'm pretty sure that we have one specific active user who has a broken install of it.
+    """
+    return (err['exception']['message'] == 'uncaught exception: [Exception... "Index or size is negative or greater than the allowed amount"  code: "1" nsresult: "0x80530001 (NS_ERROR_DOM_INDEX_SIZE_ERR)"  location: "chrome://searchqutoolbar/content/toolbar.xul Line: 1"]')
+
+
+QUIRKS = [quirk_NortonInternetSecurityEngine, quirk_ScriptError, quirk_SearchGUIToolbar]
 
 def is_quirk_should_be_ignored(err):
     for quirk in QUIRKS:
