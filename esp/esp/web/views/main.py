@@ -471,6 +471,9 @@ def is_quirk_should_be_ignored(err):
 @csrf_exempt  ## We want this to work even (especially?) if something's borked with the CSRF cookie logic
 def error_reporter(request):
     """ Grab an error submitted as a GET request """
+    if not request.GET and not request.POST:
+        return HttpResponse('')  ## If someone just hits this page at random, ignore it
+
     url = request.GET.get('url', "")
     domain = Site.objects.get_current().domain
     if url[:4] == 'http' and (domain not in (url[7:(7+len(domain))], url[8:(8+len(domain))])):
