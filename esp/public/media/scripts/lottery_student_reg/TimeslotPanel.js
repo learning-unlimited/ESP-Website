@@ -8,21 +8,13 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
     initComponent: function() {
         var config =
         {
-            items:
+            items: 
             [        
-                {
-                    xtype: "fieldset",
-                    border: true,
-		    autoHeight: true,
-                    items: 
-                    [
-                        {
-                            xtype: "displayfield",
-			    autoHeight: true,
-                            value: walkins_text
-                        }
-                    ]
-                }
+	        {
+		    xtype: "displayfield",
+		    autoHeight: true, 
+		    value: walkins_text,
+		}
             ],
             priorityLimit: 1,
             scroll: false,
@@ -43,7 +35,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         if (!this.ESPwalkins){
             this.ESPwalkins = [];
         }
-        var walkinsDisplay = this.items.items[0]
+        var walkinsDisplay = this;
         var i;
         for(i = 0; i< this.ESPwalkins.length; i++)
         {
@@ -55,7 +47,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
                 ESPClassInfo: walkin     
             });
         };
-        walkinsDisplay.doLayout();
+        //walkinsDisplay.doLayout();
     },
 
     addNoClassRadio: function () 
@@ -106,13 +98,14 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         });
         this.addNoClassRadio();
 
+	var elts = [];
         for(i = 0; i < this.ESPclasses.length; i++)
         {
             var r = this.ESPclasses[i];
             section_id = this.getSectionId(r);
 
             if (priority_limit == 1) {
-                this.add({
+		elts.push({
                     xtype: 'class_checkboxes',
                     ESPClassInfo: r,
                     timeblockId: this.timeblock[0],
@@ -163,9 +156,11 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
                     autoHeight: true,
                     id: 'title_'+ r.data.id 
                 });
-                this.add(new_column)
+                elts.push(new_column);
             }
         }
+
+	this.add(elts);
     },
 
     getSectionId: function (r)
@@ -206,7 +201,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
     },
 
     flaggedClass: function () {
-        for(j=3; j<this.items.items.length; j++) {
+        for(j=3; j<this.items.length; j++) {
              var checkbox = this.items.items[j];
              if(checkbox.isFlagged()){
                 return checkbox;
