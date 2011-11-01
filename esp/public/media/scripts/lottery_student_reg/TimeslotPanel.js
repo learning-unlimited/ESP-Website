@@ -12,7 +12,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
             [        
 	        {
 		    xtype: "displayfield",
-		    value: walkins_text,
+		    value: walkins_text
 		}
             ],
             priorityLimit: 1,

@@ -412,7 +412,7 @@ win = new StudentRegInterface({
       monitorResize: true,
       id: "sri",
       title: nice_name + ' Class Lottery - ' + esp_user["cur_first_name"] + ' ' + esp_user["cur_last_name"] + ' (grade ' + grade + ')',
-      autoWidth: true,
+      autoWidth: true
       });
 
 
