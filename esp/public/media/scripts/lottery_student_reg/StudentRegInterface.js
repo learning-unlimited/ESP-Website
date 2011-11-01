@@ -395,6 +395,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	// TODO: Ext.Msg seems to create boxes that have weird side effects on IE 8/9
         alert('Click "OK" to submit your preferences.  This may take a few minutes.  Please do not navigate away from this page until you get a confirmation page.');
 
+	Ext.Ajax.timeout = 300000;
          Ext.Ajax.request({
              url: '/learn/'+url_base+'/lsr_submit',
              success: handle_submit_response,
