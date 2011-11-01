@@ -45,6 +45,11 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
             ]
         };
 
+	// HACK for IE 7 and older
+	if (/MSIE (\d+\.\d+);/.test(navigator.userAgent) && new Number(RegExp.$1) < 8) {
+	    config['height'] = 6000;
+	}
+
         this.loadPrepopulate();
         this.loadCatalog();
         this.store.load({});    
