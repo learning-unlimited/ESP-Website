@@ -47,7 +47,10 @@ class ConfirmationEmailController(object):
     def send_confirmation_email(self, user, program, repeat=False, override=False):
         options = program.getModuleExtension('StudentClassRegModuleInfo')
         ## Get or create a userbit indicating whether or not email's been sent.
-        confbit, created = UserBit.objects.get_or_create(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(program.anchor.tree_encode())+"/ConfEmail"))
+        try:
+            confbit, created = UserBit.objects.get_or_create(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(program.anchor.tree_encode())+"/ConfEmail"))
+        except Exception:
+            created = False
         if (created or repeat) and (options.send_confirmation or override):
             try:
                 receipt_template = Template(DBReceipt.objects.get(program=program, action='confirmemail').receipt)
