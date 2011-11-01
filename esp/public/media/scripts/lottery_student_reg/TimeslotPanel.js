@@ -201,9 +201,9 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
     },
 
     flaggedClass: function () {
-        for(j=3; j<this.items.length; j++) {
+        for(j=0; j<this.items.length; j++) {
              var checkbox = this.items.items[j];
-             if(checkbox.isFlagged()){
+             if('isFlagged' in checkbox && checkbox.isFlagged()){
                 return checkbox;
              }
          }
@@ -211,13 +211,13 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     checkedClasses: function () {
         var checked = [];
-        for(j=3; j<this.items.items.length; j++) {
+        for(j=0; j<this.items.items.length; j++) {
              var checkbox = this.items.items[j];
             if(!typeof(checkbox) == "classCheckboxes"){
                 //console.log(this);
                 //console.log(checkboxes);
             }
-             if(checkbox.isChecked()){
+             if('isChecked' in checkbox && checkbox.isChecked()){
                 checked.push(checkbox);
              }
          }
@@ -226,7 +226,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     //return true if a class is flagged.
     timeslotCompleted: function () {
-        for(i = 3; i < this.items.items.length; i ++)
+        for(i = 0; i < this.items.items.length; i ++)
         {
             var classFieldSet = this.items.items[i];
             if(classFieldSet.isFlagged() == true)
@@ -239,7 +239,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
 
     getNewPreferences: function () {
         classPreferences = new Object();
-        for(j=3; j<this.items.items.length; j++) {
+        for(j=0; j<this.items.items.length; j++) {
              var checkbox = this.items.items[j];
              classPreferences[checkbox.classNumber()] = checkbox.isChecked();
              classPreferences["flag_" + checkbox.classNumber()] = checkbox.isFlagged();

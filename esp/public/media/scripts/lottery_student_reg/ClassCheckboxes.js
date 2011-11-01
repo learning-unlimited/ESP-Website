@@ -14,7 +14,8 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
         classText = this.getClassFullTitle();
         var config = 
         {
-            layout: 'column',
+            layout: 'table',
+	    layoutConfig: {columns: 4},
             border: false,
             id: this.timeblockId + this.ESPClassInfo.id,
             items: 
@@ -60,7 +61,7 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
 
     showCatalogInfo: function () 
     {
-        Ext.Msg.alert(this.ownerCt.ownerCt.getClassFullTitle(), this.ownerCt.ownerCt.catalogText());
+        Ext.Msg.alert(this.ownerCt.getClassFullTitle(), this.ownerCt.catalogText());
     },
 
     catalogText: function ()
