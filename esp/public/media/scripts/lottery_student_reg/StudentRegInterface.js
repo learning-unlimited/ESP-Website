@@ -285,16 +285,14 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 
     allTabsCheck: function() {
         var missing = false;
-        for(i = 0; i < this.items.items.length; i++)
+        var tab;
+        for(var i = 0; i < this.items.items.length; i++)
         {
             tab = this.items.items[i];
-            if(tab.xtype == "timeslotpanel")
+            if(tab.xtype == "timeslotpanel" && !tab.timeslotCompleted())
             {
-                if(!tab.timeslotCompleted())
-                {
-                    missing = true;
-                    break;
-                }
+                missing = true;
+                break;
             }
         }
         if (missing) {
