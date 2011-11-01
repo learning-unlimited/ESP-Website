@@ -226,7 +226,7 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         for(i = 0; i < this.items.items.length; i ++)
         {
             var classFieldSet = this.items.items[i];
-            if(classFieldSet.isFlagged() == true)
+            if('isFlagged' in classFieldSet && classFieldSet.isFlagged() == true)
             {
                 return true;
             }
@@ -238,8 +238,10 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
         classPreferences = new Object();
         for(j=0; j<this.items.items.length; j++) {
              var checkbox = this.items.items[j];
-             classPreferences[checkbox.classNumber()] = checkbox.isChecked();
-             classPreferences["flag_" + checkbox.classNumber()] = checkbox.isFlagged();
+	     if ('isChecked' in checkbox) {
+		 classPreferences[checkbox.classNumber()] = checkbox.isChecked();
+		 classPreferences["flag_" + checkbox.classNumber()] = checkbox.isFlagged();
+	     }
          }
         return classPreferences;
     },
