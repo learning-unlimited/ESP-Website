@@ -311,7 +311,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
     },
 
      confirmRegistration: function() {
-         tabpanel = Ext.getCmp('sri');
+        tabpanel = Ext.getCmp('sri');
         //submitForm.getForm().submit({url: 'lsr_submit'})
         if(priority_limit == 1)
         {

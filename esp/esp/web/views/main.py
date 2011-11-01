@@ -438,11 +438,34 @@ def registration_redirect(request):
 ## Errors that we ignore, because they're supposed to be there for whatever reason
 # If yo add something to this list, DOCUMENT why it's here!
 def quirk_NortonInternetSecurityEngine(err):
-    """ We seem to hit some sort of incompatibility with some JS-based Norton Security Engine extension on our login page.  I have no idea why, but there's not much we can do about it in the absence of someone with Norton Security Helper experiencing this bug. """
+    """
+    We seem to hit some sort of incompatibility with some JS-based Norton Security Engine extension on our login page.
+    I have no idea why, but there's not much we can do about it in the absence of someone with Norton Security Helper experiencing this bug.
+    """
     return ('rfhelper32.js' in err['exception']['message'])
     
+def quirk_ScriptError(err):
+    """
+    We occasionally get messages with the content "Script error.", and no other useful information.
+    These are probably manifestations of real issues on browsers that are just totally unhelpful, but
+    seeing as they're totally unhelpul, there's no real point in forwarding them.
+    """
+    return (err['exception']['message'] == "Script error." \
+                and ('stack' not in err['exception'] \
+                         or len(err['exception']['stack']) == 0 \
+                         or (err['exception']['stack'][0].get('func','?') == '?' \
+                                 and err['exception']['stack'][0].get('line',0) == 0)))
 
-QUIRKS = [quirk_NortonInternetSecurityEngine]
+
+def quirk_SearchGUIToolbar(err):
+    """
+    I'm pretty sure that this is the Google Toolbar for Firefox,
+    and I'm pretty sure that we have one specific active user who has a broken install of it.
+    """
+    return (err['exception']['message'] == 'uncaught exception: [Exception... "Index or size is negative or greater than the allowed amount"  code: "1" nsresult: "0x80530001 (NS_ERROR_DOM_INDEX_SIZE_ERR)"  location: "chrome://searchqutoolbar/content/toolbar.xul Line: 1"]')
+
+
+QUIRKS = [quirk_NortonInternetSecurityEngine, quirk_ScriptError, quirk_SearchGUIToolbar]
 
 def is_quirk_should_be_ignored(err):
     for quirk in QUIRKS:
@@ -456,6 +479,9 @@ def is_quirk_should_be_ignored(err):
 @csrf_exempt  ## We want this to work even (especially?) if something's borked with the CSRF cookie logic
 def error_reporter(request):
     """ Grab an error submitted as a GET request """
+    if not request.GET and not request.POST:
+        return HttpResponse('')  ## If someone just hits this page at random, ignore it
+
     url = request.GET.get('url', "")
     domain = Site.objects.get_current().domain
     if url[:4] == 'http' and (domain not in (url[7:(7+len(domain))], url[8:(8+len(domain))])):
