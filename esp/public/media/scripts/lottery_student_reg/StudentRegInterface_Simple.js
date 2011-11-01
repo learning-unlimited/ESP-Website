@@ -367,7 +367,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 //  console.log("Registration successful.");
                 Ext.Msg.show({
                     title:  'Registration Successful',
-                    msg: 'Your preferences have been stored in the ESP database and will be used to assign classes in the lottery on February 27.',
+                    msg: 'Your preferences have been stored in the ESP database.',
                     buttons: {ok:'Continue', cancel:'Return to edit preferences'},
                     fn: function(button) {
                         if (button == 'ok') 
