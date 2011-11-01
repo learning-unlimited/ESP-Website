@@ -391,9 +391,10 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 }
             }
         };
-         //console.log(ESPclasses);
+
          data = Ext.encode(ESPclasses);
-        //console.log(data);
+
+	 Ext.Ajax.timeout = 300000;  // Just in case the server is really totally hosed
          Ext.Ajax.request({
              url: '/learn/'+url_base+'/lsr_submit',
              success: handle_submit_response,
