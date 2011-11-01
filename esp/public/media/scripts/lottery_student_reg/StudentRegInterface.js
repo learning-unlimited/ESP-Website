@@ -21,7 +21,6 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
     
         var config = {
             id: 'sri',
-            autoHeight: true,
             deferredRender: true,
             closeable: false,
             tabWidth: 20,
@@ -33,13 +32,10 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
                 {
                     title: 'Instructions',
                     xtype: 'panel',
-		    autoHeight: true,
                     items: 
                     [
                         {
                             xtype: 'displayfield',
-                            //height: 600,
-                            autoHeight: true,
                             value: instructions_text,
                             preventScrollbars: true
                         }
@@ -250,7 +246,6 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
              id: "confirm",
              xtype: 'form',
              title: 'Confirm Registration',
-	     autoHeight: true,
              listeners: {
                 show: this.getPreferences
              }
@@ -420,7 +415,6 @@ win = new StudentRegInterface({
       id: "sri",
       title: nice_name + ' Class Lottery - ' + esp_user["cur_first_name"] + ' ' + esp_user["cur_last_name"] + ' (grade ' + grade + ')',
       autoWidth: true,
-      autoHeight: true
       });
 
 

@@ -49,7 +49,6 @@ ClassCheckboxes = Ext.extend(Ext.form.FieldSet, {
                     border: false,
 		    xtype: 'displayfield',
 		    value: classText,
-		    autoHeight: true,
 		    id: 'title_'+ this.sectionId
 		}
             ]

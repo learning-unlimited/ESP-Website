@@ -12,7 +12,6 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
             [        
 	        {
 		    xtype: "displayfield",
-		    autoHeight: true, 
 		    value: walkins_text,
 		}
             ],
@@ -20,7 +19,6 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
             scroll: false,
             monitorResize: true,
             checkboxesMade: false,
-	    autoHeight: true,
             listeners: { 
                 render: this.makeCheckBoxes
                 //beforehide: this.checkPriorities
@@ -153,7 +151,6 @@ TimeslotPanel = Ext.extend(Ext.FormPanel, {
                 new_column.items.push({
                     xtype: 'displayfield',
                     value: " &nbsp; &nbsp; &nbsp; &nbsp; " + text,
-                    autoHeight: true,
                     id: 'title_'+ r.data.id 
                 });
                 elts.push(new_column);
