@@ -50,9 +50,9 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	    config['height'] = 6000;
 	}
 
-        this.loadPrepopulate();
         this.loadCatalog();
         this.store.load({});    
+        this.loadPrepopulate();
 
         Ext.apply(this, Ext.apply(this.initialConfig, config));
         StudentRegInterface.superclass.initComponent.apply(this, arguments); 
@@ -73,7 +73,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
             ],
             proxy: new Ext.data.HttpProxy({ url: '/learn/'+url_base+'/catalog_registered_classes_json' })
         });
-        this.oldPreferences.load();
+        this.oldPreferences.load({callback: this.makeTabsWrapper, scope: this});
     },
 
     loadCatalog: function () {
@@ -120,12 +120,27 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
             {
                 load: {
                     scope: this,
-                    fn: this.makeTabs
+                    fn: this.grabTabsData
                 }
             }        
         });
     },
+
+    grabTabsData: function(store, records, options) {
+	this.tabsStore = store;
+	this.tabsRecords = records;
+	this.tabsOptions = options;
+	this.makeTabsWrappe();
+    }
     
+    ajaxDataCounter: 2,
+    makeTabsWrapper: function() {
+	ajaxDataCounter--;
+	if (this.ajaxDataCounter <= 0) {
+	    this.makeTabs(this.tabsStore, this.tabsRecords, this.tabsOptions);
+	}
+    }
+
     makeTabs: function (store, records, options) {
         //make a tab for each class period
         //num_tabs and tab_names need to be modified for a particular program
