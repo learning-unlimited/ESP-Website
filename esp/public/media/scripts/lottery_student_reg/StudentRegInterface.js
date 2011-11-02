@@ -130,16 +130,16 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
 	this.tabsStore = store;
 	this.tabsRecords = records;
 	this.tabsOptions = options;
-	this.makeTabsWrappe();
-    }
+	this.makeTabsWrapper();
+    },
     
     ajaxDataCounter: 2,
     makeTabsWrapper: function() {
-	ajaxDataCounter--;
+	this.ajaxDataCounter--;
 	if (this.ajaxDataCounter <= 0) {
 	    this.makeTabs(this.tabsStore, this.tabsRecords, this.tabsOptions);
 	}
-    }
+    },
 
     makeTabs: function (store, records, options) {
         //make a tab for each class period
