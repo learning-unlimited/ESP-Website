@@ -319,24 +319,23 @@ then
 	cd $DEPDIR
 	
 	#	Get what we can using Ubuntu's package manager
-	apt-get install -y build-essential texlive imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-dns postgresql-8.4 python-psycopg2 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large ipython wget
+	apt-get install -y build-essential texlive imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-dns postgresql-8.4 python-psycopg2 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large ipython wget memcached libmemcached
 
 	#	Fetch and extract files
-	if [[ ! -d memcached-1.4.5 ]]
+	if [[ ! -d selenium-server-standalone-2.9.0 ]]
 	then
-		wget http://memcached.googlecode.com/files/memcached-1.4.5.tar.gz
-		tar -xzf memcached-1.4.5.tar.gz
+		mkdir selenium-server-standalone-2.9.0
+		cd selenium-server-standalone-2.9.0
+		wget http://selenium.googlecode.com/files/selenium-server-standalone-2.9.0.jar
+		cd $DEPDIR
 	fi
-	if [[ ! -d libmemcached-0.44 ]]
+        if [[ ! -d andrewgodwin-south-21a635231327 ]]
 	then
-		wget http://launchpad.net/libmemcached/1.0/0.44/+download/libmemcached-0.44.tar.gz
-		tar -xzf libmemcached-0.44.tar.gz
-	fi
-	if [[ ! -d selenium-server-standalone-2.8.0 ]]
-	then
-		mkdir selenium-server-standalone-2.8.0
-		cd selenium-server-standalone-2.8.0
-		wget http://selenium.googlecode.com/files/selenium-server-standalone-2.8.0.jar
+		wget https://bitbucket.org/andrewgodwin/south/get/21a635231327.tar.gz
+		tar -xvf 21a635231327.tar.gz
+		cd andrewgodwin-south-21a635231327/
+		./setup.py build
+		sudo ./setup.py install
 		cd $DEPDIR
 	fi
 	while [[ ! -d dropbox ]]
@@ -351,29 +350,6 @@ then
 		tar -xzf dropbox.tar.gz
 		mv .dropbox-dist dropbox
 	done
-
-	#	Install memcached with additional configuration for init script
-	cd $DEPDIR/memcached-1.4.5
-	./configure
-	make
-	make install
-	mkdir -p /usr/share/memcached/scripts
-	wget -O /usr/share/memcached/scripts/start-memcached http://www.kilentra.net/sandbox/memcached-stuff/start-memcached
-	chmod +x /usr/share/memcached/scripts/start-memcached
-	wget -O /etc/init.d/memcached http://www.kilentra.net/sandbox/memcached-stuff/memcached
-	chmod +x /etc/init.d/memcached
-	mkdir -p /etc/default
-	echo "ENABLE_MEMCACHED=yes" > /etc/default/memcached
-	ln -sf /usr/share/memcached/scripts/start-memcached /etc/rc2.d/S51memcached
-	ln -sf /usr/share/memcached/scripts/start-memcached /etc/rc3.d/S51memcached
-	ln -sf /usr/share/memcached/scripts/start-memcached /etc/rc4.d/S51memcached
-	ln -sf /usr/share/memcached/scripts/start-memcached /etc/rc5.d/S51memcached
-
-	#	Install libmemcached
-	cd $DEPDIR/libmemcached-0.44
-	./configure --prefix=/usr
-	make
-	make install
 
 	#	Install python libraries
 	python -m easy_install iCalendar
@@ -410,7 +386,7 @@ then
 	wget -O pylibmc.tar.gz http://pypi.python.org/packages/source/p/pylibmc/pylibmc-1.1.1.tar.gz#md5=e43c54e285f8d937a3f1a916256ecc85
 	tar -xzf pylibmc.tar.gz
 	cd pylibmc-1.1.1
-	python setup.py install --with-libmemcached=../libmemcached-0.44/libmemcached
+	python setup.py install # --with-libmemcached=../libmemcached-0.44/libmemcached
 
     cd $CURDIR
     
