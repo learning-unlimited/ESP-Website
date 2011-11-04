@@ -37,6 +37,7 @@ from esp.program.models.class_ import ClassSection
 from esp.middleware.esperrormiddleware import AjaxErrorMiddleware
 
 from esp.program.tests import ProgramFrameworkTest
+from django_selenium.testcases import SeleniumTestCase
 
 import random
 import simplejson as json
@@ -44,7 +45,7 @@ import simplejson as json
 #from esp.utils.selenium_auto import selenium_test
 
 
-class AjaxStudentRegTest(ProgramFrameworkTest):
+class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
     def setUp(self, *args, **kwargs):
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
         
@@ -54,7 +55,8 @@ class AjaxStudentRegTest(ProgramFrameworkTest):
             'num_teachers': 6, 'classes_per_teacher': 1, 'sections_per_class': 2,
             'num_rooms': 6,
             } )
-        super(AjaxStudentRegTest, self).setUp(*args, **kwargs)
+        ProgramFrameworkTest.setUp(self, *args, **kwargs)
+        SeleniumTestCase.setUp(self)
         
         self.add_student_profiles()
         self.schedule_randomly()

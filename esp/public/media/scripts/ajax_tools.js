@@ -6,6 +6,10 @@
 
 dojo.require("dojo._base.xhr");
 
+if (!numAjaxConnections)
+{
+    var numAjaxConnections = 0;
+}
 //  Define an array for registered forms if they do not exist
 if (!registered_forms)
 {
@@ -125,6 +129,7 @@ var dojo_handle = function(data,args)
         //  Reset the form event functions so they can be used again
         reset_forms();
     }
+    numAjaxConnections--;
 }
 
 var handle_submit = function(mode, attrs, element)
@@ -159,6 +164,7 @@ var handle_submit = function(mode, attrs, element)
     {
         dojo.xhrGet(params);
     }
+    numAjaxConnections++;
 }
 
 

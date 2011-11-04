@@ -1,3 +1,14 @@
+dojo.require('dijit.form.Button');
+dojo.require('dijit.Dialog');
+newDiv = document.createElement('div');
+newDiv.setAttribute('id', 'csrfAlert');
+newDiv.setAttribute('dojoType', 'dijit.Dialog');
+newDiv.setAttribute('style', 'display:none');
+newDiv.setAttribute('title', 'Oops!');
+newText = document.createTextNode('It appears your session has become disconnected. Please make sure cookies are enabled and try again.');
+newDiv.appendChild(newText);
+document.body.appendChild(newDiv);
+
 function strip_tags(str)
 {
     return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt");
@@ -11,7 +22,7 @@ var check_csrf_cookie = function(form)
     //alert(csrf_cookie);
     if (csrf_cookie == null)
     {
-        alert("Oops! It appears your session has become disconnected. Please make sure cookies are enabled and try again.");
+        dijit.byId('csrfAlert').show();
         $j.get("/set_csrf_token");
         return false;
     }
