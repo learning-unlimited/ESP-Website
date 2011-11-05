@@ -1,4 +1,5 @@
-path_to_esp = '/esp/esp/'
+#path_to_esp = '/esp/esp/'
+path_to_esp = '/home/ruthbyers/esp-project/esp/'
 
 import sys
 sys.path += [path_to_esp, path_to_esp + 'esp/']
@@ -11,7 +12,6 @@ import random
 from esp.cal.models import Event
 from esp.users.models import User, ESPUser
 from esp.program.models import Program, ClassSection, StudentRegistration, RegistrationType
-
 
 ################################
 # Global Settings and Thingies #
@@ -41,10 +41,10 @@ print "Initialized program to", program
 
 # Lunch hours, for checking whether a student has lunch free.
 #satlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[522,518])]) # for Spark 2011, lunch is 12-1, 1-2 on Saturday, March 18
-satlunch = (522, 518)
+satlunch = (552, 553)
 # no Sunday lunch for Spark
 # commented out all lines in the program that included sunlunch; for Splash, these should be uncommented
-# sunlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[497,498])])
+sunlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[556,557])])
 
 # The wiggle room factor for the class capacity, to leave a space for
 # those classes that didn't fill up from priority.  Set to 10% for now.
@@ -99,11 +99,11 @@ def try_add(user, cls):
         if not lunch_free(user, satlunch):
             return False
 
-#    if not hasattr(cls, "_sunlunch"):
-#        cls._sunlunch = bool(cls.meeting_times.filter(id__in=sunlunch))
-#    if cls._sunlunch:
-#        if not lunch_free(user, sunlunch):
-#            return False
+    if not hasattr(cls, "_sunlunch"):
+        cls._sunlunch = bool(cls.meeting_times.filter(id__in=sunlunch))
+    if cls._sunlunch:
+        if not lunch_free(user, sunlunch):
+            return False
 
     # Now we've worked out any potential lunch conflicts.
     # Check if this user can actually add this section (and has no conflicts).
@@ -197,8 +197,8 @@ def print_issues():
                     print ESPUser(student).name() + " (" + student.username + "), Saturday lunch conflict"                    
                     break
 
-#        if secs.filter(meeting_times__in=sunlunch).count() > 1:
-#            print ESPUser(student).name() + " (" + student.username + "), Sunday lunch conflict"
+        if secs.filter(meeting_times__in=sunlunch).count() > 1:
+            print ESPUser(student).name() + " (" + student.username + "), Sunday lunch conflict"
 
 
 ################################
@@ -374,3 +374,5 @@ def assign_interesteds():
 
     # Now print out if there were any issues.  This step apparently takes a while.
     print_issues()
+
+
