@@ -1,5 +1,4 @@
-#path_to_esp = '/esp/esp/'
-path_to_esp = '/home/ruthbyers/esp-project/esp/'
+path_to_esp = '/esp/esp/'
 
 import sys
 sys.path += [path_to_esp, path_to_esp + 'esp/']
@@ -76,8 +75,10 @@ def capacity_star(cls):
 def lunch_free(user, lunchtimes):
     secs = ESPUser(user).getEnrolledSectionsFromProgram(program)
     for sec in secs:
-        if lunchtimes in sec.get_meeting_times():
-            return False
+        mt = sec.get_meeting_times().values_list('pk',flat=True).distinct() # lunch is an id, but get_meeting_times() is a QuerySet, so we need to search through the list of its ids
+        for lunch in lunchtimes: # lunchtimes is a tuple of id's
+            if lunch in mt: 
+                return False
     return True
     #return not bool(ESPUser(user).getEnrolledSectionsFromProgram(program).filter(meeting_times__in=lunchtimes))
 
