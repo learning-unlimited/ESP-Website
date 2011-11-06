@@ -2167,6 +2167,9 @@ class ClassCategories(models.Model):
     class Admin:
         pass
 
+def open_class_category():
+    return ClassCategories.objects.get_or_create(category='Walk-in Seminar', symbol='W', seq=0)[0]
+
 @cache_function
 def sections_in_program_by_id(prog):
     return [int(x) for x in ClassSection.objects.filter(parent_class__parent_program=prog).distinct().values_list('id', flat=True)]

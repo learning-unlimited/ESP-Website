@@ -2,6 +2,7 @@ from django import template
 from esp.web.util.template import cache_inclusion_tag
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion
+from esp.program.models.class_ import open_class_category
 from esp.cache.key_set import wildcard
 from esp.tagdict.models import Tag
     
@@ -75,12 +76,18 @@ def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     #   Add ajax_addclass to prereg_url if registering from catalog is allowed
     ajax_prereg_url = None
     scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+    crmi = cls.parent_program.getModuleExtension('ClassRegModuleInfo')
 
     #   Ensure cached catalog shows buttons and fillslots don't
+    # NOTE: I believe that this is deprecated; it isn't referred to anywhere. 
+    # Which means that scrmi.register_from_catalog is currently useless.
+    # This should be fixed. -jmoldow 11/06/2011
     if scrmi.register_from_catalog and not timeslot:
         ajax_prereg_url = cls.parent_program.get_learn_url() + 'ajax_addclass'
 
-    prereg_url = cls.parent_program.get_learn_url() + 'addclass'
+    prereg_url = None
+    if not (crmi.open_class_registration and cls.category == open_class_category()):
+        prereg_url = cls.parent_program.get_learn_url() + 'addclass'
 
     if user and prereg_url and timeslot:
         error1 = cls.cannotAdd(user)
