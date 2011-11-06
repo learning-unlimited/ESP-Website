@@ -185,6 +185,7 @@ def print_issues():
 
     for student in program.students()['enrolled']:
         lunch_count = 0
+        secs = ESPUser(student).getEnrolledSectionsFromProgram(program)
         for sec in secs:
             if satlunch in sec.get_meeting_times():
                 lunch_count += 1
@@ -198,36 +199,47 @@ def print_issues():
                     print ESPUser(student).name() + " (" + student.username + "), Sunday lunch conflict"                    
                     break
 
-    print problem_count
-
 def check_conflicting_classes(remove):
-    problem_count = 0
     for student in program.students()['enrolled']:
         secs = ESPUser(student).getEnrolledSectionsFromProgram(program)
         my_tsdict = {}
         for sec in secs:
             for mt in sec.meeting_times.all():
-                if int(mt.id) in my_tsdict:
+                if int(mt.id) in my_tsdict and not my_tsdict[mt.id] == None and not my_tsdict[mt.id] == sec:
                     otherSec = my_tsdict[mt.id]
                     problem_count = problem_count + 1
                     print ESPUser(student).name() + " (" + student.username + "), conflict: " + sec.emailcode() + ", " + my_tsdict[mt.id].emailcode()
                     if remove:
-                        #to choose which section to remove, we first check whether either was the student's priority class, if not
-                        # we remove the students from the class with less space
-                        if StudentRegistration.objects.filter(section=sec, user=student, relationship__name=priority_type).count() > 0:
-                            removeSection = otherSec
-                        elif StudentRegistration.objects.filter(section=otherSec, user=student, relationship__name=priority_type).count() > 0:
-                            removeSection = sec
-                        elif sec.max_class_capacity - sec.num_students() < otherSec.max_class_capacity - otherSec.num_students():
-                            removeSection = sec
-                        else:
-                            removeSection = otherSec
-                        #removeSection.unpreregister(student, enrolled_type)
-                        print "removed " + student.username + " from section " + removeSection.emailcode()
-                        my_tsdict[mt.id] = sec
+                        choose_class_and_remove_student(sec, otherSec, my_tsdict, student)
                 else:
                     my_tsdict[int(mt.id)] = sec
 
+#requires otherSec be the section currently in my_tsdict for the conflicting timeslot
+def choose_class_and_remove_student(sec, otherSec, my_tsdict, student):
+    #to choose which section to remove, we first check whether either was the student's priority class, if not
+    # we remove the students from the class with less space
+    if StudentRegistration.objects.filter(section=sec, user=student, relationship__name=priority_type).count() > 0:
+        removeSection = otherSec
+    elif StudentRegistration.objects.filter(section=otherSec, user=student, relationship__name=priority_type).count() > 0:
+        removeSection = sec
+    elif sec._get_capacity() - sec.num_students() < otherSec._get_capacity() - otherSec.num_students():
+        removeSection = sec
+    else:
+        removeSection = otherSec
+    removeSection.unpreregister_student(student, enrolled_type)
+    print "removed " + student.username + " from section " + removeSection.emailcode()
+    if removeSection == otherSec:
+        for timeslot in otherSec.get_meeting_times():
+            my_tsdict[timeslot.id] = None
+        for timeslot in sec.get_meeting_times():
+            if timeslot.id in my_tsdict: 
+                if my_tsdict[timeslot.id] == None:
+                    my_tsdict[timeslot.id] = sec
+                else:
+                    choose_class_and_remove_student(sec, my_tsdict[timeslot.id], my_tsdict, student)
+            else:
+                my_tsdict[timeslot.id] = sec
+            
 
 def remove_students_in_conflicting_classes():
     check_conflicting_classes(True)
