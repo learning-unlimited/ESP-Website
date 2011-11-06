@@ -89,7 +89,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @cache_function
     def ajax_sections_cached(self, prog):
-        sections = prog.sections().select_related('category', 'parent_class', 'optimal_class_size_range')
+        sections = prog.sections().select_related()
 
         rrequests = ResourceRequest.objects.filter(target__in = sections)
 
@@ -114,6 +114,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'teachers': teacher_dict[s.parent_class.anchor_id],
                 'resource_requests': rrequest_dict[s.id],
                 'max_class_capacity': s.max_class_capacity,
+                'capacity': s.capacity,
+                'class_size_max': s.parent_class.class_size_max,
                 'optimal_class_size': s.parent_class.class_size_optimal,
                 'optimal_class_size_range': s.parent_class.optimal_class_size_range.range_str() if s.parent_class.optimal_class_size_range else None,
                 'allowable_class_size_ranges': [ cr.range_str() for cr in s.parent_class.get_allowable_class_size_ranges() ],
