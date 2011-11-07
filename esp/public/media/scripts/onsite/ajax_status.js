@@ -21,7 +21,8 @@ var status = {
     enrollment_received: false,
     checkins_received: false,
     counts_received: false,
-    rooms_received: false
+    rooms_received: false,
+    students_received: false
 };
 
 //  This function resets all the flags
@@ -32,6 +33,7 @@ function reset_status()
     status.checkins_received = false;
     status.counts_received = false;
     status.rooms_received = false;
+    status.students_received = false;
 }
 
 //  This function only returns true if all flags have been set
@@ -48,6 +50,8 @@ function check_status()
         return false;
     if (!status.rooms_received)
         return false;
+    if (!status.students_received)
+        return false;
         
     return true;
 }
@@ -56,7 +60,9 @@ function check_status()
 var state = {
     status: status,
     display_mode: "status",
-    student_id: null
+    student_id: null,
+    student_schedule: null,
+    last_event: null
 };
 
 /*  Ajax handler functions
@@ -103,9 +109,136 @@ function handle_rooms(new_data, text_status, jqxhr)
         handle_completed();
 }
 
+function handle_students(new_data, text_status, jqxhr)
+{
+    data.students_list = new_data;
+    status.students_received = true;
+    if (check_status())
+        handle_completed();
+}
+
+/*  Event handlers  */
+
+function update_checkboxes()
+{
+    $j(".student_enrolled").removeClass("student_enrolled");
+    $j(".classchange_checkbox").removeAttr("checked");
+    
+    for (var i in state.student_schedule)
+    {
+        var section = data.sections[state.student_schedule[i]];
+        for (var j in section.timeslots)
+        {
+            $j("#section_" + section.id + "_" + section.timeslots[j]).addClass("student_enrolled");
+            $j("#classchange_" + section.id + "_" + state.student_id + "_" + section.timeslots[j]).attr("checked", "checked");
+        }
+    }
+    //  console.log("Refreshed checkboxes");
+}
+
+function handle_schedule_response(new_data, text_status, jqxhr)
+{
+    //  Save the new schedule
+    state.student_schedule = new_data.sections;
+    state.student_schedule.sort();
+    console.log("Updated schedule for student " + new_data.user);
+    for (var i in new_data.messages)
+    {
+        var new_msg = $j("<div/>").addClass("message");
+        new_msg.html(new_data.messages[i]);
+        $j("#messages").append(new_msg);
+    }
+    
+    //  Update the table if possible
+    if (check_status())
+        update_checkboxes();
+}
+
+//  Set the currently active student
+function set_current_student(student_id)
+{
+    state.student_id = student_id;
+    var schedule_resp = $j.ajax({
+        url: "/onsite/Splash/2010/get_schedule_json?user=" + student_id,
+        async: false,
+        success: handle_schedule_response
+    });
+}
+
+//  Add a student to a class
+function add_student(student_id, section_id)
+{
+    if (state.student_id != student_id)
+        console.log("Warning: student " + student_id + " is not currently selected for updates.");
+        
+    var new_sections = state.student_schedule;
+    section_id = parseInt(section_id);
+    
+    //  TODO: Remove any conflicting classes
+    
+    console.log("add_student: Updated sections are " + new_sections.toString());
+    
+    //  Add desired section to list if it isn't already there
+    if (new_sections.indexOf(section_id) == -1)
+        new_sections.push(section_id);
+    else
+        console.log("Section " + section_id + " already found in current schedule");
+    
+    //  Commit changes to server
+    var schedule_resp = $j.ajax({
+        url: "/onsite/Splash/2010/update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]",
+        async: false,
+        success: handle_schedule_response
+    });
+}
+
+//  Remove a student from a class
+function remove_student(student_id, section_id)
+{
+    if (state.student_id != student_id)
+        console.log("Warning: student " + student_id + " is not currently selected for updates.");
+        
+    var new_sections = state.student_schedule;
+    section_id = parseInt(section_id);
+    
+    //  Remove desired section from list if it's there
+    if (new_sections.indexOf(section_id) != -1)
+        new_sections = new_sections.slice(0, new_sections.indexOf(section_id)).concat(new_sections.slice(new_sections.indexOf(section_id) + 1));
+    else
+        console.log("Section " + section_id + " not found in current schedule");
+ 
+    console.log("remove_student: Updated sections are " + new_sections.toString());
+   
+    //  Commit changes to server
+    var schedule_resp = $j.ajax({
+        url: "/onsite/Splash/2010/update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]",
+        async: false,
+        success: handle_schedule_response
+    });
+}
+
+//  Figure out what to do when one of the checkboxes is hit.
+//  It could be either "on" or "off".
+function handle_checkbox(event)
+{
+    //  The checkbox ids are of the form classchange_[section id]_[student id]_[timeslot id], e.g. classchange_4100_55502_475
+    var target_info = event.target.id.split("_");
+    if (event.target.checked)
+    {
+        //  console.log("Handling CHECKING of " + event.target.id);
+        add_student(target_info[2], target_info[1]);
+    }
+    else
+    {
+        //  console.log("Handling UN-CHECKING of " + event.target.id);
+        remove_student(target_info[2], target_info[1]);
+    }
+}
+
 /*  This function turns the data structure populated by handle_completed() (below)
-    into a table displaying the enrollment and check-in status of all sections. */
-function render_status_table()
+    into a table displaying the enrollment and check-in status of all sections. 
+    Additional features are controlled by display_mode and student_id.  */
+function render_table(display_mode, student_id)
 {
     for (var ts_id in data.timeslots)
     {
@@ -117,8 +250,17 @@ function render_status_table()
         {
             var section = data.sections[data.timeslots[ts_id].sections[i]];
             var new_div = $j("<div/>").addClass("section");
+            
+            if (display_mode == "classchange")
+            {
+                var studentcheckbox = $j("<input/>").attr("type", "checkbox").attr("id", "classchange_" + section.id + "_" + student_id + "_" + ts_id).addClass("classchange_checkbox");
+                studentcheckbox.change(handle_checkbox)
+                new_div.append(studentcheckbox);
+            }
+            
             new_div.append($j("<span/>").addClass("emailcode").html(section.emailcode));
             new_div.append($j("<span/>").addClass("room").html(section.rooms));
+            //  TODO: make this snap to the right reliably
             new_div.append($j("<span/>").addClass("studentcounts").html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
             
             //  Set color of the cell based on check-in and enrollment of the section
@@ -128,12 +270,27 @@ function render_status_table()
             if (hue > 1.0)
                 hue = 1.0;
             if (section.num_students_enrolled == 0)
-                lightness = 0.5;
+                lightness = 0.9;
             new_div.css("background", hslToHTML(hue, saturation, lightness));
-            new_div.attr("id", "section_" + section.id);
+            new_div.attr("id", "section_" + section.id + "_" + ts_id);
+            
+            //  Create tooltip with class description, teachers
+            new_div.addClass("tooltip");
+            var hover_div = $j("<span/>").addClass("tooltip").addClass("tooltip_hover");
+            hover_div.html("Hi, this is a tooltip");
+            hover_div.attr("id", "section_" + section.id + "_tooltip");
+            //  TODO: FIX
+            //  new_div.append(hover_div);
+            
             ts_div.append(new_div);
         }
     }
+}
+    
+function render_status_table()
+{
+    render_table("status", null);
+    $j("#messages").html("Displaying status matrix");
 }
 
 /*  This function turns the data structure populated by handle_completed()
@@ -141,7 +298,9 @@ function render_status_table()
 */
 function render_classchange_table(student_id)
 {
-    //  TODO
+    render_table("classchange", student_id);
+    update_checkboxes();
+    $j("#messages").html("Displaying class changes matrix for " + data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + ")");
 }
 
 /*  This function populates the linked data structures once all components have arrived.
@@ -173,6 +332,7 @@ function handle_completed()
             new_sec.num_students_enrolled = 0;
             new_sec.num_students_checked_in = 0;
             new_sec.capacity = data.catalog[cls].get_sections[sec].capacity;
+            new_sec.timeslots = [];
             data.sections[new_sec.id] = new_sec;
             
             //  Create timeslot if it doesn't exist already
@@ -189,10 +349,30 @@ function handle_completed()
                     data.timeslots[new_ts.id] = new_ts;
                     //  console.log("Added timeslot ID " + new_ts.id + ": " + new_ts.label);
                 }
+                data.sections[new_sec.id].timeslots.push(ts[i].id);
                 data.timeslots[ts[i].id].sections.push(new_sec.id);
                 //  console.log("Added " + data.catalog[cls].title + " section ID " + data.catalog[cls].get_sections[sec].id + " to timeslot " + ts[i].id);
             }
         }
+    }
+    
+    //  Sort sections within each timeslot
+    for (var i in data.timeslots)
+    {
+        data.timeslots[i].sections.sort();
+    }
+    
+    //  Initialize students array
+    for (var i in data.students_list)
+    {
+        var new_student = {};
+        new_student.id = data.students_list[i][0];
+        new_student.last_name = data.students_list[i][1];
+        new_student.first_name = data.students_list[i][2];
+        new_student.grade = data.students_list[i][3];
+        new_student.sections = [];
+        new_student.checked_in = null;
+        data.students[new_student.id] = new_student;
     }
     
     //  Assign rooms
@@ -207,6 +387,7 @@ function handle_completed()
         var user_id = data.enrollments[i][0];
         if (!(user_id in data.students))
         {
+            console.log("Warning: student ID " + user_id + " was not found in initial list");
             var new_user = {};
             new_user.id = user_id
             new_user.sections = [];
@@ -240,7 +421,7 @@ function handle_completed()
         }
         else
         {
-            console.log("User " + user_id + " from checkins is not present in enrollments");
+            console.log("User " + user_id + " from checkins is not present");
         }
     }
     
@@ -259,8 +440,11 @@ function handle_completed()
         }
     }
     
-    reset_status();
+    //  This line would set catalog_received, counts_received, etc. to false.
+    //  At the very least it needs to be done immediately before refreshing the full table.
+    //  reset_status();
     
+    $j("#messages").html("");
     console.log("All data has been processed.");
     
     //  Re-draw the table of sections in the appropriate mode.
@@ -274,6 +458,8 @@ $j(document).ready(function () {
     //  Send out initial requests for data.
     //  Once they have all completed, the results will be parsed and the
     //  class changes grid will be displayed.
+
+    $j("#messages").html("Loading class and student data...");
     $j.ajax({
         url: "/learn/Splash/2010/catalog_json",
         success: handle_catalog
@@ -294,4 +480,14 @@ $j(document).ready(function () {
         url: "/onsite/Splash/2010/rooms_status",
         success: handle_rooms
     });
+    $j.ajax({
+        url: "/onsite/Splash/2010/students_status",
+        success: handle_students
+    });
+    
+        
+    //  TEMPORARY - Defaults
+    state.display_mode = "classchange";
+    set_current_student(55502);
+    
 });

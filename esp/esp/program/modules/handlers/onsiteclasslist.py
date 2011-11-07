@@ -96,9 +96,26 @@ class OnSiteClassList(ProgramModuleObj):
         return resp
         
     @needs_onsite
+    def students_status(self, request, tl, one, two, module, extra, prog):
+        resp = HttpResponse(mimetype='application/json')
+        grade_query = """
+SELECT (12 + 2012 - "users_studentinfo"."graduation_year")
+FROM "users_studentinfo", "program_registrationprofile"
+WHERE
+    "program_registrationprofile"."most_recent_profile" = true
+AND	"program_registrationprofile"."student_info_id" = "users_studentinfo"."id"
+AND	"users_studentinfo"."user_id" = "auth_user"."id"
+ORDER BY program_registrationprofile.id DESC
+LIMIT 1
+        """
+        data = ESPUser.objects.filter(studentregistration__section__parent_class__parent_program=prog, studentregistration__end_date__gte=datetime.now(), studentregistration__start_date__lte=datetime.now()).extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
+        simplejson.dump(list(data), resp)
+        return resp
+        
+    @needs_onsite
     def checkin_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-        data = ESPUser.objects.filter(userbit__startdate__lte=datetime.now(), userbit__enddate__gte=datetime.now(), userbit__qsc=prog.anchor, userbit__verb__uri='V/Flags/Registration/Attended').values_list('id', flat=True).distinct()
+        data = ESPUser.objects.filter(userbit__startdate__lte=datetime.now(), userbit__enddate__gte=datetime.now(), userbit__qsc=prog.anchor, userbit__verb__uri='V/Flags/Registration/Attended').values_list('id').distinct()
         simplejson.dump(list(data), resp)
         return resp
 
@@ -145,7 +162,7 @@ class OnSiteClassList(ProgramModuleObj):
             desired_sections = None
             
         if user and desired_sections is not None:
-            current_sections = list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__start_date__lte=datetime.now(), studentregistration__end_date__gte=datetime.now(), studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
+            current_sections = list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__start_date__lte=datetime.now(), studentregistration__end_date__gte=datetime.now(), studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).values_list('id', flat=True).order_by('id').distinct())
             sections_to_remove = ClassSection.objects.filter(id__in=list(set(current_sections) - set(desired_sections)))
             sections_to_add = ClassSection.objects.filter(id__in=list(set(desired_sections) - set(current_sections)))
             
@@ -157,19 +174,22 @@ class OnSiteClassList(ProgramModuleObj):
             #   Remove sections the student wants out of
             for sec in sections_to_remove:
                 sec.unpreregister_student(user)
-                result['messages'].append('Removed %s (%s) from %s: %s' % (user.name(), user.id, sec.emailcode(), sm_sec.title()))
+                result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
                 
             #   Remove sections that conflict with those the student wants into
             sec_times = sections_to_add.select_related('meeting_times__id').values_list('id', 'meeting_times__id').order_by('meeting_times__id').distinct()
             sm = ScheduleMap(user, prog)
             existing_sections = []
+            print 'New sections are at times: %s' % sec_times
+            print 'Schedule map is: %s' % sm.map
             for (sec, ts) in sec_times:
                 if ts and len(sm.map[ts]) > 0:
                     #   We found something we need to remove
+                    print 'Need to remove: %s' % sm.map[ts]
                     for sm_sec in sm.map[ts]:
-                        if sm_sec.id not in desired_sections:
+                        if sm_sec.id not in sections_to_add:
                             sm_sec.unpreregister_student(user)
-                            result['messages'].append('Removed %s (%s) from %s: %s' % (user.name(), user.id, sec.emailcode(), sm_sec.title()))
+                            result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sm_sec.emailcode(), sm_sec.title(), sm_sec.id))
                         else:
                             existing_sections.append(sm_sec)
                             
@@ -178,9 +198,9 @@ class OnSiteClassList(ProgramModuleObj):
                 if sec not in existing_sections:
                     reg_result = sec.preregister_student(user)
                     if reg_result:
-                        result['messages'].append('Added %s (%s) to %s: %s' % (user.name(), user.id, sec.emailcode(), sec.title()))
+                        result['messages'].append('Added %s (%s) to %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
                     else:
-                        result['messages'].append('Failed to add %s (%s) to %s: %s' % (user.name(), user.id, sec.emailcode(), sec.title()))
+                        result['messages'].append('Failed to add %s (%s) to %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
         
             result['user'] = user.id
             result['sections'] = list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__start_date__lte=datetime.now(), studentregistration__end_date__gte=datetime.now(), studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
