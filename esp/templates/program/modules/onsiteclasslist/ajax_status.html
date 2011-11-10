@@ -1,0 +1,117 @@
+<html>
+<head>
+<title>Live Registration Status</title>
+<script type="text/javascript" src="/media/scripts/jquery.js"></script>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/jquery-ui.js"></script>
+<script type="text/javascript">
+    $j = $.noConflict();
+    $j(document).ready(function() {
+        $j.getScript("/media/scripts/csrf_init.js");
+        $j.getScript("/media/scripts/csrf_check.js");
+    });
+</script>
+<script type="text/javascript" src="/media/scripts/onsite/hsl_colors.js"></script>
+<script type="text/javascript" src="/media/scripts/onsite/ajax_status.js"></script>
+<link rel="stylesheet" type="text/css" href="/media/styles/tooltips.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/jquery.autocomplete.css" />
+<style type="text/css">
+td {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+}
+
+p {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 9pt;
+}
+
+th {
+    background-color: #cccccc;
+    font-size: 10pt;
+    padding-bottom: 8px;
+}
+
+td.narrow {
+    padding: 0px;
+    margin: 0px;
+    height: 20px;
+    white-space: nowrap;
+//  overflow: hidden;
+    text-overflow:ellipsis; 
+}
+
+tr.narrow {
+    padding: 0px;
+    margin: 0px;
+    height: 20px;
+}
+
+table.bordered {
+    border: 1px solid #cccccc;
+}
+
+table.narrow {
+    margin: 0px;
+    padding: 0px;
+    border-spacing: 0em;
+    table-layout:fixed;
+}
+
+.timeslot_header {
+    font-weight: bold;
+    text-align: center;
+    background-color: #cccccc;
+    width: 200px;
+    height: 30px;
+    font-size: 1.1em;
+}
+
+.room {
+    color: #666666;
+}
+
+.section {
+    background-color: #ccccff;
+}
+
+.student_enrolled {
+    border: 1px solid #000099;
+    background-color: #FFFF00 !important;
+    margin: -1px;
+    /*  TODO: add drop shadow/glow   */
+}
+
+#student_selector_area {
+    height: 100px;
+}
+
+input #student_selector {
+    border: 1px solid #999999;
+}
+
+span {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="messages">
+</div>
+
+<div id="student_selector_area" class="ui-widget">Select a student:
+<input type="text" id="student_selector"/>
+</div>
+
+<table class="narrow bordered">
+<tr>{% for timeslot in timeslots %}
+    <td width="270px" valign="top"><div id="timeslot_{{ timeslot.id }}"></div></td>{% endfor %}
+</tr>
+</table>
+
+<div id="space_at_bottom" style="height: 200px;">&nbsp;</div>
+
+</body>
