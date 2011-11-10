@@ -163,6 +163,7 @@ function set_current_student(student_id)
         async: false,
         success: handle_schedule_response
     });
+    render_classchange_table(student_id);
 }
 
 //  Add a student to a class
@@ -235,11 +236,51 @@ function handle_checkbox(event)
     }
 }
 
+var last_select_event = null;
+function autocomplete_select_item(event, ui)
+{
+    last_select_event = [event, ui];
+    var s = ui.item.value;
+    var student_id = s.slice(s.indexOf("(")+1, s.indexOf(")"));
+    
+    //  Refresh the table of checkboxes for the newly selected student.
+    if ((student_id > 0) && (student_id < 99999999))
+        set_current_student(parseInt(student_id));
+    else
+        console.log("Invalid student selected: " + s);
+}
+
+function setup_autocomplete()
+{
+    var student_strings = [];
+    for (var i in data.students)
+    {
+        student_strings.push(data.students[i].first_name + " " + data.students[i].last_name + " (" + i + ")");
+    }
+
+    $j("#student_selector").autocomplete({
+        source: student_strings,
+        select: autocomplete_select_item
+  	});
+}
+
+function clear_table()
+{
+    for (var ts_id in data.timeslots)
+    {
+        var div_name = "timeslot_" + ts_id;
+        var ts_div = $j("#" + div_name);
+        
+        ts_div.html("");
+    }
+}
+
 /*  This function turns the data structure populated by handle_completed() (below)
     into a table displaying the enrollment and check-in status of all sections. 
     Additional features are controlled by display_mode and student_id.  */
 function render_table(display_mode, student_id)
 {
+    clear_table();
     for (var ts_id in data.timeslots)
     {
         var div_name = "timeslot_" + ts_id;
@@ -258,31 +299,34 @@ function render_table(display_mode, student_id)
                 new_div.append(studentcheckbox);
             }
             
-            new_div.append($j("<span/>").addClass("emailcode").html(section.emailcode));
-            new_div.append($j("<span/>").addClass("room").html(section.rooms));
-            //  TODO: make this snap to the right reliably
-            new_div.append($j("<span/>").addClass("studentcounts").html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
-            
-            //  Set color of the cell based on check-in and enrollment of the section
-            var hue = 0.4 + 0.6 * (section.num_students_enrolled / section.capacity);
-            var lightness = 0.9 - 0.5 * (section.num_students_checked_in / section.num_students_enrolled);
-            var saturation = 0.8;
-            if (hue > 1.0)
-                hue = 1.0;
-            if (section.num_students_enrolled == 0)
-                lightness = 0.9;
-            new_div.css("background", hslToHTML(hue, saturation, lightness));
-            new_div.attr("id", "section_" + section.id + "_" + ts_id);
-            
-            //  Create tooltip with class description, teachers
-            new_div.addClass("tooltip");
-            var hover_div = $j("<span/>").addClass("tooltip").addClass("tooltip_hover");
-            hover_div.html("Hi, this is a tooltip");
-            hover_div.attr("id", "section_" + section.id + "_tooltip");
-            //  TODO: FIX
-            //  new_div.append(hover_div);
-            
-            ts_div.append(new_div);
+            if ((display_mode != "classchange") || ((section.grade_min <= data.students[student_id].grade) && (section.grade_max >= data.students[student_id].grade)))
+            {
+                new_div.append($j("<span/>").addClass("emailcode").html(section.emailcode));
+                new_div.append($j("<span/>").addClass("room").html(section.rooms));
+                //  TODO: make this snap to the right reliably
+                new_div.append($j("<span/>").addClass("studentcounts").html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
+                
+                //  Set color of the cell based on check-in and enrollment of the section
+                var hue = 0.4 + 0.6 * (section.num_students_enrolled / section.capacity);
+                var lightness = 0.9 - 0.5 * (section.num_students_checked_in / section.num_students_enrolled);
+                var saturation = 0.8;
+                if (hue > 1.0)
+                    hue = 1.0;
+                if (section.num_students_enrolled == 0)
+                    lightness = 0.9;
+                new_div.css("background", hslToHTML(hue, saturation, lightness));
+                new_div.attr("id", "section_" + section.id + "_" + ts_id);
+                
+                //  Create tooltip with class description, teachers
+                new_div.addClass("tooltip");
+                var hover_div = $j("<span/>").addClass("tooltip").addClass("tooltip_hover");
+                hover_div.html("Hi, this is a tooltip");
+                hover_div.attr("id", "section_" + section.id + "_tooltip");
+                //  TODO: FIX
+                //  new_div.append(hover_div);
+                
+                ts_div.append(new_div);
+            }
         }
     }
 }
@@ -406,6 +450,9 @@ function handle_completed()
         }
     }
     
+    //  Initialize student selector autocomplete
+    setup_autocomplete();
+    
     //  Assign checkins
     for (var i in data.checkins)
     {
@@ -484,10 +531,5 @@ $j(document).ready(function () {
         url: "/onsite/Splash/2010/students_status",
         success: handle_students
     });
-    
-        
-    //  TEMPORARY - Defaults
-    state.display_mode = "classchange";
-    set_current_student(55502);
     
 });
