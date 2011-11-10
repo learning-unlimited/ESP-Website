@@ -441,7 +441,7 @@ function render_table(display_mode, student_id)
                 new_div.append($j("<span/>").addClass("emailcode").html(section.emailcode));
                 new_div.append($j("<span/>").addClass("room").html(section.rooms));
                 //  TODO: make this snap to the right reliably
-                new_div.append($j("<span/>").addClass("studentcounts").html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
+                new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
                 
                 //  Create a tooltip with more information about the class
                 tooltip_div = $j("<span/>").addClass("tooltip_hover");
@@ -506,14 +506,11 @@ function render_classchange_table(student_id)
 /*  This function populates the linked data structures once all components have arrived.
 */
 
-function handle_completed()
+function populate_classes()
 {
-    //  console.log("All data has been received.");
-    
-    data.students = {};
+    data.timeslots = {};
     data.classes = {};
     data.sections = {};
-    data.timeslots = {};
     
     //  Iterate over classes/sections in the catalog
     for (var cls in data.catalog)
@@ -566,6 +563,11 @@ function handle_completed()
     {
         data.timeslots[i].sections.sort();
     }
+}
+
+function populate_students()
+{
+    data.students = {};
     
     //  Initialize students array
     for (var i in data.students_list)
@@ -580,12 +582,21 @@ function handle_completed()
         data.students[new_student.id] = new_student;
     }
     
+    //  Initialize student selector autocomplete
+    setup_autocomplete();
+}
+
+function populate_rooms()
+{
     //  Assign rooms
     for (var i in data.rooms)
     {
         data.sections[data.rooms[i][0]].rooms = data.rooms[i][1];
     }
-    
+}
+
+function populate_enrollments()
+{
     //  Assign students
     for (var i in data.enrollments)
     {
@@ -610,10 +621,10 @@ function handle_completed()
             //  console.log("Section " + data.enrollments[i][1] + " from enrollments is not present in catalog");
         }
     }
-    
-    //  Initialize student selector autocomplete
-    setup_autocomplete();
-    
+}
+
+function populate_checkins()
+{
     //  Assign checkins
     for (var i in data.checkins)
     {
@@ -632,7 +643,10 @@ function handle_completed()
             //  console.log("User " + user_id + " from checkins is not present");
         }
     }
-    
+}
+
+function populate_counts()
+{
     //  Assign student counts (consistency check)
     for (var i in data.counts)
     {
@@ -640,14 +654,27 @@ function handle_completed()
         var num_students = data.counts[i][1];
         
         //  If we have a conflict, assume the larger number of students are enrolled.
-        if (data.sections[sec_id].num_students_enrolled != num_students)
+        if (!data.sections[sec_id])
+            console.log("Could not find section " + sec_id);
+        else if (data.sections[sec_id].num_students_enrolled != num_students)
         {
             //  console.log("Warning: Section " + sec_id + " claims to have " + num_students + " students but " + data.sections[sec_id].num_students_enrolled + " are enrolled.");
             if (num_students > data.sections[sec_id].num_students_enrolled)
                 data.sections[sec_id].num_students_enrolled = num_students;
         }
     }
-    
+}
+
+function handle_completed()
+{
+    //  console.log("All data has been received.");
+    populate_classes();
+    populate_students();
+    populate_rooms();
+    populate_enrollments();
+    populate_checkins();
+    populate_counts();
+
     //  This line would set catalog_received, counts_received, etc. to false.
     //  At the very least it needs to be done immediately before refreshing the full table.
     //  reset_status();
@@ -662,17 +689,20 @@ function handle_completed()
         set_current_student(state.student_id);
 }
 
-$j(document).ready(function () {
-    //  Send out initial requests for data.
-    //  Once they have all completed, the results will be parsed and the
-    //  class changes grid will be displayed.
-
-    $j("#messages").html("Loading class and student data...");
-    
-    $j.ajax({
-        url: "/learn/Splash/2010/catalog_json",
-        success: handle_catalog
-    });
+function fetch_all(avoid_catalog)
+{
+    reset_status();
+    if (!avoid_catalog)
+    {
+        $j.ajax({
+            url: "/learn/Splash/2010/catalog_json",
+            success: handle_catalog
+        });
+    }
+    else
+    {
+        status.catalog_received = true;
+    }
     $j.ajax({
         url: "/onsite/Splash/2010/enrollment_status",
         success: handle_enrollment
@@ -693,5 +723,22 @@ $j(document).ready(function () {
         url: "/onsite/Splash/2010/students_status",
         success: handle_students
     });
+}
+
+function refresh_counts() {
+    add_message("Pinging server for updated information, please stand by...", "message_header");
+    fetch_all(true);
+}
+
+$j(document).ready(function () {
+    //  Send out initial requests for data.
+    //  Once they have all completed, the results will be parsed and the
+    //  class changes grid will be displayed.
+
+    $j("#messages").html("Loading class and student data...");
     
+    fetch_all();
+    
+    //  Update enrollment counts and list of students once per minute.
+    setInterval(refresh_counts, 120000);
 });
