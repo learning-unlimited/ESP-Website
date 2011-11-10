@@ -119,20 +119,50 @@ function handle_students(new_data, text_status, jqxhr)
 
 /*  Event handlers  */
 
+function add_message(msg, cls)
+{
+    if (!cls)
+        $j("#messages").append($j("<div/>").addClass("message").html(msg));
+    else
+        $j("#messages").append($j("<div/>").addClass(cls).html(msg));
+    $j("#messages").prop("scrollTop", $j("#messages").prop("scrollHeight"));
+}
+
 function update_checkboxes()
 {
     $j(".student_enrolled").removeClass("student_enrolled");
     $j(".classchange_checkbox").removeAttr("checked");
+    $j(".classchange_checkbox").removeAttr("disabled");
+    $j(".classchange_checkbox").unbind("change");
+    
+    //  Gray out checkboxes for full classes.  Checkboxes for non-full classes trigger
+    //  the handle_checkbox() function when they are clicked on.
+    for (var ts_id in data.timeslots)
+    {
+        for (var i in data.timeslots[ts_id].sections)
+        {
+            var section = data.sections[data.timeslots[ts_id].sections[i]];
+            var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + ts_id);
+            if (section.num_students_enrolled >= section.capacity)
+                studentcheckbox.attr("disabled", "disabled");
+            else
+                studentcheckbox.change(handle_checkbox);
+        }
+    }
     
     for (var i in state.student_schedule)
     {
         var section = data.sections[state.student_schedule[i]];
         for (var j in section.timeslots)
         {
+            var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + section.timeslots[j]);
             $j("#section_" + section.id + "_" + section.timeslots[j]).addClass("student_enrolled");
-            $j("#classchange_" + section.id + "_" + state.student_id + "_" + section.timeslots[j]).attr("checked", "checked");
+            studentcheckbox.attr("checked", "checked");
+            studentcheckbox.removeAttr("disabled");
+            studentcheckbox.change(handle_checkbox);
         }
     }
+
     //  console.log("Refreshed checkboxes");
 }
 
@@ -144,9 +174,7 @@ function handle_schedule_response(new_data, text_status, jqxhr)
     console.log("Updated schedule for student " + new_data.user);
     for (var i in new_data.messages)
     {
-        var new_msg = $j("<div/>").addClass("message");
-        new_msg.html(new_data.messages[i]);
-        $j("#messages").append(new_msg);
+        add_message(new_data.messages[i]);
     }
     
     //  Update the table if possible
@@ -157,13 +185,27 @@ function handle_schedule_response(new_data, text_status, jqxhr)
 //  Set the currently active student
 function set_current_student(student_id)
 {
-    state.student_id = student_id;
-    var schedule_resp = $j.ajax({
-        url: "/onsite/Splash/2010/get_schedule_json?user=" + student_id,
-        async: false,
-        success: handle_schedule_response
-    });
-    render_classchange_table(student_id);
+    if (student_id)
+    {
+        state.student_id = student_id;
+        state.display_mode = "classchange";
+        var schedule_resp = $j.ajax({
+            url: "/onsite/Splash/2010/get_schedule_json?user=" + student_id,
+            async: false,
+            success: handle_schedule_response
+        });
+        render_classchange_table(student_id);
+        $j("#status_switch").removeAttr("disabled");
+        $j("#status_switch").click(function () {set_current_student(null);});
+    }
+    else
+    {
+        state.student_id = null;
+        state.display_mode = "status";
+        render_status_table();
+        $j("#student_selector").attr("value", "");
+        $j("#status_switch").attr("disabled", "disabled");
+    }
 }
 
 //  Add a student to a class
@@ -295,7 +337,7 @@ function render_table(display_mode, student_id)
             if (display_mode == "classchange")
             {
                 var studentcheckbox = $j("<input/>").attr("type", "checkbox").attr("id", "classchange_" + section.id + "_" + student_id + "_" + ts_id).addClass("classchange_checkbox");
-                studentcheckbox.change(handle_checkbox)
+                //  Parameters of these checkboxes will be set in the update_checkboxes() function above
                 new_div.append(studentcheckbox);
             }
             
@@ -350,7 +392,8 @@ function render_table(display_mode, student_id)
 function render_status_table()
 {
     render_table("status", null);
-    $j("#messages").html("Displaying status matrix");
+    add_message("Displaying status matrix", "message_header");
+    add_message("To view/change classes for a student, begin typing their name or ID number into the box below; then click on an entry, or use the arrow keys and Enter to select a student.");
 }
 
 /*  This function turns the data structure populated by handle_completed()
@@ -360,7 +403,7 @@ function render_classchange_table(student_id)
 {
     render_table("classchange", student_id);
     update_checkboxes();
-    $j("#messages").html("Displaying class changes matrix for " + data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + "), grade " + data.students[student_id].grade);
+    add_message("Displaying class changes matrix for " + data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + "), grade " + data.students[student_id].grade, "message_header");
 }
 
 /*  This function populates the linked data structures once all components have arrived.
@@ -517,9 +560,9 @@ function handle_completed()
     
     //  Re-draw the table of sections in the appropriate mode.
     if (state.display_mode == "status")
-        render_status_table();
+        set_current_student(null);
     else if (state.display_mode == "classchange")
-        render_classchange_table(state.student_id);
+        set_current_student(state.student_id);
 }
 
 $j(document).ready(function () {
@@ -528,6 +571,7 @@ $j(document).ready(function () {
     //  class changes grid will be displayed.
 
     $j("#messages").html("Loading class and student data...");
+    
     $j.ajax({
         url: "/learn/Splash/2010/catalog_json",
         success: handle_catalog
