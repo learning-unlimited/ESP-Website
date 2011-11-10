@@ -9,6 +9,11 @@
 //  This is the primary data structure for all received data.
 var data = {};
 
+//  Some parameters for things that can be customized in the future.
+var settings = {
+    checkin_colors: false,
+};
+
 /*  Ajax status flags
     We request multiple chunks of data from the server concurrently
     and have to wait for all of them to arrive before we populate the
@@ -262,7 +267,7 @@ function clear_conflicts(event)
         $j("#" + data.conflicts[event.target.id][i]).removeClass("section_conflict");
         //  console.log("Un-highlighted " + data.conflicts[event.target.id][i]);
     }
-    data.conflicts[event.target.id] = null;
+    delete data.conflicts[event.target.id];
 }
 
 //  Add a student to a class
@@ -334,7 +339,30 @@ function handle_checkbox(event)
     if (event.target.checked)
     {
         //  console.log("Handling CHECKING of " + event.target.id);
-        add_student(target_info[2], target_info[1]);
+        
+        //  Check for conflicts
+        var verified = true;
+        if (data.conflicts[event.target.id])
+        {
+            var conflicted_sections_list = [];
+            for (var i in data.conflicts[event.target.id])
+            {
+                var section_conflict_id = data.conflicts[event.target.id][i].split("_")[1];
+                if ((section_conflict_id != target_info[1]) && (conflicted_sections_list.indexOf(section_conflict_id) == -1))
+                    conflicted_sections_list.push(section_conflict_id);
+            }
+            if (conflicted_sections_list.length > 0)
+            {
+                verified = confirm("Registering for this class will remove the student from " + conflicted_sections_list.length + " other class[es].  Are you sure?");
+            }
+        }
+        
+        if (verified)
+            add_student(target_info[2], target_info[1]);
+        else
+        {
+            $j("#" + event.target.id).removeAttr("checked");
+        }
     }
     else
     {
@@ -433,7 +461,9 @@ function render_table(display_mode, student_id)
                 
                 //  Set color of the cell based on check-in and enrollment of the section
                 var hue = 0.4 + 0.6 * (section.num_students_enrolled / section.capacity);
-                var lightness = 0.9 - 0.5 * (section.num_students_checked_in / section.num_students_enrolled);
+                var lightness = 0.9;
+                if (settings.checkin_colors)
+                    lightness -= 0.5 * (section.num_students_checked_in / section.num_students_enrolled);
                 var saturation = 0.8;
                 if (hue > 1.0)
                     hue = 1.0;
