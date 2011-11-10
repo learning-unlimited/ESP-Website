@@ -43,6 +43,7 @@ from esp.users.models import ESPUser
 from esp.resources.models import ResourceAssignment
 from esp.datatree.models import *
 from django.db.models import Min
+from django.db.models.query import Q
 from django.http import HttpResponse
 
 import simplejson
@@ -108,7 +109,8 @@ AND	"users_studentinfo"."user_id" = "auth_user"."id"
 ORDER BY program_registrationprofile.id DESC
 LIMIT 1
         """
-        data = ESPUser.objects.filter(studentregistration__section__parent_class__parent_program=prog, studentregistration__end_date__gte=datetime.now(), studentregistration__start_date__lte=datetime.now()).extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
+        #   To ensure we don't miss anyone, fetch students who have a profile for the program
+        data = ESPUser.objects.filter(registrationprofile__program=prog).extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
         simplejson.dump(list(data), resp)
         return resp
         
