@@ -299,12 +299,28 @@ function render_table(display_mode, student_id)
                 new_div.append(studentcheckbox);
             }
             
-            if ((display_mode != "classchange") || ((section.grade_min <= data.students[student_id].grade) && (section.grade_max >= data.students[student_id].grade)))
+            if ((display_mode == "status") || ((section.grade_min <= data.students[student_id].grade) && (section.grade_max >= data.students[student_id].grade)))
             {
                 new_div.append($j("<span/>").addClass("emailcode").html(section.emailcode));
                 new_div.append($j("<span/>").addClass("room").html(section.rooms));
                 //  TODO: make this snap to the right reliably
                 new_div.append($j("<span/>").addClass("studentcounts").html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
+                
+                //  Create a tooltip with more information about the class
+                tooltip_div = $j("<span/>").addClass("tooltip_hover");
+                tooltip_div.append($j("<div/>").addClass("tooltip_title").html(section.title));
+                var teacher_txt = "";
+                for (var t in data.classes[section.class_id].teachers)
+                {
+                    teacher_txt += data.classes[section.class_id].teachers[t].first_name + " " + data.classes[section.class_id].teachers[t].last_name;
+                    if (t < data.classes[section.class_id].teachers.length - 1)
+                        teacher_txt += ", ";
+                }
+                tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(teacher_txt));
+                tooltip_div.append($j("<div/>").addClass("tooltip_grades").html("Grades " + data.classes[section.class_id].grade_min.toString() + "--" + data.classes[section.class_id].grade_max.toString()));
+                tooltip_div.append($j("<div/>").addClass("tooltip_description").html(data.classes[section.class_id].class_info));
+
+                new_div.append(tooltip_div);
                 
                 //  Set color of the cell based on check-in and enrollment of the section
                 var hue = 0.4 + 0.6 * (section.num_students_enrolled / section.capacity);
@@ -344,7 +360,7 @@ function render_classchange_table(student_id)
 {
     render_table("classchange", student_id);
     update_checkboxes();
-    $j("#messages").html("Displaying class changes matrix for " + data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + ")");
+    $j("#messages").html("Displaying class changes matrix for " + data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + "), grade " + data.students[student_id].grade);
 }
 
 /*  This function populates the linked data structures once all components have arrived.
@@ -355,17 +371,22 @@ function handle_completed()
     console.log("All data has been received.");
     
     data.students = {};
+    data.classes = {};
     data.sections = {};
     data.timeslots = {};
     
     //  Iterate over classes/sections in the catalog
     for (var cls in data.catalog)
     {
+        //  Copy class object to dictionary
+        data.classes[data.catalog[cls].id] = data.catalog[cls];
+    
         for (var sec in data.catalog[cls].get_sections)
         {
             //  Construct simplified section object
             var new_sec = {};
             new_sec.id = data.catalog[cls].get_sections[sec].id;
+            new_sec.class_id = data.catalog[cls].id;
             new_sec.title = data.catalog[cls].title;
             new_sec.grade_min = data.catalog[cls].grade_min;
             new_sec.grade_max = data.catalog[cls].grade_max;
