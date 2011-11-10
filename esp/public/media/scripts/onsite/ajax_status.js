@@ -134,6 +134,7 @@ function update_checkboxes()
     $j(".classchange_checkbox").removeAttr("checked");
     $j(".classchange_checkbox").removeAttr("disabled");
     $j(".classchange_checkbox").unbind("change");
+    data.conflicts = {};
     
     //  Gray out checkboxes for full classes.  Checkboxes for non-full classes trigger
     //  the handle_checkbox() function when they are clicked on.
@@ -143,6 +144,7 @@ function update_checkboxes()
         {
             var section = data.sections[data.timeslots[ts_id].sections[i]];
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + ts_id);
+            studentcheckbox.hover(check_conflicts, clear_conflicts);
             if (section.num_students_enrolled >= section.capacity)
                 studentcheckbox.attr("disabled", "disabled");
             else
@@ -171,7 +173,7 @@ function handle_schedule_response(new_data, text_status, jqxhr)
     //  Save the new schedule
     state.student_schedule = new_data.sections;
     state.student_schedule.sort();
-    console.log("Updated schedule for student " + new_data.user);
+    //  console.log("Updated schedule for student " + new_data.user);
     for (var i in new_data.messages)
     {
         add_message(new_data.messages[i]);
@@ -208,24 +210,83 @@ function set_current_student(student_id)
     }
 }
 
+var last_conflict_event = null;
+function check_conflicts(event)
+{
+    last_conflict_event = event;
+    
+    var event_info = event.target.id.split("_");
+    var section_id = event_info[1];
+    var student_id = event_info[2];
+    var timeslot_id = event_info[3];
+    var conflict_highlighted_list = [];
+    var timeslot_list = [];
+
+    //  Highlight this and the other timeslots of this class.
+    for (var i in data.sections[section_id].timeslots)
+    {
+        var target_div_id = "section_" + section_id + "_" + data.sections[section_id].timeslots[i];
+        $j("#" + target_div_id).addClass("section_highlight");
+        conflict_highlighted_list.push(target_div_id);
+        timeslot_list.push();
+        
+        //  Check to see if they are in any other classes at the same time; highlight those and register the conflicts.
+        for (var j in state.student_schedule)
+        {
+            //  Move along if you're enrolled in the class already; that's no conflict.
+            if (state.student_schedule[j] == section_id)
+                continue;
+                
+            if (data.sections[state.student_schedule[j]].timeslots.indexOf(data.sections[section_id].timeslots[i]) != -1)
+            {
+                for (var k in data.sections[state.student_schedule[j]].timeslots)
+                {
+                    var conflict_div_id = "section_" + state.student_schedule[j] + "_" + data.sections[state.student_schedule[j]].timeslots[k];
+                    $j("#" + conflict_div_id).addClass("section_conflict");
+                    conflict_highlighted_list.push(conflict_div_id);
+                    //  console.log("Detected conflict between " + section_id + " and " + state.student_schedule[j] + " at " + data.sections[state.student_schedule[j]].timeslots[k]);
+                }
+            }
+        }
+    }
+    
+    data.conflicts[event.target.id] = conflict_highlighted_list;
+    //  console.log("Hovering over section " +  + " at time " + );
+}
+
+function clear_conflicts(event)
+{
+    for (var i in data.conflicts[event.target.id])
+    {
+        $j("#" + data.conflicts[event.target.id][i]).removeClass("section_highlight");
+        $j("#" + data.conflicts[event.target.id][i]).removeClass("section_conflict");
+        //  console.log("Un-highlighted " + data.conflicts[event.target.id][i]);
+    }
+    data.conflicts[event.target.id] = null;
+}
+
 //  Add a student to a class
 function add_student(student_id, section_id)
 {
     if (state.student_id != student_id)
-        console.log("Warning: student " + student_id + " is not currently selected for updates.");
+    {
+        //  console.log("Warning: student " + student_id + " is not currently selected for updates.");
+    }
         
     var new_sections = state.student_schedule;
     section_id = parseInt(section_id);
     
-    //  TODO: Remove any conflicting classes
+    //  TODO: Remove any conflicting classes [???]
     
-    console.log("add_student: Updated sections are " + new_sections.toString());
+    //  console.log("add_student: Updated sections are " + new_sections.toString());
     
     //  Add desired section to list if it isn't already there
     if (new_sections.indexOf(section_id) == -1)
         new_sections.push(section_id);
     else
-        console.log("Section " + section_id + " already found in current schedule");
+    {
+        //  console.log("Section " + section_id + " already found in current schedule");
+    }
     
     //  Commit changes to server
     var schedule_resp = $j.ajax({
@@ -239,7 +300,9 @@ function add_student(student_id, section_id)
 function remove_student(student_id, section_id)
 {
     if (state.student_id != student_id)
-        console.log("Warning: student " + student_id + " is not currently selected for updates.");
+    {
+        //  console.log("Warning: student " + student_id + " is not currently selected for updates.");
+    }
         
     var new_sections = state.student_schedule;
     section_id = parseInt(section_id);
@@ -248,9 +311,11 @@ function remove_student(student_id, section_id)
     if (new_sections.indexOf(section_id) != -1)
         new_sections = new_sections.slice(0, new_sections.indexOf(section_id)).concat(new_sections.slice(new_sections.indexOf(section_id) + 1));
     else
-        console.log("Section " + section_id + " not found in current schedule");
+    {
+        //  console.log("Section " + section_id + " not found in current schedule");
+    }
  
-    console.log("remove_student: Updated sections are " + new_sections.toString());
+    //  console.log("remove_student: Updated sections are " + new_sections.toString());
    
     //  Commit changes to server
     var schedule_resp = $j.ajax({
@@ -289,7 +354,9 @@ function autocomplete_select_item(event, ui)
     if ((student_id > 0) && (student_id < 99999999))
         set_current_student(parseInt(student_id));
     else
-        console.log("Invalid student selected: " + s);
+    {
+        //  console.log("Invalid student selected: " + s);
+    }
 }
 
 function setup_autocomplete()
@@ -411,7 +478,7 @@ function render_classchange_table(student_id)
 
 function handle_completed()
 {
-    console.log("All data has been received.");
+    //  console.log("All data has been received.");
     
     data.students = {};
     data.classes = {};
@@ -495,7 +562,7 @@ function handle_completed()
         var user_id = data.enrollments[i][0];
         if (!(user_id in data.students))
         {
-            console.log("Warning: student ID " + user_id + " was not found in initial list");
+            //  console.log("Warning: student ID " + user_id + " was not found in initial list");
             var new_user = {};
             new_user.id = user_id
             new_user.sections = [];
@@ -510,7 +577,7 @@ function handle_completed()
         }
         else
         {
-            console.log("Section " + data.enrollments[i][1] + " from enrollments is not present in catalog");
+            //  console.log("Section " + data.enrollments[i][1] + " from enrollments is not present in catalog");
         }
     }
     
@@ -532,7 +599,7 @@ function handle_completed()
         }
         else
         {
-            console.log("User " + user_id + " from checkins is not present");
+            //  console.log("User " + user_id + " from checkins is not present");
         }
     }
     
@@ -545,7 +612,7 @@ function handle_completed()
         //  If we have a conflict, assume the larger number of students are enrolled.
         if (data.sections[sec_id].num_students_enrolled != num_students)
         {
-            console.log("Warning: Section " + sec_id + " claims to have " + num_students + " students but " + data.sections[sec_id].num_students_enrolled + " are enrolled.");
+            //  console.log("Warning: Section " + sec_id + " claims to have " + num_students + " students but " + data.sections[sec_id].num_students_enrolled + " are enrolled.");
             if (num_students > data.sections[sec_id].num_students_enrolled)
                 data.sections[sec_id].num_students_enrolled = num_students;
         }
@@ -556,7 +623,7 @@ function handle_completed()
     //  reset_status();
     
     $j("#messages").html("");
-    console.log("All data has been processed.");
+    //  console.log("All data has been processed.");
     
     //  Re-draw the table of sections in the appropriate mode.
     if (state.display_mode == "status")
