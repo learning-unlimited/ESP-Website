@@ -1,6 +1,7 @@
 from django.db import models
 from django.template.loaders.cached import Loader as CachedLoader
 from django.template.loader import find_template
+import reversion
 
 """ A template override model that stores the contents of a template in the database. """
 class TemplateOverride(models.Model):
@@ -24,9 +25,7 @@ class TemplateOverride(models.Model):
     
     def save(self, *args, **kwargs):
         #   Never overwrite; save a new copy with the version incremented.
-        self.id = None
         self.version = self.next_version()
-        kwargs['force_insert'] = True
         super(TemplateOverride, self).save(*args, **kwargs)
 
 from esp.utils import get_user

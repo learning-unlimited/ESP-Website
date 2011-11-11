@@ -4,8 +4,10 @@
 from esp.utils.models import TemplateOverride
 
 from django.contrib import admin
+from reversion.admin import VersionAdmin
 
-class TemplateOverrideAdmin(admin.ModelAdmin):
+
+class TemplateOverrideAdmin(VersionAdmin):
     exclude = ['version']
     search_fields = ['name']
 
