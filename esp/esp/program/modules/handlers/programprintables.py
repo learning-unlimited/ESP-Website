@@ -935,7 +935,7 @@ class ProgramPrintables(ProgramModuleObj):
             # attach payment information to student
             student.invoice_id = invoice.locator
             student.itemizedcosts = invoice.get_items()
-            student.meals = student.itemizedcosts.filter(li_type__anchor__parent__name='Optional').distinct()  # catch everything that's not admission to the program.
+            student.meals = student.itemizedcosts.filter(li_type__anchor__parent__name__in=('Optional','BuyMultiSelect')).distinct()  # catch everything that's not admission to the program.
             student.admission = student.itemizedcosts.filter(li_type__anchor__name='Required').distinct()  # Program admission
             student.paid_online = student.itemizedcosts.filter(anchor__parent__name='Receivable').distinct()  # LineItems for having paid online.
             student.itemizedcosttotal = invoice.cost()
