@@ -12,7 +12,6 @@ from esp.cal.models import Event
 from esp.users.models import User, ESPUser
 from esp.program.models import Program, ClassSection, StudentRegistration, RegistrationType
 
-
 ################################
 # Global Settings and Thingies #
 ################################
@@ -41,10 +40,10 @@ print "Initialized program to", program
 
 # Lunch hours, for checking whether a student has lunch free.
 #satlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[522,518])]) # for Spark 2011, lunch is 12-1, 1-2 on Saturday, March 18
-satlunch = (522, 518)
+satlunch = (552, 553)
 # no Sunday lunch for Spark
 # commented out all lines in the program that included sunlunch; for Splash, these should be uncommented
-# sunlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[497,498])])
+sunlunch = tuple([int(x.id) for x in Event.objects.filter(id__in=[566,567])])
 
 # The wiggle room factor for the class capacity, to leave a space for
 # those classes that didn't fill up from priority.  Set to 10% for now.
@@ -76,8 +75,10 @@ def capacity_star(cls):
 def lunch_free(user, lunchtimes):
     secs = ESPUser(user).getEnrolledSectionsFromProgram(program)
     for sec in secs:
-        if lunchtimes in sec.get_meeting_times():
-            return False
+        mt = sec.get_meeting_times().values_list('pk',flat=True).distinct() # lunch is an id, but get_meeting_times() is a QuerySet, so we need to search through the list of its ids
+        for lunch in lunchtimes: # lunchtimes is a tuple of id's
+            if lunch in mt: 
+                return False
     return True
     #return not bool(ESPUser(user).getEnrolledSectionsFromProgram(program).filter(meeting_times__in=lunchtimes))
 
@@ -99,11 +100,11 @@ def try_add(user, cls):
         if not lunch_free(user, satlunch):
             return False
 
-#    if not hasattr(cls, "_sunlunch"):
-#        cls._sunlunch = bool(cls.meeting_times.filter(id__in=sunlunch))
-#    if cls._sunlunch:
-#        if not lunch_free(user, sunlunch):
-#            return False
+    if not hasattr(cls, "_sunlunch"):
+        cls._sunlunch = bool(cls.meeting_times.filter(id__in=sunlunch))
+    if cls._sunlunch:
+        if not lunch_free(user, sunlunch):
+            return False
 
     # Now we've worked out any potential lunch conflicts.
     # Check if this user can actually add this section (and has no conflicts).
@@ -179,17 +180,12 @@ def get_val(bundle):
 def print_issues():
     # Find students with conflicting classes.
     print "ERROR SWEEP: Looking for students with conflicting classes or multiple classes over lunch..."
-    for student in program.students()['lotteried_students']:
-        secs = ESPUser(student).getEnrolledSectionsFromProgram(program)
-        my_tsdict = {}
-        for sec in secs:
-            for mt in sec.meeting_times.all():
-                if int(mt.id) in my_tsdict:
-                    print ESPUser(student).name() + " (" + student.username + "), conflict: " + sec.emailcode()
-                else:
-                    my_tsdict[int(mt.id)] = sec
 
+    check_conflicting_classes(False)
+
+    for student in program.students()['enrolled']:
         lunch_count = 0
+        secs = ESPUser(student).getEnrolledSectionsFromProgram(program)
         for sec in secs:
             if satlunch in sec.get_meeting_times():
                 lunch_count += 1
@@ -197,9 +193,77 @@ def print_issues():
                     print ESPUser(student).name() + " (" + student.username + "), Saturday lunch conflict"                    
                     break
 
-#        if secs.filter(meeting_times__in=sunlunch).count() > 1:
-#            print ESPUser(student).name() + " (" + student.username + "), Sunday lunch conflict"
+            if sunlunch in sec.get_meeting_times():
+                lunch_count += 1
+                if lunch_count > 1:
+                    print ESPUser(student).name() + " (" + student.username + "), Sunday lunch conflict"                    
+                    break
 
+def check_conflicting_classes(remove):
+    for student in program.students()['enrolled']:
+        secs = ESPUser(student).getEnrolledSectionsFromProgram(program)
+        my_tsdict = {}
+        for sec in secs:
+            for mt in sec.meeting_times.all():
+                if int(mt.id) in my_tsdict and not my_tsdict[mt.id] == None and not my_tsdict[mt.id] == sec:
+                    otherSec = my_tsdict[mt.id]
+                    problem_count = problem_count + 1
+                    print ESPUser(student).name() + " (" + student.username + "), conflict: " + sec.emailcode() + ", " + my_tsdict[mt.id].emailcode()
+                    if remove:
+                        choose_class_and_remove_student(sec, otherSec, my_tsdict, student)
+                else:
+                    my_tsdict[int(mt.id)] = sec
+
+#requires otherSec be the section currently in my_tsdict for the conflicting timeslot
+def choose_class_and_remove_student(sec, otherSec, my_tsdict, student):
+    #to choose which section to remove, we first check whether either was the student's priority class, if not
+    # we remove the students from the class with less space
+    if StudentRegistration.objects.filter(section=sec, user=student, relationship__name=priority_type).count() > 0:
+        removeSection = otherSec
+    elif StudentRegistration.objects.filter(section=otherSec, user=student, relationship__name=priority_type).count() > 0:
+        removeSection = sec
+    elif sec._get_capacity() - sec.num_students() < otherSec._get_capacity() - otherSec.num_students():
+        removeSection = sec
+    else:
+        removeSection = otherSec
+    removeSection.unpreregister_student(student, enrolled_type)
+    print "removed " + student.username + " from section " + removeSection.emailcode()
+    if removeSection == otherSec:
+        for timeslot in otherSec.get_meeting_times():
+            my_tsdict[timeslot.id] = None
+        for timeslot in sec.get_meeting_times():
+            if timeslot.id in my_tsdict: 
+                if my_tsdict[timeslot.id] == None:
+                    my_tsdict[timeslot.id] = sec
+                else:
+                    choose_class_and_remove_student(sec, my_tsdict[timeslot.id], my_tsdict, student)
+            else:
+                my_tsdict[timeslot.id] = sec
+            
+
+def remove_students_in_conflicting_classes():
+    check_conflicting_classes(True)
+
+def check_sanity():
+    for stu in program.students()['confirmed']:
+        print stu
+        d = {}
+        for t in program.getTimeSlots():
+            d[t] = []
+        for sr in StudentRegistration.objects.filter(section__parent_class__parent_program=74, relationship__name='Enrolled', user__id=stu.id):
+            for s in sr.section.get_meeting_times():
+                d[s].append(sr)
+        for t in d:
+            if len(d[t]) == 0:
+                for inter in StudentRegistration.objects.filter(section__parent_class__parent_program=74, relationship__name='Priority/1', user__id=stu.id):
+                    if not inter.section.isFull():
+                        if t in inter.section.get_meeting_times():
+                            if len(inter.section.get_meeting_times()) == 1:
+                                print t
+                                print inter.section
+                    
+            #print "no class"
+            #figure out whether there are open classes the student was interested in 
 
 ################################
 # Lottery Assignment Functions #
@@ -293,6 +357,12 @@ def assign_priorities():
 
 
 def screwed_sweep_p1_printout(fd=None):
+    screwed_sweep_by_type(priority_type, fd)
+
+def screwed_sweep_interested_printout(fd=None):
+    screwed_sweep_by_type(interested_type, fd)
+
+def screwed_sweep_by_type(reg_type, fd=None):
     """
     Print out the percentage that each student got, of the priority
     classes that they marked, in order of increasing percentage.
@@ -303,7 +373,7 @@ def screwed_sweep_p1_printout(fd=None):
 
     def classes_cnt(user):
         classescnt = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=program, user=user, relationship__name=enrolled_type).values('section').distinct().count()
-        pcnt = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=program, user=user, relationship__name=priority_type).values('section').distinct().count()
+        pcnt = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=program, user=user, relationship__name=reg_type).values('section').distinct().count()
         return (classescnt, pcnt)
 
     def pclasses_pct(user):
@@ -312,7 +382,7 @@ def screwed_sweep_p1_printout(fd=None):
             return 100*(counts[0]/(counts[1]*1.0))
         else: return 0
 
-    users = sorted(program.students()['lotteried_students'], key=pclasses_pct)
+    users = sorted(program.students()['enrolled'], key=pclasses_pct)
     fd.write("Full name,Username,% classes gotten,# received,# applied\n")
     for user in users:
         output = "%s,%s,%d,%d,%d\n" % (user.name(), user.username, pclasses_pct(user), classes_cnt(user)[0], classes_cnt(user)[1])
@@ -374,3 +444,5 @@ def assign_interesteds():
 
     # Now print out if there were any issues.  This step apparently takes a while.
     print_issues()
+
+

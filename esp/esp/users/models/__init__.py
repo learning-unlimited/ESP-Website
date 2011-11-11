@@ -647,7 +647,10 @@ class ESPUser(User, AnonymousUser):
                 if t.id in priority_dict:
                     for v in cv:
                         if v.startswith('Priority'):
-                            priority_dict[t.id].append(int(v[9:]))
+                            try:
+                                priority_dict[t.id].append(int(v[9:]))
+                            except Exception: # fails if 'Priority' is set, rather than 'Priority/1'
+                                priority_dict[t.id].append(1)
                         elif v == 'Enrolled':
                             return 0
         #   Now priority_dict is a dictionary where the keys are timeslot IDs and the values

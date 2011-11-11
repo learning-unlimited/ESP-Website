@@ -28,7 +28,7 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call, meets_deadline, needs_student
+from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call, meets_deadline, needs_student, meets_grade
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.program.views           import lottery_student_reg, lsr_submit as lsr_view_submit
@@ -86,6 +86,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
 
     @main_call
     @needs_student
+    @meets_grade
     @meets_deadline('/Classes/Lottery')
     def lotterystudentreg(self, request, tl, one, two, module, extra, prog):
         """
