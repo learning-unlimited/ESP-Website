@@ -391,6 +391,8 @@ LIMIT 1
                      )
             if extra == 'unsorted':
                 classes = classes.order_by('begin_time', 'id').distinct()
+            elif extra == 'by_time':
+                classes = classes.order_by('begin_time', 'parent_class__category', 'id').distinct()
             else:
                 classes = classes.order_by('parent_class__category', 'begin_time', 'id').distinct()
         
