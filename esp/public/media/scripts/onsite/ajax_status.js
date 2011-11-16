@@ -521,7 +521,7 @@ function render_table(display_mode, student_id)
             //  Hide the class if it's full (and we are filtering full classes)
             if (section.num_students_enrolled >= section.capacity)
             {
-                if ((!(settings.show_full_classes)) && (data.students[student_id].sections.indexOf(section.id) == -1))
+                if ((!(settings.show_full_classes)) && ((display_mode == "status") || (data.students[student_id].sections.indexOf(section.id) == -1)))
                     new_div.addClass("section_hidden");
             }
             
@@ -687,7 +687,7 @@ function populate_rooms()
             
         //  If section still doesn't have a capacity, mark it as 1000
         if (!(data.sections[data.rooms[i][0]].capacity))
-            data.sections[data.rooms[i][0]].capacity = 1000;
+            data.sections[data.rooms[i][0]].capacity = 2000;
     }
 }
 
@@ -775,7 +775,7 @@ function handle_completed()
     //  At the very least it needs to be done immediately before refreshing the full table.
     //  reset_status();
     
-    $j("#messages").html("");
+    //  $j("#messages").html("");
     //  console.log("All data has been processed.");
     
     //  Re-draw the table of sections in the appropriate mode.
