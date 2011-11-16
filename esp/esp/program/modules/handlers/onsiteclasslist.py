@@ -231,6 +231,30 @@ LIMIT 1
         
     
     """ End of highly model-dependent JSON views    """
+    
+    @needs_onsite
+    def printschedule_status(self, request, tl, one, two, module, extra, prog):
+        resp = HttpResponse(mimetype='application/json')
+         
+        verb = GetNode('V/Publish/Print')
+        qsc = self.program_anchor_cached().tree_create(['Schedule'])
+        result = {}
+
+        try:
+            user = int(request.GET.get('user', None))
+        except:
+            result['message'] = "Could not find user %s." % request.GET.get('user', None)
+            
+        if user:
+            user_obj = ESPUser.objects.get(id=user)
+            if not UserBit.objects.filter(user__id=user, verb=verb, qsc=qsc).exclude(enddate__lte=datetime.now()).exists():
+                newbit = UserBit.objects.create(user=user_obj, verb=verb, qsc=qsc, recursive=False, enddate=datetime.now() + timedelta(days=1))
+                result['message'] = "Submitted %s's schedule for printing." % (user_obj.name())
+            else:
+                result['message'] = "A schedule is already waiting to be printed for %s." % (user_obj.name())
+            
+        simplejson.dump(result, resp)
+        return resp
 
     @needs_onsite
     def ajax_status(self, request, tl, one, two, module, extra, prog):
