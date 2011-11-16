@@ -173,6 +173,8 @@ function add_message(msg, cls)
 
 function update_checkboxes()
 {
+    $j(".section_highlight").removeClass("section_highlight");
+    $j(".section_conflict").removeClass("section_conflict");
     $j(".student_enrolled").removeClass("student_enrolled");
     $j(".classchange_checkbox").removeAttr("checked");
     $j(".classchange_checkbox").removeAttr("disabled");
