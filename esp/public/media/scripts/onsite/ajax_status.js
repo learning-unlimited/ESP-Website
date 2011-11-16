@@ -11,7 +11,7 @@ var data = {};
 
 //  Some parameters for things that can be customized in the future.
 var settings = {
-    checkin_colors: false,
+    checkin_colors: false
 };
 
 /*  Ajax status flags
@@ -21,7 +21,7 @@ var settings = {
 */
 
 //  This is a set of flags for whether each batch of JSON data has arrived
-var status = {
+var data_status = {
     catalog_received: false,
     enrollment_received: false,
     checkins_received: false,
@@ -33,29 +33,29 @@ var status = {
 //  This function resets all the flags
 function reset_status()
 {
-    status.catalog_received = false;
-    status.enrollment_received = false;
-    status.checkins_received = false;
-    status.counts_received = false;
-    status.rooms_received = false;
-    status.students_received = false;
+    data_status.catalog_received = false;
+    data_status.enrollment_received = false;
+    data_status.checkins_received = false;
+    data_status.counts_received = false;
+    data_status.rooms_received = false;
+    data_status.students_received = false;
 }
 
 //  This function only returns true if all flags have been set
 //  (i.e. we received all necessary data)
 function check_status()
 {
-    if (!status.catalog_received)
+    if (!data_status.catalog_received)
         return false;
-    if (!status.enrollment_received)
+    if (!data_status.enrollment_received)
         return false;
-    if (!status.checkins_received)
+    if (!data_status.checkins_received)
         return false;
-    if (!status.counts_received)
+    if (!data_status.counts_received)
         return false;
-    if (!status.rooms_received)
+    if (!data_status.rooms_received)
         return false;
-    if (!status.students_received)
+    if (!data_status.students_received)
         return false;
         
     return true;
@@ -63,7 +63,7 @@ function check_status()
 
 //  This is a state variable.
 var state = {
-    status: status,
+    status: data_status,
     display_mode: "status",
     student_id: null,
     student_schedule: null,
@@ -77,7 +77,7 @@ var state = {
 function handle_catalog(new_data, text_status, jqxhr)
 {
     data.catalog = new_data;
-    status.catalog_received = true;
+    data_status.catalog_received = true;
     if (check_status())
         handle_completed();
 }
@@ -85,7 +85,7 @@ function handle_catalog(new_data, text_status, jqxhr)
 function handle_counts(new_data, text_status, jqxhr)
 {
     data.counts = new_data;
-    status.counts_received = true;
+    data_status.counts_received = true;
     if (check_status())
         handle_completed();
 }
@@ -93,7 +93,7 @@ function handle_counts(new_data, text_status, jqxhr)
 function handle_enrollment(new_data, text_status, jqxhr)
 {
     data.enrollments = new_data;
-    status.enrollment_received = true;
+    data_status.enrollment_received = true;
     if (check_status())
         handle_completed();
 }
@@ -101,7 +101,7 @@ function handle_enrollment(new_data, text_status, jqxhr)
 function handle_checkins(new_data, text_status, jqxhr)
 {
     data.checkins = new_data;
-    status.checkins_received = true;
+    data_status.checkins_received = true;
     if (check_status())
         handle_completed();
 }
@@ -109,7 +109,7 @@ function handle_checkins(new_data, text_status, jqxhr)
 function handle_rooms(new_data, text_status, jqxhr)
 {
     data.rooms = new_data;
-    status.rooms_received = true;
+    data_status.rooms_received = true;
     if (check_status())
         handle_completed();
 }
@@ -117,7 +117,7 @@ function handle_rooms(new_data, text_status, jqxhr)
 function handle_students(new_data, text_status, jqxhr)
 {
     data.students_list = new_data;
-    status.students_received = true;
+    data_status.students_received = true;
     if (check_status())
         handle_completed();
 }
@@ -701,7 +701,7 @@ function fetch_all(avoid_catalog)
     }
     else
     {
-        status.catalog_received = true;
+        data_status.catalog_received = true;
     }
     $j.ajax({
         url: "/onsite/Splash/2010/enrollment_status",
