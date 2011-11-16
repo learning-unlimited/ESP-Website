@@ -189,40 +189,46 @@ LIMIT 1
             sections_to_remove = ClassSection.objects.filter(id__in=list(set(current_sections) - set(desired_sections)))
             sections_to_add = ClassSection.objects.filter(id__in=list(set(desired_sections) - set(current_sections)))
 
-            #   Remove sections the student wants out of
-            for sec in sections_to_remove:
-                sec.unpreregister_student(user)
-                result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
-                
-            #   Remove sections that conflict with those the student wants into
-            sec_times = sections_to_add.select_related('meeting_times__id').values_list('id', 'meeting_times__id').order_by('meeting_times__id').distinct()
-            sm = ScheduleMap(user, prog)
-            existing_sections = []
-            for (sec, ts) in sec_times:
-                if ts and len(sm.map[ts]) > 0:
-                    #   We found something we need to remove
-                    for sm_sec in sm.map[ts]:
-                        if sm_sec.id not in sections_to_add:
-                            sm_sec.unpreregister_student(user)
-                            result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sm_sec.emailcode(), sm_sec.title(), sm_sec.id))
-                        else:
-                            existing_sections.append(sm_sec)
-                            
-            #   Add the sections the student wants
+            failed_add_sections = []
             for sec in sections_to_add:
-                if sec not in existing_sections:
-                    #   Use cannotAdd() to check schedule constraints, e.g. lunch
-                    error = sec.cannotAdd(user, not override_full)
-                    if not error:
-                        reg_result = sec.preregister_student(user, overridefull=override_full)
-                        error = 'Class is currently full.'
-                    else:
-                        reg_result = False
-                        
-                    if reg_result:
-                        result['messages'].append('Added %s (%s) to %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
-                    else:
-                        result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, error))
+                if sec.isFull() and not override_full:
+                    result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, 'Class is currently full.'))
+                    failed_add_sections.append(sec.id)
+
+            if len(failed_add_sections) == 0:
+                #   Remove sections the student wants out of
+                for sec in sections_to_remove:
+                    sec.unpreregister_student(user)
+                    result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
+                    
+                #   Remove sections that conflict with those the student wants into
+                sec_times = sections_to_add.select_related('meeting_times__id').values_list('id', 'meeting_times__id').order_by('meeting_times__id').distinct()
+                sm = ScheduleMap(user, prog)
+                existing_sections = []
+                for (sec, ts) in sec_times:
+                    if ts and len(sm.map[ts]) > 0:
+                        #   We found something we need to remove
+                        for sm_sec in sm.map[ts]:
+                            if sm_sec.id not in sections_to_add:
+                                sm_sec.unpreregister_student(user)
+                                result['messages'].append('Removed %s (%s) from %s: %s (%s)' % (user.name(), user.id, sm_sec.emailcode(), sm_sec.title(), sm_sec.id))
+                            else:
+                                existing_sections.append(sm_sec)
+                            
+                #   Add the sections the student wants
+                for sec in sections_to_add:
+                    if sec not in existing_sections and sec.id not in failed_add_sections:
+                        error = sec.cannotAdd(user, not override_full)
+                        if not error:
+                            reg_result = sec.preregister_student(user, overridefull=override_full)
+                            if not reg_result:
+                                error = 'Class is currently full.'
+                        else:
+                            reg_result = False
+                        if reg_result:
+                            result['messages'].append('Added %s (%s) to %s: %s (%s)' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id))
+                        else:
+                            result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, error))
         
             result['user'] = user.id
             result['sections'] = list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__start_date__lte=datetime.now(), studentregistration__end_date__gte=datetime.now(), studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
