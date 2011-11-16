@@ -446,14 +446,7 @@ function render_table(display_mode, student_id)
                 //  Create a tooltip with more information about the class
                 tooltip_div = $j("<span/>").addClass("tooltip_hover");
                 tooltip_div.append($j("<div/>").addClass("tooltip_title").html(section.title));
-                var teacher_txt = "";
-                for (var t in data.classes[section.class_id].teachers)
-                {
-                    teacher_txt += data.classes[section.class_id].teachers[t].first_name + " " + data.classes[section.class_id].teachers[t].last_name;
-                    if (t < data.classes[section.class_id].teachers.length - 1)
-                        teacher_txt += ", ";
-                }
-                tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(teacher_txt));
+                tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(data.classes[section.class_id].teacher_names));
                 tooltip_div.append($j("<div/>").addClass("tooltip_grades").html("Grades " + data.classes[section.class_id].grade_min.toString() + "--" + data.classes[section.class_id].grade_max.toString()));
                 tooltip_div.append($j("<div/>").addClass("tooltip_description").html(data.classes[section.class_id].class_info));
 
@@ -512,50 +505,59 @@ function populate_classes()
     data.classes = {};
     data.sections = {};
     
-    //  Iterate over classes/sections in the catalog
-    for (var cls in data.catalog)
+    //  Fill in timeslots (we need these)
+    for (var i in data.catalog.timeslots)
     {
-        //  Copy class object to dictionary
-        data.classes[data.catalog[cls].id] = data.catalog[cls];
+        var new_ts = {};
+        new_ts.id = data.catalog.timeslots[i][0];
+        new_ts.label = data.catalog.timeslots[i][1];
+        new_ts.sections = [];
+        data.timeslots[new_ts.id] = new_ts;
+    }
     
-        for (var sec in data.catalog[cls].get_sections)
+    //  Fill in classes
+    for (var i in data.catalog.classes)
+    {
+        var new_cls = data.catalog.classes[i];
+        new_cls.teachers = new_cls.teacher_names;
+        data.classes[new_cls.id] = new_cls;
+    }
+    
+    //  Fill in sections
+    for (var i in data.catalog.sections)
+    {
+        var new_sec = data.catalog.sections[i];
+        var parent_class = data.classes[new_sec.parent_class__id];
+        
+        //  Give up if we don't have a parent class for some strange reason...
+        if (!parent_class)
+            continue;
+        
+        new_sec.class_id = new_sec.parent_class__id;
+        new_sec.title = parent_class.anchor__friendly_name;
+        new_sec.grade_min = parent_class.grade_min;
+        new_sec.grade_max = parent_class.grade_max;
+        new_sec.rooms = null;
+        new_sec.emailcode = parent_class.category__symbol + parent_class.id + "s" + new_sec.anchor__name.substr(7);
+        new_sec.students_enrolled = [];
+        new_sec.students_checked_in = [];
+        new_sec.num_students_enrolled = 0;
+        new_sec.num_students_checked_in = 0;
+        //  Place max capacity here, and lower it later if it turns out the room is smaller
+        new_sec.capacity = parent_class.class_size_max;
+        if ((parent_class.class_size_max == 0) || ((parent_class.class_size_max_optimal) && (parent_class.class_size_max_optimal < new_sec.capacity)))
+            new_sec.capacity = parent_class.class_size_max_optimal;
+        if ((new_sec.max_class_capacity) && (new_sec.max_class_capacity < new_sec.capacity))
+            new_sec.capacity = new_sec.max_class_capacity;
+        new_sec.timeslots = new_sec.event_ids.split(",");
+        for (var j in new_sec.timeslots)
         {
-            //  Construct simplified section object
-            var new_sec = {};
-            new_sec.id = data.catalog[cls].get_sections[sec].id;
-            new_sec.class_id = data.catalog[cls].id;
-            new_sec.title = data.catalog[cls].title;
-            new_sec.grade_min = data.catalog[cls].grade_min;
-            new_sec.grade_max = data.catalog[cls].grade_max;
-            new_sec.rooms = null;
-            new_sec.emailcode = data.catalog[cls].category.symbol + data.catalog[cls].id + "s" + (parseInt(sec)+1);
-            new_sec.students_enrolled = [];
-            new_sec.students_checked_in = [];
-            new_sec.num_students_enrolled = 0;
-            new_sec.num_students_checked_in = 0;
-            new_sec.capacity = data.catalog[cls].get_sections[sec].capacity;
-            new_sec.timeslots = [];
-            data.sections[new_sec.id] = new_sec;
-            
-            //  Create timeslot if it doesn't exist already
-            var ts = data.catalog[cls].get_sections[sec].get_meeting_times;
-            for (var i in ts)
-            {
-                if (!(ts[i].id in data.timeslots))
-                {
-                    var new_ts = {};
-                    new_ts.id = ts[i].id;
-                    
-                    new_ts.label = ts[i].short_description;
-                    new_ts.sections = [];
-                    data.timeslots[new_ts.id] = new_ts;
-                    //  console.log("Added timeslot ID " + new_ts.id + ": " + new_ts.label);
-                }
-                data.sections[new_sec.id].timeslots.push(ts[i].id);
-                data.timeslots[ts[i].id].sections.push(new_sec.id);
-                //  console.log("Added " + data.catalog[cls].title + " section ID " + data.catalog[cls].get_sections[sec].id + " to timeslot " + ts[i].id);
-            }
+            if (data.timeslots[parseInt(new_sec.timeslots[j])])
+                data.timeslots[parseInt(new_sec.timeslots[j])].sections.push(new_sec.id);
         }
+        
+        data.sections[new_sec.id] = new_sec;
+        console.log("Added section " + new_sec.emailcode);
     }
     
     //  Sort sections within each timeslot
@@ -592,6 +594,14 @@ function populate_rooms()
     for (var i in data.rooms)
     {
         data.sections[data.rooms[i][0]].rooms = data.rooms[i][1];
+        
+        //  Lower capacity to that of room if needed
+        if (data.rooms[i][2] < data.sections[data.rooms[i][0]].capacity)
+            data.sections[data.rooms[i][0]].capacity = data.rooms[i][2];
+            
+        //  If section still doesn't have a capacity, mark it as 1000
+        if (!(data.sections[data.rooms[i][0]].capacity))
+            data.sections[data.rooms[i][0]].capacity = 1000;
     }
 }
 
@@ -695,7 +705,7 @@ function fetch_all(avoid_catalog)
     if (!avoid_catalog)
     {
         $j.ajax({
-            url: "/learn/Splash/2010/catalog_json",
+            url: "/onsite/Splash/2010/catalog_status",
             success: handle_catalog
         });
     }
