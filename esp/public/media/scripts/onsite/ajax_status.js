@@ -11,7 +11,10 @@ var data = {};
 
 //  Some parameters for things that can be customized in the future.
 var settings = {
-    checkin_colors: false
+    checkin_colors: false,
+    show_full_classes: true,
+    override_full: false,
+    disable_grade_filter: false
 };
 
 /*  Ajax status flags
@@ -122,6 +125,32 @@ function handle_students(new_data, text_status, jqxhr)
         handle_completed();
 }
 
+//  I wonder why this variable is necessary...
+var last_settings_event;
+function handle_settings_change(event)
+{
+    last_settings_event = event;
+    setup_settings();
+    render_table(state.display_mode, state.student_id);
+    update_checkboxes();
+}
+
+function setup_settings()
+{
+    $j("#hide_full_control").unbind("change");
+    $j("#override_control").unbind("change");
+    $j("#grade_limits_control").unbind("change");
+    
+    //  Apply settings
+    settings.show_full_classes = $j("#hide_full_control").prop("checked");
+    settings.override_full = $j("#override_control").prop("checked");
+    settings.disable_grade_filter = $j("#grade_limits_control").prop("checked");
+    
+    $j("#hide_full_control").change(handle_settings_change);
+    $j("#override_control").change(handle_settings_change);
+    $j("#grade_limits_control").change(handle_settings_change);
+}
+
 /*  Event handlers  */
 
 function add_message(msg, cls)
@@ -150,7 +179,8 @@ function update_checkboxes()
             var section = data.sections[data.timeslots[ts_id].sections[i]];
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + ts_id);
             studentcheckbox.hover(check_conflicts, clear_conflicts);
-            if (section.num_students_enrolled >= section.capacity)
+            //  Disable the checkbox if the class is full, unless we are overriding that
+            if ((section.num_students_enrolled >= section.capacity) && (!(settings.override_full)))
                 studentcheckbox.attr("disabled", "disabled");
             else
                 studentcheckbox.change(handle_checkbox);
@@ -271,7 +301,7 @@ function clear_conflicts(event)
 }
 
 //  Add a student to a class
-function add_student(student_id, section_id)
+function add_student(student_id, section_id, size_override)
 {
     if (state.student_id != student_id)
     {
@@ -295,7 +325,7 @@ function add_student(student_id, section_id)
     
     //  Commit changes to server
     var schedule_resp = $j.ajax({
-        url: "/onsite/Splash/2010/update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]",
+        url: "/onsite/Splash/2010/update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]&override=" + size_override,
         async: false,
         success: handle_schedule_response
     });
@@ -336,6 +366,9 @@ function handle_checkbox(event)
 {
     //  The checkbox ids are of the form classchange_[section id]_[student id]_[timeslot id], e.g. classchange_4100_55502_475
     var target_info = event.target.id.split("_");
+    var cur_grade = data.students[state.student_id].grade;
+    var target_section = data.sections[parseInt(target_info[1])];
+    
     if (event.target.checked)
     {
         //  console.log("Handling CHECKING of " + event.target.id);
@@ -357,8 +390,30 @@ function handle_checkbox(event)
             }
         }
         
+        //  Check grade
         if (verified)
-            add_student(target_info[2], target_info[1]);
+        {
+            if ((cur_grade < target_section.grade_min) || (cur_grade > target_section.grade_max))
+            {
+                verified = confirm("This class is for grades " + target_section.grade_min + "--" + target_section.grade_max + ", but the current student is in grade " + cur_grade + ".  Are you sure you want to register them for this class?");
+            }
+        }
+        
+        //  Check size override
+        var size_override = false;
+        if ((verified) && (settings.override_full))
+        {
+            if (target_section.num_students_enrolled >= target_section.capacity)
+            {
+                verified = confirm("This class is full or oversubscribed (" + target_section.num_students_enrolled + " students, " + target_section.capacity + " spots).  Are you sure you want to register the student?");
+                if (verified)
+                    size_override = true;
+            }
+        }
+        
+        //  Send request to the server if 
+        if (verified)
+            add_student(target_info[2], target_info[1], size_override);
         else
         {
             $j("#" + event.target.id).removeAttr("checked");
@@ -403,6 +458,10 @@ function setup_autocomplete()
 
 function clear_table()
 {
+    $j(".section").removeClass("section_highlight");
+    $j(".section").removeClass("section_conflict");
+    $j(".section").removeClass("student_enrolled");
+
     for (var ts_id in data.timeslots)
     {
         var div_name = "timeslot_" + ts_id;
@@ -436,45 +495,56 @@ function render_table(display_mode, student_id)
                 new_div.append(studentcheckbox);
             }
             
-            if ((display_mode == "status") || ((section.grade_min <= data.students[student_id].grade) && (section.grade_max >= data.students[student_id].grade)))
+            //  Hide the class if the current student is outside the grade range (and we are filtering by grade)
+            if ((display_mode == "classchange") && ((section.grade_min > data.students[student_id].grade) || (section.grade_max < data.students[student_id].grade)))
             {
-                new_div.append($j("<span/>").addClass("emailcode").html(section.emailcode));
-                new_div.append($j("<span/>").addClass("room").html(section.rooms));
-                //  TODO: make this snap to the right reliably
-                new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
-                
-                //  Create a tooltip with more information about the class
-                tooltip_div = $j("<span/>").addClass("tooltip_hover");
-                tooltip_div.append($j("<div/>").addClass("tooltip_title").html(section.title));
-                tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(data.classes[section.class_id].teacher_names));
-                tooltip_div.append($j("<div/>").addClass("tooltip_grades").html("Grades " + data.classes[section.class_id].grade_min.toString() + "--" + data.classes[section.class_id].grade_max.toString()));
-                tooltip_div.append($j("<div/>").addClass("tooltip_description").html(data.classes[section.class_id].class_info));
-
-                new_div.append(tooltip_div);
-                
-                //  Set color of the cell based on check-in and enrollment of the section
-                var hue = 0.4 + 0.6 * (section.num_students_enrolled / section.capacity);
-                var lightness = 0.9;
-                if (settings.checkin_colors)
-                    lightness -= 0.5 * (section.num_students_checked_in / section.num_students_enrolled);
-                var saturation = 0.8;
-                if (hue > 1.0)
-                    hue = 1.0;
-                if (section.num_students_enrolled == 0)
-                    lightness = 0.9;
-                new_div.css("background", hslToHTML(hue, saturation, lightness));
-                new_div.attr("id", "section_" + section.id + "_" + ts_id);
-                
-                //  Create tooltip with class description, teachers
-                new_div.addClass("tooltip");
-                var hover_div = $j("<span/>").addClass("tooltip").addClass("tooltip_hover");
-                hover_div.html("Hi, this is a tooltip");
-                hover_div.attr("id", "section_" + section.id + "_tooltip");
-                //  TODO: FIX
-                //  new_div.append(hover_div);
-                
-                ts_div.append(new_div);
+                if ((!(settings.disable_grade_filter)) && (data.students[student_id].sections.indexOf(section.id) == -1))
+                    new_div.addClass("section_hidden");
             }
+            
+            //  Hide the class if it's full (and we are filtering full classes)
+            if (section.num_students_enrolled >= section.capacity)
+            {
+                if ((!(settings.show_full_classes)) && (data.students[student_id].sections.indexOf(section.id) == -1))
+                    new_div.addClass("section_hidden");
+            }
+            
+            new_div.append($j("<span/>").addClass("emailcode").html(section.emailcode));
+            new_div.append($j("<span/>").addClass("room").html(section.rooms));
+            //  TODO: make this snap to the right reliably
+            new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
+            
+            //  Create a tooltip with more information about the class
+            tooltip_div = $j("<span/>").addClass("tooltip_hover");
+            tooltip_div.append($j("<div/>").addClass("tooltip_title").html(section.title));
+            tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(data.classes[section.class_id].teacher_names));
+            tooltip_div.append($j("<div/>").addClass("tooltip_grades").html("Grades " + data.classes[section.class_id].grade_min.toString() + "--" + data.classes[section.class_id].grade_max.toString()));
+            tooltip_div.append($j("<div/>").addClass("tooltip_description").html(data.classes[section.class_id].class_info));
+
+            new_div.append(tooltip_div);
+            
+            //  Set color of the cell based on check-in and enrollment of the section
+            var hue = 0.4 + 0.6 * (section.num_students_enrolled / section.capacity);
+            var lightness = 0.9;
+            if (settings.checkin_colors)
+                lightness -= 0.5 * (section.num_students_checked_in / section.num_students_enrolled);
+            var saturation = 0.8;
+            if (hue > 1.0)
+                hue = 1.0;
+            if (section.num_students_enrolled == 0)
+                lightness = 0.9;
+            new_div.css("background", hslToHTML(hue, saturation, lightness));
+            new_div.attr("id", "section_" + section.id + "_" + ts_id);
+            
+            //  Create tooltip with class description, teachers
+            new_div.addClass("tooltip");
+            var hover_div = $j("<span/>").addClass("tooltip").addClass("tooltip_hover");
+            hover_div.html("Hi, this is a tooltip");
+            hover_div.attr("id", "section_" + section.id + "_tooltip");
+            //  TODO: FIX
+            //  new_div.append(hover_div);
+            
+            ts_div.append(new_div);
         }
     }
 }
@@ -557,7 +627,6 @@ function populate_classes()
         }
         
         data.sections[new_sec.id] = new_sec;
-        console.log("Added section " + new_sec.emailcode);
     }
     
     //  Sort sections within each timeslot
@@ -747,6 +816,7 @@ $j(document).ready(function () {
 
     $j("#messages").html("Loading class and student data...");
     
+    setup_settings();
     fetch_all();
     
     //  Update enrollment counts and list of students once per minute.
