@@ -60,7 +60,9 @@ class OnSiteClassList(ProgramModuleObj):
             "admin_title": "Show All Classes at Onsite Registration",
             "link_title": "List of All Classes",
             "module_type": "onsite",
-            "seq": 31
+            "seq": 31,
+            "main_call": "allClassList",
+            "aux_calls": "status,enrollment_status,students_status,checkin_status,counts_status,rooms_status,get_schedule_json,update_schedule_json,ajax_status,catalog_status,printschedule_status",
             }, {
             "admin_title": "Show Open Classes at Onsite Registration",
             "link_title": "List of Open Classes",
@@ -70,7 +72,6 @@ class OnSiteClassList(ProgramModuleObj):
             "aux_calls": "status",
             } ]
 
-    
     @cache_function
     def section_data(sec):
         sect = {}
