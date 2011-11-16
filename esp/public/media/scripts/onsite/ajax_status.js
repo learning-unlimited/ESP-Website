@@ -153,6 +153,15 @@ function setup_settings()
 
 /*  Event handlers  */
 
+function print_schedule()
+{
+    result = $j.ajax({
+        url: "/onsite/Splash/2010/printschedule_status?user=" + state.student_id,
+        async: false
+    });
+    add_message(JSON.parse(result.responseText).message);
+}
+
 function add_message(msg, cls)
 {
     if (!cls)
@@ -233,7 +242,11 @@ function set_current_student(student_id)
         });
         render_classchange_table(student_id);
         $j("#status_switch").removeAttr("disabled");
+        $j("#schedule_print").removeAttr("disabled");
+        $j("#status_switch").unbind("click");
+        $j("#schedule_print").unbind("click");
         $j("#status_switch").click(function () {set_current_student(null);});
+        $j("#schedule_print").click(function () {print_schedule();});
     }
     else
     {
@@ -242,6 +255,7 @@ function set_current_student(student_id)
         render_status_table();
         $j("#student_selector").attr("value", "");
         $j("#status_switch").attr("disabled", "disabled");
+        $j("#schedule_print").attr("disabled", "disabled");
     }
 }
 
@@ -564,6 +578,7 @@ function render_classchange_table(student_id)
     render_table("classchange", student_id);
     update_checkboxes();
     add_message("Displaying class changes matrix for " + data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + "), grade " + data.students[student_id].grade, "message_header");
+    add_message("Display settings can be found at the <a href=\"#settings\">bottom of the page</a>.");
 }
 
 /*  This function populates the linked data structures once all components have arrived.
