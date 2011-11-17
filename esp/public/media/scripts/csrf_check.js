@@ -1,13 +1,17 @@
 dojo.require('dijit.form.Button');
 dojo.require('dijit.Dialog');
-newDiv = document.createElement('div');
-newDiv.setAttribute('id', 'csrfAlert');
-newDiv.setAttribute('dojoType', 'dijit.Dialog');
-newDiv.setAttribute('style', 'display:none');
-newDiv.setAttribute('title', 'Oops!');
-newText = document.createTextNode('It appears your session has become disconnected. Please make sure cookies are enabled and try again.');
-newDiv.appendChild(newText);
-document.body.appendChild(newDiv);
+
+if($j("#csrfAlert").length == 0)
+{
+    newDiv = document.createElement('div');
+    newDiv.setAttribute('id', 'csrfAlert');
+    newDiv.setAttribute('dojoType', 'dijit.Dialog');
+    newDiv.setAttribute('style', 'display:none');
+    newDiv.setAttribute('title', 'Oops!');
+    newText = document.createTextNode('It appears your session has become disconnected. Please make sure cookies are enabled and try again.');
+    newDiv.appendChild(newText);
+    document.body.appendChild(newDiv);
+}
 
 function strip_tags(str)
 {
@@ -16,7 +20,11 @@ function strip_tags(str)
 
 var check_csrf_cookie = function(form)
 {
-    if (!form || !form.csrfmiddlewaretoken) return false;
+    //If the form is null, return false
+    if (!form) return false;
+    //If this is a non-CSRF form just submit
+    if (!form.csrfmiddlewaretoken) return true;
+
     csrf_token = form.csrfmiddlewaretoken;
     csrf_cookie = $j.cookie("csrftoken");
     //alert(csrf_cookie);

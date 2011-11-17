@@ -1,3 +1,11 @@
+$j.getScript("/media/scripts/csrf_check.js", set_onsubmit);
+
+function set_onsubmit()
+{ 
+  //Select all forms
+  $j("form").submit(function() { return check_csrf_cookie(this); });
+}
+
 var csrfmiddlewaretoken = $j.cookie("csrftoken");
 if (csrfmiddlewaretoken == "")
 {
@@ -9,4 +17,3 @@ if (csrfmiddlewaretoken == "")
 function csrftoken() {
   document.write("<input type='hidden' name='csrfmiddlewaretoken' value='" + csrfmiddlewaretoken + "' />");
 }
-
