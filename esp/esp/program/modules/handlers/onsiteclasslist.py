@@ -62,7 +62,7 @@ class OnSiteClassList(ProgramModuleObj):
             "module_type": "onsite",
             "seq": 31,
             "main_call": "allClassList",
-            "aux_calls": "status,enrollment_status,students_status,checkin_status,counts_status,rooms_status,get_schedule_json,update_schedule_json,ajax_status,catalog_status,printschedule_status",
+            "aux_calls": "status,enrollment_status,students_status,checkin_status,counts_status,rooms_status,get_schedule_json,update_schedule_json,classchange_grid,catalog_status,printschedule_status",
             }, {
             "admin_title": "Show Open Classes at Onsite Registration",
             "link_title": "List of Open Classes",
@@ -265,7 +265,7 @@ LIMIT 1
         return resp
 
     @needs_onsite
-    def ajax_status(self, request, tl, one, two, module, extra, prog):
+    def classchange_grid(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['timeslots'] = prog.getTimeSlots()
         return render_to_response(self.baseDir()+'ajax_status.html', request, (prog, tl), context)
