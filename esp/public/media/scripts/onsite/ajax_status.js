@@ -902,5 +902,5 @@ $j(document).ready(function () {
     fetch_all();
     
     //  Update enrollment counts and list of students once per minute.
-    setInterval(refresh_counts, 120000);
+    setInterval(refresh_counts, 300000);
 });
