@@ -51,6 +51,7 @@ table.narrow {
     text-align: center;
     background-color: #cccccc;
     width: 200px;
+    padding-top: 10px;
     height: 30px;
     font-size: 1.1em;
 }
@@ -88,6 +89,12 @@ table.narrow {
     border: 0px;
 }
 
+.section_category_hidden {
+    visibility: hidden;
+    height: 0px;
+    border: 0px;
+}
+
 #student_selector_area {
     height: 100px;
 }
@@ -118,7 +125,22 @@ span {
     background-color: #EEF3FF;
     border: 1px solid #99CCFF;
     height: 80px;
-    width: 663px;
+    width: 600px;
+    padding: 6px;
+    margin-right: 20px;
+    float: left;
+    overflow: auto;
+    box-shadow: 1px 1px 3px hsla(0, 0%, 0%, 0.6);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 0.9em;
+}
+
+#category_controls {
+    text-align: left;
+    background-color: #EEF3FF;
+    border: 1px solid #99CCFF;
+    height: 80px;
+    width: 400px;
     padding: 6px;
     overflow: auto;
     box-shadow: 1px 1px 3px hsla(0, 0%, 0%, 0.6);
@@ -162,4 +184,21 @@ span {
     font-weight: bold;
     font-family: Arial, Helvetica, sans-serif;
     font-size: 0.9em;
+}
+
+#category_controls div span {
+    font-size: 0.8em;
+}
+
+#category_controls p {
+    columns: 2;
+}
+
+#category_list {
+    width: 320px;
+}
+
+.category_item {
+    width: 150px;
+    float: left;
 }

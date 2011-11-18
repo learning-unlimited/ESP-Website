@@ -14,7 +14,8 @@ var settings = {
     checkin_colors: false,
     show_full_classes: true,
     override_full: false,
-    disable_grade_filter: false
+    disable_grade_filter: false,
+    categories_to_display: []
 };
 
 /*  Ajax status flags
@@ -152,6 +153,21 @@ function setup_settings()
 }
 
 /*  Event handlers  */
+
+function show_loading_box()
+{
+    var loading_box = $j("<div/>").attr("id", "loading_box");
+    loading_box.html("Loading...");
+    loading_box.dialog({
+        autoOpen: true,
+        modal: false
+    });
+}
+
+function hide_loading_box()
+{
+    $j("#loading_box").dialog("close");
+}
 
 function print_schedule()
 {
@@ -490,8 +506,10 @@ function clear_table()
 /*  This function turns the data structure populated by handle_completed() (below)
     into a table displaying the enrollment and check-in status of all sections. 
     Additional features are controlled by display_mode and student_id.  */
+var last_hover_event = null;
 function render_table(display_mode, student_id)
 {
+    render_category_options();
     clear_table();
     for (var ts_id in data.timeslots)
     {
@@ -502,7 +520,10 @@ function render_table(display_mode, student_id)
         for (var i in data.timeslots[ts_id].sections)
         {
             var section = data.sections[data.timeslots[ts_id].sections[i]];
+            var parent_class = data.classes[section.class_id];
+            
             var new_div = $j("<div/>").addClass("section");
+            new_div.addClass("section_category_" + parent_class.category__symbol);
             
             if (display_mode == "classchange")
             {
@@ -531,16 +552,18 @@ function render_table(display_mode, student_id)
             new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
             
             //  Create a tooltip with more information about the class
-            tooltip_div = $j("<span/>").addClass("tooltip_hover");
-            tooltip_div.append($j("<div/>").addClass("tooltip_title").html(section.title));
+            new_div.addClass("tooltip");
+            var tooltip_div = $j("<span/>").addClass("tooltip_hover").attr("id", div_name);
+            tooltip_div.append($j("<div/>").addClass("tooltip_title").html(section.title + " - Grades " + data.classes[section.class_id].grade_min.toString() + "--" + data.classes[section.class_id].grade_max.toString()));
+            tooltip_div.append($j("<div/>").html(section.num_students_checked_in.toString() + " students checked in, " + section.num_students_enrolled + " enrolled; capacity = " + section.capacity));
             tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(data.classes[section.class_id].teacher_names));
-            tooltip_div.append($j("<div/>").addClass("tooltip_grades").html("Grades " + data.classes[section.class_id].grade_min.toString() + "--" + data.classes[section.class_id].grade_max.toString()));
-            tooltip_div.append($j("<div/>").addClass("tooltip_description").html(data.classes[section.class_id].class_info));
-
+            tooltip_div.append($j("<div/>").attr("id", "tooltip_" + section.id + "_" + ts_id + "_desc").addClass("tooltip_description").html(data.classes[section.class_id].class_info));
             new_div.append(tooltip_div);
             
             //  Set color of the cell based on check-in and enrollment of the section
-            var hue = 0.4 + 0.6 * (section.num_students_enrolled / section.capacity);
+            var hue = 0.4 + 0.4 * (section.num_students_enrolled / section.capacity);
+            if (section.num_students_enrolled >= section.capacity)
+                hue = 1.0;
             var lightness = 0.9;
             if (settings.checkin_colors)
                 lightness -= 0.5 * (section.num_students_checked_in / section.num_students_enrolled);
@@ -551,17 +574,10 @@ function render_table(display_mode, student_id)
                 lightness = 0.9;
             new_div.css("background", hslToHTML(hue, saturation, lightness));
             new_div.attr("id", "section_" + section.id + "_" + ts_id);
-            
-            //  Create tooltip with class description, teachers
-            new_div.addClass("tooltip");
-            var hover_div = $j("<span/>").addClass("tooltip").addClass("tooltip_hover");
-            hover_div.html("Hi, this is a tooltip");
-            hover_div.attr("id", "section_" + section.id + "_tooltip");
-            //  TODO: FIX
-            //  new_div.append(hover_div);
-            
+
             ts_div.append(new_div);
         }
+        ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
     }
 }
     
@@ -586,11 +602,60 @@ function render_classchange_table(student_id)
 /*  This function populates the linked data structures once all components have arrived.
 */
 
+function update_category_filters()
+{
+    $j(".section").removeClass("section_category_hidden");
+    for (var symbol in data.categories)
+    {
+        if (settings.categories_to_display.indexOf(symbol) == -1)
+            $j(".section_category_" + symbol).addClass("section_category_hidden");
+    }
+}
+
+function render_category_options()
+{
+    //  Clear category select area
+    top_div = $j("#category_list");
+    top_div.html("");
+    //  Add a checkbox for each category we know about
+    for (var symbol in data.categories)
+    {
+        var new_li = $j("<div/>").addClass("category_item");
+        var new_checkbox = $j("<input/>").attr("type", "checkbox").attr("id", "category_select_" + symbol);
+        if (settings.categories_to_display.indexOf(symbol) != -1)
+            new_checkbox.attr("checked", "checked");
+        new_checkbox.change(function (event) {
+            var symbol = event.target.id.split("_")[2];
+            var symbol_index = settings.categories_to_display.indexOf(symbol);
+            if (symbol_index == -1)
+                settings.categories_to_display.push(symbol)
+            else
+                settings.categories_to_display = settings.categories_to_display.slice(0, symbol_index).concat(settings.categories_to_display.slice(symbol_index + 1));
+            update_category_filters();
+        });
+        new_li.append(new_checkbox);
+        new_li.append($j("<span/>").html(symbol + ": " + data.categories[symbol].category));
+        top_div.append(new_li);
+    }
+}
+
 function populate_classes()
 {
     data.timeslots = {};
     data.classes = {};
     data.sections = {};
+    data.categories = {}
+    
+    //  Fill in categories
+    for (var i in data.catalog.categories)
+    {
+        var new_category = data.catalog.categories[i];
+        data.categories[new_category.symbol] = new_category;
+        if (settings.categories_to_display.indexOf(new_category.symbol) == -1)
+        {
+            settings.categories_to_display.push(new_category.symbol);
+        }
+    }
     
     //  Fill in timeslots (we need these)
     for (var i in data.catalog.timeslots)
