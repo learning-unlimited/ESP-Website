@@ -7,6 +7,7 @@ from esp.datatree.models import GetNode
 from django.contrib.auth import logout, login, authenticate
 from esp.middleware import ESPError
 from esp.users.views import make_user_admin
+from esp.tests.utils import CacheFlushTestCase
 
 class ESPUserTest(TestCase):
     def testInit(self):
@@ -225,7 +226,7 @@ class UserForwarderTest(TestCase):
         self.assertTrue(UserForwarder.follow(self.ub) == (self.ub, False), fwd_info(self.ub))
         self.assertTrue(UserForwarder.follow(self.uc) == (self.ub, True), fwd_info(self.uc))
 
-class MakeAdminTest(TestCase):
+class MakeAdminTest(CacheFlushTestCase):
     def setUp(self):
         self.user, created = ESPUser.objects.get_or_create(username='admin_test')
     def runTest(self):

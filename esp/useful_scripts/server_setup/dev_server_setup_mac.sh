@@ -4,9 +4,49 @@
 # Michael Price, December 2010
 
 # Parameters
-GIT_REPO="http://diogenes.learningu.org/git/esp-project.git"
+#GIT_REPO="http://diogenes.learningu.org/git/esp-project.git"
 #GIT_REPO="espuser@esp.mit.edu:/esp/git/esp-project.git"
-DROPBOX_STARTUP_SCRIPT="/etc/rc.local"
+GIT_REPO="git://github.com/learning-unlimited/ESP-Website.git"
+
+## Required dependencies
+if [ -z "`which port`" ]; then
+    echo "ERROR: This installer requires MacPorts!"
+    echo "Unfortunately, this installer is too lazy to go and download MacPorts"
+    echo "for you; you'll have to go and do it yourself."
+    
+    SYS_VERSION="`system_profiler SPSoftwareDataType | grep "System Version:"`"
+    if [ -z "$SYS_VERSION" ]; then
+	echo "We can't seem to figure out your MacOS X version; though the following may help:"
+	system_profiler SPSoftwareDataType
+    else
+	MACOSX_VERSION="`echo "$SYS_VERSION" | grep "System Version:" | grep -o "10\.[0-9]"`"
+	case "$MACOSX_VERSION" in
+	    10.0) MACOSX_CODENAME="Cheetah (dude, you're still running Cheetah??)";;
+	    10.1) MACOSX_CODENAME="Puma";;
+	    10.2) MACOSX_CODENAME="Jaguar";;
+	    10.3) MACOSX_CODENAME="Panther";;
+	    10.4) MACOSX_CODENAME="Tiger";;
+	    10.5) MACOSX_CODENAME="Leopard";;
+	    10.6) MACOSX_CODENAME="Snow Leopard";;
+	    10.7) MACOSX_CODENAME="Lion";;
+	    *) MACOSX_CODENAME="(unrecognized version)";;
+	esac
+
+	echo "You're using MacOS X $MACOSX_VERSION \"$MACOSX_CODENAME\"."
+    fi
+
+    echo "You can (probably) download and install MacPorts for this version by"
+    echo "following the instructions at <http://www.macports.org/install.php>."
+
+    if [ ! -d "/Developer" ]; then
+	echo
+	echo "MacPorts also requires Apple's Developer Tools, which appear to be missing too."
+	echo "You can install them from the CD's that came with your computer, or download"
+	echo "the installer from <http://developer.apple.com/xcode/> (free registration required)."
+    fi
+
+    exit 0
+fi
 
 # Stuff for random password generation
 MATRIX="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
@@ -20,7 +60,7 @@ LENGTH="8"
 CURDIR=`pwd`
 
 # Parse options
-OPTSETTINGS=`getopt -o 'ah' -l 'all,reset,deps,git,settings,db,dropbox,apache,help' -- "$@"`
+OPTSETTINGS=`getopt ahrdgbsp: $*`
 E_OPTERR=65
 if [ "$#" -eq 0 ]
 then   # Script needs at least one command-line argument.
@@ -36,15 +76,12 @@ do
   case "$1" in
     -a) MODE_ALL=true;;
     -h) MODE_USAGE=true;;
-    --all) MODE_ALL=true;;
-    --help) MODE_USAGE=true;;
-    --reset) MODE_RESET=true;;
-    --deps) MODE_DEPS=true;;
-    --dropbox) MODE_DROPBOX=true;;
-    --git) MODE_GIT=true;;
-    --db) MODE_DB=true;;
-    --settings) MODE_SETTINGS=true;;
-    --apache) MODE_APACHE=true;;
+    -r) MODE_RESET=true;;
+    -d) MODE_DEPS=true;;
+    -g) MODE_GIT=true;;
+    -b) MODE_DB=true;;
+    -s) MODE_SETTINGS=true;;
+    -p) MODE_APACHE=true;;
      *) break;;
   esac
 
@@ -66,7 +103,6 @@ Options:
     --reset:    Reset settings that have been entered (can be used with others)
     --deps:     Install software dependencies
     --git:      Check out a copy of the code
-    --dropbox:  Create a Dropbox share for the site's media files
     --db:       Set up a PostgreSQL database
     --settings: Write settings files
     --apache:   Set up Apache to serve the site using mod_wsgi
@@ -146,7 +182,6 @@ while [[ ! -n $DEPDIR ]]; do
 done
 echo "Using dependencies temp directory: $DEPDIR"
 echo "DEPDIR=\"$DEPDIR\"" >> $BASEDIR/.espsettings
-DROPBOX_PATH=${DEPDIR}/dropbox
 
 while [[ ! -n $ESPHOSTNAME ]]; do 
     echo
@@ -198,18 +233,6 @@ while [[ ! -n $ADMINEMAIL ]]; do
 done
 echo "Selected admin e-mail: $ADMINEMAIL"
 echo "ADMINEMAIL=\"$ADMINEMAIL\"" >> $BASEDIR/.espsettings
-
-while [[ ! -n $DROPBOX_BASE_DIR ]]; do
-    echo 
-    echo "Please enter a directory path reserved for Dropbox storage"
-    echo "  (default = `dirname $BASEDIR`/dropboxes). This site's Dropbox "
-    echo "  share will be mounted as '$SITENAME' within that directory ."
-    echo -n "  --> "
-    read DROPBOX_BASE_DIR
-    DROPBOX_BASE_DIR=${DROPBOX_BASE_DIR:-`dirname $BASEDIR`/dropboxes}
-done
-echo "Selected Dropbox storage path: $DROPBOX_BASE_DIR"
-echo "DROPBOX_BASE_DIR=\"$DROPBOX_BASE_DIR\"" >> $BASEDIR/.espsettings
 
 while [[ ! -n $LOGDIR ]]; do
     echo 
@@ -272,15 +295,15 @@ echo "DBPASS=\"$DBPASS\"" >> $BASEDIR/.espsettings
 echo "Settings have been entered.  Please check them by looking over the output"
 echo -n "above, then press enter to continue or Ctrl-C to quit."
 read THROWAWAY
-
-# Update package repositories
-apt-get update
+echo "You may be prompted about installing various pieces of software;"
+echo "please confirm that you want to install."
+echo
 
 # Git repository setup
 # To manually reset: Back up .espsettings file in [sitename].old directory, then remove site directory
 if [[ "$MODE_GIT" || "$MODE_ALL" ]]
 then
-    apt-get install -y git-core
+    port install git-core +universal
 
     if [[ -e $BASEDIR/esp ]]
     then
@@ -319,39 +342,22 @@ then
 	cd $DEPDIR
 	
 	#	Get what we can using Ubuntu's package manager
-	apt-get install -y build-essential texlive imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-dns postgresql-8.4 python-psycopg2 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large ipython wget memcached libmemcached
+	port install texlive ImageMagick dvipng postgresql91 inkscape wget memcached libmemcached +universal
 
-	#	Fetch and extract files
-	if [[ ! -d selenium-server-standalone-2.9.0 ]]
+	if [[ ! -d selenium-server-standalone-2.8.0 ]]
 	then
-		mkdir selenium-server-standalone-2.9.0
-		cd selenium-server-standalone-2.9.0
-		wget http://selenium.googlecode.com/files/selenium-server-standalone-2.9.0.jar
+		mkdir selenium-server-standalone-2.8.0
+		cd selenium-server-standalone-2.8.0
+		wget http://selenium.googlecode.com/files/selenium-server-standalone-2.8.0.jar
 		cd $DEPDIR
 	fi
-        if [[ ! -d andrewgodwin-south-21a635231327 ]]
-	then
-		wget https://bitbucket.org/andrewgodwin/south/get/21a635231327.tar.gz
-		tar -xvf 21a635231327.tar.gz
-		cd andrewgodwin-south-21a635231327/
-		./setup.py build
-		sudo ./setup.py install
-		cd $DEPDIR
-	fi
-	while [[ ! -d dropbox ]]
-	do
-        rm -f dropbox.tar.gz
-		if [[ `uname -a | grep "_64" | wc -l` != "0" ]]
-		then
-			wget -O dropbox.tar.gz http://www.dropbox.com/download/?plat=lnx.x86_64
-		else
-			wget -O dropbox.tar.gz http://www.dropbox.com/download/?plat=lnx.x86
-		fi
-		tar -xzf dropbox.tar.gz
-		mv .dropbox-dist dropbox
-	done
 
 	#	Install python libraries
+	python -m easy_install --find-links http://www.pythonware.com/products/pil/ Imaging
+	python -m easy_install flup
+	python -m easy_install pydns
+	python -m easy_install psycopg2
+	python -m easy_install ipython
 	python -m easy_install iCalendar
 	python -m easy_install django
 	python -m easy_install south
@@ -363,6 +369,7 @@ then
 	python -m easy_install selenium
 	python -m easy_install django-selenium==0.3
 	python -m easy_install django-selenium-test-runner
+	python -m easy_install django-extensions
 
 	#	Install sslauth
 	if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]
@@ -377,16 +384,16 @@ then
 	fi
 
 	cd $DEPDIR
-	wget -O django-extensions.tar.gz http://pypi.python.org/packages/source/d/django-extensions/django-extensions-0.6.tar.gz
-	tar -zxf django-extensions.tar.gz
-	cd django-extensions-0.6
-	python setup.py install
 
 	cd $DEPDIR
 	wget -O pylibmc.tar.gz http://pypi.python.org/packages/source/p/pylibmc/pylibmc-1.1.1.tar.gz#md5=e43c54e285f8d937a3f1a916256ecc85
 	tar -xzf pylibmc.tar.gz
 	cd pylibmc-1.1.1
-	python setup.py install # --with-libmemcached=../libmemcached-0.44/libmemcached
+	if [ "$MACOSX_VERSION" == "10.6" ]; then
+	    CFLAGS="-arch x86_64" LDFLAGS="-arch x86_64" python setup.py install --with-libmemcached=/opt/local
+	else
+	    python setup.py install --with-libmemcached=/opt/local
+	fi
 
     cd $CURDIR
     
@@ -485,7 +492,7 @@ SELENIUM_DRIVERS = 'Firefox'
 
 EOF
 
-    /etc/init.d/memcached restart
+    killall memcached ## launchd is shiny and respawns stuff, and I'm lazy
 
     echo "Generated Django settings overrides, saved to:"
     echo "  $BASEDIR/esp/esp/local_settings.py"
@@ -493,72 +500,6 @@ EOF
     echo "  ${BASEDIR}/esp/esp/database_settings.py"
 
     echo "Settings have been generated.  Please check them by looking over the"
-    echo -n "output above, then press enter to continue or Ctrl-C to quit."
-    read THROWAWAY
-
-fi
-
-# Dropbox setup
-# To reset: 
-# - remove line from /etc/rc.local
-# - stop Dropbox process from selected home directory
-# - remove links to images, styles, uploaded in esp/public/media
-# - remove link esp/public/custom_media
-# - remove Dropbox folder
-if [[ "$MODE_DROPBOX" || "$MODE_ALL" ]]
-then
-
-	if [[ ! -e ${DROPBOX_PATH}/dropbox ]]
-	then
-		echo "Dropbox executable could not be found."
-		echo "Expected path was: ${DROPBOX_PATH}/dropbox"
-		echo "Please install dependencies using the --deps option."
-		exit 1
-	fi
-
-    echo "A Dropbox will now be created for this site's media."
-    echo "You may be prompted to link this machine to a Dropbox account."
-    echo "If so, you'll see a URL that should be copied into a Web browser"
-    echo "to establish the link.  You may want to create a new account"
-    echo "specific to $INSTITUTION before doing it."
-    echo
-    echo -n "Once this is complete, type 'ok' and hit enter"
-    mkdir -p ${DROPBOX_BASE_DIR}/${SITENAME}
-    HOME=${DROPBOX_BASE_DIR}/$SITENAME ${DROPBOX_PATH}/dropbox -i start &
-
-    while [[ $THROWAWAY != "ok" ]]
-    do
-        echo -n " --> "
-        read THROWAWAY
-    done
-    kill $!
-
-    cat >>$DROPBOX_STARTUP_SCRIPT <<EOF
-HOME=${DROPBOX_BASE_DIR}/$SITENAME ${DROPBOX_PATH}/dropboxd &
-EOF
-
-    echo "Dropbox for $SITENAME will run on startup from now on."
-    echo "To change, edit ${DROPBOX_STARTUP_SCRIPT}."
-
-    HOME=${DROPBOX_BASE_DIR}/$SITENAME nohup ${DROPBOX_PATH}/dropboxd &
-    echo "Dropbox has also been started for the current session."
-
-    MEDIADIR=$BASEDIR/esp/public/media
-    mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/images
-    mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/styles
-    mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/uploaded
-    DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
-    cp -r ${DJANGO_DIR}/contrib/admin/media $MEDIADIR/admin
-    ln -sf ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media $BASEDIR/esp/public/custom_media
-    ln -sf $BASEDIR/esp/public/custom_media/images $BASEDIR/esp/public/media/images
-    ln -sf $BASEDIR/esp/public/custom_media/styles $BASEDIR/esp/public/media/styles
-    echo "Dropbox-hosted directories have been linked into the site's media."
-
-    mkdir -p $MEDIADIR/uploaded
-    mkdir $MEDIADIR/uploaded/bio_pictures
-    chmod -R 777 $MEDIADIR
-    
-    echo "Dropbox has been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
 
@@ -636,7 +577,7 @@ fi
 
 if [[ "$MODE_APACHE" || "$MODE_ALL" ]]
 then
-	APACHE_CONF_DIR=/etc/apache2/conf.d
+	APACHE_CONF_DIR=/etc/apache2/extra
 
     cat >$BASEDIR/esp.wsgi <<EOF
 import os
@@ -688,7 +629,7 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 </VirtualHost>
 
 EOF
-    /etc/init.d/apache2 reload
+    apachectl restart
     echo "Added VirtualHost to Apache configuration $APACHE_CONF_FILE"
     
     echo "Apache has been set up.  Please check them by looking over the"

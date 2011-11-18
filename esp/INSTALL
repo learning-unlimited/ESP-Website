@@ -55,7 +55,7 @@ selenium	Python (easy_install)	N/A
 django-selenium	Python (easy_install)	0.3
 django-selenium-test-runner	Python (easy_install)	N/A
 
-selenium-server-standalone	System	http://selenium.googlecode.com/files/selenium-server-standalone-2.8.0.jar
+selenium-server-standalone	System	http://selenium.googlecode.com/files/selenium-server-standalone-2.9.0.jar
 
 LaTeX           System                  texlive, texlive-latex-extra
 libcurl         System                  libcurl4-openssl-dev
