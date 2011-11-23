@@ -9,21 +9,11 @@ class Migration(DataMigration):
 
     def forwards(self, orm):
         "Write your forwards methods here."
-        module = ProgramModule.objects.get(handler='AJAXSchedulingModule', main_call='ajax_scheduling')
-        aux_calls = module.aux_calls.split(',')
-        if 'ajax_resourcetypes' not in aux_calls:
-            module.aux_calls = ",".join(aux_calls + ['ajax_resourcetypes'])
-            print module.aux_calls
-            module.save()
+        module = ProgramModule.objects.get(handler='AJAXSchedulingModule')
 
     def backwards(self, orm):
         "Write your backwards methods here."
-        module = ProgramModule.objects.get(handler='AJAXSchedulingModule', main_call='ajax_scheduling')
-        aux_calls = module.aux_calls.split(',')
-        if 'ajax_resourcetypes' in aux_calls:
-            aux_calls.remove('ajax_resourcetypes')
-            module.aux_calls = ",".join(aux_calls)
-            module.save()
+        module = ProgramModule.objects.get(handler='AJAXSchedulingModule')
 
     models = {
         'auth.group': {
