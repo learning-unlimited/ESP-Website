@@ -47,8 +47,6 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             "link_title": "Sign Up to Volunteer",
             "module_type": "volunteer",
             "seq": 0,
-            "main_call": "signup",
-            "aux_calls": "view",
             }
 
     def signup(self, request, tl, one, two, module, extra, prog):

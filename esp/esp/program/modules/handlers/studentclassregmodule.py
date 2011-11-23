@@ -130,9 +130,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             "link_title": "Sign up for Classes",
             "module_type": "learn",
             "seq": 10,
+            "inline_template": "classlist.html",
             "required": True,
-            "main_call": "classlist",
-            "aux_calls": "ajax_schedule,addclass,ajax_addclass,catalog,fillslot,clearslot,ajax_clearslot,class_docs,swapclass,catalog_student_count_json,catalog_registered_classes_json"
             }]
 
     def extensions(self):

@@ -54,7 +54,6 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
             "link_title": "Credit Card Payment",
             "module_type": "learn",
             "seq": 10000,
-            "main_call": "payonline",
             }
 
     def isCompleted(self):

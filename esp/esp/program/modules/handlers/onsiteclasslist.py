@@ -65,8 +65,6 @@ class OnSiteClassList(ProgramModuleObj):
             "link_title": "List of Open Classes",
             "module_type": "onsite",
             "seq": 32,
-            "main_call": "classList",
-            "aux_calls": "status",
             } ]
 
     

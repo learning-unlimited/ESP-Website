@@ -48,7 +48,6 @@ class SATPrepTeacherInput(ProgramModuleObj):
             "admin_title": "SATPrep Interface for Teachers",
             "module_type": "teach",
             "seq": 50,
-            "main_call": "satprepdiag"
             }
 
     @aux_call
