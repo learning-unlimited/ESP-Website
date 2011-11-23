@@ -913,7 +913,26 @@ class Program(models.Model, CustomFormsLinkModel):
         if user:
             for module in modules:
                 module.setUser(user)
+        #   Populate the view attributes so they can be cached
+        for module in modules:
+            module.get_all_views()
+            module.get_main_view()
         return modules
+
+    @cache_function
+    def getModuleViews(self, main_only=False, tl=None):
+        modules = self.getModules_cached(tl)
+        result = {}
+        for mod in modules:
+            tl = mod.module.module_type
+            if main_only:
+                if mod.main_view:
+                    result[(tl, mod.main_view)] = mod
+            else:
+                for view in mod.views:
+                    result[(tl, view)] = mod
+        return result
+    getModuleViews.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
     
     def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
