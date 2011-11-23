@@ -476,13 +476,10 @@ class ProgramModuleObj(models.Model):
         - "handler"
         - "admin_title" (as "%(link_title)s (%(handler)s)")
         - "seq" (as 200)
-        - "aux_calls" (based on @aux_calls decorators)
-        - "main_call" (based on the @main_call decorator)
         """
 
         props = cls.module_properties()
 
-        
         def update_props(props):
             if not "handler" in props:
                 props["handler"] = cls.__name__
@@ -491,20 +488,6 @@ class ProgramModuleObj(models.Model):
             if not "seq" in props:
                 props["seq"] = 200
 
-            if not "aux_calls" in props:
-                NAME = 0
-                FN = 1
-                props["aux_calls"] = ",".join( [ x[NAME] for x in cls.__dict__.items()
-                                                 if getattr(x[FN], "call_tag", None) == "Aux Call" ] )
-
-            if not "main_call" in props:
-                NAME = 0
-                FN = 1
-                mainCallList = [ x[NAME] for x in cls.__dict__.items()
-                                 if getattr(x[FN], "call_tag", None) == "Main Call" ]
-                assert len(mainCallList) <= 1, "Error: You can only have one Main Call per class!: (%s: %s)" % (cls.__name__, ",".join(mainCallList))
-                props["main_call"] = ",".join(mainCallList)
-            
         if type(props) == dict:
             props = [ props ]
 
