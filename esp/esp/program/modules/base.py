@@ -128,16 +128,25 @@ class ProgramModuleObj(models.Model):
             if isinstance(item, type(self.get_views_by_call_tag)) and hasattr(item, 'call_tag'):
                 if item.call_tag in tags:
                     result.append(key)
-                    
+            
         return result
-
+    
     def get_main_view(self):
-        return self.get_views_by_call_tag(['Main Call'])
-
-    def all_views(self):
-        return self.get_views_by_call_tag(['Main Call', 'Aux Call'])
-    views = property(all_views)
-
+        if not hasattr(self, '_main_view'):
+            main_views = self.get_views_by_call_tag(['Main Call'])
+            if len(main_views) > 0:
+                self._main_view = main_views[0]
+            else:
+                self._main_view = None
+        return self._main_view
+    main_view = property(get_main_view)
+    
+    def get_all_views(self):
+        if not hasattr(self, '_views'):
+            self._views = self.get_views_by_call_tag(['Main Call', 'Aux Call'])
+        return self._views
+    views = property(get_all_views)
+    
     def get_msg_vars(self, user, key):
         return None
 
