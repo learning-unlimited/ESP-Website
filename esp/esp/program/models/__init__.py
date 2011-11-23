@@ -76,16 +76,8 @@ class ProgramModule(models.Model):
     # Human-readable name for the Program Module
     admin_title = models.CharField(max_length=128)
 
-    # Main view function associated with this Program Module
-    #   Not all program modules have main calls, but this field
-    #   must contain the name of the default template if the main call
-    #   is not a function!
-    main_call  = models.CharField(max_length=32, default='main')
-
     #   A module can have an inline template (whose context is filled by prepare())
-    #   independently of its main_call, although the main_call field can be used
-    #   to specify the template name (in the absence of a view function)
-    #   for backwards compatibility.
+    #   independently of its main view.
     inline_template = models.CharField(max_length=32, blank=True, null=True)
 
     # One of teach/learn/etc.; What is this module typically used for?
@@ -97,13 +89,7 @@ class ProgramModule(models.Model):
     # Sequence orderer.  When ProgramModules are listed on a page, order them
     # from smallest to largest 'seq' value
     seq = models.IntegerField()
-
-    # Secondary view functions associated with this ProgramModule
-    aux_calls = models.CharField(max_length=1024, blank=True, null=True)
-
-    # Summary view functions, that summarize data for all instances of this ProgramModule
-    summary_calls = models.CharField(max_length=512, blank=True, null=True)
-
+    
     # Must the user supply this ProgramModule with data in order to complete program registration?
     required = models.BooleanField()
 
