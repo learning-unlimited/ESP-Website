@@ -155,7 +155,7 @@ class ProgramModuleObj(models.Model):
         modules = self.program.getModules(self.user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
-                return getattr(module, module.module.main_call)
+                return getattr(module, module.main_view)
         assert False, 'No core module to return to!'
 
     def getCoreURL(self, tl):
@@ -163,8 +163,7 @@ class ProgramModuleObj(models.Model):
         modules = self.program.getModules(self.user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
-                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.module.main_call
-
+                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.main_view
 
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl))
@@ -180,24 +179,25 @@ class ProgramModuleObj(models.Model):
         else:
             return Q(id__in = ids)
 
-    #   This function caches the customized (augmented) program module objects
     @cache_function
     def findModuleObject(tl, call_txt, prog):
+        """ This function caches the customized (augmented) program module object
+            matching a particular view function and area. """
         # Make sure all modules exist
         modules = prog.program_modules.all()
         for module in modules:
             ProgramModuleObj.getFromProgModule(prog, module)
 
-        #   Start with the program's cached list of modules
-        moduleobjs = filter(lambda mod: mod.module.module_type == tl, prog.getModules())
         #   Check for a module that has a matching main_call
-        for modobj in moduleobjs:
-            if modobj.module.main_call == call_txt:
-                return modobj
+        main_call_map = prog.getModuleViews(main_only=True)
+        if (tl, call_txt) in main_call_map:
+            return main_call_map[(tl, call_txt)]
+            
         #   Check for a module that has a matching aux_call
-        for modobj in moduleobjs:
-            if isinstance(modobj.module.aux_calls, basestring) and call_txt in modobj.module.aux_calls.strip().split(','):
-                return modobj
+        all_call_map = prog.getModuleViews(main_only=False)
+        if (tl, call_txt) in all_call_map:
+            return all_call_map[(tl, call_txt)]
+            
         #   If no module matched those criteria, we are looking for a page that does not exist.
         raise Http404
         
@@ -234,8 +234,8 @@ class ProgramModuleObj(models.Model):
                 for m in other_modules:
                     m.request = request
                     m.user    = user
-                    if not isinstance(m, CoreModule) and not m.isCompleted() and hasattr(m, m.module.main_call):
-                        return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
+                    if not isinstance(m, CoreModule) and not m.isCompleted() and m.main_view:
+                        return getattr(m, m.main_view)(request, tl, one, two, call_txt, extra, prog)
 
         #   If the module isn't "core" or the user did all required steps,
         #   call on the originally requested view.
@@ -345,7 +345,7 @@ class ProgramModuleObj(models.Model):
     def get_full_path(self):
         str_array = self.program.anchor.tree_encode()
         url = '/'+self.module.module_type \
-              +'/'+'/'.join(str_array[-2:])+'/'+self.module.main_call
+              +'/'+'/'.join(str_array[-2:])+'/'+self.main_view
         return url
     get_full_path.depend_on_row(lambda: ProgramModuleObj, 'self')
 
@@ -394,7 +394,7 @@ class ProgramModuleObj(models.Model):
 
     def useTemplate(self):
         """ Use a template if the `mainView' function doesn't exist. """
-        return (not self.module.main_call) or (not hasattr(self, self.module.main_call))
+        return (not self.main_view)
 
     def isCompleted(self):
         return False
