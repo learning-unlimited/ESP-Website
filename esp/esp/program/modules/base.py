@@ -99,9 +99,11 @@ class ProgramModuleObj(models.Model):
             'call_tag' attribute.  This function searches the methods of the
             current program module to find those that match the list supplied
             in the 'tags' argument. """
+        from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo
             
         result = []
         for key in dir(self):
+
             #   Check that this attribute isn't derived from the base class.
             if key in dir(ProgramModuleObj):
                 continue
@@ -109,6 +111,14 @@ class ProgramModuleObj(models.Model):
             #   Check that we don't do a Django attribute lookup which could
             #   result in an unwanted database query.
             if key in self.__class__._meta.get_all_field_names():
+                continue
+                
+            #   Check that this attribute isn't coming from a module extension class.
+            exclude_key = False
+            for exclude_class in [ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo]:
+                if key in dir(exclude_class):
+                    exclude_key = True
+            if exclude_key:
                 continue
                 
             #   Fetch the attribute, now that we're confident it's safe to look at.
