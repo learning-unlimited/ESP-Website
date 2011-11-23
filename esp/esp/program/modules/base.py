@@ -92,11 +92,41 @@ class ProgramModuleObj(models.Model):
     def __unicode__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
-    def all_views(self):
-        if self.module and self.module.aux_calls:
-            return self.module.aux_calls.strip(',').split(',')
+    def get_views_by_call_tag(self, tags):
+        """ We define decorators below (aux_call, main_call, etc.) which allow
+            methods within the ProgramModuleObj subclass to be tagged with
+            metadata.  At the moment, this metadata is a string stored in the
+            'call_tag' attribute.  This function searches the methods of the
+            current program module to find those that match the list supplied
+            in the 'tags' argument. """
+            
+        result = []
+        for key in dir(self):
+            #   Check that this attribute isn't derived from the base class.
+            if key in dir(ProgramModuleObj):
+                continue
+        
+            #   Check that we don't do a Django attribute lookup which could
+            #   result in an unwanted database query.
+            if key in self.__class__._meta.get_all_field_names():
+                continue
+                
+            #   Fetch the attribute, now that we're confident it's safe to look at.
+            item = getattr(self, key)
+            #   This is a hack to test whether the item is a bound method,
+            #   maybe there is a better way.
+            if isinstance(item, type(self.get_views_by_call_tag)) and hasattr(item, 'call_tag'):
+                if item.call_tag in tags:
+                    result.append(key)
+                    
+        return result
 
-        return []
+    def get_main_view(self):
+        return self.get_views_by_call_tag(['Main Call'])
+
+    def all_views(self):
+        return self.get_views_by_call_tag(['Main Call', 'Aux Call'])
+    views = property(all_views)
 
     def get_msg_vars(self, user, key):
         return None
