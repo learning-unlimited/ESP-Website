@@ -129,6 +129,7 @@ class ProgramModuleObj(models.Model):
                 self._main_view = None
         return self._main_view
     main_view = property(get_main_view)
+    main_view_fn = lambda self, *args, **kwargs: getattr(self, self.main_view)(*args, **kwargs)
     
     def get_all_views(self):
         if not hasattr(self, '_views'):
@@ -224,7 +225,7 @@ class ProgramModuleObj(models.Model):
                     m.request = request
                     m.user    = user
                     if not isinstance(m, CoreModule) and not m.isCompleted() and m.main_view:
-                        return getattr(m, m.main_view)(request, tl, one, two, call_txt, extra, prog)
+                        return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
 
         #   If the module isn't "core" or the user did all required steps,
         #   call on the originally requested view.
