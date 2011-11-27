@@ -8,44 +8,113 @@
 #GIT_REPO="espuser@esp.mit.edu:/esp/git/esp-project.git"
 GIT_REPO="git://github.com/learning-unlimited/ESP-Website.git"
 
+SYS_VERSION="`system_profiler SPSoftwareDataType | grep "System Version:"`"
+MACOSX_VERSION="`echo "$SYS_VERSION" | grep "System Version:" | grep -o "10\.[0-9]"`"
+case "$MACOSX_VERSION" in
+    10.0) MACOSX_CODENAME="Cheetah (dude, you're still running Cheetah??)";;
+    10.1) MACOSX_CODENAME="Puma";;
+    10.2) MACOSX_CODENAME="Jaguar";;
+    10.3) MACOSX_CODENAME="Panther";;
+    10.4) MACOSX_CODENAME="Tiger";;
+    10.5) MACOSX_CODENAME="Leopard";;
+    10.6) MACOSX_CODENAME="Snow Leopard";;
+    10.7) MACOSX_CODENAME="Lion";;
+    *) MACOSX_CODENAME="(unrecognized version)";;
+esac
+
+# Helper method
+function die() {
+    echo "$1"
+    exit -1
+}
+
+# Macs tend to distribute packages as .pkg files sitting on mountable filesystems,
+# themselves distributed as .dmg files.
+# So you have to download the .dmg, mount it, find the .pkg (or .mpkg, a metapackage containing several packages),
+# install the .pkg, unmount the image, and remove the .dmg.
+function install_dmg_pkg() {
+    local DMG="$1"
+    if which wget; then  ## Macs don't ship with wget; we install it ourselves after installing MacPorts
+	wget -c "$DMG" -O /tmp/disk_image.dmg || die "Error downloading disk image: [$DMG]"
+    else
+	curl "$DMG" > /tmp/disk_image.dmg || die "Error downloading disk image: [$DMG]"
+    fi
+    mkdir -p "/tmp/mountpoint"
+    hdiutil attach -mountpoint "/tmp/mountpoint" "/tmp/disk_image.dmg"
+    if [ -n "`ls /tmp/mountpoint | grep "pkg$"`" ]; then
+	installer -verbose -pkg "/tmp/mountpoint/`ls /tmp/mountpoint | grep "pkg$"`" -target / || die "Error installing from disk image [$DMG]"
+    else
+	echo "Installer is a standalone application; will now launch..."
+	open /tmp/mountpoint/*.app
+    fi
+    hdiutil detach "/tmp/mountpoint" && rm /tmp/disk_image.dmg
+    rmdir /tmp/mountpoint
+}
+
+function install_zip_pkg() {
+    local ZIP="$1"
+    if which wget; then
+	wget -c "$ZIP" -O /tmp/pkg/zip || die "Error downloading zip file [$ZIP]"
+    else
+	curl "$ZIP" > /tmp/pkg.zip || die "Error downloading zip file [$ZIP]"
+    fi
+    pushd .
+    cd /tmp/
+    mkdir -p pkg
+    unzip pkg.zip -d pkg
+    if [ -n "`ls /tmp/pkg | grep "pkg$"`" ]; then
+	installer -verbose -pkg "/tmp/pkg/`ls /tmp/pkg | grep "pkg$"`" -target / || die "Error installing from zip file [$ZIP]"
+    else
+	echo "Installer is a standalone application; will now launch..."
+	open /tmp/pkg/*.app
+    fi
+    rm -rf pkg pkg.zip
+    popd
+}
+
 ## Required dependencies
 if [ -z "`which port`" ]; then
-    echo "ERROR: This installer requires MacPorts!"
-    echo "Unfortunately, this installer is too lazy to go and download MacPorts"
-    echo "for you; you'll have to go and do it yourself."
+    echo "WARNING: This installer requires MacPorts!"
     
-    SYS_VERSION="`system_profiler SPSoftwareDataType | grep "System Version:"`"
     if [ -z "$SYS_VERSION" ]; then
 	echo "We can't seem to figure out your MacOS X version; though the following may help:"
 	system_profiler SPSoftwareDataType
+	echo "You can (probably) download and install MacPorts for this version by"
+	echo "following the instructions at <http://www.macports.org/install.php>."
+
+	exit 0
     else
-	MACOSX_VERSION="`echo "$SYS_VERSION" | grep "System Version:" | grep -o "10\.[0-9]"`"
-	case "$MACOSX_VERSION" in
-	    10.0) MACOSX_CODENAME="Cheetah (dude, you're still running Cheetah??)";;
-	    10.1) MACOSX_CODENAME="Puma";;
-	    10.2) MACOSX_CODENAME="Jaguar";;
-	    10.3) MACOSX_CODENAME="Panther";;
-	    10.4) MACOSX_CODENAME="Tiger";;
-	    10.5) MACOSX_CODENAME="Leopard";;
-	    10.6) MACOSX_CODENAME="Snow Leopard";;
-	    10.7) MACOSX_CODENAME="Lion";;
-	    *) MACOSX_CODENAME="(unrecognized version)";;
-	esac
-
-	echo "You're using MacOS X $MACOSX_VERSION \"$MACOSX_CODENAME\"."
+	echo "You appear to be using MacOS X $MACOSX_VERSION \"$MACOSX_CODENAME\"."
     fi
-
-    echo "You can (probably) download and install MacPorts for this version by"
-    echo "following the instructions at <http://www.macports.org/install.php>."
 
     if [ ! -d "/Developer" ]; then
 	echo
-	echo "MacPorts also requires Apple's Developer Tools, which appear to be missing too."
+	echo "MacPorts requires Apple's Developer Tools, which appear to be missing too."
 	echo "You can install them from the CD's that came with your computer, or download"
 	echo "the installer from <http://developer.apple.com/xcode/> (free registration required)."
+	echo "Please install the Developer tools before proceeding."
+
+	exit 0
     fi
 
-    exit 0
+    case "$MACOSX_VERSION" in
+	10.0) echo "Error: Unsupported MacOS X version (too old).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
+	10.1) echo "Error: Unsupported MacOS X version (too old).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
+	10.2) echo "Error: Unsupported MacOS X version (too old).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
+	10.3) echo "Error: Unsupported MacOS X version (too old).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
+	10.4) install_dmg_pkg "https://distfiles.macports.org/MacPorts/MacPorts-2.0.3-10.4-Tiger.dmg";;
+	10.5) install_dmg_pkg "https://distfiles.macports.org/MacPorts/MacPorts-2.0.3-10.5-Leopard.dmg";;
+	10.6) install_dmg_pkg "https://distfiles.macports.org/MacPorts/MacPorts-2.0.3-10.6-SnowLeopard.dmg";;
+	10.7) install_dmg_pkg "https://distfiles.macports.org/MacPorts/MacPorts-2.0.3-10.7-Lion.dmg";;
+	*) echo "Error: Unsupported MacOS X version (too new or otherwise unrecognized).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
+    esac
+
+    echo "MacPorts should now be installed.  You may need to log out and log back in again to use it."
+    echo "However, this installer is Awesome(tm) and will proceed to use it without logging out and back in."
+
+    ## Set up some MacPorts environment variables
+    export PATH="/opt/local/bin:/opt/local/sbin:$PATH"
+    export MANPATH=/opt/local/share/man:$MANPATH
 fi
 
 # Stuff for random password generation
@@ -295,15 +364,24 @@ echo "DBPASS=\"$DBPASS\"" >> $BASEDIR/.espsettings
 echo "Settings have been entered.  Please check them by looking over the output"
 echo -n "above, then press enter to continue or Ctrl-C to quit."
 read THROWAWAY
-echo "You may be prompted about installing various pieces of software;"
-echo "please confirm that you want to install."
-echo
 
 # Git repository setup
 # To manually reset: Back up .espsettings file in [sitename].old directory, then remove site directory
 if [[ "$MODE_GIT" || "$MODE_ALL" ]]
 then
-    port install git-core +universal
+    export PATH="$PATH:/usr/local/git/bin/"
+
+    if which git; then
+	echo "git already installed; not downloading"
+    else
+	echo "Downloading git"
+	case "$MACOSX_VERSION" in
+	    10.5) which git || if [ -n "`uname -m | grep ppc`" ]; then install_dmg_pkg "http://git-osx-installer.googlecode.com/files/git-1.6.5.1-UNIVERSALbinary-leopard.dmg"; else install_dmg_pkg "http://git-osx-installer.googlecode.com/files/git-1.7.4.4-i386-leopard.dmg"; fi;;
+	    10.6) which git || install_dmg_pkg "http://git-osx-installer.googlecode.com/files/git-1.7.7-intel-universal-snow-leopard.dmg";;
+	    10.7) which git || install_dmg_pkg "http://git-osx-installer.googlecode.com/files/git-1.7.7-intel-universal-snow-leopard.dmg";;  ## Lion's Xcode ships with git; may be installed already
+	    *) echo "Warning:  No binary git package available for this platform.  Installing from source; this may take a while...";port install git-core +universal;;
+	esac
+    fi
 
     if [[ -e $BASEDIR/esp ]]
     then
@@ -338,62 +416,98 @@ fi
 if [[ "$MODE_DEPS" || "$MODE_ALL" ]]
 then
 
-	mkdir -p $DEPDIR
-	cd $DEPDIR
+    mkdir -p $DEPDIR
+    cd $DEPDIR
 	
-	#	Get what we can using Ubuntu's package manager
-	port install texlive ImageMagick dvipng postgresql91 inkscape wget memcached libmemcached +universal
+    export PATH="$PATH:/usr/local/texlive/2011/bin/universal-darwin/"
+    if which latex; then
+	echo "LaTeX already installed; not downloading/installing"
+    else
+	echo "Downloading texlive"
+	case "$MACOSX_VERSION" in
+	    10.3) install_zip_pkg "http://ftp.tug.org/historic/systems/mactex/mactex2010-final-20110528.zip";;
+	    10.4) install_zip_pkg "http://ftp.tug.org/historic/systems/mactex/mactex2010-final-20110528.zip";;
+	    10.5) install_zip_pkg "http://mirror.hmc.edu/ctan/systems/mac/mactex/MacTeX.mpkg.zip";;
+	    10.6) install_zip_pkg "http://mirror.hmc.edu/ctan/systems/mac/mactex/MacTeX.mpkg.zip";;
+	    10.7) install_zip_pkg "http://mirror.hmc.edu/ctan/systems/mac/mactex/MacTeX.mpkg.zip";;
+	    *) echo "Warning:  No binary texlive package available for this platform.  Installing from source; this may take a while...";port install texlive +universal;;
+	esac
+    fi
 
-	if [[ ! -d selenium-server-standalone-2.8.0 ]]
-	then
-		mkdir selenium-server-standalone-2.8.0
-		cd selenium-server-standalone-2.8.0
-		wget http://selenium.googlecode.com/files/selenium-server-standalone-2.8.0.jar
-		cd $DEPDIR
-	fi
+    if which postgres; then
+	echo "PostgreSQL already installed; not downloading/installing.  Please make sure that the 'postgres' user is a PostgreSQL superuser on this system."
+    else
+	echo "Downloading PostgreSQL"
+	case "$MACOSX_VERSION" in
+	    10.4) install_dmg_pkg "http://get.enterprisedb.com/postgresql/postgresql-9.1.1-1-osx.dmg";;
+	    10.5) install_dmg_pkg "http://get.enterprisedb.com/postgresql/postgresql-9.1.1-1-osx.dmg";;
+	    10.6) install_dmg_pkg "http://get.enterprisedb.com/postgresql/postgresql-9.1.1-1-osx.dmg";;
+	    10.7) install_dmg_pkg "http://get.enterprisedb.com/postgresql/postgresql-9.1.1-1-osx.dmg";;
+	    *) echo "Warning:  No binary texlive package available for this platform.  Installing from source; this may take a while...";port install postgresql91 +universal;;
+	esac
+        echo "PostgreSQL requires a reboot after installation, for some boot-time-only kernel parameters to take effect."
+	echo "Please reboot, re-run the PostgreSQL installer (which will be on your desktop), and re-run this installer."
+	mv /tmp/disk_image.dmg ~/Desktop/PostgreSQL_Installer.dmg
+    fi
+
+    #	Get what we can using MacPorts (and what we can't get via any binary package)
+    port install ImageMagick +universal
+    port install inkscape +universal  ## There is a Snow Leopard inkscape binary, but it doesn't install the CLI tools into $PATH
+    port install dvipng +universal
+    port install wget +universal  ## There are binaries out there for wget on some platforms; but at this point we might as well just use the package
+    port install memcached +universal
+    port install libmemcached +universal
+
+    if [[ ! -d selenium-server-standalone-2.8.0 ]]
+    then
+	mkdir selenium-server-standalone-2.8.0
+	cd selenium-server-standalone-2.8.0
+	wget http://selenium.googlecode.com/files/selenium-server-standalone-2.8.0.jar
+	cd $DEPDIR
+    fi
 
 	#	Install python libraries
-	python -m easy_install --find-links http://www.pythonware.com/products/pil/ Imaging
-	python -m easy_install flup
-	python -m easy_install pydns
-	python -m easy_install psycopg2
-	python -m easy_install ipython
-	python -m easy_install iCalendar
-	python -m easy_install django
-	python -m easy_install south
-	python -m easy_install repoze.profile
-	python -m easy_install xlwt
-	python -m easy_install simplejson
-	python -m easy_install twill
-	python -m easy_install django-form-utils
-	python -m easy_install selenium
-	python -m easy_install django-selenium==0.3
-	python -m easy_install django-selenium-test-runner
-	python -m easy_install django-extensions
+    python -m easy_install --find-links http://www.pythonware.com/products/pil/ Imaging
+    python -m easy_install flup
+    python -m easy_install pydns
+    python -m easy_install psycopg2
+    python -m easy_install ipython
+    python -m easy_install iCalendar
+    python -m easy_install django
+    python -m easy_install south
+    python -m easy_install repoze.profile
+    python -m easy_install xlwt
+    python -m easy_install simplejson
+    python -m easy_install twill
+    python -m easy_install django-form-utils
+    python -m easy_install selenium
+    python -m easy_install django-selenium==0.3
+    python -m easy_install django-selenium-test-runner
+    python -m easy_install django-extensions
 
 	#	Install sslauth
-	if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]
-	then
-		echo "You do not have sslauth (expected path: $BASEDIR/esp/esp/3rdparty/sslauth)."
-		echo "This is required only if you want to use Apache to serve your site;"
-		echo "Django's manage.py will work fine without it.  If you want to fix this,"
-		echo "go back and grab the Git repository by running this script with the "
-		echo "--git option."
-	else
-		cp -r $BASEDIR/esp/esp/3rdparty/sslauth /usr/local/lib/python2.6/dist-packages/
-	fi
+    if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]
+    then
+	echo "You do not have sslauth (expected path: $BASEDIR/esp/esp/3rdparty/sslauth)."
+	echo "This is required only if you want to use Apache to serve your site;"
+	echo "Django's manage.py will work fine without it.  If you want to fix this,"
+	echo "go back and grab the Git repository by running this script with the "
+	echo "--git option."
+    else
+	cp -r $BASEDIR/esp/esp/3rdparty/sslauth /usr/local/lib/python2.6/dist-packages/
+    fi
 
-	cd $DEPDIR
+    cd $DEPDIR
 
-	cd $DEPDIR
-	wget -O pylibmc.tar.gz http://pypi.python.org/packages/source/p/pylibmc/pylibmc-1.1.1.tar.gz#md5=e43c54e285f8d937a3f1a916256ecc85
-	tar -xzf pylibmc.tar.gz
-	cd pylibmc-1.1.1
-	if [ "$MACOSX_VERSION" == "10.6" ]; then
-	    CFLAGS="-arch x86_64" LDFLAGS="-arch x86_64" python setup.py install --with-libmemcached=/opt/local
-	else
-	    python setup.py install --with-libmemcached=/opt/local
-	fi
+    cd $DEPDIR
+    wget -O pylibmc.tar.gz http://pypi.python.org/packages/source/p/pylibmc/pylibmc-1.1.1.tar.gz#md5=e43c54e285f8d937a3f1a916256ecc85
+    tar -xzf pylibmc.tar.gz
+    cd pylibmc-1.1.1
+    if [ "$MACOSX_VERSION" == "10.6" ]; then
+	CFLAGS="-arch x86_64" LDFLAGS="-arch x86_64" python setup.py install --with-libmemcached=/opt/local
+    else
+	python setup.py install --with-libmemcached=/opt/local
+    fi
 
     cd $CURDIR
     
