@@ -137,9 +137,8 @@ class CsrfTestCase(SeleniumTestCase):
             last_good_to = TemplateOverride.objects.filter(name='index.html', version=self.good_version)
             last_good_to.save()
         else:
-            # We need to get rid of the template override entirely somehow
-            # I don't know how to do this yet
-            pass
+            # We need to get rid of the template override entirely
+            TemplateOverride.objects.filter(name='index.html').delete()
 
     def try_login(self):
         elem = self.find_element_by_name("username") # Find the username field
