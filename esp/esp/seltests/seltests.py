@@ -53,6 +53,7 @@ class CsrfTestCase(SeleniumTestCase):
 {% endblock %}
 """
         to.save()
+
     def setUpAjaxLogin(self):
         if(self.good_version == -1):
              to, created = TemplateOverride.objects.get_or_create(name='index.html', version=1)
@@ -130,6 +131,40 @@ class CsrfTestCase(SeleniumTestCase):
 {% endblock %}
 """
         to.save()
+    def setUpCsrfMissingLogin(self):
+        if(self.good_version == -1):
+             to, created = TemplateOverride.objects.get_or_create(name='index.html', version=1)
+        else:
+             to = TemplateOverride.objects.filter(name='index.html')[0]
+        to.content = """
+{% extends "elements/html" %}
+
+{% block body %}
+<div id="login_box">
+<div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
+<div id="login_div">
+{% if not request.user.is_authenticated %}
+<!-- login -->
+<form name="login_form" id="login_form" method="post" action="/myesp/login/">
+  <input type="hidden" name="next" value="/" />
+  <input type="text" id="login_user" name="username"/>
+  <input type="password" id="login_pswd" name="password" />
+  <input type="submit" id="login_submit" name="login_submit" value="" />
+  <a href="/myesp/register" id="login_signup"></a>
+  <a href="/myesp/loginhelp.html" id="login_help">need help?</a>
+</form>
+
+{% else %}
+<!-- logout -->
+  Hello, {{ request.user.first_name }} {{ request.user.last_name }}!<br />
+  (<a href="/myesp/signout/">Logout</a>)
+{% endif %}
+
+</div>
+</div>
+{% endblock %}
+"""
+        to.save()
 
     def tearDown(self):
         if (self.good_version > 1):
@@ -201,5 +236,23 @@ class CsrfTestCase(SeleniumTestCase):
         self.try_normal_login()
         self.failUnless(self.is_text_present('Student Student'))
         logout(self)
+
+        # Now set up and test normal login missing the csrf token
+        self.setUpCsrfMissingLogin()
+        self.open_url("/") # Load index
+
+        self.try_normal_login()
+        self.failUnless(self.is_text_present('Student Student'))
+        self.logout()
+
+        self.delete_cookie("csrftoken")
+
+        self.try_normal_login()
+        self.failUnless(self.is_element_present('#login_box'))
+        self.logout()
+
+        self.try_normal_login()
+        self.failUnless(self.is_text_present('Student Student'))
+        self.logout()
 
         self.close()
