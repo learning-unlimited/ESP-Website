@@ -52,6 +52,7 @@ from esp.middleware import ESPError, Http403
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
 from django.views.decorators.vary import vary_on_cookie
 from django.views.decorators.cache import cache_control
+from esp.cache.varnish import purge_page
 
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
@@ -209,6 +210,10 @@ def qsd(request, branch, name, section, action):
         qsd_rec_new.keywords    = request.POST['keywords']
         qsd_rec_new.save()
 
+        # We should also purge the cache
+        purge_page(qsd_rec_new.url())
+        purge_page(request.path)
+
         qsd_rec = qsd_rec_new
 
         # If any files were uploaded, save them
@@ -286,6 +291,12 @@ def ajax_qsd(request):
         qsd.content = post_dict['data']
         qsd.load_cur_user_time(request, )
         # Local change here, to enable QSD editing.
+        # We should also purge the cache
+        # TEMP:
+        from sys import stdout
+        stdout.write("AJAX\n")
+        purge_page(qsd.url())
+        purge_page(request.path)
         qsd.save()
         result['status'] = 1
         result['content'] = teximages(smartypants(markdown(qsd.content)))
