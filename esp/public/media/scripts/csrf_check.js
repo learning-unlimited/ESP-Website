@@ -22,6 +22,16 @@ var check_csrf_cookie = function(form)
 {
     //If the form is null, return false
     if (!form) return false;
+
+    //Check if the form is external
+    var hostname = new RegExp(location.host);
+    if (!hostname.test(form.action))
+    {
+        //Delete the csrfmiddlewaretoken if it has it
+        $j(form).find("input[name=csrfmiddlewaretoken]").remove();
+        return true;
+    }
+
     //If this form is missing the csrfmiddlewaretoken, add it
     if (!form.csrfmiddlewaretoken)
     {
