@@ -23,9 +23,9 @@ function set_onsubmit()
         //Set their onsubmit functions to be check_csrf_cookie
         .submit(function() { return check_csrf_cookie(this); })
         //Filter down to ones without csrfmiddlewaretokens
-        .filter(":not(:has(input[name=csrfmiddlewaretoken]))")
+        //.filter(":not(:has(input[name=csrfmiddlewaretoken]))")
         //Add the csrfmiddlewaretoken hidden input
-        .append(csrftokenstring())
+        //.append(csrftokenstring())
 }
 
 $j.getScript("/media/scripts/csrf_check.js", set_onsubmit);
