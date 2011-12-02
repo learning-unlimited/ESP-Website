@@ -37,7 +37,16 @@ from esp.cache.registry import all_caches
 from esp.datatree.models import GetNode
 from esp.users.models import admin_required
 from esp.web.util.main import render_to_response
+from esp.cache.varnish import purge_page
+from django.http import HttpResponse
 
 @admin_required
 def view_all(request):
     return render_to_response('cache/view_all.html', request, GetNode('Q/Web'), {'caches': sorted(all_caches.values(), key=lambda c: c.name)})
+
+# TODO: Secure this view somehow
+def varnish_purge(request):
+    # Purge the page specified
+    purge_page(request.POST['page'])
+    # Return the minimum possible
+    return HttpResponse('')

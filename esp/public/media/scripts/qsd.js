@@ -28,7 +28,7 @@ function qsd_inline_edit(qsd_id)
 
 function qsd_send_command(qsd_id, postdata)
 {
-    postdata.csrfmiddlewaretoken = csrfmiddlewaretoken;
+    /*
     var request = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("MSXML2.XMLHTTP.3.0");
     request.open("POST", "/admin/ajax_qsd/", true);
     request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
@@ -49,17 +49,35 @@ function qsd_send_command(qsd_id, postdata)
                 alert(request.responseText);
             }
         }
-        /*
         else
         {
             new_window = window.open("", "ESPError");
             new_window.document.write(request.responseText);
         }
-        //  */
     };
     var poststring = post_encode(postdata);
     //  alert("Sending: " + poststring);
     request.send(poststring);
+    */
+
+    postdata.csrfmiddlewaretoken = csrfmiddlewaretoken;
+
+    $j.post("/admin/ajax_qsd", post_encode(postdata), function(data, status)
+    {
+        if (status == 200)
+        {
+            if (data)
+            {
+                qsd_inline_update(qsd_id, data);
+            }
+        }
+        else
+        {
+            alert(data);
+        }
+    });
+
+    $j.post("/cache/varnish_purge", { page: $j(location).attr('pathname') });
 }
 
 function qsd_inline_upload(qsd_id)
