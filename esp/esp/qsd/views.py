@@ -212,7 +212,6 @@ def qsd(request, branch, name, section, action):
 
         # We should also purge the cache
         purge_page(qsd_rec_new.url())
-        purge_page(request.path)
 
         qsd_rec = qsd_rec_new
 
@@ -293,10 +292,9 @@ def ajax_qsd(request):
         # Local change here, to enable QSD editing.
         # We should also purge the cache
         # TEMP:
-        from sys import stdout
-        stdout.write("AJAX\n")
-        purge_page(qsd.url())
-        purge_page(request.path)
+        #from sys import stdout
+        #stdout.write("AJAX\n")
+        #purge_page(qsd.url())
         qsd.save()
         result['status'] = 1
         result['content'] = teximages(smartypants(markdown(qsd.content)))
