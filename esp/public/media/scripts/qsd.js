@@ -64,7 +64,7 @@ function qsd_send_command(qsd_id, postdata)
 
     $j.post("/admin/ajax_qsd", post_encode(postdata), function(data, status)
     {
-        if (status == 200)
+        if (status == "success")
         {
             if (data)
             {
@@ -73,11 +73,12 @@ function qsd_send_command(qsd_id, postdata)
         }
         else
         {
-            alert(data);
+            alert("Error! Status: " + status);
+            alert("Data: " + data);
         }
     });
 
-    $j.post("/cache/varnish_purge", { page: $j(location).attr('pathname') });
+    $j.post("/cache/varnish_purge", { page: $j(location).attr('pathname'), csrfmiddlewaretoken: csrfmiddlewaretoken});
 }
 
 function qsd_inline_upload(qsd_id)
