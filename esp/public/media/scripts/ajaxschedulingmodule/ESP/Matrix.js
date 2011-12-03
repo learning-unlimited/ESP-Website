@@ -81,6 +81,31 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 		var BlockStatus = ESP.Scheduling.Resources.BlockStatus;
 		// listen for assignments
 		ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
+			if (!(data.nowriteback)) {
+			    if (data.blocks.length > 0) {
+				var req = { action: 'assignreg',
+                        csrfmiddlewaretoken: csrfmiddlewaretoken,
+					    cls: data.section.uid,
+					    block_room_assignments: data.blocks.map(function(x) { return x.time.uid + "," + x.room.uid; } ).join("\n") };
+
+				$j.post('ajax_schedule_class', req, "json")
+                .success(function(data, status) {
+					ESP.version_uuid = data.val;
+                    ESP.Utilities.evm.fire('block_section_assignment_local', { section: data.section, blocks: data.blocks });
+                    })
+                .error(function(data, status) {
+                    console.log("Failed assignment.");
+                    alert("Assignment failure!");
+                });
+			    } else {
+				ESP.Utilities.evm.fire('block_section_assignment_success', data);
+			    }
+			}
+            else {
+                ESP.Utilities.evm.fire('block_section_assignment_local', { section: data.section, blocks: data.blocks });
+            }
+		    }.bind(this));
+		ESP.Utilities.evm.bind('block_section_assignment_local', function(e, data) {
 			var blocks = data.blocks;
 			for (var i = 0; i < blocks.length; i++) {
 			    var block = blocks[i];
@@ -106,28 +131,34 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 				    cell.td.addClass('CLS_ROOM_rsrc_' + block.processed_room.resources[j].replace(/[^a-zA-Z]+/g, '-'));
 				}
 			    }
-			}
-		    }.bind(this));
-		ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
-			if (!(data.nowriteback)) {
-			    if (data.blocks.length > 0) {
-				var req = { action: 'assignreg',
-                        csrfmiddlewaretoken: csrfmiddlewaretoken,
-					    cls: data.section.uid,
-					    block_room_assignments: data.blocks.map(function(x) { return x.time.uid + "," + x.room.uid; } ).join("\n") };
 
-				$j.post('ajax_schedule_class', req, function(data, status) {
-					if (status == "success") {
-					    ESP.version_uuid = data.val;
-					    ESP.Utilities.evm.fire('block_section_assignment_success', data);
-					}
-				    }, "json");
-			    } else {
 				ESP.Utilities.evm.fire('block_section_assignment_success', data);
-			    }
 			}
 		    }.bind(this));
 		ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
+            console.log("Unassignment!");
+			if (!(data.nowriteback)) {
+                console.log("Doing it");
+			    var req = { action: 'deletereg',
+                    csrfmiddlewaretoken: csrfmiddlewaretoken,
+					cls: data.section.uid };
+
+			    $j.post('ajax_schedule_class', req)
+                .success(function(data, status) {
+                    console.log("Success");
+                    ESP.version_uuid = data.val;
+                    ESP.Utilities.evm.fire('block_section_unassignment_local', { section: data.section, blocks: data.blocks });
+                })
+                .error(function(data, status) {
+                    console.log("Failed unassignment.");
+                    alert("Unassignment failure!");
+                });
+			}
+            else {
+                ESP.Utilities.evm.fire('block_section_unassignment_local', { section: data.section, blocks: data.blocks });
+            }
+		    }.bind(this));
+		ESP.Utilities.evm.bind('block_section_unassignment_local', function(e, data) {
 			var old_blocks = data.blocks;
 			for (var i = 0; i < old_blocks.length; i++) {
 			    var block = old_blocks[i];
@@ -137,22 +168,9 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			    var css_cls = cell.td.attr('class').split(/\s+/);
 			    for (var j = 0; j < css_cls.length; j++) {
 			      if (css_cls[j].indexOf("CLS_") == 0) {
-				cell.td.removeClass(css_cls[j]);
+				    cell.td.removeClass(css_cls[j]);
 			      }
 			    }
-			}
-		    }.bind(this))
-		ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
-			if (!(data.nowriteback)) {
-			    var req = { action: 'deletereg',
-                    csrfmiddlewaretoken: csrfmiddlewaretoken,
-					cls: data.section.uid };
-
-			    $j.post('ajax_schedule_class', req, function(data, status) {
-				    if (status == "success") {
-					ESP.version_uuid = data.val;
-				    }
-			        }, "json");
 			}
 		    }.bind(this));
 	    }
