@@ -39,26 +39,11 @@ ESP.Scheduling = function(){
 	    });
 	ESP.Utilities.evm.bind('block_section_assignment_request', function(event, data){
 		//alert('[' + data.block.uid + '] : [' + data.section.uid + ']');
-
-		var block_status;
-		for (var i = 0; i < data.blocks.length; i++) {
-		    if (!((block_status = ESP.Scheduling.validate_block_assignment(data.blocks[i], data.section, true)) == "OK")) {
-			console.log("Error:  Conflict when adding block " + data.blocks[i].room.text + " (" + data.blocks[i].time.text + ") to section " + data.section.code + ": [" + block_status + "]");
-		    }
-		}
-
-		data.section.blocks = data.blocks;
-		for (var i = 0; i < data.blocks.length; i++) {
-		    data.blocks[i].section = data.section;
-		}
 		ESP.Utilities.evm.fire('block_section_assignment',data);
 	    });
 	ESP.Utilities.evm.bind('block_section_unassignment_request', function(event, data){
+        console.log("Unassignment request");
 		//alert('[' + data.block.uid + '] : [' + data.section.uid + ']');
-		data.section.blocks = [];
-		for (var i = 0; i < data.blocks.length; i++) {
-		    data.blocks[i].section = null;
-		}
 		ESP.Utilities.evm.fire('block_section_unassignment',data);
 	    });
 

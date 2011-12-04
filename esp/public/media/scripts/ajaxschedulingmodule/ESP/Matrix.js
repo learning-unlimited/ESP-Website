@@ -89,12 +89,17 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 					    block_room_assignments: data.blocks.map(function(x) { return x.time.uid + "," + x.room.uid; } ).join("\n") };
 
 				$j.post('ajax_schedule_class', req, "json")
-                .success(function(data, status) {
+                .success(function(ajax_data, status) {
 					ESP.version_uuid = data.val;
-                    ESP.Utilities.evm.fire('block_section_assignment_local', { section: data.section, blocks: data.blocks });
+                    ESP.Utilities.evm.fire('block_section_assignment_local', data);
                     })
-                .error(function(data, status) {
-                    console.log("Failed assignment.");
+                .error(function(ajax_data, status) {
+                    if(ajax_data.status == 403)
+                    {
+                        console.log("CSRF error");
+                        //We want to make sure the CSRF token gets set so this doesn't happen multiple times
+                        $j.get("/set_csrf_token", function() { csrfmiddlewaretoken = $j.cookie("csrftoken"); });
+                    }
                     alert("Assignment failure!");
                 });
 			    } else {
@@ -102,10 +107,24 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			    }
 			}
             else {
-                ESP.Utilities.evm.fire('block_section_assignment_local', { section: data.section, blocks: data.blocks });
+                ESP.Utilities.evm.fire('block_section_assignment_local', data);
             }
-		    }.bind(this));
+            }.bind(this));
 		ESP.Utilities.evm.bind('block_section_assignment_local', function(e, data) {
+            console.log("Assignment local");
+            //Some checking
+			var block_status;
+			for (var i = 0; i < data.blocks.length; i++) {
+				if (!((block_status = ESP.Scheduling.validate_block_assignment(data.blocks[i], data.section, true)) == "OK")) {
+				console.log("Error:  Conflict when adding block " + data.blocks[i].room.text + " (" + data.blocks[i].time.text + ") to section " + data.section.code + ": [" + block_status + "]");
+				}
+			}
+            //Actually set the data
+			data.section.blocks = data.blocks;
+			for (var i = 0; i < data.blocks.length; i++) {
+				data.blocks[i].section = data.section;
+			}
+            //Set the CSS
 			var blocks = data.blocks;
 			for (var i = 0; i < blocks.length; i++) {
 			    var block = blocks[i];
@@ -136,29 +155,38 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 			}
 		    }.bind(this));
 		ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
-            console.log("Unassignment!");
 			if (!(data.nowriteback)) {
-                console.log("Doing it");
 			    var req = { action: 'deletereg',
                     csrfmiddlewaretoken: csrfmiddlewaretoken,
 					cls: data.section.uid };
 
 			    $j.post('ajax_schedule_class', req)
-                .success(function(data, status) {
-                    console.log("Success");
+                .success(function(ajax_data, status) {
                     ESP.version_uuid = data.val;
-                    ESP.Utilities.evm.fire('block_section_unassignment_local', { section: data.section, blocks: data.blocks });
+                    ESP.Utilities.evm.fire('block_section_unassignment_local', data);
                 })
-                .error(function(data, status) {
-                    console.log("Failed unassignment.");
+                .error(function(ajax_data, status) {
+                    if(ajax_data.status == 403)
+                    {
+                        console.log("CSRF error");
+                        //We want to make sure the CSRF token gets set so this doesn't happen multiple times
+                        $j.get("/set_csrf_token", function() { csrfmiddlewaretoken = $j.cookie("csrftoken"); });
+                    }
                     alert("Unassignment failure!");
                 });
 			}
             else {
-                ESP.Utilities.evm.fire('block_section_unassignment_local', { section: data.section, blocks: data.blocks });
+                ESP.Utilities.evm.fire('block_section_unassignment_local', data);
             }
 		    }.bind(this));
 		ESP.Utilities.evm.bind('block_section_unassignment_local', function(e, data) {
+            console.log("Unassignment local");
+            //Update the actual data
+			data.section.blocks = [];
+			for (var i = 0; i < data.blocks.length; i++) {
+				data.blocks[i].section = null;
+			}
+            //Update the CSS
 			var old_blocks = data.blocks;
 			for (var i = 0; i < old_blocks.length; i++) {
 			    var block = old_blocks[i];
@@ -200,7 +228,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 	Matrix.HeaderCell = Class.create(Matrix.Cell,{
 		initialize: function($super){
 			$super();
-			this.td.addClass('header-cell');
+			this.td.addClass('header-cfunction() { csrfmiddlewaretoken = $j.cookie("csrftoken"); }ell');
 		}
 	});
 	Matrix.InvalidCell = Class.create(Matrix.Cell,{
