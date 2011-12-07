@@ -82,21 +82,25 @@ class AdminVitals(ProgramModuleObj):
         for module in self.program.getModules():
             teacher_labels_dict.update(module.teacherDesc())
         vitals['teachernum'] = []
-        for key in self.program.teachers().keys():
+
+        teachers = self.program.teachers()
+        for key in teachers.keys():
             if key in teacher_labels_dict:
-                vitals['teachernum'].append((teacher_labels_dict[key], self.program.teachers()[key]))
+                vitals['teachernum'].append((teacher_labels_dict[key], teachers[key]))
             else:
-                vitals['teachernum'].append((key, self.program.teachers()[key]))
+                vitals['teachernum'].append((key, teachers[key]))
                 
         student_labels_dict = {}
         for module in self.program.getModules():
             student_labels_dict.update(module.studentDesc())      
         vitals['studentnum'] = []
-        for key in self.program.students().keys():
+
+        students = self.program.students()
+        for key in students.keys():
             if key in student_labels_dict:
-                vitals['studentnum'].append((student_labels_dict[key], self.program.students()[key]))
+                vitals['studentnum'].append((student_labels_dict[key], students[key]))
             else:
-                vitals['studentnum'].append((key, self.program.students()[key]))
+                vitals['studentnum'].append((key, students[key]))
                 
         timeslots = self.program.getTimeSlots()
         vitals['timeslots'] = []
