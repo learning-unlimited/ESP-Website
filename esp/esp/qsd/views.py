@@ -290,11 +290,6 @@ def ajax_qsd(request):
         qsd.content = post_dict['data']
         qsd.load_cur_user_time(request, )
         # Local change here, to enable QSD editing.
-        # We should also purge the cache
-        # TEMP:
-        #from sys import stdout
-        #stdout.write("AJAX\n")
-        #purge_page(qsd.url())
         qsd.save()
         result['status'] = 1
         result['content'] = teximages(smartypants(markdown(qsd.content)))
