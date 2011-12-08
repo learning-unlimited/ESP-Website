@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from esp.cache.registry import all_caches
 from esp.datatree.models import GetNode
-from esp.users.models import admin_required
+from esp.users.models import admin_required, UserBit, ESPUser
 from esp.web.util.main import render_to_response
 from esp.cache.varnish import purge_page
 from django.http import HttpResponse
@@ -44,8 +44,18 @@ from django.http import HttpResponse
 def view_all(request):
     return render_to_response('cache/view_all.html', request, GetNode('Q/Web'), {'caches': sorted(all_caches.values(), key=lambda c: c.name)})
 
-# TODO: Secure this view somehow
 def varnish_purge(request):
+    # Authenticate
+    import sys
+    sys.stdout.write(str(request.user) + "\n")
+    sys.stdout.write(str(request.user.is_authenticated()) + "\n")
+    sys.stdout.write(str(ESPUser(request.user).isAdministrator() + "\n")
+    #sys.stdout.write(str(UserBit.objects.user_has_verb(request.user, GetNode('V/Administer/Edit/QSD'))
+    #sys.stdout(request.user)
+    #sys.stdout(request.user.is_authenticated())
+    #sys.stedout(
+    #if not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator() or not UserBit.objects.user_has_verb(request.user, GetNode('V/Administer/Edit/QSD')):
+        # raise PermissionDenied
     # Purge the page specified
     purge_page(request.POST['page'])
     # Return the minimum possible

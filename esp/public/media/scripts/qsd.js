@@ -28,38 +28,6 @@ function qsd_inline_edit(qsd_id)
 
 function qsd_send_command(qsd_id, postdata)
 {
-    /*
-    var request = window.XMLHttpRequest ? new XMLHttpRequest() : new ActiveXObject("MSXML2.XMLHTTP.3.0");
-    request.open("POST", "/admin/ajax_qsd/", true);
-    request.setRequestHeader("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
-    request.onreadystatechange = function ()
-    {
-        //  alert("Received " + request.readyState + ", " + request.status)
-        if (request.readyState == 4)
-        {
-            if (request.status == 200)
-            {
-                if (request.responseText)
-                {
-                    qsd_inline_update(qsd_id, request.responseText);
-                }
-            }
-            else
-            {
-                alert(request.responseText);
-            }
-        }
-        else
-        {
-            new_window = window.open("", "ESPError");
-            new_window.document.write(request.responseText);
-        }
-    };
-    var poststring = post_encode(postdata);
-    //  alert("Sending: " + poststring);
-    request.send(poststring);
-    */
-
     postdata.csrfmiddlewaretoken = csrfmiddlewaretoken;
 
     $j.post("/admin/ajax_qsd", post_encode(postdata), function(data, status)
