@@ -1652,11 +1652,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             sections = self.get_sections()
         for s in sections:
-            if s.meeting_times.all().count() > 0 and not s.isFull(ignore_changes=ignore_changes):
+            if len(s.get_meeting_times()) > 0 and not s.isFull(ignore_changes=ignore_changes):
                 return False
         return True
 
-    @staticmethod
+    @cache_function
     def get_capacity_factor():
         tag_val = Tag.getTag('nearly_full_threshold')
         if tag_val:
@@ -1664,9 +1664,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             capacity_factor = 0.75
         return capacity_factor
+    get_capacity_factor.depend_on_row(lambda: Tag, lambda tag: {}, lambda tag: tag.key == 'nearly_full_threshold')
+    get_capacity_factor = staticmethod(get_capacity_factor)
 
-    def is_nearly_full(self):
-        capacity_factor = ClassSubject.get_capacity_factor()
+    def is_nearly_full(self, capacity_factor = None):
+        if capacity_factor == None:
+            capacity_factor = get_capacity_factor()
         return len([x for x in self.get_sections() if x.num_students() > capacity_factor*x.capacity]) > 0
 
     def getTeacherNames(self):
