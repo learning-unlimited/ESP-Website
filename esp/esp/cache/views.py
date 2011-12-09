@@ -46,16 +46,8 @@ def view_all(request):
 
 def varnish_purge(request):
     # Authenticate
-    import sys
-    sys.stdout.write(str(request.user) + "\n")
-    sys.stdout.write(str(request.user.is_authenticated()) + "\n")
-    sys.stdout.write(str(ESPUser(request.user).isAdministrator() + "\n")
-    #sys.stdout.write(str(UserBit.objects.user_has_verb(request.user, GetNode('V/Administer/Edit/QSD'))
-    #sys.stdout(request.user)
-    #sys.stdout(request.user.is_authenticated())
-    #sys.stedout(
-    #if not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator() or not UserBit.objects.user_has_verb(request.user, GetNode('V/Administer/Edit/QSD')):
-        # raise PermissionDenied
+    if not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator() or not UserBit.objects.user_has_verb(request.user, GetNode('V/Administer/Edit/QSD')):
+        raise PermissionDenied
     # Purge the page specified
     purge_page(request.POST['page'])
     # Return the minimum possible
