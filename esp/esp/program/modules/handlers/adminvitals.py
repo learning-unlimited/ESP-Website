@@ -41,8 +41,9 @@ from esp.program.models.class_ import open_class_category
 from esp.users.models import UserBit, ESPUser, shirt_sizes, shirt_types
 from django.contrib.auth.models import User
 from django.core.cache import cache
-from django.db.models import Count
+from django.db.models import Count, Sum
 from django.db.models.query      import Q
+from collections import defaultdict
 import math
 
 class KeyDoesNotExist(Exception):
@@ -83,10 +84,14 @@ class AdminVitals(ProgramModuleObj):
             teacher_labels_dict.update(module.teacherDesc())
         vitals['teachernum'] = []
 
+        ## Ew, queries in a for loop...
+        ## Not much to be done about it, though;
+        ## the loop is iterating over a list of independent queries and running each.
         teachers = self.program.teachers()
         for key in teachers.keys():
             if key in teacher_labels_dict:
-                vitals['teachernum'].append((teacher_labels_dict[key], teachers[key]))
+                vitals['teachernum'].append((teacher_labels_dict[key],         ## Unfortunately, 
+teachers[key]))
             else:
                 vitals['teachernum'].append((key, teachers[key]))
                 
@@ -95,6 +100,8 @@ class AdminVitals(ProgramModuleObj):
             student_labels_dict.update(module.studentDesc())      
         vitals['studentnum'] = []
 
+        ## Ew, another set of queries in a for loop...
+        ## Same justification, though.
         students = self.program.students()
         for key in students.keys():
             if key in student_labels_dict:
@@ -105,13 +112,23 @@ class AdminVitals(ProgramModuleObj):
         timeslots = self.program.getTimeSlots()
         vitals['timeslots'] = []
         
+        ## Prefetch enough data that get_meeting_times() and num_students() don't have to hit the db
+        curclasses = ClassSection.prefetch_catalog_data(
+            ClassSection.objects.filter(parent_class__parent_program = self.program))
+
+        ## Is it really faster to do this logic in Python?
+        ## It'd be even faster to just write a raw SQL query to do it.
+        ## But this is probably good enough.
+        timeslot_dict = defaultdict(list)
+        timeslot_set = set(timeslots)
+        for section in curclasses:
+            for timeslot in set.intersection(timeslot_set, section.get_meeting_times()):
+                timeslot_dict[timeslot].append(section)
+
         for timeslot in timeslots:
             curTimeslot = {'slotname': timeslot.short_description}
             
-            curclasses = ClassSection.objects.filter(parent_class__parent_program = self.program,
-                                              meeting_times  = timeslot)
-
-            curTimeslot['classcount'] = curclasses
+            curTimeslot['classcount'] = len(timeslot_dict[timeslot])
 
             class studentcounter:
                 self.clslist = []
@@ -127,7 +144,7 @@ class AdminVitals(ProgramModuleObj):
                 def __init__(self, newclslist):
                     self.clslist = newclslist
 
-            curTimeslot['studentcount'] = studentcounter(curclasses)
+            curTimeslot['studentcount'] = studentcounter(timeslot_dict[timeslot])
             
             vitals['timeslots'].append(curTimeslot)
 
@@ -140,11 +157,22 @@ class AdminVitals(ProgramModuleObj):
 
         shours = 0
         chours = 0
-        for section in self.program.sections():
-            chours += math.ceil(section.duration)
-            if type(section.parent_class.class_size_max) == int:
-                shours += math.ceil(section.duration)*section.parent_class.class_size_max
-            else: shours = 0
+        ## Write this as a 'for' loop because PostgreSQL can't do it in
+        ## one go without a subquery or duplicated logic, and Django
+        ## doesn't have enough power to expose either approach directly.
+        ## At least there aren't any queries in the for loop...
+        ## (In MySQL, this could I believe be done with a minimally-painful extra() clause.)
+        ## Also, since we're iterating over a big data set, use .values()
+        ## minimize the number of objects that we're creating.
+        ## One dict and two Decimals per row, as opposed to
+        ## an Object per field and all kinds of stuff...
+        for cls in self.program.classes().annotate(subject_duration=Sum('sections__duration')).values('subject_duration', 'class_size_max'):
+            chours += cls['subject_duration']
+            shours += cls['subject_duration'] * (cls['class_size_max'] if cls['class_size_max'] else 0)
+#            chours += math.ceil(section.duration)
+#            if type(section.parent_class.class_size_max) == int:
+#                shours += math.ceil(section.duration)*section.parent_class.class_size_max
+#            else: shours = 0
        
         context['classhours'] = chours
         context['classpersonhours'] = shours
@@ -152,9 +180,9 @@ class AdminVitals(ProgramModuleObj):
         crmi = self.program.getModuleExtension('ClassRegModuleInfo')
         if crmi.open_class_registration:
             Q_categories |= Q(pk=open_class_category().pk)
-        context['categories'] = ClassCategories.objects.filter(Q_categories, cls__parent_program=self.program, cls__status__gte=0).distinct().annotate(num_subjects=Count('cls')).order_by('-num_subjects').values().distinct()
-        for i in range(len(context['categories'])):
-            context['categories'][i].update({'num_sections': ClassSection.objects.filter(status__gte=0, parent_class__parent_program=self.program, parent_class__category__id=context['categories'][i]['id']).distinct().count(), 'num_subjects': ClassSubject.objects.filter(status__gte=0, parent_program=self.program, category__id=context['categories'][i]['id']).distinct().count()})
+        context['categories'] = ClassCategories.objects.filter(Q_categories, cls__parent_program=self.program, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'category').distinct()
+        #for i in range(len(context['categories'])):
+        #    context['categories'][i].update({'num_sections': ClassSection.objects.filter(status__gte=0, parent_class__parent_program=self.program, parent_class__category__id=context['categories'][i]['id']).distinct().count(), 'num_subjects': ClassSubject.objects.filter(status__gte=0, parent_program=self.program, category__id=context['categories'][i]['id']).distinct().count()})
         
         return context
     
