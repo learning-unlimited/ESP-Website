@@ -1003,6 +1003,10 @@ class ClassSection(models.Model):
 
     @cache_function
     def num_students(self, verbs=['Enrolled']):
+        if verbs == ['Enrolled']:
+            if not hasattr(self, '_count_students'):
+                self._count_students = self.students(verbs).count()
+            return self._count_students
         return self.students(verbs).count()
     num_students.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
 
