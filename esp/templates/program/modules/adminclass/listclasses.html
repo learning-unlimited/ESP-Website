@@ -107,8 +107,8 @@ function manage_class(clsid) {
 </script>
 
 <script type="text/javascript">
-$(document).ready(function () {
-$.getScript("/media/scripts/csrf_init.js", function() {
+$j(document).ready(function () {
+$j.getScript("/media/scripts/csrf_init.js", function() {
 {% for cls in classes %}
     document.getElementById("csrf_token_edit_{{ cls.id }}").value = csrfmiddlewaretoken;
     document.getElementById("csrf_token_delete_{{ cls.id }}").value = csrfmiddlewaretoken;
@@ -305,7 +305,6 @@ and <tt>M100-class@{{ EMAIL_HOST }}</tt> will email everyone in the class.
    {% render_class_row cls program %}
    </tr>
    {% endfor %}
-
 </table>
 </div>
 
