@@ -169,10 +169,6 @@ teachers[key]))
         for cls in self.program.classes().annotate(subject_duration=Sum('sections__duration')).values('subject_duration', 'class_size_max'):
             chours += cls['subject_duration']
             shours += cls['subject_duration'] * (cls['class_size_max'] if cls['class_size_max'] else 0)
-#            chours += math.ceil(section.duration)
-#            if type(section.parent_class.class_size_max) == int:
-#                shours += math.ceil(section.duration)*section.parent_class.class_size_max
-#            else: shours = 0
        
         context['classhours'] = chours
         context['classpersonhours'] = shours
@@ -181,9 +177,7 @@ teachers[key]))
         if crmi.open_class_registration:
             Q_categories |= Q(pk=open_class_category().pk)
         context['categories'] = ClassCategories.objects.filter(Q_categories, cls__parent_program=self.program, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'category').distinct()
-        #for i in range(len(context['categories'])):
-        #    context['categories'][i].update({'num_sections': ClassSection.objects.filter(status__gte=0, parent_class__parent_program=self.program, parent_class__category__id=context['categories'][i]['id']).distinct().count(), 'num_subjects': ClassSubject.objects.filter(status__gte=0, parent_program=self.program, category__id=context['categories'][i]['id']).distinct().count()})
-        
+
         return context
     
  
