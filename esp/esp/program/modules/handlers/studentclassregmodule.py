@@ -50,6 +50,7 @@ from django.http import HttpResponse
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
 from esp.cal.models import Event, EventType
+from esp.program.templatetags.class_render import render_class_direct
 from django.core.cache import cache
 from datetime import datetime
 from decimal import Decimal
@@ -580,7 +581,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     # This function actually renders the catalog
     def catalog_render(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
-        
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)
 
@@ -593,9 +593,35 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         collapse_full = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
         hide_full = Tag.getProgramTag('hide_full_classes', prog, False)
         context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'hide_full': hide_full, 'collapse_full': collapse_full}
-        
+
+        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+
+        prog_color = prog.getColor()
+        collapse_full_classes = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
+        class_blobs = []
+
+        category_header_str = """<hr size="1"/>
+    <a name="cat%d"></a>
+      <p style="font-size: 1.2em;" class="category">
+         %s
+      </p>
+      <p class="linktop">
+         <a href="#top">[ Return to Category List ]</a>
+      </p>
+"""
+
+        class_category_id = None
+        for cls in classes:
+            if cls.category.id != class_category_id:
+                class_category_id = cls.category.id
+                class_blobs.append(category_header_str % (class_category_id, cls.category.category))
+            class_blobs.append(render_class_direct(cls))
+            class_blobs.append('<br />')
+        context['class_descs'] = ''.join(class_blobs)
+
         return render_to_response(self.baseDir()+'catalog.html', request, (prog, tl), context)
 
+#def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, collapse_full_classes=None):
     def catalog_javascript(self, request, tl, one, two, module, extra, prog, timeslot=None):
         return render_to_response(self.baseDir()+'catalog_javascript.html', request, (prog, tl), {
                 'one':        one,

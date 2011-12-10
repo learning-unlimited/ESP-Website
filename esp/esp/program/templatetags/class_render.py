@@ -1,5 +1,7 @@
 from django import template
+from django.template.loader import render_to_string
 from esp.web.util.template import cache_inclusion_tag
+from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion
 from esp.program.models.class_ import open_class_category
@@ -30,33 +32,7 @@ def get_smallest_section(cls, timeslot=None):
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_core.html')
 def render_class_core(cls):
-
-    prog = cls.parent_program
-
-    #   Show e-mail codes?  We need to look in the settings.
-    scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
-
-    # Okay, chose a program? Good. Now fetch the color from its hiding place and format it...
-    colorstring = prog.getColor()
-    if colorstring is not None:
-        colorstring = ' background-color:#' + colorstring + ';'
-    
-    # HACK for Harvard HSSP -- show application counts with enrollment
-    if cls.studentappquestion_set.count():
-        cls._sections = list(cls.get_sections())
-        for sec in cls._sections:
-            sec.num_apps = sec.num_students(verbs=['Applied'])
-
-    # Allow tag configuration of whether class descriptions get collapsed
-    # when the class is full (default: yes)
-    collapse_full = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
-
-    return {'class': cls,
-            'collapse_full': collapse_full,
-            'colorstring': colorstring,
-            'show_enrollment': scrmi.visible_enrollments,
-            'show_emailcodes': scrmi.show_emailcodes,
-            'show_meeting_times': scrmi.visible_meeting_times}           
+    return render_class_core_helper(cls)
 render_class_core.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
 render_class_core.cached_function.depend_on_row(ClassSection, lambda sec: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'cls': self})
@@ -64,8 +40,50 @@ render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lam
 render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_row(StudentAppQuestion, lambda ques: {'cls': ques.subject})
 
+def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, collapse_full_classes=None):
+    if not prog:
+        prog = cls.parent_program
+
+    #   Show e-mail codes?  We need to look in the settings.
+    if not scrmi:
+        scrmi = cls.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+
+    # Okay, chose a program? Good. Now fetch the color from its hiding place and format it...
+    if not colorstring:
+        colorstring = prog.getColor()
+        if colorstring is not None:
+            colorstring = ' background-color:#' + colorstring + ';'
+    
+    # HACK for Harvard HSSP -- show application counts with enrollment
+    #if cls.studentappquestion_set.count():
+    #    cls._sections = list(cls.get_sections())
+    #    for sec in cls._sections:
+    #        sec.num_apps = sec.num_students(verbs=['Applied'])
+
+    # Allow tag configuration of whether class descriptions get collapsed
+    # when the class is full (default: yes)
+    if collapse_full_classes is None:
+        collapse_full_classes = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
+
+    return {'class': cls,
+            'collapse_full': collapse_full_classes,
+            'colorstring': colorstring,
+            'show_enrollment': scrmi.visible_enrollments,
+            'show_emailcodes': scrmi.show_emailcodes,
+            'show_meeting_times': scrmi.visible_meeting_times}           
+
+
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', disable=True)
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
+    return render_class_helper(cls)
+render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
+
+@cache_function
+def render_class_direct(cls, user=None, prereg_url=None, filter=False, timeslot=None):
+    return render_to_string('inclusion/program/class_catalog.html', render_class_helper(cls))
+render_class_direct.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
+
+def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     errormsg = None
     
     if timeslot:

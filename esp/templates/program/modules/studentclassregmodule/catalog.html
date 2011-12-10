@@ -103,23 +103,7 @@ if (document.getElementById("student_schedule")) {
 -->
 </script>
 
-{% load class_render %}
-{% for class in classes %}
-
-{% ifchanged class.category_id %}<hr size="1"/>
-
-    <a name="cat{{class.category_id}}"></a>
-      <p style="font-size: 1.2em;" class="category">
-         {{ class.category.category }}
-      </p>
-      <p class="linktop">
-         <a href="#top">[ Return to Category List ]</a>
-      </p> {% endifchanged %}
-
-{% render_class class None prereg_url request.GET.filter timeslot %}
-
-<br />
-{% endfor %}
+{% autoescape off %}{{ class_descs }}{% endautoescape %}
 </div>
 
 <script language="JavaScript">
