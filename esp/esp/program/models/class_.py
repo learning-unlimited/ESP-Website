@@ -552,7 +552,7 @@ class ClassSection(models.Model):
 
     def initial_rooms(self):
         from esp.resources.models import Resource
-        if self.meeting_times.count() > 0:
+        if len(self.get_meeting_times()) > 0:
             return self.classrooms().filter(event=self.meeting_times.order_by('start')[0]).order_by('id')
         else:
             return Resource.objects.none()
