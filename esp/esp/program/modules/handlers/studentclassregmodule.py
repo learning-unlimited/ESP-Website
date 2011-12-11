@@ -49,6 +49,7 @@ from django.template.loader import get_template
 from django.http import HttpResponse
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_cookie
+from esp.utils.no_autocookie import disable_csrf_cookie_update
 from esp.cal.models import Event, EventType
 from django.core.cache import cache
 from datetime import datetime
@@ -675,6 +676,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     # This function gets called and branches off to the two above depending on the user's role
     @aux_call
     @cache_control(public=True, max_age=120)
+    @disable_csrf_cookie_update
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Check user role and maybe return the program class catalog """
         user = ESPUser(request.user)

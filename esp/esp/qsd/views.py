@@ -49,6 +49,7 @@ from django.core.cache import cache
 from django.template.defaultfilters import urlencode
 from esp.datatree.decorators import branch_find
 from esp.middleware import ESPError, Http403
+from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
 from django.views.decorators.vary import vary_on_cookie
 from django.views.decorators.cache import cache_control
@@ -111,6 +112,7 @@ def handle_ajax_mover(method):
 @branch_find
 #@vary_on_cookie
 @cache_control(max_age=180)
+@disable_csrf_cookie_update
 def qsd(request, branch, name, section, action):
 
     READ_VERB = 'V/Flags/Public'
