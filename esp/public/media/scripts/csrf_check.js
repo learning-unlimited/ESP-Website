@@ -1,13 +1,17 @@
 dojo.require('dijit.form.Button');
 dojo.require('dijit.Dialog');
-newDiv = document.createElement('div');
-newDiv.setAttribute('id', 'csrfAlert');
-newDiv.setAttribute('dojoType', 'dijit.Dialog');
-newDiv.setAttribute('style', 'display:none');
-newDiv.setAttribute('title', 'Oops!');
-newText = document.createTextNode('It appears your session has become disconnected. Please make sure cookies are enabled and try again.');
-newDiv.appendChild(newText);
-document.body.appendChild(newDiv);
+
+if($j("#csrfAlert").length == 0)
+{
+    newDiv = document.createElement('div');
+    newDiv.setAttribute('id', 'csrfAlert');
+    newDiv.setAttribute('dojoType', 'dijit.Dialog');
+    newDiv.setAttribute('style', 'display:none');
+    newDiv.setAttribute('title', 'Oops!');
+    newText = document.createTextNode('It appears your session has become disconnected. Please make sure cookies are enabled and try again.');
+    newDiv.appendChild(newText);
+    document.body.appendChild(newDiv);
+}
 
 function strip_tags(str)
 {
@@ -16,7 +20,25 @@ function strip_tags(str)
 
 var check_csrf_cookie = function(form)
 {
-    if (!form || !form.csrfmiddlewaretoken) return false;
+    //If the form is null, return false
+    if (!form) return false;
+
+    //Check if the form is external
+    var hostname = new RegExp(location.host);
+    var prefix = new RegExp("[A-Za-z-].*://");
+    if (prefix.test(form.action) && !hostname.test(form.action))
+    {
+        //Delete the csrfmiddlewaretoken if it has it
+        $j(form).find("input[name=csrfmiddlewaretoken]").remove();
+        return true;
+    }
+
+    //If this form is missing the csrfmiddlewaretoken, add it
+    if (!form.csrfmiddlewaretoken)
+    {
+        $j(form).append(csrftokenstring());
+    }
+
     csrf_token = form.csrfmiddlewaretoken;
     csrf_cookie = $j.cookie("csrftoken");
     //alert(csrf_cookie);
