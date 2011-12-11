@@ -208,8 +208,12 @@ def hasPerm(user, form):
     else:
         perms_list=form.perms.strip(',').split(',')
         main_perm=perms_list[0]
-        prog_id=perms_list[1]
-        sub_perms=perms_list[2:]
+        prog_id=""
+        sub_perms=None
+        if len(perms_list)>1:
+            prog_id=perms_list[1]
+            if len(perms_list)>2:
+                sub_perms=perms_list[2:]
         Qlist=[]
         Qlist.append(ESPUser.getAllOfType(main_perm))  #Check -> what to do with students?
         if sub_perms:
