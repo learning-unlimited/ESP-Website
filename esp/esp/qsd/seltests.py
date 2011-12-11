@@ -4,9 +4,11 @@ from esp.users.models import ESPUser
 from esp.users.models import UserBit
 from esp.settings import VARNISH_PORT
 from esp.datatree.models import GetNode
+from esp.seltests import try_login, logout
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
-from sys import stderr, exc_info
+from selenium import selenium
+from sys import stdout, stderr, exc_info
 
 
 def noActiveAjax(driver):
@@ -14,24 +16,20 @@ def noActiveAjax(driver):
 
 class TestQsdCachePurging(SeleniumTestCase):
     PASSWORD_STRING = 'password'
-
-    def loginUser(self, user):
-        self.open_url("/")
-        elem = self.find_element_by_name("username")
-        elem.send_keys(user.username)
-        elem = self.find_element_by_name("password")
-        elem.send_keys(self.PASSWORD_STRING)
-        elem.submit()
-        try:
-            WebDriverWait(self, 10).until(noActiveAjax)
-        except:
-            stderr.write(str(exc_info()[0]) + "\n")
-            stderr.write("Wait for ajax login timed out.\n")
-        self.open_url("/")
+    TEST_STRING = 'Hello there from a django test!'
 
     def editQSD(self):
         elem = self.find_element_by_class_name("qsd_header")
         elem.click()
+        stdout.write("Clicked the qsd header!\n")
+        elem = self.find_element_by_name("qsd_content")
+        stdout.write("Found the text box!\n")
+        #self.control_key_down()
+        #elem.send_keys("a")
+        #self.control_key_up()
+        #stdout.write("Selected the text!\n")
+        elem.send_keys(self.TEST_STRING)
+        stdout.write("Entered the text!\n")
         elem.send_keys(Keys.TAB)
 
     def setUp(self):
@@ -45,17 +43,27 @@ class TestQsdCachePurging(SeleniumTestCase):
         self.qsd_user.set_password(self.PASSWORD_STRING)
         self.qsd_user.userbit_set.add(UserBit(verb = GetNode('V/Administer/Edit/QSD'), qsc = GetNode('Q'), recursive = True))
         self.qsd_user.save()
-        self.unpriv_user, created = ESPUser.objects.get_or_create(username='unpriv', first_name='Angry', last_name='Parent')
-        self.unpriv_user.set_password(self.PASSWORD_STRING)
-        self.unpriv_user.save()
 
     def test_qsd_cache_purging(self):
         self.driver.testserver_port = VARNISH_PORT
-        self.loginUser(self.admin_user)
+        self.open_url("/")
+        try_login(self, self.admin_user.username, self.PASSWORD_STRING)
         self.editQSD()
-        # Somehow test this?
-        # Perhaps we don't need to even check the QSD, just the purging really...
 
-        import time
-        time.sleep(10)
+        self.delete_all_cookies()
+        self.open_url("/")
+        self.failUnless(self.is_text_present(self.TEST_STRING))
+        logout(self)
+
+        try_login(self, self.qsd_user.username, self.PASSWORD_STRING)
+        self.editQSD()
+
+        self.delete_all_cookies()
+        self.open_url("/")
+        self.failUnless(self.is_text_present(self.TEST_STRING))
+
         self.driver.testserver_port = 8000 # Find where this number is actually stored
+
+    def cleanUp(self):
+        stdout.write("Cleaning up!\n")
+        self.driver.testserver_port = 8000 # Find where this number is actually stored        
