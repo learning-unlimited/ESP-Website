@@ -735,7 +735,7 @@ class ClassSection(models.Model):
         cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
         cache.delete(cache_key)
     
-    def assign_room(self, base_room, compromise=True, clear_others=False):
+    def assign_room(self, base_room, compromise=True, clear_others=False, allow_partial=False):
         """ Assign the classroom given, except at the times needed by this class. """
         rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all()))
         
@@ -756,7 +756,7 @@ class ClassSection(models.Model):
             status = False
             errors.append( u'Room <strong>%s</strong> is not available at the times requested by <strong>%s</strong>.  Bug the webmasters to find out why you were allowed to assign this room.' % (base_room.name, self) )
         
-        for r in rooms_to_assign:
+        for i, r in enumerate(rooms_to_assign):
             r.clear_schedule_cache(self.parent_program)
             result = self.assignClassRoom(r)
             if not result:
@@ -766,6 +766,11 @@ class ClassSection(models.Model):
                 if occupiers_set.count() > 0: # We really shouldn't have to test for this, but I guess it's safer not to assume... -ageng 2008-11-02
                     occupiers_str = u' by <strong>%s</strong>' % (occupiers_set[0].target or occupiers_set[0].target_subj)
                 errors.append( u'Error: Room <strong>%s</strong> is already taken%s.  Please assign a different one to <strong>%s</strong>.  While you\'re at it, bug the webmasters to find out why you were allowed to assign a conflict.' % ( base_room.name, occupiers_str, self ) )
+                # If we don't allow partial fulfillment, undo and quit.
+                if not allow_partial:
+                    for r2 in rooms_to_assign[:i]:
+                        r2.clear_assignments()
+                    break
             
         return (status, errors)
     
