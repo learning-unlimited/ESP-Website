@@ -736,7 +736,7 @@ class ClassSection(models.Model):
         cache.delete(cache_key)
     
     def assign_room(self, base_room, compromise=True, clear_others=False, allow_partial=False):
-        """ Assign the classroom given, except at the times needed by this class. """
+        """ Assign the classroom given, at the times needed by this class. """
         rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all()))
         
         status = True
