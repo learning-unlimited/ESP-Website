@@ -762,7 +762,7 @@ class ClassSection(models.Model):
             if not result:
                 status = False
                 occupiers_str = ''
-                occupiers_set = base_room.assignments()
+                occupiers_set = r.assignments()
                 if occupiers_set.count() > 0: # We really shouldn't have to test for this, but I guess it's safer not to assume... -ageng 2008-11-02
                     occupiers_str = u' by <strong>%s</strong>' % (occupiers_set[0].target or occupiers_set[0].target_subj)
                 errors.append( u'Error: Room <strong>%s</strong> is already taken%s.  Please assign a different one to <strong>%s</strong>.  While you\'re at it, bug the webmasters to find out why you were allowed to assign a conflict.' % ( base_room.name, occupiers_str, self ) )
