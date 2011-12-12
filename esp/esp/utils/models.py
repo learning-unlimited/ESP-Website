@@ -2,6 +2,11 @@ from django.db import models
 from django.template.loaders.cached import Loader as CachedLoader
 from django.template.loader import find_template
 
+
+## aseering 11/29/2011
+## HACK to generate a warning on deferred field evaluation
+from esp.utils import deferred_notifier
+
 """ A template override model that stores the contents of a template in the database. """
 class TemplateOverride(models.Model):
 
