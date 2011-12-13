@@ -177,6 +177,13 @@ class ESPUser(User, AnonymousUser):
     def is_anonymous(self):
         return self._is_anonymous
 
+    @staticmethod
+    def onsite_user():
+        if ESPUser.objects.filter(username='onsite').exists():
+            return ESPUser.objects.filter(username='onsite')[0]
+        else:
+            return None
+
     @classmethod
     def ajax_autocomplete(cls, data):
         names = data.strip().split(',')
@@ -2012,6 +2019,11 @@ def install():
                             "recursive": False } )
 
         populateInitialUserBits(AdminUserBits)
+
+    #   Ensure that there is an onsite user
+    if not ESPUser.onsite_user():
+        ESPUser.objects.create(username='onsite', first_name='Onsite', last_name='User')
+        print 'Created onsite user, please set their password in the admin interface.'
 
 # We can't import these earlier because of circular stuff...
 from esp.users.models.userbits import UserBit
