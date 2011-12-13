@@ -70,7 +70,7 @@ class AdminReviewApps(ProgramModuleObj):
     def studentDesc(self):
         return {'app_accepted_to_one_program': """Students who are accepted to at least one class."""}
 
-    @aux_call
+    @main_call
     @needs_admin
     def review_students(self, request, tl, one, two, module, extra, prog):
         """ Show a roster of the students in the class, allowing the administrators

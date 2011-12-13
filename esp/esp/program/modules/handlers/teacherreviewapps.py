@@ -56,7 +56,7 @@ class TeacherReviewApps(ProgramModuleObj):
             "seq": 1000,
             }
 
-    @aux_call
+    @main_call
     @meets_deadline("/AppReview")
     @needs_teacher
     @never_cache

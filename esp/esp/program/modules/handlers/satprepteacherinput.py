@@ -50,7 +50,7 @@ class SATPrepTeacherInput(ProgramModuleObj):
             "seq": 50,
             }
 
-    @aux_call
+    @main_call
     @needs_teacher
     def satprepuserdiagnostic(self, request, tl, one, two, module, extra, prog):
         context = {}

@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.models import VolunteerRequest
-from esp.program.modules.base import ProgramModuleObj, needs_admin
+from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.program.modules.forms.volunteer import VolunteerRequestForm
 from esp.web.util        import render_to_response
 from django.http import HttpResponse
@@ -56,7 +56,8 @@ class VolunteerManage(ProgramModuleObj):
         See who has signed up for each timeslot
         Invite people to volunteer via comm panel
     """
-
+    
+    @main_call
     @needs_admin
     def volunteering(self, request, tl, one, two, module, extra, prog):
         context = {}
