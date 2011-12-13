@@ -43,7 +43,10 @@ from esp.tagdict.models          import Tag
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, Resource
-from datetime                    import timedelta
+from esp.settings                import SERVER_EMAIL
+from django.template.loader      import render_to_string
+from django.core.mail            import send_mail
+from datetime                    import timedelta, datetime
 
 class AvailabilityModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
@@ -141,13 +144,27 @@ class AvailabilityModule(ProgramModuleObj):
             teacher.clearAvailableTimes(self.program)
             
             #   Add in resources for the checked available times.
+            timeslots = []
             for ts_id in post_vars.getlist('timeslots'):
                     ts = Event.objects.filter(id=int(ts_id))
+                    timeslots.append(ts)
                     if len(ts) != 1:
                         raise ESPError('Found %d matching events for input %s' % (len(ts), key))
                     
                     teacher.addAvailableTime(self.program, ts[0])
                     
+            #   Send an e-mail showing availability to directors and teachers
+            email_title = 'Availability for %s: %s' % (self.program.niceName(), teacher.name())
+            email_from = '%s Registration <%s>' % (self.program.anchor.parent.name, SERVER_EMAIL)
+            email_context = {'teacher': teacher,
+                             'timeslots': timeslots,
+                             'program': self.program,
+                             'curtime': datetime.now()}
+            email_contents = render_to_string(self.baseDir()+'update_email.txt', email_context)
+            email_to = ['%s <%s>' % (self.user.name(), self.user.email), '%s Directors <%s>' % (self.program.anchor.parent.name, self.program.director_email)]
+            send_mail(email_title, email_contents, email_from, email_to, False)
+            
+            #   Return to the main registration page
             return self.goToCore(tl)
                 
         else:
