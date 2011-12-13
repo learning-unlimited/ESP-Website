@@ -389,6 +389,13 @@ class AJAXSchedulingModule(ProgramModuleObj):
     ajax_schedule_last_changed_cached.depend_on_model(lambda: ClassSubject)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: UserAvailability)
 
+    @aux_call
+    @needs_admin
+    def ajax_lunch_timeslots(self, request, tl, one, two, module, extra, prog):
+        data = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values_list('id', flat=True))
+        response = HttpResponse(content_type="application/json")
+        simplejson.dump(data, response)
+        return response
 
     @aux_call
     @needs_admin
