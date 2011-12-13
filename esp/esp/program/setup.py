@@ -62,7 +62,7 @@ def prepare_program(program, data):
     
     userbits += [('V/Deadline/Registration/Student', '(all)', data['student_reg_start'], data['student_reg_end'])]
     #userbits += [('V/Deadline/Registration/Student/Applications', 0, data['student_reg_start'], data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Catalog', 0, data['student_reg_start'], None)]
+    userbits += [('V/Deadline/Registration/Student/Catalog', '(all)', data['student_reg_start'], None)]
     #userbits += [('V/Deadline/Registration/Student/Classes', 0, data['student_reg_start'], data['student_reg_end'])]
     #userbits += [('V/Deadline/Registration/Student/Classes/OneClass', 0, data['student_reg_start'], data['student_reg_end'])]
     #userbits += [('V/Deadline/Registration/Student/Confirm', 0, data['student_reg_start'], data['publish_end'])]
@@ -73,8 +73,12 @@ def prepare_program(program, data):
     userbits += [('V/Deadline/Registration/Teacher', '(all)', data['teacher_reg_start'], data['teacher_reg_end'])]
     #userbits += [('V/Deadline/Registration/Teacher/Catalog', 0, data['teacher_reg_start'], None)]
     #userbits += [('V/Deadline/Registration/Teacher/Classes', 0, data['teacher_reg_start'], data['teacher_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Teacher/Classes/View', 0, data['teacher_reg_start'], data['publish_end'])]
-    #userbits += [('V/Deadline/Registration/Teacher/MainPage', 0, data['teacher_reg_start'], data['publish_end'])]
+    userbits += [('V/Deadline/Registration/Teacher/Classes/View', '(all)', data['teacher_reg_start'], None)]
+    userbits += [('V/Deadline/Registration/Teacher/MainPage', '(all)', data['teacher_reg_start'], None)]
+    
+    #   Grant onsite bit (for all times) if an onsite user is available.
+    if ESPUser.onsite_user():
+        userbits += [('V/Registration/Onsite', ESPUser.onsite_user(), None, None)]
     
     for director in data['admins']:
         userbits += [('V/Administer', ESPUser.objects.get(id=int(director)), None, None)]
