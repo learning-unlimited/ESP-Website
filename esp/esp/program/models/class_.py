@@ -298,6 +298,7 @@ class ClassManager(ProcedureManager):
     catalog_cached.depend_on_model(lambda: ClassSubject)
     catalog_cached.depend_on_model(lambda: ClassSection)
     catalog_cached.depend_on_model(lambda: QSDMedia)
+    catalog_cached.depend_on_model(lambda: Tag)
     catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
                                  lambda bit: bit.applies_to_verb('V/Flags/Registration/Teacher'))
     #catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
