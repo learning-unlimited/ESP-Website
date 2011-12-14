@@ -17,6 +17,12 @@ def noActiveAjax(driver):
     return driver.execute_script("return numAjaxConnections == 0")
 
 class TestQsdCachePurging(SeleniumTestCase):
+    """
+       This test requires Varnish (or some proxy caching server that accepts PURGE requests)
+       to be set up on the port and host specified in local_settings.py as VARNISH_HOST (a
+       string) and VARNISH_PORT (an int).
+    """
+
     PASSWORD_STRING = 'password'
     TEST_STRING = 'Hello there from a django test!'
 
