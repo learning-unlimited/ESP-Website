@@ -206,13 +206,13 @@ class CsrfTestCase(SeleniumTestCase):
         self.open_url("/")
         self.try_ajax_login()
         self.failUnless(self.is_text_present('Student Student'))
-        logout(self)
+        self.logout()
 
         self.delete_cookie("csrftoken")
 
         self.try_ajax_login()
         self.failUnless(self.is_text_present('Please log in to access program registration'))
-        logout(self)
+        self.logout()
 
         self.try_ajax_login()
         self.failUnless(self.is_text_present('Student Student'))
@@ -235,7 +235,7 @@ class CsrfTestCase(SeleniumTestCase):
 
         self.try_normal_login()
         self.failUnless(self.is_text_present('Student Student'))
-        logout(self)
+        self.logout()
 
         # Now set up and test normal login missing the csrf token
         self.setUpCsrfMissingLogin()
