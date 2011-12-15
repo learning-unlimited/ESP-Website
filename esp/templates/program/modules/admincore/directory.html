@@ -16,6 +16,7 @@ function updateDocs(docs) {
 </script>
 {% endblock %}
 {% block content %}
+{% load render_qsd %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
 </style>
@@ -31,6 +32,11 @@ If you need any assistance, please email <tt>{{ DEFAULT_EMAIL_ADDRESSES.support 
 <strong>Your options:</strong>
 <br />
 <table border="0" width="100%">
+<tr>
+ <td colspan="2">
+{% render_inline_qsd program.anchor "manage:main_top" request.user %}
+ </td>
+</tr>
 <tr>
  <td width="40%">
 <ul>
@@ -50,6 +56,11 @@ If you need any assistance, please email <tt>{{ DEFAULT_EMAIL_ADDRESSES.support 
   {% endif %}
 {% endif %}
 {% endfor %}
+<li><a href="/manage/{{ one }}/{{ two }}/deadline_management/" title="Deadline Management" onmouseover="updateDocs('<p>Edit Program Deadlines</p>');">Edit Program Deadlines</a></li>
+<li><a href="/manage/{{ one }}/{{ two }}/visibleregistrationtype_management/" title="Visible Registration Type Management" onmouseover="updateDocs('<p>Visible Registration Type Management</p>');">Visible Registration Type Management</a></li>
+<li><a href="/learn/{{ one }}/{{ two }}/studentreg/" title="Student Registration" onmouseover="updateDocs('<p>Student Reg</p>');">Student Reg</a></li>
+<li><a href="/learn/{{ one }}/{{ two }}/catalog/" title="Catalog" onmouseover="updateDocs('<p>Catalog</p>');">Catalog</a></li>
+<li><a href="/manage/{{ one }}/{{ two }}/attendees/" title="Class Attendance" onmouseover="updateDocs('<p>Update Class Attendees</p>');">Update Class Attendees</a></li>
 </ul>
 </td>
 <td style="vertical-align: top;">
@@ -58,6 +69,11 @@ If you need any assistance, please email <tt>{{ DEFAULT_EMAIL_ADDRESSES.support 
 <div id="adminhelp">
 Please select an option to the left to continue, or look down below to select further options.
 </div>
+</td>
+</tr>
+<tr>
+<td colspan="2">
+{% render_inline_qsd program.anchor "manage:main_bottom" request.user %}
 </td>
 </tr>
 </table>
