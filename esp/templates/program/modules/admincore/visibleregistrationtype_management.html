@@ -1,0 +1,48 @@
+{% extends "main.html" %}
+{% comment %}
+{% block extrahead %}{{ block.super }}
+<script type="text/javascript" src="/media/admin/js/core.js"></script>
+<script type="text/javascript" src="/media/admin/js/SelectBox.js"></script>
+<script type="text/javascript" src="/media/admin/js/SelectFilter2.js"></script>
+{% endblock %}
+{% endcomment %}
+
+{% block title %}{{program.niceName}} Visible Registration Type Management{% endblock %}
+
+{% block content %}
+    <h1>{{program.niceName}} Visible Registration Type Management</h1>
+    <br />
+    {% if non_unique_name %}
+        <h3 style="font-weight:bold; color:red;">WARNING! You have multiple RegistrationTypes with the same name!</h3>
+        <p>This could potentially cause problems with student registration. 
+        Contact <a href="mailto:{{ support }}">{{ support }}</a> for help fixing this problem. 
+        Or, if you know what you're doing, delete the redundant objects in <a href="/admin/program/registrationtype/">the admin panel</a>.</p>
+        <p>The duplicated names are:</p>
+        <ul>
+        {% for name in non_unique_name %}
+            <li>{{ name }}</li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Select the types of registrations that should appear on the inline student schedule that appears at the bottom of the main studentreg page. Enrolled should always be selected. Additionally:</p>
+        <ul>
+            <li>If you are running a normal student registration, that is probably all that you need to select.</li>
+            <li>If you are using an application, you should make sure to select Applied. To avoid confusion, de-select this before allowing students to see what classes they got into.</li>
+            <li>If you are running a single-preference lottery, you should select Priority/1 and Interested. To avoid confusion, de-select these before allowing students to see what classes they got into.</li>
+            <li>If you are running a multi-preference lottery, you should select Priority/1, Priority/2, etc. To avoid confusion, de-select these before allowing students to see what classes they got into.</li>
+        </ul>
+        <p>When in doubt, contact <a href="mailto:{{ support }}">{{ support }}</a> for assistance.</p>
+        <p>You may also select All to have all registration types display (which was the original default behavior). Only select this if you are sure that you want students to be able to see everything (something which has caused confusion in the past).</p>
+        <form action="/manage/{{ one }}/{{ two }}/studentviewschedule_management/" method="post">{% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Submit" />
+        </form>
+        <br /><br />
+        {% if POST and saved %}
+            <h3 style="font-weight:bold;">Settings successfully saved.</h3>
+        {% endif %}
+        {% if POST and not saved %}
+            <h3 style="font-weight:bold; color:red;">There was an error with saving your settings. Please try again.</h3>
+        {% endif %}
+    {% endif %}
+{% endblock %}

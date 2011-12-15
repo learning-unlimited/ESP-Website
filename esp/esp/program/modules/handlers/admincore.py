@@ -68,7 +68,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             "link_title": "Program Dashboard",
             "module_type": "manage",
             "main_call": "dashboard",
-            "aux_calls": "main,deadlines,deadline_management",
+            "aux_calls": "main,deadlines,deadline_management,deadline_management",
             "seq": -9999
             }
 
@@ -100,7 +100,34 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['two'] = two
 
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
-
+    
+    @aux_call
+    @needs_admin
+    def visibleregistrationtype_management(self, request, tl, one, two, module, extra, prog):
+        
+        from esp.program.modules.forms.admincore import VisibleRegistrationTypeForm as VRTF
+        from esp.settings import DEFAULT_EMAIL_ADDRESSES
+        from esp.program.controllers.studentclassregmodule import VisibleRegistrationTypeController as VRTC
+        
+        context = {}
+        context['one'] = one
+        context['two'] = two
+        context['prog'] = prog
+        context['POST'] = False
+        context['saved'] = False
+        context['non_unique_name'] = VRTC.getNonUniqueNames()
+        context['support'] = DEFAULT_EMAIL_ADDRESSES['support']
+        
+        if request.method == 'POST':
+            context['POST'] = True
+            form = VRTF(request.POST)
+            if form.is_valid():
+                context['saved'] = VRTC.setVisibleRegistrationTypeNames(form.cleaned_data['display_names'], prog)
+        
+        display_names = list(VRTC.getVisibleRegistrationTypeNames(prog, for_VRT_form=True))
+        context['form'] = VRTF(data={'display_names': display_names})
+        return render_to_response(self.baseDir()+'visibleregistrationtype_management.html', request, (prog, tl), context)
+    
     @aux_call
     @needs_admin
     def deadline_management(self, request, tl, one, two, module, extra, prog):
