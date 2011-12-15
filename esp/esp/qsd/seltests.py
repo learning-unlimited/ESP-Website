@@ -29,19 +29,10 @@ class TestQsdCachePurging(SeleniumTestCase):
     def editQSD(self):
         elem = self.find_element_by_class_name("qsd_header")
         elem.click()
-        stdout.write("Clicked the qsd header!\n")
         elem = self.find_element_by_name("qsd_content")
-        stdout.write("Found the text box!\n")
-        for x in range(0, len(self.TEST_STRING)):
+        for x in range(0, len(elem.text)):
             elem.send_keys(Keys.DELETE)
-        # For some reason the control_key_down function doesn't exist even though it should
-        # TODO: Use the below code instead of the above at some point
-        #self.control_key_down()
-        #elem.send_keys("a")
-        #self.control_key_up()
-        #stdout.write("Selected the text!\n")
         elem.send_keys(self.TEST_STRING)
-        stdout.write("Entered the text!\n")
         elem.send_keys(Keys.TAB)
 
     def setUp(self):
@@ -68,8 +59,8 @@ class TestQsdCachePurging(SeleniumTestCase):
         qsd_rec_new.name = 'teach:test'
         qsd_rec_new.author = self.admin_user
         qsd_rec_new.nav_category = NavBarCategory.default()
-        qsd_rec_new.content = "Testing"
-        qsd_rec_new.title = "Test page"
+        qsd_rec_new.content = ''
+        qsd_rec_new.title = 'Test page'
         qsd_rec_new.description = ''
         qsd_rec_new.keywords    = ''
         qsd_rec_new.save()
