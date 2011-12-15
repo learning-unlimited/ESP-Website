@@ -1318,8 +1318,8 @@ class RegistrationProfile(models.Model):
         return form_data
     
     #   Note: these functions return ClassSections, not ClassSubjects.
-    def preregistered_classes(self):
-        return ESPUser(self.user).getSectionsFromProgram(self.program)
+    def preregistered_classes(self,verbs=None):
+        return ESPUser(self.user).getSectionsFromProgram(self.program,verbs=verbs)
     
     def registered_classes(self):
         return ESPUser(self.user).getEnrolledSections(program=self.program)
