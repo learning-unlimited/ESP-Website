@@ -4,17 +4,14 @@ from esp.users.models import ESPUser
 from esp.users.models import UserBit
 from esp.settings import VARNISH_PORT
 from esp.datatree.models import GetNode
-from esp.seltests import try_login, logout
+from esp.seltests import try_ajax_login, logout, noActiveAjax
 from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium import selenium
 from sys import stdout, stderr, exc_info
-
-
-def noActiveAjax(driver):
-    return driver.execute_script("return numAjaxConnections == 0")
+import time
 
 class TestQsdCachePurging(SeleniumTestCase):
     """
@@ -34,9 +31,13 @@ class TestQsdCachePurging(SeleniumTestCase):
             elem.send_keys(Keys.DELETE)
         elem.send_keys(self.TEST_STRING)
         elem.send_keys(Keys.TAB)
+        time.sleep(1) # Can we do this more dynamically somehow?
 
     def setUp(self):
         SeleniumTestCase.setUp(self)
+
+        # Make Q/Web public
+        UserBit.objects.create(verb = GetNode('V/Flags/Public'), qsc = GetNode('Q/Web'))
 
         # Make our users
         self.admin_user, created = ESPUser.objects.get_or_create(username='admin', first_name='Harry', last_name='Alborez')
@@ -55,8 +56,8 @@ class TestQsdCachePurging(SeleniumTestCase):
 
         # Make our test page
         qsd_rec_new = QuasiStaticData()
-        qsd_rec_new.path = GetNode('Q/Programs')
-        qsd_rec_new.name = 'teach:test'
+        qsd_rec_new.path = GetNode('Q/Web')
+        qsd_rec_new.name = 'test'
         qsd_rec_new.author = self.admin_user
         qsd_rec_new.nav_category = NavBarCategory.default()
         qsd_rec_new.content = ''
@@ -65,31 +66,33 @@ class TestQsdCachePurging(SeleniumTestCase):
         qsd_rec_new.keywords    = ''
         qsd_rec_new.save()
 
-    def test_qsd_cache_purging(self):
+    def check_page(self, page):
         self.driver.testserver_port = VARNISH_PORT
         self.open_url("/")
-        try_login(self, self.admin_user.username, self.PASSWORD_STRING)
-        self.open_url("/teach/test.html")
+        try_ajax_login(self, self.admin_user.username, self.PASSWORD_STRING)
+        self.open_url(page)
         self.editQSD()
 
         self.delete_all_cookies()
-        self.open_url("/")
-        try_login(self, self.admin_user.username, self.PASSWORD_STRING)
-        self.open_url("/teach/test.html")
+        self.open_url(page)
         self.failUnless(self.is_text_present(self.TEST_STRING))
         logout(self)
 
-        try_login(self, self.qsd_user.username, self.PASSWORD_STRING)
-        self.open_url("/teach/test.html")
+        try_ajax_login(self, self.qsd_user.username, self.PASSWORD_STRING)
+        self.open_url(page)
         self.editQSD()
 
         self.delete_all_cookies()
-        self.open_url("/")
-        try_login(self, self.admin_user.username, self.PASSWORD_STRING)
-        self.open_url("/teach/test.html")
+        self.open_url(page)
         self.failUnless(self.is_text_present(self.TEST_STRING))
 
         self.driver.testserver_port = 8000 # Find where this number is actually stored
+
+    def test_inline(self):
+        self.check_page("/")
+
+    def test_regular(self):
+        self.check_page("/test.html")
 
     def cleanUp(self):
         stdout.write("Cleaning up!\n")
