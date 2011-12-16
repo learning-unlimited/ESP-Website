@@ -83,7 +83,7 @@ class AdminMorph(ProgramModuleObj):
 
         self.user.switch_to_user(request,
                                  user,
-                                 '/manage/%s/%s/admin_morph/' % (one,two),
+                                 '/manage/%s/admin_morph/' % prog.getUrlBase(),
                                  'Managing %s' % self.program.niceName(),
                                  False)
 
