@@ -17,10 +17,18 @@ ESP.Scheduling = function(){
             this.status = this._status.setStatus.bind(this._status);
             this.status('success','Welcome to the scheduling app!');
         }
+        
+        if(this.roomfilter)
+            this.roomfilter.save();
+        
         this.matrix = new ESP.Scheduling.Widgets.Matrix(pd.times, pd.rooms, pd.blocks);
         $j('#matrix-target').text('');
         $j('#matrix-target').append((new Date()).getMilliseconds());
         $j('#matrix-target').append(this.matrix.el);
+        if(!this.roomfilter)
+            this.roomfilter = new ESP.Scheduling.Widgets.RoomFilter(this.matrix);
+        else
+            this.roomfilter.restore(this.matrix);
         this.directory = new ESP.Scheduling.Widgets.Directory(pd.sections);
         this.searchbox = new ESP.Scheduling.Widgets.SearchBox(this.directory);
         this.garbage   = new ESP.Scheduling.Widgets.GarbageBin();
@@ -129,7 +137,8 @@ ESP.Scheduling = function(){
                     'Size:': r.num_students.toString(), 
                     'Resources:': assd_resources
                     }, true),
-                resources: assd_resources
+                resources: assd_resources,
+                size: r.num_students
             });
             processed_data.rooms.push(room);
             var rid = room.uid;
