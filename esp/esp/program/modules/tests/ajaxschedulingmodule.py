@@ -40,8 +40,9 @@ class AJAXSchedulingModuleTest(ProgramFrameworkTest):
 
         # Set up the program -- we want to be sure of these parameters
         kwargs.update({
-            'num_timeslots': 3, 'timeslot_length': 50, 'timeslot_gap': 10,
-            'num_teachers': 2, 'classes_per_teacher': 1, 'sections_per_class': 1
+            'num_rooms': 4,
+            'num_timeslots': 4, 'timeslot_length': 50, 'timeslot_gap': 10,
+            'num_teachers': 3, 'classes_per_teacher': 2, 'sections_per_class': 1
             })
         super(AJAXSchedulingModuleTest, self).setUp(*args, **kwargs)
 
@@ -50,15 +51,28 @@ class AJAXSchedulingModuleTest(ProgramFrameworkTest):
             sec.duration = '1.83'
             sec.save()
 
+    def loginAdmin(self):
+        """Log in an admin user."""
+        self.failUnless(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+    def emptySchedule(self):
+        """Empty the schedule and teacher availability."""
+        for s in self.program.sections():
+            s.clearRooms()
+            s.clear_meeting_times()
+        for t in self.teachers:
+            t.clearAvailableTimes(self.program)
+
     def testModelAPI(self):
         """Schedule classes using the on-model methods."""
+
+        self.emptySchedule()
 
         # Fetch three consecutive vacancies in one room.
         rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
         self.failUnless(rooms.count() >= 3, "Not enough timeslots to run this test.")
 
         # Now we attempt to schedule the sections overlapping.
-        s1, s2 = self.program.sections()[:2]
+        s1, s2 = [t.getTaughtSections(self.program)[0] for t in self.teachers[:2]]
 
         # First, meeting times should be assigned without trouble.
         m1 = [rooms[0].event, rooms[1].event]
@@ -76,3 +90,78 @@ class AJAXSchedulingModuleTest(ProgramFrameworkTest):
         # Check that the second attempt did not take.
         self.failUnless(set(s1.classrooms()) == set(rooms[:2]), "First class's schedule modified.")
         self.failUnless(not s2.classrooms().exists(), "Second class should not have any classrooms assigned.")
+
+    def testForceAvailability(self):
+        """Test the 'force_availability' view."""
+
+        # force_availability is really a schedulingmodule view.
+        # Either we should move this test to the scheduling module's tests,
+        # or we should move this page to the AJAX scheduling module.
+        # It was just too easy to include the test here meanwhile.
+
+        self.emptySchedule()
+        self.loginAdmin()
+
+        # The setup:
+        # Teacher 0 is teaching in the first two timeslots.
+        # Teacher 1 is available the first two timeslots and has no classes scheduled.
+        # Teacher 2 hasn't filled out their availability.
+
+        # Set availability.
+        timeslots = self.program.getTimeSlots().order_by('start')
+        teachers = list(self.teachers)
+        for t in teachers[:2]:
+            t.addAvailableTime(self.program, timeslots[0])
+            t.addAvailableTime(self.program, timeslots[1])
+        # Schedule one class
+        teachers[0].getTaughtSections(self.program)[0].assign_meeting_times(timeslots[:2])
+        # Check the current state of availability.
+        self.failUnless(all([
+                set(teachers[0].getAvailableTimes(self.program)) == set(timeslots[:2]),
+                set(teachers[1].getAvailableTimes(self.program)) == set(timeslots[:2]),
+                set(teachers[2].getAvailableTimes(self.program)) == set(),
+                set(teachers[0].getAvailableTimes(self.program, ignore_classes=True)) == set(),
+            ]), "Unexpected availability state.")
+
+        # Force availability
+        self.client.post('/manage/%s/force_availability' % self.program.getUrlBase(), {'sure': 'True'})
+        # Check the state of availability again
+        self.failUnless(all([
+                set(teachers[0].getAvailableTimes(self.program)) == set(timeslots[:2]),
+                set(teachers[1].getAvailableTimes(self.program)) == set(timeslots[:2]),
+                set(teachers[2].getAvailableTimes(self.program)) == set(timeslots),
+                set(teachers[0].getAvailableTimes(self.program, ignore_classes=True)) == set(),
+            ]), "Unexpected availability state.")
+
+    def testWebAPI(self):
+        """Schedule classes using the ajax_schedule_class view."""
+
+        self.emptySchedule()
+        self.loginAdmin()
+
+        # Force teacher availability.
+        self.client.post('/manage/%s/force_availability' % self.program.getUrlBase(), {'sure': 'True'})
+
+        # Attempt to give a teacher a schedule conflict.
+        t = self.teachers[0]
+
+        # Fetch two consecutive vacancies in two different rooms
+        rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
+        self.failUnless(rooms.count() >= 2, "Not enough timeslots to run this test.")
+        a1 = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
+        rooms = self.rooms.exclude(name=rooms[0].name)[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
+        self.failUnless(rooms.count() >= 2, "Not enough timeslots to run this test.")
+        a2 = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
+
+        # Schedule one class.
+        ajax_url = '/manage/%s/ajax_schedule_class' % self.program.getUrlBase()
+        s1, s2 = t.getTaughtSections(self.program)[:2]
+        timeslots = self.program.getTimeSlots().order_by('start')
+        self.client.post(ajax_url, {'action': 'deletereg', 'cls': s1.id})
+        self.client.post(ajax_url, {'action': 'assignreg', 'cls': s1.id, 'block_room_assignments': a1})
+        self.failUnless(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Failed to assign meeting times.")
+        # Try to schedule the other class.
+        self.client.post(ajax_url, {'action': 'deletereg', 'cls': s2.id})
+        self.client.post(ajax_url, {'action': 'assignreg', 'cls': s2.id, 'block_room_assignments': a2})
+        self.failUnless(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Existing meeting times clobbered.")
+        self.failUnless(set(s2.get_meeting_times()) == set(), "Failed to prevent teacher conflict.")

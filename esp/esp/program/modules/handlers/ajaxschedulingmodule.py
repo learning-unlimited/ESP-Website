@@ -339,7 +339,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 if c != basic_cls:
                     return makeret(ret=False, msg="Assigning one section to multiple rooms.  This interface doesn't support this feature currently; assign it to one room for now and poke a Webmin to do this for you manually.")
                 
-            times = Event.objects.filter(id__in=times)
+            times = Event.objects.filter(id__in=times).order_by('start')
             if len(times) < 1:
                 return makeret(ret=False, msg="Specified Events not found in the database")
 
@@ -349,10 +349,14 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
             classroom = classrooms[0]
 
+            if times[0] not in cls.viable_times(ignore_classes=True):
+                return makeret(ret=False, msg="Some of the teachers are unavailable at this time.")
+
             cls.assign_meeting_times(times)
             status, errors = cls.assign_room(classroom)
 
             if not status: # If we failed any of the scheduling-constraints checks in assign_room()
+                cls.clear_meeting_times()
                 return makeret(ret=False, msg=" | ".join(errors))
             
             return makeret(ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
