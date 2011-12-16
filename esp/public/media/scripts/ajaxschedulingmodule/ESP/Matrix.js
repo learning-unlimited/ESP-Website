@@ -90,8 +90,12 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 
                     $j.post('ajax_schedule_class', req, "json")
                     .success(function(ajax_data, status) {
-                        ESP.version_uuid = data.val;
-                        ESP.Utilities.evm.fire('block_section_assignment_local', data);
+                        if (ajax_data.ret == true) {
+                            ESP.version_uuid = data.val;
+                            ESP.Utilities.evm.fire('block_section_assignment_local', data);
+                        } else {
+                            ESP.Scheduling.status('error', "Failed to assign " + data.section.code + ": " + ajax_data.msg);
+                        }
                     })
                     .error(function(ajax_data, status) {
                         if(ajax_data.status == 403)
