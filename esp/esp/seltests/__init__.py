@@ -15,6 +15,13 @@ def try_login(driver, username, password):
     elem = driver.find_element_by_name("password")
     elem.send_keys(password)
     elem.submit()
+
+def try_normal_login(driver, username, password):
+    try_login(driver, username, password)
+    driver.open_url("/")
+
+def try_ajax_login(driver, username, password):
+    try_login(driver, username, password)
     try:
         WebDriverWait(driver, 10).until(noActiveAjax)
     except:
