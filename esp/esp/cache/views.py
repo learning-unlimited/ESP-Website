@@ -46,7 +46,7 @@ def view_all(request):
 
 def varnish_purge(request):
     # Authenticate
-    if not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator() or not UserBit.objects.user_has_verb(request.user, GetNode('V/Administer/Edit/QSD')):
+    if (not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator()) and (not UserBit.objects.user_has_verb(request.user, GetNode('V/Administer/Edit/QSD'))):
         raise PermissionDenied
     # Purge the page specified
     purge_page(request.POST['page'])
