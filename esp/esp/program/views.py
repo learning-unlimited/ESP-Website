@@ -400,11 +400,24 @@ def userview(request):
     if not teacherbio.picture:
         teacherbio.picture = 'images/not-available.jpg'
     
+    from esp.users.forms.user_profile import StudentInfoForm
+    
+    if 'graduation_year' in request.GET:
+        student_info = user.getLastProfile().student_info
+        student_info.graduation_year = int(request.GET['graduation_year'])
+        student_info.save()
+    
+    change_grade_form = StudentInfoForm(user=user)
+    if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
+        del change_grade_form.fields['graduation_year'].widget.attrs['disabled']
+    change_grade_form.fields['graduation_year'].initial = ESPUser.YOGFromGrade(user.getGrade())
+    
     context = {
         'user': user,
         'taught_classes' : user.getTaughtClasses().order_by('parent_program'),
         'teacherbio': teacherbio,
         'domain': SITE_INFO[1],
+        'change_grade_form': change_grade_form,
     }
     return render_to_response("users/userview.html", request, GetNode("Q/Web"), context )
     

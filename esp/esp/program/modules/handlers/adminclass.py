@@ -348,7 +348,7 @@ class AdminClass(ProgramModuleObj):
                 #   class when the sections are unreviewed.
                 cls_form.save_data(cls_alter)
 
-                return HttpResponseRedirect('/manage/%s/%s/dashboard' % (one, two))            
+                return HttpResponseRedirect(request.get_full_path())
             
         consistency_checker = ConsistencyChecker(self.program)
         context['errors'] = []
