@@ -57,21 +57,9 @@ class DateTimeWidget(forms.widgets.TextInput):
         return a
 
     def value_from_datadict(self, data, files, name):
-        dtf = forms.fields.DEFAULT_DATETIME_INPUT_FORMATS
-        empty_values = forms.fields.EMPTY_VALUES
-
         value = data.get(name, None)
-        if value in empty_values:
-            return None
-        if isinstance(value, datetime.datetime):
-            return value
-        if isinstance(value, datetime.date):
-            return datetime.datetime(value.year, value.month, value.day)
-        for format in dtf:
-            try:
-                return datetime.datetime(*(time.strptime(value, format)[:6]))
-            except ValueError:
-                continue
+        if value:
+            return datetime.datetime(*(time.strptime(value, self.dformat)[:6]))
         return None
 
 # TODO: Make this not suck
