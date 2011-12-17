@@ -87,11 +87,13 @@ ESP.Scheduling = function(){
             sections: [],
             block_index: {},
             teachers: [],
-            schedule_assignments: []
+            schedule_assignments: [],
+            lunch_timeslots: []
         };
 
         processed_data.schedule_assignments = data.schedule_assignments;
-    
+        processed_data.lunch_timeslots = data.lunch_timeslots;
+
         var Resources = ESP.Scheduling.Resources;
 
         // resourcetypes
@@ -110,6 +112,10 @@ ESP.Scheduling = function(){
             processed_data.times.push(r =
                     Resources.create('Time',
                         { uid: t.id, text: t.short_description, start: start, end: end, length: end - start + 15*60000 }));
+            if (processed_data.lunch_timeslots.indexOf(r.uid) != -1)
+                r.is_lunch = true;
+            else
+                r.is_lunch = false;
             // console.log("Added block " + r.text + " (" + r.length + " ms)");
         }
         processed_data.times.sort(function(x,y){
@@ -286,35 +292,7 @@ ESP.Scheduling = function(){
             //return (str_err ? "Class '" + section.text + "' (size: " + class_size + " students) not the right size for room '" + block.room.text + "' (max size: " + room_size + " students)" : false);
             //console.log("Warning:  Class '" + section.text + "' (size: " + class_size + " students) not the right size for room '" + block.room.text + "' (max size: " + room_size + " students)");
         }
-        /*
-        // check for not scheduling across a time boundary
-        if (section.blocks && (section.blocks.length > 0)) {
-            var cmpBlock = section.blocks[0];
-            var first;
-            var second;
-            if (block.time.start > cmpBlock.time.start) {
-            first = cmpBlock;
-            second = block;
-            } else {
-            first = block;
-            second = cmpBlock;
-            }
-            
-            var inSeq = false;
-            while (first.seq) {
-            if (first.uid[0] == second.uid[0]) {
-                inSeq = true;
-                break;
-            }
-            first = first.seq;
-            }
-            if (!inSeq) {
-            console.log("Class '" + section.text + "' is scheduled across a lunch boundary");
-            return (str_err ? "Class '" + section.text + "' is scheduled across a lunch boundary" : false)
-            }
-            
-        }
-        */
+
         // check for teacher class conflicts
         // also check for making this class's teachers run all over campus (horrible dirty hack)
         var class_bldg = block.room.text.split('-');
@@ -399,9 +377,46 @@ ESP.Scheduling = function(){
         return (str_err ? "OK" : true);
     };
     
+    var validate_start_time = function(time, section, str_err) {
+        //  Check for not scheduling across a contiguous group of lunch periods - check start block only
+        if (section.blocks && (section.blocks.length > 0)) {
+            var test_time = time;
+            var covered_lunch_start = false;
+            
+            //  Start with the proposed start time and iterate over all time blocks the section will need
+            for (var i = 0; i < section.blocks.length; i++)
+            {
+                if (test_time.is_lunch && !covered_lunch_start)
+                {
+                    //  Check that this is the first lunch in the group:
+                    //  - this is the first time slot, or
+                    //  - the previous time slot is not a lunch block
+                    if ((ESP.Scheduling.data.times.indexOf(test_time) == 0) || !(ESP.Scheduling.data.times[ESP.Scheduling.data.times.indexOf(test_time) - 1].is_lunch))
+                        covered_lunch_start = true;
+                }
+
+                //  If this is the last timeslot of the program, don't sweat it... this assignment
+                //  is invalid anyway.
+                if (!test_time.seq)
+                    break;
+                    
+                //  But, if our class period overlapped with the beginning of the lunch sequence
+                //  and now also overlaps with the end of the lunch sequence, that's a conflict.
+                if (covered_lunch_start && !(test_time.seq.is_lunch))
+                    return (str_err ? "Section " + section.code + " starting at " + time.text + " would conflict with a group of lunch periods" : false);
+                    
+                //  Move on to the next time slot.
+                test_time = test_time.seq;
+            }
+        }
+        
+        return (str_err ? "OK" : true);
+    };
+    
     var self = {
         init: init,
-        validate_block_assignment: validate_block_assignment
+        validate_block_assignment: validate_block_assignment,
+        validate_start_time: validate_start_time
     };
     return self;
 }();
@@ -422,7 +437,7 @@ $j(function(){
 
     var data = {};
     var success_count = 0;
-    var files = ['times','rooms','sections','resources','resourcetypes','teachers','schedule_assignments'];
+    var files = ['times','rooms','sections','resources','resourcetypes','teachers','schedule_assignments','lunch_timeslots'];
     var ajax_verify = function(name) {
         return function(d, status) {
             if (status != "success") {

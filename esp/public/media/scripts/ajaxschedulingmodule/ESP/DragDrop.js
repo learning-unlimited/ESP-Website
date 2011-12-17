@@ -22,7 +22,8 @@ ESP.declare('ESP.Scheduling.DragDrop', function(){
                 var section = get_section();
                 for (var i = 0; i < blocks.length; i++) {
                     var b = blocks[i];
-                    b._temp_accept = (b.section == section) || ESP.Scheduling.validate_block_assignment(b, section);
+                    b._temp_accept = (b.section == section) || ESP.Scheduling.validate_block_assignment(b, section, false);
+                    b._temp_accept_start = (b.section == section) || ESP.Scheduling.validate_start_time(b.time, section, false);
                 }
                 target.data('section', section);
                 //     console.log("Started to drag section " + section.code);
@@ -50,6 +51,14 @@ ESP.declare('ESP.Scheduling.DragDrop', function(){
                 var blocks = [];
             
                 var section = d.data('section');
+                
+                //  Check errors from the section starting on the first proposed time block
+                if (block == null || !block._temp_accept_start)
+                {
+                    return target_block._temp_accept_flag = false;
+                }
+                
+                //  Check errors from the section occuring during any of the proposed time blocks
                 var t = section.length;
                 while (t > 0) {
                     if (block == null || !block._temp_accept) {
@@ -60,6 +69,7 @@ ESP.declare('ESP.Scheduling.DragDrop', function(){
                     block = block.seq;
                 }
                 target_block._temp_glom = blocks;
+                
                 return target_block._temp_accept_flag = true;
             },
             drop: function(e, ui) {

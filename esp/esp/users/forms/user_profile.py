@@ -244,6 +244,13 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         self.allow_change_grade_level = Tag.getTag('allow_change_grade_level')
 
+        #   Add user's current grade if it is out of range.
+        if user:
+            user_grade = user.getGrade()
+            grade_tup = (str(ESPUser.YOGFromGrade(user_grade)), str(user_grade))
+            if grade_tup not in self.fields['graduation_year'].choices:
+                self.fields['graduation_year'].choices.insert(0, grade_tup)
+
         ## All of these Tags may someday want to be made per-program somehow.
         ## We don't know the current program right now, though...
         show_studentrep_application = Tag.getTag('show_studentrep_application')
@@ -289,7 +296,10 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 # Disable the age and grade fields if they already exist.
                 if initial_data.has_key('graduation_year') and initial_data.has_key('dob'):
                     self.fields['graduation_year'].widget.attrs['disabled'] = "true"
+                    self.fields['graduation_year'].required = False
                     self.fields['dob'].widget.attrs['disabled'] = "true"
+                    self.fields['dob'].required = False
+                    
 
         #   Add schoolsystem fields if directed by the Tag
         if Tag.getTag('schoolsystem'):
