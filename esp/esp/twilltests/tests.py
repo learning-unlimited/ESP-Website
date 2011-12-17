@@ -39,7 +39,7 @@ if SERVER_HOSTNAME == None or SERVER_HOSTNAME == '':
 if SERVER_PORT == None or SERVER_PORT == '':
     SERVER_PORT = ''
     
-import unittest
+from django.utils import unittest
 
 class AllFilesTest(unittest.TestCase):
     """
@@ -185,6 +185,7 @@ class AllFilesTest(unittest.TestCase):
             twill.unit.run_test(self._test_info(testFile))
 
 
+    @unittest.skip("Stress test doesn't work within the Django tester")
     def testStressTest(self):
         print "Error: Stress test doesn't work within the Django tester."
         print "Cancelling this test."
