@@ -271,7 +271,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         custom_grade_options = Tag.getTag('student_grade_options')
         if custom_grade_options:
             custom_grade_options = json.loads(custom_grade_options)
-            self.fields['graduation_year'].choices = [(str(ESPUser.YOGFromGrade(x)), str(x)) for x in custom_grade_options]
+            self.fields['graduation_year'].choices = [('','')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in custom_grade_options]
 
         if Tag.getTag('show_student_graduation_years_not_grades'):            
             current_grad_year = self.ESPUser.current_schoolyear()
