@@ -180,7 +180,7 @@ class ESPUser(User, AnonymousUser):
     @staticmethod
     def onsite_user():
         if ESPUser.objects.filter(username='onsite').exists():
-            return ESPUser.objects.filter(username='onsite')[0]
+            return ESPUser.objects.get(username='onsite')
         else:
             return None
 
