@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program
+from esp.middleware              import ESPError
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from django                      import forms
@@ -43,7 +44,10 @@ from esp.tagdict.models          import Tag
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, Resource
-from datetime                    import timedelta
+from esp.settings                import SERVER_EMAIL
+from django.template.loader      import render_to_string
+from django.core.mail            import send_mail
+from datetime                    import timedelta, datetime
 
 class AvailabilityModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
@@ -141,13 +145,26 @@ class AvailabilityModule(ProgramModuleObj):
             teacher.clearAvailableTimes(self.program)
             
             #   Add in resources for the checked available times.
-            for ts_id in post_vars.getlist('timeslots'):
-                    ts = Event.objects.filter(id=int(ts_id))
-                    if len(ts) != 1:
-                        raise ESPError('Found %d matching events for input %s' % (len(ts), key))
+            timeslot_ids = map(int, post_vars.getlist('timeslots'))
+            timeslots = Event.objects.filter(id__in=timeslot_ids)
+            missing_tsids = set(timeslot_ids) - set(x.id for x in timeslots)
+            if missing_tsids:
+                raise ESPError(False), 'Received requests for the following timeslots that don\'t exist: %s' % str(list(sorted(missing_tsids)))
+            for timeslot in timeslots:
+                teacher.addAvailableTime(self.program, timeslot)
                     
-                    teacher.addAvailableTime(self.program, ts[0])
-                    
+            #   Send an e-mail showing availability to directors and teachers
+            email_title = 'Availability for %s: %s' % (self.program.niceName(), teacher.name())
+            email_from = '%s Registration <%s>' % (self.program.anchor.parent.name, SERVER_EMAIL)
+            email_context = {'teacher': teacher,
+                             'timeslots': timeslots,
+                             'program': self.program,
+                             'curtime': datetime.now()}
+            email_contents = render_to_string(self.baseDir()+'update_email.txt', email_context)
+            email_to = ['%s <%s>' % (self.user.name(), self.user.email), '%s Directors <%s>' % (self.program.anchor.parent.name, self.program.director_email)]
+            send_mail(email_title, email_contents, email_from, email_to, False)
+            
+            #   Return to the main registration page
             return self.goToCore(tl)
                 
         else:

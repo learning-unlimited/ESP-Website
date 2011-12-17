@@ -169,7 +169,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         return HttpResponse(json.dumps(json_data))
 
 
-    @aux_call
+    @main_call
     @needs_onsite
     def rapidcheckin(self, request, tl, one, two, module, extra, prog):
         context = {}
@@ -198,7 +198,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'ajaxcheckin.html', request, (prog, tl), context)
         
 
-    @main_call
+    @aux_call
     @needs_onsite
     def checkin(self, request, tl, one, two, module, extra, prog):
 
