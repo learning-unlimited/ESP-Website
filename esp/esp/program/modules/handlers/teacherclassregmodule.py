@@ -69,9 +69,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             "link_title": "Register Your Classes",
             "module_type": "teach",
             "seq": 10,
-            "main_call": "makeaclass",
             "inline_template": "listclasses.html",
-            "aux_calls": "class_students,section_students,editclass,deleteclass,coteachers,teacherlookup,class_status,class_docs,select_students,ajax_restypes,ajax_requests,makeopenclass"
             }
 
     def extensions(self):

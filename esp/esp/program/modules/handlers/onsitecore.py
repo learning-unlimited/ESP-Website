@@ -52,8 +52,6 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
             "link_title": "onsite",
             "module_type": "onsite",
             "seq": -1000,
-            "main_call": "main",
-            #"aux_calls": "reg,checkin" # These are present in the ESP DB, but, not sure where they're actually defined?
             }
     
     @main_call
