@@ -34,7 +34,7 @@ sections of the
 same class, <b>do not submit this form multiple times.</b>  Instead, select the desired number of sections next to "Number of Sections" (the second field from the top).</div>
 </p>
 
-<form action="{{request.path}}" id="clsform" name="clsform" method="post" onsubmit="return check_grade_range($j(this));">{% csrf_token %}
+<form action="{{request.path}}" id="clsform" name="clsform" method="post" {% if grade_range_popup %}onsubmit="return check_grade_range($j(this), {{ program.grade_min }}, {{ program.grade_max }});"{% endif %}>{% csrf_token %}
 
 {% if form.errors %}
 <p align="center">
