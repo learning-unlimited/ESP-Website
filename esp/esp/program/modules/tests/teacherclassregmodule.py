@@ -1,11 +1,10 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
 __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2009 by the individual contributors
+Copyright (c) 2011 by the individual contributors
   (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
@@ -33,7 +32,25 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.program.modules.tests.availabilitymodule import AvailabilityModuleTest
-from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest
-from esp.program.modules.tests.studentreg import StudentRegTest
-from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest
+from esp.program.tests import ProgramFrameworkTest
+from esp.program.modules.base import ProgramModule, ProgramModuleObj
+import random
+
+class TeacherClassRegTest(ProgramFrameworkTest):
+    def setUp(self, *args, **kwargs):
+        super(TeacherClassRegTest, self).setUp(*args, **kwargs)
+
+        self.teacher = random.choice(self.teachers)
+        self.cls = random.choice(self.teacher.getTaughtClasses())
+
+        pm = ProgramModule.objects.get(handler='TeacherClassRegModule')
+        self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, pm)
+        self.moduleobj.user = self.teacher
+
+    def test_grade_range_popup(self):
+        # Login the teacehr
+        self.failUnless(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
+
+        # Try editing the class
+        response = self.client.get('%smakeaclass' % self.program.get_teach_url())
+        self.failUnless("check_grade_range" in response.content)
