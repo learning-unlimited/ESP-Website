@@ -5,7 +5,7 @@ from south.v2 import DataMigration
 from django.db import models
 import reversion
 
-import utils.admin # required to register the model with reversion
+import esp.utils.admin # required to register the model with reversion
 
 def string(obj):
     return "<Override: id=%s, name=%s, version=%s>" % (obj.id, obj.name, obj.version, )
