@@ -58,23 +58,23 @@ def prepare_program(program, data):
     for sub_node in ProgramTemplate:
         datatrees += [(program_node_name + sub_node, '')]
 
-    userbits += [('V/Flags/Public', '(all)', data['publish_start'], data['publish_end'])]
+    userbits += [('V/Flags/Public', None, data['publish_start'], data['publish_end'])]
     
-    userbits += [('V/Deadline/Registration/Student', '(all)', data['student_reg_start'], data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Applications', 0, data['student_reg_start'], data['student_reg_end'])]
-    userbits += [('V/Deadline/Registration/Student/Catalog', '(all)', data['student_reg_start'], None)]
-    #userbits += [('V/Deadline/Registration/Student/Classes', 0, data['student_reg_start'], data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Classes/OneClass', 0, data['student_reg_start'], data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Confirm', 0, data['student_reg_start'], data['publish_end'])]
-    #userbits += [('V/Deadline/Registration/Student/ExtraCosts', 0, data['student_reg_start'], data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/MainPage', 0, data['student_reg_start'], data['publish_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Payment', 0, data['student_reg_start'], data['publish_end'])]
+    userbits += [('V/Deadline/Registration/Student', None, data['student_reg_start'], data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Applications', None, data['student_reg_start'], data['student_reg_end'])]
+    userbits += [('V/Deadline/Registration/Student/Catalog', None, data['student_reg_start'], None)]
+    #userbits += [('V/Deadline/Registration/Student/Classes', None, data['student_reg_start'], data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Classes/OneClass', None, data['student_reg_start'], data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Confirm', None, data['student_reg_start'], data['publish_end'])]
+    #userbits += [('V/Deadline/Registration/Student/ExtraCosts', None, data['student_reg_start'], data['student_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Student/MainPage', None, data['student_reg_start'], data['publish_end'])]
+    #userbits += [('V/Deadline/Registration/Student/Payment', None, data['student_reg_start'], data['publish_end'])]
     
-    userbits += [('V/Deadline/Registration/Teacher', '(all)', data['teacher_reg_start'], data['teacher_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Teacher/Catalog', 0, data['teacher_reg_start'], None)]
-    #userbits += [('V/Deadline/Registration/Teacher/Classes', 0, data['teacher_reg_start'], data['teacher_reg_end'])]
-    userbits += [('V/Deadline/Registration/Teacher/Classes/View', '(all)', data['teacher_reg_start'], None)]
-    userbits += [('V/Deadline/Registration/Teacher/MainPage', '(all)', data['teacher_reg_start'], None)]
+    userbits += [('V/Deadline/Registration/Teacher', None, data['teacher_reg_start'], data['teacher_reg_end'])]
+    #userbits += [('V/Deadline/Registration/Teacher/Catalog', None, data['teacher_reg_start'], None)]
+    #userbits += [('V/Deadline/Registration/Teacher/Classes', None, data['teacher_reg_start'], data['teacher_reg_end'])]
+    userbits += [('V/Deadline/Registration/Teacher/Classes/View', None, data['teacher_reg_start'], None)]
+    userbits += [('V/Deadline/Registration/Teacher/MainPage', None, data['teacher_reg_start'], None)]
     
     #   Grant onsite bit (for all times) if an onsite user is available.
     if ESPUser.onsite_user():
@@ -105,7 +105,7 @@ def commit_program(prog, datatrees, userbits, modules, costs = (0, 0)):
             new_ub.startdate = tup[2]
         if tup[3]:
             new_ub.enddate = tup[3]
-        if (tup[1] is None) or (tup[1] == 0) or (tup[1] == '(all)'):
+        if (tup[1] is None) or (tup[1] == 0):
             new_ub.user = None
         elif type(tup[1]) in (User, ESPUser):
             new_ub.user = tup[1]
