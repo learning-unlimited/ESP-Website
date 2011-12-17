@@ -72,7 +72,6 @@ def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, colla
             'show_emailcodes': scrmi.show_emailcodes,
             'show_meeting_times': scrmi.visible_meeting_times}           
 
-
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', disable=True)
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     return render_class_helper(cls)
