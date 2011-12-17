@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program
+from esp.middleware              import ESPError
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from django                      import forms
@@ -144,14 +145,13 @@ class AvailabilityModule(ProgramModuleObj):
             teacher.clearAvailableTimes(self.program)
             
             #   Add in resources for the checked available times.
-            timeslots = []
-            for ts_id in post_vars.getlist('timeslots'):
-                    ts = Event.objects.filter(id=int(ts_id))
-                    timeslots.append(ts)
-                    if len(ts) != 1:
-                        raise ESPError('Found %d matching events for input %s' % (len(ts), key))
-                    
-                    teacher.addAvailableTime(self.program, ts[0])
+            timeslot_ids = map(int, post_vars.getlist('timeslots'))
+            timeslots = Event.objects.filter(id__in=timeslot_ids)
+            missing_tsids = set(timeslot_ids) - set(x.id for x in timeslots)
+            if missing_tsids:
+                raise ESPError(False), 'Received requests for the following timeslots that don\'t exist: %s' % str(list(sorted(missing_tsids)))
+            for timeslot in timeslots:
+                teacher.addAvailableTime(self.program, timeslot)
                     
             #   Send an e-mail showing availability to directors and teachers
             email_title = 'Availability for %s: %s' % (self.program.niceName(), teacher.name())
