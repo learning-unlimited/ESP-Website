@@ -42,7 +42,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
 
         # Set up the program -- we want to be sure of these parameters
-        kwargs.update({'num_students': 2,})
+        kwargs.update({'num_students': 3,})
         super(RegProfileModuleTest, self).setUp(*args, **kwargs)
 
         # Get and remember the instance of this module
@@ -89,3 +89,32 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         self.failUnless( self.students[1].registrationprofile_set.count() <= 1, "Too many profiles." )
         self.failUnless( not self.moduleobj.isCompleted(), "Profile too old but accepted anyway." )
         self.failUnless( self.students[1].registrationprofile_set.count() <= 1, "Too many profiles." )
+
+        self.moduleobj.user = self.students[2]
+        for r in RegistrationProfile.objects.filter(user=self.students[2]):
+            r.delete()
+        # Test to see whether the graduation year is required
+        self.client.login(username=self.students[2].username, password='password')
+        response = self.client.post('%sprofile' % self.program.get_learn_url(), {'graduation_year': '', 'profile_page': ''})
+        lines = response.content.split('\n')
+
+        ## Find the line for the start of the graduation-year form field
+        for i, line in enumerate(lines):
+            if '<select id="id_graduation_year" class="required" name="graduation_year">' in line:
+                break
+        self.assertTrue(i < len(lines)-1) ## Found the relevant line
+
+        ## Find the line for the end of the graduation-year form field
+        for j, line in enumerate(lines[i:]):
+            if '</select>' in line:
+                break
+        self.assertTrue(j < len(lines) - 2) ## Found the line, need to also find the error message on the next line
+
+        ## Find the error message
+        self.assertTrue('<span class="form_error">This field is required.</span>' in lines[i+j+1])
+
+        ## Validate that the default value of the form is the empty string, like we assumed in POST'ing it above
+        found_default = False        
+        for line in lines[i:i+j]:
+            found_default = found_default or ('<option value="" selected="selected"></option>' in line)
+        self.assertTrue(found_default)
