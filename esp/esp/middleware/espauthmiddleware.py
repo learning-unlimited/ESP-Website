@@ -92,6 +92,9 @@ class ESPAuthMiddleware(object):
         modified_cookies = False
 
         user = getattr(request, '_cached_user', None)
+        #   Allow a view to set a newly logged-in user via the response
+        if not user:
+            user = getattr(response, '_new_user', None)
             
         if user and user.id:
             if settings.SESSION_EXPIRE_AT_BROWSER_CLOSE:
