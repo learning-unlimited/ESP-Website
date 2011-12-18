@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
+from esp.tagdict.models import Tag
 import random
 
 class TeacherClassRegTest(ProgramFrameworkTest):
@@ -55,17 +56,19 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
         self.failUnless("check_grade_range" in response.content)
 
-        # Change the grade range of the program
-        self.program.grade_min = 7
-        self.program.grade_max = 8
-        self.program.save()
-
-        # Login the teacher
-        self.failUnless(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
+        # Add a tag that specifically removes this functionality
+        Tag.setTag('grade_range_popup', self.program, 'False')
 
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
-        import sys
-        sys.stdout.write(response.content + "\n")
+        self.failUnless(not "check_grade_range" in response.content)
 
+        # Change the grade range of the program and reset the tag
+        self.program.grade_min = 7
+        self.program.grade_max = 8
+        self.program.save()
+        Tag.setTag('grade_range_popup', self.program, 'True')
+
+        # Try editing the class
+        response = self.client.get('%smakeaclass' % self.program.get_teach_url())
         self.failUnless(not "check_grade_range" in response.content)
