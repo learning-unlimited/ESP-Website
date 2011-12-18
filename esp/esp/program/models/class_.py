@@ -1136,7 +1136,7 @@ class ClassSection(models.Model):
         events = [r.event for r in resources] 
         """
         if hasattr(self, "_events"):
-            events = self._events
+            events = list(self._events)
         else:
             events = list(self.meeting_times.all())
 
