@@ -58,8 +58,8 @@ class AdminVitals(ProgramModuleObj):
             "admin_title": "Admin Module for Showing Basic Vitals",
             "link_title": "Program Vitals",
             "module_type": "manage",
+            "inline_template": "vitals.html",
             "seq": -2,
-            "main_call": "vitals"
             }
     
     def prepare(self, context=None):

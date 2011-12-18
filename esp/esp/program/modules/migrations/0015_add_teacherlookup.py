@@ -10,12 +10,11 @@ class Migration(DataMigration):
 
     def forwards(self, orm):
         "Write your forwards methods here."
-
-        ProgramModule.objects.filter(handler='AdminClass').update(aux_calls="changeoption,alter_checkmark,proposeclass,manageclass,deleteclass,editclass,approveclass,rejectclass,coteachers,teacherlookup,deletesection,addsection,attendees,bulkapproval")
-        
+        pass
+    
     def backwards(self, orm):
         "Write your backwards methods here."
-
+        pass
 
     models = {
         'auth.group': {

@@ -16,10 +16,7 @@ class Migration(DataMigration):
         
     def backwards(self, orm):
         "Write your backwards methods here."
-        mod = ProgramModule.objects.get(handler='StudentClassRegModule', main_call='classlist')
-        if 'catalog_student_count_json' in mod.aux_calls:
-            mod.aux_calls = mod.aux_calls.replace(',catalog_student_count_json', '')
-            mod.save()
+        mod = ProgramModule.objects.get(handler='StudentClassRegModule')
 
     models = {
         'auth.group': {

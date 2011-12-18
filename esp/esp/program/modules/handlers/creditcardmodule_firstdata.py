@@ -54,7 +54,6 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
             "link_title": "Credit Card Payment",
             "module_type": "learn",
             "seq": 10000,
-            "main_call": "payonline",
             }
 
     def isCompleted(self):
@@ -84,6 +83,7 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
     def studentDesc(self):
         return {'creditcard': """Students who have filled out the credit card form."""}
 
+    @aux_call
     def payment_success(self, request, tl, one, two, module, extra, prog):
         """ Receive payment from First Data Global Gateway """
 
@@ -132,7 +132,7 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         #   return HttpResponseRedirect("http://%s/learn/%s/%s/confirmreg" % (request.META['HTTP_HOST'], one, two))
         return render_to_response(self.baseDir() + 'success.html', request, (prog, tl), context)
         
-
+    @aux_call
     def payment_failure(self, request, tl, one, two, module, extra, prog):
         context = {}
         if request.method == 'POST':
@@ -141,7 +141,7 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         context['support_email'] = DEFAULT_EMAIL_ADDRESSES['support']
         return render_to_response(self.baseDir() + 'failure.html', request, (prog, tl), context)
 
-    @aux_call
+    @main_call
     @meets_deadline('/Payment')
     @usercheck_usetl
     def payonline(self, request, tl, one, two, module, extra, prog):

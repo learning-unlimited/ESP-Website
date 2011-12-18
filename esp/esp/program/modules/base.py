@@ -92,12 +92,51 @@ class ProgramModuleObj(models.Model):
     def __unicode__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
-    def all_views(self):
-        if self.module and self.module.aux_calls:
-            return self.module.aux_calls.strip(',').split(',')
-
-        return []
-
+    def get_views_by_call_tag(self, tags):
+        """ We define decorators below (aux_call, main_call, etc.) which allow
+            methods within the ProgramModuleObj subclass to be tagged with
+            metadata.  At the moment, this metadata is a string stored in the
+            'call_tag' attribute.  This function searches the methods of the
+            current program module to find those that match the list supplied
+            in the 'tags' argument. """
+        from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo
+            
+        result = []
+        
+        #   Filter out attributes that we don't want to look at: 
+        #   - Attributes of ProgramMdouleObj, including Django stuff
+        #   - Module extension attributes
+        key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_all_field_names())
+        for exclude_class in [ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo]:
+            key_set = filter(lambda key: key not in dir(exclude_class), key_set)
+        for key in key_set:
+            #   Fetch the attribute, now that we're confident it's safe to look at.
+            item = getattr(self, key)
+            #   This is a hack to test whether the item is a bound method,
+            #   maybe there is a better way.
+            if isinstance(item, type(self.get_views_by_call_tag)) and hasattr(item, 'call_tag'):
+                if item.call_tag in tags:
+                    result.append(key)
+            
+        return result
+    
+    def get_main_view(self):
+        if not hasattr(self, '_main_view'):
+            main_views = self.get_views_by_call_tag(['Main Call'])
+            if len(main_views) > 0:
+                self._main_view = main_views[0]
+            else:
+                self._main_view = None
+        return self._main_view
+    main_view = property(get_main_view)
+    main_view_fn = lambda self, *args, **kwargs: getattr(self, self.main_view)(*args, **kwargs)
+    
+    def get_all_views(self):
+        if not hasattr(self, '_views'):
+            self._views = self.get_views_by_call_tag(['Main Call', 'Aux Call'])
+        return self._views
+    views = property(get_all_views)
+    
     def get_msg_vars(self, user, key):
         return None
 
@@ -106,7 +145,7 @@ class ProgramModuleObj(models.Model):
         modules = self.program.getModules(self.user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
-                return getattr(module, module.module.main_call)
+                return getattr(module, module.main_view)
         assert False, 'No core module to return to!'
 
     def getCoreURL(self, tl):
@@ -114,8 +153,7 @@ class ProgramModuleObj(models.Model):
         modules = self.program.getModules(self.user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
-                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.module.main_call
-
+                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.main_view
 
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl))
@@ -131,24 +169,25 @@ class ProgramModuleObj(models.Model):
         else:
             return Q(id__in = ids)
 
-    #   This function caches the customized (augmented) program module objects
     @cache_function
     def findModuleObject(tl, call_txt, prog):
+        """ This function caches the customized (augmented) program module object
+            matching a particular view function and area. """
         # Make sure all modules exist
         modules = prog.program_modules.all()
         for module in modules:
             ProgramModuleObj.getFromProgModule(prog, module)
 
-        #   Start with the program's cached list of modules
-        moduleobjs = filter(lambda mod: mod.module.module_type == tl, prog.getModules())
         #   Check for a module that has a matching main_call
-        for modobj in moduleobjs:
-            if modobj.module.main_call == call_txt:
-                return modobj
+        main_call_map = prog.getModuleViews(main_only=True)
+        if (tl, call_txt) in main_call_map:
+            return main_call_map[(tl, call_txt)]
+            
         #   Check for a module that has a matching aux_call
-        for modobj in moduleobjs:
-            if isinstance(modobj.module.aux_calls, basestring) and call_txt in modobj.module.aux_calls.strip().split(','):
-                return modobj
+        all_call_map = prog.getModuleViews(main_only=False)
+        if (tl, call_txt) in all_call_map:
+            return all_call_map[(tl, call_txt)]
+            
         #   If no module matched those criteria, we are looking for a page that does not exist.
         raise Http404
         
@@ -185,8 +224,8 @@ class ProgramModuleObj(models.Model):
                 for m in other_modules:
                     m.request = request
                     m.user    = user
-                    if not isinstance(m, CoreModule) and not m.isCompleted() and hasattr(m, m.module.main_call):
-                        return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
+                    if not isinstance(m, CoreModule) and not m.isCompleted() and m.main_view:
+                        return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
 
         #   If the module isn't "core" or the user did all required steps,
         #   call on the originally requested view.
@@ -296,7 +335,7 @@ class ProgramModuleObj(models.Model):
     def get_full_path(self):
         str_array = self.program.anchor.tree_encode()
         url = '/'+self.module.module_type \
-              +'/'+'/'.join(str_array[-2:])+'/'+self.module.main_call
+              +'/'+'/'.join(str_array[-2:])+'/'+self.main_view
         return url
     get_full_path.depend_on_row(lambda: ProgramModuleObj, 'self')
 
@@ -345,7 +384,7 @@ class ProgramModuleObj(models.Model):
 
     def useTemplate(self):
         """ Use a template if the `mainView' function doesn't exist. """
-        return (not self.module.main_call) or (not hasattr(self, self.module.main_call))
+        return (not self.main_view)
 
     def isCompleted(self):
         return False
@@ -357,28 +396,27 @@ class ProgramModuleObj(models.Model):
         return []
 
     def getTemplate(self):
-        baseDir = 'program/modules/'+self.__class__.__name__.lower()+'/'
-        mainCallTemp = self.module.main_call+'.html'
-        base_template = baseDir + mainCallTemp
-        per_program_template = baseDir+'per_program/'+str(self.program.id)+ \
-            '_'+ mainCallTemp
-
         if self.module.inline_template:
-            return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
+            baseDir = 'program/modules/'+self.__class__.__name__.lower()+'/'
+            base_template = baseDir + self.module.inline_template
+            per_program_template = baseDir+'per_program/'+str(self.program.id)+ \
+                '_'+ self.module.inline_template
 
-        #   Iterate over a bunch of reasons to return a template;
-        #   if none of them come up true, return None.
-        try:
-            get_template(per_program_template)
-            if self.useTemplate():
-                return per_program_template
-        except TemplateDoesNotExist:
+            #   Iterate over a bunch of reasons to return a template;
+            #   if none of them come up true, return None.
             try:
-                get_template(base_template)
+                get_template(per_program_template)
                 if self.useTemplate():
-                    return base_template
+                    return per_program_template
             except TemplateDoesNotExist:
-                pass
+                try:
+                    get_template(base_template)
+                    if self.useTemplate():
+                        return base_template
+                except TemplateDoesNotExist:
+                    pass
+            
+            return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
 
         return None
 
@@ -427,13 +465,10 @@ class ProgramModuleObj(models.Model):
         - "handler"
         - "admin_title" (as "%(link_title)s (%(handler)s)")
         - "seq" (as 200)
-        - "aux_calls" (based on @aux_calls decorators)
-        - "main_call" (based on the @main_call decorator)
         """
 
         props = cls.module_properties()
 
-        
         def update_props(props):
             if not "handler" in props:
                 props["handler"] = cls.__name__
@@ -442,20 +477,6 @@ class ProgramModuleObj(models.Model):
             if not "seq" in props:
                 props["seq"] = 200
 
-            if not "aux_calls" in props:
-                NAME = 0
-                FN = 1
-                props["aux_calls"] = ",".join( [ x[NAME] for x in cls.__dict__.items()
-                                                 if getattr(x[FN], "call_tag", None) == "Aux Call" ] )
-
-            if not "main_call" in props:
-                NAME = 0
-                FN = 1
-                mainCallList = [ x[NAME] for x in cls.__dict__.items()
-                                 if getattr(x[FN], "call_tag", None) == "Main Call" ]
-                assert len(mainCallList) <= 1, "Error: You can only have one Main Call per class!: (%s: %s)" % (cls.__name__, ",".join(mainCallList))
-                props["main_call"] = ",".join(mainCallList)
-            
         if type(props) == dict:
             props = [ props ]
 
