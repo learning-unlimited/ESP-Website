@@ -302,3 +302,6 @@ email_addresses = {
     'esp-web' : DEFAULT_EMAIL_ADDRESSES['support'],
     'relations': DEFAULT_EMAIL_ADDRESSES['default'],
     }
+
+VARNISH_HOST = "localhost"
+VARNISH_PORT = 8000
