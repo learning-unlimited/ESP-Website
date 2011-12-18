@@ -1356,23 +1356,23 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return self.title()
     
     def prettyDuration(self):
-        if self.sections.all().count() <= 0:
+        if len(self.get_sections()) <= 0:
             return "N/A"
         else:
-            return self.sections.all()[0].prettyDuration()
+            return self.get_sections()[0].prettyDuration()
 
     def prettyrooms(self):
-        if self.sections.all().count() <= 0:
+        if len(self.get_sections()) <= 0:
             return "N/A"
         else:
-            return self.sections.all()[0].prettyrooms()
+            return self.get_sections()[0].prettyrooms()
 
     def ascii_info(self):
         return self.class_info.encode('ascii', 'ignore')
         
     def _get_meeting_times(self):
         timeslot_id_list = []
-        for s in self.sections.all():
+        for s in self.get_sections():
             timeslot_id_list += s.meeting_times.all().values_list('id', flat=True)
         return Event.objects.filter(id__in=timeslot_id_list).order_by('start')
     all_meeting_times = property(_get_meeting_times)
@@ -1505,13 +1505,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         
     def students_dict(self):
         result = PropertyDict({})
-        for sec in self.sections.all():
+        for sec in self.get_sections():
             result.merge(sec.students_dict())
         return result
         
     def students(self, verbs=['Enrolled']):
         result = ESPUser.objects.none()
-        for sec in self.sections.all():
+        for sec in self.get_sections():
             result = result | sec.students(verbs=verbs)
         return result
         
@@ -1731,14 +1731,14 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if user.getClasses(self.parent_program, verbs=[self.parent_program.getModuleExtension('StudentClassRegModuleInfo').signup_verb.name]).count() == 0:
             return False
 
-        for section in self.sections.all():
+        for section in self.get_sections():
             if user.isEnrolledInClass(section):
                 return 'You are already signed up for a section of this class!'
         
         res = False
         # check to see if there's a conflict with each section of the subject, or if the user
         # has already signed up for one of the sections of this class
-        for section in self.sections.all():
+        for section in self.get_sections():
             res = section.cannotAdd(user, checkFull)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
@@ -1800,7 +1800,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return False
         
         for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
-            for section in cls.sections.all():
+            for section in cls.get_sections():
                 for time in section.meeting_times.all():
                     for sec in self.sections.all().exclude(id=section.id):
                         if sec.meeting_times.filter(id = time.id).count() > 0:
@@ -1820,7 +1820,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return False
     
     def isRegClosed(self):
-        for sec in self.sections.all():
+        for sec in self.get_sections():
             if not sec.isRegClosed():
                 return False
         return True
