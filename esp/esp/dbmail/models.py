@@ -199,8 +199,7 @@ class MessageRequest(models.Model):
 
             newemailrequest.save()
 
-            
-            
+        print 'Prepared e-mails to send for message request %d: %s' % (self.id, self.subject)
 
 
     class Admin:

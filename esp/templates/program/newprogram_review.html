@@ -49,7 +49,7 @@ The program you are trying to create is: <b>{{ prog.anchor.name }} {{ datatrees.
 </tr>
 <tr><th class="materials">Verb</th><th class="materials">User ID</th><th class="materials">Start Date</th><th class="materials">End Date</th></tr>
 {% for item in userbits %}
-    <tr><td>{{ item.0 }}</td><td>{{ item.1 }}</td><td>{{ item.2 }}</td><td>{{ item.3 }}</td></tr>
+    <tr><td>{{ item.0 }}</td><td>{% if item.1 %}{{ item.1 }}{% else %}(all){% endif %}</td><td>{{ item.2 }}</td><td>{{ item.3 }}</td></tr>
 {% endfor %}
 </table>
 </div>

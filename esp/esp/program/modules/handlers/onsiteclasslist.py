@@ -68,8 +68,6 @@ class OnSiteClassList(ProgramModuleObj):
             "link_title": "List of Open Classes",
             "module_type": "onsite",
             "seq": 32,
-            "main_call": "classList",
-            "aux_calls": "status",
             } ]
 
     @cache_function
@@ -245,6 +243,9 @@ LIMIT 1
         resp = HttpResponse(mimetype='application/json')
          
         verb = GetNode('V/Publish/Print')
+        if extra and extra != "":
+            verb = verb[extra]
+        
         qsc = self.program_anchor_cached().tree_create(['Schedule'])
         result = {}
 
@@ -268,6 +269,7 @@ LIMIT 1
     def classchange_grid(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['timeslots'] = prog.getTimeSlots()
+        context['printers'] = GetNode('V/Publish/Print').children().values_list('name', flat=True)
         return render_to_response(self.baseDir()+'ajax_status.html', request, (prog, tl), context)
 
     @needs_onsite

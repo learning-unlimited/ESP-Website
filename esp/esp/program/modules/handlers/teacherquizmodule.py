@@ -106,7 +106,6 @@ class TeacherQuizModule(ProgramModuleObj):
         return [ {
             "module_type": "teach",
             'required': False,
-            'main_call': 'quiz',
             'admin_title': 'Teacher Logistics Quiz',
             'link_title': 'Take the Teacher Logistics Quiz',
             'seq': 5,

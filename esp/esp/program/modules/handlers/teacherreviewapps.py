@@ -54,10 +54,9 @@ class TeacherReviewApps(ProgramModuleObj):
             "link_title": "Review Student Applications",
             "module_type": "teach",
             "seq": 1000,
-            "main_call": "teacherreviewapp"
             }
 
-    @aux_call
+    @main_call
     @meets_deadline("/AppReview")
     @needs_teacher
     @never_cache

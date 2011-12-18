@@ -51,6 +51,7 @@ form_utils      Python (easy_install)   https://bitbucket.org/carljm/django-form
 psycopg         Python (easy_install)   N/A    * Choose psycopg or psycopg2 and update local_settings.py DATABASE_BACKEND
 psycopg2        Python (easy_install)   N/A      (default is psycopg2)
 django-debug-toolbar    Python (easy_install)   N/A       * Optional
+reversion       Python 1.5.1            https://github.com/etianen/django-reversion
 selenium	Python (easy_install)	N/A
 django-selenium	Python (easy_install)	0.3
 django-selenium-test-runner	Python (easy_install)	N/A

@@ -71,14 +71,12 @@ class TeacherEventsModule(ProgramModuleObj):
         return [ {
             "module_type": "teach",
             'required': False,
-            'main_call': 'event_signup',
             'admin_title': 'Teacher Training and Interview Signups',
             'link_title': 'Sign up for Teacher Training and Interviews',
             'seq': 5,
         }, {
             "module_type": "manage",
             'required': False,
-            'main_call': 'teacher_events',
             'admin_title': 'Manage Teacher Training and Interviews',
             'link_title': 'Teacher Training and Interviews',
         } ]

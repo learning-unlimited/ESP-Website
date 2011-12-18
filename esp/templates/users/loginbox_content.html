@@ -10,7 +10,7 @@
     {% endif %}
 {% endif %}
 
-{% if request.user.is_authenticated %}
+{% if request.user.is_authenticated and request.user.id %}
 <div id="divnav">
   <p align="center">
     Hello, {{ request.user.first_name }} {{ request.user.last_name }}!<br />

@@ -171,8 +171,12 @@ function hide_loading_box()
 
 function print_schedule()
 {
+    printer_name = $j("#printer_selector").attr("value");
+    printing_url = "/onsite/Splash/2010/printschedule_status";
+    if (printer_name)
+        printing_url = printing_url + "/" + printer_name; 
     result = $j.ajax({
-        url: "/onsite/Splash/2010/printschedule_status?user=" + state.student_id,
+        url: printing_url + "?user=" + state.student_id,
         async: false
     });
     add_message(JSON.parse(result.responseText).message);
