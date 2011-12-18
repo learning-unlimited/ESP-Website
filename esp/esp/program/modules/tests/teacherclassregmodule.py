@@ -48,9 +48,24 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.moduleobj.user = self.teacher
 
     def test_grade_range_popup(self):
-        # Login the teacehr
+        # Login the teacher
         self.failUnless(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
 
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
         self.failUnless("check_grade_range" in response.content)
+
+        # Change the grade range of the program
+        self.program.grade_min = 7
+        self.program.grade_max = 8
+        self.program.save()
+
+        # Login the teacher
+        self.failUnless(self.client.login(username=self.teacher.username, password='password'), "Couldn't log in as teacher %s" % self.teacher.username)
+
+        # Try editing the class
+        response = self.client.get('%smakeaclass' % self.program.get_teach_url())
+        import sys
+        sys.stdout.write(response.content + "\n")
+
+        self.failUnless(not "check_grade_range" in response.content)
