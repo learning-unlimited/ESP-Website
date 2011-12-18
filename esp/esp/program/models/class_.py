@@ -553,7 +553,7 @@ class ClassSection(models.Model):
 
     def initial_rooms(self):
         from esp.resources.models import Resource
-        if self.meeting_times.count() > 0:
+        if len(self.get_meeting_times()) > 0:
             return self.classrooms().filter(event=self.meeting_times.order_by('start')[0]).order_by('id')
         else:
             return Resource.objects.none()
@@ -1009,6 +1009,10 @@ class ClassSection(models.Model):
 
     @cache_function
     def num_students(self, verbs=['Enrolled']):
+        if verbs == ['Enrolled']:
+            if not hasattr(self, '_count_students'):
+                self._count_students = self.students(verbs).count()
+            return self._count_students
         return self.students(verbs).count()
     num_students.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
 
@@ -1132,7 +1136,7 @@ class ClassSection(models.Model):
         events = [r.event for r in resources] 
         """
         if hasattr(self, "_events"):
-            events = self._events
+            events = list(self._events)
         else:
             events = list(self.meeting_times.all())
 
@@ -1654,11 +1658,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             sections = self.get_sections()
         for s in sections:
-            if s.meeting_times.all().count() > 0 and not s.isFull(ignore_changes=ignore_changes):
+            if len(s.get_meeting_times()) > 0 and not s.isFull(ignore_changes=ignore_changes):
                 return False
         return True
 
-    @staticmethod
+    @cache_function
     def get_capacity_factor():
         tag_val = Tag.getTag('nearly_full_threshold')
         if tag_val:
@@ -1666,9 +1670,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             capacity_factor = 0.75
         return capacity_factor
+    get_capacity_factor.depend_on_row(lambda: Tag, lambda tag: {}, lambda tag: tag.key == 'nearly_full_threshold')
+    get_capacity_factor = staticmethod(get_capacity_factor)
 
-    def is_nearly_full(self):
-        capacity_factor = ClassSubject.get_capacity_factor()
+    def is_nearly_full(self, capacity_factor = None):
+        if capacity_factor == None:
+            capacity_factor = get_capacity_factor()
         return len([x for x in self.get_sections() if x.num_students() > capacity_factor*x.capacity]) > 0
 
     def getTeacherNames(self):

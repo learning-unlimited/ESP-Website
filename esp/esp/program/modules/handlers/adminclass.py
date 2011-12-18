@@ -108,11 +108,11 @@ class AdminClass(ProgramModuleObj):
         return clsTimeSlots
 
     def getClasses(self):
-        return self.user.getEditable(ClassSubject, qsc=self.program.anchor).order_by('anchor__name')
+        return ClassSubject.objects.catalog(self.program, force_all=True)
         
     def prepare(self, context=None):
         if context is None: context = {}
-        classes = self.getClasses().order_by('id')
+        classes = self.getClasses()
         context['noclasses'] = (len(classes) == 0)
         context['classes']   = classes
         return context
