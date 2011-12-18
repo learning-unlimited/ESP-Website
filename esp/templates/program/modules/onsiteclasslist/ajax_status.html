@@ -36,6 +36,13 @@
 <input id="schedule_print" class="control_button" type="button" value="Print schedule"/>
 <input id="status_switch" class="control_button" type="button" value="Return to status view"/>
 <input id="reload_button" class="control_button" type="button" value="Refresh data" onclick="refresh_counts();"/>
+<br />Select a printer:
+<select id="printer_selector" class="control_button">
+    <option value="">Default printer</option>
+    {% for printer in printers %}
+    <option value="{{ printer }}">{{ printer }}</option>
+    {% endfor %}
+</select>
 </div>
 
 <table class="narrow bordered">

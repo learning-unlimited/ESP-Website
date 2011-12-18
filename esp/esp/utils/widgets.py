@@ -6,6 +6,7 @@ from django.conf import settings
 from django import forms
 from django.forms import widgets
 from django.utils.safestring import mark_safe
+import django.utils.formats
 
 import datetime
 import time
@@ -57,7 +58,7 @@ class DateTimeWidget(forms.widgets.TextInput):
         return a
 
     def value_from_datadict(self, data, files, name):
-        dtf = forms.fields.DEFAULT_DATETIME_INPUT_FORMATS
+        dtf = django.utils.formats.get_format('DATETIME_INPUT_FORMATS')
         empty_values = forms.fields.EMPTY_VALUES
 
         value = data.get(name, None)
@@ -204,4 +205,4 @@ class DummyWidget(widgets.Input):
         if attrs and 'text' in attrs:
             output += attrs['text']
         return mark_safe(output)
-        
+

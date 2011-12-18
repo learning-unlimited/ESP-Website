@@ -6,6 +6,7 @@ from esp.users.views.make_admin import *
 from esp.users.models import ESPUser
 
 from django.http import HttpResponseRedirect, HttpResponse
+from django.template import RequestContext
 from esp.web.util.main import render_to_response
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.views import login
@@ -91,7 +92,7 @@ def ajax_login(request, *args, **kwargs):
         result_str = 'Invalid username or password'
         
     request.user = ESPUser(user)
-    content = render_to_string('users/loginbox_content.html', {'request': request, 'login_result': result_str})
+    content = render_to_string('users/loginbox_content.html', RequestContext(request, {'request': request, 'login_result': result_str}))
     result_dict = {'loginbox_html': content}
     
     if request.user.isAdministrator():
