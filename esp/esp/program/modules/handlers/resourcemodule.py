@@ -58,7 +58,6 @@ class ResourceModule(ProgramModuleObj):
             "admin_title": "Resource Management",
             "link_title": "Manage Times and Rooms",
             "module_type": "manage",
-            "main_call": "resources",
             "seq": 10
             }
 

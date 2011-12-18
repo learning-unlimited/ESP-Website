@@ -55,8 +55,6 @@ class SchedulingModule(ProgramModuleObj):
         return {
             "link_title": "Scheduling",
             "module_type": "manage",
-            "main_call": "scheduling",
-            "aux_calls": "force_availability,view_requests,securityschedule",
             "seq": 8
             }
     

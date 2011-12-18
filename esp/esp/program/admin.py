@@ -49,8 +49,8 @@ from esp.program.models import StudentApplication, StudentAppQuestion, StudentAp
 
 
 class ProgramModuleAdmin(admin.ModelAdmin):
-    list_display = ('link_title', 'admin_title', 'handler', 'main_call')
-    search_fields = ['link_title', 'admin_title', 'handler', 'main_call']
+    list_display = ('link_title', 'admin_title', 'handler')
+    search_fields = ['link_title', 'admin_title', 'handler']
 admin.site.register(ProgramModule, ProgramModuleAdmin)
     
 class ArchiveClassAdmin(admin.ModelAdmin):

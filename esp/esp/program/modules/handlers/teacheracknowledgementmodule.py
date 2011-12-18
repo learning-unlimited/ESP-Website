@@ -23,8 +23,6 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             "admin_title": "Teacher Acknowledgement",
             "link_title": "Teacher Acknowledgement",
             "module_type": "teach",
-            "main_call": "acknowledgement",
-            "aux_calls": "",
             "required": False,
         }
     

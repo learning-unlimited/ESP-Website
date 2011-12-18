@@ -78,16 +78,8 @@ class ProgramModule(models.Model):
     # Human-readable name for the Program Module
     admin_title = models.CharField(max_length=128)
 
-    # Main view function associated with this Program Module
-    #   Not all program modules have main calls, but this field
-    #   must contain the name of the default template if the main call
-    #   is not a function!
-    main_call  = models.CharField(max_length=32, default='main')
-
     #   A module can have an inline template (whose context is filled by prepare())
-    #   independently of its main_call, although the main_call field can be used
-    #   to specify the template name (in the absence of a view function)
-    #   for backwards compatibility.
+    #   independently of its main view.
     inline_template = models.CharField(max_length=32, blank=True, null=True)
 
     # One of teach/learn/etc.; What is this module typically used for?
@@ -99,13 +91,7 @@ class ProgramModule(models.Model):
     # Sequence orderer.  When ProgramModules are listed on a page, order them
     # from smallest to largest 'seq' value
     seq = models.IntegerField()
-
-    # Secondary view functions associated with this ProgramModule
-    aux_calls = models.CharField(max_length=1024, blank=True, null=True)
-
-    # Summary view functions, that summarize data for all instances of this ProgramModule
-    summary_calls = models.CharField(max_length=512, blank=True, null=True)
-
+    
     # Must the user supply this ProgramModule with data in order to complete program registration?
     required = models.BooleanField()
 
@@ -915,7 +901,26 @@ class Program(models.Model, CustomFormsLinkModel):
         if user:
             for module in modules:
                 module.setUser(user)
+        #   Populate the view attributes so they can be cached
+        for module in modules:
+            module.get_all_views()
+            module.get_main_view()
         return modules
+
+    @cache_function
+    def getModuleViews(self, main_only=False, tl=None):
+        modules = self.getModules_cached(tl)
+        result = {}
+        for mod in modules:
+            tl = mod.module.module_type
+            if main_only:
+                if mod.main_view:
+                    result[(tl, mod.main_view)] = mod
+            else:
+                for view in mod.views:
+                    result[(tl, view)] = mod
+        return result
+    getModuleViews.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
     
     def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
