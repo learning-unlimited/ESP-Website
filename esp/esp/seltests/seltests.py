@@ -1,21 +1,8 @@
-from django.core.urlresolvers import reverse
 from django_selenium.testcases import SeleniumTestCase
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait
+from esp.seltests import try_ajax_login, try_normal_login, logout
 
 from esp.utils.models import TemplateOverride
 from esp.users.models import ESPUser
-
-from sys import stderr, stdout, exc_info
-
-import time
-
-def noActiveAjax(driver):
-    return driver.execute_script("return numAjaxConnections == 0")
-
-def waitForAjax(driver):
-    while(not noActiveAjax(driver)):
-        time.sleep(1)
 
 class CsrfTestCase(SeleniumTestCase):
     def setUp(self):
@@ -188,84 +175,60 @@ class CsrfTestCase(SeleniumTestCase):
             # We need to get rid of the template override entirely
             TemplateOverride.objects.filter(name='index.html').delete()
 
-    def try_login(self):
-        elem = self.find_element_by_name("username") # Find the username field
-        elem.send_keys("student")
-        elem = self.find_element_by_name("password") # Find the password field
-        elem.send_keys("student")
-        elem.submit()
-
-    def try_normal_login(self):
-        self.try_login()
-        self.open_url("/")
-
-    def try_ajax_login(self):
-        self.try_login()
-        try:
-            WebDriverWait(self, 10).until(noActiveAjax)
-        except:
-            stderr.write(str(exc_info()[0]) + "\n")
-            stderr.write("Wait for ajax login timed out.\n")
-        self.open_url("/")
-
-    def logout(self):
-        self.open_url("/myesp/signout/")
-        self.open_url("/")
-
     def test_csrf_delete(self):
         # First set up and test AJAX
         self.setUpAjaxLogin()
 
         self.open_url("/")
-        self.try_ajax_login()
+        try_ajax_login(self, "student", "student")
         self.failUnless(self.is_text_present('Student Student'))
-        self.logout()
+        logout(self)
 
         self.delete_cookie("csrftoken")
 
-        self.try_ajax_login()
+        try_ajax_login(self, "student", "student")
         self.failUnless(self.is_text_present('Please log in to access program registration'))
-        self.logout()
+        logout(self)
 
-        self.try_ajax_login()
+        try_ajax_login(self, "student", "student")
         self.failUnless(self.is_text_present('Student Student'))
-        self.logout()
+        logout(self)
 
 
         # Now set up and test normal login
         self.setUpNormalLogin()
         self.open_url("/") # Load index
 
-        self.try_normal_login()
+        try_normal_login(self, "student", "student")
         self.failUnless(self.is_text_present('Student Student'))
-        self.logout()
+        logout(self)
 
         self.delete_cookie("csrftoken")
 
-        self.try_normal_login()
+        try_normal_login(self, "student", "student")
         self.failUnless(self.is_element_present('#login_box'))
-        self.logout()
+        logout(self)
 
-        self.try_normal_login()
+        try_normal_login(self, "student", "student")
         self.failUnless(self.is_text_present('Student Student'))
-        self.logout()
+        logout(self)
 
         # Now set up and test normal login missing the csrf token
         self.setUpCsrfMissingLogin()
         self.open_url("/") # Load index
 
-        self.try_normal_login()
+        try_normal_login(self, "student", "student")
         self.failUnless(self.is_text_present('Student Student'))
-        self.logout()
+        logout(self)
 
         self.delete_cookie("csrftoken")
 
-        self.try_normal_login()
+        try_normal_login(self, "student", "student")
         self.failUnless(self.is_element_present('#login_box'))
-        self.logout()
+        logout(self)
 
-        self.try_normal_login()
+        try_normal_login(self, "student", "student")
         self.failUnless(self.is_text_present('Student Student'))
-        self.logout()
+        logout(self)
 
         self.close()
