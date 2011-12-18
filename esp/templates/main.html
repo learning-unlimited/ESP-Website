@@ -110,14 +110,13 @@ body {
     {% include "users/loginbox_ajax.html" %}
     <br />
 
-    {% if request.user.is_staff %}
+    <div class="admin admin_hidden">
         <a href="/admin/miniblog/entry/">Edit News</a> <br />
         <a href="/admin/miniblog/announcementlink/">Edit Announcement/Links</a> <br />
         <a href="/admin/web/navbarentry/">Edit Navigation Links</a> <br />
         <a href="/admin/web/navbarcategory/">Edit Navigation Categories</a>
-    {% endif %}
+    </div>
 
-    
     </div>
 </div>
 {% endblock %}
@@ -126,11 +125,6 @@ body {
     <div id="main_content">
     {% block content %}
     {% endblock %}
-    {% if request.user.get_profile.prof.isAdministrator %}
-    <div id="divnav7">
-    <a href="/manage/programs">Administration pages</a>
-    </div>
-    {% endif %}
     </div>
 </div>
 
