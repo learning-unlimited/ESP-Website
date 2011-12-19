@@ -505,57 +505,74 @@ fi
 if [[ "$MODE_DROPBOX" || "$MODE_ALL" ]]
 then
 
-	if [[ ! -e ${DROPBOX_PATH}/dropbox ]]
+    echo "Would you like this dev server to mirror a production site's media files?"
+    echo "If yes, we will set up Dropbox and you will need to enter the account "
+    echo "information for your chapter's Web site Dropbox when prompted."
+    echo "Answer no if you are not mirroring a production site or you would like"
+    echo "to skip the Dropbox setup."
+	echo -n "  Mirror an existing Dropbox for media files (y/N)? --> "
+	read DROPBOX_MIRROR
+	DROPBOX_MIRROR=${DROPBOX_MIRROR:-N}
+	
+	MEDIADIR=$BASEDIR/esp/public/media
+	DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
+	
+    if [[ "$DROPBOX_MIRROR" == "y" ]]
 	then
-		echo "Dropbox executable could not be found."
-		echo "Expected path was: ${DROPBOX_PATH}/dropbox"
-		echo "Please install dependencies using the --deps option."
-		exit 1
-	fi
+	    #   Set up Dropbox
+	    
+	    if [[ ! -e ${DROPBOX_PATH}/dropbox ]]
+	    then
+		    echo "Dropbox executable could not be found."
+		    echo "Expected path was: ${DROPBOX_PATH}/dropbox"
+		    echo "Please install dependencies using the --deps option."
+		    exit 1
+	    fi
+	
+        echo "A Dropbox instance will now be created for this site's media."
+        echo "You may be prompted to link this machine to a Dropbox account."
+        echo -n "Once this is complete, type 'ok' and hit enter"
+        mkdir -p ${DROPBOX_BASE_DIR}/${SITENAME}
+        HOME=${DROPBOX_BASE_DIR}/$SITENAME ${DROPBOX_PATH}/dropbox -i start &
 
-    echo "A Dropbox will now be created for this site's media."
-    echo "You may be prompted to link this machine to a Dropbox account."
-    echo "If so, you'll see a URL that should be copied into a Web browser"
-    echo "to establish the link.  You may want to create a new account"
-    echo "specific to $INSTITUTION before doing it."
-    echo
-    echo -n "Once this is complete, type 'ok' and hit enter"
-    mkdir -p ${DROPBOX_BASE_DIR}/${SITENAME}
-    HOME=${DROPBOX_BASE_DIR}/$SITENAME ${DROPBOX_PATH}/dropbox -i start &
+        while [[ $THROWAWAY != "ok" ]]
+        do
+            echo -n " --> "
+            read THROWAWAY
+        done
+        kill $!
 
-    while [[ $THROWAWAY != "ok" ]]
-    do
-        echo -n " --> "
-        read THROWAWAY
-    done
-    kill $!
-
-    cat >>$DROPBOX_STARTUP_SCRIPT <<EOF
-HOME=${DROPBOX_BASE_DIR}/$SITENAME ${DROPBOX_PATH}/dropboxd &
+        cat >>$DROPBOX_STARTUP_SCRIPT <<EOF
+    HOME=${DROPBOX_BASE_DIR}/$SITENAME ${DROPBOX_PATH}/dropboxd &
 EOF
 
-    echo "Dropbox for $SITENAME will run on startup from now on."
-    echo "To change, edit ${DROPBOX_STARTUP_SCRIPT}."
+        echo "Dropbox for $SITENAME will run on startup from now on."
+        echo "To change, edit ${DROPBOX_STARTUP_SCRIPT}."
 
-    HOME=${DROPBOX_BASE_DIR}/$SITENAME nohup ${DROPBOX_PATH}/dropboxd &
-    echo "Dropbox has also been started for the current session."
+        HOME=${DROPBOX_BASE_DIR}/$SITENAME nohup ${DROPBOX_PATH}/dropboxd &
+        echo "Dropbox has also been started for the current session."
 
-    MEDIADIR=$BASEDIR/esp/public/media
-    mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/images
-    mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/styles
-    mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/uploaded
-    DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
-    cp -r ${DJANGO_DIR}/contrib/admin/media $MEDIADIR/admin
-    ln -sf ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media $BASEDIR/esp/public/custom_media
-    ln -sf $BASEDIR/esp/public/custom_media/images $BASEDIR/esp/public/media/images
-    ln -sf $BASEDIR/esp/public/custom_media/styles $BASEDIR/esp/public/media/styles
-    echo "Dropbox-hosted directories have been linked into the site's media."
+        mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/images
+        mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/styles
+        mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/uploaded
+        
+        cp -r ${DJANGO_DIR}/contrib/admin/media $MEDIADIR/admin
+        ln -sf ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media $BASEDIR/esp/public/custom_media
+        ln -sf $BASEDIR/esp/public/custom_media/images $BASEDIR/esp/public/media/images
+        ln -sf $BASEDIR/esp/public/custom_media/styles $BASEDIR/esp/public/media/styles
+        echo "Dropbox-hosted directories have been linked into the site's media directories."
+    else
+        #   Set up default media directories
+        ln -sf $MEDIADIR/default_styles $MEDIADIR/styles
+        ln -sf $MEDIADIR/default_images $MEDIADIR/images
+        ln -sf ${DJANGO_DIR}/contrib/admin/media $MEDIADIR/admin
+        echo "Default media files have been linked into the site's media directories."
+    fi
 
-    mkdir -p $MEDIADIR/uploaded
-    mkdir $MEDIADIR/uploaded/bio_pictures
+    mkdir -p $MEDIADIR/uploaded/bio_pictures
     chmod -R 777 $MEDIADIR
     
-    echo "Dropbox has been set up.  Please check them by looking over the"
+    echo "Media directories have been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
 
