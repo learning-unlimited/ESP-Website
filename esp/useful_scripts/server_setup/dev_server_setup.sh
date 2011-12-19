@@ -583,10 +583,10 @@ fi
 if [[ "$MODE_DB" || "$MODE_ALL" ]]
 then
     sudo -u postgres psql template1 -c "CREATE LANGUAGE plpgsql;"
+    sudo -u postgres psql -c "DROP DATABASE $DBNAME;"
     sudo -u postgres psql -c "DROP ROLE IF EXISTS $DBUSER;"
 	sudo -u postgres psql -c "CREATE USER $DBUSER CREATEDB;"
 	sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
-	sudo -u postgres psql -c "DROP DATABASE $DBNAME;"
 	sudo -u postgres psql -c "CREATE DATABASE $DBNAME OWNER ${DBUSER};"
 	
 	echo "Created a PostgreSQL login role and empty database."
