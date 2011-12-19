@@ -322,7 +322,7 @@ then
 	cd $DEPDIR
 	
 	#	Get what we can using Ubuntu's package manager
-	apt-get install -y build-essential texlive imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-dns postgresql-8.4 python-psycopg2 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large ipython wget memcached libmemcached
+	apt-get install -y build-essential texlive imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-pip python-dns postgresql-9.1 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large ipython wget memcached libmemcached6 libmemcached-dev python-pylibmc libpq-dev
 
 	#	Fetch and extract files
 	if [[ ! -d selenium-server-standalone-2.9.0 ]]
@@ -357,7 +357,6 @@ then
 	#	Install python libraries
 	python -m easy_install iCalendar
 	python -m easy_install django
-	python -m easy_install south
 	python -m easy_install repoze.profile
 	python -m easy_install xlwt
 	python -m easy_install simplejson
@@ -367,6 +366,12 @@ then
 	python -m easy_install selenium
 	python -m easy_install django-selenium==0.3
 	python -m easy_install django-selenium-test-runner
+	python -m easy_install django-extensions
+	
+	#   This is special for Ubuntu 11.10; if you install python-psycopg2 using apt-get
+	#   you get psycopg2 version 2.4.2, which is too new for the current version of
+	#   Django.  So we manually install version 2.4.1.
+	pip install psycopg2==2.4.1
 
 	#	Install sslauth
 	if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]
@@ -379,18 +384,6 @@ then
 	else
 		cp -r $BASEDIR/esp/esp/3rdparty/sslauth /usr/local/lib/python2.6/dist-packages/
 	fi
-
-	cd $DEPDIR
-	wget -O django-extensions.tar.gz http://pypi.python.org/packages/source/d/django-extensions/django-extensions-0.6.tar.gz
-	tar -zxf django-extensions.tar.gz
-	cd django-extensions-0.6
-	python setup.py install
-
-	cd $DEPDIR
-	wget -O pylibmc.tar.gz http://pypi.python.org/packages/source/p/pylibmc/pylibmc-1.1.1.tar.gz#md5=e43c54e285f8d937a3f1a916256ecc85
-	tar -xzf pylibmc.tar.gz
-	cd pylibmc-1.1.1
-	python setup.py install # --with-libmemcached=../libmemcached-0.44/libmemcached
 
     cd $CURDIR
     
