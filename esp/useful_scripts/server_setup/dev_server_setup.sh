@@ -4,8 +4,7 @@
 # Michael Price, December 2010
 
 # Parameters
-GIT_REPO="http://diogenes.learningu.org/git/esp-project.git"
-#GIT_REPO="espuser@esp.mit.edu:/esp/git/esp-project.git"
+GIT_REPO="https://github.com/learning-unlimited/ESP-Website.git"
 DROPBOX_STARTUP_SCRIPT="/etc/rc.local"
 
 # Stuff for random password generation
