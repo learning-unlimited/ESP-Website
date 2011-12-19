@@ -36,7 +36,7 @@ from django.conf import settings
 from django.contrib.auth.middleware import LazyUser, AuthenticationMiddleware
 from esp.utils.get_user import get_user
 from django.utils.cache import patch_vary_headers
-from.esp.users.models import UserBit, GetNode
+from esp.users.models import UserBit, GetNode
 
 __all__ = ('ESPAuthMiddleware',)
 
