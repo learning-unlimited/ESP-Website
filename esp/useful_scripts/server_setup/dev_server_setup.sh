@@ -86,7 +86,9 @@ echo
 
 if [ "$2" ]
 then
-    BASEDIR=`echo "$2" | sed -e "s/\/*$//"`
+    #   Convert specified directory to an absolute path
+    FULLPATH=`mkdir -p $2; cd $2; pwd`
+    BASEDIR=`echo "$FULLPATH" | sed -e "s/\/*$//"`
 
     echo "You have entered the installation directory: $BASEDIR"
     echo "(Note: Trailing slashes have been removed)"
