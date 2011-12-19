@@ -1269,7 +1269,10 @@ class RegistrationProfile(models.Model):
     @cache_function
     def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
+        if isinstance(user, AnonymousUser):
+            regProfList = RegistrationProfile.objects.none()
+        else:
+            regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
         if len(regProfList) < 1:
             if program:
                 # Has this user already filled out a profile for the parent program?
