@@ -758,7 +758,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['static_resource_requests'] = static_resource_requests
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         context['classroom_form_advisories'] = 'classroom_form_advisories'
-        
+        context['program'] = self.program
+        if self.program.grade_max - self.program.grade_min >= 4:
+            context['grade_range_popup'] = (Tag.getProgramTag('grade_range_popup', self.program) != "False")
+        else:
+            context['grade_range_popup'] = False
+
         if newclass is None:
             context['addoredit'] = 'Add'
         else:
