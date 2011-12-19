@@ -1050,7 +1050,7 @@ class ClassSection(models.Model):
         to_email = ['Directors <%s>' % (self.parent_program.director_email)]
         from_email = '%s Web Site <%s>' % (self.parent_program.anchor.parent.friendly_name, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
-        send_mail(email_title, msgtext, from_email, [DEFAULT_EMAIL_ADDRESSES['archive']])
+        send_mail(email_title, email_content, from_email, [DEFAULT_EMAIL_ADDRESSES['archive']])
 
         self.clearStudents()
     
