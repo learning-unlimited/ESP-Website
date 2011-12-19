@@ -11,7 +11,7 @@
     </td>
     <td class="clsmiddle" style="font-size: 12px" width="40px">
       <span title="Control the enrollment of the class's sections">
-      {% for sec in cls.sections.all %}
+      {% for sec in cls.get_sections %}
       <a href="/teach/{{ program.getUrlBase }}/select_students/{{ sec.id }}">Sec. {{ sec.index }}</a><br />
       {% endfor %}
       </span>

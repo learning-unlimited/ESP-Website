@@ -110,19 +110,23 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
     def teachers(self, QObject = False):
         #   New approach: Pile the class datatree anchor IDs into the appropriate lists.
-        
-        rejected_list = [x['anchor'] for x in self.program.classes().filter(status__lt=0).values('anchor')]
-        approved_list = [x['anchor'] for x in self.program.classes().filter(status__gt=0).values('anchor')]
-        proposed_list = [x['anchor'] for x in self.program.classes().filter(status=0).values('anchor')]
+
         Q_isteacher = Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
-        Q_rejected_teacher = Q(userbit__qsc__in=rejected_list) & Q_isteacher
-        Q_approved_teacher = Q(userbit__qsc__in=approved_list) & Q_isteacher
-        Q_proposed_teacher = Q(userbit__qsc__in=proposed_list) & Q_isteacher
+        Q_rejected_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status__lt=0)) & Q_isteacher
+        Q_approved_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status__gt=0)) & Q_isteacher
+        Q_proposed_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status=0)) & Q_isteacher
         Q_all_teachers = Q_rejected_teacher | Q_approved_teacher | Q_proposed_teacher 
 
-        nearly_full_classes = [x.anchor for x in self.program.classes().filter(status__gt=0) if x.is_nearly_full()]
+
+        ## is_nearly_full() means at least one section is more than float(ClassSubject.get_capacity_factor()) full
+        ## isFull() means that all *scheduled* sections are full
+        ## Querying the full catalog is overkill here, but we do use a fair bit of it..., and hopefully it's
+        ## better cached than other simpler queries that we might use.
+        classes = ClassSubject.objects.catalog(self.program)
+        capacity_factor = ClassSubject.get_capacity_factor()
+        nearly_full_classes = [x.anchor for x in classes if x.is_nearly_full(capacity_factor)]
         Q_nearly_full_teacher = Q(userbit__qsc__in=nearly_full_classes) & Q_isteacher
-        full_classes = [x.anchor for x in self.program.classes().filter(status__gt=0) if x.isFull()]
+        full_classes = [x.anchor for x in classes if x.isFull()]
         Q_full_teacher = Q(userbit__qsc__in=full_classes) & Q_isteacher
 
         Q_taught_before = Q_isteacher & Q(userbit__qsc__classsubject__status=10, userbit__qsc__classsubject__parent_program__in=Program.objects.exclude(pk=self.program.pk))
