@@ -621,7 +621,7 @@ then
 		sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
 
 		cd $BASEDIR/esp/esp
-		./manage.py migrate
+		./manage.py migrate --delete-ghost-migrations
 		cd $CURDIR
 
 	else
