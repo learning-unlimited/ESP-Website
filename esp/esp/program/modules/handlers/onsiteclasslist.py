@@ -113,7 +113,7 @@ class OnSiteClassList(ProgramModuleObj):
     def students_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         grade_query = """
-SELECT (12 + 2012 - "users_studentinfo"."graduation_year")
+SELECT (12 + %d - "users_studentinfo"."graduation_year")
 FROM "users_studentinfo", "program_registrationprofile"
 WHERE
     "program_registrationprofile"."most_recent_profile" = true
@@ -121,7 +121,7 @@ AND	"program_registrationprofile"."student_info_id" = "users_studentinfo"."id"
 AND	"users_studentinfo"."user_id" = "auth_user"."id"
 ORDER BY program_registrationprofile.id DESC
 LIMIT 1
-        """
+        """ % ESPUser.current_schoolyear()
         #   To ensure we don't miss anyone, fetch students who have a profile for the program
         data = ESPUser.objects.filter(registrationprofile__program=prog).extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
         simplejson.dump(list(data), resp)
