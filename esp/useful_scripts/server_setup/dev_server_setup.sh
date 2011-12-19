@@ -151,8 +151,10 @@ DROPBOX_PATH=${DEPDIR}/dropbox
 
 while [[ ! -n $ESPHOSTNAME ]]; do 
     echo
-    echo -n "Enter your site's hostname (without the http://) --> "
+    echo "Enter your site's hostname (without the http://)"
+    echo -n "  (default = localhost) --> "
     read ESPHOSTNAME
+    ESPHOSTNAME=${ESPHOSTNAME:-localhost}
 done
 echo "The Web site address will be http://$ESPHOSTNAME."
 echo "ESPHOSTNAME=\"$ESPHOSTNAME\"" >> $BASEDIR/.espsettings
