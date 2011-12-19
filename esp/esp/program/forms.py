@@ -88,7 +88,7 @@ class ProgramCreationForm(BetterModelForm):
 ('Program Title', {'fields': ['term', 'term_friendly'] }),
                      ('Program Constraints', {'fields':['grade_min','grade_max','class_size_min','class_size_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['admins','director_email']}),
-                     ('Finacial Details' ,{'fields':['base_cost','finaid_cost']}),
+                     ('Financial Details' ,{'fields':['base_cost','finaid_cost']}),
                      ('Program Internal details' ,{'fields':['anchor','program_modules','class_categories']}),
                      ('Registrations Date',{'fields':['publish_start','publish_end','teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
 

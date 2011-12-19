@@ -66,9 +66,8 @@ class AdminClass(ProgramModuleObj):
             "admin_title": "Class Management for Admin",
             "link_title": "Manage Classes",
             "module_type": "manage",
+            "inline_template": "listclasses.html",
             "seq": 1,
-            "main_call": "listclasses",
-            "aux_calls": "changeoption,alter_checkmark,proposeclass,manageclass,deleteclass,editclass,approveclass,rejectclass,coteachers,teacherlookup,deletesection,addsection,attendees,bulkapproval"
             }
         
     form_choice_types = ['status', 'reg_status', 'room', 'progress', 'resources', 'times', 'min_grade', 'max_grade']
@@ -109,11 +108,11 @@ class AdminClass(ProgramModuleObj):
         return clsTimeSlots
 
     def getClasses(self):
-        return self.user.getEditable(ClassSubject, qsc=self.program.anchor).order_by('anchor__name')
+        return ClassSubject.objects.catalog(self.program, force_all=True)
         
     def prepare(self, context=None):
         if context is None: context = {}
-        classes = self.getClasses().order_by('id')
+        classes = self.getClasses()
         context['noclasses'] = (len(classes) == 0)
         context['classes']   = classes
         return context
@@ -348,7 +347,7 @@ class AdminClass(ProgramModuleObj):
                 #   class when the sections are unreviewed.
                 cls_form.save_data(cls_alter)
 
-                return HttpResponseRedirect('/manage/%s/%s/dashboard' % (one, two))            
+                return HttpResponseRedirect(request.get_full_path())
             
         consistency_checker = ConsistencyChecker(self.program)
         context['errors'] = []

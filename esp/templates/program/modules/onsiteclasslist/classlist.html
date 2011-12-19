@@ -81,7 +81,7 @@ font-size: 1.7em;
 <div id="catalog">
 <table width="100%">
 <tr>
-<td width="65%" valign="top">
+<td width="50%" valign="top">
   <table cellpadding="2" cellspacing="0" width="100%">
     <tr>
         <th style="font-size: 2.0em" colspan="2">{{ prog.niceName }}: Open classes for the upcoming hour: starting at {{ current_time.start|date:"D P" }}</th>
@@ -94,7 +94,10 @@ font-size: 1.7em;
         {% ifequal class.start_time current_time %}
         {% if not class.isFull %}
         {% if not class.already_passed %}
-            {% render_class_current class %}
+    <tr>
+        <td>{{class.emailcode}}</td>
+        <td>{{class.title}} ({% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}; Grades {{class.parent_class.grade_min}}-{{class.parent_class.grade_max}})</td>
+    </tr>
         {% endif %}
         {% endif %}
         {% endifequal %}

@@ -119,14 +119,17 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         #   Reschedule that class and try again
         sec.clearRooms()
         sec.meeting_times.clear()
+        sec = ClassSection.objects.get(id=sec.id)
         vt = sec.viable_times()
         new_timeslot = random.choice(vt)
         sec.assign_start_time(new_timeslot)
+        sec = ClassSection.objects.get(id=sec.id)
         response = self.client.get('/learn/%s/ajax_schedule' % program.getUrlBase(), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_sections_in_schedule(response, [sec])
 
         #   Remove the class and ensure that it's gone
         sec.unpreregister_student(student)
+        sec = ClassSection.objects.get(id=sec.id)
         response = self.client.get('/learn/%s/ajax_schedule' % program.getUrlBase(), HTTP_X_REQUESTED_WITH='XMLHttpRequest')
         self.expect_empty_schedule(response)
 

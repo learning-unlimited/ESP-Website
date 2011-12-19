@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.users.models    import UserBit, ESPUser, User
@@ -53,13 +53,11 @@ class SurveyModule(ProgramModuleObj):
             "admin_title": "Student Surveys",
             "link_title": "Surveys",
             "module_type": "learn",
-            "main_call": "survey",
             "seq": 20,
         }, {
             "admin_title": "Teacher Surveys",
             "link_title": "Survey",
             "module_type": "teach",
-            "main_call": "survey",
             "seq": 15,
         } ]
 
@@ -106,6 +104,7 @@ class SurveyModule(ProgramModuleObj):
 
         return nav_bars
     
+    @main_call
     @meets_deadline('/Survey')
     def survey(self, request, tl, one, two, module, extra, prog):
         if extra is None or extra == '':
@@ -116,7 +115,6 @@ class SurveyModule(ProgramModuleObj):
             return survey_graphical(request, tl, one, two)
         elif extra == 'review_single':
             return survey_review_single(request, tl, one, two)
-        
 
     class Meta:
         abstract = True

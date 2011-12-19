@@ -253,13 +253,10 @@ class ProgramHappenTest(TestCase):
         ClassCategories.objects.create(symbol='N', category='Nothing')
         ProgramModule.objects.create(link_title='Default Module', admin_title='Default Module (do stuff)', module_type='learn', handler='StudentRegCore', seq=0, required=False)
         ProgramModule.objects.create(link_title='Register Your Classes', admin_title='Teacher Class Registration', module_type='teach', handler='TeacherClassRegModule',
-            main_call='makeaclass',inline_template='listclasses.html', aux_calls='class_students,section_students,editclass,deleteclass,coteachers,teacherlookup,class_status,class_docs,select_students,makeopenclass',
-            seq=10, required=False)
+            inline_template='listclasses.html', seq=10, required=False)
         ProgramModule.objects.create(link_title='Sign up for Classes', admin_title='Student Class Registration', module_type='learn', handler='StudentClassRegModule',
-            main_call='classlist', aux_calls='catalog,clearslot,fillslot,changeslot,addclass,swapclass,class_docs',
             seq=10, required=True)
         ProgramModule.objects.create(link_title='Sign up for a Program', admin_title='Student Registration Core', module_type='learn', handler='StudentRegCore',
-            main_call='studentreg', aux_calls='confirmreg,cancelreg',
             seq=-9999, required=False)
         
         # Admin logs in
@@ -719,6 +716,7 @@ class ScheduleMapTest(ProgramFrameworkTest):
         section1.assign_start_time(ts1)
         section1.preregister_student(student)
 
+        section1 = ClassSection.objects.get(id=section1.id)  ## Go get the class (and its size) again
         self.assertEqual(section1.num_students(), 1, "Cache error, didn't correctly update the number of students in the class")
         self.assertEqual(section1.num_students(), ClassSection.objects.get(id=section1.id).enrolled_students, "Triggers error, didn't update enrolled_students with the new enrollee")
         sm = ScheduleMap(student, program)
@@ -741,6 +739,8 @@ class ScheduleMapTest(ProgramFrameworkTest):
         #   Remove the student and check that the map is empty again
         section1.unpreregister_student(student)
         section2.unpreregister_student(student)
+        section1 = ClassSection.objects.get(id=section1.id)  ## Go get the class (and its size) again
+        section2 = ClassSection.objects.get(id=section2.id)  ## Go get the class (and its size) again
         self.assertEqual(section1.num_students(), 0, "Cache error, didn't register a student being un-registered")
         self.assertEqual(section1.num_students(), section1.enrolled_students, "Triggers error, didn't update enrolled_students with the new un-enrollee")
         sm = ScheduleMap(student, program)

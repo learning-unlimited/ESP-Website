@@ -48,10 +48,9 @@ class SATPrepTeacherInput(ProgramModuleObj):
             "admin_title": "SATPrep Interface for Teachers",
             "module_type": "teach",
             "seq": 50,
-            "main_call": "satprepdiag"
             }
 
-    @aux_call
+    @main_call
     @needs_teacher
     def satprepuserdiagnostic(self, request, tl, one, two, module, extra, prog):
         context = {}

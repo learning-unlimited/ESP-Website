@@ -1,0 +1,66 @@
+<html>
+<head>
+<title>Live Registration Status</title>
+<script type="text/javascript" src="/media/scripts/jquery.js"></script>
+<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/jquery-ui.js"></script>
+<script type="text/javascript">
+    $j = $.noConflict();
+    $j(document).ready(function() {
+        $j.getScript("/media/scripts/csrf_init.js");
+        $j.getScript("/media/scripts/csrf_check.js");
+    });
+</script>
+<script type="text/javascript" src="/media/scripts/onsite/hsl_colors.js"></script>
+<script type="text/javascript" src="/media/scripts/onsite/ajax_status.js"></script>
+<link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" type="text/css" href="/media/styles/tooltips.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/onsite_ajax_status.css" />
+</head>
+
+<body>
+
+<p align="center">
+<div id="messages">
+</div>
+<div id="category_controls">
+<b>Categories to display</b>
+<div id="category_list">
+</div>
+</div>
+</p>
+
+<p>
+<div id="student_selector_area" class="ui-widget">Select a student:
+<input type="text" id="student_selector"/> 
+<input id="schedule_print" class="control_button" type="button" value="Print schedule"/>
+<input id="status_switch" class="control_button" type="button" value="Return to status view"/>
+<input id="reload_button" class="control_button" type="button" value="Refresh data" onclick="refresh_counts();"/>
+<br />Select a printer:
+<select id="printer_selector" class="control_button">
+    <option value="">Default printer</option>
+    {% for printer in printers %}
+    <option value="{{ printer }}">{{ printer }}</option>
+    {% endfor %}
+</select>
+</div>
+
+<table class="narrow bordered">
+<tr>{% for timeslot in timeslots %}
+    <td width="270px" valign="top"><div id="timeslot_{{ timeslot.id }}"></div></td>{% endfor %}
+</tr>
+</table>
+
+<div id="space_at_bottom" style="height: 400px;">&nbsp;</div>
+
+<a name="settings" />
+<div id="settings_controls">
+<b>Advanced settings</b>
+<ul>
+<li><input type="checkbox" id="hide_full_control" checked="checked"/>Show full classes</li>
+<li><input type="checkbox" id="override_control"/>Override size limits</li>
+<li><input type="checkbox" id="grade_limits_control"/>Show classes outside student's grade range</li>
+</ul>
+</div>
+
+</body>

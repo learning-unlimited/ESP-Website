@@ -36,6 +36,7 @@ from django.conf import settings
 from django.contrib.auth.middleware import LazyUser, AuthenticationMiddleware
 from esp.utils.get_user import get_user
 from django.utils.cache import patch_vary_headers
+from.esp.users.models import UserBit, GetNode
 
 __all__ = ('ESPAuthMiddleware',)
 
@@ -114,6 +115,7 @@ class ESPAuthMiddleware(object):
                           'cur_other_user': getattr(user, 'other_user', False) and '1' or '0',
                           'cur_retTitle': ret_title,
                           'cur_admin': espuser.isAdministrator() and '1' or '0',
+                          'cur_qsd_bits': UserBit.objects.user_has_verb(espuser, GetNode('V/Administer/Edit/QSD')) and '1' or '0',
                           'cur_grade': espuser.getGrade(),
                           'cur_roles': urllib.quote(",".join(espuser.getUserTypes())),
                           }
@@ -129,7 +131,7 @@ class ESPAuthMiddleware(object):
             cookies_to_delete = [x for x in ('cur_username','cur_email',
                                          'cur_first_name','cur_last_name',
                                          'cur_other_user','cur_retTitle',
-                                         'cur_admin', 'cur_roles') if request.COOKIES.get(x, False)]
+                                         'cur_admin', 'cur_roles', 'cur_qsd_bits') if request.COOKIES.get(x, False)]
 
             map(response.delete_cookie, cookies_to_delete)
             modified_cookies = (len(cookies_to_delete) > 0)

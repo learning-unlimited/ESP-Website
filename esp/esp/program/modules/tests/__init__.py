@@ -33,7 +33,10 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+from esp.program.modules.tests.ajaxschedulingmodule import AJAXSchedulingModuleTest
 from esp.program.modules.tests.availabilitymodule import AvailabilityModuleTest
 from esp.program.modules.tests.regprofilemodule import RegProfileModuleTest
 from esp.program.modules.tests.studentreg import StudentRegTest
 from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest
+from esp.program.modules.tests.dashboard import DashboardTest
+from esp.program.modules.tests.existence import ModuleExistenceTest

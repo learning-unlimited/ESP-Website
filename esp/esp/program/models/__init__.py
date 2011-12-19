@@ -35,6 +35,7 @@ import copy
 import random
 
 from django.db import models
+from django.db.models import Count
 from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
 from esp.datatree.models import *
@@ -50,6 +51,7 @@ from esp.cache import cache_function
 from esp.tagdict.models import Tag
 from esp.settings import DEFAULT_HOST
 
+from collections import defaultdict
 import simplejson as json
 
 from esp.customforms.linkfields import CustomFormsLinkModel
@@ -76,16 +78,8 @@ class ProgramModule(models.Model):
     # Human-readable name for the Program Module
     admin_title = models.CharField(max_length=128)
 
-    # Main view function associated with this Program Module
-    #   Not all program modules have main calls, but this field
-    #   must contain the name of the default template if the main call
-    #   is not a function!
-    main_call  = models.CharField(max_length=32, default='main')
-
     #   A module can have an inline template (whose context is filled by prepare())
-    #   independently of its main_call, although the main_call field can be used
-    #   to specify the template name (in the absence of a view function)
-    #   for backwards compatibility.
+    #   independently of its main view.
     inline_template = models.CharField(max_length=32, blank=True, null=True)
 
     # One of teach/learn/etc.; What is this module typically used for?
@@ -97,13 +91,7 @@ class ProgramModule(models.Model):
     # Sequence orderer.  When ProgramModules are listed on a page, order them
     # from smallest to largest 'seq' value
     seq = models.IntegerField()
-
-    # Secondary view functions associated with this ProgramModule
-    aux_calls = models.CharField(max_length=1024, blank=True, null=True)
-
-    # Summary view functions, that summarize data for all instances of this ProgramModule
-    summary_calls = models.CharField(max_length=512, blank=True, null=True)
-
+    
     # Must the user supply this ProgramModule with data in order to complete program registration?
     required = models.BooleanField()
 
@@ -913,7 +901,26 @@ class Program(models.Model, CustomFormsLinkModel):
         if user:
             for module in modules:
                 module.setUser(user)
+        #   Populate the view attributes so they can be cached
+        for module in modules:
+            module.get_all_views()
+            module.get_main_view()
         return modules
+
+    @cache_function
+    def getModuleViews(self, main_only=False, tl=None):
+        modules = self.getModules_cached(tl)
+        result = {}
+        for mod in modules:
+            tl = mod.module.module_type
+            if main_only:
+                if mod.main_view:
+                    result[(tl, mod.main_view)] = mod
+            else:
+                for view in mod.views:
+                    result[(tl, view)] = mod
+        return result
+    getModuleViews.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
     
     def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
@@ -991,22 +998,20 @@ class Program(models.Model, CustomFormsLinkModel):
     
     @cache_function
     def getShirtInfo(self):
-
-        shirt_count = {}
-        shirts = {}
-        for shirt_type in shirt_types:
-            shirt_count[ shirt_type[0] ] = {}
-            for shirt_size in shirt_sizes:
-                shirt_count[ shirt_type[0] ][ shirt_size[0] ] = 0
+        shirt_count = defaultdict(lambda: defaultdict(int))
         teacher_dict = self.teachers()
         if teacher_dict.has_key('class_approved'):
-            for teacher in teacher_dict['class_approved']:
-                profile = ESPUser(teacher).getLastProfile().teacher_info
-                if profile is not None:
-                    if shirt_count.has_key(profile.shirt_type) and shirt_count[profile.shirt_type].has_key(profile.shirt_size):
-                        shirt_count[ profile.shirt_type ][ profile.shirt_size ] += 1
-                    if not profile.shirt_type and profile.shirt_size:
-                        shirt_count['M'][profile.shirt_size] += 1
+            query = teacher_dict['class_approved']
+            query = query.filter(registrationprofile__most_recent_profile=True)
+            query = query.values_list('registrationprofile__teacher_info__shirt_type',
+                                      'registrationprofile__teacher_info__shirt_size')
+            query = query.annotate(people=Count('id', distinct=True))
+
+            for row in query:
+                shirt_type, shirt_size, count = row
+                shirt_count[shirt_type][shirt_size] = count
+
+        shirts = {}
         shirts['teachers'] = [ { 'type': shirt_type[1], 'distribution':[ shirt_count[shirt_type[0]][shirt_size[0]] for shirt_size in shirt_sizes ] } for shirt_type in shirt_types ]
 
         return {'shirts' : shirts, 'shirt_sizes' : shirt_sizes, 'shirt_types' : shirt_types }

@@ -1,0 +1,7 @@
+To all it may concern,
+
+On {{ curtime|date:"l M d Y" }} at {{ curtime|date:"h:i A" }}, teacher {{ teacher.name }} updated their availability for {{ program.niceName }}.  They are now available at:{% for slot in timeslots %}
+* {{ slot.0.start|date:"l M d" }}, {{ slot.0.short_time }}{% endfor %}
+
+- {{ program.anchor.parent.name }} Registration System
+  Contact the directors: {{ program.director_email }}
