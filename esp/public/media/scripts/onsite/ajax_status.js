@@ -258,7 +258,7 @@ function set_current_student(student_id)
         state.student_id = student_id;
         state.display_mode = "classchange";
         var schedule_resp = $j.ajax({
-            url: "/onsite/Splash/2010/get_schedule_json?user=" + student_id,
+            url: "/onsite/Splash/2011/get_schedule_json?user=" + student_id,
             async: false,
             success: handle_schedule_response
         });
@@ -361,7 +361,7 @@ function add_student(student_id, section_id, size_override)
     
     //  Commit changes to server
     var schedule_resp = $j.ajax({
-        url: "/onsite/Splash/2010/update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]&override=" + size_override,
+        url: "/onsite/Splash/2011/update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]&override=" + size_override,
         async: false,
         success: handle_schedule_response
     });
@@ -390,7 +390,7 @@ function remove_student(student_id, section_id)
    
     //  Commit changes to server
     var schedule_resp = $j.ajax({
-        url: "/onsite/Splash/2010/update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]",
+        url: "/onsite/Splash/2011/update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]",
         async: false,
         success: handle_schedule_response
     });
@@ -860,7 +860,7 @@ function fetch_all(avoid_catalog)
     if (!avoid_catalog)
     {
         $j.ajax({
-            url: "/onsite/Splash/2010/catalog_status",
+            url: "/onsite/Splash/2011/catalog_status",
             success: handle_catalog
         });
     }
@@ -869,23 +869,23 @@ function fetch_all(avoid_catalog)
         data_status.catalog_received = true;
     }
     $j.ajax({
-        url: "/onsite/Splash/2010/enrollment_status",
+        url: "/onsite/Splash/2011/enrollment_status",
         success: handle_enrollment
     });
     $j.ajax({
-        url: "/onsite/Splash/2010/checkin_status",
+        url: "/onsite/Splash/2011/checkin_status",
         success: handle_checkins
     });
     $j.ajax({
-        url: "/onsite/Splash/2010/counts_status",
+        url: "/onsite/Splash/2011/counts_status",
         success: handle_counts
     });
     $j.ajax({
-        url: "/onsite/Splash/2010/rooms_status",
+        url: "/onsite/Splash/2011/rooms_status",
         success: handle_rooms
     });
     $j.ajax({
-        url: "/onsite/Splash/2010/students_status",
+        url: "/onsite/Splash/2011/students_status",
         success: handle_students
     });
 }
