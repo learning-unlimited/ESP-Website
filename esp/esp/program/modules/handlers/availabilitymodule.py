@@ -48,6 +48,7 @@ from esp.settings                import SERVER_EMAIL
 from django.template.loader      import render_to_string
 from django.core.mail            import send_mail
 from datetime                    import timedelta, datetime
+from esp.middleware.threadlocalrequest import get_current_request
 
 class AvailabilityModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
@@ -77,7 +78,7 @@ class AvailabilityModule(ProgramModuleObj):
 
     def isCompleted(self):
         """ Make sure that they have indicated sufficient availability for all classes they have signed up to teach. """
-        available_slots = self.user.getAvailableTimes(self.program, ignore_classes=False)
+        available_slots = get_current_request().user.getAvailableTimes(self.program, ignore_classes=False)
         
         #   Check number of timeslots against Tag-specified minimum
         if Tag.getTag('min_available_timeslots'):
@@ -86,7 +87,7 @@ class AvailabilityModule(ProgramModuleObj):
                 return False
         
         # Round durations of both classes and timeslots to nearest 30 minutes
-        total_time = self.user.getTaughtTime(self.program, include_scheduled=True, round_to=0.5)
+        total_time = get_current_request().user.getTaughtTime(self.program, include_scheduled=True, round_to=0.5)
         available_time = timedelta()
         for a in available_slots:
             available_time = available_time + timedelta( seconds = 1800 * round( a.duration().seconds / 1800.0 ) )
@@ -111,7 +112,7 @@ class AvailabilityModule(ProgramModuleObj):
         return {'availability': """Teachers who have indicated their scheduled availability for the program."""}
 
     def deadline_met(self):
-        if self.user.isAdmin(self.program):
+        if get_current_request().user.isAdmin(self.program):
             return True
         
         tmpModule = ProgramModuleObj()
@@ -161,7 +162,7 @@ class AvailabilityModule(ProgramModuleObj):
                              'program': self.program,
                              'curtime': datetime.now()}
             email_contents = render_to_string(self.baseDir()+'update_email.txt', email_context)
-            email_to = ['%s <%s>' % (self.user.name(), self.user.email), '%s Directors <%s>' % (self.program.anchor.parent.name, self.program.director_email)]
+            email_to = ['%s <%s>' % (request.user.name(), request.user.email), '%s Directors <%s>' % (self.program.anchor.parent.name, self.program.director_email)]
             send_mail(email_title, email_contents, email_from, email_to, False)
             
             #   Return to the main registration page
@@ -179,7 +180,7 @@ class AvailabilityModule(ProgramModuleObj):
             context = {'groups': [{'selections': [{'checked': (t in available_slots), 'slot': t} for t in group]} for group in time_groups]}
             context['num_groups'] = len(context['groups'])
             context['prog'] = self.program
-            context['is_overbooked'] = (not self.isCompleted() and (self.user.getTaughtTime(self.program) > timedelta(0)))
+            context['is_overbooked'] = (not self.isCompleted() and (request.user.getTaughtTime(self.program) > timedelta(0)))
             
             return render_to_response(self.baseDir()+'availability_form.html', request, (prog, tl), context)
 

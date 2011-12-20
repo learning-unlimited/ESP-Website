@@ -15,9 +15,7 @@ def espuserified_request(request):
 
 def esp_user(request):
     from esp.users.models import ESPUser
-    if hasattr(request, 'user'):
-        user = ESPUser(request.user)
-        return {'user': user}
+    return {'user': lambda: request.user}
     return {}
 
 def index_backgrounds(request):

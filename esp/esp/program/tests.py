@@ -511,6 +511,8 @@ class ProgramFrameworkTest(TestCase):
         from esp.program.models import ProgramModule, Program, ClassCategories, ClassSubject
         from esp.program.setup import prepare_program, commit_program
         from esp.program.forms import ProgramCreationForm
+        from esp.qsd.models import QuasiStaticData
+        from esp.web.models import NavBarCategory
         from datetime import datetime, timedelta
         
         #   Force Datatree to not use transactions
@@ -646,6 +648,15 @@ class ProgramFrameworkTest(TestCase):
                     if new_class.get_sections().count() <= j:
                         new_class.add_section(duration=settings['timeslot_length']/60.0)
                 new_class.accept() 
+
+        #   Give the program its own QSD main-page
+        QuasiStaticData.objects.get_or_create(path=new_prog.anchor,
+                                              name="learn:index",
+                                              title=new_prog.niceName(),
+                                              content="Welcome to %s!  Click <a href='studentreg'>here</a> to go to Student Registration.  Click <a href='catalog'>here</a> to view the course catalog.",
+                                              author=self.admins[0],
+                                              nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="")[0])
+
 
     #   Helper function to give the program a schedule.
     #   Does not get called by default, but subclasses can call it.

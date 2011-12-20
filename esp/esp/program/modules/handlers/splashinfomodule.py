@@ -57,7 +57,6 @@ class SplashInfoModule(ProgramModuleObj):
     def isStep(self):
         return True
 
-    @needs_student
     def prepare(self, context={}):
         context['splashinfo'] = SplashInfo.getForUser(self.user, self.program)
 

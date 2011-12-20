@@ -33,10 +33,11 @@ Learning Unlimited, Inc.
 """
 
 from esp.web.models import NavBarEntry, NavBarCategory
-
+from esp.program.tests import ProgramFrameworkTest  ## Really should find somewhere else to put this...
 from django.test.client import Client
 from esp.tests.util import CacheFlushTestCase as TestCase
 
+import difflib
 import re
 
 # We don't want to do "from esp.twilltests.tests import AllFilesTest
@@ -125,3 +126,47 @@ class NavbarTest(TestCase):
         self.assertTrue(self.get_navbar_titles('/') == ['NavBar2', 'NavBar1A'], 'Altered navbar order not showing up: got %s, expected %s' % (self.get_navbar_titles('/'), ['NavBar2', 'NavBar1A']))
         
 
+class NoVaryOnCookieTest(ProgramFrameworkTest):
+    """
+    The "Vary: Cookie" header should not ever be set on certain views.
+    Test that it is in fact not set on these views.
+    Further, test that it is safe to have it not-set on these views,
+    because the content of the views is the same when logged out as when
+    logged in as anyone.
+    """
+
+    url = "/learn/TestProgram/2222_Summer/"
+
+    def testQSD(self):
+        c = Client()
+        res = c.get(self.url + "index.html")
+        
+        self.assertEqual(res.status_code, 200)
+        self.assertNotIn('Cookie', res['Vary'])
+        logged_out_content = res.content
+
+        c.login(username=self.admins[0], password='password')
+        res = c.get(self.url + "index.html")
+        
+        self.assertEqual(res.status_code, 200)
+        #self.assertNotIn('Cookie', res['Vary'])
+        logged_in_content = res.content
+
+        self.assertEqual("\n".join(difflib.context_diff(logged_out_content.split("\n"), logged_in_content.split("\n"))), "")
+
+    def testCatalog(self):
+        c = Client()
+        res = c.get(self.url + "catalog")
+        
+        self.assertEqual(res.status_code, 200)
+        self.assertNotIn('Cookie', res['Vary'])
+        logged_out_content = res.content
+
+        c.login(username=self.admins[0], password='password')
+        res = c.get(self.url + "catalog")
+        
+        self.assertEqual(res.status_code, 200)
+        #self.assertNotIn('Cookie', res['Vary'])
+        logged_in_content = res.content
+
+        self.assertEqual("\n".join(difflib.context_diff(logged_out_content.split("\n"), logged_in_content.split("\n"))), "")
