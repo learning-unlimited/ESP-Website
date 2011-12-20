@@ -207,7 +207,7 @@ LIMIT 1
                 sm = ScheduleMap(user, prog)
                 existing_sections = []
                 for (sec, ts) in sec_times:
-                    if ts and len(sm.map[ts]) > 0:
+                    if ts and ts in sm.map and len(sm.map[ts]) > 0:
                         #   We found something we need to remove
                         for sm_sec in sm.map[ts]:
                             if sm_sec.id not in sections_to_add:
