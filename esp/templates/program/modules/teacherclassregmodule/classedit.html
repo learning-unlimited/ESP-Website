@@ -13,6 +13,7 @@
 {% block xtrajs %}
     {{ block.super }}
     {% include "load_ajax_scripts.html" %}
+    <script type="text/javascript" src="/media/scripts/program/modules/teacherclassregmodule.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -33,7 +34,7 @@ sections of the
 same class, <b>do not submit this form multiple times.</b>  Instead, select the desired number of sections next to "Number of Sections" (the second field from the top).</div>
 </p>
 
-<form action="{{request.path}}" id="clsform" name="clsform" method="post">{% csrf_token %}
+<form action="{{request.path}}" id="clsform" name="clsform" method="post" {% if grade_range_popup %}onsubmit="return check_grade_range($j(this), {{ program.grade_min }}, {{ program.grade_max }});"{% endif %}>{% csrf_token %}
 
 {% if form.errors %}
 <p align="center">
