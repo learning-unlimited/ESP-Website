@@ -5,7 +5,7 @@ from esp.users.models import ESPUser
 from esp.users.models import UserBit
 import esp.settings
 from esp.datatree.models import GetNode
-from esp.seltests import try_ajax_login, logout, noActiveAjax
+from esp.seltests import try_ajax_login, logout, noActiveAjaxJQuery
 from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory
 from selenium.webdriver.support.ui import WebDriverWait
@@ -39,7 +39,7 @@ class TestQsdCachePurging(SeleniumTestCase):
             elem.send_keys(Keys.DELETE)
         elem.send_keys(self.TEST_STRING)
         elem.send_keys(Keys.TAB)
-        time.sleep(1) # Can we do this more dynamically somehow?
+        WebDriverWait(self, 10).until(noActiveAjaxJQuery)
 
     def setUp(self):
         SeleniumTestCase.setUp(self)
