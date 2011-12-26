@@ -553,7 +553,7 @@ class ClassSection(models.Model):
 
     def initial_rooms(self):
         from esp.resources.models import Resource
-        if self.meeting_times.count() > 0:
+        if len(self.get_meeting_times()) > 0:
             return self.classrooms().filter(event=self.meeting_times.order_by('start')[0]).order_by('id')
         else:
             return Resource.objects.none()
@@ -1009,6 +1009,10 @@ class ClassSection(models.Model):
 
     @cache_function
     def num_students(self, verbs=['Enrolled']):
+        if verbs == ['Enrolled']:
+            if not hasattr(self, '_count_students'):
+                self._count_students = self.students(verbs).count()
+            return self._count_students
         return self.students(verbs).count()
     num_students.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
 
@@ -1046,7 +1050,7 @@ class ClassSection(models.Model):
         to_email = ['Directors <%s>' % (self.parent_program.director_email)]
         from_email = '%s Web Site <%s>' % (self.parent_program.anchor.parent.friendly_name, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
-        send_mail(email_title, msgtext, from_email, [DEFAULT_EMAIL_ADDRESSES['archive']])
+        send_mail(email_title, email_content, from_email, [DEFAULT_EMAIL_ADDRESSES['archive']])
 
         self.clearStudents()
     
@@ -1132,7 +1136,7 @@ class ClassSection(models.Model):
         events = [r.event for r in resources] 
         """
         if hasattr(self, "_events"):
-            events = self._events
+            events = list(self._events)
         else:
             events = list(self.meeting_times.all())
 
@@ -1352,23 +1356,23 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return self.title()
     
     def prettyDuration(self):
-        if self.sections.all().count() <= 0:
+        if len(self.get_sections()) <= 0:
             return "N/A"
         else:
-            return self.sections.all()[0].prettyDuration()
+            return self.get_sections()[0].prettyDuration()
 
     def prettyrooms(self):
-        if self.sections.all().count() <= 0:
+        if len(self.get_sections()) <= 0:
             return "N/A"
         else:
-            return self.sections.all()[0].prettyrooms()
+            return self.get_sections()[0].prettyrooms()
 
     def ascii_info(self):
         return self.class_info.encode('ascii', 'ignore')
         
     def _get_meeting_times(self):
         timeslot_id_list = []
-        for s in self.sections.all():
+        for s in self.get_sections():
             timeslot_id_list += s.meeting_times.all().values_list('id', flat=True)
         return Event.objects.filter(id__in=timeslot_id_list).order_by('start')
     all_meeting_times = property(_get_meeting_times)
@@ -1501,13 +1505,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         
     def students_dict(self):
         result = PropertyDict({})
-        for sec in self.sections.all():
+        for sec in self.get_sections():
             result.merge(sec.students_dict())
         return result
         
     def students(self, verbs=['Enrolled']):
         result = ESPUser.objects.none()
-        for sec in self.sections.all():
+        for sec in self.get_sections():
             result = result | sec.students(verbs=verbs)
         return result
         
@@ -1654,11 +1658,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             sections = self.get_sections()
         for s in sections:
-            if s.meeting_times.all().count() > 0 and not s.isFull(ignore_changes=ignore_changes):
+            if len(s.get_meeting_times()) > 0 and not s.isFull(ignore_changes=ignore_changes):
                 return False
         return True
 
-    @staticmethod
+    @cache_function
     def get_capacity_factor():
         tag_val = Tag.getTag('nearly_full_threshold')
         if tag_val:
@@ -1666,9 +1670,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         else:
             capacity_factor = 0.75
         return capacity_factor
+    get_capacity_factor.depend_on_row(lambda: Tag, lambda tag: {}, lambda tag: tag.key == 'nearly_full_threshold')
+    get_capacity_factor = staticmethod(get_capacity_factor)
 
-    def is_nearly_full(self):
-        capacity_factor = ClassSubject.get_capacity_factor()
+    def is_nearly_full(self, capacity_factor = None):
+        if capacity_factor == None:
+            capacity_factor = get_capacity_factor()
         return len([x for x in self.get_sections() if x.num_students() > capacity_factor*x.capacity]) > 0
 
     def getTeacherNames(self):
@@ -1724,14 +1731,14 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if user.getClasses(self.parent_program, verbs=[self.parent_program.getModuleExtension('StudentClassRegModuleInfo').signup_verb.name]).count() == 0:
             return False
 
-        for section in self.sections.all():
+        for section in self.get_sections():
             if user.isEnrolledInClass(section):
                 return 'You are already signed up for a section of this class!'
         
         res = False
         # check to see if there's a conflict with each section of the subject, or if the user
         # has already signed up for one of the sections of this class
-        for section in self.sections.all():
+        for section in self.get_sections():
             res = section.cannotAdd(user, checkFull)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
@@ -1793,7 +1800,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return False
         
         for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
-            for section in cls.sections.all():
+            for section in cls.get_sections():
                 for time in section.meeting_times.all():
                     for sec in self.sections.all().exclude(id=section.id):
                         if sec.meeting_times.filter(id = time.id).count() > 0:
@@ -1813,7 +1820,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return False
     
     def isRegClosed(self):
-        for sec in self.sections.all():
+        for sec in self.get_sections():
             if not sec.isRegClosed():
                 return False
         return True

@@ -34,14 +34,16 @@ Learning Unlimited, Inc.
 """
 from esp.users.models import ESPUser
 from django.template import Context, Template, loader, RequestContext
-import django.shortcuts
 from django.conf import settings
 from django import http
 from django.http import HttpResponse
+from django.contrib.auth.models import AnonymousUser
 from esp.program.models import Program
 from esp.qsd.models import ESPQuotations
 from esp.middleware import ESPError
 from esp.settings import DEFAULT_EMAIL_ADDRESSES, EMAIL_HOST
+
+import django.shortcuts
 
 def get_from_id(id, module, strtype = 'object', error = True):
     """ This function will get an object from its id, and return an appropriate error if need be. """
@@ -112,9 +114,9 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
             if prog is None:
                 context['navbar_list'] = []
             elif type(prog) == Program:
-                context['navbar_list'] = makeNavBar(request.user, prog.anchor, section, category)
+                context['navbar_list'] = makeNavBar(AnonymousUser(), prog.anchor, section, category)
             else:
-                context['navbar_list'] = makeNavBar(request.user, prog, section, category)
+                context['navbar_list'] = makeNavBar(AnonymousUser(), prog, section, category)
 
         #   Force comprehension of navbar list
         if hasattr(context['navbar_list'], 'value'):
