@@ -66,8 +66,7 @@ def branch_find(view_func):
     def _new_func(request, url='index', subsection=None, filename=None, *args, **kwargs):
 
         # Cache which tree node corresponds to this URL
-        cache_key = 'qsdeditor_%s_%s_%s_%s' % (request.user.id,
-                                               url, subsection, filename)
+        cache_key = 'qsdeditor_%s_%s_%s' % (url, subsection, filename)
         cache_key = cache_key.replace(' ', '')
         retVal = cache.get(cache_key)
         if retVal is not None:
@@ -112,12 +111,7 @@ def branch_find(view_func):
 
         try:
             # attempt to get the node
-            branch = GetNodeOrNoBits(tree_node_uri,
-                                     request.user,
-                                     READ_VERB,
-                                    #only create if we are planning on writing.
-                                     action in ('create','edit',)
-                                     )
+            branch = GetNode(tree_node_uri)
         except PermissionDenied:
             raise Http404, "No such site, no bits to create it: '%s'" % \
                          tree_node_uri
@@ -134,10 +128,7 @@ def branch_find(view_func):
 
         retVal = (branch, view_address, subsection, action)
 
-        if request.user.id is None:
-            cache.set(cache_key, retVal, 86400)
-        else:
-            cache.set(cache_key, retVal, 3600)
+        cache.set(cache_key, retVal, 86400)
 
         return view_func(*((request,) + retVal + args), **kwargs)
 

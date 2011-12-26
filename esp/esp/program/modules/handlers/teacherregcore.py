@@ -53,7 +53,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
     def teacherreg(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher reg page """
         context = {}
-        modules = self.program.getModules(self.user, 'teach')
+        modules = self.program.getModules(request.user, 'teach')
 
         context['completedAll'] = True
         for module in modules:
@@ -67,7 +67,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
         context['one'] = one
         context['two'] = two
 
-        context['progposts'] = Entry.find_posts_by_perms(self.user,GetNode('V/Subscribe'),
+        context['progposts'] = Entry.find_posts_by_perms(request.user,GetNode('V/Subscribe'),
                                                          self.program_anchor_cached().tree_create(['Announcements', 'Teachers']))
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
 

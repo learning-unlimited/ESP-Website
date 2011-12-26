@@ -40,7 +40,7 @@ from esp.program.models import SATPrepRegInfo
 from esp.users.models   import ESPUser
 from django.contrib.auth.models import User
 from django.db.models.query     import Q
-
+from esp.middleware.threadlocalrequest import get_current_request
 
 
 class SATPrepModule(ProgramModuleObj):
@@ -141,7 +141,7 @@ class SATPrepModule(ProgramModuleObj):
     
     def isCompleted(self):
         
-	satPrep = SATPrepRegInfo.getLastForProgram(self.user, self.program)
+	satPrep = SATPrepRegInfo.getLastForProgram(get_current_request().user, self.program)
 	return satPrep.id is not None
 
     @main_call

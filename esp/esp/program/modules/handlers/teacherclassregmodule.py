@@ -56,6 +56,7 @@ from esp.resources.forms         import ResourceRequestFormSet, ResourceTypeForm
 from datetime                    import timedelta
 from esp.mailman                 import add_list_member
 from django.http                 import HttpResponseRedirect
+from esp.middleware.threadlocalrequest import get_current_request
 import simplejson as json
 
 class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
@@ -90,7 +91,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
     def noclasses(self):
         """ Returns true of there are no classes in this program """
-        return len(self.clslist()) < 1
+        return len(self.clslist(get_current_request().user)) < 1
 
     def isCompleted(self):
         return not self.noclasses()
@@ -178,7 +179,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return result
     
     def deadline_met(self, extension=''):
-        if self.user.isAdmin(self.program):
+        if get_current_request().user.isAdmin(self.program):
             return True
         
         if len(extension) > 0:
@@ -188,8 +189,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         tmpModule.__dict__ = self.__dict__
         return tmpModule.deadline_met('/Classes/Create') or tmpModule.deadline_met('/Classes/Edit')
     
-    def clslist(self):
-        return [cls for cls in self.user.getTaughtClasses()
+    def clslist(self, user):
+        return [cls for cls in user.getTaughtClasses()
                 if cls.parent_program.id == self.program.id ]
 
     @aux_call
@@ -299,7 +300,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     @meets_deadline('/Classes')
     def deleteclass(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(id = extra)
-        if len(classes) != 1 or not self.user.canEdit(classes[0]):
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
         if cls.num_students() > 0:
@@ -319,12 +320,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             clsid = extra
             
         classes = ClassSubject.objects.filter(id = clsid)
-        if len(classes) != 1 or not self.user.canEdit(classes[0]):
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
 
         context = {'cls': cls, 'module': self,
-                   'blogposts': Entry.find_posts_by_perms(self.user,GetNode('V/Subscribe'),cls.anchor)
+                   'blogposts': Entry.find_posts_by_perms(request.user,GetNode('V/Subscribe'),cls.anchor)
                   }
 
         return render_to_response(self.baseDir()+'class_status.html', request, (prog, tl), context)
@@ -343,7 +344,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             clsid = extra
             
         classes = ClassSubject.objects.filter(id = clsid)
-        if len(classes) != 1 or not self.user.canEdit(classes[0]):
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         
         target_class = classes[0]
@@ -388,7 +389,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             ajax = True
             
         classes = ClassSubject.objects.filter(id = request.POST['clsid'])
-        if len(classes) != 1 or not self.user.canEdit(classes[0]):
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
 
         cls = classes[0]
@@ -397,7 +398,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         if not request.POST.has_key('coteachers'):
             coteachers = cls.teachers()
             coteachers = [ ESPUser(user) for user in coteachers
-                           if user.id != self.user.id           ]
+                           if user.id != request.user.id           ]
             
             txtTeachers = ",".join([str(user.id) for user in coteachers ])
             
@@ -422,7 +423,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             if len(request.POST['teacher_selected'].strip()) == 0:
                 error = 'Error - Please click on the name when it drops down.'
 
-            elif (request.POST['teacher_selected'] == str(self.user.id)):
+            elif (request.POST['teacher_selected'] == str(request.user.id)):
                 error = 'Error - You cannot select yourself as a coteacher!'
             elif request.POST['teacher_selected'] in txtTeachers.split(','):
                 error = 'Error - You already added this teacher as a coteacher!'
@@ -463,8 +464,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             to_be_deleted = old_coteachers_set - new_coteachers_set
 
             # don't delete the current user
-            if self.user in to_be_deleted:
-                to_be_deleted.remove(self.user)
+            if request.user in to_be_deleted:
+                to_be_deleted.remove(request.user)
 
             for teacher in to_be_added:
                 if cls.conflicts(teacher):
@@ -596,7 +597,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         if len(classes) == 0:
             raise ESPError("False"), "No class found matching this ID!"
 
-        if len(classes) != 1 or not self.user.canEdit(classes[0]):
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
 
