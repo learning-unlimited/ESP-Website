@@ -113,7 +113,6 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['prog'] = prog
         context['POST'] = False
         context['saved'] = False
-        context['non_unique_name'] = RTC.getNonUniqueNames()
         context['support'] = DEFAULT_EMAIL_ADDRESSES['support']
         
         if request.method == 'POST':

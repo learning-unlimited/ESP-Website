@@ -1853,7 +1853,10 @@ class RegistrationType(models.Model):
     #   Purely for bookkeeping on the part of administrators 
     #   without reading the whole description
     category = models.CharField(max_length=32)
-
+    
+    class Meta:
+        unique_together = (("name", "category"),)
+    
     @cache_function
     def get_cached(name, category):
         rt, created = RegistrationType.objects.get_or_create(name=name, defaults = {'category': category})
