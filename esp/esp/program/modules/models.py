@@ -62,8 +62,7 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
     if model is None:
         model = ProgramModule
     
-    #   Select existing modules only by handler and module type, which are assumed to be unique;
-    #   don't create duplicate modules if the default main_call differs from the data.
+    #   Select existing modules only by handler and module type, which are assumed to be unique.
     mods = []
     for datum in update_data:
         query_kwargs = {'handler': datum["handler"], 'module_type': datum["module_type"]}
@@ -71,7 +70,11 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
         if qs.exists():
             mods.append((datum, (qs[0], False)))
         else:
-            query_kwargs['defaults'] = datum
+            if 'main_call' in datum:
+                datum.pop('main_call')
+            if 'aux_calls' in datum:
+                datum.pop('aux_calls')
+            query_kwargs['defaults'] = datum            
             mods.append((datum, model.objects.get_or_create(**query_kwargs)))
 
     if overwriteExisting:
@@ -91,41 +94,15 @@ def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model
     for (datum, (mod, created)) in mods:
         #   If the module exists but the provided data adds fields that 
         #   are null or blank, go ahead and add them.
-        #   If aux_calls are changed, merge the values from the code and the
-        #   database so that everyone's happy.
         #   This simplifies data migrations where the default module properties
         #   are changed.
         for key in datum:
             if (key not in mod.__dict__) or (mod.__dict__[key] is None) or (mod.__dict__[key] == ''):
                 if datum[key] is not None and datum[key] != u'':
-                    print 'Setting field %s=%s on existing ProgramModule %s' % (key, datum[key], mod.handler)
+                    #print 'Setting field %s=%s on existing ProgramModule %s' % (key, datum[key], mod.handler)
                     mod.__dict__[key] = datum[key] 
-            elif mod.__dict__[key] != datum[key]:
-                if key == 'aux_calls':
-                    #   print 'Module %s matching on %s' % (mod, key)
-                    db_list = mod.__dict__[key].strip().split(',')
-                    db_list.sort()
-                    code_list = datum[key].strip().split(',')
-                    code_list.sort()
-                    #   Values in database: db_list
-                    #   Values in code: code_list
-                    if db_list == code_list:
-                        #   Values are equal and differ by ordering
-                        pass
-                    else:
-                        #   Values are truly different
-                        db_set = set(db_list)
-                        code_set = set(code_list)
-                        #   Items in code but not DB: code_set - db_set
-                        #   Items in DB but not code: db_set - code_set
-                        new_set = db_set | code_set
-                        #   Save union of what's in DB and code
-                        mod.__dict__[key] = ','.join(list(new_set))
-                elif key == 'main_call':
-                    mod.__dict__[key] = datum[key]
                 
         mod.save()
-
 
 def install(model=None):
     """ Install the initial ProgramModule table data for all currently-existing modules """

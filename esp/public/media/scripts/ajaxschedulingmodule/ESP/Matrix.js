@@ -90,8 +90,12 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 
                     $j.post('ajax_schedule_class', req, "json")
                     .success(function(ajax_data, status) {
-                        ESP.version_uuid = data.val;
-                        ESP.Utilities.evm.fire('block_section_assignment_local', data);
+                        if (ajax_data.ret == true) {
+                            ESP.version_uuid = data.val;
+                            ESP.Utilities.evm.fire('block_section_assignment_local', data);
+                        } else {
+                            ESP.Scheduling.status('error', "Failed to assign " + data.section.code + ": " + ajax_data.msg);
+                        }
                     })
                     .error(function(ajax_data, status) {
                         if(ajax_data.status == 403)
@@ -198,6 +202,153 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                 }
             }
         }.bind(this));
+    },
+    
+    hideRoom:function(uid){
+        var rc=this.room_cells[uid];
+        rc.tr.hide();
+        rc.td.parent().hide();
+    },
+    
+    showRoom:function(uid){
+        var rc=this.room_cells[uid];
+        rc.tr.show();
+        rc.td.parent().show();
+    },
+    
+    showAll:function(){
+        this.filter(function(){return true;});
+    },
+    
+    filter:function(filter){
+        for(var i=0; i<this.rooms.length; i++){
+            if(filter(this.rooms[i]))
+                this.showRoom(this.rooms[i].uid);
+            else
+                this.hideRoom(this.rooms[i].uid);
+        }
+    },
+    
+    sortBy:function(val){
+        var sorted=this.rooms.sortBy(val);
+        
+        function moveToEnd(node){
+            var parent=node.parentNode;
+            parent.removeChild(node);
+            parent.appendChild(node);
+        }
+        
+        for(var i=0; i<sorted.length; i++){
+            var rc=this.room_cells[sorted[i].uid];
+            moveToEnd(rc.tr[0]);
+            moveToEnd(rc.td.parent()[0]);
+        }
+    }
+    
+}));
+
+ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
+    initialize: function(matrix) {
+        this.matrix = matrix;
+        this.el=$j("<div/>").addClass('room-filter');
+        this.el.append(
+            $j("<input/>").attr({type: "button", value: "Filter/sort\nrooms"}).click((function(e){
+                if(!this.dialog){
+                    
+                    this.dialog=$j("<div/>").css({
+                        "background-color": "white",
+                        "position": "relative",
+                        "left": "10px",
+                        "top": "10px",
+                          "border": "solid black 1px",
+                          "padding": "5px",
+                          "width": "150px"
+                    });
+                    
+                    this.resources={};
+                    for(var i=0; i<this.matrix.rooms.length; i++)
+                        for(var j=0; j<this.matrix.rooms[i].resources.length; j++)
+                            this.resources[this.matrix.rooms[i].resources[j]]={};
+                    
+                    this.dialog.append("<b>Resources:</b><br/>");
+                    for(var res in this.resources){
+                        this.resources[res].name=res;
+                        this.resources[res].checkbox=$j("<input type='checkbox'/>");
+                        this.dialog.append(this.resources[res].checkbox, res, "<br/>");
+                    }
+                    this.dialog.append("<hr/>");
+                    
+                    this.dialog.append("<b>Min size:</b> ", this.minsize=$j("<input type='text' value='0' size='2'/>"), "<br/>",
+                                 "<b>Max size:</b> ", this.maxsize=$j("<input type='text' value='1000' size='2'/>"), "<br/>");
+                    $j([this.minsize[0], this.maxsize[0]]).focus(function(e){e.target.select()});
+                    this.dialog.append("<hr/>");
+                    
+                    this.dialog.append("<b>Sort by:</b><br/>");
+                    this.dialog.append(
+                        $j("<input type='button' value='Room number'>").click((function(){
+                            this.sort(function(r){return r.uid});
+                            this.dialog.hide();
+                        }).bind(this)),
+                        $j("<input type='button' value='Size ascending'>").click((function(){
+                            this.sort(function(r){return r.size});
+                            this.dialog.hide();
+                        }).bind(this)),
+                        $j("<input type='button' value='Size descending'>").click((function(){
+                            this.sort(function(r){return -r.size});
+                            this.dialog.hide();
+                        }).bind(this)));
+                    
+                    this.dialog.click(function(e){
+                        e.stopPropagation();
+                    }).change((function(){
+                        this.filter();
+                    }).bind(this));
+                    
+                    $j("body").click((function(){
+                        this.filter();
+                        this.dialog.hide();
+                    }).bind(this));
+                    
+                    this.el.append(this.dialog);
+                    this.dialog.hide();
+                    
+                }
+                this.dialog.toggle(100);
+                e.stopPropagation();
+            }).bind(this))
+        );
+        $j('.matrix-corner-box').append(this.el);
+    },
+        
+    filter: function(){
+        this.matrix.filter((function(room){
+            for(var res in this.resources)
+                if(this.resources[res].checkbox[0].checked && 
+                            !room.resources.contains(res))
+                    return false;
+            if(room.size<this.minsize.val() || 
+                room.size>this.maxsize.val())
+                return false;
+            return true;
+        }).bind(this));
+    },
+        
+    sort: function(valFunc){
+        if(!valFunc)
+            valFunc=this.lastValFunc;
+        this.lastValFunc=valFunc;
+        if(typeof valFunc == "function")
+            this.matrix.sortBy(valFunc);
+    },
+        
+    save: function(){
+        this.el[0].parentNode.removeChild(this.el[0]);
+    },
+        
+    restore: function(matrix){
+        this.matrix=matrix;
+        $j('.matrix-corner-box').append(this.el);
+        this.filter();
     }
 }));
 

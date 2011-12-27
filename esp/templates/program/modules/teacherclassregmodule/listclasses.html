@@ -139,7 +139,7 @@ If you have any questions regarding the program, <br /> please email the
             <span style="font-weight: bold; color: #00C;">Unreviewed</span>
             {% endif %}
         </td>
-        <td class="clsmiddle" valign="top" colspan="3">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif %}</td>
+        <td class="clsmiddle" valign="top" colspan="3">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}</td>
         <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
             <br />(<a href="/teach/{{ one }}/{{ two }}/section_students/{{ sec.id }}">view list</a>) 
             <!-- (<a href="/teach/{{ one }}/{{ two }}/select_students/{{ sec.id }}">enroll/reject</a>) --> </td>

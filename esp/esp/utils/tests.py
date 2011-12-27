@@ -2,6 +2,8 @@
 Test cases for Django-ESP utilities
 """
 
+from __future__ import with_statement
+
 import unittest
 import doctest
 import subprocess
@@ -30,6 +32,7 @@ from django.core.cache.backends.base import default_key_func
 from django.db.models import loading
 
 from django.template import loader, Template, Context, TemplateDoesNotExist
+import reversion
 
 # Code from <http://snippets.dzone.com/posts/show/6313>
 # My understanding is that snippets from this site are public domain,
@@ -399,17 +402,19 @@ class TemplateOverrideTest(DjangoTestCase):
         self.expect_template_error('BLAARG.NOTANACTUALTEMPLATE')
 
         #   Create a template override and make sure you can see it
-        to = TemplateOverride(name='BLAARG.TEMPLATEOVERRIDE', content='Hello')
-        to.save()
+        with reversion.create_revision():
+            to = TemplateOverride(name='BLAARG.TEMPLATEOVERRIDE', content='Hello')
+            to.save()
         self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Hello')
 
         #   Save an update to the template override and make sure you see that too
-        to.content = 'Goodbye'
-        to.save()
+        with reversion.create_revision():
+            to.content = 'Goodbye'
+            to.save()
         self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Goodbye')
 
-        #   Delete the update to the template and make sure you see the old version
-        to.delete()
+        #   Revert the update to the template and make sure you see the old version
+        reversion.get_unique_for_object(to)[1].revert()
         self.assertTrue(self.get_response_for_template('BLAARG.TEMPLATEOVERRIDE') == 'Hello')
 
         #   Delete the original template override and make sure you see nothing

@@ -53,6 +53,7 @@ from django.db.models.query import Q
 from django.core.cache import cache
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
+from esp.middleware.threadlocalrequest import get_current_request
 
 from os.path import exists
 
@@ -92,30 +93,68 @@ class ProgramModuleObj(models.Model):
     def __unicode__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
-    def all_views(self):
-        if self.module and self.module.aux_calls:
-            return self.module.aux_calls.strip(',').split(',')
-
-        return []
-
+    def get_views_by_call_tag(self, tags):
+        """ We define decorators below (aux_call, main_call, etc.) which allow
+            methods within the ProgramModuleObj subclass to be tagged with
+            metadata.  At the moment, this metadata is a string stored in the
+            'call_tag' attribute.  This function searches the methods of the
+            current program module to find those that match the list supplied
+            in the 'tags' argument. """
+        from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo
+            
+        result = []
+        
+        #   Filter out attributes that we don't want to look at: 
+        #   - Attributes of ProgramMdouleObj, including Django stuff
+        #   - Module extension attributes
+        key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_all_field_names())
+        for exclude_class in [ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo]:
+            key_set = filter(lambda key: key not in dir(exclude_class), key_set)
+        for key in key_set:
+            #   Fetch the attribute, now that we're confident it's safe to look at.
+            item = getattr(self, key)
+            #   This is a hack to test whether the item is a bound method,
+            #   maybe there is a better way.
+            if isinstance(item, type(self.get_views_by_call_tag)) and hasattr(item, 'call_tag'):
+                if item.call_tag in tags:
+                    result.append(key)
+            
+        return result
+    
+    def get_main_view(self):
+        if not hasattr(self, '_main_view'):
+            main_views = self.get_views_by_call_tag(['Main Call'])
+            if len(main_views) > 0:
+                self._main_view = main_views[0]
+            else:
+                self._main_view = None
+        return self._main_view
+    main_view = property(get_main_view)
+    main_view_fn = lambda self, *args, **kwargs: getattr(self, self.main_view)(*args, **kwargs)
+    
+    def get_all_views(self):
+        if not hasattr(self, '_views'):
+            self._views = self.get_views_by_call_tag(['Main Call', 'Aux Call'])
+        return self._views
+    views = property(get_all_views)
+    
     def get_msg_vars(self, user, key):
         return None
 
     def getCoreView(self, tl):
         import esp.program.modules.models
-        modules = self.program.getModules(self.user, tl)
+        modules = self.program.getModules(get_current_request().user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
-                return getattr(module, module.module.main_call)
+                return getattr(module, module.main_view)
         assert False, 'No core module to return to!'
 
     def getCoreURL(self, tl):
         import esp.program.modules.models
-        modules = self.program.getModules(self.user, tl)
+        modules = self.program.getModules(get_current_request().user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
-                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.module.main_call
-
+                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.main_view
 
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl))
@@ -131,24 +170,25 @@ class ProgramModuleObj(models.Model):
         else:
             return Q(id__in = ids)
 
-    #   This function caches the customized (augmented) program module objects
     @cache_function
     def findModuleObject(tl, call_txt, prog):
+        """ This function caches the customized (augmented) program module object
+            matching a particular view function and area. """
         # Make sure all modules exist
         modules = prog.program_modules.all()
         for module in modules:
             ProgramModuleObj.getFromProgModule(prog, module)
 
-        #   Start with the program's cached list of modules
-        moduleobjs = filter(lambda mod: mod.module.module_type == tl, prog.getModules())
         #   Check for a module that has a matching main_call
-        for modobj in moduleobjs:
-            if modobj.module.main_call == call_txt:
-                return modobj
+        main_call_map = prog.getModuleViews(main_only=True)
+        if (tl, call_txt) in main_call_map:
+            return main_call_map[(tl, call_txt)]
+            
         #   Check for a module that has a matching aux_call
-        for modobj in moduleobjs:
-            if isinstance(modobj.module.aux_calls, basestring) and call_txt in modobj.module.aux_calls.strip().split(','):
-                return modobj
+        all_call_map = prog.getModuleViews(main_only=False)
+        if (tl, call_txt) in all_call_map:
+            return all_call_map[(tl, call_txt)]
+            
         #   If no module matched those criteria, we are looking for a page that does not exist.
         raise Http404
         
@@ -173,25 +213,22 @@ class ProgramModuleObj(models.Model):
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
         moduleobj = ProgramModuleObj.findModuleObject(tl, call_txt, prog)
-        user = ESPUser(request.user)
         scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
 
         #   If a "core" module has been found:
         #   Put the user through a sequence of all required modules in the same category.
         #   Only do so if we've not blocked this behavior, though
         if scrmi.force_show_required_modules:
-            if tl != "manage" and request.user.is_authenticated() and isinstance(moduleobj, CoreModule):
+            if tl != "manage" and isinstance(moduleobj, CoreModule):
                 other_modules = moduleobj.findCategoryModules(False)
                 for m in other_modules:
                     m.request = request
-                    m.user    = user
-                    if not isinstance(m, CoreModule) and not m.isCompleted() and hasattr(m, m.module.main_call):
-                        return getattr(m, m.module.main_call)(request, tl, one, two, call_txt, extra, prog)
+                    if not isinstance(m, CoreModule) and not m.isCompleted() and m.main_view:
+                        return m.main_view_fn(request, tl, one, two, call_txt, extra, prog)
 
         #   If the module isn't "core" or the user did all required steps,
         #   call on the originally requested view.
         moduleobj.request = request
-        moduleobj.user    = user
         if hasattr(moduleobj, call_txt):
             return getattr(moduleobj, call_txt)(request, tl, one, two, call_txt, extra, prog)
 
@@ -240,7 +277,7 @@ class ProgramModuleObj(models.Model):
         classes = ClassSubject.objects.filter(id = clsid)
             
         if len(classes) == 1:
-            if not self.user.canEdit(classes[0]):
+            if not get_current_request().user.canEdit(classes[0]):
                 from esp.middleware import ESPError
                 raise ESPError(False), 'You do not have permission to edit %s.' %\
                       classes[0].title()
@@ -272,7 +309,7 @@ class ProgramModuleObj(models.Model):
         from esp.users.models import UserBit
         from esp.datatree.models import GetNode, DataTree
 
-        if not self.user or not self.program:
+        if not get_current_request().user or not self.program:
             raise ESPError(False), "There is no user or program object!"
 
 
@@ -282,12 +319,12 @@ class ProgramModuleObj(models.Model):
 
         canView = False
 
-        if self.user.__dict__.has_key('onsite_local'):
-            canView = self.user.__dict__['onsite_local']
+        if get_current_request().user.__dict__.has_key('onsite_local'):
+            canView = get_current_request().user.__dict__['onsite_local']
 
         if not canView:
             test_node = GetNode('V/Deadline/Registration/'+{'learn':'Student', 'teach':'Teacher'}[self.module.module_type]+extension)
-            canView = UserBit.UserHasPerms(self.user, self.program.anchor_id, test_node)
+            canView = UserBit.UserHasPerms(get_current_request().user, self.program.anchor_id, test_node)
 
         return canView
 
@@ -296,7 +333,7 @@ class ProgramModuleObj(models.Model):
     def get_full_path(self):
         str_array = self.program.anchor.tree_encode()
         url = '/'+self.module.module_type \
-              +'/'+'/'.join(str_array[-2:])+'/'+self.module.main_call
+              +'/'+'/'.join(str_array[-2:])+'/'+self.main_view
         return url
     get_full_path.depend_on_row(lambda: ProgramModuleObj, 'self')
 
@@ -345,7 +382,7 @@ class ProgramModuleObj(models.Model):
 
     def useTemplate(self):
         """ Use a template if the `mainView' function doesn't exist. """
-        return (not self.module.main_call) or (not hasattr(self, self.module.main_call))
+        return (not self.main_view)
 
     def isCompleted(self):
         return False
@@ -357,28 +394,27 @@ class ProgramModuleObj(models.Model):
         return []
 
     def getTemplate(self):
-        baseDir = 'program/modules/'+self.__class__.__name__.lower()+'/'
-        mainCallTemp = self.module.main_call+'.html'
-        base_template = baseDir + mainCallTemp
-        per_program_template = baseDir+'per_program/'+str(self.program.id)+ \
-            '_'+ mainCallTemp
-
         if self.module.inline_template:
-            return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
+            baseDir = 'program/modules/'+self.__class__.__name__.lower()+'/'
+            base_template = baseDir + self.module.inline_template
+            per_program_template = baseDir+'per_program/'+str(self.program.id)+ \
+                '_'+ self.module.inline_template
 
-        #   Iterate over a bunch of reasons to return a template;
-        #   if none of them come up true, return None.
-        try:
-            get_template(per_program_template)
-            if self.useTemplate():
-                return per_program_template
-        except TemplateDoesNotExist:
+            #   Iterate over a bunch of reasons to return a template;
+            #   if none of them come up true, return None.
             try:
-                get_template(base_template)
+                get_template(per_program_template)
                 if self.useTemplate():
-                    return base_template
+                    return per_program_template
             except TemplateDoesNotExist:
-                pass
+                try:
+                    get_template(base_template)
+                    if self.useTemplate():
+                        return base_template
+                except TemplateDoesNotExist:
+                    pass
+            
+            return 'program/modules/%s/%s' % (self.__class__.__name__.lower(), self.module.inline_template)
 
         return None
 
@@ -427,13 +463,10 @@ class ProgramModuleObj(models.Model):
         - "handler"
         - "admin_title" (as "%(link_title)s (%(handler)s)")
         - "seq" (as 200)
-        - "aux_calls" (based on @aux_calls decorators)
-        - "main_call" (based on the @main_call decorator)
         """
 
         props = cls.module_properties()
 
-        
         def update_props(props):
             if not "handler" in props:
                 props["handler"] = cls.__name__
@@ -442,20 +475,6 @@ class ProgramModuleObj(models.Model):
             if not "seq" in props:
                 props["seq"] = 200
 
-            if not "aux_calls" in props:
-                NAME = 0
-                FN = 1
-                props["aux_calls"] = ",".join( [ x[NAME] for x in cls.__dict__.items()
-                                                 if getattr(x[FN], "call_tag", None) == "Aux Call" ] )
-
-            if not "main_call" in props:
-                NAME = 0
-                FN = 1
-                mainCallList = [ x[NAME] for x in cls.__dict__.items()
-                                 if getattr(x[FN], "call_tag", None) == "Main Call" ]
-                assert len(mainCallList) <= 1, "Error: You can only have one Main Call per class!: (%s: %s)" % (cls.__name__, ",".join(mainCallList))
-                props["main_call"] = ",".join(mainCallList)
-            
         if type(props) == dict:
             props = [ props ]
 
@@ -499,15 +518,15 @@ def usercheck_usetl(method):
     def _checkUser(moduleObj, request, tl, *args, **kwargs):
         errorpage = 'errors/program/nota'+tl+'.html'
     
-        if not moduleObj.user or not moduleObj.user.is_authenticated():
+        if not request.user or not request.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-        if tl == 'learn' and not moduleObj.user.isStudent():
+        if tl == 'learn' and not request.user.isStudent():
             return render_to_response(errorpage, request, moduleObj.program, {})
         
-        if tl == 'teach' and not moduleObj.user.isTeacher():
+        if tl == 'teach' and not request.user.isTeacher():
             return render_to_response(errorpage, request, moduleObj.program, {})
         
-        if tl == 'manage' and not moduleObj.user.isAdmin(moduleObj.program):
+        if tl == 'manage' and not request.user.isAdmin(moduleObj.program):
             return render_to_response(errorpage, request, moduleObj.program, {})
 
         return method(moduleObj, request, tl, *args, **kwargs)
@@ -518,9 +537,9 @@ def usercheck_usetl(method):
 def needs_teacher(method):
     def _checkTeacher(moduleObj, request, *args, **kwargs):
         allowed_teacher_types = Tag.getTag("allowed_teacher_types", moduleObj.program, default='').split(",")
-        if not moduleObj.user or not moduleObj.user.is_authenticated():
+        if not request.user or not request.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-        if not moduleObj.user.isTeacher() and not moduleObj.user.isAdmin(moduleObj.program) and not (set(moduleObj.user.getUserTypes()) & set(allowed_teacher_types)):
+        if not request.user.isTeacher() and not request.user.isAdmin(moduleObj.program) and not (set(request.user.getUserTypes()) & set(allowed_teacher_types)):
             return render_to_response('errors/program/notateacher.html', request, (moduleObj.program, 'teach'), {})
         return method(moduleObj, request, *args, **kwargs)
 
@@ -533,11 +552,11 @@ def needs_admin(method):
         else:
             morpheduser=None
 
-        if not moduleObj.user or not moduleObj.user.is_authenticated():
+        if not request.user or not request.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
-        if not (moduleObj.user.isAdmin(moduleObj.program) or (morpheduser and morpheduser.isAdmin(moduleObj.program))):
-            if not ( hasattr(moduleObj.user, 'other_user') and moduleObj.user.other_user and moduleObj.user.other_user.isAdmin(moduleObj.program) ):
+        if not (request.user.isAdmin(moduleObj.program) or (morpheduser and morpheduser.isAdmin(moduleObj.program))):
+            if not ( hasattr(request.user, 'other_user') and request.user.other_user and request.user.other_user.isAdmin(moduleObj.program) ):
                 return render_to_response('errors/program/notanadmin.html', request, (moduleObj.program, 'manage'), {})
         return method(moduleObj, request, *args, **kwargs)
 
@@ -545,11 +564,11 @@ def needs_admin(method):
 
 def needs_onsite(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
-        if not moduleObj.user or not moduleObj.user.is_authenticated():
+        if not request.user or not request.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
-        if not moduleObj.user.isOnsite(moduleObj.program) and not moduleObj.user.isAdmin(moduleObj.program):
-            user = moduleObj.user
+        if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(moduleObj.program):
+            user = request.user
             user = ESPUser(user)
             user.updateOnsite(request)
             ouser = user.get_old(request)
@@ -562,11 +581,11 @@ def needs_onsite(method):
 
 def needs_onsite_no_switchback(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
-        if not moduleObj.user or not moduleObj.user.is_authenticated():
+        if not request.user or not request.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
-        if not moduleObj.user.isOnsite(moduleObj.program) and not moduleObj.user.isAdmin(moduleObj.program):
-            user = moduleObj.user
+        if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(moduleObj.program):
+            user = request.user
             user = ESPUser(user)
             user.updateOnsite(request)
             ouser = user.get_old(request)
@@ -578,12 +597,12 @@ def needs_onsite_no_switchback(method):
 
 def needs_student(method):
     def _checkStudent(moduleObj, request, *args, **kwargs):
-        if not moduleObj.user or not moduleObj.user.is_authenticated():
+        if not request.user or not request.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
-        if not moduleObj.user.isStudent() and not moduleObj.user.isAdmin(moduleObj.program):
+        if not request.user.isStudent() and not request.user.isAdmin(moduleObj.program):
             allowed_student_types = Tag.getTag("allowed_student_types", moduleObj.program, default='')
-            matching_user_types = UserBit.valid_objects().filter(user=moduleObj.user, verb__parent=GetNode("V/Flags/UserRole"), verb__name__in=allowed_student_types.split(","))
+            matching_user_types = UserBit.valid_objects().filter(user=request.user, verb__parent=GetNode("V/Flags/UserRole"), verb__name__in=allowed_student_types.split(","))
             if not matching_user_types:
                 return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
         return method(moduleObj, request, *args, **kwargs)
@@ -592,7 +611,7 @@ def needs_student(method):
 
 def needs_account(method):
     def _checkAccount(moduleObj, request, *args, **kwargs):
-        if not moduleObj.user or not moduleObj.user.is_authenticated():
+        if not request.user or not request.user.is_authenticated():
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
         return method(moduleObj, request, *args, **kwargs)
     return _checkAccount
@@ -606,7 +625,7 @@ def meets_grade(method):
         verb_override = GetNode('V/Flags/Registration/GradeOverride')
 
         # if there's grade override we can just skip everything
-        if UserBit.UserHasPerms(user = moduleObj.user,
+        if UserBit.UserHasPerms(user = request.user,
                                   qsc  = moduleObj.program.anchor_id,
                                   verb = verb_override):
             return method(moduleObj, request, tl, *args, **kwargs)
@@ -614,7 +633,7 @@ def meets_grade(method):
         # now we have to use the grade..
 
         # get the last grade...
-        cur_grade = moduleObj.user.getGrade(moduleObj.program)
+        cur_grade = request.user.getGrade(moduleObj.program)
         if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
                                cur_grade > moduleObj.program.grade_max):
             return render_to_response(errorpage, request, (moduleObj.program, tl), {})
@@ -633,10 +652,10 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
     if tl != 'learn' and tl != 'teach':
         return True
 
-    canView = moduleObj.user.updateOnsite(request)
+    canView = request.user.updateOnsite(request)
     if not canView:
-        canView = UserBit.UserHasPerms(moduleObj.user,
-                                       moduleObj.program.anchor_id,
+        canView = UserBit.UserHasPerms(request.user,
+                                       request.program.anchor_id,
                                        GetNode('V/Deadline/Registration/'+{'learn':'Student',
                                                                        'teach':'Teacher'}[tl]+extension))
 

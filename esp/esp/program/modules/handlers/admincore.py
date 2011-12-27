@@ -67,8 +67,6 @@ class AdminCore(ProgramModuleObj, CoreModule):
         return {
             "link_title": "Program Dashboard",
             "module_type": "manage",
-            "main_call": "dashboard",
-            "aux_calls": "main,deadlines,deadline_management,deadline_management",
             "seq": -9999
             }
 
@@ -76,7 +74,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
     @needs_admin
     def main(self, request, tl, one, two, module, extra, prog):
         context = {}
-        modules = self.program.getModules(self.user, 'manage')
+        modules = self.program.getModules(request.user, 'manage')
                     
         context['modules'] = modules
         context['one'] = one
@@ -90,7 +88,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         """ The administration panel showing statistics for the program, and a list
         of classes with the ability to edit each one.  """
         context = {}
-        modules = self.program.getModules(self.user, 'manage')
+        modules = self.program.getModules(request.user, 'manage')
         
         for module in modules:
             context = module.prepare(context)

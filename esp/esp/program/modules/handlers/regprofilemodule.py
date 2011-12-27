@@ -37,6 +37,7 @@ from esp.program.models import RegistrationProfile
 from esp.users.models   import ESPUser, User
 from django.db.models.query import Q
 from django.contrib.auth.decorators import login_required
+from esp.middleware.threadlocalrequest import get_current_request
 
 # reg profile module
 class RegProfileModule(ProgramModuleObj):
@@ -46,14 +47,12 @@ class RegProfileModule(ProgramModuleObj):
             "admin_title": "Student Profile Editor",
             "link_title": "Update Your Profile",
             "module_type": "learn",
-            "main_call": "profile",
             "seq": 1,
             "required": True
         }, {
             "admin_title": "Teacher Profile Editor",
             "link_title": "Update Your Profile",
             "module_type": "teach",
-            "main_call": "profile",
             "seq": 1,
             "required": True
         } ]
@@ -78,8 +77,8 @@ class RegProfileModule(ProgramModuleObj):
     def teacherDesc(self):
         return {'teacher_profile': """Teachers who have completed the profile."""}
 
-    @needs_account
     @main_call
+    @needs_account
     @meets_deadline("/Profile")
     def profile(self, request, tl, one, two, module, extra, prog, check_role=True):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
@@ -123,7 +122,7 @@ class RegProfileModule(ProgramModuleObj):
         return response
 
     def isCompleted(self):
-        regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
+        regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
         return regProf.id is not None
 
 

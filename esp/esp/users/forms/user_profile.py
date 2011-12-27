@@ -10,6 +10,7 @@ from esp.program.models import RegistrationProfile
 from esp.settings import INSTITUTION_NAME
 import re
 import simplejson as json
+from django.contrib.localflavor.us.forms import USPhoneNumberField
 
 # SRC: esp/program/manipulators.py
 
@@ -86,8 +87,8 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     first_name = SizedCharField(length=25, max_length=64)
     last_name = SizedCharField(length=30, max_length=64)
     e_mail = forms.EmailField()
-    phone_day = PhoneNumberField(required=False)
-    phone_cell = PhoneNumberField(required=False)
+    phone_day = USPhoneNumberField(required=False)
+    phone_cell = USPhoneNumberField(required=False)
     receive_txt_message = forms.BooleanField(required=False)
     address_street = SizedCharField(length=40, max_length=100)
     address_city = SizedCharField(length=20, max_length=50)
@@ -117,8 +118,8 @@ class TeacherContactForm(UserContactForm):
     """ Contact form for teachers """
 
     # Require both phone numbers for teachers.
-    phone_day = PhoneNumberField()
-    phone_cell = PhoneNumberField()
+    phone_day = USPhoneNumberField()
+    phone_cell = USPhoneNumberField()
     
 class EmergContactForm(FormUnrestrictedOtherUser):
     """ Contact form for emergency contacts """
@@ -126,8 +127,8 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_first_name = SizedCharField(length=25, max_length=64)
     emerg_last_name = SizedCharField(length=30, max_length=64)
     emerg_e_mail = forms.EmailField(required=False)
-    emerg_phone_day = PhoneNumberField()
-    emerg_phone_cell = PhoneNumberField(required=False)
+    emerg_phone_day = USPhoneNumberField()
+    emerg_phone_cell = USPhoneNumberField(required=False)
     emerg_address_street = SizedCharField(length=40, max_length=100)
     emerg_address_city = SizedCharField(length=20, max_length=50)
     emerg_address_state = forms.ChoiceField(choices=zip(_states,_states))
@@ -148,8 +149,8 @@ class GuardContactForm(FormUnrestrictedOtherUser):
     guard_last_name = SizedCharField(length=30, max_length=64)
     guard_no_e_mail = forms.BooleanField(required=False)
     guard_e_mail = forms.EmailField(required=False)
-    guard_phone_day = PhoneNumberField()
-    guard_phone_cell = PhoneNumberField(required=False)
+    guard_phone_day = USPhoneNumberField()
+    guard_phone_cell = USPhoneNumberField(required=False)
 
     def __init__(self, *args, **kwargs):
         super(GuardContactForm, self).__init__(*args, **kwargs)
@@ -243,6 +244,13 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         self.allow_change_grade_level = Tag.getTag('allow_change_grade_level')
 
+        #   Add user's current grade if it is out of range.
+        if user:
+            user_grade = user.getGrade()
+            grade_tup = (str(ESPUser.YOGFromGrade(user_grade)), str(user_grade))
+            if grade_tup not in self.fields['graduation_year'].choices:
+                self.fields['graduation_year'].choices.insert(0, grade_tup)
+
         ## All of these Tags may someday want to be made per-program somehow.
         ## We don't know the current program right now, though...
         show_studentrep_application = Tag.getTag('show_studentrep_application')
@@ -263,7 +271,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         custom_grade_options = Tag.getTag('student_grade_options')
         if custom_grade_options:
             custom_grade_options = json.loads(custom_grade_options)
-            self.fields['graduation_year'].choices = [(str(ESPUser.YOGFromGrade(x)), str(x)) for x in custom_grade_options]
+            self.fields['graduation_year'].choices = [('','')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in custom_grade_options]
 
         if Tag.getTag('show_student_graduation_years_not_grades'):            
             current_grad_year = self.ESPUser.current_schoolyear()
@@ -288,7 +296,10 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 # Disable the age and grade fields if they already exist.
                 if initial_data.has_key('graduation_year') and initial_data.has_key('dob'):
                     self.fields['graduation_year'].widget.attrs['disabled'] = "true"
+                    self.fields['graduation_year'].required = False
                     self.fields['dob'].widget.attrs['disabled'] = "true"
+                    self.fields['dob'].required = False
+                    
 
         #   Add schoolsystem fields if directed by the Tag
         if Tag.getTag('schoolsystem'):

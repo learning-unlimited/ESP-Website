@@ -34,8 +34,10 @@ Learning Unlimited, Inc.
 
 from django.conf import settings
 from django.contrib.auth.middleware import LazyUser, AuthenticationMiddleware
+from django.contrib.auth.models import AnonymousUser
 from esp.utils.get_user import get_user
 from django.utils.cache import patch_vary_headers
+from esp.users.models import UserBit, GetNode
 
 __all__ = ('ESPAuthMiddleware',)
 
@@ -52,6 +54,7 @@ class ESPLazyUser(LazyUser):
 
             SESSION_KEY = '_auth_user_id'
 
+            user = AnonymousUser()            
             if request.session.has_key(SESSION_KEY):
                 user_id = request.session[SESSION_KEY]
                 try:
@@ -59,7 +62,7 @@ class ESPLazyUser(LazyUser):
                 except ESPUser.DoesNotExist:
                     pass
                 
-            if not user:                
+            if not user:
                 request._cached_user = ESPUser(get_user_django(request))
                 request._cached_user.updateOnsite(request)
             else:
@@ -75,12 +78,16 @@ class ESPAuthMiddleware(object):
         request.__class__.user = ESPLazyUser()
         
         #Call get_token to make sure the CSRF cookie is set on any request
-        from django.middleware.csrf import get_token
-        get_token(request)
+        #from django.middleware.csrf import get_token
+        #get_token(request)
 
         return None
 
     def process_response(self, request, response):
+        ## This gets set if we're not supposed to modify the cookie
+        if getattr(response, 'no_set_cookies', False):
+            return response
+        
         from esp.users.models import ESPUser
         modified_cookies = False
 
@@ -114,6 +121,7 @@ class ESPAuthMiddleware(object):
                           'cur_other_user': getattr(user, 'other_user', False) and '1' or '0',
                           'cur_retTitle': ret_title,
                           'cur_admin': espuser.isAdministrator() and '1' or '0',
+                          'cur_qsd_bits': UserBit.objects.user_has_verb(espuser, GetNode('V/Administer/Edit/QSD')) and '1' or '0',
                           'cur_grade': espuser.getGrade(),
                           'cur_roles': urllib.quote(",".join(espuser.getUserTypes())),
                           }
@@ -129,7 +137,7 @@ class ESPAuthMiddleware(object):
             cookies_to_delete = [x for x in ('cur_username','cur_email',
                                          'cur_first_name','cur_last_name',
                                          'cur_other_user','cur_retTitle',
-                                         'cur_admin', 'cur_roles') if request.COOKIES.get(x, False)]
+                                         'cur_admin', 'cur_roles', 'cur_qsd_bits') if request.COOKIES.get(x, False)]
 
             map(response.delete_cookie, cookies_to_delete)
             modified_cookies = (len(cookies_to_delete) > 0)

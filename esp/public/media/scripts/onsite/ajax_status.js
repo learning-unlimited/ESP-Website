@@ -171,8 +171,12 @@ function hide_loading_box()
 
 function print_schedule()
 {
+    printer_name = $j("#printer_selector").attr("value");
+    printing_url = program_base_url + "printschedule_status";
+    if (printer_name)
+        printing_url = printing_url + "/" + printer_name; 
     result = $j.ajax({
-        url: "/onsite/Splash/2010/printschedule_status?user=" + state.student_id,
+        url: printing_url + "?user=" + state.student_id,
         async: false
     });
     add_message(JSON.parse(result.responseText).message);
@@ -254,7 +258,7 @@ function set_current_student(student_id)
         state.student_id = student_id;
         state.display_mode = "classchange";
         var schedule_resp = $j.ajax({
-            url: "/onsite/Splash/2010/get_schedule_json?user=" + student_id,
+            url: program_base_url + "get_schedule_json?user=" + student_id,
             async: false,
             success: handle_schedule_response
         });
@@ -357,7 +361,7 @@ function add_student(student_id, section_id, size_override)
     
     //  Commit changes to server
     var schedule_resp = $j.ajax({
-        url: "/onsite/Splash/2010/update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]&override=" + size_override,
+        url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]&override=" + size_override,
         async: false,
         success: handle_schedule_response
     });
@@ -386,7 +390,7 @@ function remove_student(student_id, section_id)
    
     //  Commit changes to server
     var schedule_resp = $j.ajax({
-        url: "/onsite/Splash/2010/update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]",
+        url: program_base_url + "update_schedule_json?user=" + student_id + "&sections=[" + new_sections.toString() + "]",
         async: false,
         success: handle_schedule_response
     });
@@ -856,7 +860,7 @@ function fetch_all(avoid_catalog)
     if (!avoid_catalog)
     {
         $j.ajax({
-            url: "/onsite/Splash/2010/catalog_status",
+            url: program_base_url + "catalog_status",
             success: handle_catalog
         });
     }
@@ -865,23 +869,23 @@ function fetch_all(avoid_catalog)
         data_status.catalog_received = true;
     }
     $j.ajax({
-        url: "/onsite/Splash/2010/enrollment_status",
+        url: program_base_url + "enrollment_status",
         success: handle_enrollment
     });
     $j.ajax({
-        url: "/onsite/Splash/2010/checkin_status",
+        url: program_base_url + "checkin_status",
         success: handle_checkins
     });
     $j.ajax({
-        url: "/onsite/Splash/2010/counts_status",
+        url: program_base_url + "counts_status",
         success: handle_counts
     });
     $j.ajax({
-        url: "/onsite/Splash/2010/rooms_status",
+        url: program_base_url + "rooms_status",
         success: handle_rooms
     });
     $j.ajax({
-        url: "/onsite/Splash/2010/students_status",
+        url: program_base_url + "students_status",
         success: handle_students
     });
 }

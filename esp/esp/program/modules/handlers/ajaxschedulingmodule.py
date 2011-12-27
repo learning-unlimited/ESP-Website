@@ -339,7 +339,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 if c != basic_cls:
                     return makeret(ret=False, msg="Assigning one section to multiple rooms.  This interface doesn't support this feature currently; assign it to one room for now and poke a Webmin to do this for you manually.")
                 
-            times = Event.objects.filter(id__in=times)
+            times = Event.objects.filter(id__in=times).order_by('start')
             if len(times) < 1:
                 return makeret(ret=False, msg="Specified Events not found in the database")
 
@@ -349,17 +349,20 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
             classroom = classrooms[0]
 
+            if times[0] not in cls.viable_times(ignore_classes=True):
+                return makeret(ret=False, msg="Some of the teachers are unavailable at this time.")
+
             cls.assign_meeting_times(times)
             status, errors = cls.assign_room(classroom)
 
             if not status: # If we failed any of the scheduling-constraints checks in assign_room()
+                cls.clear_meeting_times()
                 return makeret(ret=False, msg=" | ".join(errors))
             
             return makeret(ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
         else:
             return makeret(ret=False, msg="Unrecognized command: '%s'" % action)
-
-        
+    
     @aux_call
     @needs_admin
     def ajax_schedule_last_changed(self, request, tl, one, two, module, extra, prog):
@@ -381,7 +384,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     # Yeah, the cache will get expired quite often...; but, eh, it's a cheap function.
     ajax_schedule_last_changed_cached.get_or_create_token(('prog',))
     ajax_schedule_last_changed_cached.depend_on_model(lambda: ResourceAssignment)
-    ajax_schedule_last_changed_cached.depend_on_model(lambda:Resource)
+    ajax_schedule_last_changed_cached.depend_on_model(lambda: Resource)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: ResourceRequest)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: Event)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: UserBit)
@@ -389,7 +392,23 @@ class AJAXSchedulingModule(ProgramModuleObj):
     ajax_schedule_last_changed_cached.depend_on_model(lambda: ClassSubject)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: UserAvailability)
 
-
+    @cache_function
+    def ajax_lunch_timeslots_cached(self, prog):
+        data = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values_list('id', flat=True))
+        response = HttpResponse(content_type="application/json")
+        simplejson.dump(data, response)
+        return response
+    ajax_lunch_timeslots_cached.depend_on_model(lambda: Event)
+    ajax_lunch_timeslots_cached.depend_on_model(lambda: ClassSection)
+    ajax_lunch_timeslots_cached.depend_on_model(lambda: ClassSubject)
+    ajax_lunch_timeslots_cached.depend_on_model(lambda: ClassCategories)
+    ajax_lunch_timeslots_cached.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
+    
+    @aux_call
+    @needs_admin
+    def ajax_lunch_timeslots(self, request, tl, one, two, module, extra, prog):
+        return self.ajax_lunch_timeslots_cached(prog)
+        
     @aux_call
     @needs_admin
     def securityschedule(self, request, tl, one, two, module, extra, prog):

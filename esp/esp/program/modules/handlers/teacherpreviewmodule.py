@@ -50,8 +50,8 @@ class TeacherPreviewModule(ProgramModuleObj):
             "admin_title": "Teacher Class Previewing",
             "link_title": "Preview Other Classes",
             "module_type": "teach",
+            "inline_template": "preview.html",
             "seq": -10,
-            "main_call": "preview"
             }
 
     def teacherhandout(self, request, tl, one, two, module, extra, prog, template_file='teacherschedules.html'):
