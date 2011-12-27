@@ -57,7 +57,11 @@ class RegistrationTypeController(object):
             display_names = simplejson.loads(display_names) + cls.default_names
         else:
             display_names = cls.default_names
-        return set([name for name in display_names if (name != "All" or for_VRT_form)])
+        if "All" in display_names:
+            display_names = list(RegistrationType.objects.all().values_list('name',flat=True).distinct().order_by('name'))
+            if for_VRT_form:
+                display_names.append("All")
+        return display_names
     
     @classmethod
     def setVisibleRegistrationTypeNames(cls, display_names, prog):
@@ -70,7 +74,7 @@ class RegistrationTypeController(object):
                 return False
         try:
             if "All" in display_names:
-                display_names = ["All"] + list(RegistrationType.objects.all().values_list('name',flat=True).distinct().order_by('name'))
+                display_names = cls.default_names + ["All"]
             Tag.setTag(key=cls.key, target=prog, value=simplejson.dumps(display_names))
             return True
         except Exception:
@@ -78,4 +82,15 @@ class RegistrationTypeController(object):
         
     def getVisibleRegistrationTypes(cls, prog):
         return RegistrationType.objects.filter(name__in=cls.getVisibleRegistrationTypeNames(prog=prog)).distinct()
-
+    
+    @classmethod
+    def getNonUniqueNames(cls):
+        rts = RegistrationType.objects.filter(category='student').distinct().values('pk','name').order_by('name')
+        non_unique_name = set()
+        
+        prev = rts[0]['name']
+        for rt in rts[1:]:
+            if prev == rt['name']:
+                non_unique_name.add(prev)
+            prev = rt['name']
+        return non_unique_name
