@@ -79,9 +79,6 @@ body {
 
     <div id="navbar_content">
 
-    {% load preview %}
-    {% miniblog_for_user request.user as announcements 6 %}
-
     {% load smartypants %}
     {% load markdown %}
     {% for announce in announcements.announcementList %}
