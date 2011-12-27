@@ -199,8 +199,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass')
 
     def prepare(self, context={}):
-        from esp.program.controllers.studentclassregmodule import VisibleRegistrationTypeController as VRTC
-        verbs = VRTC.getVisibleRegistrationTypeNames(prog=self.program)
+        from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+        verbs = RTC.getVisibleRegistrationTypeNames(prog=self.program)
         regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
         timeslots = self.program.getTimeSlotList(exclude_compulsory=False)
         classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes(verbs=verbs))

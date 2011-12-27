@@ -101,11 +101,11 @@ class AdminCore(ProgramModuleObj, CoreModule):
     
     @aux_call
     @needs_admin
-    def visibleregistrationtype_management(self, request, tl, one, two, module, extra, prog):
+    def registrationtype_management(self, request, tl, one, two, module, extra, prog):
         
         from esp.program.modules.forms.admincore import VisibleRegistrationTypeForm as VRTF
         from esp.settings import DEFAULT_EMAIL_ADDRESSES
-        from esp.program.controllers.studentclassregmodule import VisibleRegistrationTypeController as VRTC
+        from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
         
         context = {}
         context['one'] = one
@@ -113,18 +113,18 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['prog'] = prog
         context['POST'] = False
         context['saved'] = False
-        context['non_unique_name'] = VRTC.getNonUniqueNames()
+        context['non_unique_name'] = RTC.getNonUniqueNames()
         context['support'] = DEFAULT_EMAIL_ADDRESSES['support']
         
         if request.method == 'POST':
             context['POST'] = True
             form = VRTF(request.POST)
             if form.is_valid():
-                context['saved'] = VRTC.setVisibleRegistrationTypeNames(form.cleaned_data['display_names'], prog)
+                context['saved'] = RTC.setVisibleRegistrationTypeNames(form.cleaned_data['display_names'], prog)
         
-        display_names = list(VRTC.getVisibleRegistrationTypeNames(prog, for_VRT_form=True))
+        display_names = list(RTC.getVisibleRegistrationTypeNames(prog, for_VRT_form=True))
         context['form'] = VRTF(data={'display_names': display_names})
-        return render_to_response(self.baseDir()+'visibleregistrationtype_management.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'registrationtype_management.html', request, (prog, tl), context)
     
     @aux_call
     @needs_admin

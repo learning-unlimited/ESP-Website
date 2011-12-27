@@ -37,7 +37,7 @@ import simplejson
 from esp.tagdict.models import Tag
 from esp.program.models import RegistrationType, Program
 
-class VisibleRegistrationTypeController(object):
+class RegistrationTypeController(object):
     
     key = 'display_registration_names'
     default_names = ["Enrolled",]
