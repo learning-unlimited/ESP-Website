@@ -89,7 +89,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
 
     def noclasses(self):
-        """ Returns true of there are no classes in this program """
+        """ Returns true if there are no classes in this program """
         return len(self.clslist()) < 1
 
     def isCompleted(self):
