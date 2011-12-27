@@ -61,8 +61,6 @@ class OnSiteClassList(ProgramModuleObj):
             "link_title": "List of All Classes",
             "module_type": "onsite",
             "seq": 31,
-            "main_call": "allClassList",
-            "aux_calls": "status,enrollment_status,students_status,checkin_status,counts_status,rooms_status,get_schedule_json,update_schedule_json,classchange_grid,catalog_status,printschedule_status",
             }, {
             "admin_title": "Show Open Classes at Onsite Registration",
             "link_title": "List of Open Classes",
@@ -88,6 +86,7 @@ class OnSiteClassList(ProgramModuleObj):
         the models.  If the schema is changed this code will need to be updated.
     """
     
+    @aux_call
     @needs_onsite
     def catalog_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
@@ -102,18 +101,20 @@ class OnSiteClassList(ProgramModuleObj):
         simplejson.dump(data, resp)
         return resp
     
+    @aux_call
     @needs_onsite
     def enrollment_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         data = StudentRegistration.objects.filter(section__status__gt=0, section__parent_class__status__gt=0, end_date__gte=datetime.now(), start_date__lte=datetime.now(), section__parent_class__parent_program=prog, relationship__name='Enrolled').values_list('user__id', 'section__id')
         simplejson.dump(list(data), resp)
         return resp
-        
+    
+    @aux_call
     @needs_onsite
     def students_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         grade_query = """
-SELECT (12 + 2012 - "users_studentinfo"."graduation_year")
+SELECT (12 + %d - "users_studentinfo"."graduation_year")
 FROM "users_studentinfo", "program_registrationprofile"
 WHERE
     "program_registrationprofile"."most_recent_profile" = true
@@ -121,33 +122,37 @@ AND	"program_registrationprofile"."student_info_id" = "users_studentinfo"."id"
 AND	"users_studentinfo"."user_id" = "auth_user"."id"
 ORDER BY program_registrationprofile.id DESC
 LIMIT 1
-        """
+        """ % ESPUser.current_schoolyear()
         #   To ensure we don't miss anyone, fetch students who have a profile for the program
         data = ESPUser.objects.filter(registrationprofile__program=prog).extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
         simplejson.dump(list(data), resp)
         return resp
-        
+    
+    @aux_call
     @needs_onsite
     def checkin_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         data = ESPUser.objects.filter(userbit__startdate__lte=datetime.now(), userbit__enddate__gte=datetime.now(), userbit__qsc=prog.anchor, userbit__verb__uri='V/Flags/Registration/Attended').values_list('id').distinct()
         simplejson.dump(list(data), resp)
         return resp
-
+        
+    @aux_call
     @needs_onsite
     def counts_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).values_list('id', 'enrolled_students')
         simplejson.dump(list(data), resp)
         return resp
-        
+    
+    @aux_call    
     @needs_onsite
     def rooms_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name').values_list('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students')
         simplejson.dump(list(data), resp)
         return resp
-        
+    
+    @aux_call
     @needs_onsite
     def get_schedule_json(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
@@ -161,6 +166,7 @@ LIMIT 1
         simplejson.dump(result, resp)
         return resp
         
+    @aux_call
     @needs_onsite
     def update_schedule_json(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
@@ -205,7 +211,7 @@ LIMIT 1
                 sm = ScheduleMap(user, prog)
                 existing_sections = []
                 for (sec, ts) in sec_times:
-                    if ts and len(sm.map[ts]) > 0:
+                    if ts and ts in sm.map and len(sm.map[ts]) > 0:
                         #   We found something we need to remove
                         for sm_sec in sm.map[ts]:
                             if sm_sec.id not in sections_to_add:
@@ -238,6 +244,7 @@ LIMIT 1
     
     """ End of highly model-dependent JSON views    """
     
+    @aux_call
     @needs_onsite
     def printschedule_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
@@ -265,13 +272,16 @@ LIMIT 1
         simplejson.dump(result, resp)
         return resp
 
+    @aux_call
     @needs_onsite
     def classchange_grid(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['timeslots'] = prog.getTimeSlots()
         context['printers'] = GetNode('V/Publish/Print').children().values_list('name', flat=True)
+        context['program'] = prog
         return render_to_response(self.baseDir()+'ajax_status.html', request, (prog, tl), context)
 
+    @aux_call
     @needs_onsite
     def status(self, request, tl, one, two, module, extra, prog):
         context = {}
@@ -354,6 +364,7 @@ LIMIT 1
         response = render_to_response(self.baseDir()+'status.html', request, (prog, tl), context)
         return response
 
+    @aux_call
     @needs_onsite
     def classList(self, request, tl, one, two, module, extra, prog):
         """ Display a list of all classes that still have space in them """

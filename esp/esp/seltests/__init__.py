@@ -2,11 +2,15 @@ from selenium.webdriver.support.ui import WebDriverWait
 from sys import stderr, stdout, exc_info
 import time
 
-def noActiveAjax(driver):
+def noActiveAjaxJQuery(driver):
+    return driver.execute_script("return $j.active == 0")
+def waitForAjaxJQuery(driver):
+    while(not noActiveAjaxJQuery(driver)):
+        time.sleep(1)
+def noActiveAjaxForms(driver):
     return driver.execute_script("return numAjaxConnections == 0")
-
-def waitForAjax(driver):
-    while(not noActiveAjax(driver)):
+def waitForAjaxForms(driver):
+    while(not noActiveAjaxForms(driver)):
         time.sleep(1)
 
 def try_login(driver, username, password):
@@ -23,7 +27,7 @@ def try_normal_login(driver, username, password):
 def try_ajax_login(driver, username, password):
     try_login(driver, username, password)
     try:
-        WebDriverWait(driver, 10).until(noActiveAjax)
+        WebDriverWait(driver, 10).until(noActiveAjaxForms)
     except:
         stderr.write(str(exc_info()[0]) + "\n")
         stderr.write("Wait for ajax login timed out.\n")

@@ -168,7 +168,8 @@ MIDDLEWARE_GLOBAL = [
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),
-    (1150, 'sslauth.middleware.SSLAuthMiddleware'),
+   #es
+    #(1150, 'sslauth.middleware.SSLAuthMiddleware'),
     (1200, 'django.middleware.gzip.GZipMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
@@ -236,10 +237,10 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this
                                'esp.context_processors.esp_user',
                                'esp.context_processors.current_site',
                                'esp.context_processors.index_backgrounds',
-                               'esp.context_processors.espuserified_request',
+                               #'esp.context_processors.espuserified_request',
                                'esp.context_processors.preload_images',
                                'django.core.context_processors.i18n',
-                               'django.contrib.auth.context_processors.auth',
+                               #'django.contrib.auth.context_processors.auth',
                                'django.core.context_processors.media',
                                )
 

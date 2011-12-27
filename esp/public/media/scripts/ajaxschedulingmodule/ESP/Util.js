@@ -47,6 +47,7 @@ ESP.Utilities = function(){
         root.appendChild( document.createTextNode(label) );
     
         var span = document.createElement('span');
+        span.setAttribute('class', 'tooltip_hover');
         root.appendChild(span);
 
         for (key in elts) {

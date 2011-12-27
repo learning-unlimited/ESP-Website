@@ -1,10 +1,11 @@
+from django.utils.unittest.case import skipIf
 from django_selenium.testcases import SeleniumTestCase
 from esp.users.views.make_admin import make_user_admin
 from esp.users.models import ESPUser
 from esp.users.models import UserBit
-from esp.settings import VARNISH_PORT
+import esp.settings
 from esp.datatree.models import GetNode
-from esp.seltests import try_ajax_login, logout, noActiveAjax
+from esp.seltests import try_ajax_login, logout, noActiveAjaxJQuery
 from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory
 from selenium.webdriver.support.ui import WebDriverWait
@@ -12,6 +13,13 @@ from selenium.webdriver.common.keys import Keys
 from selenium import selenium
 from sys import stdout, stderr, exc_info
 import time
+
+# Make sure our varnish settings exist
+if hasattr(esp.settings, 'VARNISH_HOST') and hasattr(esp.settings, 'VARNISH_PORT'):
+    from esp.settings import VARNISH_PORT
+else:
+    # Set this for now, but it shouldn't actually be used
+    VARNISH_PORT = 8000
 
 class TestQsdCachePurging(SeleniumTestCase):
     """
@@ -31,7 +39,7 @@ class TestQsdCachePurging(SeleniumTestCase):
             elem.send_keys(Keys.DELETE)
         elem.send_keys(self.TEST_STRING)
         elem.send_keys(Keys.TAB)
-        time.sleep(1) # Can we do this more dynamically somehow?
+        WebDriverWait(self, 10).until(noActiveAjaxJQuery)
 
     def setUp(self):
         SeleniumTestCase.setUp(self)
@@ -88,9 +96,11 @@ class TestQsdCachePurging(SeleniumTestCase):
 
         self.driver.testserver_port = 8000 # Find where this number is actually stored
 
+    @skipIf(not hasattr(esp.settings, 'VARNISH_HOST') or not hasattr(esp.settings, 'VARNISH_PORT'), "Varnish settings weren't set")
     def test_inline(self):
         self.check_page("/")
 
+    @skipIf(not hasattr(esp.settings, 'VARNISH_HOST') or not hasattr(esp.settings, 'VARNISH_PORT'), "Varnish settings weren't set")
     def test_regular(self):
         self.check_page("/test.html")
 

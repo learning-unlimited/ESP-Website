@@ -37,6 +37,7 @@ from esp.program.models import RegistrationProfile
 from esp.users.models   import ESPUser, User
 from django.db.models.query import Q
 from django.contrib.auth.decorators import login_required
+from esp.middleware.threadlocalrequest import get_current_request
 
 # reg profile module
 class RegProfileModule(ProgramModuleObj):
@@ -121,7 +122,7 @@ class RegProfileModule(ProgramModuleObj):
         return response
 
     def isCompleted(self):
-        regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
+        regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
         return regProf.id is not None
 
 

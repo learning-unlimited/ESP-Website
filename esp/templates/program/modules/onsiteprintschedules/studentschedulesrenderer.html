@@ -18,7 +18,7 @@ function reset_reload()
 function plain_refresh()
 {
     var auto_reload_img = document.getElementById("auto_reload_img");
-    auto_reload_img.src = 'printschedules?gen_img&q='+ new Date().getTime();
+    auto_reload_img.src = '?gen_img&q='+ new Date().getTime();
     reset_reload();
 }
 
@@ -34,6 +34,6 @@ reset_reload();
 </script>
 </head>
 <body>
-<img id="auto_reload_img" src="printschedules?gen_img" onload="javascript:printself();" />
+<img id="auto_reload_img" src="?gen_img" onload="javascript:printself();" />
 </body>
 </html>

@@ -69,9 +69,9 @@ class InlineQSDNode(template.Node):
             new_qsd.name = qsd
             new_qsd.title = qsd
             new_qsd.content = self.nodelist.render(context)
-            new_qsd.author = user
             
-            if user.id:
+            if getattr(user, 'id', False):
+                new_qsd.author = user
                 new_qsd.save()
 
             qsd_obj = new_qsd
