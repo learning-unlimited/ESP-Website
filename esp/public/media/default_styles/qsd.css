@@ -46,6 +46,12 @@ div.qsd_edit_hidden
     visibility: hidden;
 }
 
+div.qsd_bits_hidden
+{
+    height: 0px;
+    visibility: hidden;
+}
+
 div.qsd_edit_visible
 {
     font-family: Arial, Helvetica, sans-serif;
