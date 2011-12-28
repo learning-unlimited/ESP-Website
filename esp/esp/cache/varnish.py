@@ -1,6 +1,9 @@
 import httplib
 from sys import stdout, stderr
 
+from esp.tagdict.decorators import require_tag
+
+@require_tag('varnish_purge')
 def purge_page(url, host = None):
     if host == None:
         try:
