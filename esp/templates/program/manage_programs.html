@@ -16,14 +16,14 @@
 <thead>
   <tr class="welcomebox">
     <th align="center" class="welcomebox">
-        Welcome, {{ request.user.first_name }}!
+        Welcome, {{ user.first_name }}!
     </th>
   </tr>
 </thead>
 <tbody>
   <tr class="welcomebox">
     <td>
-        {% render_inline_qsd "Q/Web" "manage:programs" request.user %}
+        {% render_inline_qsd "Q/Web" "manage:programs" user %}
     </td>
   </tr>
   <tr class="welcomebox">
