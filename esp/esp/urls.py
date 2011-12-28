@@ -113,11 +113,6 @@ urlpatterns += patterns('esp.qsd.views',
 #                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html')),
 #                        )
 
-# logging in and out
-urlpatterns += patterns('django.contrib.auth.views',
-                     (r'^myesp/signout/?$', 'logout',{'next_page': '/myesp/signedout/'}),
-                        )
-
 # other apps
 urlpatterns += patterns('',
 #                        (r'^alumni/', include('esp.membership.alumni_urls')),

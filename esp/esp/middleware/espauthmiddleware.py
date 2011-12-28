@@ -92,7 +92,12 @@ class ESPAuthMiddleware(object):
         modified_cookies = False
 
         user = getattr(request, '_cached_user', None)
-            
+        #   Allow a view to set a newly logged-in user via the response
+        if not user or isinstance(user, AnonymousUser):
+            new_user = getattr(response, '_new_user', None)
+            if isinstance(new_user, ESPUser):
+                user = new_user
+                
         if user and user.id:
             if settings.SESSION_EXPIRE_AT_BROWSER_CLOSE:
                 max_age = None
@@ -133,15 +138,16 @@ class ESPAuthMiddleware(object):
                                         secure=settings.SESSION_COOKIE_SECURE or None)
                     modified_cookies = True
 
-        else:
+        if user and not user.is_authenticated():
             cookies_to_delete = [x for x in ('cur_username','cur_email',
                                          'cur_first_name','cur_last_name',
                                          'cur_other_user','cur_retTitle',
-                                         'cur_admin', 'cur_roles', 'cur_qsd_bits') if request.COOKIES.get(x, False)]
-
+                                         'cur_admin', 'cur_roles', 
+                                         'cur_grade', 'cur_qsd_bits') if request.COOKIES.get(x, False)]
+            
             map(response.delete_cookie, cookies_to_delete)
             modified_cookies = (len(cookies_to_delete) > 0)
-
+        
         request.session.accessed = request.session.modified  ## Django only uses this for determining whether it refreshed the session cookie (and so needs to vary on cache), and its behavior is buggy; this works around it. -- aseering 11/1/2010
 
         if modified_cookies:
