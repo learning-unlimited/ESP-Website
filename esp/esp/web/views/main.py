@@ -37,7 +37,7 @@ from django.core.exceptions import PermissionDenied
 from django.contrib.sites.models import Site
 from esp.program.modules.base import LOGIN_URL
 from django.contrib.auth import REDIRECT_FIELD_NAME
-from esp.datatree.models import *
+from esp.datatree.models import GetNode
 from esp.users.models import GetNodeOrNoBits, ESPUser, UserBit
 from django.http import Http404, HttpResponseRedirect, HttpResponse, MultiValueDict
 from django.template import loader
@@ -60,6 +60,7 @@ from esp.web.views.archives import archive_handlers
 from esp.middleware import ESPError
 from esp.web.forms.contact_form import ContactForm, email_addresses
 from esp.tagdict.models import Tag
+from esp.utils.no_autocookie import disable_csrf_cookie_update
 
 from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
@@ -79,7 +80,9 @@ except ImportError:
 def my_import(name):
     from django.core.urlresolvers import get_callable
     return get_callable(name)
-
+    
+@cache_control(max_age=180)
+@disable_csrf_cookie_update
 def home(request):
     #   Get navbars corresponding to the 'home' category
     nav_category, created = NavBarCategory.objects.get_or_create(name='home')
