@@ -140,7 +140,8 @@ class ESPAuthMiddleware(object):
             cookies_to_delete = [x for x in ('cur_username','cur_email',
                                          'cur_first_name','cur_last_name',
                                          'cur_other_user','cur_retTitle',
-                                         'cur_admin', 'cur_roles', 'cur_qsd_bits') if request.COOKIES.get(x, False)]
+                                         'cur_admin', 'cur_roles', 
+                                         'cur_grade', 'cur_qsd_bits') if request.COOKIES.get(x, False)]
 
             map(response.delete_cookie, cookies_to_delete)
             modified_cookies = (len(cookies_to_delete) > 0)
