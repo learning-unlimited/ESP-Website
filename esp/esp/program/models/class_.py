@@ -1174,9 +1174,12 @@ class ClassSection(models.Model):
         now = datetime.datetime.now()
         return StudentRegistration.objects.filter(section=self, user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
     
-    def getRegVerbs(self, user):
+    def getRegVerbs(self, user, allowed_verbs=False):
         """ Get the list of verbs that a student has within this class's anchor. """
-        return self.getRegistrations(user).values_list('relationship__name', flat=True)
+        if not allowed_verbs:
+            return self.getRegistrations(user).values_list('relationship__name', flat=True).distinct()
+        else:
+            return self.getRegistrations(user).filter(relationship__name__in=allowed_verbs).values_list('relationship__name', flat=True).distinct()
 
     def unpreregister_student(self, user, prereg_verb = None):
         #   New behavior: prereg_verb should be a string matching the name of

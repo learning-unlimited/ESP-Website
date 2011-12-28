@@ -1,4 +1,5 @@
 {% extends "main.html" %}
+{% load render_qsd %}
 
 {% block stylesheets %}
 {{block.super}}
@@ -21,6 +22,12 @@
 </thead>
 <tbody>
   <tr class="welcomebox">
+    <td>
+        {% render_inline_qsd "Q/Web" "manage:programs" request.user %}
+    </td>
+  </tr>
+  <tr class="welcomebox">
+
     <td bgcolor="#FFFFFF" class="welcomebox">
 Select a program to manage it.
     </td>
