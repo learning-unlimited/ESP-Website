@@ -594,8 +594,8 @@ class ESPUser(User, AnonymousUser):
         else:
             return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(relationship__in=rts, start_date__lte=now, end_date__gte=now).values_list('section', flat=True))
 
-    def getSectionsFromProgram(self, program):
-        return self.getSections(program, verbs=None)
+    def getSectionsFromProgram(self, program, verbs=None):
+        return self.getSections(program, verbs=verbs)
 
     def getEnrolledSections(self, program=None):
         if program is None:

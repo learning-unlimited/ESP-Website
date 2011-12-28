@@ -199,9 +199,11 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass')
 
     def prepare(self, context={}):
+        from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+        verbs = RTC.getVisibleRegistrationTypeNames(prog=self.program)
         regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
         timeslots = self.program.getTimeSlotList(exclude_compulsory=False)
-        classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes())
+        classList = ClassSection.prefetch_catalog_data(regProf.preregistered_classes(verbs=verbs))
 
         prevTimeSlot = None
         blockCount = 0
@@ -231,7 +233,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             #   the student's detailed enrollment status.  (Performance hit, I know.)
             #   - Michael P, 6/23/2009
             #   if scrmi.use_priority:
-            sec.verbs = sec.getRegVerbs(user)
+            sec.verbs = sec.getRegVerbs(user, allowed_verbs=verbs)
 
             for mt in sec.get_meeting_times():
                 section_dict = {'section': sec, 'changeable': show_changeslot}

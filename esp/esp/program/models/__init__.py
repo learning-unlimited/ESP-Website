@@ -1326,8 +1326,8 @@ class RegistrationProfile(models.Model):
         return form_data
     
     #   Note: these functions return ClassSections, not ClassSubjects.
-    def preregistered_classes(self):
-        return ESPUser(self.user).getSectionsFromProgram(self.program)
+    def preregistered_classes(self,verbs=None):
+        return ESPUser(self.user).getSectionsFromProgram(self.program,verbs=verbs)
     
     def registered_classes(self):
         return ESPUser(self.user).getEnrolledSections(program=self.program)
@@ -1853,7 +1853,10 @@ class RegistrationType(models.Model):
     #   Purely for bookkeeping on the part of administrators 
     #   without reading the whole description
     category = models.CharField(max_length=32)
-
+    
+    class Meta:
+        unique_together = (("name", "category"),)
+    
     @cache_function
     def get_cached(name, category):
         rt, created = RegistrationType.objects.get_or_create(name=name, defaults = {'category': category})
