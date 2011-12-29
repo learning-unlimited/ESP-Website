@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from datetime import datetime, timedelta
 from esp.program.tests import ProgramFrameworkTest
+from esp.middleware.threadlocalrequest import get_current_request
 
 class RegProfileModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -61,11 +62,11 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         # We'll probably need to be a little more careful about how we set
         # the ProgramModuleObj's user if we ever cache isCompleted().
         for student in self.students:
-            self.moduleobj.user = student
+            get_current_request().user = student
             self.failUnless( not self.moduleobj.isCompleted(), "The profile should be incomplete at first." )
 
         # First student: Test copying of sufficiently recent profiles
-        self.moduleobj.user = self.students[0]
+        get_current_request().user = self.students[0]
         prof = self.students[0].getLastProfile()
         prof.program = None
         prof.save()
@@ -76,7 +77,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         self.failUnless( self.students[0].registrationprofile_set.count() <= 2, "Too many profiles." )
 
         # Second student: Test non-auto-saving of sufficiently old profiles
-        self.moduleobj.user = self.students[1]
+        get_current_request().user = self.students[1]
         prof = self.students[1].getLastProfile()
         prof.program = None
         # HACK -- save properly to dump the appropriate cache.
@@ -90,7 +91,7 @@ class RegProfileModuleTest(ProgramFrameworkTest):
         self.failUnless( not self.moduleobj.isCompleted(), "Profile too old but accepted anyway." )
         self.failUnless( self.students[1].registrationprofile_set.count() <= 1, "Too many profiles." )
 
-        self.moduleobj.user = self.students[2]
+        get_current_request().user = self.students[2]
         for r in RegistrationProfile.objects.filter(user=self.students[2]):
             r.delete()
         # Test to see whether the graduation year is required
