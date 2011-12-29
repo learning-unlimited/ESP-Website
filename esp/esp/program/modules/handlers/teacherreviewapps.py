@@ -43,6 +43,7 @@ from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from datetime import datetime
 from django.views.decorators.cache import never_cache
+from esp.middleware.threadlocalrequest import get_current_request
 
 __all__ = ['TeacherReviewApps']
 
@@ -66,7 +67,7 @@ class TeacherReviewApps(ProgramModuleObj):
         except ClassSubject.DoesNotExist:
             raise ESPError(False), 'Cannot find class.'
 
-        if not self.user.canEdit(cls):
+        if not request.user.canEdit(cls):
             raise ESPError(False), 'You cannot edit class "%s"' % cls
 
         #   Fetch any student even remotely related to the class.
@@ -84,7 +85,7 @@ class TeacherReviewApps(ProgramModuleObj):
                 student.app = None
 
             if student.app:
-                reviews = student.app.reviews.all().filter(reviewer=self.user, score__isnull=False)
+                reviews = student.app.reviews.all().filter(reviewer=request.user, score__isnull=False)
                 questions = student.app.questions.all().filter(subject=cls)
             else:
                 reviews = []
@@ -129,7 +130,7 @@ class TeacherReviewApps(ProgramModuleObj):
     def app_questions(self, request, tl, one, two, module, extra, prog):
         """ Edit the subject-specific questions that students will respond to on
         their applications. """
-        subjects = self.user.getTaughtClasses(prog)
+        subjects = request.user.getTaughtClasses(prog)
         clrmi = module_ext.ClassRegModuleInfo.objects.get(module__program=self.program)
         question_list = []
 
@@ -188,7 +189,7 @@ class TeacherReviewApps(ProgramModuleObj):
         except ClassSubject.DoesNotExist:
             raise ESPError(False), 'Cannot find class.'
 
-        if not self.user.canEdit(cls):
+        if not request.user.canEdit(cls):
             raise ESPError(False), 'You cannot edit class "%s"' % cls
 
         student = request.GET.get('student',None)
@@ -212,11 +213,11 @@ class TeacherReviewApps(ProgramModuleObj):
 
         student.added_class = StudentRegistration.valid_objects().filter(section__parent_class = cls, user = student)[0].start_date
 
-        teacher_reviews = student.app.reviews.all().filter(reviewer=self.user)
+        teacher_reviews = student.app.reviews.all().filter(reviewer=request.user)
         if teacher_reviews.count() > 0:
             this_review = teacher_reviews.order_by('id')[0]
         else:
-            this_review = StudentAppReview(reviewer=self.user)
+            this_review = StudentAppReview(reviewer=request.user)
             this_review.save()
             student.app.reviews.add(this_review)
 
@@ -247,7 +248,7 @@ class TeacherReviewApps(ProgramModuleObj):
     def prepare(self, context):
         clrmi = module_ext.ClassRegModuleInfo.objects.get(module__program=self.program)
         context['num_teacher_questions'] = clrmi.num_teacher_questions;
-        context['classes'] = self.user.getTaughtClasses().filter(parent_program = self.program)
+        context['classes'] = get_current_request().user.getTaughtClasses().filter(parent_program = self.program)
         return context
 
     def isStep(self):

@@ -38,6 +38,7 @@ from esp.middleware              import ESPError
 from esp.program.models          import ClassSubject, ClassSection
 from datetime                    import timedelta
 from esp.users.models            import ESPUser
+from esp.middleware.threadlocalrequest import get_current_request
 from esp.web.util        import render_to_response
 
 class TeacherPreviewModule(ProgramModuleObj):
@@ -92,7 +93,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'catalogpreview.html', request, (prog, tl), {'class': cls})
     
     def get_handouts(self):
-        sections = self.user.getTaughtSections(self.program)
+        sections = get_current_request().user.getTaughtSections(self.program)
         sections = filter(lambda x: x.isAccepted() and x.meeting_times.count() > 0, sections)
         if len(sections) > 0:
             return {'teacherschedule': 'Your Class Schedule', 'classroster': 'Class Rosters'}

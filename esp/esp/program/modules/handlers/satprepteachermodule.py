@@ -41,7 +41,7 @@ from esp.program.models import Program
 from esp.users.models   import ESPUser, User
 from django.db.models.query import Q
 from django.db        import models
-
+from esp.middleware.threadlocalrequest import get_current_request
 
 
 
@@ -66,7 +66,7 @@ class SATPrepTeacherModule(ProgramModuleObj):
         return {'teachers_satprepinfo': """Teachers who have entered SATPrep-specific information."""}
 
     def isCompleted(self):
-        return module_ext.SATPrepTeacherModuleInfo.objects.filter(user = self.user,
+        return module_ext.SATPrepTeacherModuleInfo.objects.filter(user = get_current_request().user,
                                                        program = self.program).count() > 0
 
 
@@ -75,7 +75,7 @@ class SATPrepTeacherModule(ProgramModuleObj):
     def satprepinfo(self, request, tl, one, two, module, extra, prog):
         subject_list = module_ext.SATPrepTeacherModuleInfo.subjects()
         
-	moduleinfos = module_ext.SATPrepTeacherModuleInfo.objects.filter(user = self.user,
+	moduleinfos = module_ext.SATPrepTeacherModuleInfo.objects.filter(user = request.user,
 		program = self.program)
 
 	if request.method == 'POST':
@@ -83,7 +83,7 @@ class SATPrepTeacherModule(ProgramModuleObj):
 		form = SATPrepTeacherInfoForm(subject_list, request.POST)
 		if form.is_valid():
 		    info = form.save(commit = False)
-		    info.user = self.user
+		    info.user = request.user
 		    info.program = self.program
 		    info.save()
 		    return self.goToCore(tl)

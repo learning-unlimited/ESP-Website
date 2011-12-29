@@ -47,6 +47,7 @@ from esp.users.models import ESPUser, UserBit, User
 from esp.customforms.models import Form
 from esp.customforms.DynamicForm import FormHandler
 from esp.tagdict.models import Tag
+from esp.middleware.threadlocalrequest import get_current_request
 #from datetime import datetime
 import re
 
@@ -135,7 +136,7 @@ class TeacherQuizModule(ProgramModuleObj):
     # Per-user info
     def isCompleted(self):
         """Return true if user has filled out the teacher quiz."""
-        return self.controller.isCompleted(self.user)
+        return self.controller.isCompleted(get_current_request().user)
 
     # Views
     @main_call
@@ -149,13 +150,13 @@ class TeacherQuizModule(ProgramModuleObj):
         else:
             raise ESPError('Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the quiz_form_id Tag.')
         
-        form_wizard = FormHandler(cf, request, self.user).getWizard()
+        form_wizard = FormHandler(cf, request, request.user).getWizard()
     
         if request.method == 'POST':
             form = form_wizard.get_form(0, request.POST)
             if form.is_valid():
                 form_wizard.done(request, [form])
-                self.controller.markCompleted(self.user)
+                self.controller.markCompleted(request.user)
                 return self.goToCore(tl)
         else:
             form = form_wizard.get_form(0)

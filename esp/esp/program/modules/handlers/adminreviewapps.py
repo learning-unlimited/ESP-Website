@@ -83,7 +83,7 @@ class AdminReviewApps(ProgramModuleObj):
         except ClassSubject.DoesNotExist:
             raise ESPError(False), 'Cannot find class.'
 
-        if not self.user.canEdit(cls):
+        if not request.user.canEdit(cls):
             raise ESPError(False), 'You cannot edit class "%s"' % cls
 
         #   Fetch any student even remotely related to the class.

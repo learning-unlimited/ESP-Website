@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -50,7 +49,7 @@ from esp.cache                   import cache_function
 from uuid                        import uuid4 as get_uuid
 from django.db.models.query      import Q
 from django.views.decorators.cache import cache_control
-
+from esp.middleware.threadlocalrequest import get_current_request
 #def json_encode_timeslots(obj):
     
 
@@ -68,7 +67,7 @@ class LotteryStudentRegModule_Simple(ProgramModuleObj):
         return {'lotteried_students': "Students who have entered the lottery via the simple lottery interface"}
 
     def isCompleted(self):
-        return bool(StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, user=self.user))
+        return bool(StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, user=get_current_request().user))
 
     @classmethod
     def module_properties(cls):

@@ -101,15 +101,15 @@ class OnsitePrintSchedules(ProgramModuleObj):
 
     def studentschedule(self, request, *args, **kwargs):
         request.GET = {'extra': str(285), 'op':'usersearch',
-                       'userid': str(self.user.id) }
+                       'userid': str(request.user.id) }
 
         module = [module for module in self.program.getModules('manage')
                   if type(module) == ProgramPrintables        ][0]
 
-        module.user = self.user
+        module.user = request.user
         module.program = self.program
 #        return module.studentschedules(request, *args, **kwargs)
-        return ProgramPrintables.get_student_schedules(request, [self.user], self.program, onsite=True)
+        return ProgramPrintables.get_student_schedules(request, [request.user], self.program, onsite=True)
         
 
     class Meta:

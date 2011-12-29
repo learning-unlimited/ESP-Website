@@ -39,6 +39,7 @@ from esp.web.util        import render_to_response
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.models import SplashInfo
 from esp.middleware import ESPError
+from esp.middleware.threadlocalrequest import get_current_request
 from esp.tagdict.models import Tag
 
 class SplashInfoModule(ProgramModuleObj):
@@ -52,13 +53,13 @@ class SplashInfoModule(ProgramModuleObj):
           }
 
     def isCompleted(self):
-        return SplashInfo.hasForUser(self.user, self.program)
+        return SplashInfo.hasForUser(get_current_request().user, self.program)
 
     def isStep(self):
         return True
 
     def prepare(self, context={}):
-        context['splashinfo'] = SplashInfo.getForUser(self.user, self.program)
+        context['splashinfo'] = SplashInfo.getForUser(get_current_request().user, self.program)
 
         if Tag.getTag('splashinfo_siblingdiscount', default='True') == 'False':
             context['splashinfo'].include_siblingdiscount = False

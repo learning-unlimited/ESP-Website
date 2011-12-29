@@ -444,7 +444,7 @@ class AdminClass(ProgramModuleObj):
     def main(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """
         context = {}
-        modules = self.program.getModules(self.user, 'manage')
+        modules = self.program.getModules(request.user, 'manage')
         
         for module in modules:
             context = module.prepare(context)
@@ -460,7 +460,7 @@ class AdminClass(ProgramModuleObj):
     @needs_admin
     def deleteclass(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(id = extra)
-        if len(classes) != 1 or not self.user.canEdit(classes[0]):
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
 
@@ -486,7 +486,7 @@ class AdminClass(ProgramModuleObj):
             ajax = True
             
         classes = ClassSubject.objects.filter(id = clsid)
-        if len(classes) != 1 or not self.user.canEdit(classes[0]):
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
 
         cls = classes[0]
@@ -495,7 +495,7 @@ class AdminClass(ProgramModuleObj):
         if not request.POST.has_key('coteachers'):
             coteachers = cls.teachers()
             coteachers = [ ESPUser(user) for user in coteachers
-                           if user.id != self.user.id           ]
+                           if user.id != request.user.id           ]
             
             txtTeachers = ",".join([str(user.id) for user in coteachers ])
             
@@ -518,7 +518,7 @@ class AdminClass(ProgramModuleObj):
             if len(request.POST['teacher_selected'].strip()) == 0:
                 error = 'Error - Please click on the name when it drops down.'
 
-            elif (request.POST['teacher_selected'] == str(self.user.id)):
+            elif (request.POST['teacher_selected'] == str(request.user.id)):
                 error = 'Error - You cannot select yourself as a coteacher!'
             elif request.POST['teacher_selected'] in txtTeachers.split(','):
                 error = 'Error - You already added this teacher as a coteacher!'
@@ -582,7 +582,7 @@ class AdminClass(ProgramModuleObj):
         from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
         
         classes = ClassSubject.objects.filter(id = extra)
-        if len(classes) != 1 or not self.user.canEdit(classes[0]):
+        if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
 
