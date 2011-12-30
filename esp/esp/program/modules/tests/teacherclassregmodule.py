@@ -32,10 +32,13 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+from django.db import transaction
+from esp.users.models import ESPUser
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.models import ClassSubject
 from esp.tagdict.models import Tag
+from esp.resources.models import ResourceType, ResourceRequest
 import random
 
 class TeacherClassRegTest(ProgramFrameworkTest):
@@ -52,6 +55,10 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.other_teacher2 = random.choice(other_teachers)
         # Make the primary teacher an admin of the class
         self.cls.makeAdmin(self.teacher)
+
+        # Get and remember the instance of TeacherClassRegModule
+        pm = ProgramModule.objects.get(handler='TeacherClassRegModule')
+        self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, pm)
 
     def test_grade_range_popup(self):
         # Login the teacher
@@ -138,4 +145,41 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.failUnless(self.cls in self.teacher.getTaughtClasses())
         self.failUnless(self.cls in self.other_teacher1.getTaughtClasses())
         self.failUnless(not self.cls in self.other_teacher2.getTaughtClasses())
+
+    def add_resource_request(self, sec, res_type, val):
+        rr = ResourceRequest()
+        rr.target = sec
+        rr.res_type = res_type
+        rr.desired_value = val
+        rr.save()
+
+    def delete_resource_request(self, sec, res_type):
+        ResourceRequest.objects.filter(target = sec, res_type = res_type).delete()
+
+    def has_resource_pair_with_teacher(self, res_type, val_index, teacher):
+        label = 'teacher_res_%d_%d' % (res_type.id, val_index)
+        label_list = [resource_pair[0] for resource_pair in self.moduleobj.get_resource_pairs()]
+        if not label in label_list:
+            return False
+        i = label_list.index(label)
+        teacher_list = ESPUser.objects.filter(self.moduleobj.get_resource_pairs()[i][2])
+        return teacher in teacher_list
+
+    @transaction.commit_manually
+    def test_get_resource_pairs(self):
+        prog = self.program
+        new_res_type1 = ResourceType.get_or_create('NewResource1', program = self.program)
+        new_res_type2 = ResourceType.get_or_create('NewResource2', program = self.program)
+        sec = random.choice(self.cls.sections.all())
+
+        self.add_resource_request(sec, new_res_type1, 'Yes')
+        self.failUnless(self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
+
+        self.add_resource_request(sec, new_res_type2, 'ThisValueIsAwesome')
+        self.failUnless(self.has_resource_pair_with_teacher(new_res_type2, 0, self.teacher))
+
+        self.delete_resource_request(sec, new_res_type1)
+        self.failUnless(not self.has_resource_pair_with_teacher(new_res_type1, 0, self.teacher))
+
+        transaction.rollback()
 
