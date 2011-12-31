@@ -121,12 +121,10 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
         #   Force comprehension of navbar list
         if hasattr(context['navbar_list'], 'value'):
             context['navbar_list'] = context['navbar_list'].value
-            
+        
         if not use_request_context:
             context['request'] = request
-            print "hi"
             response = django.shortcuts.render_to_response(template, context, mimetype=mimetype)
-            print response, template, context.keys(), mimetype
             return response
         else:
             return render_response(request, template, context, mimetype=mimetype)
