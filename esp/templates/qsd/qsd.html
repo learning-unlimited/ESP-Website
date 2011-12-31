@@ -12,7 +12,7 @@
 {% block content %}
 
 {% load render_qsd %}
-{% autoescape off %}{% render_qsd qsdrec request.user %}{% endautoescape %}
+{% autoescape off %}{% render_qsd qsdrec %}{% endautoescape %}
 
 <div class="qsd_bits qsd_bits_hidden">
     <a href="{{ edit_url }}">Edit this page</a>
