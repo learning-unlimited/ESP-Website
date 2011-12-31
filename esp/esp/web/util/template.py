@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from django import template
+from django.template import Context
 from esp.middleware.threadlocalrequest import AutoRequestContext
 from esp.cache import cache_function
 from esp.cache.key_set import wildcard, is_wildcard
@@ -55,7 +56,7 @@ DISABLED = Disabled_Cache()
 
 class InclusionTagCacheDecorator(object):
 
-    def __init__(self, register, file_name, context_class=AutoRequestContext, takes_context=False, disable=False, **kwargs):
+    def __init__(self, register, file_name, context_class=Context, takes_context=False, disable=False, **kwargs):
         """
         This function will cache the rendering and output of a inclusion tag for cache_time seconds.
         You may use the caching API to add dependencies for automatic invalidation by accessing the
@@ -73,7 +74,10 @@ class InclusionTagCacheDecorator(object):
             return {'foo': foo}
         fun_tag.cached_function.depend_on_row(lambda: SomeModel, lambda some_instance: {'foo': some_instance.foo})
 
-        The tag will now be cached.
+        The tag will now be cached.  Note that you may need to include the keyword argument context_class=AutoRequestContext
+        (e.g. esp.middleware.threadlocalrequest.AutoRequestContext) in order to use {{ request }} variables in
+        the template.  This should not be used in proxy-cached views since it accesses session data and causes
+        the Vary: Cookie header to be set.
         """
         
         if 'cache_key_func' in kwargs:
