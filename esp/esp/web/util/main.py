@@ -122,10 +122,6 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
         if hasattr(context['navbar_list'], 'value'):
             context['navbar_list'] = context['navbar_list'].value
 
-        #   Add request into context
-        #   (this used to be done by esp.context_processors.espuserified_request)
-        context['request'] = request
-
         return render_response(request, template, context, mimetype=mimetype)
         
     assert False, 'render_to_response expects 2 or 4 arguments.'
