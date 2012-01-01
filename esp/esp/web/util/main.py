@@ -73,7 +73,7 @@ def _per_program_template_name(prog, templatename):
     new_tpath = tpath[:-1] + ["per_program", "%s_%s" % (prog.id, tpath[-1])]
     return "/".join(new_tpath)
 
-def render_to_response(template, requestOrContext, prog = None, context = None, auto_per_program_templates = True, mimetype=None, ):
+def render_to_response(template, requestOrContext, prog = None, context = None, auto_per_program_templates = True, mimetype=None, use_request_context=True):
     from esp.web.views.navBar import makeNavBar
 
     if isinstance(template, (basestring,)):
@@ -102,7 +102,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
         context['DEFAULT_EMAIL_ADDRESSES'] = DEFAULT_EMAIL_ADDRESSES
         context['EMAIL_HOST'] = EMAIL_HOST
 
-        if not context.has_key('program'):  
+        if not context.has_key('program'):
             if type(prog) == Program:
                 context['program'] = prog
                 
@@ -121,8 +121,13 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
         #   Force comprehension of navbar list
         if hasattr(context['navbar_list'], 'value'):
             context['navbar_list'] = context['navbar_list'].value
-
-        return render_response(request, template, context, mimetype=mimetype)
+        
+        if not use_request_context:
+            context['request'] = request
+            response = django.shortcuts.render_to_response(template, context, mimetype=mimetype)
+            return response
+        else:
+            return render_response(request, template, context, mimetype=mimetype)
         
     assert False, 'render_to_response expects 2 or 4 arguments.'
 

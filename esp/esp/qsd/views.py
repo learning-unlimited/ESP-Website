@@ -156,7 +156,7 @@ def qsd(request, branch, name, section, action):
 
             if (action == 'read'):
                 edit_link = base_url+'.edit.html'
-                return render_to_response('qsd/nopage_edit.html', request, (branch, section), {'edit_link': edit_link})
+                return render_to_response('qsd/nopage_edit.html', request, (branch, section), {'edit_link': edit_link}, use_request_context=False)
         else:
             if action == 'read':
                 raise Http404, 'This page does not exist.'
@@ -178,7 +178,7 @@ def qsd(request, branch, name, section, action):
             'content': qsd_rec.html(),
             'qsdrec': qsd_rec,
             'have_edit': True,  ## Edit-ness is determined client-side these days
-            'edit_url': base_url + ".edit.html" })
+            'edit_url': base_url + ".edit.html" }, use_request_context=False)
 
 #        patch_vary_headers(response, ['Cookie'])
 #        if have_edit:
@@ -265,7 +265,8 @@ def qsd(request, branch, name, section, action):
             'qsd'          : True,
             'missing_files': m.BrokenLinks(),
             'target_url'   : base_url.split("/")[-1] + ".edit.html",
-            'return_to_view': base_url.split("/")[-1] + ".html" })
+            'return_to_view': base_url.split("/")[-1] + ".html" },
+                                  use_request_context=False)
 
     
     # Operation Complete!

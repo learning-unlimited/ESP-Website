@@ -621,7 +621,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             class_blobs.append('<br />')
         context['class_descs'] = ''.join(class_blobs)
 
-        return render_to_response(self.baseDir()+'catalog.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'catalog.html', request, (prog, tl), context, use_request_context=False)
 
 #def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, collapse_full_classes=None):
     def catalog_javascript(self, request, tl, one, two, module, extra, prog, timeslot=None):
