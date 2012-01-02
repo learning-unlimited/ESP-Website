@@ -1226,7 +1226,7 @@ class ClassSection(models.Model):
 
         if prereg_verb == None:
             scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
-            if scrmi.use_priority:
+            if scrmi and scrmi.use_priority:
                 prereg_verb = 'Priority/%d' % priority
             else:
                 prereg_verb = 'Enrolled'
