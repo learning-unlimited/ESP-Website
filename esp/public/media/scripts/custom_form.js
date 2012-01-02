@@ -24,7 +24,7 @@ var formElements={
     },  
     'NotReallyFields': {
         instructions: {'disp_name': 'Instructions', 'ques': ''}
-    },
+    }
 	/*'Personal':{
 		name:{'disp_name':'Name','ques':'Your name', 'field_type':'custom', 'field_options':{}},
 		gender:{'disp_name':'Gender','ques':'Gender', 'field_type':'radio', 'field_options':{'options':'Male|Female'}},
@@ -421,7 +421,7 @@ var addOption=function(option_text) {
 	$wrap_option=$('<div></div>').addClass('option_element');
 	$option=$('<input/>', {
 		type:"text",
-		value:option_text,
+		value:option_text
 	});
 	$option.appendTo($wrap_option);
 	$('<input/>',{type:'button',value:'+'}).click(function(){addOption('')}).appendTo($wrap_option);
@@ -912,7 +912,7 @@ var renderNormalField=function(item, field_options, data){
 		$yyyy=$('<input/>', {
 			type:"text",
 			size:"4",
-			value:"yyyy",
+			value:"yyyy"
 		});
 		$new_elem.append($('<p>').append($mm).append($('<span> / </span>')).append($dd).append($('<span> / </span>')).append($yyyy));
 	}
