@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from esp.datatree.models import *
 from esp.users.models import UserBit, GetNode, ESPUser, StudentInfo
-from esp.program.models import ClassSection, RegistrationProfile
+from esp.program.models import ClassSection, RegistrationProfile, ScheduleMap
 from esp.resources.models import ResourceType
 
 from django.contrib.auth.models import User, Group
@@ -683,6 +683,25 @@ class ProgramFrameworkTest(TestCase):
             student_studentinfo.save()
             student_regprofile = RegistrationProfile(user=student, program=self.program, student_info=student_studentinfo, most_recent_profile=True)
             student_regprofile.save()
+            
+    #   Helper function to put the students in classes.
+    #   Does not get called by default, but subclasses can call it.
+    def classreg_students(self):
+        ignore_ts = []
+        for student in self.students:
+            schedule_full = False
+            while not schedule_full:
+                sm = ScheduleMap(student, self.program)
+                empty_slots = filter(lambda x: x not in ignore_ts and len(sm.map[x]) == 0, sm.map.keys())
+                if len(empty_slots) == 0:
+                    schedule_full = True
+                    break
+                target_ts = random.choice(empty_slots)
+                if self.program.sections().filter(meeting_times=target_ts).exists():
+                    sec = random.choice(self.program.sections().filter(meeting_times=target_ts))
+                    sec.preregister_student(student, fast_force_create=True)
+                else:
+                    ignore_ts.append(target_ts)
 
 def randomized_attrs(program):
     section_list = list(program.sections())
