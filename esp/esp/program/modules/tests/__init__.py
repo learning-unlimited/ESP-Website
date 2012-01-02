@@ -40,3 +40,4 @@ from esp.program.modules.tests.studentreg import StudentRegTest
 from esp.program.modules.tests.teacherclassregmodule import TeacherClassRegTest
 from esp.program.modules.tests.dashboard import DashboardTest
 from esp.program.modules.tests.existence import ModuleExistenceTest
+from esp.program.modules.tests.programprintables import ProgramPrintablesModuleTest
