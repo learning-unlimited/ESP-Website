@@ -120,19 +120,26 @@ class InclusionTagCacheDecorator(object):
                     render_given_args = cache_function(render_given_args, uid_extra='*'+describe_func(func))
                     render_given_args.get_or_create_token(('args',))
                     def render_map(**kwargs):
-                        #   Reconstruct argument list in proper order
-                        result_args = []
-                        for key in params:
-                            if key in kwargs:
-                                result_args.append(kwargs[key])
-                            else:
-                                result_args.append(None)
-                        result = {'args': result_args}
+                        
+                        #   If the key set is empty, we can just flush everything.
+                        if kwargs == {}:
+                            result = {}
+                        else:
+                            #   Otherwise, prepare a key set embedding the argument list in the 'args' key
+                            result_args = []
+                            for key in params:
+                                if key in kwargs:
+                                    result_args.append(kwargs[key])
+                                else:
+                                    result_args.append(None)
+                            result = {'args': result_args}
+                            
                         #   Flush everything if we got a wildcard
                         for key in kwargs:
                             if is_wildcard(kwargs[key]):
                                 result = {}
                         return result
+                        
                     render_given_args.depend_on_cache(cached_function, render_map)
 
                 def render(in_self, context):
