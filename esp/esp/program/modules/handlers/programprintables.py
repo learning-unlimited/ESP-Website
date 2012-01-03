@@ -1238,7 +1238,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def teacherlabels(self, request, tl, one, two, module, extra, prog):
         context = {'module': self}
-        teachers = self.program.teachers()
+        teachers = list(self.program.teachers()['class_approved'])
         teachers.sort()
         context['teachers'] = teachers
         context['settings'] = settings
