@@ -1329,7 +1329,7 @@ class ProgramPrintables(ProgramModuleObj):
     def adminbinder(self, request, tl, one, two, module, extra, prog):
         
         if extra not in ['teacher','classid','timeblock']:
-            return self.goToCore()
+            return self.goToCore(tl)
         context = {'module': self}
 
         scheditems = []
