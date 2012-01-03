@@ -235,7 +235,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         from esp.program.modules.module_ext import DBReceipt
         
-        if self.have_paid():
+        if self.have_paid(request.user):
             raise ESPError(False), "You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund."
         
         bits = UserBit.objects.filter(user = request.user,
