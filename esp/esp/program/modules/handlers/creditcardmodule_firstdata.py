@@ -40,6 +40,7 @@ from datetime            import datetime
 from django.db.models.query     import Q
 from django.http         import HttpResponseRedirect
 from django.core.mail import send_mail
+from django.contrib.sites.models import Site
 from esp.users.models    import User, ESPUser
 from esp.accounting_core.models import LineItemType, EmptyTransactionException, Balance, CompletedTransactionException
 from esp.accounting_docs.models import Document
@@ -166,7 +167,10 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         context['user'] = user
         context['itemizedcosts'] = invoice.get_items()
         context['program'] = self.program
-        context['hostname'] = request.META['HTTP_HOST']
+        if 'HTTP_HOST' in request.META:
+            context['hostname'] = request.META['HTTP_HOST']
+        else:
+            context['hostname'] = Site.objects.get_current().domain
         context['institution'] = INSTITUTION_NAME
         context['storename'] = self.store_id
         context['support_email'] = DEFAULT_EMAIL_ADDRESSES['support']
