@@ -1589,7 +1589,7 @@ class ProgramPrintables(ProgramModuleObj):
                                [', '.join([r.desired_value for r in section.getResourceRequests() if r.res_type == rt]) for rt in resource_types]+ \
                                time_values + \
                                [', '.join([conflict.emailcode() for conflict in conflicts])]  + \
-                               [smart_str(((section.parent_class.requested_room + '. ') if section.parent_class.requested_room != '' else '') + section.parent_class.message_for_directors)])
+                               [smart_str(((section.parent_class.requested_room + '. ') if section.parent_class.requested_room else '') + section.parent_class.message_for_directors)])
 
         response['Content-Disposition'] = 'attachment; filename=ok_times_concise.csv'
         return response
