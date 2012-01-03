@@ -77,7 +77,7 @@ class AdminReviewApps(ProgramModuleObj):
         to accept students into the program based on the teachers' reviews and the
         students' applications. """
         
-        accept_node = request.get_node('V/Flags/Registration/Accepted')
+        accept_node = GetNode('V/Flags/Registration/Accepted')
         try:
             cls = ClassSubject.objects.get(id = extra)
         except ClassSubject.DoesNotExist:
@@ -125,7 +125,7 @@ class AdminReviewApps(ProgramModuleObj):
     def accept_student(self, request, tl, one, two, module, extra, prog):
         """ Accept a student into a class. """
 
-        accept_node = request.get_node('V/Flags/Registration/Accepted')
+        accept_node = GetNode('V/Flags/Registration/Accepted')
         try:
             cls = ClassSubject.objects.get(id = request.GET.get('cls',''))
             student = User.objects.get(id = request.GET.get('student',''))
@@ -142,7 +142,7 @@ class AdminReviewApps(ProgramModuleObj):
         """ Reject a student from a class (does not affect their
         registration). """
 
-        accept_node = request.get_node('V/Flags/Registration/Accepted')
+        accept_node = GetNode('V/Flags/Registration/Accepted')
         try:
             cls = ClassSubject.objects.get(id = request.GET.get('cls',''))
             student = User.objects.get(id = request.GET.get('student',''))

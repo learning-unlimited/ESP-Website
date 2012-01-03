@@ -779,8 +779,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if not hasattr(request.user, "onsite_local"):
             request.user.onsite_local = False
         
-        v_registered = request.get_node('V/Flags/Registration/Preliminary')
-        v_auto = request.get_node('V/Flags/Registration/Preliminary/Automatic')
+        v_registered = GetNode('V/Flags/Registration/Preliminary')
+        v_auto = GetNode('V/Flags/Registration/Preliminary/Automatic')
         
         # Check if implications are already broken
         broken_implications = False
