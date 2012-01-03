@@ -47,6 +47,7 @@ from esp.users.models import ESPUser, UserBit, User
 from esp.customforms.models import Form
 from esp.customforms.DynamicForm import FormHandler
 from esp.tagdict.models import Tag
+from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 #from datetime import datetime
 import re
