@@ -73,9 +73,9 @@ class TestQsdCachePurging(SeleniumTestCase):
         qsd_rec_new.description = ''
         qsd_rec_new.keywords    = ''
         qsd_rec_new.save()
+        self.driver.testserver_port = VARNISH_PORT
 
     def check_page(self, page):
-        self.driver.testserver_port = VARNISH_PORT
         self.open_url("/")
         try_ajax_login(self, self.admin_user.username, self.PASSWORD_STRING)
         self.open_url(page)
@@ -94,8 +94,6 @@ class TestQsdCachePurging(SeleniumTestCase):
         self.open_url(page)
         self.failUnless(self.is_text_present(self.TEST_STRING))
 
-        self.driver.testserver_port = 8000 # Find where this number is actually stored
-
     @skipIf(not hasattr(esp.settings, 'VARNISH_HOST') or not hasattr(esp.settings, 'VARNISH_PORT'), "Varnish settings weren't set")
     def test_inline(self):
         self.check_page("/")
@@ -105,5 +103,4 @@ class TestQsdCachePurging(SeleniumTestCase):
         self.check_page("/test.html")
 
     def cleanUp(self):
-        stdout.write("Cleaning up!\n")
         self.driver.testserver_port = 8000 # Find where this number is actually stored        
