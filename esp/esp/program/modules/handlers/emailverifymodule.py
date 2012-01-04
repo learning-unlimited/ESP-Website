@@ -37,7 +37,7 @@ from esp.web.views.myesp import profile_editor
 from esp.program.models import RegistrationProfile
 from esp.users.models   import ESPUser, User
 from django.db.models.query import Q
-
+from esp.middleware.threadlocalrequest import get_current_request
 
 class EmailVerifyModule(ProgramModuleObj):
     """ This module will allow users to verify that their email accounts work. """
@@ -94,19 +94,19 @@ class EmailVerifyModule(ProgramModuleObj):
         symbols = string.ascii_uppercase + string.digits
         code = "".join([random.choice(symbols) for x in range(30)])
 
-        regProf = RegistrationProfile.getLastForProgram(self.user, self.program)
+        regProf = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
 
         if regProf.email_verified:
             return self.goToCore(tl)
 
         if request.method == 'POST' and request.POST.has_key('verify_me'):
             # create the variable modules
-            variable_modules = {'program': self.program, 'user': self.user}
+            variable_modules = {'program': self.program, 'user': get_current_request().user}
             
             # get the filter object
-            filterobj = PersistentQueryFilter.getFilterFromQ(Q(id = self.user.id),
+            filterobj = PersistentQueryFilter.getFilterFromQ(Q(id = get_current_request().user.id),
                                                              User,
-                                                             'User %s' % self.username)
+                                                             'User %s' % get_current_request().user.username)
 
             newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
                                                           subject    = '[ESP] Email Verification For esp.mit.edu',

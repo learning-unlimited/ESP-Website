@@ -1238,7 +1238,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def teacherlabels(self, request, tl, one, two, module, extra, prog):
         context = {'module': self}
-        teachers = self.program.teachers()
+        teachers = list(self.program.teachers()['class_approved'])
         teachers.sort()
         context['teachers'] = teachers
         context['settings'] = settings
@@ -1329,7 +1329,7 @@ class ProgramPrintables(ProgramModuleObj):
     def adminbinder(self, request, tl, one, two, module, extra, prog):
         
         if extra not in ['teacher','classid','timeblock']:
-            return self.goToCore()
+            return self.goToCore(tl)
         context = {'module': self}
 
         scheditems = []
@@ -1589,7 +1589,7 @@ class ProgramPrintables(ProgramModuleObj):
                                [', '.join([r.desired_value for r in section.getResourceRequests() if r.res_type == rt]) for rt in resource_types]+ \
                                time_values + \
                                [', '.join([conflict.emailcode() for conflict in conflicts])]  + \
-                               [smart_str(((section.parent_class.requested_room + '. ') if section.parent_class.requested_room != '' else '') + section.parent_class.message_for_directors)])
+                               [smart_str(((section.parent_class.requested_room + '. ') if section.parent_class.requested_room else '') + section.parent_class.message_for_directors)])
 
         response['Content-Disposition'] = 'attachment; filename=ok_times_concise.csv'
         return response

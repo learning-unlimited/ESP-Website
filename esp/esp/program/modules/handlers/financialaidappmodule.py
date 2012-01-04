@@ -43,6 +43,7 @@ from django.template.loader import get_template
 from esp.program.models  import FinancialAidRequest
 from esp.tagdict.models import Tag
 from esp.settings import DEFAULT_HOST, SERVER_EMAIL
+from esp.middleware.threadlocalrequest import get_current_request
 from django              import forms
 
 
@@ -79,7 +80,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                 'studentfinaid_approved': """Students who have been granted financial aid."""}
     
     def isCompleted(self):
-        return self.user.appliedFinancialAid(self.program)
+        return get_current_request().user.appliedFinancialAid(self.program)
 
     @main_call
     @needs_student
@@ -109,7 +110,7 @@ class FinancialAidAppModule(ProgramModuleObj):
         from django.core.mail import send_mail
         from esp.settings import SITE_INFO
         
-        app, created = FinancialAidRequest.objects.get_or_create(user = self.user,
+        app, created = FinancialAidRequest.objects.get_or_create(user = request.user,
                                                                 program = self.program)
 
         class Form(forms.ModelForm):

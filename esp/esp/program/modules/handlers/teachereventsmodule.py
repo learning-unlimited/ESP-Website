@@ -43,6 +43,7 @@ from esp.miniblog.models import Entry
 from esp.datatree.models import GetNode
 from esp.cal.models import Event
 from esp.users.models import ESPUser, UserBit, User
+from esp.middleware.threadlocalrequest import get_current_request
 from datetime import datetime
 
 class TeacherEventsModule(ProgramModuleObj):
@@ -122,7 +123,7 @@ class TeacherEventsModule(ProgramModuleObj):
         If there are teacher training timeslots, requires signing up for them.
         If there are teacher interview timeslots, requires those too.
         """
-        bits = self.bitsByTeacher(self.user)
+        bits = self.bitsByTeacher(get_current_request().user)
         return (self.getTimes('interview').count() == 0 or bits['interview'].count() > 0) and (self.getTimes('training').count() == 0 or bits['training'].count() > 0)
     
     # Views
@@ -146,8 +147,8 @@ class TeacherEventsModule(ProgramModuleObj):
                         event_names = ' '.join([x.description for x in data['interview'].event_set.all()])
                         send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_names, \
                               """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
-                              (self.user.first_name, self.user.last_name, event_names) , \
-                              ('%s <%s>' % (self.user.first_name + ' ' + self.user.last_name, self.user.email,)), \
+                              (request.user.first_name, request.user.last_name, event_names) , \
+                              ('%s <%s>' % (request.user.first_name + ' ' + request.user.last_name, request.user.email,)), \
                               [self.program.director_email], True)
                     if not created:
                         ub.enddate = datetime(9999,1,1) # Approximately infinity; see default value of UserBit.enddate

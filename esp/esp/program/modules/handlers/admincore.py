@@ -74,7 +74,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
     @needs_admin
     def main(self, request, tl, one, two, module, extra, prog):
         context = {}
-        modules = self.program.getModules(self.user, 'manage')
+        modules = self.program.getModules(request.user, 'manage')
                     
         context['modules'] = modules
         context['one'] = one
@@ -88,7 +88,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         """ The administration panel showing statistics for the program, and a list
         of classes with the ability to edit each one.  """
         context = {}
-        modules = self.program.getModules(self.user, 'manage')
+        modules = self.program.getModules(request.user, 'manage')
         
         for module in modules:
             context = module.prepare(context)
@@ -98,7 +98,33 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['two'] = two
 
         return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
-
+    
+    @aux_call
+    @needs_admin
+    def registrationtype_management(self, request, tl, one, two, module, extra, prog):
+        
+        from esp.program.modules.forms.admincore import VisibleRegistrationTypeForm as VRTF
+        from esp.settings import DEFAULT_EMAIL_ADDRESSES
+        from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
+        
+        context = {}
+        context['one'] = one
+        context['two'] = two
+        context['prog'] = prog
+        context['POST'] = False
+        context['saved'] = False
+        context['support'] = DEFAULT_EMAIL_ADDRESSES['support']
+        
+        if request.method == 'POST':
+            context['POST'] = True
+            form = VRTF(request.POST)
+            if form.is_valid():
+                context['saved'] = RTC.setVisibleRegistrationTypeNames(form.cleaned_data['display_names'], prog)
+        
+        display_names = list(RTC.getVisibleRegistrationTypeNames(prog, for_VRT_form=True))
+        context['form'] = VRTF(data={'display_names': display_names})
+        return render_to_response(self.baseDir()+'registrationtype_management.html', request, (prog, tl), context)
+    
     @aux_call
     @needs_admin
     def deadline_management(self, request, tl, one, two, module, extra, prog):

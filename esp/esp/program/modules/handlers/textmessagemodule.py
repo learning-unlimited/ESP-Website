@@ -38,7 +38,7 @@ from django.http import HttpResponseRedirect
 from django import forms
 from esp.users.forms.user_profile import PhoneNumberField
 from esp.program.models import RegistrationProfile
-
+from esp.middleware.threadlocalrequest import get_current_request
 class TextMessageForm(forms.Form):
     phone_number = PhoneNumberField(local_areacode='773')
 
@@ -56,7 +56,7 @@ class TextMessageModule(ProgramModuleObj):
     def prepare(self, context):
         context['textmessage_form'] = TextMessageForm()
 
-        profile = RegistrationProfile.getLastForProgram(self.user, self.program)
+        profile = RegistrationProfile.getLastForProgram(get_current_request().user, self.program)
         if profile.text_reminder is True:
             if profile.contact_user:
                 context['textmessage_form'] = TextMessageForm(initial={'phone_number': profile.contact_user.phone_cell})

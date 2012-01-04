@@ -40,10 +40,13 @@ from datetime            import datetime
 from django.db.models.query     import Q
 from django.http         import HttpResponseRedirect
 from django.core.mail import send_mail
+from django.contrib.sites.models import Site
 from esp.users.models    import User, ESPUser
 from esp.accounting_core.models import LineItemType, EmptyTransactionException, Balance, CompletedTransactionException
 from esp.accounting_docs.models import Document
 from esp.middleware      import ESPError
+from esp.middleware.threadlocalrequest import get_current_request
+
 from esp.settings import INSTITUTION_NAME, DEFAULT_EMAIL_ADDRESSES
 
 class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings):
@@ -58,12 +61,12 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
-        if ( len(Document.get_completed(self.user, self.program_anchor_cached())) > 0 ):
+        if ( len(Document.get_completed(get_current_request().user, self.program_anchor_cached())) > 0 ):
             return True
         else:
             parent_program = self.program.getParentProgram()
             if parent_program is not None:
-                return ( len(Document.get_completed(self.user, parent_program.anchor)) > 0 )
+                return ( len(Document.get_completed(get_current_request().user, parent_program.anchor)) > 0 )
         return False
     
     have_paid = isCompleted
@@ -164,7 +167,10 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         context['user'] = user
         context['itemizedcosts'] = invoice.get_items()
         context['program'] = self.program
-        context['hostname'] = request.META['HTTP_HOST']
+        if 'HTTP_HOST' in request.META:
+            context['hostname'] = request.META['HTTP_HOST']
+        else:
+            context['hostname'] = Site.objects.get_current().domain
         context['institution'] = INSTITUTION_NAME
         context['storename'] = self.store_id
         context['support_email'] = DEFAULT_EMAIL_ADDRESSES['support']

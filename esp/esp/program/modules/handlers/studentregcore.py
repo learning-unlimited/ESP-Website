@@ -66,14 +66,14 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             "seq": -9999
             }
 
-    def have_paid(self):
+    def have_paid(self, user):
         """ Whether the user has paid for this program or its parent program.  """
-        if ( len(Document.get_completed(self.user, self.program_anchor_cached())) > 0 ):
+        if ( len(Document.get_completed(user, self.program_anchor_cached())) > 0 ):
             return True
         else:
             parent_program = self.program.getParentProgram()
             if parent_program is not None:
-                return ( len(Document.get_completed(self.user, parent_program.anchor)) > 0 )
+                return ( len(Document.get_completed(user, parent_program.anchor)) > 0 )
 
         return False
 
@@ -127,14 +127,16 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @meets_grade
     def waitlist_subscribe(self, request, tl, one, two, module, extra, prog):
         """ Add this user to the waitlist """
+        self.request = request
+
         if not self.program.isFull():
             raise ESPError(False), "You can't subscribe to the waitlist of a program that isn't full yet!  Please click 'Back' and refresh the page to see the button to confirm your registration."
 
         waitlist_all = UserBit.objects.filter(verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Waitlist")).filter(enddate__gte=datetime.now())
-        waitlist = waitlist_all.filter(user=self.user)
+        waitlist = waitlist_all.filter(user=request.user)
         
         if waitlist.count() <= 0:
-            UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Waitlist"), recursive=False)
+            UserBit.objects.create(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Waitlist"), recursive=False)
             already_on_list = False
         else:
             already_on_list = True
@@ -145,17 +147,21 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @needs_student
     @meets_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
-        if UserBit.objects.filter(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now()).count() > 0:
+        if UserBit.objects.filter(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now()).count() > 0:
             return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
         return self.confirmreg_new(request, tl, one, two, module, extra, prog)
     
     @meets_deadline("/Confirm")
     def confirmreg_new(self, request, tl, one, two, module, extra, prog):
+        self.request = request
+
         return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=True)
     
     def confirmreg_forreal(self, request, tl, one, two, module, extra, prog, new_reg):
         """ The page that is shown once the user saves their student reg,
             giving them the option of printing a confirmation            """
+        self.request = request
+
         from esp.program.modules.module_ext import DBReceipt
 
         try:
@@ -189,7 +195,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         if prog.isFull() and not user.canRegToFullProgram(prog) and not self.program.isConfirmed(user):
             raise ESPError(log = False), "This program has filled!  It can't accept any more students.  Please try again next session."
 
-        modules = prog.getModules(self.user, tl)
+        modules = prog.getModules(request.user, tl)
         completedAll = True
         for module in modules:
             if hasattr(module, 'onConfirm'):
@@ -205,7 +211,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             raise ESPError(False), "You must finish all the necessary steps first, then click on the Save button to finish registration."
 
         cfe = ConfirmationEmailController()
-        cfe.send_confirmation_email(self.user, self.program)
+        cfe.send_confirmation_email(request.user, self.program)
 
         try:
             receipt_text = DBReceipt.objects.get(program=self.program, action='confirm').receipt
@@ -225,12 +231,14 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @meets_grade    
     @meets_deadline()
     def cancelreg(self, request, tl, one, two, module, extra, prog):
+        self.request = request
+
         from esp.program.modules.module_ext import DBReceipt
         
-        if self.have_paid():
+        if self.have_paid(request.user):
             raise ESPError(False), "You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund."
         
-        bits = UserBit.objects.filter(user = self.user,
+        bits = UserBit.objects.filter(user = request.user,
                                       verb = GetNode('V/Flags/Public'),
                                       qsc  = GetNode('/'.join(prog.anchor.tree_encode())+'/Confirmation'))
 
@@ -241,9 +249,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         #   If the appropriate flag is set, remove the student from their classes.
         scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
         if scrmi.cancel_button_dereg:
-            sections = self.user.getSections()
+            sections = request.user.getSections()
             for sec in sections:
-                sec.unpreregister_student(self.user)
+                sec.unpreregister_student(request.user)
 
         #   If a cancel receipt template is there, use it.  Otherwise, return to the main studentreg page.
         try:
@@ -266,9 +274,10 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @meets_deadline('/MainPage')
     def studentreg(self, request, tl, one, two, module, extra, prog):
         """ Display a student reg page """
-
+        self.request = request
+        
         context = {}
-        modules = prog.getModules(self.user, 'learn')
+        modules = prog.getModules(request.user, 'learn')
         context['completedAll'] = True
         for module in modules:
             # If completed all required modules so far...
@@ -289,8 +298,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['two'] = two
         context['coremodule'] = self
         context['scrmi'] = prog.getModuleExtension('StudentClassRegModuleInfo')
-        context['isConfirmed'] = self.program.isConfirmed(self.user)            
-        context['have_paid'] = self.have_paid()
+        context['isConfirmed'] = self.program.isConfirmed(request.user)            
+        context['have_paid'] = self.have_paid(request.user)
         
         context['printers'] = self.printer_names()
         
@@ -307,12 +316,12 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     def getNavBars(self):
         nav_bars = []
-        if super(StudentRegCore, self).deadline_met() or ( self.user and self.program and UserBit.objects.UserHasPerms(self.user, self.program, GetNode("V/Deadline/Registration/Student/Classes/OneClass")) ):
+        if super(StudentRegCore, self).deadline_met() or ( self.request.user and self.program and UserBit.objects.UserHasPerms(self.request.user, self.program, GetNode("V/Deadline/Registration/Student/Classes/OneClass")) ):
              nav_bars.append({ 'link': '/learn/%s/studentreg/' % ( self.program.getUrlBase() ),
                       'text': '%s Student Registration' % ( self.program.niceSubName() ),
                       'section': ''})
 
-        if ESPUser(self.user).isAdmin(self.program):
+        if self.request.user.isAdmin(self.program):
             nav_bars.append({'link':'/learn/%s/studentreg.html' % (self.program.getUrlBase()),
                              'text':'%s Student Reg Inline Text' % self.program.niceSubName(),
                              'section': 'learn'})

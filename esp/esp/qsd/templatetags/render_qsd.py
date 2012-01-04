@@ -10,14 +10,15 @@ from urllib import quote
 
 register = template.Library()
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html', cache_time=300)
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html')
 def render_qsd(qsd, user=None):
     edit_bits = False
     if user:
         edit_bits = UserBit.UserHasPerms(user, qsd.path, DataTree.get_by_uri('V/Administer/Edit'))
     return {'qsdrec': qsd, 'edit_bits': edit_bits}
+render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
 
-@cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html', cache_time=1)
+@cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html')
 def render_inline_qsd(input_anchor, qsd, user=None):
     if isinstance(input_anchor, basestring):
         try:
@@ -38,6 +39,7 @@ def render_inline_qsd(input_anchor, qsd, user=None):
         return {'edit_bits': edit_bits, 'qsdname': qsd, 'anchor_id': anchor.id}
     
     return {'qsdrec': qsd_obj, 'edit_bits': edit_bits}
+render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'input_anchor': qsd.path.uri, 'qsd': qsd.name})
 
 class InlineQSDNode(template.Node):
     def __init__(self, nodelist, input_anchor, qsd_name, user_variable):
@@ -69,9 +71,9 @@ class InlineQSDNode(template.Node):
             new_qsd.name = qsd
             new_qsd.title = qsd
             new_qsd.content = self.nodelist.render(context)
-            new_qsd.author = user
             
-            if user.id:
+            if getattr(user, 'id', False):
+                new_qsd.author = user
                 new_qsd.save()
 
             qsd_obj = new_qsd

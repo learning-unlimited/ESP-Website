@@ -1,4 +1,3 @@
-
 __author__    = "MIT ESP"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -31,6 +30,7 @@ Email: web@esp.mit.edu
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call, meets_deadline, needs_student
 from esp.program.modules         import module_ext
 from esp.program.modules.handlers import lotterystudentregmodule
+from esp.program.modules.handlers.lotterystudentregmodule import LotteryStudentRegModule
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.program.views           import lottery_student_reg, lsr_submit as lsr_view_submit
 from esp.datatree.models         import *
@@ -50,12 +50,12 @@ from esp.cache                   import cache_function
 from uuid                        import uuid4 as get_uuid
 from django.db.models.query      import Q
 from django.views.decorators.cache import cache_control
-
+from esp.middleware.threadlocalrequest import get_current_request
 #def json_encode_timeslots(obj):
     
 
 
-class LotteryStudentRegModule_Simple(ProgramModuleObj):
+class LotteryStudentRegModule_Simple(LotteryStudentRegModule):
 
     def students(self, QObject = False):
         q = Q(studentregistration__section__parent_class__parent_program=self.program, studentregistration__end_date__gte=datetime.now())
@@ -68,7 +68,7 @@ class LotteryStudentRegModule_Simple(ProgramModuleObj):
         return {'lotteried_students': "Students who have entered the lottery via the simple lottery interface"}
 
     def isCompleted(self):
-        return bool(StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, user=self.user))
+        return bool(StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, user=get_current_request().user))
 
     @classmethod
     def module_properties(cls):
@@ -115,7 +115,7 @@ class LotteryStudentRegModule_Simple(ProgramModuleObj):
     def timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program timeslot names for the tabs in the lottery inteface """
         # using .extra() to select all the category text simultaneously
-        return LotterStudentRegModule.timeslots_json(request, tl, one, two, module, extra, prog, timeslot)
+        return LotteryStudentRegModule.timeslots_json(self, request, tl, one, two, module, extra, prog, timeslot)
         """     ordered_timeslots = sorted(self.program.getTimeSlotList(), key=lambda event: event.start)
         ordered_timeslot_names = list()
         for item in ordered_timeslots:
@@ -132,7 +132,7 @@ class LotteryStudentRegModule_Simple(ProgramModuleObj):
     @needs_student
     @meets_deadline('/Classes/Lottery/View')
     def viewlotteryprefs(self, request, tl, one, two, module, extra, prog):
-        return LotteryStudentRegModule.viewlotteryprefs(request, tl, one, two, module, extra, prog)
+        return LotteryStudentRegModule.viewlotteryprefs(self, request, tl, one, two, module, extra, prog)
         """context = {}
         context['student'] = request.user
         context['program'] = prog

@@ -75,7 +75,7 @@ class CommModule(ProgramModuleObj):
             fromemail = request.POST['from']
         else:
             # String together an address like username@esp.mit.edu
-            fromemail = '%s@%s' % (self.user.username, settings.SITE_INFO[1])
+            fromemail = '%s@%s' % (request.user.username, settings.SITE_INFO[1])
         
         # Set Reply-To address
         if request.POST.has_key('replyto') and len(request.POST['replyto'].strip()) > 0:
@@ -137,13 +137,13 @@ class CommModule(ProgramModuleObj):
         
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
 
-        variable_modules = {'user': self.user, 'program': self.program}
+        variable_modules = {'user': request.user, 'program': self.program}
 
         newmsg_request = MessageRequest.createRequest(var_dict   = variable_modules,
                                                       subject    = subject,
                                                       recipients = filterobj,
                                                       sender     = fromemail,
-                                                      creator    = self.user,
+                                                      creator    = request.user,
                                                       msgtext    = body,
                                                       special_headers_dict
                                                                  = { 'Reply-To': replytoemail, }, )

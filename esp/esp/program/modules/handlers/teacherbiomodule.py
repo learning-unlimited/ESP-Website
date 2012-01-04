@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.models import TeacherBio
 from esp.users.models   import ESPUser, User
+from esp.middleware.threadlocalrequest import get_current_request
 from django.db.models.query   import Q
 
 # reg profile module
@@ -64,7 +65,7 @@ class TeacherBioModule(ProgramModuleObj):
     def biography(self, request, tl, one, two, module, extra, prog):
     	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
         from esp.web.views.bio import bio_edit_user_program
-        result = bio_edit_user_program(request, self.user, self.program, external=True)
+        result = bio_edit_user_program(request, request.user, self.program, external=True)
 
         if result is not True:
             return result
@@ -72,7 +73,7 @@ class TeacherBioModule(ProgramModuleObj):
         return self.goToCore(tl)
 
     def isCompleted(self):
-        lastBio = TeacherBio.getLastForProgram(self.user, self.program)
+        lastBio = TeacherBio.getLastForProgram(get_current_request().user, self.program)
         return lastBio.id is not None
 
 

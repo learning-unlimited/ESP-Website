@@ -1,10 +1,36 @@
 {% extends "elements/html" %}
 
+{% comment %}
+    Customize your title formatting here.  For example:
+    {% block fulltitle %}Splash at UFoo - {% block title %}{% endblock %}{% endblock %} 
+{% endcomment %}
 {% block fulltitle %}{% block title %}{% endblock %}{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
+    {# Customize your stylesheets here #}
     <link rel="stylesheet" href="/media/styles/main.css" type="text/css" />
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+
+    {% comment %}
+        These script fragments ensure that the backgrounds of the nav bar and 
+        content area line up at the bottom of the page.  If you don't need them,
+        feel free to remove them.
+    {% endcomment %}
+    <script type="text/javascript" src="/media/scripts/match_heights.js"></script>
+    <script type="text/javascript">
+    <!--
+    match_content = function () {
+        match_heights(['main', 'navbar']);
+    };
+    $j(document).ready(match_content);
+    -->
+    </script>
+
+    {# Customize your scripts here #}
 {% endblock %}
 
 {% block body %}
@@ -48,13 +74,10 @@ body {
     <div id="navbar_content">
     <span class="announcementlink_title">Relevant Links</span>
     {% load navbar %}
-    {% navbar_gen request.path request.user navbar_list %}
+    {% navbar_gen request.path None navbar_list %}
     </div>
 
     <div id="navbar_content">
-
-    {% load preview %}
-    {% miniblog_for_user request.user as announcements 6 %}
 
     {% load smartypants %}
     {% load markdown %}
@@ -81,17 +104,16 @@ body {
     
     <div id="navbar_content">
     <br />
-    {% include "users/loginbox_ajax.html" %}
+    {% include "users/loginbox.html" %}
     <br />
 
-    {% if request.user.is_staff %}
+    <div class="admin admin_hidden">
         <a href="/admin/miniblog/entry/">Edit News</a> <br />
         <a href="/admin/miniblog/announcementlink/">Edit Announcement/Links</a> <br />
         <a href="/admin/web/navbarentry/">Edit Navigation Links</a> <br />
         <a href="/admin/web/navbarcategory/">Edit Navigation Categories</a>
-    {% endif %}
+    </div>
 
-    
     </div>
 </div>
 {% endblock %}
@@ -100,11 +122,6 @@ body {
     <div id="main_content">
     {% block content %}
     {% endblock %}
-    {% if request.user.get_profile.prof.isAdministrator %}
-    <div id="divnav7">
-    <a href="/manage/programs">Administration pages</a>
-    </div>
-    {% endif %}
     </div>
 </div>
 

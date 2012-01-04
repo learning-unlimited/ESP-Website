@@ -5,6 +5,7 @@ from esp.users.models   import ESPUser, UserBit
 from esp.datatree.models import GetNode
 from django import forms
 from django.db.models.query import Q
+from esp.middleware.threadlocalrequest import get_current_request
 
 #GetNode('V/Flags/Registration/Teacher/Acknowledgement')
 #GetNode('V/Deadline/Registration/Teacher/Acknowledgement')
@@ -35,7 +36,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         return GetNode('V/Deadline/Registration/Teacher/Acknowledgement')
     
     def isCompleted(self):
-        return bool(UserBit.objects.filter(Q(user=self.user, qsc=self.program.anchor, verb=self.flags_verb) & UserBit.not_expired()))
+        return bool(UserBit.objects.filter(Q(user=get_current_request().user, qsc=self.program.anchor, verb=self.flags_verb) & UserBit.not_expired()))
     
     @main_call
     @needs_teacher
@@ -44,7 +45,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         context = {'prog': prog}
         if request.method == 'POST':
             context['form'] = teacheracknowledgementform_factory(prog)(request.POST)
-            ub, created = UserBit.objects.get_or_create(user=self.user, qsc=self.program.anchor, verb=self.flags_verb)
+            ub, created = UserBit.objects.get_or_create(user=request.user, qsc=self.program.anchor, verb=self.flags_verb)
             if context['form'].is_valid():
                 ub.renew()
                 return self.goToCore(tl)

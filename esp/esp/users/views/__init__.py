@@ -28,9 +28,27 @@ def filter_username(username, password):
             
     return username
 
+#   This is a huge hack while we figure out what to do about logins and cookies.
+#   - Michael P 12/28/2011
+def HttpMetaRedirect(location='/'):
+    response = HttpResponse()
+    response.status = 200
+    response.content = """
+    <html><head>
+    <meta http-equiv="refresh" content="0; url=%s">
+    </head>
+    <body>Thank you for logging in.  Please click <a href="%s">here</a> if you are not redirected.</body>
+    </html>
+    """ % (location, location)
+    return response
+
 def login_checked(request, *args, **kwargs):
     if request.user.is_authenticated():
-        return HttpResponseRedirect('/')
+        #   Set response cookies in case of repeat login
+        reply = HttpMetaRedirect('/')
+        reply._new_user = request.user
+        reply.no_set_cookies = False
+        return reply
 
     reply = login(request, *args, **kwargs)
 
@@ -59,9 +77,13 @@ def login_checked(request, *args, **kwargs):
         # Let's try to do something smarter.
         request.user = ESPUser(request.user)
         if request.user.isTeacher():
-            return HttpResponseRedirect("/teach/index.html")
+            reply = HttpMetaRedirect("/teach/index.html")
         else:
-            return HttpResponseRedirect("/learn/index.html")
+            reply = HttpMetaRedirect("/learn/index.html")
+
+    #   Stick the user in the response in order to set cookies if necessary
+    reply._new_user = request.user
+    reply.no_set_cookies = False
 
     return reply
 
@@ -102,7 +124,19 @@ def ajax_login(request, *args, **kwargs):
 
     return HttpResponse(json.dumps(result_dict))
 
+def signout(request):
+    """ This view merges Django's logout view with our own "Goodbye" message. """
+    auth_logout(request)
+    
+    #   Tag the (now anonymous) user object so our middleware knows to delete cookies
+    request._cached_user = request.user
+    
+    return render_to_response('registration/logged_out.html',
+                              request, request.get_node('Q/Web/myesp'),
+                              {})
+
 def signed_out_message(request):
+    """ If the user is indeed logged out, show them a "Goodbye" message. """
     if request.user.is_authenticated():
         return HttpResponseRedirect('/')
 

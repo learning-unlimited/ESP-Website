@@ -44,6 +44,7 @@ from esp.program.models.class_ import open_class_category as open_class_category
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from esp.settings import INSTITUTION_NAME
+from esp.middleware.threadlocalrequest import get_current_request
 from datetime import datetime, timedelta
 import simplejson as json
 
@@ -356,7 +357,7 @@ class TeacherEventSignupForm(FormWithRequiredCss):
     def __init__(self, module, *args, **kwargs):
         super(TeacherEventSignupForm, self).__init__(*args, **kwargs)
         self.module = module
-        self.user = module.user
+        self.user = get_current_request().user
         
         interview_times = module.getTimes('interview')
         if interview_times.count() > 0:

@@ -460,8 +460,9 @@ def classTemplateEditor(request, program, session):
 @admin_required
 def manage_programs(request):
     admPrograms = ESPUser(request.user).getEditable(Program).order_by('-id')
-
-    return render_to_response('program/manage_programs.html', request, GetNode('Q/Web/myesp'), {'admPrograms': admPrograms})
+    context = {'admPrograms': admPrograms,
+               'user': request.user}
+    return render_to_response('program/manage_programs.html', request, GetNode('Q/Web/myesp'), context)
 
 @admin_required
 def newprogram(request):

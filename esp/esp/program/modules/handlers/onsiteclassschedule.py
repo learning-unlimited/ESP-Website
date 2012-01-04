@@ -59,11 +59,11 @@ class OnsiteClassSchedule(ProgramModuleObj):
 
         qsc   = self.program_anchor_cached().tree_create(['Schedule'])
 
-        if len(UserBit.objects.filter(user=self.user,
+        if len(UserBit.objects.filter(user=request.user,
                                   verb=verb,
                                   qsc=qsc).exclude(enddate__lte=datetime.now())[:1]) == 0:
 
-            newbit = UserBit.objects.create(user=self.user, verb=verb,
+            newbit = UserBit.objects.create(user=request.user, verb=verb,
                              qsc=qsc, recursive=False, enddate=datetime.now() + timedelta(days=1))
 
         return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
@@ -76,16 +76,16 @@ class OnsiteClassSchedule(ProgramModuleObj):
         if 'format' in request.GET:
             format = request.GET['format'].lower()
         request.GET = {'op':'usersearch',
-                       'userid': str(self.user.id) }
+                       'userid': str(request.user.id) }
 
         module = [module for module in self.program.getModules('manage')
                   if type(module) == ProgramPrintables        ][0]
 
-        module.user = self.user
+        module.user = request.user
         module.program = self.program
         
         #  onsite=False since we probably want a PDF
-        return ProgramPrintables.get_student_schedules(request, [self.user], self.program, onsite=False)
+        return ProgramPrintables.get_student_schedules(request, [request.user], self.program, onsite=False)
 
 
     @main_call
@@ -98,7 +98,7 @@ class OnsiteClassSchedule(ProgramModuleObj):
         if not found:
             return user
         
-        self.user.switch_to_user(request,
+        request.user.switch_to_user(request,
                                  user,
                                  self.getCoreURL(tl),
                                  'OnSite Registration!',

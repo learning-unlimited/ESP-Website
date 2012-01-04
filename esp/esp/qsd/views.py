@@ -49,6 +49,7 @@ from django.core.cache import cache
 from django.template.defaultfilters import urlencode
 from esp.datatree.decorators import branch_find
 from esp.middleware import ESPError, Http403
+from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
 from django.views.decorators.vary import vary_on_cookie
 from django.views.decorators.cache import cache_control
@@ -112,6 +113,7 @@ def handle_ajax_mover(method):
 @branch_find
 #@vary_on_cookie
 @cache_control(max_age=180)
+@disable_csrf_cookie_update
 def qsd(request, branch, name, section, action):
 
     READ_VERB = 'V/Flags/Public'
@@ -123,13 +125,8 @@ def qsd(request, branch, name, section, action):
         base_url = request.path[:(-len(action)-6)]
 
     # Detect edit authorizations
-    have_edit = UserBit.UserHasPerms(request.user, branch, EDIT_VERB)
-
-    if have_edit:
-        have_read = True
-    else:
-        have_read = UserBit.UserHasPerms(request.user, branch, READ_VERB)
-
+    have_read = True
+    
     if not have_read and action == 'read':
         raise Http403, "You do not have permission to access this page."
 
@@ -142,6 +139,8 @@ def qsd(request, branch, name, section, action):
             raise QuasiStaticData.DoesNotExist
 
     except QuasiStaticData.DoesNotExist:
+        have_edit = UserBit.UserHasPerms(request.user, branch, EDIT_VERB)
+
         if have_edit:
             if action in ('edit','create',):
                 qsd_rec = QuasiStaticData()
@@ -157,7 +156,7 @@ def qsd(request, branch, name, section, action):
 
             if (action == 'read'):
                 edit_link = base_url+'.edit.html'
-                return render_to_response('qsd/nopage_edit.html', request, (branch, section), {'edit_link': edit_link})
+                return render_to_response('qsd/nopage_edit.html', request, (branch, section), {'edit_link': edit_link}, use_request_context=False)
         else:
             if action == 'read':
                 raise Http404, 'This page does not exist.'
@@ -178,8 +177,8 @@ def qsd(request, branch, name, section, action):
             'nav_category': qsd_rec.nav_category, 
             'content': qsd_rec.html(),
             'qsdrec': qsd_rec,
-            'have_edit': have_edit,
-            'edit_url': base_url + ".edit.html" })
+            'have_edit': True,  ## Edit-ness is determined client-side these days
+            'edit_url': base_url + ".edit.html" }, use_request_context=False)
 
 #        patch_vary_headers(response, ['Cookie'])
 #        if have_edit:
@@ -193,6 +192,8 @@ def qsd(request, branch, name, section, action):
             
     # Detect POST
     if request.POST.has_key('post_edit'):
+        have_edit = UserBit.UserHasPerms(request.user, branch, EDIT_VERB)
+
         if not have_edit:
             raise Http403, "Sorry, you do not have permission to edit this page."
         
@@ -241,6 +242,8 @@ def qsd(request, branch, name, section, action):
 
     # Detect the edit verb
     if action == 'edit':
+        have_edit = UserBit.UserHasPerms(request.user, branch, EDIT_VERB)
+
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
             raise ESPError(False), "You don't have permission to edit this page."
@@ -262,7 +265,8 @@ def qsd(request, branch, name, section, action):
             'qsd'          : True,
             'missing_files': m.BrokenLinks(),
             'target_url'   : base_url.split("/")[-1] + ".edit.html",
-            'return_to_view': base_url.split("/")[-1] + ".html" })
+            'return_to_view': base_url.split("/")[-1] + ".html" },
+                                  use_request_context=False)
 
     
     # Operation Complete!

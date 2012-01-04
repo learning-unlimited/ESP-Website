@@ -1269,7 +1269,10 @@ class RegistrationProfile(models.Model):
     @cache_function
     def getLastForProgram(user, program):
         """ Returns the newest RegistrationProfile attached to this user and this program (or any ancestor of this program). """
-        regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
+        if isinstance(user, AnonymousUser):
+            regProfList = RegistrationProfile.objects.none()
+        else:
+            regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
         if len(regProfList) < 1:
             if program:
                 # Has this user already filled out a profile for the parent program?
@@ -1323,8 +1326,8 @@ class RegistrationProfile(models.Model):
         return form_data
     
     #   Note: these functions return ClassSections, not ClassSubjects.
-    def preregistered_classes(self):
-        return ESPUser(self.user).getSectionsFromProgram(self.program)
+    def preregistered_classes(self,verbs=None):
+        return ESPUser(self.user).getSectionsFromProgram(self.program,verbs=verbs)
     
     def registered_classes(self):
         return ESPUser(self.user).getEnrolledSections(program=self.program)
@@ -1850,7 +1853,10 @@ class RegistrationType(models.Model):
     #   Purely for bookkeeping on the part of administrators 
     #   without reading the whole description
     category = models.CharField(max_length=32)
-
+    
+    class Meta:
+        unique_together = (("name", "category"),)
+    
     @cache_function
     def get_cached(name, category):
         rt, created = RegistrationType.objects.get_or_create(name=name, defaults = {'category': category})

@@ -167,9 +167,10 @@ teachers[key]))
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
         for cls in self.program.classes().annotate(subject_duration=Sum('sections__duration')).values('subject_duration', 'class_size_max'):
-            chours += cls['subject_duration']
-            shours += cls['subject_duration'] * (cls['class_size_max'] if cls['class_size_max'] else 0)
-       
+            if cls['subject_duration']:
+                chours += cls['subject_duration']
+                shours += cls['subject_duration'] * (cls['class_size_max'] if cls['class_size_max'] else 0)
+           
         context['classhours'] = chours
         context['classpersonhours'] = shours
         Q_categories = Q(program=self.program)

@@ -37,18 +37,12 @@ div.qsd_header
 </style>
 
 {% load render_qsd %}
-{% render_inline_qsd "Q/Web" "homepage_qsdpart" request.user %}
+{% render_inline_qsd "Q/Web" "homepage_qsdpart" None %}
 
-{% if request.user.get_profile.prof.isAdministrator %}
-<div id="divnav7">
-<a href="/manage/programs">Administration pages</a>
-</div>
-{% endif %}
-
-{% if request.user.get_profile.prof.isOnsite %}
+<div class="onsite onsite_hidden">
 <div id="divnav8">
 <a href="/myesp/onsite/">On-Site Registration</a>
 </div>
-{% endif %}
+</div>
 
 {% endblock %}

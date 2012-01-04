@@ -59,7 +59,7 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
     def main(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher eg page """
         context = {}
-        modules = self.program.getModules(self.user, 'onsite')
+        modules = self.program.getModules(request.user, 'onsite')
         
         for module in modules:
             context = module.prepare(context)
@@ -69,7 +69,7 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
         context['one'] = one
         context['two'] = two
 
-        if self.user.isAdmin(self.program):
+        if request.user.isAdmin(self.program):
             context['core_admin'] = True
         else:
             context['core_admin'] = False

@@ -46,7 +46,7 @@ from django              import forms
 from django.contrib.auth.models import User
 from esp.accounting_docs.models import Document
 from esp.accounting_core.models import LineItem, LineItemType
-
+from esp.middleware.threadlocalrequest import get_current_request
 from collections import defaultdict
 
 class CostItem(forms.Form):
@@ -80,10 +80,10 @@ class StudentExtraCosts(ProgramModuleObj):
             }
     
     def get_invoice(self):
-        return Document.get_invoice(self.user, self.program_anchor_cached(parent=True), [], dont_duplicate=True)
+        return Document.get_invoice(get_current_request().user, self.program_anchor_cached(parent=True), [], dont_duplicate=True)
 
     def have_paid(self):
-        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(parent=True), txn__complete=True).count() > 0 )
+        return ( Document.objects.filter(user=get_current_request().user, anchor=self.program_anchor_cached(parent=True), txn__complete=True).count() > 0 )
 
     def studentDesc(self):
         """ Return a description for each line item type that students can be filtered by. """
@@ -110,7 +110,7 @@ class StudentExtraCosts(ProgramModuleObj):
         return student_lists
 
     def isCompleted(self):
-        return ( Document.objects.filter(user=self.user, anchor=self.program_anchor_cached(parent=True), txn__complete=True).count() > 0 or self.get_invoice().txn.lineitem_set.all().count() > 0 )
+        return ( Document.objects.filter(user=get_current_request().user, anchor=self.program_anchor_cached(parent=True), txn__complete=True).count() > 0 or self.get_invoice().txn.lineitem_set.all().count() > 0 )
 
     @main_call
     @needs_student

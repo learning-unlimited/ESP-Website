@@ -40,6 +40,7 @@ from esp.web.util                import render_to_response
 from django.core.mail            import send_mail
 from django.db.models.query      import Q
 from esp.users.models            import ESPUser, User
+from esp.middleware.threadlocalrequest import get_current_request
 
 class RemoteTeacherProfile(ProgramModuleObj):
     """ This program module allows teachers to select how they are going to do things with respect to having a program far away. (i.e. do they need transportation, when do they need transportation, etc.)"""
@@ -68,10 +69,10 @@ class RemoteTeacherProfile(ProgramModuleObj):
         return {'teacher_remoteprofile': """Teachers who have completed the remote volunteer profile."""}
 
     def isCompleted(self):
-        if module_ext.RemoteProfile.objects.filter(user = self.user, program = self.program).exists():
+        if module_ext.RemoteProfile.objects.filter(user = get_current_request().user, program = self.program).exists():
             return True
         else:
-            regProf, created = module_ext.RemoteProfile.objects.get_or_create(user = self.user, program = self.program)
+            regProf, created = module_ext.RemoteProfile.objects.get_or_create(user = get_current_request().user, program = self.program)
             return False
 
     @main_call
@@ -81,11 +82,11 @@ class RemoteTeacherProfile(ProgramModuleObj):
  
         context = {'module': self}
         
-        profile_qs = module_ext.RemoteProfile.objects.filter(user = self.user, program = self.program)
+        profile_qs = module_ext.RemoteProfile.objects.filter(user = request.user, program = self.program)
         if profile_qs.exists():
             profile = profile_qs.order_by('-id')[0]
         else:
-            profile, created = module_ext.RemoteProfile.objects.get_or_create(user=self.user, program=self.program)
+            profile, created = module_ext.RemoteProfile.objects.get_or_create(user=request.user, program=self.program)
             profile.save()
         if request.method == 'POST':
             form = RemoteTeacherProfileForm(self, request.POST)

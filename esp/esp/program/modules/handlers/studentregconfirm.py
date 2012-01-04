@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call
+from esp.middleware.threadlocalrequest import get_current_request
 from django.http import HttpResponseRedirect
 
 class StudentRegConfirm(ProgramModuleObj):
@@ -52,7 +53,7 @@ class StudentRegConfirm(ProgramModuleObj):
         return HttpResponseRedirect("confirmreg")
 
     def isCompleted(self):
-        return self.program.isConfirmed(self.user)
+        return self.program.isConfirmed(get_current_request().user)
 
     def hideNotRequired(self):
         return True

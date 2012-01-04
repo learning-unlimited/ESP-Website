@@ -81,7 +81,7 @@ class AdminMorph(ProgramModuleObj):
         if not found:
             return user
 
-        self.user.switch_to_user(request,
+        request.user.switch_to_user(request,
                                  user,
                                  '/manage/%s/admin_morph/' % prog.getUrlBase(),
                                  'Managing %s' % self.program.niceName(),

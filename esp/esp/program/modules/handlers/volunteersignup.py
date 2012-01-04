@@ -66,8 +66,8 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             form = VolunteerOfferForm(program=prog)
             
         #   Pre-fill information if possible
-        if hasattr(self.user, 'email'):
-            form.load(self.user)
+        if hasattr(request.user, 'email'):
+            form.load(request.user)
         
         #   Override default appearance; template doesn't mind taking a string instead
         context['form'] = form._html_output(
