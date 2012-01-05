@@ -5,7 +5,7 @@ from esp.users.models import ESPUser
 from esp.users.models import UserBit
 import esp.settings
 from esp.datatree.models import GetNode
-from esp.seltests import try_normal_login, logout
+from esp.seltests import try_normal_login, logout, noActiveAjaxJQuery
 from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory
 from selenium.webdriver.support.ui import WebDriverWait
