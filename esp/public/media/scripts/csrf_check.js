@@ -33,21 +33,37 @@ var check_csrf_cookie = function(form)
         return true;
     }
 
+    //Set the csrf token
+    $j.ajax("/set_csrf_token", { async: false });
+
     //If this form is missing the csrfmiddlewaretoken, add it
     if (!form.csrfmiddlewaretoken)
     {
+        console.log('Missing csrfmiddlewaretoken, adding');
         $j(form).append(csrftokenstring());
     }
 
-    csrf_token = form.csrfmiddlewaretoken;
+    //Check it
+    csrf_token = $j(form.csrfmiddlewaretoken).val();
+    console.log(csrf_token);
     csrf_cookie = $j.cookie("csrftoken");
-    //alert(csrf_cookie);
     if (csrf_cookie == null)
     {
         dijit.byId('csrfAlert').show();
-        $j.get("/set_csrf_token");
         return false;
     }
+
+    if (csrf_cookie != form.csrfmiddlewaretoken)
+    {
+        console.log('Not matching. csrf_cookie: ' + csrf_cookie + ', csrfmiddlewaretoken: ' + csrf_token);
+    }
+    return true;
+    /*
+
+
+
+    //alert(csrf_cookie);
+
     else
     {
         //alert("Changing csrftoken values");
@@ -56,4 +72,8 @@ var check_csrf_cookie = function(form)
         //alert("csrf_token = " + csrf_token.value + ", csrf_cookie = " + csrf_cookie);
         return true;
     }
+
+
+
+    */
 }

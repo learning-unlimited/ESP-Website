@@ -5,7 +5,7 @@ from esp.users.models import ESPUser
 from esp.users.models import UserBit
 import esp.settings
 from esp.datatree.models import GetNode
-from esp.seltests import try_ajax_login, logout, noActiveAjaxJQuery
+from esp.seltests import try_normal_login, logout
 from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory
 from selenium.webdriver.support.ui import WebDriverWait
@@ -77,7 +77,7 @@ class TestQsdCachePurging(SeleniumTestCase):
 
     def check_page(self, page):
         self.open_url("/")
-        try_ajax_login(self, self.admin_user.username, self.PASSWORD_STRING)
+        try_normal_login(self, self.admin_user.username, self.PASSWORD_STRING)
         self.open_url(page)
         self.editQSD()
 
@@ -86,7 +86,7 @@ class TestQsdCachePurging(SeleniumTestCase):
         self.failUnless(self.is_text_present(self.TEST_STRING))
         logout(self)
 
-        try_ajax_login(self, self.qsd_user.username, self.PASSWORD_STRING)
+        try_normal_login(self, self.qsd_user.username, self.PASSWORD_STRING)
         self.open_url(page)
         self.editQSD()
 
