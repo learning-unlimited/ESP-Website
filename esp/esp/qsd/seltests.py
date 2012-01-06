@@ -8,6 +8,7 @@ from esp.datatree.models import GetNode
 from esp.seltests import try_normal_login, logout, noActiveAjaxJQuery
 from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory
+from esp.tagdict.models import Tag
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium import selenium
@@ -74,6 +75,9 @@ class TestQsdCachePurging(SeleniumTestCase):
         qsd_rec_new.keywords    = ''
         qsd_rec_new.save()
         self.driver.testserver_port = VARNISH_PORT
+
+        # Add the varnish_purge tag
+        Tag.objects.get_or_create(key='varnish_purge', value='true')
 
     def check_page(self, page):
         self.open_url("/")
