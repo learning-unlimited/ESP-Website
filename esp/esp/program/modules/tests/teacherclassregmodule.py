@@ -257,50 +257,11 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.failUnless(teacher in d['class_nearly_full'])
 
         # Make a program
-        prog_form_values = {
-                'term': '1111_Spring',
-                'term_friendly': 'Spring 1111',
-                'grade_min': '7',
-                'grade_max': '12',
-                'class_size_min': '0',
-                'class_size_max': '500',
-                'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234568@mit.edu',
-                'program_size_max': '3000',
-                'anchor': self.program_type_anchor.id,
-                'program_modules': [x.id for x in ProgramModule.objects.all()],
-                'class_categories': [x.id for x in self.categories],
-                'admins': [x.id for x in self.admins],
-                'teacher_reg_start': '1111-01-01 00:00:00',
-                'teacher_reg_end':   '2000-01-01 00:00:00',
-                'student_reg_start': '1111-01-01 00:00:00',
-                'student_reg_end':   '2000-01-01 00:00:00',
-                'publish_start':     '1111-01-01 00:00:00',
-                'publish_end':       '2000-01-01 00:00:00',
-                'base_cost':         '666',
-                'finaid_cost':       '37',
-            }
-        pcf = ProgramCreationForm(prog_form_values)
-        if not pcf.is_valid():
-            print "ProgramCreationForm errors"
-            print pcf.data
-            print pcf.errors
-            print prog_form_values
-            raise Exception()
-        temp_prog = pcf.save(commit=False)
-        datatrees, userbits, modules = prepare_program(temp_prog, pcf.cleaned_data)
-        costs = (pcf.cleaned_data['base_cost'], pcf.cleaned_data['finaid_cost'])
-        anchor = GetNode(pcf.cleaned_data['anchor'].get_uri() + "/" + pcf.cleaned_data["term"])
-        anchor.friendly_name = pcf.cleaned_data['term_friendly']
-        anchor.save()
-        new_prog = pcf.save(commit=False)
-        new_prog.anchor = anchor
-        new_prog.save()
-        pcf.save_m2m()
-        commit_program(new_prog, datatrees, userbits, modules, costs)
+        self.create_past_program()
 
         # Create a class for the teacher
         class_dummy_anchor = GetNode('Q/DummyClass')
-        new_class, created = ClassSubject.objects.get_or_create(anchor=class_dummy_anchor, category=self.categories[0], grade_min=7, grade_max=12, parent_program=new_prog, class_size_max=30, class_info='Previous class!')
+        new_class, created = ClassSubject.objects.get_or_create(anchor=class_dummy_anchor, category=self.categories[0], grade_min=7, grade_max=12, parent_program=self.new_prog, class_size_max=30, class_info='Previous class!')
         new_class.makeTeacher(self.teacher)
         new_class.add_section(duration=50.0/60.0)
         new_class.accept()
