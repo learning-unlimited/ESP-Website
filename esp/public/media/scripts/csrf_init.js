@@ -1,23 +1,34 @@
-function csrftoken()
+function csrf_token()
 {
-    document.write(csrftokenstring());
+    return $j.cookie('csrftoken');
 }
 
-function csrftokenstring()
+function csrf_token_string()
 {
     return "<input type='hidden' name='csrfmiddlewaretoken' value='" + $j.cookie('csrftoken') + "' />";
 }
 
+function add_csrf_token()
+{
+    document.write(csrf_token_string());
+}
+
 function set_onsubmit()
 { 
-    //Select all forms with post methods
-    $j("form[method=post]")
-        //Set their onsubmit functions to be check_csrf_cookie
-        .submit(function() { return check_csrf_cookie(this); })
-        //Filter down to ones without csrfmiddlewaretokens
-        //.filter(":not(:has(input[name=csrfmiddlewaretoken]))")
-        //Add the csrfmiddlewaretoken hidden input
-        //.append(csrftokenstring())
+    $j("form[method=post]").submit(function() { return check_csrf_cookie(this); })
+}
+
+function refresh_csrf_cookie()
+{
+    if (!$j.cookie('csrftoken'))
+    {
+        $j.ajax("/set_csrf_token", { async: false });
+    }
+}
+
+function force_refresh_csrf_cookie()
+{
+    $j.ajax("/set_csrf_token", { async: false });
 }
 
 $j.getScript("/media/scripts/csrf_check.js", set_onsubmit);
