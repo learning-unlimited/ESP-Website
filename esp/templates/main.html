@@ -9,7 +9,7 @@
 {% block stylesheets %}
     {{ block.super }}
     {# Customize your stylesheets here #}
-    <link rel="stylesheet" href="{{ MEDIA_URL }}styles/main.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/main.css" type="text/css" />
 {% endblock %}
 
 {% block javascript %}
@@ -20,7 +20,7 @@
         content area line up at the bottom of the page.  If you don't need them,
         feel free to remove them.
     {% endcomment %}
-    <script type="text/javascript" src="{{ MEDIA_URL }}scripts/match_heights.js"></script>
+    <script type="text/javascript" src="/media/scripts/match_heights.js"></script>
     <script type="text/javascript">
     <!--
     match_content = function () {
