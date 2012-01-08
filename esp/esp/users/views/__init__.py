@@ -72,8 +72,9 @@ def login_checked(request, *args, **kwargs):
                     context['next_title'] = 'the home page'
                 return render_to_response('users/login_duplicate_warning.html', request, request.get_node('Q/Web/myesp'), context)
 
-    if reply.get('Location', '') == '/':
-        # We're getting redirected to the homepage.
+    mask_locations = ['/', '/myesp/signout/']
+    if reply.get('Location', '') in mask_locations:
+        # We're getting redirected to somewhere undesirable.
         # Let's try to do something smarter.
         request.user = ESPUser(request.user)
         if request.user.isTeacher():
