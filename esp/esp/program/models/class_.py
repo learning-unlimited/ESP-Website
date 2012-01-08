@@ -182,7 +182,7 @@ class ClassManager(ProcedureManager):
         """
         now = datetime.datetime.now()
         
-        enrolled_type = RegistrationType.get_map()['Enrolled']
+        enrolled_type = RegistrationType.get_map(include=['Enrolled'], category='student')['Enrolled']
         teaching_node=GetNode("V/Flags/Registration/Teacher")
 
         if initial_queryset:

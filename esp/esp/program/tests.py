@@ -703,6 +703,55 @@ class ProgramFrameworkTest(TestCase):
                 else:
                     ignore_ts.append(target_ts)
 
+    # Helper function to create another program in the past
+    # Does not get called by default, but subclasses can call it
+    def create_past_program(self):
+        from esp.program.models import ProgramModule
+        from esp.program.forms import ProgramCreationForm
+        from esp.program.setup import prepare_program, commit_program
+        # Make a program
+        prog_form_values = {
+                'term': '1111_Spring',
+                'term_friendly': 'Spring 1111',
+                'grade_min': '7',
+                'grade_max': '12',
+                'class_size_min': '0',
+                'class_size_max': '500',
+                'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234568@mit.edu',
+                'program_size_max': '3000',
+                'anchor': self.program_type_anchor.id,
+                'program_modules': [x.id for x in ProgramModule.objects.all()],
+                'class_categories': [x.id for x in self.categories],
+                'admins': [x.id for x in self.admins],
+                'teacher_reg_start': '1111-01-01 00:00:00',
+                'teacher_reg_end':   '2000-01-01 00:00:00',
+                'student_reg_start': '1111-01-01 00:00:00',
+                'student_reg_end':   '2000-01-01 00:00:00',
+                'publish_start':     '1111-01-01 00:00:00',
+                'publish_end':       '2000-01-01 00:00:00',
+                'base_cost':         '666',
+                'finaid_cost':       '37',
+            }
+        pcf = ProgramCreationForm(prog_form_values)
+        if not pcf.is_valid():
+            print "ProgramCreationForm errors"
+            print pcf.data
+            print pcf.errors
+            print prog_form_values
+            raise Exception()
+        temp_prog = pcf.save(commit=False)
+        datatrees, userbits, modules = prepare_program(temp_prog, pcf.cleaned_data)
+        costs = (pcf.cleaned_data['base_cost'], pcf.cleaned_data['finaid_cost'])
+        anchor = GetNode(pcf.cleaned_data['anchor'].get_uri() + "/" + pcf.cleaned_data["term"])
+        anchor.friendly_name = pcf.cleaned_data['term_friendly']
+        anchor.save()
+        new_prog = pcf.save(commit=False)
+        new_prog.anchor = anchor
+        new_prog.save()
+        pcf.save_m2m()
+        commit_program(new_prog, datatrees, userbits, modules, costs)
+        self.new_prog = new_prog
+
 def randomized_attrs(program):
     section_list = list(program.sections())
     random.shuffle(section_list)
