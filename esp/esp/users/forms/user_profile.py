@@ -244,13 +244,6 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
 
         self.allow_change_grade_level = Tag.getTag('allow_change_grade_level')
 
-        #   Add user's current grade if it is out of range.
-        if user:
-            user_grade = user.getGrade()
-            grade_tup = (str(ESPUser.YOGFromGrade(user_grade)), str(user_grade))
-            if grade_tup not in self.fields['graduation_year'].choices:
-                self.fields['graduation_year'].choices.insert(0, grade_tup)
-
         ## All of these Tags may someday want to be made per-program somehow.
         ## We don't know the current program right now, though...
         show_studentrep_application = Tag.getTag('show_studentrep_application')
@@ -272,6 +265,13 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
         if custom_grade_options:
             custom_grade_options = json.loads(custom_grade_options)
             self.fields['graduation_year'].choices = [('','')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in custom_grade_options]
+            
+        #   Add user's current grade if it is out of range and they have already filled out the profile.
+        if user and user.registrationprofile_set.count() > 0:
+            user_grade = user.getGrade()
+            grade_tup = (str(ESPUser.YOGFromGrade(user_grade)), str(user_grade))
+            if grade_tup not in self.fields['graduation_year'].choices:
+                self.fields['graduation_year'].choices.insert(0, grade_tup)
 
         if Tag.getTag('show_student_graduation_years_not_grades'):            
             current_grad_year = self.ESPUser.current_schoolyear()
