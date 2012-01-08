@@ -157,12 +157,12 @@ class ClassManager(ProcedureManager):
         
         return self.filter(status = 10)
 
-    def catalog(self, program, ts=None, force_all=False, initial_queryset=None, use_cache=True, cache_only=False):
+    def catalog(self, program, ts=None, force_all=False, initial_queryset=None, use_cache=True, cache_only=False, order_args_override=None):
         # Try getting the catalog straight from cache
-        catalog = self.catalog_cached(program, ts, force_all, initial_queryset, cache_only=True)
+        catalog = self.catalog_cached(program, ts, force_all, initial_queryset, cache_only=True, order_args_override=order_args_override)
         if catalog is None:
             # Get it from the DB, then try prefetching class sizes
-            catalog = self.catalog_cached(program, ts, force_all, initial_queryset, use_cache=use_cache, cache_only=cache_only)
+            catalog = self.catalog_cached(program, ts, force_all, initial_queryset, use_cache=use_cache, cache_only=cache_only, order_args_override=order_args_override)
         else:
             for cls in catalog:
                 for sec in cls.get_sections():
@@ -173,7 +173,7 @@ class ClassManager(ProcedureManager):
 
     
     @cache_function
-    def catalog_cached(self, program, ts=None, force_all=False, initial_queryset=None):
+    def catalog_cached(self, program, ts=None, force_all=False, initial_queryset=None, order_args_override=None):
         """ Return a queryset of classes for view in the catalog.
 
         In addition to just giving you the classes, it also
@@ -219,17 +219,16 @@ class ClassManager(ProcedureManager):
         
         #   Allow customized orderings for the catalog.
         #   These are the default ordering fields in descending order of priority.
-        order_args = ['category__symbol', 'sections__meeting_times__start', '_num_students', 'id']
-        #   First check if there is an ordering specified for the program.
-        program_sort_fields = Tag.getTag('catalog_sort_fields', target=program)
-        if program_sort_fields:
-            #   If you found one, use it.
-            order_args = program_sort_fields.split(',')
+        if order_args_override:
+            order_args = order_args_override
         else:
-            #   If there is none, check for a global tag.  If one is found, use it.
-            global_sort_fields = Tag.getTag('catalog_sort_fields')
-            if global_sort_fields:
-                order_args = global_sort_fields.split(',')
+            order_args = ['category__symbol', 'sections__meeting_times__start', '_num_students', 'id']
+            #   First check if there is an ordering specified for the program.
+            program_sort_fields = Tag.getProgramTag('catalog_sort_fields', program)
+            if program_sort_fields:
+                #   If you found one, use it.
+                order_args = program_sort_fields.split(',')
+        
         #   Order the QuerySet using the specified list.
         classes = classes.order_by(*order_args)
         

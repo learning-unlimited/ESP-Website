@@ -108,7 +108,7 @@ class AdminClass(ProgramModuleObj):
         return clsTimeSlots
 
     def getClasses(self):
-        return ClassSubject.objects.catalog(self.program, force_all=True)
+        return ClassSubject.objects.catalog(self.program, force_all=True, order_args_override=['id'])
         
     def prepare(self, context=None):
         if context is None: context = {}
