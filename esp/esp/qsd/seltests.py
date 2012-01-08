@@ -5,9 +5,10 @@ from esp.users.models import ESPUser
 from esp.users.models import UserBit
 import esp.settings
 from esp.datatree.models import GetNode
-from esp.seltests import try_ajax_login, logout, noActiveAjaxJQuery
+from esp.seltests import try_normal_login, logout, noActiveAjaxJQuery
 from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory
+from esp.tagdict.models import Tag
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium import selenium
@@ -75,9 +76,12 @@ class TestQsdCachePurging(SeleniumTestCase):
         qsd_rec_new.save()
         self.driver.testserver_port = VARNISH_PORT
 
+        # Add the varnish_purge tag
+        Tag.objects.get_or_create(key='varnish_purge', value='true')
+
     def check_page(self, page):
         self.open_url("/")
-        try_ajax_login(self, self.admin_user.username, self.PASSWORD_STRING)
+        try_normal_login(self, self.admin_user.username, self.PASSWORD_STRING)
         self.open_url(page)
         self.editQSD()
 
@@ -86,7 +90,7 @@ class TestQsdCachePurging(SeleniumTestCase):
         self.failUnless(self.is_text_present(self.TEST_STRING))
         logout(self)
 
-        try_ajax_login(self, self.qsd_user.username, self.PASSWORD_STRING)
+        try_normal_login(self, self.qsd_user.username, self.PASSWORD_STRING)
         self.open_url(page)
         self.editQSD()
 

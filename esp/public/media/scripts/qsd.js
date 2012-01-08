@@ -28,7 +28,9 @@ function qsd_inline_edit(qsd_id)
 
 function qsd_send_command(qsd_id, postdata)
 {
-    postdata.csrfmiddlewaretoken = csrfmiddlewaretoken;
+    //Refresh the csrf token if needed
+    refresh_csrf_cookie();
+    postdata.csrfmiddlewaretoken = csrf_token();
 
     $j.post("/admin/ajax_qsd", post_encode(postdata), function(data, status)
     {
@@ -46,7 +48,7 @@ function qsd_send_command(qsd_id, postdata)
         }
     });
 
-    $j.post("/cache/varnish_purge", { page: $j(location).attr('pathname'), csrfmiddlewaretoken: csrfmiddlewaretoken});
+    $j.post("/cache/varnish_purge", { page: $j(location).attr('pathname'), csrfmiddlewaretoken: csrf_token()});
 }
 
 function qsd_inline_upload(qsd_id)

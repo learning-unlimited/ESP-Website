@@ -83,8 +83,10 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
             if (!(data.nowriteback)) {
                 if (data.blocks.length > 0) {
+                    //Refresh the csrf token
+                    refresh_csrf_cookie();
                     var req = { action: 'assignreg',
-                            csrfmiddlewaretoken: csrfmiddlewaretoken,
+                            csrfmiddlewaretoken: csrf_token(),
                             cls: data.section.uid,
                             block_room_assignments: data.blocks.map(function(x) { return x.time.uid + "," + x.room.uid; } ).join("\n") };
 
@@ -98,11 +100,6 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                         }
                     })
                     .error(function(ajax_data, status) {
-                        if(ajax_data.status == 403)
-                        {
-                            //We want to make sure the CSRF token gets set so this doesn't happen multiple times
-                            $j.get("/set_csrf_token", function() { csrfmiddlewaretoken = $j.cookie("csrftoken"); });
-                        }
                         alert("Assignment failure!");
                     });
                 } else {
@@ -158,8 +155,10 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         }.bind(this));
         ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
             if (!(data.nowriteback)) {
+                //Refresh the csrf token
+                refresh_csrf_cookie();
                 var req = { action: 'deletereg',
-                    csrfmiddlewaretoken: csrfmiddlewaretoken,
+                    csrfmiddlewaretoken: csrf_token(),
                     cls: data.section.uid };
 
                 $j.post('ajax_schedule_class', req)
@@ -168,11 +167,6 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                     ESP.Utilities.evm.fire('block_section_unassignment_local', data);
                 })
                 .error(function(ajax_data, status) {
-                    if(ajax_data.status == 403)
-                    {
-                        //We want to make sure the CSRF token gets set so this doesn't happen multiple times
-                        $j.get("/set_csrf_token", function() { csrfmiddlewaretoken = $j.cookie("csrftoken"); });
-                    }
                     alert("Unassignment failure!");
                 });
             }
@@ -376,7 +370,6 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
     Matrix.HeaderCell = Class.create(Matrix.Cell,{
         initialize: function($super){
             $super();
-            this.td.addClass('header-cfunction() { csrfmiddlewaretoken = $j.cookie("csrftoken"); }ell');
         }
     });
     Matrix.InvalidCell = Class.create(Matrix.Cell,{
