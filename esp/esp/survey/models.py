@@ -110,9 +110,9 @@ class Survey(models.Model):
         if progs.count() == 1:
             prog = progs[0]
             if self.category == 'teach':
-                return prog.num_teachers()['class_rejected']
+                return prog.teachers()['class_approved'].count()
             elif self.category == 'learn':
-                return prog.num_students()['confirmed']
+                return prog.students()['confirmed'].count()
             else:
                 return 0
         else:
