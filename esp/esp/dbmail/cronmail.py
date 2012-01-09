@@ -90,9 +90,10 @@ def send_email_requests():
         try:
             mailtxt.send()
         except:
-            #failed
+            #   Raise an exception if sending failed - we want to find out what happened.
             mailtxt.sent_by = None
             mailtxt.save()
+            raise
         else:
             mailtxt.sent = datetime.now()
             mailtxt.save()
