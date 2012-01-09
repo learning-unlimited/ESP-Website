@@ -46,7 +46,9 @@ from django.template import Template #, VariableNode, TextNode
 
 from django.conf import settings
 
-from django.core.mail import SMTPConnection
+from django.core.mail import get_connection
+from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
+from django.core.mail.message import sanitize_address
 
 
 
@@ -63,8 +65,9 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     from django.core.mail import EmailMessage #send_mail as django_send_mail
     print "Sent mail to %s" % str(new_list)
     
-    # The below stolen from send_mail in django.core.mail
-    connection = CustomSMTPConnection(username=None, password=None, fail_silently=fail_silently, return_path=return_path)
+    #   Get whatever type of e-mail connection Django provides.
+    #   Normally this will be SMTP, but it also has an in-memory backend for testing.
+    connection = get_connection(fail_silently=fail_silently, return_path=return_path)
     msg = EmailMessage(subject, message, from_email, new_list, bcc=(bcc,), connection=connection, headers=extra_headers)
     
     #   Detect HTML tags in message and change content-type if they are found
@@ -441,21 +444,24 @@ class PlainRedirect(models.Model):
         ordering=('original',)
 
 
-# Taken from http://www.djangosnippets.org/snippets/735/
-class CustomSMTPConnection(SMTPConnection):
-    """Simple override of SMTPConnection to allow a Return-Path to be specified"""
+# Adapted from http://www.djangosnippets.org/snippets/735/
+class CustomSMTPBackend(SMTPEmailBackend):
+    """ Simple override of Django's default backend to allow a Return-Path to be specified """
+    
     def __init__(self, return_path=None, **kwargs):
         self.return_path = return_path
-        super(CustomSMTPConnection, self).__init__(**kwargs)
-    
+        super(SMTPEmailBackend, self).__init__(**kwargs)
+        
     def _send(self, email_message):
         """A helper method that does the actual sending."""
-        if not email_message.to:
+        if not email_message.recipients():
             return False
+        from_email = sanitize_address(email_message.from_email, email_message.encoding)
+        recipients = [sanitize_address(addr, email_message.encoding)
+                      for addr in email_message.recipients()]
         try:
-            return_path = self.return_path or email_message.from_email
-            self.connection.sendmail(return_path,
-                    email_message.recipients(),
+            self.connection.sendmail(sanitize_address(self.return_path, email_message.encoding),
+                    recipients,
                     email_message.message().as_string())
         except:
             if not self.fail_silently:

@@ -109,6 +109,7 @@ EMAIL_PORT   = '25'
 SERVER_EMAIL = 'server@diogenes.learningu.org'
 EMAIL_SUBJECT_PREFIX = '[ ESP ERROR ] '
 EMAIL_HOST_SENDER = EMAIL_HOST
+EMAIL_BACKEND = 'esp.dbmail.models.CustomSMTPBackend'
 
 # Default addresses to send archive/bounce info to - should probably be overridden in local_settings
 DEFAULT_EMAIL_ADDRESSES = {
