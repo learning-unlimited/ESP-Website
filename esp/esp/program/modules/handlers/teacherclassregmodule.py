@@ -779,6 +779,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             context['isopenclass'] = 0
         elif action == 'createopenclass' or action == 'editopenclass':
             context['isopenclass'] = 1
+            context['grade_range_popup'] = False
             context['classroom_form_advisories'] += '__open_class'
         context['classtype'] = context['classes'][context['isopenclass']]['type']
         context['otherclass'] = context['classes'][1 - context['isopenclass']]
