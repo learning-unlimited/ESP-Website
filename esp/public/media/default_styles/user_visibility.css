@@ -1,17 +1,18 @@
 
-// WARNING: This set of CSS themes (along with accompanying JavaScript)
-// lets you set things to be visible only for certain types of users.
-// This is *not secure*!  Users can always just do "View Source" to see it.
-// So only use it as a UI convenience; where you don't really care all
-// that much if people see text meant for another user type but you
-// don't want users to have to think about that text if they don't want to.
-
-// Current recognized UserRoles:
-// Administrator
-// Educator
-// Guardian
-// Student
-// Teacher
+/* WARNING: This set of CSS themes (along with accompanying JavaScript)
+ * lets you set things to be visible only for certain types of users.
+ * This is *not secure*!  Users can always just do "View Source" to see it.
+ * So only use it as a UI convenience; where you don't really care all
+ * that much if people see text meant for another user type but you
+ * don't want users to have to think about that text if they don't want to.
+ *
+ * Current recognized UserRoles:
+ * Administrator
+ * Educator
+ * Guardian
+ * Student
+ * Teacher
+ */
 
 .Administrator_hidden {
   display: none;
@@ -29,7 +30,7 @@
   display: none;
 }
 
-// Some legacy stuff
+/* Some legacy stuff */
 .admin_hidden {
   display: none;
 }
