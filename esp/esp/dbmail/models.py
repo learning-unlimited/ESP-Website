@@ -450,7 +450,7 @@ class CustomSMTPBackend(SMTPEmailBackend):
     
     def __init__(self, return_path=None, **kwargs):
         self.return_path = return_path
-        super(SMTPEmailBackend, self).__init__(**kwargs)
+        super(CustomSMTPBackend, self).__init__(**kwargs)
         
     def _send(self, email_message):
         """A helper method that does the actual sending."""
