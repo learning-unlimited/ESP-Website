@@ -121,9 +121,14 @@ class ProgramModuleObj(models.Model):
             
         return result
     
-    def get_main_view(self):
-        if not hasattr(self, '_main_view'):
+    def get_main_view(self, tl=None):
+        if tl or not hasattr(self, '_main_view'):
             main_views = self.get_views_by_call_tag(['Main Call'])
+        if tl:
+            tl_matching_views = filter(lambda x: hasattr(getattr(self, x), 'call_tl') and getattr(self, x).call_tl == tl, main_views)
+            if len(tl_matching_views) > 0:
+                return tl_matching_views[0]
+        if not hasattr(self, '_main_view'):
             if len(main_views) > 0:
                 self._main_view = main_views[0]
             else:
@@ -146,7 +151,7 @@ class ProgramModuleObj(models.Model):
         modules = self.program.getModules(get_current_request().user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
-                return getattr(module, module.main_view)
+                return getattr(module, module.get_main_view(tl))
         assert False, 'No core module to return to!'
 
     def getCoreURL(self, tl):
@@ -330,10 +335,10 @@ class ProgramModuleObj(models.Model):
 
     # important functions for hooks...
     @cache_function
-    def get_full_path(self):
+    def get_full_path(self, tl=None):
         str_array = self.program.anchor.tree_encode()
         url = '/'+self.module.module_type \
-              +'/'+'/'.join(str_array[-2:])+'/'+self.main_view
+              +'/'+'/'.join(str_array[-2:])+'/'+self.get_main_view(tl)
         return url
     get_full_path.depend_on_row(lambda: ProgramModuleObj, 'self')
 
@@ -357,7 +362,7 @@ class ProgramModuleObj(models.Model):
     def makeLink(self):
         if not self.module.module_type == 'manage':
             link = u'<a href="%s" title="%s" class="vModuleLink" >%s</a>' % \
-                (self.get_full_path(), self.module.link_title, self.module.link_title)
+                (self.get_full_path(tl=self.module.module_type), self.module.link_title, self.module.link_title)
         else:
             link = u'<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
                (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title)
@@ -542,7 +547,7 @@ def needs_teacher(method):
         if not request.user.isTeacher() and not request.user.isAdmin(moduleObj.program) and not (set(request.user.getUserTypes()) & set(allowed_teacher_types)):
             return render_to_response('errors/program/notateacher.html', request, (moduleObj.program, 'teach'), {})
         return method(moduleObj, request, *args, **kwargs)
-
+    _checkTeacher.call_tl = 'teach'
     return _checkTeacher
 
 def needs_admin(method):
@@ -559,7 +564,7 @@ def needs_admin(method):
             if not ( hasattr(request.user, 'other_user') and request.user.other_user and request.user.other_user.isAdmin(moduleObj.program) ):
                 return render_to_response('errors/program/notanadmin.html', request, (moduleObj.program, 'manage'), {})
         return method(moduleObj, request, *args, **kwargs)
-
+    _checkAdmin.call_tl = 'manage'
     return _checkAdmin
 
 def needs_onsite(method):
@@ -576,7 +581,7 @@ def needs_onsite(method):
                 return render_to_response('errors/program/notonsite.html', request, (moduleObj.program, 'onsite'), {})
             user.switch_back(request)
         return method(moduleObj, request, *args, **kwargs)
-
+    _checkAdmin.call_tl = 'onsite'
     return _checkAdmin
 
 def needs_onsite_no_switchback(method):
@@ -592,7 +597,7 @@ def needs_onsite_no_switchback(method):
             if not user.other_user or (not ouser.isOnsite(moduleObj.program) and not ouser.isAdmin(moduleObj.program)):
                 return render_to_response('errors/program/notonsite.html', request, (moduleObj.program, 'onsite'), {})
         return method(moduleObj, request, *args, **kwargs)
-
+    _checkAdmin.call_tl = 'onsite'
     return _checkAdmin
 
 def needs_student(method):
@@ -606,7 +611,7 @@ def needs_student(method):
             if not matching_user_types:
                 return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
         return method(moduleObj, request, *args, **kwargs)
-
+    _checkStudent.call_tl = 'learn'
     return _checkStudent        
 
 def needs_account(method):
