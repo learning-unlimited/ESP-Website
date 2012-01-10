@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
+from esp.admin import admin_site
 from esp.survey.models import Survey, SurveyResponse, QuestionType, Question, Answer
 
 from copy import deepcopy
@@ -55,18 +56,18 @@ def copy_surveys(modeladmin, request, queryset):
 class SurveyAdmin(admin.ModelAdmin):
     #actions = [ copy_surveys, ]
     pass
-admin.site.register(Survey, SurveyAdmin)
+admin_site.register(Survey, SurveyAdmin)
 
 class SurveyResponseAdmin(admin.ModelAdmin):
     pass
-admin.site.register(SurveyResponse, SurveyResponseAdmin)
+admin_site.register(SurveyResponse, SurveyResponseAdmin)
     
-admin.site.register(QuestionType)
+admin_site.register(QuestionType)
 
 class QuestionAdmin(admin.ModelAdmin):
     list_display = ['seq', 'name', 'question_type', 'survey']
     list_display_links = ['name']
     list_filter = ['survey']
-admin.site.register(Question, QuestionAdmin)
+admin_site.register(Question, QuestionAdmin)
 
-admin.site.register(Answer)
+admin_site.register(Answer)

@@ -34,33 +34,34 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
+from esp.admin import admin_site
 from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo, SATPrepTeacherModuleInfo, SATPrepAdminModuleInfo, CreditCardSettings
 from esp.program.modules.module_ext import RemoteProfile
 from esp.program.modules.base import ProgramModuleObj
 
-admin.site.register(DBReceipt)
+admin_site.register(DBReceipt)
 
-admin.site.register(SATPrepAdminModuleInfo)
+admin_site.register(SATPrepAdminModuleInfo)
 
 class SCRMIAdmin(admin.ModelAdmin):
     pass
-admin.site.register(StudentClassRegModuleInfo, SCRMIAdmin)
+admin_site.register(StudentClassRegModuleInfo, SCRMIAdmin)
 
 class CRMIAdmin(admin.ModelAdmin):
     exclude = ['display_times']
     pass
-admin.site.register(ClassRegModuleInfo, CRMIAdmin)
+admin_site.register(ClassRegModuleInfo, CRMIAdmin)
 
 class ProgramModelObjAdmin(admin.ModelAdmin):
     list_display = ('program', 'module')
     list_filter = ('program', 'module')
     search_fields = ('program__anchor__friendly_name', 'program__anchor__parent__friendly_name', 'module__admin_title', 'module__link_title')
-admin.site.register(ProgramModuleObj, ProgramModelObjAdmin)
+admin_site.register(ProgramModuleObj, ProgramModelObjAdmin)
 
-admin.site.register(SATPrepTeacherModuleInfo)
+admin_site.register(SATPrepTeacherModuleInfo)
 
 class RemoteProfileAdmin(admin.ModelAdmin):
     list_display = ('user', 'program', 'volunteer', 'need_bus')
-admin.site.register(RemoteProfile, RemoteProfileAdmin)
+admin_site.register(RemoteProfile, RemoteProfileAdmin)
 
-admin.site.register(CreditCardSettings)
+admin_site.register(CreditCardSettings)

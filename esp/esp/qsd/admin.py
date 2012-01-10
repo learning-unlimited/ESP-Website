@@ -34,10 +34,11 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
+from esp.admin import admin_site
 from esp.qsd.models import QuasiStaticData, ESPQuotations
 
 class QuasiStaticDataAdmin(admin.ModelAdmin):
     search_fields = ['title','name','keywords','description']
-admin.site.register(QuasiStaticData, QuasiStaticDataAdmin)
+admin_site.register(QuasiStaticData, QuasiStaticDataAdmin)
 
-admin.site.register(ESPQuotations)
+admin_site.register(ESPQuotations)

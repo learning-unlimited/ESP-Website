@@ -35,6 +35,8 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from django.db.models import ManyToManyField
 
+from esp.admin import admin_site
+
 from esp.program.models import ProgramModule, ArchiveClass, Program, BusSchedule
 from esp.program.models import TeacherParticipationProfile, SATPrepRegInfo, RegistrationProfile
 from esp.program.models import TeacherBio, FinancialAidRequest, SplashInfo
@@ -51,13 +53,13 @@ from esp.program.models import StudentApplication, StudentAppQuestion, StudentAp
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
     search_fields = ['link_title', 'admin_title', 'handler']
-admin.site.register(ProgramModule, ProgramModuleAdmin)
+admin_site.register(ProgramModule, ProgramModuleAdmin)
     
 class ArchiveClassAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'year', 'date', 'category', 'program', 'teacher')
     search_fields = ['description', 'title', 'program', 'teacher', 'category']
     pass
-admin.site.register(ArchiveClass, ArchiveClassAdmin)
+admin_site.register(ArchiveClass, ArchiveClassAdmin)
 
 class ProgramAdmin(admin.ModelAdmin):
     class Media:
@@ -69,31 +71,31 @@ class ProgramAdmin(admin.ModelAdmin):
         if isinstance( db_field, ManyToManyField ):
             kwargs['widget'] = admin.widgets.FilteredSelectMultiple(verbose_name='', is_stacked=False)
         return super(ProgramAdmin, self).formfield_for_dbfield(db_field,**kwargs)
-admin.site.register(Program, ProgramAdmin)
+admin_site.register(Program, ProgramAdmin)
 
-admin.site.register(BusSchedule)
-admin.site.register(TeacherParticipationProfile)
+admin_site.register(BusSchedule)
+admin_site.register(TeacherParticipationProfile)
 
 class SATPrepRegInfoAdmin(admin.ModelAdmin):
     list_display = ('user', 'program')
     #list_filter = ('program',)
     search_fields = ['user__username']
     pass
-admin.site.register(SATPrepRegInfo, SATPrepRegInfoAdmin)
+admin_site.register(SATPrepRegInfo, SATPrepRegInfoAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'contact_user', 'program')
     pass
-admin.site.register(RegistrationProfile, RegistrationProfileAdmin)
+admin_site.register(RegistrationProfile, RegistrationProfileAdmin)
     
 class TeacherBioAdmin(admin.ModelAdmin):
     list_display = ('user', 'program', 'slugbio')
     search_fields = ['user__username', 'slugbio', 'bio']
 
-admin.site.register(TeacherBio, TeacherBioAdmin)
+admin_site.register(TeacherBio, TeacherBioAdmin)
     
-admin.site.register(FinancialAidRequest)
-admin.site.register(SplashInfo)
+admin_site.register(FinancialAidRequest)
+admin_site.register(SplashInfo)
 
 ## Schedule stuff (wish it was schedule_.py)
 
@@ -104,38 +106,38 @@ subclass_instance_type.short_description = 'Instance type'
 class BooleanTokenAdmin(admin.ModelAdmin):
     list_display = ('expr', 'seq', subclass_instance_type, 'text')
     search_fields = ['text']
-admin.site.register(BooleanToken, BooleanTokenAdmin)    
+admin_site.register(BooleanToken, BooleanTokenAdmin)    
     
 class BooleanExpressionAdmin(admin.ModelAdmin):
     list_display = ('label', subclass_instance_type, 'num_tokens')
     def num_tokens(self, obj):
         return len(obj.get_stack())
-admin.site.register(BooleanExpression, BooleanExpressionAdmin)   
+admin_site.register(BooleanExpression, BooleanExpressionAdmin)   
 
-admin.site.register(ScheduleConstraint)
+admin_site.register(ScheduleConstraint)
 
 class ScheduleTestOccupiedAdmin(admin.ModelAdmin):
     list_display = ('timeblock', 'expr', 'seq', subclass_instance_type, 'text')
-admin.site.register(ScheduleTestOccupied, ScheduleTestOccupiedAdmin)
+admin_site.register(ScheduleTestOccupied, ScheduleTestOccupiedAdmin)
 
 class ScheduleTestCategoryAdmin(admin.ModelAdmin):
     list_display = ('timeblock', 'category', 'expr', 'seq', subclass_instance_type, 'text')
-admin.site.register(ScheduleTestCategory, ScheduleTestCategoryAdmin)
+admin_site.register(ScheduleTestCategory, ScheduleTestCategoryAdmin)
 
 class ScheduleTestSectionListAdmin(admin.ModelAdmin):
     list_display = ('timeblock', 'section_ids', 'expr', 'seq', subclass_instance_type, 'text')
-admin.site.register(ScheduleTestSectionList, ScheduleTestSectionListAdmin)
+admin_site.register(ScheduleTestSectionList, ScheduleTestSectionListAdmin)
 
-admin.site.register(VolunteerRequest)
-admin.site.register(VolunteerOffer)
+admin_site.register(VolunteerRequest)
+admin_site.register(VolunteerOffer)
 
 ## class_.py
 
 class ProgramCheckItemAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'program')
-admin.site.register(ProgramCheckItem, ProgramCheckItemAdmin)
+admin_site.register(ProgramCheckItem, ProgramCheckItemAdmin)
 
-admin.site.register(RegistrationType)
+admin_site.register(RegistrationType)
 
 def expire_student_registrations(modeladmin, request, queryset):
     for reg in queryset:
@@ -143,7 +145,7 @@ def expire_student_registrations(modeladmin, request, queryset):
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-admin.site.register(StudentRegistration, StudentRegistrationAdmin)
+admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
 def sec_classrooms(obj):
     return list(set([(x.name, str(x.num_students) + " students") for x in obj.classrooms()]))
@@ -154,21 +156,21 @@ class SectionAdmin(admin.ModelAdmin):
     list_display_links = ('title',)
     list_filter = ['status']
     pass
-admin.site.register(ClassSection, SectionAdmin)
+admin_site.register(ClassSection, SectionAdmin)
 
 
 class SubjectAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'parent_program', 'category')
     list_display_links = ('title',)
     search_fields = ['class_info', 'anchor__friendly_name']
-admin.site.register(ClassSubject, SubjectAdmin)
+admin_site.register(ClassSubject, SubjectAdmin)
 
-admin.site.register(ClassCategories)
-admin.site.register(ClassSizeRange)
+admin_site.register(ClassCategories)
+admin_site.register(ClassSizeRange)
 
 ## app_.py
 
-admin.site.register(StudentApplication)
-admin.site.register(StudentAppQuestion)
-admin.site.register(StudentAppResponse)
-admin.site.register(StudentAppReview)
+admin_site.register(StudentApplication)
+admin_site.register(StudentAppQuestion)
+admin_site.register(StudentAppResponse)
+admin_site.register(StudentAppReview)

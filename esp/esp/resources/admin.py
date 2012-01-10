@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
+from esp.admin import admin_site
 
 from esp.resources.models import ResourceType, ResourceRequest, Resource
 
@@ -48,6 +49,6 @@ class ResourceRequestAdmin(admin.ModelAdmin):
     list_display = ('target', 'res_type', 'desired_value')
     search_fields = ['target', 'res_type', 'desired_value']
 
-admin.site.register(ResourceType, ResourceTypeAdmin)
-admin.site.register(ResourceRequest, ResourceRequestAdmin)
-admin.site.register(Resource)
+admin_site.register(ResourceType, ResourceTypeAdmin)
+admin_site.register(ResourceRequest, ResourceRequestAdmin)
+admin_site.register(Resource)

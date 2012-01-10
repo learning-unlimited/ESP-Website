@@ -33,17 +33,18 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 from django.contrib import admin
+from esp.admin import admin_site
 from esp.accounting_core.models import LineItemType, Transaction, LineItem
 
 class LITAdmin(admin.ModelAdmin):
     list_display = ['text', 'amount', 'anchor']
     search_fields = ['text', 'amount', 'anchor__uri']
-admin.site.register(LineItemType, LITAdmin)
+admin_site.register(LineItemType, LITAdmin)
 
 class TXNAdmin(admin.ModelAdmin):
     pass
-admin.site.register(Transaction, TXNAdmin)
+admin_site.register(Transaction, TXNAdmin)
 
 class LIAdmin(admin.ModelAdmin):
     pass
-admin.site.register(LineItem, LIAdmin)
+admin_site.register(LineItem, LIAdmin)

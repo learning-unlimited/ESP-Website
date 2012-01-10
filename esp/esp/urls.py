@@ -34,12 +34,13 @@ Learning Unlimited, Inc.
 import os
 from django.conf.urls.defaults import patterns, include, handler500, handler404
 from django.contrib import admin
+from esp.admin import admin_site, autodiscover
 from esp.settings import PROJECT_ROOT, MEDIA_ROOT
 from django.views.generic.base import RedirectView
 
-admin.autodiscover()
-
 from esp.section_data import section_redirect_keys, section_prefix_keys
+
+autodiscover(admin_site)
 
 # Override error pages
 handler404 = 'esp.web.util.main.error404'
@@ -57,7 +58,7 @@ urlpatterns += patterns('',
                      (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
                      (r'^admin/ajax_children/?', 'esp.datatree.views.ajax_children'),
-                     (r'^admin/', include(admin.site.urls)),
+                     (r'^admin/', include(admin_site.urls)),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
                      #(r'^learn/Junction/2007_Spring/catalog/?$',RedirectView.as_view(url='/learn/Junction/2007_Summer/catalog/')),
                      (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$',RedirectView.as_view(url='/%(subsection)s/index.html')),
