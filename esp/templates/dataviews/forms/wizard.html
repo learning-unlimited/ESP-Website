@@ -39,7 +39,7 @@ function showInstructions() {
 {% endblock %}
 {% endblock %}
 {% block form %}
-<form action="." method="post" id="id_{{ step }}-form">{% csrf_token %}
+<form action="." method="post" id="id_{{ step }}-form">
 {% block form_begin %}{% endblock %}
 {% block form_div %}<div id="id_{{ step0 }}-form_div">{% endblock %}
 {% block form_as %}{{ form.as_p }}{% endblock %}

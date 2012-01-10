@@ -47,7 +47,7 @@
 <tr><td class="key">Graduation Year</td><td>{{ profile.student_info.graduation_year }} ({{ user.getGrade }}th Grade)</td></tr>
 <tr><td colspan="2">Is this student's grade incorrect?<br />
 Change grade to: 
-<form action="/manage/userview/" method="get" name="change_grade">{% csrf_token %}
+<form action="/manage/userview/" method="get" name="change_grade">
 {{ change_grade_form.graduation_year }}<br />
 <input type="hidden" name="username" value="{{ user.username }}" />
 <input type="submit" value="Change grade" />

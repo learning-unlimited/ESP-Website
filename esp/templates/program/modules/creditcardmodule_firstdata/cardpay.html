@@ -168,7 +168,7 @@ Please review the costs below. If you are concerned that there is a problem, ple
 
 {% comment %}{% end_inline_qsd_block %}{% endcomment %}
 
-<form onsubmit="return formTest();" action="{{ module.post_url }}" method="post" autocomplete="off">{% csrf_token %} 
+<form onsubmit="return formTest();" action="{{ module.post_url }}" method="post" autocomplete="off"> 
 
 <input type="hidden" name="storename" value="{{ module.store_id }}" />
 <input type="hidden" name="oid" value="{{ module.invoice_prefix }}-{{ invoice.get_locator }}" />

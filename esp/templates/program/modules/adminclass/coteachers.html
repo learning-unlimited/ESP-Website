@@ -39,7 +39,7 @@
 {% if not coteachers|length %}
 There are currently no teachers associated with this class.
 {% else %}
-<form action="{{request.path}}" method="post" name="manage_coteachers">{% csrf_token %}
+<form action="{{request.path}}" method="post" name="manage_coteachers">
 <table align="center" width="400">
     <tr>
         <th colspan="2">Current Teachers</th>
@@ -68,7 +68,7 @@ There are currently no teachers associated with this class.
 </table>
 </form>
 {% endif %}
-<form action="{{request.path}}" method="post" name="addteacher">{% csrf_token %}
+<form action="{{request.path}}" method="post" name="addteacher">
 <table align="center" width="400">
     <tr>
         <th colspan="2">Add More Teachers</th>
@@ -97,7 +97,7 @@ There are currently no teachers associated with this class.
     </tr>
     <tr>
         <td align="center" colspan="2">
-            <form action="{{request.path}}" method="post" name="submit">{% csrf_token %}
+            <form action="{{request.path}}" method="post" name="submit">
             <input type="hidden" name="op" value="save" />
             <input type="hidden" name="clsid" value="{{ class.id }}" />
             <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />

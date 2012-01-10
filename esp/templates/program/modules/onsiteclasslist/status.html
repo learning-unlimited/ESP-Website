@@ -93,7 +93,7 @@ form {
 {% for section in timeslot.sections %}
 <tr class="narrow">
 <td class="narrow">
-<form method="POST" action="{{ request.path }}?op=add&sec_id={{ section.id }}">{% csrf_token %}
+<form method="POST" action="{{ request.path }}?op=add&sec_id={{ section.id }}">
 <table bgcolor="#{{ section.color }}" border="0" cellspacing="0" cellpadding="0">
 <tr>
 <td> <!-- width="50px" -->

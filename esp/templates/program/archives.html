@@ -44,7 +44,7 @@ Old sort params:
 <br />
 
 <a name="top"></a>
-<form method="post" action="{{request.path}}">{% csrf_token %}
+<form method="post" action="{{request.path}}">
 
 <table cellspacing="0" cellpadding="4" class="fullwidth" align="center">
 <tr><th colspan="2">
@@ -114,7 +114,7 @@ Archive Viewing Options
 <tr><td>
 <h3>Browse current set of results</h3></td>
 <td>
-<form method="post" action="{{request.path}}">{% csrf_token %}
+<form method="post" action="{{request.path}}">
 <input type="hidden" name="max_num_results" value="{{ max_num_results }}" />
 <input type="hidden" name="results_end" value="{{ results_range.start }}" />
 <input type="hidden" name="newparam" value="{{ sortorder.0 }}" />
@@ -129,7 +129,7 @@ disabled
 {% endifequal %}
 />
 </form>
-<form method="post" action="{{request.path}}">{% csrf_token %}
+<form method="post" action="{{request.path}}">
 <input type="hidden" name="max_num_results" value="{{ max_num_results }}" />
 <input type="hidden" name="results_start" value="{{ results_range.end }}" />
 <input type="hidden" name="newparam" value="{{ sortorder.0 }}" />

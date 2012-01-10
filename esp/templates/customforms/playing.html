@@ -7,7 +7,7 @@
 		<p>{{form_description}}</p>
 		<p>Step {{ step }} of {{ step_count }}</p>
 		
-		<form action="." method="post">{% csrf_token %}
+		<form action="." method="post">
 		{% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
 		{% for fieldset in form.fieldsets %}
 		  <fieldset class="{{ fieldset.classes }}">
