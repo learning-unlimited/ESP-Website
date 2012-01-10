@@ -72,7 +72,7 @@ def login_checked(request, *args, **kwargs):
                     context['next_title'] = 'the home page'
                 return render_to_response('users/login_duplicate_warning.html', request, request.get_node('Q/Web/myesp'), context)
 
-    mask_locations = ['/', '/myesp/signout/']
+    mask_locations = ['/', '/myesp/signout/', '/admin/logout/']
     if reply.get('Location', '') in mask_locations:
         # We're getting redirected to somewhere undesirable.
         # Let's try to do something smarter.
