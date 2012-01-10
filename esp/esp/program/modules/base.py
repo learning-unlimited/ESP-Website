@@ -519,12 +519,16 @@ class ProgramModuleObj(models.Model):
 
 # will check and depending on the value of tl
 # will use .isTeacher or .isStudent()
+def not_logged_in(request):
+    return (not request.user or not request.user.is_authenticated() or not request.user.id)
+
 def usercheck_usetl(method):
     def _checkUser(moduleObj, request, tl, *args, **kwargs):
         errorpage = 'errors/program/nota'+tl+'.html'
     
-        if not request.user or not request.user.is_authenticated():
+        if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+            
         if tl == 'learn' and not request.user.isStudent():
             return render_to_response(errorpage, request, moduleObj.program, {})
         
@@ -542,8 +546,10 @@ def usercheck_usetl(method):
 def needs_teacher(method):
     def _checkTeacher(moduleObj, request, *args, **kwargs):
         allowed_teacher_types = Tag.getTag("allowed_teacher_types", moduleObj.program, default='').split(",")
-        if not request.user or not request.user.is_authenticated():
+        
+        if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+            
         if not request.user.isTeacher() and not request.user.isAdmin(moduleObj.program) and not (set(request.user.getUserTypes()) & set(allowed_teacher_types)):
             return render_to_response('errors/program/notateacher.html', request, (moduleObj.program, 'teach'), {})
         return method(moduleObj, request, *args, **kwargs)
@@ -556,8 +562,8 @@ def needs_admin(method):
             morpheduser=ESPUser.objects.get(id=request.session['user_morph']['olduser_id'])
         else:
             morpheduser=None
-
-        if not request.user or not request.user.is_authenticated():
+            
+        if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
         if not (request.user.isAdmin(moduleObj.program) or (morpheduser and morpheduser.isAdmin(moduleObj.program))):
@@ -569,7 +575,7 @@ def needs_admin(method):
 
 def needs_onsite(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
-        if not request.user or not request.user.is_authenticated():
+        if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
         if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(moduleObj.program):
@@ -586,7 +592,7 @@ def needs_onsite(method):
 
 def needs_onsite_no_switchback(method):
     def _checkAdmin(moduleObj, request, *args, **kwargs):
-        if not request.user or not request.user.is_authenticated():
+        if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
         if not request.user.isOnsite(moduleObj.program) and not request.user.isAdmin(moduleObj.program):
@@ -602,7 +608,7 @@ def needs_onsite_no_switchback(method):
 
 def needs_student(method):
     def _checkStudent(moduleObj, request, *args, **kwargs):
-        if not request.user or not request.user.is_authenticated():
+        if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
 
         if not request.user.isStudent() and not request.user.isAdmin(moduleObj.program):
@@ -616,8 +622,9 @@ def needs_student(method):
 
 def needs_account(method):
     def _checkAccount(moduleObj, request, *args, **kwargs):
-        if not request.user or not request.user.is_authenticated():
+        if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+            
         return method(moduleObj, request, *args, **kwargs)
     return _checkAccount
 
@@ -656,15 +663,19 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
     from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
     if tl != 'learn' and tl != 'teach':
         return True
+    response = None
+    canView = False
+    if not_logged_in(request):
+        response = HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+    else:
+        canView = request.user.updateOnsite(request)
+        if not canView:
+            canView = UserBit.UserHasPerms(request.user,
+                                           request.program.anchor_id,
+                                           GetNode('V/Deadline/Registration/'+{'learn':'Student',
+                                                                           'teach':'Teacher'}[tl]+extension))
 
-    canView = request.user.updateOnsite(request)
-    if not canView:
-        canView = UserBit.UserHasPerms(request.user,
-                                       request.program.anchor_id,
-                                       GetNode('V/Deadline/Registration/'+{'learn':'Student',
-                                                                       'teach':'Teacher'}[tl]+extension))
-
-    return canView
+    return (canView, response)
 
 #   Return a decorator that returns a function calling the decorated function if
 #   the deadline is met, or a function that generates an error page if the
@@ -673,11 +684,14 @@ def meets_deadline(extension=''):
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             errorpage = 'errors/program/deadline-%s.html' % tl
-            canView = _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs)
+            (canView, response) = _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs)
             if canView:
                 return method(moduleObj, request, tl, *args, **kwargs)
             else:
-                return render_to_response(errorpage, request, (moduleObj.program, tl), {})
+                if response:
+                    return response
+                else:
+                    return render_to_response(errorpage, request, (moduleObj.program, tl), {})
         return _checkDeadline
     return meets_deadline
 
@@ -689,10 +703,13 @@ def meets_any_deadline(extensions=[]):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             errorpage = 'errors/program/deadline-%s.html' % tl
             for ext in extensions:
-                canView = _checkDeadline_helper(method, ext, moduleObj, request, tl, *args, **kwargs)
+                (canView, response) = _checkDeadline_helper(method, ext, moduleObj, request, tl, *args, **kwargs)
                 if canView:
                     return method(moduleObj, request, tl, *args, **kwargs)
-            return render_to_response(errorpage, request, (moduleObj.program, tl), {})
+            if response:
+                return response
+            else:
+                return render_to_response(errorpage, request, (moduleObj.program, tl), {})
         return _checkDeadline
     return meets_deadline
 
@@ -702,9 +719,12 @@ def meets_all_deadlines(extensions=[]):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
             errorpage = 'errors/program/deadline-%s.html' % tl
             for ext in extensions:
-                canView = _checkDeadline_helper(method, ext, moduleObj, request, tl, *args, **kwargs)
+                (canView, response) = _checkDeadline_helper(method, ext, moduleObj, request, tl, *args, **kwargs)
                 if not canView:
-                    return render_to_response(errorpage, request, (moduleObj.program, tl), {})
+                    if response:
+                        return response
+                    else:
+                        return render_to_response(errorpage, request, (moduleObj.program, tl), {})
             return method(moduleObj, request, tl, *args, **kwargs)
         return _checkDeadline
     return meets_deadline
