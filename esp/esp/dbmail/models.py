@@ -460,7 +460,11 @@ class CustomSMTPBackend(SMTPEmailBackend):
         recipients = [sanitize_address(addr, email_message.encoding)
                       for addr in email_message.recipients()]
         try:
-            self.connection.sendmail(sanitize_address(self.return_path, email_message.encoding),
+            if self.return_path:
+                return_path = self.return_path
+            else:
+                return_path = email_message.from_email
+            self.connection.sendmail(sanitize_address(return_path, email_message.encoding),
                     recipients,
                     email_message.message().as_string())
         except:
