@@ -147,7 +147,7 @@ class AvailabilityModule(ProgramModuleObj):
             
             #   Add in resources for the checked available times.
             timeslot_ids = map(int, post_vars.getlist('timeslots'))
-            timeslots = Event.objects.filter(id__in=timeslot_ids)
+            timeslots = Event.objects.filter(id__in=timeslot_ids).order_by('start')
             missing_tsids = set(timeslot_ids) - set(x.id for x in timeslots)
             if missing_tsids:
                 raise ESPError(False), 'Received requests for the following timeslots that don\'t exist: %s' % str(list(sorted(missing_tsids)))
