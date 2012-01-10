@@ -23,7 +23,7 @@ The directors would like you to specify up to {{ clrmi.num_teacher_questions }} 
 </p>
 
 <div id="program_form">
-<form method="post" action="{{ request.path }}">{% csrf_token %}
+<form method="post" action="{{ request.path }}">
 <table align="center" width="500">
 {% for f in forms %}
     <th colspan="2">App Question for {{ f.app_question.subject }}</th>

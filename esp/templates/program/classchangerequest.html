@@ -21,7 +21,7 @@ None
 </ol>
 <h3>Class Change Request Form</h3>
 <p>You can request a change into any class without application questions, or into any application question class that you originally applied for, and were accepted to.</p>
-<form action="classchangerequest" method="post">{% csrf_token %}
+<form action="classchangerequest" method="post">
 {{ form.as_p }}
 {% if user.isStudent %}
 <input type="submit" value="Submit" />

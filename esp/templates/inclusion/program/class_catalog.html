@@ -14,7 +14,7 @@
                 <p class="addbutton_error">{{ errormsg }}</p>
                 {% if user.onsite_local %}
                     <br />
-                    <form name="prereg_{{ section.id }}" onsubmit="return submit_override_prereg('{{ section.id }}');" method="post" action="{{ prereg_url }}">{% csrf_token %}
+                    <form name="prereg_{{ section.id }}" onsubmit="return submit_override_prereg('{{ section.id }}');" method="post" action="{{ prereg_url }}">
                     <input type="hidden" name="class_id" value="{{ class.id }}" />
                     <input type="hidden" name="section_id" value="{{ section.id }}" />
                     <input type="submit" class="addbutton" name="action" value="Add this class anyway!"

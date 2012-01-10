@@ -25,13 +25,13 @@ click "Create account" again below.)
 <ul>
   {% for u in accounts %}
   <li>Username: "{{ u.username }}" (
-  <form method="post" action="/myesp/login">{% csrf_token %}
+  <form method="post" action="/myesp/login">
     <input type="hidden" name="username" value="{{ u.username }}" />
     <input type="hidden" name="password" value="" />
     <input type="hidden" name="next" value="/myesp/profile/" />
     <input type="submit" value="Try logging in" />
   </form>
-  <form action="/myesp/passwdrecover/" method="post">{% csrf_token %}
+  <form action="/myesp/passwdrecover/" method="post">
     <input type="hidden" name="email" value="{{ u.email }}" />
     <input type="hidden" name="username" value="{{ u.username }}" />
     <input type="submit" value="I forgot my password!" />
@@ -57,7 +57,7 @@ for programs, sign up for classes, among other things.
 
 
 <div id="program_form">
-<form action="{{ request.path }}" method="post" name="newuser_form">{% csrf_token %}
+<form action="{{ request.path }}" method="post" name="newuser_form">
 <table>
 <thead>
 <tr>
