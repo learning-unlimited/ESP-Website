@@ -37,7 +37,7 @@
 
 
 {% block content %}
-<form method="post" action="{{ request.path }}" enctype="multipart/form-data">{% csrf_token %}
+<form method="post" action="{{ request.path }}" enctype="multipart/form-data">
 
 <h1>Static Page Editing</h1>
 <p>Current URL path: <tt>{{ qsdrec.url }}</tt> <br />

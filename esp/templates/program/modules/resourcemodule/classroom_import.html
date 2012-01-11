@@ -23,7 +23,7 @@ You have chosen to import the classrooms from {{ past_program.niceName }} to {{ 
 {% end_inline_qsd_block %}
 
 <div id="program_form">
-<form method="post" action="{{ request.path }}">{% csrf_token %}
+<form method="post" action="{{ request.path }}">
 <input type="hidden" name="import_confirm" value="yes" />
 <input type="hidden" name="program" value="{{ past_program.id }}" />
 <table align="center" cellpadding="0" cellspacing="0" width="550">

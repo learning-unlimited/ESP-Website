@@ -59,7 +59,7 @@ Use a past program as a template:
 </p>
 
 <div id="alumni_form">
-  <form action="{{ request.path }}" method="post">{% csrf_token %}
+  <form action="{{ request.path }}" method="post">
   {% autoescape off %}
   {% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
 {% for fieldset in form.fieldsets %}

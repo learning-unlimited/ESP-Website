@@ -14,7 +14,7 @@
     </ul>
     <p>When in doubt, contact <a href="mailto:{{ support }}">{{ support }}</a> for assistance.</p>
     <p>You may also select All to have all registration types display (which was the original default behavior). Only select this if you are sure that you want students to be able to see everything (something which has caused confusion in the past).</p>
-    <form action="/manage/{{ one }}/{{ two }}/registrationtype_management/" method="post">{% csrf_token %}
+    <form action="/manage/{{ one }}/{{ two }}/registrationtype_management/" method="post">
     {{ form.as_p }}
     <input type="submit" value="Submit" />
     </form>

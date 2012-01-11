@@ -19,7 +19,7 @@
 Some of your responses are incorrect!  Please consult our instructions and fill in the right answers.
 {% endif %}
 
-<form method="post" action="{{ request.path }}" class="form-stacked">{% csrf_token %}
+<form method="post" action="{{ request.path }}" class="form-stacked">
 {% include "customforms/single_form_fragment.html" %}
 <div style="text-align: center;"><input type="submit" value="Done!" /></div>
 
