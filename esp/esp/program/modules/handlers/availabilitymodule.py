@@ -138,6 +138,8 @@ class AvailabilityModule(ProgramModuleObj):
         else:
             time_groups = Event.group_contiguous(list(time_options))
 
+        blank = False
+
         if request.method == 'POST':
             #   Process form
             post_vars = request.POST
@@ -151,40 +153,43 @@ class AvailabilityModule(ProgramModuleObj):
             missing_tsids = set(timeslot_ids) - set(x.id for x in timeslots)
             if missing_tsids:
                 raise ESPError(False), 'Received requests for the following timeslots that don\'t exist: %s' % str(list(sorted(missing_tsids)))
-            for timeslot in timeslots:
-                teacher.addAvailableTime(self.program, timeslot)
-                    
-            #   Send an e-mail showing availability to directors and teachers
-            email_title = 'Availability for %s: %s' % (self.program.niceName(), teacher.name())
-            email_from = '%s Registration System <server@%s>' % (self.program.anchor.parent.name, EMAIL_HOST_SENDER)
-            email_context = {'teacher': teacher,
-                             'timeslots': timeslots,
-                             'program': self.program,
-                             'curtime': datetime.now()}
-            email_contents = render_to_string(self.baseDir()+'update_email.txt', email_context)
-            email_to = ['%s <%s>' % (request.user.name(), request.user.email), '%s Directors <%s>' % (self.program.anchor.parent.name, self.program.director_email)]
-            send_mail(email_title, email_contents, email_from, email_to, False)
             
-            #   Return to the main registration page
-            return self.goToCore(tl)
+            blank = (not (bool(len(timeslot_ids))))
+            if not blank:
+                for timeslot in timeslots:
+                    teacher.addAvailableTime(self.program, timeslot)
                 
-        else:
-            #   Show new form
-            available_slots = teacher.getAvailableTimes(self.program)
-            if len(available_slots) == 0:
-                #   If they didn't enter anything, make everything checked by default.
-                available_slots = self.program.getTimeSlots()
-                #   The following 2 lines mark the teacher as always available.  This
-                #   is sometimes helpful, but not usually the desired behavior.
-                #   for a in available_slots:
-                #       teacher.addAvailableTime(self.program, a)
+                #   Send an e-mail showing availability to directors and teachers
+                email_title = 'Availability for %s: %s' % (self.program.niceName(), teacher.name())
+                email_from = '%s Registration System <server@%s>' % (self.program.anchor.parent.name, EMAIL_HOST_SENDER)
+                email_context = {'teacher': teacher,
+                                 'timeslots': timeslots,
+                                 'program': self.program,
+                                 'curtime': datetime.now()}
+                email_contents = render_to_string(self.baseDir()+'update_email.txt', email_context)
+                email_to = ['%s <%s>' % (request.user.name(), request.user.email), '%s Directors <%s>' % (self.program.anchor.parent.name, self.program.director_email)]
+                send_mail(email_title, email_contents, email_from, email_to, False)
+                
+                #   Return to the main registration page
+                return self.goToCore(tl)
+        
+        #   Show new form
+        available_slots = teacher.getAvailableTimes(self.program)
+        if not (len(available_slots) or blank): # I'm not sure whether or not we want the "or blank"
+            #   If they didn't enter anything, make everything checked by default.
+            available_slots = self.program.getTimeSlots()
+            #   The following 2 lines mark the teacher as always available.  This
+            #   is sometimes helpful, but not usually the desired behavior.
+            #   for a in available_slots:
+            #       teacher.addAvailableTime(self.program, a)
 
-            context = {'groups': [{'selections': [{'checked': (t in available_slots), 'slot': t} for t in group]} for group in time_groups]}
-            context['num_groups'] = len(context['groups'])
-            context['prog'] = self.program
-            context['is_overbooked'] = (not self.isCompleted() and (request.user.getTaughtTime(self.program) > timedelta(0)))
-            
-            return render_to_response(self.baseDir()+'availability_form.html', request, (prog, tl), context)
+        context = {'groups': [{'selections': [{'checked': (t in available_slots), 'slot': t} for t in group]} for group in time_groups]}
+        context['num_groups'] = len(context['groups'])
+        context['prog'] = self.program
+        context['is_overbooked'] = (not self.isCompleted() and (request.user.getTaughtTime(self.program) > timedelta(0)))
+        context['submitted_blank'] = blank
+        
+        return render_to_response(self.baseDir()+'availability_form.html', request, (prog, tl), context)
 
     class Meta:
         abstract = True

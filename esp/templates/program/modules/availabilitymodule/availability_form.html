@@ -36,6 +36,14 @@ We have detected that you are currently signed up to teach more hours of class t
 {% end_inline_qsd_block %}
 {% endif %}
 
+{% if submitted_blank %}
+{% inline_qsd_block program.anchor teacher_blank_availability request.user %}
+<p style="color: red;">
+You submitted a schedule with no available times.  You can't register a class without first telling us when you are free!  Please add your available times in order to continue with registration.
+</p>
+{% end_inline_qsd_block %}
+{% endif %}
+
 <br />
 
 <form method="post" action="{{ request.path }}">
