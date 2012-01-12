@@ -15,13 +15,13 @@ from esp.users.models import ESPUser
 from esp.middleware import ESPError
 
 def landing(request):
-    if request.user.is_authenticated():
+    if request.user.is_authenticated() and not ESPUser(request.user).isStudent():
         forms=Form.objects.filter(created_by=request.user)
         return render_to_response("customforms/landing.html", {'form_list':forms}, context_instance=RequestContext(request))
     return HttpResponseRedirect('/')    
 
 def formBuilder(request):
-    if request.user.is_authenticated():
+    if request.user.is_authenticated() and not ESPUser(request.user).isStudent():
         prog_list=Program.objects.all()
         form_list=Form.objects.filter(created_by=request.user)
         return render_to_response('customforms/index.html',{'prog_list':prog_list, 'form_list':form_list, 'only_fkey_models':cf_cache.only_fkey_models.keys()}) 
@@ -263,7 +263,7 @@ def viewResponse(request, form_id):
     """
     Viewing response data
     """
-    if request.user.is_authenticated:
+    if request.user.is_authenticated and not ESPUser(request.user).isStudent():
         try:
             form_id=int(form_id)
         except ValueError:
@@ -341,19 +341,6 @@ def get_links(request):
                 retval[obj.id]=unicode(obj)
                 
             return HttpResponse(json.dumps(retval))
-    return HttpResponse(status=400)                                        
-        
-def test():
-    f=Form.objects.get(pk=16)
-    from esp.customforms.DynamicForm import rd
-    dyn=DMH(form=f).createDynModel()
-    rd.depend_on_model(lambda:dyn)
-    rd.run_all_delayed()
-    data1=rd(dyn,f)
-    user=ESPUser.objects.get(pk=1)
-    dyn.objects.create(user=user, question_83='yyy')
-    data2=rd(dyn,f)
-    return {'first':data1, 'second':data2}
-    
+    return HttpResponse(status=400)
     
             
