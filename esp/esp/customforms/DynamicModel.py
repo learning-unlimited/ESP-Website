@@ -12,43 +12,44 @@ from esp.customforms.linkfields import cf_cache
 from django.contrib.contenttypes.models import ContentType
 
 class DynamicModelHandler:
-    """Handler class for creating, modifying and deleting dynamic models
+    """
+    Handler class for creating, modifying and deleting dynamic models
         -Uses South for db operations
         - __init__() takes as input two arguments -> 'form', the current Form instance, and 'fields', 
             a list of (field_id, field_type) tuples
         -'fields' is optional. If not provided, it is computed automatically.    
     """
     
-    _app_label='customforms'
-    _module='esp.customforms.models'
-    _schema_name='customforms'
+    _app_label = 'customforms'
+    _module = 'esp.customforms.models'
+    _schema_name = 'customforms'
     
-    _field_types={
-        'textField':{'typeMap':models.CharField, 'attrs':{'max_length':30,}, 'args':[]},
-        'longTextField':{'typeMap':models.CharField, 'attrs':{'max_length':60,}, 'args':[]},
-        'longAns':{'typeMap':models.TextField, 'attrs':{}, 'args':[]},
-        'reallyLongAns':{'typeMap':models.TextField, 'attrs':{}, 'args':[]},
-        'radio':{'typeMap':models.CharField, 'attrs':{'max_length':200,}, 'args':[]},
-        'dropdown':{'typeMap':models.CharField, 'attrs':{'max_length':200,}, 'args':[]},
-        'multiselect':{'typeMap':models.TextField, 'attrs':{}, 'args':[]},
-        'checkboxes':{'typeMap':models.TextField, 'attrs':{}, 'args':[]},
-        'numeric':{'typeMap':models.IntegerField, 'attrs':{'null':True, }, 'args':[]},
-        'date':{'typeMap':models.CharField, 'attrs':{'max_length':10, }, 'args':[]},
-        'time':{'typeMap':models.CharField, 'attrs':{'max_length':10, }, 'args':[]},
-        'phone':{'typeMap':models.CharField, 'attrs':{'max_length':15}, 'args':[]},
-        'email':{'typeMap':models.CharField, 'attrs':{'max_length':30,}, 'args':[]},
-        'state':{'typeMap':models.CharField, 'attrs':{'max_length':2}, 'args':[]},
-        'gender':{'typeMap':models.CharField, 'attrs':{'max_length':2}, 'args':[]},
+    _field_types = {
+        'textField': {'typeMap': models.CharField, 'attrs': {'max_length': 30,}, 'args': []},
+        'longTextField': {'typeMap': models.CharField, 'attrs': {'max_length': 60,}, 'args': []},
+        'longAns': {'typeMap': models.TextField, 'attrs': {}, 'args': []},
+        'reallyLongAns': {'typeMap': models.TextField, 'attrs': {}, 'args': []},
+        'radio': {'typeMap': models.CharField, 'attrs': {'max_length': 200,}, 'args': []},
+        'dropdown': {'typeMap': models.CharField, 'attrs': {'max_length': 200,}, 'args': []},
+        'multiselect': {'typeMap': models.TextField, 'attrs': {}, 'args': []},
+        'checkboxes': {'typeMap': models.TextField, 'attrs': {}, 'args': []},
+        'numeric': {'typeMap': models.IntegerField, 'attrs': {'null': True, }, 'args': []},
+        'date': {'typeMap': models.CharField, 'attrs': {'max_length': 10, }, 'args': []},
+        'time': {'typeMap': models.CharField, 'attrs': {'max_length': 10, }, 'args': []},
+        'phone': {'typeMap': models.CharField, 'attrs': {'max_length': 15}, 'args': []},
+        'email': {'typeMap': models.CharField, 'attrs': {'max_length': 30,}, 'args':[]},
+        'state': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
+        'gender': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
         'instructions': {'typeMap': None},
     }
     
     
     def __init__(self, form, fields=[]):
-        self.form=form
-        self.field_list=[]
-        self.fields=fields
-        self._tname='customforms\".\"customforms_response_%d' % form.id
-        self.link_models_list=[]     #Used to store the names of models that are currently linked to via link fields
+        self.form = form
+        self.field_list = []
+        self.fields = fields
+        self._tname = 'customforms\".\"customforms_response_%d' % form.id
+        self.link_models_list = []     # Used to store the names of models that are currently linked to via link fields
     
     def __marinade__(self):
         """
@@ -56,66 +57,72 @@ class DynamicModelHandler:
         """
         return 'dyn'    
         
-    #CHECK THIS
+    # CHECK THIS
     @cache_function
     def _getFieldsForForm(self, form):
-        """Gets the list of (field_id, field_type) tuples for the present form.
-            Called if this list isn't passed to __init__() and the dynamic model needs to be generated.
         """
-        self.fields=Field.objects.filter(form=form).values_list('id', 'field_type')
+        Gets the list of (field_id, field_type) tuples for the present form.
+        Called if this list isn't passed to __init__() and the dynamic model needs to be generated.
+        """
+        self.fields = Field.objects.filter(form=form).values_list('id', 'field_type')
         return self.fields
     _getFieldsForForm.depend_on_row(lambda: Field, lambda field: {'form': field.form})        
     
     def _getModelField(self, field_type):
-        """Returns the appropriate Django Model Field based on field_type"""
+        """
+        Returns the appropriate Django Model Field based on field_type
+        """
         if self._field_types[field_type]['typeMap']:
             return self._field_types[field_type]['typeMap'](*self._field_types[field_type]['args'], **self._field_types[field_type]['attrs'])
         else:
             return None
             
     def _getModelFieldList(self):
-        """Returns a list of Model Field tuples given a list of field_types (from the metadata)
-            -An entry would be like (field_name, field)
-            -An 'id' field is automatically added, as is a 'user_id' field, based on whether the form
-            is anonymous or not.
-            -A field-name is of the form 'question_23', where '23' is the ID of the corresponding question
-            -For custom fields like address, a field-name would be of the form 'question_23_zip'
         """
-        link_models=[]
+        Returns a list of Model Field tuples given a list of field_types (from the metadata)
+            - An entry would be like (field_name, field)
+            - An 'id' field is automatically added, as is a 'user_id' field, based on whether the form
+              is anonymous or not.
+            - A field-name is of the form 'question_23', where '23' is the ID of the corresponding question
+            - For custom fields like address, a field-name would be of the form 'question_23_zip'
+        """
+        link_models = []
         if not self.fields:
-            self.fields=self._getFieldsForForm(self.form)
+            self.fields = self._getFieldsForForm(self.form)
         
-        self.field_list.append( ('id', models.AutoField(primary_key=True) ) )
+        self.field_list.append( ('id', models.AutoField(primary_key = True) ) )
         if not self.form.anonymous:
-            self.field_list.append( ('user', models.ForeignKey(ESPUser, null=True, blank=True, on_delete=models.SET_NULL) ) )
+            self.field_list.append( ('user', models.ForeignKey(ESPUser, null = True, blank = True, on_delete = models.SET_NULL) ) )
             
-        #Checking for only_fkey links
-        if self.form.link_type!='-1':
-            model_cls=cf_cache.only_fkey_models[self.form.link_type]
-            self.field_list.append( ('link_'+model_cls.__name__, models.ForeignKey(model_cls, null=True, blank=True, on_delete=models.SET_NULL)) )
+        # Checking for only_fkey links
+        if self.form.link_type != '-1':
+            model_cls = cf_cache.only_fkey_models[self.form.link_type]
+            self.field_list.append( ('link_%s' % model_cls.__name__, models.ForeignKey(model_cls, null=True, blank=True, on_delete=models.SET_NULL)) )
             
-        #Check for linked fields-
-        #Insert a foreign-key to the parent model for link fields
-        #Insert a regular column for non-link fields
+        # Check for linked fields-
+        # Insert a foreign-key to the parent model for link fields
+        # Insert a regular column for non-link fields
         for field_id, field in self.fields:
             if cf_cache.isLinkField(field):
-                lm=cf_cache.modelForLinkField(field)
+                lm = cf_cache.modelForLinkField(field)
                 if lm not in link_models: link_models.append(lm)
             else:
                 new_field = self._getModelField(field)
                 if new_field:
-                    self.field_list.append( ('question_'+str(field_id), new_field) )
+                    self.field_list.append( ('question_%s' % str(field_id), new_field) )
         
-        #Adding foreign key fields for link-field models
+        # Adding foreign key fields for link-field models
         for model in link_models:
             if model:
-                self.field_list.append( ('link_'+model.__name__, models.ForeignKey(model, null=True, blank=True, on_delete=models.SET_NULL) ) )
+                self.field_list.append( ('link_%s' % model.__name__, models.ForeignKey(model, null=True, blank=True, on_delete=models.SET_NULL) ) )
                 self.link_models_list.append(model.__name__)
                     
         return self.field_list
         
     def createTable(self):
-        """Sets up the database table using self.field_list"""
+        """
+        Sets up the database table using self.field_list
+        """
         
         if not self.field_list:
             self._getModelFieldList()
@@ -124,25 +131,27 @@ class DynamicModelHandler:
             db.start_transaction()
             db.create_table(self._tname, tuple(self.field_list))
             
-            #Executing deferred SQL, after correcting the CREATE INDEX statements
-            deferred_sql=[]
+            # Executing deferred SQL, after correcting the CREATE INDEX statements
+            deferred_sql = []
             for stmt in db.deferred_sql:
                 deferred_sql.append(re.sub('^CREATE INDEX \"customforms\".', 'CREATE INDEX ', stmt))
-            db.deferred_sql=deferred_sql    
+            db.deferred_sql = deferred_sql    
             db.execute_deferred_sql()    
             db.commit_transaction()
         else:
             db.create_table(self._tname, tuple(self.field_list))
             
-            #Executing deferred SQL, after correcting the CREATE INDEX statements
-            deferred_sql=[]
+            # Executing deferred SQL, after correcting the CREATE INDEX statements
+            deferred_sql = []
             for stmt in db.deferred_sql:
                 deferred_sql.append(re.sub('^CREATE INDEX \"customforms\".', 'CREATE INDEX ', stmt))
-            db.deferred_sql=deferred_sql    
+            db.deferred_sql = deferred_sql    
             db.execute_deferred_sql()    
         
     def deleteTable(self):
-        """Deletes the response table for the current form"""
+        """
+        Deletes the response table for the current form
+        """
         db.start_transaction()
         db.delete_table(self._tname)
         db.commit_transaction()
@@ -151,10 +160,10 @@ class DynamicModelHandler:
         """
         Returns the model field to add, along with a suitable default
         """
-        attrs=self._field_types[ftype]['attrs'].copy()
-        args=self._field_types[ftype]['args']
-        if ftype!="numeric":
-            attrs['default']=''
+        attrs = self._field_types[ftype]['attrs'].copy()
+        args = self._field_types[ftype]['args']
+        if ftype != "numeric":
+            attrs['default'] = ''
         return self._field_types[ftype]['typeMap'](*args, **attrs)    
     
     def get_field_name(self, field):
@@ -163,7 +172,7 @@ class DynamicModelHandler:
         Returns the field name corresponding to the linked model for link fields.
         """
         if cf_cache.isLinkField(field.field_type):
-            model=cf_cache.modelForLinkField(field.field_type)
+            model = cf_cache.modelForLinkField(field.field_type)
             return 'link_'+model.__name__
             
         return "question_%d" % field.id
@@ -173,7 +182,7 @@ class DynamicModelHandler:
         Applies db_func to a column (or columns) corresponding to a particular field
         Depending on db_func, this can be used to ADD COLUMN or ALTER COLUMN
         """
-        field_name=self.get_field_name(field)
+        field_name = self.get_field_name(field)
         #   TODO: Return early if this is a linked field
         db_func(self._tname, field_name, self._getFieldToAdd(field.field_type), **kwargs)
         
@@ -187,7 +196,7 @@ class DynamicModelHandler:
         """
         Removes a column (or columns) corresponding to a particular field
         """
-        field_name=self.get_field_name(field)
+        field_name = self.get_field_name(field)
         #   TODO: Return early if this is a linked field
         db.delete_column(self._tname, field_name)
         
@@ -197,10 +206,10 @@ class DynamicModelHandler:
         """
         if not cf_cache.isLinkField(field.field_type):
             return
-        model_cls=cf_cache.modelForLinkField(field.field_type)
+        model_cls = cf_cache.modelForLinkField(field.field_type)
         if model_cls.__name__ in self.link_models_list:
-            field_name='link_'+model_cls.__name__
-            db.delete_column(self._tname, field_name+"_id")
+            field_name = 'link_%s' % model_cls.__name__
+            db.delete_column(self._tname, "%s_id" % field_name)
             self.link_models_list.remove(model_cls.__name__)
         
     def addLinkFieldColumn(self, field):
@@ -210,10 +219,10 @@ class DynamicModelHandler:
         """
         if not cf_cache.isLinkField(field.field_type):
             return    
-        model_cls=cf_cache.modelForLinkField(field.field_type)
+        model_cls = cf_cache.modelForLinkField(field.field_type)
         if model_cls.__name__ not in self.link_models_list:
             # Add in the FK-column for this model
-            field_name=self.get_field_name(field)
+            field_name = self.get_field_name(field)
             db.add_column(self._tname, field_name, models.ForeignKey(model_cls, null=True, blank=True, on_delete=models.SET_NULL))
             self.link_models_list.append(model_cls.__name__)
         
@@ -223,44 +232,46 @@ class DynamicModelHandler:
         form is modified.
         """
         
-        if old_link_type != new_link_type and old_link_type!="-1":
-            #Old FK column needs to go
-            old_model_cls=cf_cache.only_fkey_models[old_link_type]
-            old_field_name='link_'+old_model_cls.__name__
-            db.delete_column(self._tname, old_field_name+"_id")
+        if old_link_type != new_link_type and old_link_type != "-1":
+            # Old FK column needs to go
+            old_model_cls = cf_cache.only_fkey_models[old_link_type]
+            old_field_name = 'link_%s' % old_model_cls.__name__
+            db.delete_column(self._tname, "%s_id" % old_field_name)
             
-        if old_link_type!=new_link_type and new_link_type!="-1":
-            #New FK column needs to be inserted
-            new_model_cls=cf_cache.only_fkey_models[new_link_type]
-            new_field_name='link_'+new_model_cls.__name__
+        if old_link_type != new_link_type and new_link_type != "-1":
+            # New FK column needs to be inserted
+            new_model_cls = cf_cache.only_fkey_models[new_link_type]
+            new_field_name = 'link_%s' % new_model_cls.__name__
             db.add_column(self._tname, new_field_name, models.ForeignKey(new_model_cls, null=True, blank=True, on_delete=models.SET_NULL))
     
     def createDynModel(self):
-        """Creates and returns the dynamic model for this form"""
+        """
+        Creates and returns the dynamic model for this form
+        """
         
-        _db_table=self._tname
-        _model_name='Response_%d' % self.form.id
+        _db_table = self._tname
+        _model_name = 'Response_%d' % self.form.id
         
-        #Removing any existing model definitions from Django's cache
+        # Removing any existing model definitions from Django's cache
         try:
             del cache.app_models[self._app_label][_model_name.lower()]
         except KeyError:
             pass
             
         class Meta:
-            app_label=self._app_label
-            db_table=_db_table
+            app_label = self._app_label
+            db_table = _db_table
         
-        attrs={'__module__':self._module, 'Meta': Meta}
+        attrs = {'__module__': self._module, 'Meta': Meta}
         
-        #Updating attrs with the fields
+        # Updating attrs with the fields
         if not self.field_list:                
             self._getModelFieldList()
         attrs.update(dict(self.field_list))
         
-        dynModel=type(_model_name, (models.Model,), attrs)
+        dynModel = type(_model_name, (models.Model,), attrs)
         return dynModel    
                 
         
-#Giving it an alias that's less of a mouthful        
-DMH=DynamicModelHandler
+# Giving it an alias that's less of a mouthful        
+DMH = DynamicModelHandler
