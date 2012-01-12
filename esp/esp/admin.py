@@ -1,11 +1,10 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
 __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2007 by the individual contributors
+Copyright (c) 2012 by the individual contributors
   (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
@@ -32,18 +31,38 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
-from django.contrib import admin
-from esp.admin import admin_site
-from esp.cal.models import EventType, Event, Series, EmailReminder
 
-admin_site.register(EventType)
+from esp.users.views import signout
 
-admin_site.register(Series)
+from django.contrib.admin.sites import AdminSite
+from django.views.decorators.cache import never_cache
 
-class EventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'short_description', 'event_type')
-    list_filter = ('start', 'end')
-    pass
-admin_site.register(Event, EventAdmin)
+#   Override the logout view on the admin site to use our own code
+class ESPAdminSite(AdminSite):
 
-admin_site.register(EmailReminder)
+    #   Log out using our view so that cookies are deleted correctly.
+    @never_cache
+    def logout(self, request, extra_context=None):
+        return signout(request)
+
+admin_site = ESPAdminSite()
+
+#   A copy of Django's autodiscover function that accepts a site instance.
+def autodiscover(site):
+    import copy
+    from django.conf import settings
+    from django.utils.importlib import import_module
+    from django.utils.module_loading import module_has_submodule
+
+    for app in settings.INSTALLED_APPS:
+        mod = import_module(app)
+        try:
+            before_import_registry = copy.copy(site._registry)
+            import_module('%s.admin' % app)
+        except:
+            site._registry = before_import_registry
+            if module_has_submodule(mod, 'admin'):
+                raise
+
+
+

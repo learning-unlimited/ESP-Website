@@ -645,11 +645,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
     
     @cache_control(public=True, max_age=3600)
+    @aux_call
     def catalog_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Return the program class catalog """
         # using .extra() to select all the category text simultaneously
         classes = ClassSubject.objects.catalog(self.program)        
-
+        
         resp = HttpResponse(mimetype='application/json')
         
         simplejson.dump(list(classes), resp, default=json_encode)
@@ -679,6 +680,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
     @vary_on_cookie
     @needs_student
+    @aux_call
     def catalog_registered_classes_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         now = datetime.now()
         reg_bits = StudentRegistration.valid_objects().filter(user=request.user, section__parent_class__parent_program=prog).select_related()

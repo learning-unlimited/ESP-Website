@@ -33,7 +33,8 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 from django.contrib import admin
+from esp.admin import admin_site
 from esp.web.models import NavBarEntry, NavBarCategory
         
-admin.site.register(NavBarEntry)
-admin.site.register(NavBarCategory)
+admin_site.register(NavBarEntry)
+admin_site.register(NavBarCategory)

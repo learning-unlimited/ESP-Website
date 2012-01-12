@@ -33,28 +33,29 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 from django.contrib import admin
+from esp.admin import admin_site
 
 from esp.dbmail.models import MessageVars, EmailList, PlainRedirect, MessageRequest, TextOfEmail
 
 
 class MessageVarsAdmin(admin.ModelAdmin):
     pass
-admin.site.register(MessageVars, MessageVarsAdmin)
+admin_site.register(MessageVars, MessageVarsAdmin)
 
 class EmailListAdmin(admin.ModelAdmin):
     list_display = ('description', 'regex')
     pass
-admin.site.register(EmailList, EmailListAdmin)
+admin_site.register(EmailList, EmailListAdmin)
     
 class PlainRedirectAdmin(admin.ModelAdmin):
     list_display = ('original', 'destination')
     pass
-admin.site.register(PlainRedirect, PlainRedirectAdmin)
+admin_site.register(PlainRedirect, PlainRedirectAdmin)
 
 class MessageRequestAdmin(admin.ModelAdmin):
     pass
-admin.site.register(MessageRequest, MessageRequestAdmin)
+admin_site.register(MessageRequest, MessageRequestAdmin)
 
 class TextOfEmailAdmin(admin.ModelAdmin):
     pass
-admin.site.register(TextOfEmail, TextOfEmailAdmin)
+admin_site.register(TextOfEmail, TextOfEmailAdmin)

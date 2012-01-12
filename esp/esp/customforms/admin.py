@@ -1,4 +1,5 @@
 from django.contrib import admin
+from esp.admin import admin_site
 
 from esp.customforms.models import Form, Page, Section, Field, Attribute
 
@@ -22,24 +23,24 @@ page_form.short_description = 'Form'
 
 class FormAdmin(admin.ModelAdmin):
     list_display = ['title', 'date_created', 'created_by', num_fields]
-admin.site.register(Form, FormAdmin)
+admin_site.register(Form, FormAdmin)
 
 class PageAdmin(admin.ModelAdmin):
     list_display = ['__unicode__', 'form', 'seq', num_sections]
-admin.site.register(Page, PageAdmin)
+admin_site.register(Page, PageAdmin)
 
 class SectionAdmin(admin.ModelAdmin):
     list_display = ['title', page_form, 'page', 'seq', num_fields]
-admin.site.register(Section, SectionAdmin)
+admin_site.register(Section, SectionAdmin)
 
 class FieldAdmin(admin.ModelAdmin):
     list_display = ['__unicode__', 'form', 'label', 'field_type', 'section', 'seq', 'required']
     list_editable = list_display[2:]
-admin.site.register(Field, FieldAdmin)
+admin_site.register(Field, FieldAdmin)
 
 class AttributeAdmin(admin.ModelAdmin):
     list_display = ['attr_type', 'field', 'value']
     list_editable = ['value']
-admin.site.register(Attribute, AttributeAdmin)
+admin_site.register(Attribute, AttributeAdmin)
 
 

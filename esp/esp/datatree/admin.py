@@ -37,10 +37,11 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
+from esp.admin import admin_site
 from esp.datatree.models import *
 
 class DataTreeAdmin(admin.ModelAdmin):
     list_display = ('uri',)
     search_fields = ['uri']
 
-admin.site.register(DataTree, DataTreeAdmin)
+admin_site.register(DataTree, DataTreeAdmin)

@@ -4,6 +4,7 @@
 from esp.utils.models import TemplateOverride
 
 from django.contrib import admin
+from esp.admin import admin_site
 from reversion.admin import VersionAdmin
 
 
@@ -13,4 +14,4 @@ class TemplateOverrideAdmin(VersionAdmin):
     list_display = ['id', 'name', 'version', ]
     list_display_links = ['id', 'name', ]
 
-admin.site.register(TemplateOverride, TemplateOverrideAdmin)
+admin_site.register(TemplateOverride, TemplateOverrideAdmin)

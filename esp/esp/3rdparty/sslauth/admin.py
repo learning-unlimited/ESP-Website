@@ -1,5 +1,5 @@
 from .models import DistinguishedName, ClientCertificate
-from django.contrib import admin
+from esp.admin import admin_site
 
-admin.site.register(DistinguishedName)
-admin.site.register(ClientCertificate)
+admin_site.register(DistinguishedName)
+admin_site.register(ClientCertificate)

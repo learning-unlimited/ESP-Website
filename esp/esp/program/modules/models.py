@@ -45,7 +45,7 @@ from django.db.models import Q
 #    program = models.OneToOneField(Program)
 #    receipt = models.TextField()
 #
-#admin.site.register(DBReceipt)
+#admin_site.register(DBReceipt)
 
 
 def updateModules(update_data, overwriteExisting=False, deleteExtra=False, model=None):

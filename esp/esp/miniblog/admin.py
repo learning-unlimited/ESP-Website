@@ -34,9 +34,10 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
+from esp.admin import admin_site
 from esp.miniblog.models import AnnouncementLink, Entry, Comment
 
-admin.site.register(AnnouncementLink)
+admin_site.register(AnnouncementLink)
 
 class EntryAdmin(admin.ModelAdmin):
     search_fields = ['content','title','anchor__uri']
@@ -44,9 +45,9 @@ class EntryAdmin(admin.ModelAdmin):
         js = (
             '/media/scripts/admin_miniblog.js',
             )
-admin.site.register(Entry, EntryAdmin)
+admin_site.register(Entry, EntryAdmin)
 
 class CommentAdmin(admin.ModelAdmin):
     search_fields = ['author__first_name','author__last_name',
                      'subject','entry__title']
-admin.site.register(Comment, CommentAdmin)
+admin_site.register(Comment, CommentAdmin)

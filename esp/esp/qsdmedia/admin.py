@@ -34,8 +34,9 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
+from esp.admin import admin_site
 from esp.qsdmedia.models import Media
 
 class MediaAdmin(admin.ModelAdmin):
     pass
-admin.site.register(Media, MediaAdmin)
+admin_site.register(Media, MediaAdmin)
