@@ -610,7 +610,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls, action)
 
-    @aux_call
+    @main_call
     @meets_deadline('/Classes/Create')
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
