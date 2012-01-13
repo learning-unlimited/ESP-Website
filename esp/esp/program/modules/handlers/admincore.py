@@ -137,10 +137,14 @@ class AdminCore(ProgramModuleObj, CoreModule):
         #   Handle 'open' / 'close' actions
         if extra == 'open' and 'id' in request.GET:
             bit = UserBit.objects.get(id=request.GET['id'])
+            #   Clear any duplicate user bits
+            UserBit.objects.filter(qsc=bit.qsc, verb=bit.verb, user__isnull=True).exclude(id=bit.id).delete()
             bit.renew()
             message = 'Deadline opened: %s.' % bit.verb.friendly_name
         elif extra == 'close' and 'id' in request.GET:
             bit = UserBit.objects.get(id=request.GET['id'])
+            #   Clear any duplicate user bits
+            UserBit.objects.filter(qsc=bit.qsc, verb=bit.verb, user__isnull=True).exclude(id=bit.id).delete()
             bit.expire()
             message = 'Deadline closed: %s.' % bit.verb.friendly_name
 
@@ -154,6 +158,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                     if 'id' in form.cleaned_data:
                         num_forms += 1
                         bit = UserBit.objects.get(id=form.cleaned_data['id'])
+                        #   Clear any duplicate user bits
+                        UserBit.objects.filter(qsc=bit.qsc, verb=bit.verb, user__isnull=True).exclude(id=bit.id).delete()
                         bit.startdate = form.cleaned_data['startdate']
                         bit.enddate = form.cleaned_data['enddate']
                         bit.recursive = (form.cleaned_data['recursive'] == u'True')
