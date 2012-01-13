@@ -39,7 +39,9 @@ def render_inline_qsd(input_anchor, qsd, user=None):
         return {'edit_bits': edit_bits, 'qsdname': qsd, 'anchor_id': anchor.id}
     
     return {'qsdrec': qsd_obj, 'edit_bits': edit_bits}
+#   Cache dependencies need to handle either string or Datatree argument for input_anchor
 render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'input_anchor': qsd.path.uri, 'qsd': qsd.name})
+render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'input_anchor': qsd.path, 'qsd': qsd.name})
 
 class InlineQSDNode(template.Node):
     def __init__(self, nodelist, input_anchor, qsd_name, user_variable):
