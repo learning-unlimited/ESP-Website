@@ -13,7 +13,7 @@
 <div id="program_form">
 
 {% load render_qsd %}
-{% render_inline_qsd prog.anchor "teach:quizheader" request.user %}
+{% render_inline_qsd prog.anchor "teach:quizheader" %}
 
 {% if form.errors %}
 Some of your responses are incorrect!  Please consult our instructions and fill in the right answers.

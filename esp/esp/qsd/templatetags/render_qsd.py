@@ -19,7 +19,7 @@ def render_qsd(qsd, user=None):
 render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html')
-def render_inline_qsd(input_anchor, qsd, user=None):
+def render_inline_qsd(input_anchor, qsd):
     if isinstance(input_anchor, basestring):
         try:
             anchor = DataTree.get_by_uri(input_anchor)
@@ -31,14 +31,11 @@ def render_inline_qsd(input_anchor, qsd, user=None):
     else:
         return {}
 
-    edit_bits = False
-    if user:
-        edit_bits = UserBit.UserHasPerms(user, anchor, DataTree.get_by_uri('V/Administer/Edit'))
     qsd_obj = QuasiStaticData.objects.get_by_path__name(anchor, qsd)
     if qsd_obj == None:
-        return {'edit_bits': edit_bits, 'qsdname': qsd, 'anchor_id': anchor.id}
+        return {'qsdname': qsd, 'anchor_id': anchor.id}
     
-    return {'qsdrec': qsd_obj, 'edit_bits': edit_bits}
+    return {'qsdrec': qsd_obj}
 #   Cache dependencies need to handle either string or Datatree argument for input_anchor
 render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'input_anchor': qsd.path.uri, 'qsd': qsd.name})
 render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'input_anchor': qsd.path, 'qsd': qsd.name})

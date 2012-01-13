@@ -13,7 +13,7 @@
 <div id="program_form">
 
 {% load render_qsd %}
-{% render_inline_qsd prog.anchor "teach:quiz_tryagain" request.user %}
+{% render_inline_qsd prog.anchor "teach:quiz_tryagain" %}
 
 <div style="text-align: center; color: #990000; font-size: 1.3em;">
 You had {{errors|length}} questions with incorrect answers:

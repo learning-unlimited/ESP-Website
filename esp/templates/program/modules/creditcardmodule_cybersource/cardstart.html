@@ -28,11 +28,11 @@
 <br />
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "startpay_header" request.user %}
+{% render_inline_qsd program.anchor "startpay_header" %}
 
 <p class="biglink"><a id="biglink" href="https://{{ request.META.HTTP_HOST }}/learn/{{ program.getUrlBase}}/paynow_cybersource">Proceed to Credit Card Payment</a></p>
 
-{% render_inline_qsd program.anchor "startpay_footer" request.user %}
+{% render_inline_qsd program.anchor "startpay_footer" %}
 
 {% endblock %}
 

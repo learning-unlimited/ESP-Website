@@ -54,7 +54,7 @@
     </p>
 {% end_inline_qsd_block %}
 
-{% render_inline_qsd program.anchor "learn:studentregheader" request.user %}
+{% render_inline_qsd program.anchor "learn:studentregheader" %}
     <center><div class="note">
     <b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.
     </div></center>
@@ -69,7 +69,7 @@
 {% endif %}
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:studentreg" request.user %}
+{% render_inline_qsd program.anchor "learn:studentreg" %}
 
 <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
 
@@ -99,7 +99,7 @@
 {% endif %}
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:studentregfooter" request.user %}
+{% render_inline_qsd program.anchor "learn:studentregfooter" %}
 
 {% if not request.user.onsite_local and not no_confirm %}
     <center>
