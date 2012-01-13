@@ -119,6 +119,18 @@ class ESPAuthMiddleware(object):
             if encoding is None:
                 encoding = settings.DEFAULT_CHARSET
             espuser = ESPUser(user)
+            
+            #   Check for QSD editing permissions - should be simplified soon
+            in_program_area = False
+            program_areas = ['learn', 'teach', 'manage', 'onsite', 'volunteer']
+            for tl in program_areas:
+                if request.path.startswith('/' + tl):
+                    in_program_area = True
+            if in_program_area:
+                has_qsd_bits = UserBit.objects.UserHasPerms(espuser, GetNode('Q/Programs'), GetNode('V/Administer/Edit/QSD'))
+            else:
+                has_qsd_bits = UserBit.objects.UserHasPerms(espuser, GetNode('Q/Web'), GetNode('V/Administer/Edit/QSD'))
+                
             new_values = {'cur_username': user.username,
                           'cur_email': urllib.quote(user.email.encode(encoding)),
                           'cur_first_name': urllib.quote(user.first_name.encode(encoding)),
@@ -126,7 +138,7 @@ class ESPAuthMiddleware(object):
                           'cur_other_user': getattr(user, 'other_user', False) and '1' or '0',
                           'cur_retTitle': ret_title,
                           'cur_admin': espuser.isAdministrator() and '1' or '0',
-                          'cur_qsd_bits': UserBit.objects.user_has_verb(espuser, GetNode('V/Administer/Edit/QSD')) and '1' or '0',
+                          'cur_qsd_bits': has_qsd_bits and '1' or '0',
                           'cur_grade': espuser.getGrade(),
                           'cur_roles': urllib.quote(",".join(espuser.getUserTypes())),
                           }
