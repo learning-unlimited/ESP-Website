@@ -9,11 +9,14 @@ ESP.declare('ESP.Scheduling.DragDrop', function(){
         return this.drag_proxy_el;
     }.bind(DragDrop);
     
+    //Fix for Chrome text selection on drag
+    document.onselectstart = function () { return false; };
+
     DragDrop.make_draggable = function(target, get_section) {
         target.draggable({
             helper: function(){ return this.get_drag_proxy(get_section()); }.bind(this),
             revert: 'invalid', revertDuration: 350,
-            scroll: false, cursorAt: {left:25,top:25}, cursor: 'default',
+            scroll: false, cursorAt: {left:25,top:25}, cursor: 'move',
             opacity: 1.0, containment: 'window',
             zIndex: 24, // Just enough
             appendTo: 'body',

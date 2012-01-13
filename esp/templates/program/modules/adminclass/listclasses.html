@@ -106,17 +106,6 @@ function manage_class(clsid) {
 /* ]]> */
 </script>
 
-<script type="text/javascript">
-$j(document).ready(function () {
-$j.getScript("/media/scripts/csrf_init.js", function() {
-{% for cls in classes %}
-    document.getElementById("csrf_token_edit_{{ cls.id }}").value = csrfmiddlewaretoken;
-    document.getElementById("csrf_token_delete_{{ cls.id }}").value = csrfmiddlewaretoken;
-{% endfor %}
-});
-});
-</script>
-
 {% endblock %}
 
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
