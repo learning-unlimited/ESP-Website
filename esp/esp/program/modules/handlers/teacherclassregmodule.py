@@ -438,7 +438,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                                                                                                  'conflicts': []})
             
             # add schedule conflict checking here...
-            teacher = User.objects.get(id = request.POST['teacher_selected'])
+            teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
             if cls.conflicts(teacher):
                 conflictingusers.append(teacher.first_name+' '+teacher.last_name)

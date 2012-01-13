@@ -1797,6 +1797,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def conflicts(self, teacher):
         from esp.users.models import ESPUser
+        from datetime import timedelta
         user = ESPUser(teacher)
         if user.getTaughtClasses().count() == 0:
             return False
@@ -1807,6 +1808,20 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                     for sec in self.sections.all().exclude(id=section.id):
                         if sec.meeting_times.filter(id = time.id).count() > 0:
                             return True
+                            
+                    
+        #   Check that adding this teacher as a coteacher would not overcommit them
+        #   to more hours of teaching than the program allows.
+        avail = Event.collapse(teacher.getAvailableTimes(self.parent_program, ignore_classes=True), tol=timedelta(minutes=15))
+        time_avail = 0.0
+        for tg in avail:
+            td = tg.end - tg.start
+            time_avail += (td.seconds / 3600.0)
+        for cls in teacher.getTaughtClasses(self.parent_program):
+            time_avail -= float(str(cls.duration)) * len(cls.get_sections())
+        if float(str(self.duration)) * len(self.get_sections()) > time_avail:
+            return True
+            
         return False
 
     def isAccepted(self): return self.status > 0
