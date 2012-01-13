@@ -288,6 +288,10 @@ th .program_form_small{
     margin-left: 0;
 }
 
+#program_form ul.errorlist li {
+    color: red;
+}
+
 /* Volunteer signup form */
 
 #volunteer_form thead th {
