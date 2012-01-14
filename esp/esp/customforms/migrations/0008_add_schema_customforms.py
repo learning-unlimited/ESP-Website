@@ -7,11 +7,20 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        db.execute("CREATE SCHEMA customforms")
-
+        try:
+            db.execute("CREATE SCHEMA customforms")
+        except Exception, e:
+            print "Error running 'CREATE SCHEMA customforms;':"
+            print e
+            print "You may be using a backend that doesn't support schemas.  This may break customforms.  TODO:  Make this not break customforms."
+            
     def backwards(self, orm):
-        db.execute("DROP SCHEMA CASCADE")
-
+        try:
+            db.execute("DROP SCHEMA CASCADE")
+        except Exception, e:
+            print "Error running 'CREATE SCHEMA customforms;':"
+            print e
+            print "You may be using a backend that doesn't support schemas.  This may break customforms.  TODO:  Make this not break customforms."
 
     models = {
         'auth.group': {
