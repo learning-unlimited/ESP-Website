@@ -177,7 +177,10 @@ teachers[key]))
         crmi = self.program.getModuleExtension('ClassRegModuleInfo')
         if crmi.open_class_registration:
             Q_categories |= Q(pk=open_class_category().pk)
-        context['categories'] = ClassCategories.objects.filter(Q_categories, cls__parent_program=self.program, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'category').distinct()
+        #   Introduce a separate query to get valid categories, since the single query seemed to introduce duplicates
+        program_categories = ClassCategories.objects.filter(Q_categories).distinct().values_list('id', flat=True)
+        annotated_categories = ClassCategories.objects.filter(cls__parent_program=self.program, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'category').distinct()
+        context['categories'] = filter(lambda x: x['id'] in program_categories, annotated_categories)
 
         return context
     
