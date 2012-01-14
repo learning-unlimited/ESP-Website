@@ -67,9 +67,9 @@ WHERE
 sql__get_bounds = """
 SELECT %(query)s FROM
  (
-   (SELECT rangeend AS upper, (SELECT rangeend FROM %(table)s WHERE id = %%s) - rangeend - '%%s' AS diff FROM %(table)s WHERE parent_id = %%s)
-  UNION
-   (SELECT rangestart AS upper, rangeend - rangestart - %%s AS diff FROM %(table)s WHERE id = %%s)
+   SELECT rangeend AS upper, (SELECT rangeend FROM %(table)s WHERE id = %%s) - rangeend - %%s AS diff FROM %(table)s WHERE parent_id = %%s
+   UNION
+   SELECT rangestart AS upper, rangeend - rangestart - %%s AS diff FROM %(table)s WHERE id = %%s
  ) AS a
 """
 
@@ -448,6 +448,8 @@ WHERE
                     continue
                 if 'deadlock detected' in str(e.message):
                     continue
+                import traceback
+                traceback.print_exc()
                 raise e
             if node is not None:
                 break
