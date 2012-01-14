@@ -243,6 +243,8 @@ class ClassCreationController(object):
         new_data = cls.__dict__
         mail_ctxt = dict(new_data.iteritems())
         
+        mail_ctxt['title'] = cls.title()
+        
         # Make some of the fields in new_data nicer for viewing.
         mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category_id']).category
         #mail_ctxt['global_resources'] = ResourceType.objects.filter(id__in=new_data['global_resources'])
