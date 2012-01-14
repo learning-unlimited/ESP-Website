@@ -31,4 +31,6 @@ function force_refresh_csrf_cookie()
     $j.ajax("/set_csrf_token", { async: false });
 }
 
-$j.getScript("/media/scripts/csrf_check.js", set_onsubmit);
+$j(document).ready(function() {
+    $j.getScript("/media/scripts/csrf_check.js", set_onsubmit);
+});
