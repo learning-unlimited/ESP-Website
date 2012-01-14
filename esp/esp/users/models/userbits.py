@@ -321,11 +321,18 @@ class UserBitManager(ProcedureManager):
         if hasattr(user, 'id') and user.id is None:
             user = -10
 
-
-        retVal = self.values_from_procedure('userbit__user_has_perms', user, qsc_id, verb_id, now, recursive_required)
-
-        retVal = retVal[0].values()[0]
-
+        try:
+            retVal = self.values_from_procedure('userbit__user_has_perms', user, qsc_id, verb_id, now, recursive_required)
+            retVal = retVal[0].values()[0]
+        except Exception, e:
+            ## We probably don't support stored procedures
+            ## TODO: Test for this in a better way than trying and failing
+            ## TODO: Also this is slow; it doesn't try the common case, where the
+            ## qsc and verb are exact matches rather than recursive matches, first.
+            ## Oh well.
+            bits = UserBit.objects.filter(user=user, qsc__in=DataTree.objects.get(id=qsc_id).ancestors(), verb__in=DataTree.objects.get(id=verb_id).ancestors())
+            retVal = bool(bits)
+            
         self.cache(user)[user_cache_id] = retVal
 
         return retVal
