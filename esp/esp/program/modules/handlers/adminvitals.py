@@ -75,6 +75,7 @@ class AdminVitals(ProgramModuleObj):
         vitals['classapproved'] = classes.filter(status=10)
         vitals['classunreviewed'] = classes.filter(status=0)
         vitals['classrejected'] = classes.filter(status=-10)
+        vitals['classcancelled'] = classes.filter(status=-20)
 
         proganchor = self.program_anchor_cached()
         
