@@ -135,11 +135,11 @@ teachers[key]))
                 self.clslist = []
 
                 def count(self):
-                    lst = [x.num_students() for x in self.clslist]
+                    lst = [0] + [x.num_students() for x in self.clslist]
                     return reduce(operator.add, lst)
 
                 def max_count(self):
-                    lst = [x.capacity for x in self.clslist]
+                    lst = [0] + [x.capacity for x in self.clslist]
                     return reduce(operator.add, lst)
 
                 def __init__(self, newclslist):
