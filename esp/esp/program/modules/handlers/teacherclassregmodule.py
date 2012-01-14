@@ -839,7 +839,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             users = user_dict.values()
 
             # Construct combo-box items
-            obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]
+            obj_list = [{'name': "%s, %s (%s)" % (user.last_name, user.first_name, user.username), 'username': user.username, 'id': user.id} for user in users]
         else:
             obj_list = []
 
