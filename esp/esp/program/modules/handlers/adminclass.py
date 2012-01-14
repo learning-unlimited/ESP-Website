@@ -404,9 +404,7 @@ class AdminClass(ProgramModuleObj):
     def change_checkmark(self, class_id, check_id):
         cls = ClassSubject.objects.get(id = class_id)
         check = ProgramCheckItem.objects.get(id = check_id)
-        
-        cache.delete( 'CLASS_MANAGE_ROW__%d' % cls.id )
-        # Cache key here should match that of /esp/program/templatetags/class_manage_row.py
+
         if len(cls.checklist_progress.filter(id = check_id).values('id')[:1]) > 0:
             cls.checklist_progress.remove(check)
             return False
