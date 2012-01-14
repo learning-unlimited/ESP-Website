@@ -18,14 +18,24 @@ DROP FUNCTION userbit__user_has_perms(integer, integer, integer, timestamp with 
 """
 
     def forwards(self, orm):
-        with open("datatree/sql/datatree.postgresql-multiline.sql") as f:
-            db.execute(self.del_fns_str)
-            db.execute(f.read())
+        try:
+            with open("datatree/sql/datatree.postgresql-multiline.sql") as f:
+                db.execute(self.del_fns_str)
+                db.execute(f.read())
+        except Exception, e:
+            print "Error:  Exception occurred while migrating PL/PgSQL functions:"
+            print e
+            print "This migration will only work properly with PostgreSQL; it's not needed with other backends."
 
     def backwards(self, orm):
         # The file should be reverted by now; and it's self-clobbering, so just run it again
-        with open("datatree/sql/datatree.postgresql-multiline.sql") as f:
-            db.execute(self.del_fns_str)
-            db.execute(f.read())
-
+        try:
+            with open("datatree/sql/datatree.postgresql-multiline.sql") as f:
+                db.execute(self.del_fns_str)
+                db.execute(f.read())
+        except Exception, e:
+            print "Error:  Exception occurred while migrating PL/PgSQL functions:"
+            print e
+            print "This migration will only work properly with PostgreSQL; it's not needed with other backends."
+            
     complete_apps = ['datatree']

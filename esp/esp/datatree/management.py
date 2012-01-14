@@ -62,7 +62,12 @@ def post_syncdb(sender, app, **kwargs):
             from django.db import connection
             cursor = connection.cursor()
             f = open("datatree/sql/datatree.postgresql-multiline.sql")
-            cursor.execute(f.read())
+            try:
+                cursor.execute(f.read())
+            except Exception, e:
+                print "Error occurred trying to load datatree.postgresql-multiline.sql:"
+                print e
+                print "Possibly using a backend that doesn't support PL/PgSQL functions."
             f.close()
         
 signals.post_syncdb.connect(post_syncdb)
