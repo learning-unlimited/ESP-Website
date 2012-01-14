@@ -421,8 +421,7 @@ def registration_redirect(request):
             if isinstance(t.target, Program) \
                 and (set(user.getUserTypes()) & set(t.value.split(","))))
     progs = set(progs_userbit + progs_tag)
-    print progs
-        
+
     nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
     progs = list(progs)
     if len(progs) == 1:
@@ -431,6 +430,8 @@ def registration_redirect(request):
         return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
     else:
         if len(progs) > 0:
+            #   Sort available programs newest first
+            progs.sort(key=lambda x: -x.id)
             ctxt['progs'] = progs
             ctxt['prog'] = progs[0]
         ctxt['nextreg'] = list(nextreg)
