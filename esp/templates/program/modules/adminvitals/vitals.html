@@ -24,7 +24,7 @@
 
 <tr>
   <th class="smaller">Total # of Teachers</th>
-  <td{% for value in vitals.teachernum %}
+  <td>{% for value in vitals.teachernum %}
        <strong>{{ value.0 }}</strong> &ndash; {{value.1.count}}
       {% if not forloop.last %}<br />{% endif %}
       {% endfor %}
