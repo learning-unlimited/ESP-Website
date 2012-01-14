@@ -25,14 +25,14 @@ class Migration(SchemaMigration):
 
         #   Delete the verbs (need to allow null values)
         db.start_transaction()
-        db.alter_column('modules_studentclassregmoduleinfo', 'signup_verb_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'], null=True))
+        db.alter_column('modules_studentclassregmoduleinfo', 'signup_verb_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'], null=True, db_index=False))
         for item in StudentClassRegModuleInfo.objects.all():
             item.signup_verb = None
             item.save()
         db.commit_transaction()
         
         #   Changing field 'StudentClassRegModuleInfo.signup_verb'
-        db.alter_column('modules_studentclassregmoduleinfo', 'signup_verb_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['program.RegistrationType'], null=True))
+        db.alter_column('modules_studentclassregmoduleinfo', 'signup_verb_id', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['program.RegistrationType'], null=True, db_index=False))
         db.start_transaction()
         #   Change verb IDs to RegistrationTypes
         for item in StudentClassRegModuleInfo.objects.all():
