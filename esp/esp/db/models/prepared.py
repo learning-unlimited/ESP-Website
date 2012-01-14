@@ -27,6 +27,17 @@ def dictfetchmany(cursor, size):
             res.append(_build_dict(cursor, row))
         return res
 
+
+def backup__userbit__bits_get_user(qsc, verb, start, end):
+    from esp.users.models import UserBit, DataTree
+    return UserBit.objects.filter(qsc__in=DataTree.objects.get(id=qsc).ancestors(), verb__in=DataTree.objects.get(id=verb).ancestors(), startdate__lte=start, enddate__gte=end)
+    
+""" Straight-Django reimplementations of specified stored procedures """
+PROC_BACKUPS = {
+    'userbit__bits_get_user': backup__userbit__bits_get_user,
+}
+
+
 class PreparedStatementError(Exception):
     pass
 
@@ -104,14 +115,22 @@ class QuerySetPrepared(QuerySet):
         else:
             table_name = ""
             as_clause = ""                         
-            
-        cursor = connection.cursor()
-        cursor.execute("%s %s(%s)%s%s" % (prepared_command,
-                                        proc_name,
-                                        ', '.join('%s' for x in proc_params),
-                                        as_clause,
-                                        where_clause),
-                        proc_params+list(params))
+
+        try:
+            cursor = connection.cursor()
+            cursor.execute("%s %s(%s)%s%s" % (prepared_command,
+                                              proc_name,
+                                              ', '.join('%s' for x in proc_params),
+                                              as_clause,
+                                              where_clause),
+                           proc_params+list(params))
+        except Exception, e:
+            if proc_name not in PROC_BACKUPS:
+                raise e
+
+            for val in PROC_BACKUPS[proc_name](*proc_params):
+                yield val
+            return
         
         model_keys = [f.column for f in self.model._meta.fields]
 
@@ -238,14 +257,22 @@ class ProcedureManager(Manager):
         """
         new_params = [clean_param(param) for param in proc_params]
 
-        cursor = connection.cursor()
-        cursor.execute("%s %s(%s)" % (prepared_command,
-                                      proc_name,
-                                      ', '.join('%s' for x in new_params)),
-                       new_params)
+        try:
+            cursor = connection.cursor()
+            cursor.execute("%s %s(%s)" % (prepared_command,
+                                          proc_name,
+                                          ', '.join('%s' for x in new_params)),
+                           new_params)
 
-        rows = dictfetchmany(cursor, GET_ITERATOR_CHUNK_SIZE)
+            rows = dictfetchmany(cursor, GET_ITERATOR_CHUNK_SIZE)
+        except Exception, e:
+            ## Probably don't support stored procedures, or proc doesn't exist.
+            ## Check to see if we have a normal statement with the same effect.
+            if proc_name not in PROC_BACKUPS:
+                raise e
 
+            rows = PROC_BACKUPS[proc_name](*proc_params)
+            
         retVal = []
 
         while rows:
