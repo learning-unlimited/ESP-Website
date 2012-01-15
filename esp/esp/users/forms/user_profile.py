@@ -1,6 +1,6 @@
 from django import forms
 from esp.tagdict.models import Tag
-from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser, FormWithTagInitialValues
+from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser, FormWithTagInitialValues, StrippedCharField
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import SplitDateWidget
 from esp.users.models import K12School, StudentInfo
@@ -79,26 +79,20 @@ class DropdownOtherField(forms.MultiValueField):
         super(DropdownOtherField, self).__init__(*args, **kwargs)
         self.fields = (forms.CharField(), forms.CharField(required=False),)
 
-def clean_name(name):
-    name = unicode(name).strip()
-    if not name:
-        raise forms.ValidationError('This field is required.')
-    return name
-
 # TODO: Try to adapt some of these for ModelForm?
 class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     """ Base for contact form """
 
-    first_name = SizedCharField(length=25, max_length=64)
-    last_name = SizedCharField(length=30, max_length=64)
+    first_name = StrippedCharField(length=25, max_length=64)
+    last_name = StrippedCharField(length=30, max_length=64)
     e_mail = forms.EmailField()
     phone_day = USPhoneNumberField(required=False)
     phone_cell = USPhoneNumberField(required=False)
     receive_txt_message = forms.BooleanField(required=False)
-    address_street = SizedCharField(length=40, max_length=100)
-    address_city = SizedCharField(length=20, max_length=50)
+    address_street = StrippedCharField(length=40, max_length=100)
+    address_city = StrippedCharField(length=20, max_length=50)
     address_state = forms.ChoiceField(choices=zip(_states,_states))
-    address_zip = SizedCharField(length=5, max_length=5)
+    address_zip = StrippedCharField(length=5, max_length=5)
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
@@ -116,13 +110,7 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
         if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages.")
         return self.cleaned_data
-    
-    def clean_first_name(self):
-        return clean_name(self.cleaned_data['first_name'])
-    
-    def clean_last_name(self):
-        return clean_name(self.cleaned_data['last_name'])
-        
+
 UserContactForm.base_fields['e_mail'].widget.attrs['size'] = 25
 
 class TeacherContactForm(UserContactForm):
@@ -135,15 +123,15 @@ class TeacherContactForm(UserContactForm):
 class EmergContactForm(FormUnrestrictedOtherUser):
     """ Contact form for emergency contacts """
 
-    emerg_first_name = SizedCharField(length=25, max_length=64)
-    emerg_last_name = SizedCharField(length=30, max_length=64)
+    emerg_first_name = StrippedCharField(length=25, max_length=64)
+    emerg_last_name = StrippedCharField(length=30, max_length=64)
     emerg_e_mail = forms.EmailField(required=False)
     emerg_phone_day = USPhoneNumberField()
     emerg_phone_cell = USPhoneNumberField(required=False)
-    emerg_address_street = SizedCharField(length=40, max_length=100)
-    emerg_address_city = SizedCharField(length=20, max_length=50)
+    emerg_address_street = StrippedCharField(length=40, max_length=100)
+    emerg_address_city = StrippedCharField(length=20, max_length=50)
     emerg_address_state = forms.ChoiceField(choices=zip(_states,_states))
-    emerg_address_zip = SizedCharField(length=5, max_length=5)
+    emerg_address_zip = StrippedCharField(length=5, max_length=5)
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def clean(self):
@@ -156,8 +144,8 @@ class EmergContactForm(FormUnrestrictedOtherUser):
 class GuardContactForm(FormUnrestrictedOtherUser):
     """ Contact form for guardians """
 
-    guard_first_name = SizedCharField(length=25, max_length=64)
-    guard_last_name = SizedCharField(length=30, max_length=64)
+    guard_first_name = StrippedCharField(length=25, max_length=64)
+    guard_last_name = StrippedCharField(length=30, max_length=64)
     guard_no_e_mail = forms.BooleanField(required=False)
     guard_e_mail = forms.EmailField(required=False)
     guard_phone_day = USPhoneNumberField()
@@ -534,13 +522,13 @@ class VisitingUserInfo(FormUnrestrictedOtherUser):
     profession = SizedCharField(length=12, max_length=64, required=False)
 
 class MinimalUserInfo(FormUnrestrictedOtherUser):
-    first_name = SizedCharField(length=25, max_length=64)
-    last_name = SizedCharField(length=30, max_length=64)
+    first_name = StrippedCharField(length=25, max_length=64)
+    last_name = StrippedCharField(length=30, max_length=64)
     e_mail = forms.EmailField()
-    address_street = SizedCharField(length=40, max_length=100)
-    address_city = SizedCharField(length=20, max_length=50)
+    address_street = StrippedCharField(length=40, max_length=100)
+    address_city = StrippedCharField(length=20, max_length=50)
     address_state = forms.ChoiceField(choices=zip(_states,_states))
-    address_zip = SizedCharField(length=5, max_length=5)
+    address_zip = StrippedCharField(length=5, max_length=5)
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
 _grad_years = range(datetime.now().year, datetime.now().year + 6)

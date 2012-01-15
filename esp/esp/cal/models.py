@@ -36,6 +36,7 @@ from django.db import models
 from esp.datatree.models import *
 from datetime import datetime, timedelta
 from esp.db.fields import AjaxForeignKey
+from esp.cache import cache_function
 
 # Create your models here.
 
@@ -205,6 +206,21 @@ class Event(models.Model):
         #   Return the number of classes assigned to this time slot.
         from esp.program.models import ClassSection
         return ClassSection.objects.filter(meeting_times=self).count()
+    
+    @cache_function
+    def parent_program(self):
+        #   Returns the program if the event is associated with exactly one.
+        #   Otherwise returns None.
+        qs = self.anchor.program_set.all()
+        if qs.count() == 1:
+            return qs[0]
+        else:
+            return None
+    parent_program.depend_on_row(lambda: Event, lambda evt: {'self': evt})
+    def get_program_model():
+        from esp.program.models import Program
+        return Program
+    parent_program.depend_on_model(get_program_model)
     
     def __cmp__(self, other):
         try:

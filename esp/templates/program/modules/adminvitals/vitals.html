@@ -24,7 +24,7 @@
 
 <tr>
   <th class="smaller">Total # of Teachers</th>
-  <td{% for value in vitals.teachernum %}
+  <td>{% for value in vitals.teachernum %}
        <strong>{{ value.0 }}</strong> &ndash; {{value.1.count}}
       {% if not forloop.last %}<br />{% endif %}
       {% endfor %}
@@ -52,12 +52,20 @@
   <td>{{ vitals.classrejected.count }}</td>
 </tr>
 <tr>
+  <th class="smaller">Total # of Classes <span style="color: #990;">Cancelled</span></th>
+  <td>{{ vitals.classcancelled.count }}</td>
+</tr>
+<tr>
   <th class="smaller">Total # of Class Hours:</th>
   <td>{{ classhours }}</td>
 </tr>
 <tr>
-  <th class="smaller">Total # of Class-Student-Hours:</th>
+  <th class="smaller">Total # of Class-Student-Hours (capacity):</th>
   <td>{{ classpersonhours }}</td>
+</tr>
+<tr>
+  <th class="smaller">Total # of Class-Student-Hours (registered):</th>
+  <td>{{ classreghours }}</td>
 </tr>
 
 {% for timeslot in vitals.timeslots %}
@@ -65,7 +73,7 @@
 <tr>
   <th class="smaller">{{ timeslot.slotname }}</th>
   <td>Students: {{ timeslot.studentcount.count }} / {{ timeslot.studentcount.max_count }}<br />
-      Classes: {{ timeslot.classcount.count }}</td>
+      Classes: {{ timeslot.classcount }}</td>
 </tr>
 {% endfor %}
 </table>
@@ -96,7 +104,7 @@
 </tr>
 {% endfor %}{% endcomment %}
 
-<tr><th colspan="{{ shirt_sizes|length|add:1 }}">Teachers teaching at least one class</th></tr>
+<tr><th colspan="{{ shirt_sizes|length|add:1 }}">Teachers teaching approved classes</th></tr>
 <tr>
     <td></td>
     {% for shirt_size in shirt_sizes %}

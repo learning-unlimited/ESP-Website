@@ -1296,9 +1296,9 @@ class ClassSection(models.Model):
 class ClassSubject(models.Model, CustomFormsLinkModel):
     """ An ESP course.  The course includes one or more ClassSections which may be linked by ClassImplications. """
     
-	#customforms info
+    #customforms info
     form_link_name='Course'	
-	
+
     from esp.program.models import Program
     
     anchor = AjaxForeignKey(DataTree)
@@ -1818,8 +1818,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             td = tg.end - tg.start
             time_avail += (td.seconds / 3600.0)
         for cls in teacher.getTaughtClasses(self.parent_program):
-            time_avail -= float(str(cls.duration)) * len(cls.get_sections())
-        if float(str(self.duration)) * len(self.get_sections()) > time_avail:
+            for sec in cls.get_sections():
+                time_avail -= float(str(sec.duration))
+        time_needed = 0.0
+        for sec in self.get_sections():
+            time_needed += float(str(sec.duration))
+        if time_needed > time_avail:
             return True
             
         return False

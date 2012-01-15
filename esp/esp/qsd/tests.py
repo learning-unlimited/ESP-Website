@@ -76,7 +76,7 @@ class QSDCorrectnessTest(TestCase):
         #   Render a template that uses the inline_qsd template tag
         template_data = """
             {% load render_qsd %}
-            {% render_inline_qsd "Q/Programs" "learn:bar" None %}
+            {% render_inline_qsd "Q/Programs" "learn:bar" %}
         """
         template = Template(template_data)
         response_content = template.render(Context({}))

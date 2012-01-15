@@ -678,9 +678,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         simplejson.dump(clean_counts, resp)
         return resp
 
-    @vary_on_cookie
-    @needs_student
     @aux_call
+    @needs_student
+    @vary_on_cookie
     def catalog_registered_classes_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
         now = datetime.now()
         reg_bits = StudentRegistration.valid_objects().filter(user=request.user, section__parent_class__parent_program=prog).select_related()

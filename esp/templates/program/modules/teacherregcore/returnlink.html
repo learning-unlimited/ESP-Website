@@ -1,0 +1,9 @@
+<p>
+{% if prog %}
+<a href="/teach/{{ prog.getUrlBase }}/teacherreg">Click here</a> to return to the main teacher registration page.
+{% else %}
+{% if program %}
+<a href="/teach/{{ program.getUrlBase }}/teacherreg">Click here</a> to return to the main teacher registration page.
+{% endif %}
+{% endif %}
+</p>

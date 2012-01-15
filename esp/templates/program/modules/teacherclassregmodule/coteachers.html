@@ -40,7 +40,7 @@
 You currently have no coteachers for this class.
 {% else %}
 <form action="{{request.path}}" method="post" name="manage_coteachers">
-<table align="center" width="400">
+<table align="center" width="500">
     <tr>
         <th colspan="2">Current Coteachers</th>
     </tr>
@@ -69,7 +69,7 @@ You currently have no coteachers for this class.
 </form>
 {% endif %}
 <form action="{{request.path}}" method="post" name="addteacher">
-<table align="center" width="400">
+<table align="center" width="500">
     <tr>
         <th colspan="2">Add More Coteachers</th>
     </tr>
@@ -77,13 +77,13 @@ You currently have no coteachers for this class.
         <td colspan="2">Begin typing your coteacher's name in `Last, First' format to find them.</td>
     </tr>
     <tr>
-        <td width="50%">
+        <td width="70%">
             <input type="hidden" name="clsid" value="{{ class.id }}" />
             <input type="hidden" name="op" value="add" />
             <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
             <div dojoType="dojox.data.JsonRestStore" jsId="stateStore" target="/teach/{{ program.getUrlBase }}/teacherlookup/" idAttribute="id">
             </div>
-            <input dojoType="dijit.form.FilteringSelect" value="" store="stateStore" searchAttr="name" name="teacher_selected" id="stateInput">
+            <input dojoType="dijit.form.FilteringSelect" value="" store="stateStore" searchAttr="name" name="teacher_selected" id="stateInput" style="width: 340px;">
         </td>
         <td>
             <input type="submit" class="button" value="Add Teacher" />
@@ -91,7 +91,7 @@ You currently have no coteachers for this class.
     </tr>
 </table>
 </form>
-<table align="center" width="400">
+<table align="center" width="500">
     <tr>
         <td align="center" colspan="2">When you are done, click the button below to return to teacher registration.</td>
     </tr>

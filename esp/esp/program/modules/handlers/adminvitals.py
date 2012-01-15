@@ -45,6 +45,7 @@ from django.db.models import Count, Sum
 from django.db.models.query      import Q
 from collections import defaultdict
 import math
+from decimal import Decimal
 
 class KeyDoesNotExist(Exception):
     pass
@@ -75,6 +76,7 @@ class AdminVitals(ProgramModuleObj):
         vitals['classapproved'] = classes.filter(status=10)
         vitals['classunreviewed'] = classes.filter(status=0)
         vitals['classrejected'] = classes.filter(status=-10)
+        vitals['classcancelled'] = classes.filter(status=-20)
 
         proganchor = self.program_anchor_cached()
         
@@ -134,11 +136,11 @@ teachers[key]))
                 self.clslist = []
 
                 def count(self):
-                    lst = [x.num_students() for x in self.clslist]
+                    lst = [0] + [x.num_students() for x in self.clslist]
                     return reduce(operator.add, lst)
 
                 def max_count(self):
-                    lst = [x.capacity for x in self.clslist]
+                    lst = [0] + [x.capacity for x in self.clslist]
                     return reduce(operator.add, lst)
 
                 def __init__(self, newclslist):
@@ -155,8 +157,9 @@ teachers[key]))
         context['shirt_types'] = adminvitals_shirt['shirt_types']
         context['shirts'] = adminvitals_shirt['shirts']
 
-        shours = 0
-        chours = 0
+        shours = Decimal('0.0')
+        chours = Decimal('0.0')
+        crhours = Decimal('0.0')
         ## Write this as a 'for' loop because PostgreSQL can't do it in
         ## one go without a subquery or duplicated logic, and Django
         ## doesn't have enough power to expose either approach directly.
@@ -166,18 +169,23 @@ teachers[key]))
         ## minimize the number of objects that we're creating.
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
-        for cls in self.program.classes().annotate(subject_duration=Sum('sections__duration')).values('subject_duration', 'class_size_max'):
+        for cls in self.program.classes().annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max'):
             if cls['subject_duration']:
                 chours += cls['subject_duration']
                 shours += cls['subject_duration'] * (cls['class_size_max'] if cls['class_size_max'] else 0)
+                crhours += cls['subject_duration'] * cls['subject_students'] / cls['num_sections']
            
         context['classhours'] = chours
         context['classpersonhours'] = shours
+        context['classreghours'] = crhours
         Q_categories = Q(program=self.program)
         crmi = self.program.getModuleExtension('ClassRegModuleInfo')
         if crmi.open_class_registration:
             Q_categories |= Q(pk=open_class_category().pk)
-        context['categories'] = ClassCategories.objects.filter(Q_categories, cls__parent_program=self.program, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'category').distinct()
+        #   Introduce a separate query to get valid categories, since the single query seemed to introduce duplicates
+        program_categories = ClassCategories.objects.filter(Q_categories).distinct().values_list('id', flat=True)
+        annotated_categories = ClassCategories.objects.filter(cls__parent_program=self.program, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'category').distinct()
+        context['categories'] = filter(lambda x: x['id'] in program_categories, annotated_categories)
 
         return context
     

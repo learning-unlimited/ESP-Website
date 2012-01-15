@@ -74,7 +74,7 @@ def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, colla
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog.html', disable=True)
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
-    return render_class_helper(cls)
+    return render_class_helper(cls, user, prereg_url, filter, timeslot)
 render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 
 @cache_function

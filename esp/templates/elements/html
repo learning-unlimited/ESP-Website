@@ -34,13 +34,12 @@
     
     <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
     <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
+    <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo/dojo.xd.js" djConfig="parseOnLoad: true"></script>
 
     <script language="JavaScript">
     $j(document).ready(function() {
-        $j.getScript("/media/scripts/csrf_init.js");
-        $j.getScript("/media/scripts/csrf_check.js");
         update_user_classes();
     });
     </script>

@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.program.controllers.consistency import ConsistencyChecker
+from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
 from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem
 from esp.users.models import UserBit, ESPUser, User
@@ -404,9 +405,7 @@ class AdminClass(ProgramModuleObj):
     def change_checkmark(self, class_id, check_id):
         cls = ClassSubject.objects.get(id = class_id)
         check = ProgramCheckItem.objects.get(id = check_id)
-        
-        cache.delete( 'CLASS_MANAGE_ROW__%d' % cls.id )
-        # Cache key here should match that of /esp/program/templatetags/class_manage_row.py
+
         if len(cls.checklist_progress.filter(id = check_id).values('id')[:1]) > 0:
             cls.checklist_progress.remove(check)
             return False
@@ -590,46 +589,14 @@ class AdminClass(ProgramModuleObj):
         #   It might do this already.
         return TeacherClassRegModule(self).makeaclass(request, tl, one, two, module, extra, prog, cls)
 
+    @aux_call
     @needs_admin
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
-        limit = 10
-        from esp.web.views.json import JsonResponse
-        from esp.users.models import UserBit
-
-        Q_teacher = Q(userbit__verb = GetNode('V/Flags/UserRole/Teacher'))
-
         # Search for teachers with names that start with search string
         if not request.GET.has_key('name') or request.POST.has_key('name'):
             return self.goToCore(tl)
-
-        queryset = ESPUser.objects.filter(Q_teacher)
         
-        if not request.GET.has_key('name'):
-            startswith = request.POST['name']
-        else:
-            startswith = request.GET['name']
-        parts = [x.strip('*') for x in startswith.split(',')]
-        
-        #   Don't return anything if there's no input.
-        if len(parts[0]) > 0:
-            Q_name = Q(last_name__istartswith=parts[0])
-
-            if len(parts) > 1:
-                Q_name = Q_name & Q(first_name__istartswith=parts[1])
-
-            # Isolate user objects
-            queryset = queryset.filter(Q_name)[:(limit*10)]
-            user_dict = {}
-            for user in queryset:
-                user_dict[user.id] = user
-            users = user_dict.values()
-
-            # Construct combo-box items
-            obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]
-        else:
-            obj_list = []
-
-        return JsonResponse(obj_list)
+        return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)
 
     @aux_call
     @needs_admin

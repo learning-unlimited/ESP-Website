@@ -61,7 +61,7 @@ If you have any questions regarding the program, <br /> please email the
    </tr>
   {% for cls in clslist %}
   <tr>
-    <td class="clsleft classname bordertop2">
+    <td class="clsleft classname bordertop2" colspan="2">
       <span title="{{cls}}">
       {{ cls|truncatewords:6 }}
       <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
@@ -84,15 +84,10 @@ If you have any questions regarding the program, <br /> please email the
     </td>
    <td class="clsmiddle bordertop2">
       <form method="get" action="/teach/{{program.getUrlBase}}/class_status/{{cls.id}}">
-         <input class="button" type="submit" value="View Status" />
+         <input class="button" type="submit" value="Detailed Status" />
       </form>
    </td>
-   <td class="clsmiddle bordertop2">
-      <a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}" 
-        title="View Class' Students" class="abutton">
-       View Students
-      </a>
-   </td>
+
    <td class="clsright bordertop2">
       {% if cls.pageExists %}
       <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.html"
@@ -103,7 +98,26 @@ If you have any questions regarding the program, <br /> please email the
       {% endif %}
      </td>
    </tr>
-
+   
+   <tr>
+    <td class="clsleft" colspan="5">
+	<b>Directors' review status</b>: {% if cls.isReviewed %}{% if cls.isAccepted %}
+        <span style="font-weight: bold; color: #0C0;">Accepted</span>
+        {% else %}
+        <span style="font-weight: bold; color: #C00;">Rejected</span>
+        {% endif %}
+        {% else %}
+        <span style="font-weight: bold; color: #00C;">Unreviewed</span>
+        {% endif %}
+    </td>
+   <td class="clsright" colspan="1">
+    <a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}" 
+        title="View Class' Students" class="abutton">
+       View Students
+      </a>
+     </td>
+   </tr>
+   
    <tr>
     <td class="clsleft" colspan="5">
 	<b>Document uploads</b>: There are {{ cls.anchor.media_set.count }} documents associated with this class.

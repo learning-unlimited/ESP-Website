@@ -127,7 +127,7 @@ class DynamicModelHandler:
         if not self.field_list:
             self._getModelFieldList()
         
-        if not transaction.is_managed:
+        if not transaction.is_managed():
             db.start_transaction()
             db.create_table(self._tname, tuple(self.field_list))
             

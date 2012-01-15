@@ -291,7 +291,7 @@ and <tt>M100-class@{{ EMAIL_HOST }}</tt> will email everyone in the class.
 {% load class_manage_row %}
   {% for cls in classes %}
   <tr id="{{cls.id}}-row">
-   {% render_class_row cls program %}
+   {% render_class_row cls %}
    </tr>
    {% endfor %}
 </table>

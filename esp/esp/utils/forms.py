@@ -76,6 +76,10 @@ class SizedCharField(forms.CharField):
         forms.CharField.__init__(self, *args, **kwargs)
         self.widget.attrs['size'] = length
 
+class StrippedCharField(SizedCharField):
+    def clean(self, value):
+        return super(StrippedCharField, self).clean(self.to_python(value).strip())
+
 #### NOTE: Python super() does weird things (it's the next in the MRO, not a superclass).
 #### DO NOT OMIT IT if overriding __init__() when subclassing these forms
 
