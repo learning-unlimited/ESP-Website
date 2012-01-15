@@ -485,6 +485,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     cls.subscribe(teacher)
                     cls.makeAdmin(teacher, self.teacher_class_noedit)                    
                 cls.update_cache()
+                ClassCreationController(self.program).send_class_mail_to_directors(cls)
                 return self.goToCore(tl)
 
 

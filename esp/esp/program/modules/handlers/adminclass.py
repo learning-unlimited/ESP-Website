@@ -52,6 +52,7 @@ from django.contrib.auth.decorators import login_required
 from django.core.cache import cache
 from esp.middleware import ESPError
 from django.db.models.query import Q
+from esp.program.controllers.classreg import ClassCreationController
 
 """ Module in the middle of a rewrite. -Michael """
 
@@ -563,7 +564,7 @@ class AdminClass(ProgramModuleObj):
                 for teacher in coteachers:
                     cls.makeTeacher(teacher)
                     cls.makeAdmin(teacher)                    
-                
+                ClassCreationController(self.program).send_class_mail_to_directors(cls)
                 return self.goToCore(tl)
 
 
