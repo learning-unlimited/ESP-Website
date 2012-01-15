@@ -1296,9 +1296,9 @@ class ClassSection(models.Model):
 class ClassSubject(models.Model, CustomFormsLinkModel):
     """ An ESP course.  The course includes one or more ClassSections which may be linked by ClassImplications. """
     
-	#customforms info
+    #customforms info
     form_link_name='Course'	
-	
+
     from esp.program.models import Program
     
     anchor = AjaxForeignKey(DataTree)
