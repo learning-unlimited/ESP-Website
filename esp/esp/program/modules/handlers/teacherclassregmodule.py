@@ -790,15 +790,20 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     @aux_call
     @needs_teacher    
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
+        
+        # Search for teachers with names that start with search string
+        if not request.GET.has_key('name') or request.POST.has_key('name'):
+            return self.goToCore(tl)
+        
+        return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)
+    
+    @staticmethod
+    def teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
         from esp.web.views.json import JsonResponse
         from esp.users.models import UserBit
 
         Q_teacher = Q(userbit__verb = GetNode('V/Flags/UserRole/Teacher'))
-
-        # Search for teachers with names that start with search string
-        if not request.GET.has_key('name') or request.POST.has_key('name'):
-            return self.goToCore(tl)
 
         queryset = ESPUser.objects.filter(Q_teacher)
         
