@@ -60,8 +60,12 @@
   <td>{{ classhours }}</td>
 </tr>
 <tr>
-  <th class="smaller">Total # of Class-Student-Hours:</th>
+  <th class="smaller">Total # of Class-Student-Hours (capacity):</th>
   <td>{{ classpersonhours }}</td>
+</tr>
+<tr>
+  <th class="smaller">Total # of Class-Student-Hours (registered):</th>
+  <td>{{ classreghours }}</td>
 </tr>
 
 {% for timeslot in vitals.timeslots %}

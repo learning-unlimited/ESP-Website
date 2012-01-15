@@ -158,6 +158,7 @@ teachers[key]))
 
         shours = 0
         chours = 0
+        crhours = 0
         ## Write this as a 'for' loop because PostgreSQL can't do it in
         ## one go without a subquery or duplicated logic, and Django
         ## doesn't have enough power to expose either approach directly.
@@ -167,13 +168,15 @@ teachers[key]))
         ## minimize the number of objects that we're creating.
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
-        for cls in self.program.classes().annotate(subject_duration=Sum('sections__duration')).values('subject_duration', 'class_size_max'):
+        for cls in self.program.classes().annotate(subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('duration', 'subject_duration', 'subject_students', 'class_size_max'):
             if cls['subject_duration']:
                 chours += cls['subject_duration']
                 shours += cls['subject_duration'] * (cls['class_size_max'] if cls['class_size_max'] else 0)
+                crhours += cls['duration'] * cls['subject_students']
            
         context['classhours'] = chours
         context['classpersonhours'] = shours
+        context['classreghours'] = crhours
         Q_categories = Q(program=self.program)
         crmi = self.program.getModuleExtension('ClassRegModuleInfo')
         if crmi.open_class_registration:
