@@ -285,11 +285,11 @@ class ClassCreationController(object):
         if recipients:
             send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
-                      ('%s <%s>' % (user.first_name + ' ' + user.last_name, user.email,)), \
+                      ('%s Class Registration <%s>' % (self.program.anchor.parent.name, self.program.director_email)), \
                       recipients, True)
 
         if self.program.director_email:
             send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
-                      ('%s <%s>' % (user.first_name + ' ' + user.last_name, user.email,)), \
+                      ('%s Class Registration <%s>' % (self.program.anchor.parent.name, self.program.director_email)), \
                       [self.program.director_email], True)
