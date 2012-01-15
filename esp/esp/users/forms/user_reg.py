@@ -3,10 +3,8 @@ from django import forms
 from django.contrib.auth.models import User
 from django.db.models.query import Q
 
-from esp.utils.forms import CaptchaForm
 from esp.users.models import ESPUser
-
-from esp.utils.forms import CaptchaForm, SizedCharField
+from esp.utils.forms import CaptchaForm, StrippedCharField
 from esp.users.forms.user_profile import PhoneNumberField
 
 class ValidHostEmailField(forms.EmailField):
@@ -34,18 +32,12 @@ class ValidHostEmailField(forms.EmailField):
 
         return email
 
-def clean_name(name):
-    name = unicode(name).strip()
-    if not name:
-        raise forms.ValidationError('This field is required.')
-    return name
-
 class UserRegForm(forms.Form):
     """
     A form for users to register for the ESP web site.
     """
-    first_name = forms.CharField(max_length=30)
-    last_name  = forms.CharField(max_length=30)
+    first_name = StrippedCharField(max_length=30)
+    last_name  = StrippedCharField(max_length=30)
 
     username = forms.CharField(min_length=5, max_length=30)
 
@@ -94,12 +86,6 @@ class UserRegForm(forms.Form):
             raise forms.ValidationError('Ensure the password and password confirmation are equal.')
         return self.cleaned_data['confirm_password']
     
-    def clean_first_name(self):
-        return clean_name(self.cleaned_data['first_name'])
-    
-    def clean_last_name(self):
-        return clean_name(self.cleaned_data['last_name'])
-    
     def __init__(self, *args, **kwargs):
         #   Set up the default form
         super(UserRegForm, self).__init__(*args, **kwargs)
@@ -115,8 +101,8 @@ class EmailUserForm(CaptchaForm):
 
 class EmailPrefForm(forms.Form):
     email = ValidHostEmailField(label='E-Mail Address', required = True)
-    first_name = SizedCharField(label='First Name', length=30, max_length=64, required=True)
-    last_name = SizedCharField(label='Last Name', length=30, max_length=64, required=True)
+    first_name = StrippedCharField(label='First Name', length=30, max_length=64, required=True)
+    last_name = StrippedCharField(label='Last Name', length=30, max_length=64, required=True)
     sms_number = PhoneNumberField(label='Cell Phone', required = False,
                                   help_text='Optional: If you provide us your cell phone number, we can send you SMS text notifications')
 #    sms_opt_in = forms.BooleanField(label='Send Me Text Updates', initial = True, required = False)

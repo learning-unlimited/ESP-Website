@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
-from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
+from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
 from esp.datatree.models import DataTree, GetNode
@@ -61,9 +61,9 @@ class TeacherClassRegForm(FormWithRequiredCss):
     ]
     
     # Grr, TypedChoiceField doesn't seem to exist yet
-    title          = SizedCharField(    label='Course Title', length=50, max_length=200 )
+    title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
-    class_info     = forms.CharField(   label='Course Description', widget=forms.Textarea(),
+    class_info     = StrippedCharField(   label='Course Description', widget=forms.Textarea(),
                                         help_text='Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)' )
     prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(attrs={'rows': 4}), required=False,
                                         help_text='If your course does not have prerequisites, leave this box blank.')
