@@ -34,6 +34,12 @@ class ValidHostEmailField(forms.EmailField):
 
         return email
 
+def clean_name(name):
+    name = unicode(name).strip()
+    if not name:
+        raise forms.ValidationError('This field is required.')
+    return name
+
 class UserRegForm(forms.Form):
     """
     A form for users to register for the ESP web site.
@@ -87,7 +93,13 @@ class UserRegForm(forms.Form):
         if not (('confirm_password' in self.cleaned_data) and ('password' in self.cleaned_data)) or (self.cleaned_data['confirm_password'] != self.cleaned_data['password']):
             raise forms.ValidationError('Ensure the password and password confirmation are equal.')
         return self.cleaned_data['confirm_password']
-
+    
+    def clean_first_name(self):
+        return clean_name(self.cleaned_data['first_name'])
+    
+    def clean_last_name(self):
+        return clean_name(self.cleaned_data['last_name'])
+    
     def __init__(self, *args, **kwargs):
         #   Set up the default form
         super(UserRegForm, self).__init__(*args, **kwargs)

@@ -79,6 +79,11 @@ class DropdownOtherField(forms.MultiValueField):
         super(DropdownOtherField, self).__init__(*args, **kwargs)
         self.fields = (forms.CharField(), forms.CharField(required=False),)
 
+def clean_name(name):
+    name = unicode(name).strip()
+    if not name:
+        raise forms.ValidationError('This field is required.')
+    return name
 
 # TODO: Try to adapt some of these for ModelForm?
 class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
@@ -111,6 +116,12 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
         if self.cleaned_data.get('receive_txt_message', None) and self.cleaned_data.get('phone_cell','') == '':
             raise forms.ValidationError("Please specify your cellphone number if you ask to receive text messages.")
         return self.cleaned_data
+    
+    def clean_first_name(self):
+        return clean_name(self.cleaned_data['first_name'])
+    
+    def clean_last_name(self):
+        return clean_name(self.cleaned_data['last_name'])
         
 UserContactForm.base_fields['e_mail'].widget.attrs['size'] = 25
 
