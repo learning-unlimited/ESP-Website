@@ -411,6 +411,7 @@ def userview(request):
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
         del change_grade_form.fields['graduation_year'].widget.attrs['disabled']
     change_grade_form.fields['graduation_year'].initial = ESPUser.YOGFromGrade(user.getGrade())
+    change_grade_form.fields['graduation_year'].choices = filter(lambda choice: bool(choice[0]), change_grade_form.fields['graduation_year'].choices)
     
     context = {
         'user': user,
