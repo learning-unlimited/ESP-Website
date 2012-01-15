@@ -190,7 +190,7 @@ class ResourceModule(ProgramModuleObj):
                 ts_old = past_program.getTimeSlots().filter(event_type__description__icontains='class').order_by('start')
                 ts_new = self.program.getTimeSlots().filter(event_type__description__icontains='class').order_by('start')
                 ts_map = {}
-                for i in range(len(ts_old)):
+                for i in range(min(len(ts_old), len(ts_new))):
                     ts_map[ts_old[i].id] = ts_new[i]
                 
                 resource_list = []
