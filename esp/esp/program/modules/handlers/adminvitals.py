@@ -169,11 +169,11 @@ teachers[key]))
         ## minimize the number of objects that we're creating.
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
-        for cls in self.program.classes().annotate(subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('duration', 'subject_duration', 'subject_students', 'class_size_max'):
+        for cls in self.program.classes().annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max'):
             if cls['subject_duration']:
                 chours += cls['subject_duration']
                 shours += cls['subject_duration'] * (cls['class_size_max'] if cls['class_size_max'] else 0)
-                crhours += cls['duration'] * cls['subject_students']
+                crhours += cls['subject_duration'] * cls['subject_students'] / cls['num_sections']
            
         context['classhours'] = chours
         context['classpersonhours'] = shours
