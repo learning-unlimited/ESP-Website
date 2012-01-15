@@ -45,6 +45,7 @@ from django.db.models import Count, Sum
 from django.db.models.query      import Q
 from collections import defaultdict
 import math
+from decimal import Decimal
 
 class KeyDoesNotExist(Exception):
     pass
@@ -156,9 +157,9 @@ teachers[key]))
         context['shirt_types'] = adminvitals_shirt['shirt_types']
         context['shirts'] = adminvitals_shirt['shirts']
 
-        shours = 0
-        chours = 0
-        crhours = 0
+        shours = Decimal('0.0')
+        chours = Decimal('0.0')
+        crhours = Decimal('0.0')
         ## Write this as a 'for' loop because PostgreSQL can't do it in
         ## one go without a subquery or duplicated logic, and Django
         ## doesn't have enough power to expose either approach directly.
