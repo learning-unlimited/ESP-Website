@@ -16,6 +16,7 @@ from django.db import transaction
 from datetime import timedelta
 from decimal import Decimal
 import simplejson as json
+from django.conf import settings
 
 def get_custom_fields():
     result = SortedDict()
@@ -244,6 +245,9 @@ class ClassCreationController(object):
         mail_ctxt = dict(new_data.iteritems())
         
         mail_ctxt['title'] = cls.title()
+        mail_ctxt['one'] = cls.parent_program.anchor.parent.name
+        mail_ctxt['two'] = cls.parent_program.anchor.name
+        mail_ctxt['DEFAULT_HOST'] = settings.DEFAULT_HOST
         
         # Make some of the fields in new_data nicer for viewing.
         mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category_id']).category
@@ -291,6 +295,7 @@ class ClassCreationController(object):
                       recipients, False)
 
         if self.program.director_email:
+            mail_ctxt['admin'] = True
             send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
                       ('%s Class Registration <%s>' % (self.program.anchor.parent.name, self.program.director_email)), \
