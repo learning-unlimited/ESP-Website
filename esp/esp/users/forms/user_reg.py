@@ -41,9 +41,7 @@ class UserRegForm(forms.Form):
     first_name = forms.CharField(max_length=30)
     last_name  = forms.CharField(max_length=30)
 
-    username = forms.CharField(help_text="At least 5 characters, must contain only alphanumeric characters.",
-                               min_length=5, max_length=30)
-
+    username = forms.CharField(min_length=5, max_length=30)
 
     password = forms.CharField(widget = forms.PasswordInput(),
                                min_length=5)
@@ -54,7 +52,7 @@ class UserRegForm(forms.Form):
     #   The choices for this field will be set later in __init__()
     initial_role = forms.ChoiceField(choices = [])
 
-    email = ValidHostEmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=75)
+    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75)
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
