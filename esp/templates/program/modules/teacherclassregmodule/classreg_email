@@ -1,11 +1,13 @@
 {% autoescape off %}Teacher Registration Notification
 ---------------------------------
-{% if not from_here %}
-*** This teacher is not from this university. ***
-Teacher's school/employer: {{ college }} {% endif %}
+Teachers:{% for teacher in teachers %}
 
-{% if not taught_programs %}*** This teacher is a first-time teacher. ***
-{% else %}Programs this teacher has taught in: {% for prog in taught_programs %}{{ prog.niceName }}, {% endfor %}{% endif %}
+{{ teacher.teacher.get_full_name }} <{{ teacher.teacher.email }}>
+{% if not teacher.from_here %}    *** This teacher is not from this university. ***
+    Teacher's school/employer: {{ teacher.college }}{% endif %}{% if not teacher.taught_programs %}    *** This teacher is a first-time teacher. ***
+{% else %}    Programs this teacher has taught in: {{ teacher.taught_programs }}{% endif %}{% endfor %}
+
+---------------------------------
 
 Class Title: {{ title }}
 

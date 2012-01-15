@@ -54,7 +54,7 @@ class ClassCreationController(object):
         
         self.force_availability(user)  ## So the default DB state reflects the default form state of "all times work"
 
-        self.send_class_mail_to_directors(cls, user)
+        self.send_class_mail_to_directors(cls)
 
         return cls
 
@@ -75,7 +75,7 @@ class ClassCreationController(object):
         
         self.force_availability(user)  ## So the default DB state reflects the default form state of "all times work"
 
-        self.send_class_mail_to_directors(cls, user)
+        self.send_class_mail_to_directors(cls)
 
         return cls
         
@@ -239,7 +239,7 @@ class ClassCreationController(object):
         return (rt, rr)
 
 
-    def generate_director_mail_context(self, cls, user):
+    def generate_director_mail_context(self, cls):
         new_data = cls.__dict__
         mail_ctxt = dict(new_data.iteritems())
         
@@ -262,34 +262,36 @@ class ClassCreationController(object):
             # If the allowable_class_size_ranges field doesn't exist, just don't do anything.
             pass
         
-        # Provide information about whether or not teacher's from MIT.
-        last_profile = user.getLastProfile()
-        if last_profile.teacher_info != None:
-            mail_ctxt['from_here'] = last_profile.teacher_info.from_here
-            mail_ctxt['college'] = last_profile.teacher_info.college
-        else: # This teacher never filled out their teacher profile!
-            mail_ctxt['from_here'] = "[Teacher hasn't filled out teacher profile!]"
-            mail_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
+        mail_ctxt['teachers'] = []
+        for teacher in cls.teachers():
+            teacher_ctxt = {'teacher': teacher}
+            # Provide information about whether or not teacher's from MIT.
+            last_profile = teacher.getLastProfile()
+            if last_profile.teacher_info != None:
+                teacher_ctxt['from_here'] = last_profile.teacher_info.from_here
+                teacher_ctxt['college'] = last_profile.teacher_info.college
+            else: # This teacher never filled out their teacher profile!
+                teacher_ctxt['from_here'] = "[Teacher hasn't filled out teacher profile!]"
+                teacher_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
 
-        # Get a list of the programs this person has taught for in the past, if any.
-        taught_programs = user.getTaughtPrograms().order_by('pk').exclude(id=self.program.id)
-        mail_ctxt['taught_programs'] = taught_programs
-
+            # Get a list of the programs this person has taught for in the past, if any.
+            teacher_ctxt['taught_programs'] = u', '.join([prog.niceName() for prog in teacher.getTaughtPrograms().order_by('pk').exclude(id=self.program.id)])
+            mail_ctxt['teachers'].append(teacher_ctxt)
         return mail_ctxt
 
 
-    def send_class_mail_to_directors(self, cls, user):
-        mail_ctxt = self.generate_director_mail_context(cls, user)
+    def send_class_mail_to_directors(self, cls):
+        mail_ctxt = self.generate_director_mail_context(cls)
         
-        recipients = [teacher.email for teacher in cls.teachers()]        
+        recipients = [teacher.email for teacher in cls.teachers()]
         if recipients:
             send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
                       ('%s Class Registration <%s>' % (self.program.anchor.parent.name, self.program.director_email)), \
-                      recipients, True)
+                      recipients, False)
 
         if self.program.director_email:
             send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
                       ('%s Class Registration <%s>' % (self.program.anchor.parent.name, self.program.director_email)), \
-                      [self.program.director_email], True)
+                      [self.program.director_email], False)
