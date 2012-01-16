@@ -236,7 +236,7 @@ th .program_form_small{
     font-size: 0.9em;
 }
 
-#program_form input.button {
+#program_form input.button,button.button {
     background-color: #c6def7;
     border: 1px solid black;
     font-weight: bold;
@@ -254,7 +254,7 @@ th .program_form_small{
     font-family: Arial, Helvetica, sans-serif;
 }
 
-#program_form input.button:hover {
+#program_form input.button:hover,button.button:hover {
     background-color: #333399;
     color: #c6def7;
 }
