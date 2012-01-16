@@ -37,6 +37,7 @@ from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType
+from esp.program.models.class_ import open_class_category
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.datatree.models import *
 from esp.tagdict.models          import Tag
@@ -603,8 +604,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
 
-        # Dirty hack to special-case the new "open classes".  Feel free to make more general/elegant. --rye
-        if cls.category.category == "Walk-in Seminar":
+        if cls.category.category == open_class_category().category:
             action = 'editopenclass'
         else:
             action = 'edit'
