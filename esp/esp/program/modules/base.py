@@ -664,7 +664,7 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
     from esp.users.models import UserBit
     from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
     if tl != 'learn' and tl != 'teach':
-        return True
+        return (True, None)
     response = None
     canView = False
     if not_logged_in(request):
