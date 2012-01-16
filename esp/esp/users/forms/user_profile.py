@@ -518,6 +518,9 @@ class GuardianProfileForm(UserContactForm, GuardianInfoForm):
 class EducatorProfileForm(UserContactForm, EducatorInfoForm):
     """ Form for educator profiles """
 
+class VolunteerProfileForm(UserContactForm):
+    pass
+
 class VisitingUserInfo(FormUnrestrictedOtherUser):
     profession = SizedCharField(length=12, max_length=64, required=False)
 
