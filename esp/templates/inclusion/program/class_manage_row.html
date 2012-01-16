@@ -31,6 +31,7 @@
     <td class="clsmiddle">
        <form method="post" action="/teach/{{ program.url }}/editclass/{{cls.id }}">
          <input type="hidden" name="command" value="edit_class_{{cls.id}}">
+         <input type="hidden" name="manage" value="manage">
          <input class="button" type="submit" value="Edit">
        </form>
     </td>

@@ -649,6 +649,13 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
                 if do_question:
                     return HttpResponseRedirect(newclass.parent_program.get_teach_url() + "app_questions")
+                if request.POST.has_key('manage') and request.POST['manage'] == 'manage':
+                    if request.POST['manage_submit'] == 'reload':
+                        return HttpResponseRedirect(request.get_full_path()+'?manage=manage')
+                    elif request.POST['manage_submit'] == 'dashboard':
+                        return HttpResponseRedirect('/manage/%s/dashboard' % self.program.getUrlBase())
+                    elif request.POST['manage_submit'] == 'main':
+                        return HttpResponseRedirect('/manage/%s/main' % self.program.getUrlBase())
                 return self.goToCore(tl)
 
             except ClassCreationValidationError, e:
@@ -784,7 +791,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             context['classroom_form_advisories'] += '__open_class'
         context['classtype'] = context['classes'][context['isopenclass']]['type']
         context['otherclass'] = context['classes'][1 - context['isopenclass']]
-
+        
+        context['manage'] = False
+        if ((request.method == "POST" and request.POST.has_key('manage') and request.POST['manage'] == 'manage') or 
+            (request.method == "GET" and request.GET.has_key('manage') and request.GET['manage'] == 'manage')) and request.user.isAdministrator():
+            context['manage'] = True
+        
         return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
 
 
