@@ -31,7 +31,7 @@
 
     <p>Please fill out or update the form below.  (The required fields are bordered in red.)  If you would like to co-teach this class with others, please click the "Modify Coteachers" button next to the appropriate class at the teacher registration page afterwards.</p>
 
-    {% if module.open_class_registration %}
+    {% if module.open_class_registration and addoredit == 'Add' %}
     <p style="font-weight:bold;">This page is for registering a {{ classtype }} <span style="text-decoration:underline;">only</span>. If you are trying to register a {{ otherclass.type }}, <a href="{% url esp.web.views.main.program tl one two otherclass.link %}">click here</a>.</p>
     {% endif %}
     
