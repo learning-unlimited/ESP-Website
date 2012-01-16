@@ -56,6 +56,13 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.other_teacher1 = random.choice(other_teachers)
         other_teachers.remove(self.other_teacher1)
         self.other_teacher2 = random.choice(other_teachers)
+
+        self.free_teacher1, created = ESPUser.objects.get_or_create(username='freeteacher1')
+        self.free_teacher1.set_password('password')
+        self.free_teacher1.save()
+        self.free_teacher2, created = ESPUser.objects.get_or_create(username='freeteacher2')
+        self.free_teacher2.set_password('password')
+        self.free_teacher2.save()
         # Make the primary teacher an admin of the class
         self.cls.makeAdmin(self.teacher)
 
@@ -109,46 +116,46 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': '', 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
         self.failUnless("Error" in response.content)
 
-        # Add other_teacher1
-        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.other_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless(self.has_coteacher(self.other_teacher1, response.content))
-        cur_coteachers.append(self.other_teacher1.id)
+        # Add free_teacher1
+        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
+        self.failUnless(self.has_coteacher(self.free_teacher1, response.content))
+        cur_coteachers.append(self.free_teacher1.id)
 
         # Error on adding the same coteacher again
-        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.other_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
+        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
         self.failUnless("Error" in response.content)
 
-        # Add other_teacher2
-        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.other_teacher2.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless(self.has_coteacher(self.other_teacher2, response.content))
-        cur_coteachers.append(self.other_teacher2.id)
+        # Add free_teacher2
+        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher2.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
+        self.failUnless(self.has_coteacher(self.free_teacher2, response.content))
+        cur_coteachers.append(self.free_teacher2.id)
 
-        # Delete other_teacher 1
-        response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': self.other_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless(not self.has_coteacher(self.other_teacher1, response.content))
-        cur_coteachers.remove(self.other_teacher1.id)
+        # Delete free_teacher 1
+        response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
+        self.failUnless(not self.has_coteacher(self.free_teacher1, response.content))
+        cur_coteachers.remove(self.free_teacher1.id)
 
-        # Add other_teacher 1
-        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.other_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless(self.has_coteacher(self.other_teacher1, response.content))
-        cur_coteachers.append(self.other_teacher1.id)
+        # Add free_teacher 1
+        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
+        self.failUnless(self.has_coteacher(self.free_teacher1, response.content))
+        cur_coteachers.append(self.free_teacher1.id)
 
-        # Delete both other_teacher1 and other_teacher2
-        response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': [self.other_teacher1.id, self.other_teacher2.id], 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless(not self.has_coteacher(self.other_teacher1, response.content) and not self.has_coteacher(self.other_teacher2, response.content))
-        cur_coteachers.remove(self.other_teacher1.id)
-        cur_coteachers.remove(self.other_teacher2.id)
+        # Delete both free_teacher1 and free_teacher2
+        response = self.apply_coteacher_op({'op': 'del', 'clsid': self.cls.id, 'delete_coteachers': [self.free_teacher1.id, self.free_teacher2.id], 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
+        self.failUnless(not self.has_coteacher(self.free_teacher1, response.content) and not self.has_coteacher(self.free_teacher2, response.content))
+        cur_coteachers.remove(self.free_teacher1.id)
+        cur_coteachers.remove(self.free_teacher2.id)
 
-        # Add other_teacher 1
-        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.other_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
-        self.failUnless(self.has_coteacher(self.other_teacher1, response.content))
-        cur_coteachers.append(self.other_teacher1.id)
+        # Add free_teacher 1
+        response = self.apply_coteacher_op({'op': 'add', 'clsid': self.cls.id, 'teacher_selected': self.free_teacher1.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
+        self.failUnless(self.has_coteacher(self.free_teacher1, response.content))
+        cur_coteachers.append(self.free_teacher1.id)
 
         # Save the coteachers
         self.apply_coteacher_op({'op': 'save', 'clsid': self.cls.id, 'coteachers': ",".join([str(coteacher) for coteacher in cur_coteachers])})
         self.failUnless(self.cls in self.teacher.getTaughtClasses())
-        self.failUnless(self.cls in self.other_teacher1.getTaughtClasses())
-        self.failUnless(not self.cls in self.other_teacher2.getTaughtClasses())
+        self.failUnless(self.cls in self.free_teacher1.getTaughtClasses())
+        self.failUnless(not self.cls in self.free_teacher2.getTaughtClasses())
 
     def add_resource_request(self, sec, res_type, val):
         rr = ResourceRequest()
