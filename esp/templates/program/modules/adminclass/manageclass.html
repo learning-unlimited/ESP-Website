@@ -16,11 +16,10 @@
 <h1>Manage Class {{ class.id }}: {{ class.title }}</h1>
 
 <p>
-<tt>{{ class.class_info }}</tt>
+<b>Class description: </b><tt>{{ class.class_info }}</tt>
 </p>
 
 <div id="program_form">
-<br />
 
 <table align="center" width="500">
     <tr>
@@ -236,6 +235,7 @@ Please use the form below to alter {{ class.title }}.  Note that changes made to
 </div>
 
 <br />
-<br />
+
+{% include "program/modules/admincore/returnlink.html" %}
 
 {% endblock %}
