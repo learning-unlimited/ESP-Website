@@ -7,7 +7,7 @@ from esp.resources.models import ResourceType, ResourceRequest
 from esp.datatree.models import GetNode
 from esp.tagdict.models import Tag
 
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from django.utils.datastructures import SortedDict

@@ -41,7 +41,7 @@ from esp.datatree.models import GetNode
 
 from django.template import Template, Context
 from django.template.loader import select_template
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 
 class ConfirmationEmailController(object):
     def send_confirmation_email(self, user, program, repeat=False, override=False):

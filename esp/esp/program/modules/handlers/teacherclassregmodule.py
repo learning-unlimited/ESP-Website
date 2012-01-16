@@ -44,7 +44,7 @@ from esp.web.util                import render_to_response
 from django.template.loader      import render_to_string
 from esp.middleware              import ESPError
 from django.utils.datastructures import MultiValueDict
-from django.core.mail            import send_mail
+from esp.dbmail.models           import send_mail
 from django.template.loader      import render_to_string
 from django.http                 import HttpResponse
 from esp.miniblog.models         import Entry
