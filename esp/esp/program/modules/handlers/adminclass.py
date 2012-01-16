@@ -326,7 +326,8 @@ class AdminClass(ProgramModuleObj):
                 # Leave a loophole:  You can set a class to "Unreviewed" (ie., status = 0),
                 # then cancel it, and it won't kick all the students out
                 cls_alter = ClassSubject.objects.get(id=cls_form.cleaned_data['clsid'])
-                should_cancel_sections = (int(cls_alter.status) > 0 and int(cls_form.cleaned_data['status']) < 0)
+                new_status = int(cls_form.cleaned_data['status'])
+                should_cancel_sections = (int(cls_alter.status) > 0 and new_status < 0)
                 
                 for sf in sec_forms:
                     sec_alter = ClassSection.objects.get(id=sf.cleaned_data['secid'])
@@ -335,7 +336,7 @@ class AdminClass(ProgramModuleObj):
                     
                     # If the parent class was canceled, cancel the sections
                     if should_cancel_sections and int(sec_alter.status) > 0:
-                        sec_alter.status = cls_alter.status
+                        sec_alter.status = new_status
                         sec_alter.save()
 
                     # Kick all the students out of a class if it was rejected
