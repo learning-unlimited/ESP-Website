@@ -1644,6 +1644,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def key_set_from_userbit(bit):
         subjects = ClassSubject.objects.filter(anchor=bit.qsc)
         return [{'self': cls} for cls in subjects]
+    teachers.depend_on_row(lambda:ClassSubject, lambda cls: {'self': cls})
     teachers.depend_on_row(lambda:UserBit, lambda bit: ClassSubject.key_set_from_userbit(bit), lambda bit: bit.verb == GetNode('V/Flags/Registration/Teacher'))
 
     def pretty_teachers(self, use_cache = True):
