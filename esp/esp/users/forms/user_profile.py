@@ -113,13 +113,6 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
 
 UserContactForm.base_fields['e_mail'].widget.attrs['size'] = 25
 
-class TeacherContactForm(UserContactForm):
-    """ Contact form for teachers """
-
-    # Require both phone numbers for teachers.
-    phone_day = USPhoneNumberField()
-    phone_cell = USPhoneNumberField()
-    
 class EmergContactForm(FormUnrestrictedOtherUser):
     """ Contact form for emergency contacts """
 
@@ -504,7 +497,7 @@ class StudentProfileForm(UserContactForm, EmergContactForm, GuardContactForm, St
     """ Form for student profiles """
 StudentProfileForm = defaultclass(StudentProfileForm)
 
-class TeacherProfileForm(TeacherContactForm, TeacherInfoForm):
+class TeacherProfileForm(UserContactForm, TeacherInfoForm):
     """ Form for teacher profiles """
     def __init__(self, *args, **kwargs):
         super(TeacherProfileForm, self).__init__(*args, **kwargs)
