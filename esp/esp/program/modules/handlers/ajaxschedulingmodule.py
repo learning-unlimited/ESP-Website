@@ -349,8 +349,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
             classroom = classrooms[0]
 
-            if times[0] not in cls.viable_times(ignore_classes=True):
-                return makeret(ret=False, msg="Some of the teachers are unavailable at this time.")
+            cannot_schedule = cls.cannotSchedule(times)
+            if cannot_schedule:
+                return makeret(ret=False, msg=cannot_schedule)
 
             cls.assign_meeting_times(times)
             status, errors = cls.assign_room(classroom)

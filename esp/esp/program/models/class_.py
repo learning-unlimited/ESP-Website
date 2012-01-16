@@ -64,7 +64,7 @@ from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media as QSDMedia
-from esp.users.models import ESPUser, UserBit
+from esp.users.models import ESPUser, UserBit, UserAvailability
 from esp.middleware              import ESPError
 from esp.program.models          import Program, StudentRegistration, RegistrationType
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -820,12 +820,10 @@ class ClassSection(models.Model):
 
         return viable_list
     #   Dependencies: 
-    #   - all resources, requests and assignments pertaining to the target class (includes teacher availability)
+    #   - teacher availability
     #   - teachers of the class
     #   - the target section and its meeting times
-    viable_times.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
-    viable_times.depend_on_row(lambda:ResourceAssignment, lambda r: {'self': r.target})
-    viable_times.depend_on_model(lambda:Resource)   #   To do: Make this more specific (so the cache doesn't get flushed so often)
+    viable_times.depend_on_model(lambda:UserAvailability)   #   To do: Make this more specific (so the cache doesn't get flushed so often)
     viable_times.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
     viable_times.depend_on_row(lambda:ClassSection, lambda sec: {'self': sec})
     @staticmethod
@@ -950,19 +948,41 @@ class ClassSection(models.Model):
         # this user *can* add this class!
         return False
 
-    def conflicts(self, teacher):
+    def conflicts(self, teacher, meeting_times=None):
+        """Return a scheduling conflict if one exists, or None."""
         from esp.users.models import ESPUser
         user = ESPUser(teacher)
         if user.getTaughtClasses().count() == 0:
-            return False
+            return None
+        if meeting_times is None:
+            meeting_times = self.meeting_times.all()
+        for sec in user.getTaughtSections(self.parent_program).exclude(id=self.id):
+            for time in sec.meeting_times.all():
+                if meeting_times.filter(id = time.id).count() > 0:
+                    return (sec, time)
 
-        for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
-            for sec in cls.sections.all().exclude(id=self.id):
-                for time in sec.meeting_times.all():
-                    if self.meeting_times.filter(id = time.id).count() > 0:
-                        return True
+        return None
 
-		return False
+    def cannotSchedule(self, meeting_times):
+        """
+        Returns False if the given times work; otherwise, an error message.
+
+        Assumes meeting_times is a sorted QuerySet of correct length.
+
+        """
+        if meeting_times[0] not in self.viable_times(ignore_classes=True):
+            # This set of error messages deserves a better home
+            for t in self.teachers:
+                available = t.getAvailableTimes(self.parent_program, ignore_classes=False)
+                for e in meeting_times:
+                    if e not in available:
+                        return "The teacher %s has not indicated availability during %s." % (t.name(), e.pretty_time())
+                conflicts = self.conflicts(t, meeting_times)
+                if conflicts:
+                    return "The teacher %s is teaching %s during %s." % (t.name(), conflicts[0].emailcode(), conflicts[1].pretty_time())
+            # Fallback in case we couldn't come up with details
+            return "Some of the teachers (could not determine which) are unavailable at this time."
+        return False
 
     def students_dict_old(self):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
