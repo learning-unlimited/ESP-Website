@@ -2,9 +2,14 @@ import httplib
 from sys import stdout, stderr
 
 from esp.tagdict.decorators import require_tag
+from esp.tagdict.models import Tag
 
-@require_tag('varnish_purge')
+#@require_tag('varnish_purge')
 def purge_page(url, host = None):
+    if Tag.getTag('varnish_purge', default='false') == 'false':
+        return None
+
+    print "purge_page called"
     if host == None:
         try:
             from esp.settings import VARNISH_HOST, VARNISH_PORT
