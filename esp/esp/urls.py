@@ -34,12 +34,13 @@ Learning Unlimited, Inc.
 import os
 from django.conf.urls.defaults import patterns, include, handler500, handler404
 from django.contrib import admin
+from esp.admin import admin_site, autodiscover
 from esp.settings import PROJECT_ROOT, MEDIA_ROOT
 from django.views.generic.base import RedirectView
 
-admin.autodiscover()
-
 from esp.section_data import section_redirect_keys, section_prefix_keys
+
+autodiscover(admin_site)
 
 # Override error pages
 handler404 = 'esp.web.util.main.error404'
