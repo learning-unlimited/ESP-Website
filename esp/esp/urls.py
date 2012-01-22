@@ -79,7 +79,7 @@ urlpatterns += patterns('esp.web.views.main',
                         (r'^web$', 'home'), # index
                         (r'^esp_web', 'home'), # index
                         (r'.php$', 'home'), # index
-                        (r'set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
+                        (r'^set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
                         )
 
 # program stuff
@@ -113,11 +113,6 @@ urlpatterns += patterns('esp.qsd.views',
 #urlpatterns += patterns('',
 #                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html')),
 #                        )
-
-# logging in and out
-urlpatterns += patterns('django.contrib.auth.views',
-                     (r'^myesp/signout/?$', 'logout',{'next_page': '/myesp/signedout/'}),
-                        )
 
 # other apps
 urlpatterns += patterns('',
