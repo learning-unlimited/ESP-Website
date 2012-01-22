@@ -34,13 +34,12 @@ Learning Unlimited, Inc.
 import os
 from django.conf.urls.defaults import patterns, include, handler500, handler404
 from django.contrib import admin
-from esp.admin import admin_site, autodiscover
 from esp.settings import PROJECT_ROOT, MEDIA_ROOT
 from django.views.generic.base import RedirectView
 
-from esp.section_data import section_redirect_keys, section_prefix_keys
+admin.autodiscover()
 
-autodiscover(admin_site)
+from esp.section_data import section_redirect_keys, section_prefix_keys
 
 # Override error pages
 handler404 = 'esp.web.util.main.error404'
@@ -58,7 +57,7 @@ urlpatterns += patterns('',
                      (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
                      (r'^admin/ajax_children/?', 'esp.datatree.views.ajax_children'),
-                     (r'^admin/', include(admin_site.urls)),
+                     (r'^admin/', include(admin.site.urls)),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
                      #(r'^learn/Junction/2007_Spring/catalog/?$',RedirectView.as_view(url='/learn/Junction/2007_Summer/catalog/')),
                      (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$',RedirectView.as_view(url='/%(subsection)s/index.html')),
@@ -79,7 +78,7 @@ urlpatterns += patterns('esp.web.views.main',
                         (r'^web$', 'home'), # index
                         (r'^esp_web', 'home'), # index
                         (r'.php$', 'home'), # index
-                        (r'^set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
+                        (r'set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
                         )
 
 # program stuff
@@ -90,11 +89,11 @@ urlpatterns += patterns('',
 urlpatterns += patterns('esp.web.views.bio',
 
                         # bios
-                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ \.]+)/(?P<first>[-A-Za-z_ \.]+)(?P<usernum>[0-9]*)/bio.html$', 'bio'),
-                        (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio.html$', 'bio'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ \.]+)/(?P<first>[-A-Za-z_ \.]+)(?P<usernum>[0-9]*)/bio\.html$', 'bio'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio\.html$', 'bio'),
                         (r'^myesp/teacherbio/?$', 'bio_edit'),
-                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ ]+)/(?P<first>[-A-Za-z_ ]+)(?P<usernum>[0-9]*)/bio.edit.html/?(.*)$', 'bio_edit'),
-                        (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio.edit.html/?(.*)$', 'bio_edit'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ ]+)/(?P<first>[-A-Za-z_ ]+)(?P<usernum>[0-9]*)/bio\.edit\.html/?(.*)$', 'bio_edit'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio\.edit\.html/?(.*)$', 'bio_edit'),
                         )
 
 urlpatterns += patterns('',
@@ -106,13 +105,18 @@ urlpatterns += patterns('',
                         )
 
 urlpatterns += patterns('esp.qsd.views',
-                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/(?P<url>.*).html$', 'qsd'),
+                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/(?P<url>.*)\.html$', 'qsd'),
                         (r'^(?P<url>.*)\.html$', 'qsd'),
                         )
 
 #urlpatterns += patterns('',
 #                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/?$', RedirectView.as_view(url='/%(subsection)s/index.html')),
 #                        )
+
+# logging in and out
+urlpatterns += patterns('django.contrib.auth.views',
+                     (r'^myesp/signout/?$', 'logout',{'next_page': '/myesp/signedout/'}),
+                        )
 
 # other apps
 urlpatterns += patterns('',
@@ -145,7 +149,7 @@ urlpatterns += patterns('esp.web.views.main',
     # Contact Us! pages
     (r'^contact/contact/?$', 'contact'),
     (r'^contact/contact/(?P<section>[^/]+)/?$', 'contact'),
-#    (r'^contact/submit.html$', 'contact_submit'),
+#    (r'^contact/submit\.html$', 'contact_submit'),
 
 
     # Program stuff
