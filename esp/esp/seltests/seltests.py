@@ -68,10 +68,6 @@ class CsrfTestCase(SeleniumTestCase):
         self.delete_cookie("csrftoken")
 
         try_ajax_login(self, "student", "student")
-        self.failUnless(self.is_text_present('Please log in to access program registration'))
-        logout(self)
-
-        try_ajax_login(self, "student", "student")
         self.failUnless(self.is_text_present('Student Student'))
         logout(self)
 
