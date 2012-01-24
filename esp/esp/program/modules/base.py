@@ -161,7 +161,7 @@ class ProgramModuleObj(models.Model):
         modules = self.program.getModules(get_current_request().user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
-                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.main_view
+                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.get_main_view(tl)
 
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl))
