@@ -135,7 +135,9 @@ class ProgramModuleObj(models.Model):
                 self._main_view = None
         return self._main_view
     main_view = property(get_main_view)
-    main_view_fn = lambda self, *args, **kwargs: getattr(self, self.main_view)(*args, **kwargs)
+    
+    def main_view_fn(self, request, tl, one, two, call_txt, extra, prog):
+        return getattr(self, self.get_main_view(tl))(request, tl, one, two, call_txt, extra, prog)
     
     def get_all_views(self):
         if not hasattr(self, '_views'):
