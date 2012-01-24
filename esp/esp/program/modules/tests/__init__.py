@@ -42,3 +42,5 @@ from esp.program.modules.tests.dashboard import DashboardTest
 from esp.program.modules.tests.existence import ModuleExistenceTest
 from esp.program.modules.tests.programprintables import ProgramPrintablesModuleTest
 from esp.program.modules.tests.commpanel import CommunicationsPanelTest
+from esp.program.modules.tests.resourcemodule import ResourceModuleTest
+
