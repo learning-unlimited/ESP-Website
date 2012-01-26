@@ -55,7 +55,9 @@ class ResourceTypeForm(forms.Form):
             res_type.program = None
         else:
             res_type.program = program
-        res_type.priority_default = self.cleaned_data['priority']
+        if self.cleaned_data['priority']:
+            res_type.priority_default = self.cleaned_data['priority']
+        
         res_type.save()
         
        

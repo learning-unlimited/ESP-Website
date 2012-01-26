@@ -30,7 +30,7 @@
     {% for c in prog.groupedClassrooms %}
     <tr>
         <td class="underline">
-            {{ c.name }}
+            <div id="classroom-{{ c.id }}">{{ c.name }}</div>
             <br />
                 <a href="/manage/{{ prog.url }}/resources/classroom?op=edit&id={{ c.id }}">[Edit]</a>
                 <a href="/manage/{{ prog.url }}/resources/classroom?op=delete&id={{ c.id }}">[Delete]</a>
