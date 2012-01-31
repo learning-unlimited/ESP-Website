@@ -1831,12 +1831,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                     
         #   Check that adding this teacher as a coteacher would not overcommit them
         #   to more hours of teaching than the program allows.
-        avail = Event.collapse(teacher.getAvailableTimes(self.parent_program, ignore_classes=True), tol=timedelta(minutes=15))
+        avail = Event.collapse(user.getAvailableTimes(self.parent_program, ignore_classes=True), tol=timedelta(minutes=15))
         time_avail = 0.0
         for tg in avail:
             td = tg.end - tg.start
             time_avail += (td.seconds / 3600.0)
-        for cls in teacher.getTaughtClasses(self.parent_program):
+        for cls in user.getTaughtClasses(self.parent_program):
             for sec in cls.get_sections():
                 time_avail -= float(str(sec.duration))
         time_needed = 0.0
