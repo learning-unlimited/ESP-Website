@@ -57,7 +57,8 @@ class TeacherReviewApps(ProgramModuleObj):
             "seq": 1000,
             "inline_template": "teacherreviewapp.html",
             }
-
+    
+    @aux_call
     @meets_deadline("/AppReview")
     @needs_teacher
     @never_cache
