@@ -110,4 +110,4 @@ class TestQsdCachePurging(SeleniumTestCase):
 
     def tearDown(self):
         super(TestQsdCachePurging, self).tearDown()
-        self.driver.testserver_port = 8000 # Find where this number is actually stored        
+        self.driver.testserver_port = 8011 # Find where this number is actually stored        
