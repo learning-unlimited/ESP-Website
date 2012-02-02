@@ -107,7 +107,7 @@ class FinancialAidAppModule(ProgramModuleObj):
         A way for a student to apply for financial aid.
         """
         from datetime import datetime
-        from django.core.mail import send_mail
+        from esp.dbmail.models import send_mail
         from esp.settings import SITE_INFO
         
         app, created = FinancialAidRequest.objects.get_or_create(user = request.user,

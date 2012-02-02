@@ -112,7 +112,7 @@ def handle_ajax_mover(method):
 @handle_ajax_mover
 @branch_find
 #@vary_on_cookie
-@cache_control(max_age=180)
+#@cache_control(max_age=180)    NOTE: patch_cache_control() below inserts cache header for view mode only
 @disable_csrf_cookie_update
 def qsd(request, branch, name, section, action):
 

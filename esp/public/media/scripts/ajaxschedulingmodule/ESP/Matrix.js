@@ -320,9 +320,10 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
                 if(this.resources[res].checkbox[0].checked && 
                             !room.resources.contains(res))
                     return false;
-            if(room.size<this.minsize.val() || 
+            if (this.minsize && this.maxsize)
+                if(room.size<this.minsize.val() || 
                 room.size>this.maxsize.val())
-                return false;
+                    return false;
             return true;
         }).bind(this));
     },

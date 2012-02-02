@@ -64,7 +64,7 @@ from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media as QSDMedia
-from esp.users.models import ESPUser, UserBit
+from esp.users.models import ESPUser, UserBit, UserAvailability
 from esp.middleware              import ESPError
 from esp.program.models          import Program, StudentRegistration, RegistrationType
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -404,12 +404,10 @@ class ClassSection(models.Model):
 
         return sections
     
-    
+    @cache_function
     def get_meeting_times(self):
-        if not hasattr(self, "_events"):
-            self._events = self.meeting_times.all()
-
-        return self._events
+        return self.meeting_times.all()
+    get_meeting_times.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
     
     #   Some properties for traits that are actually traits of the ClassSubjects.
     def _get_parent_program(self):
@@ -820,12 +818,10 @@ class ClassSection(models.Model):
 
         return viable_list
     #   Dependencies: 
-    #   - all resources, requests and assignments pertaining to the target class (includes teacher availability)
+    #   - teacher availability
     #   - teachers of the class
     #   - the target section and its meeting times
-    viable_times.depend_on_row(lambda:ResourceRequest, lambda r: {'self': r.target})
-    viable_times.depend_on_row(lambda:ResourceAssignment, lambda r: {'self': r.target})
-    viable_times.depend_on_model(lambda:Resource)   #   To do: Make this more specific (so the cache doesn't get flushed so often)
+    viable_times.depend_on_model(lambda:UserAvailability)   #   To do: Make this more specific (so the cache doesn't get flushed so often)
     viable_times.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
     viable_times.depend_on_row(lambda:ClassSection, lambda sec: {'self': sec})
     @staticmethod
@@ -950,19 +946,41 @@ class ClassSection(models.Model):
         # this user *can* add this class!
         return False
 
-    def conflicts(self, teacher):
+    def conflicts(self, teacher, meeting_times=None):
+        """Return a scheduling conflict if one exists, or None."""
         from esp.users.models import ESPUser
         user = ESPUser(teacher)
         if user.getTaughtClasses().count() == 0:
-            return False
+            return None
+        if meeting_times is None:
+            meeting_times = self.meeting_times.all()
+        for sec in user.getTaughtSections(self.parent_program).exclude(id=self.id):
+            for time in sec.meeting_times.all():
+                if meeting_times.filter(id = time.id).count() > 0:
+                    return (sec, time)
 
-        for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
-            for sec in cls.sections.all().exclude(id=self.id):
-                for time in sec.meeting_times.all():
-                    if self.meeting_times.filter(id = time.id).count() > 0:
-                        return True
+        return None
 
-		return False
+    def cannotSchedule(self, meeting_times):
+        """
+        Returns False if the given times work; otherwise, an error message.
+
+        Assumes meeting_times is a sorted QuerySet of correct length.
+
+        """
+        if meeting_times[0] not in self.viable_times(ignore_classes=True):
+            # This set of error messages deserves a better home
+            for t in self.teachers:
+                available = t.getAvailableTimes(self.parent_program, ignore_classes=False)
+                for e in meeting_times:
+                    if e not in available:
+                        return "The teacher %s has not indicated availability during %s." % (t.name(), e.pretty_time())
+                conflicts = self.conflicts(t, meeting_times)
+                if conflicts:
+                    return "The teacher %s is teaching %s during %s." % (t.name(), conflicts[0].emailcode(), conflicts[1].pretty_time())
+            # Fallback in case we couldn't come up with details
+            return "Some of the teachers (could not determine which) are unavailable at this time."
+        return False
 
     def students_dict_old(self):
         verb_base = DataTree.get_by_uri('V/Flags/Registration')
@@ -1025,7 +1043,7 @@ class ClassSection(models.Model):
     def cancel(self, email_students=True, explanation=None):
         from esp.settings import INSTITUTION_NAME, ORGANIZATION_SHORT_NAME, DEFAULT_EMAIL_ADDRESSES
         from django.contrib.sites.models import Site
-        from django.core.mail import send_mail
+        from esp.dbmail.models import send_mail
 
         context = {'sec': self, 'prog': self.parent_program, 'explanation': explanation}
         context['full_group_name'] = Tag.getTag('full_group_name') or '%s %s' % (INSTITUTION_NAME, ORGANIZATION_SHORT_NAME)
@@ -1042,14 +1060,12 @@ class ClassSection(models.Model):
                 from_email = '%s at %s <%s>' % (self.parent_program.anchor.parent.friendly_name, INSTITUTION_NAME, self.parent_program.director_email)
                 msgtext = template.render(Context({'user': student}))
                 send_mail(email_title, msgtext, from_email, to_email)
-                send_mail(email_title, msgtext, from_email, [DEFAULT_EMAIL_ADDRESSES['archive']])
 
         #   Send e-mail to administrators as well
         email_content = render_to_string('email/class_cancellation_admin.txt', context)
         to_email = ['Directors <%s>' % (self.parent_program.director_email)]
         from_email = '%s Web Site <%s>' % (self.parent_program.anchor.parent.friendly_name, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
-        send_mail(email_title, email_content, from_email, [DEFAULT_EMAIL_ADDRESSES['archive']])
 
         self.clearStudents()
     
@@ -1646,6 +1662,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def key_set_from_userbit(bit):
         subjects = ClassSubject.objects.filter(anchor=bit.qsc)
         return [{'self': cls} for cls in subjects]
+    teachers.depend_on_row(lambda:ClassSubject, lambda cls: {'self': cls})
     teachers.depend_on_row(lambda:UserBit, lambda bit: ClassSubject.key_set_from_userbit(bit), lambda bit: bit.verb == GetNode('V/Flags/Registration/Teacher'))
 
     def pretty_teachers(self, use_cache = True):

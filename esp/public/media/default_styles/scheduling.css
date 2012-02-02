@@ -80,13 +80,14 @@ background: #eee;
       }
 
 .matrix-body {
-display: block; overflow: hidden;
+display: block;
+overflow-y: scroll;
 position: absolute; top: 50px; left: 0px; right: 0px; bottom: 0px;
 border-top: 2px solid #000;
 }
 .matrix-row-header-box {
 display: block;
-position: absolute; left: 0; width: 123px; top: 0; bottom: 0;
+position: absolute; left: 0; width: 123px; top: 0;
 border-right: 2px solid #000; background: #eee;
 }
       .matrix-row-header-box td {
@@ -95,7 +96,7 @@ border-right: 2px solid #000; background: #eee;
       }
 
 .matrix-cell-body {
-display: block; overflow: auto;
+display: block;
 position: absolute; left: 125px; right: 0; top: 0; bottom: 0;
 }
 

@@ -37,7 +37,7 @@ from esp.program.modules.forms.teacherreg import TeacherEventSignupForm
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 from django.db.models.query import Q
 from esp.miniblog.models import Entry
 from esp.datatree.models import GetNode

@@ -20,19 +20,26 @@
 
 <h1>{{ addoredit }}ing a {{ classtype }} for {{ program.niceName }}</h1>
 
-<p>
-Thank you for your interest in teaching a {{ classtype }} for {{ one }}!  Please ensure that you are available to teach your class at any of the times you have <a href="/teach/{{ program.url }}/availability">specified that you are available</a>.  If there is any chance that your plans may change and you won't be able to teach, please do not fill out this form; <a href="mailto:{{ program.director_email }}">contact the program directors</a>.</p>
+{% if manage %}
+    <p>
+    <a href="/manage/{{ program.getUrlBase }}/dashboard">Return to the {{ program.niceName }} dashboard</a><br />
+    <a href="/manage/{{ program.getUrlBase }}/main">Return to the {{ program.niceName }} admin portal</a><br />
+    </p>
+{% else %}
+    <p>
+    Thank you for your interest in teaching a {{ classtype }} for {{ one }}!  Please ensure that you are available to teach your class at any of the times you have <a href="/teach/{{ program.url }}/availability">specified that you are available</a>.  If there is any chance that your plans may change and you won't be able to teach, please do not fill out this form; <a href="mailto:{{ program.director_email }}">contact the program directors</a>.</p>
 
-<p>Please fill out or update the form below.  (The required fields are bordered in red.)  If you would like to co-teach this class with others, please click the "Modify Coteachers" button next to the appropriate class at the teacher registration page afterwards.</p>
+    <p>Please fill out or update the form below.  (The required fields are bordered in red.)  If you would like to co-teach this class with others, please click the "Modify Coteachers" button next to the appropriate class at the teacher registration page afterwards.</p>
 
-{% if module.open_class_registration %}
-<p style="font-weight:bold;">This page is for registering a {{ classtype }} <span style="text-decoration:underline;">only</span>. If you are trying to register a {{ otherclass.type }}, <a href="{% url esp.web.views.main.program tl one two otherclass.link %}">click here</a>.</p>
+    {% if module.open_class_registration and addoredit == 'Add' %}
+    <p style="font-weight:bold;">This page is for registering a {{ classtype }} <span style="text-decoration:underline;">only</span>. If you are trying to register a {{ otherclass.type }}, <a href="{% url esp.web.views.main.program tl one two otherclass.link %}">click here</a>.</p>
+    {% endif %}
+    
+    <p align="center"><div class="info">If you would like to teach multiple sections of the same class, <b>do not submit this form multiple times.</b>  Instead, select the desired number of sections next to "Number of Sections" (the second field from the top).</div></p>
 {% endif %}
 
-<p align="center"><div class="info">If you would like to teach multiple 
-sections of the 
-same class, <b>do not submit this form multiple times.</b>  Instead, select the desired number of sections next to "Number of Sections" (the second field from the top).</div>
-</p>
+
+
 
 <form action="{{request.path}}" id="clsform" name="clsform" method="post" {% if grade_range_popup %}onsubmit="return check_grade_range($j(this), {{ program.grade_min }}, {{ program.grade_max }});"{% endif %}>
 
@@ -115,16 +122,22 @@ same class, <b>do not submit this form multiple times.</b>  Instead, select the 
                 <input type="hidden" name="class_id" value="{{ class.id }}" />
             {% endif %}
             <input type="hidden" name="class_reg_page" value="" />
-    
-            {% if module.deadline_met %}
-                <input class="button" type="submit"
-                {% if class.id %}
-                    value="Save course!" />
-                {% else %}
-                    value="Teach for {{ one }}!" />
+            
+            {% if manage %}
+                <input type="hidden" name="manage" value="manage" />
+                <button class="button" type="submit" name="manage_submit" value="reload">Save, then reload this page</button><br />
+                <button class="button" type="submit" name="manage_submit" value="dashboard">Save, then load the {{ program.niceName }} dashboard</button><br />
+                <button class="button" type="submit" name="manage_submit" value="main">Save, then load the {{ program.niceName }} admin portal</button><br />
+            {% else %}
+                {% if module.deadline_met %}
+                    <input class="button" type="submit"
+                    {% if class.id %}
+                        value="Save course!" /><br />
+                    {% else %}
+                        value="Teach for {{ one }}!" /><br />
+                    {% endif %}
                 {% endif %}
             {% endif %}
-            &nbsp; &nbsp; &nbsp; | &nbsp; &nbsp; &nbsp; 
             <input class="button" type="button" onclick="history.go(-1);" value="{% if module.deadline_met %}Cancel{% else %}Go back{% endif %}" />
             <br /><br />
         </td>

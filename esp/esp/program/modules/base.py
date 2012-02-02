@@ -135,7 +135,9 @@ class ProgramModuleObj(models.Model):
                 self._main_view = None
         return self._main_view
     main_view = property(get_main_view)
-    main_view_fn = lambda self, *args, **kwargs: getattr(self, self.main_view)(*args, **kwargs)
+    
+    def main_view_fn(self, request, tl, one, two, call_txt, extra, prog):
+        return getattr(self, self.get_main_view(tl))(request, tl, one, two, call_txt, extra, prog)
     
     def get_all_views(self):
         if not hasattr(self, '_views'):
@@ -159,7 +161,7 @@ class ProgramModuleObj(models.Model):
         modules = self.program.getModules(get_current_request().user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
-                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.main_view
+                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.get_main_view(tl)
 
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl))
@@ -664,7 +666,7 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
     from esp.users.models import UserBit
     from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
     if tl != 'learn' and tl != 'teach':
-        return True
+        return (True, None)
     response = None
     canView = False
     if not_logged_in(request):

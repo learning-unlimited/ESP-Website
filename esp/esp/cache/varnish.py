@@ -3,6 +3,7 @@ from sys import stdout, stderr
 
 from esp.tagdict.decorators import require_tag
 from esp.tagdict.models import Tag
+from django.contrib.sites.models import Site
 
 #@require_tag('varnish_purge')
 def purge_page(url, host = None):
@@ -21,6 +22,7 @@ def purge_page(url, host = None):
     stdout.write("Purging: " + str(url) + "\n")
     stdout.write("Host: " + host + "\n")
     conn = httplib.HTTPConnection(host)
-    conn.request("PURGE", url)
+    cur_domain = Site.objects.get_current().domain
+    conn.request("PURGE", url, "", {'Host': cur_domain, 'Accept-Encoding': 'gzip'})
     ret = conn.getresponse()
     return (ret.status, ret.reason)

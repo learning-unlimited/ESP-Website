@@ -11,7 +11,7 @@ from django.contrib.auth import login, authenticate
 from django.http import HttpResponseRedirect
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 from django.contrib.sites.models import Site
 import hashlib
 import random
