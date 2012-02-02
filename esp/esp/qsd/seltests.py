@@ -13,6 +13,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium import selenium
 from sys import stdout, stderr, exc_info
+from django_selenium import settings
 import time
 
 # Make sure our varnish settings exist
@@ -110,4 +111,4 @@ class TestQsdCachePurging(SeleniumTestCase):
 
     def tearDown(self):
         super(TestQsdCachePurging, self).tearDown()
-        self.driver.testserver_port = 8011 # Find where this number is actually stored        
+        self.driver.testserver_port = getattr(settings, 'SELENIUM_TESTSERVER_PORT', 8011)
