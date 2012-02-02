@@ -98,7 +98,10 @@ class LotteryStudentRegModule(ProgramModuleObj):
 
         #print "blooble"
         #print request.user.username
-        return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', {'prog': self.program})
+        context = {'prog': prog }
+        #return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', {'prog': self.program})
+        return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, (prog, tl), context)
+
 
     @aux_call
     @meets_deadline('/Classes/Lottery')
