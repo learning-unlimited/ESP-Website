@@ -1,122 +1,32 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-    "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"
-     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xsi:schemaLocation="http://www.w3.org/MarkUp/SCHEMA/xhtml11.xsd"
-     xml:lang="en" >
-<head>
+{% extends "main.html" %}
+{% load render_qsd %}
 
-{%load render_qsd%}
-<!-- meta -->
-<meta http-equiv="Content-Script-Type" content="text/javascript">
+{% block title %} Class Lottery Registration for {{prog.niceName}} {% endblock %}
 
-<title> Class Lottery Registration for {{prog.niceName}}</title>
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
 
-<!-- Libraries -->
-<script type="text/javascript" src="/media/scripts/error_reporter.js"> </script>
-<script type="text/javascript" src='/media/scripts/lottery_student_reg/extjs/adapter/ext/ext-base.js'></script>
-<script type='text/javascript' src='/media/scripts/lottery_student_reg/extjs/ext-all.js'></script>
-<script type="text/javascript" src="/media/scripts/jquery.js"> </script>
-<script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
-<!-- End of libraries -->
-
-<script language="JavaScript">
-$j = $.noConflict();
-$j(document).ready(function() {
-     $j.getScript("/media/scripts/csrf_init.js");
-     $j.getScript("/media/scripts/csrf_check.js");
- });
+{% block xtrajs %}
+<script type="text/javascript" src="/media/scripts/lottery_student_reg/studentreg_new.js"></script>
+<script type="text/javascript">
+/**$j(document).ready(function() { 
+    
+});**/              
 </script>
 
-<!-- ESP cookie info -->
-<script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
+{% endblock %}                      
 
-<!-- Program info -->
-<script type='text/javascript'> var nice_name = '{{prog.niceName}}'</script>
-<script type='text/javascript'> var url_base = '{{prog.getUrlBase}}'</script>
-<script type='text/javascript'> var priority_limit = {{prog.priorityLimit}}</script>
 
-<!--User info-->
-<script type='text/javascript'>
-var grade = 0;
-if (esp_user["cur_grade"])
-{
-    grade = esp_user["cur_grade"] + {{prog.incrementGrade}}; // adds 1 if appropriate tag is set; else does nothing
-    //  console.log("Got user grade: " + grade);
-}
-else
-{
-    alert("Could not determine your grade!  Please fill out the profile and then return to this page.");
-}
-</script>
+{% block content %} 
+    
+    {% inline_qsd_block prog.anchor "lsr_title" request.user %}Class Lottery for {{prog.niceName}}{% end_inline_qsd_block %}
 
-<!--QSD text/-->
-<script type='text/javascript'>
-var default_text = "QSD Does Not Exist";
+    <table id="timeslot_list" style="text-align: center" align="center" width="400"></table>
+    <div id=lsr_content>
+        <div id=instructions>
+            {% inline_qsd_block prog.anchor "lsr_instructions" request.user %}Write instructions here!{% end_inline_qsd_block %}
+	</div>
+    </div>
 
-var instructions_text = "{% qsd_string prog.anchor "lsr_instructions_text" %}";
-var confirm_text = "{% qsd_string prog.anchor "lsr_confirm_text" %}";
-var walkins_text = "{% qsd_string prog.anchor "lsr_walkins_text" %}";
-var enter_lottery_text = "{% qsd_string prog.anchor "lsr_enter_lottery_text" %}";
-var missing_timeblocks_text = "{% qsd_string prog.anchor "lsr_missing_timeblocks_text" %}";
-var missing_timeblocks_continue_text = "{% qsd_string prog.anchor "lsr_missing_timeblocks_continue_text" %}";
-var missing_timeblocks_goback_text = "{% qsd_string prog.anchor "lsr_missing_timeblocks_goback_text" %}";
-var registration_successful_title_text = "{% qsd_string prog.anchor "lsr_registration_successful_title_text" %}";
-var registration_successful_text = "{% qsd_string prog.anchor "lsr_registration_successful_text" %}";
-
-//defaults
-if(instructions_text == default_text){
-    instructions_text = "Instructions";
-}
-if(confirm_text == default_text){
-    confirm_text = "To enter the {{prog.niceName}} lottery, click the button below.";
-}
-if(walkins_text == default_text){
-    walkins_text = "<font size = 14> Walk-in Seminars </font><br> These classes will be available during this timeblock with no enrollment required.";
-}
-if(enter_lottery_text == default_text){
-    enter_lottery_text = "Enter me in the {{prog.niceName}} lottery!";
-}
-if(missing_timeblocks_text == default_text){
-    missing_timeblocks_text = "Wait!  You haven't filled out preferences for every time block!";
-}
-if(missing_timeblocks_continue_text == default_text){
-    missing_timeblocks_continue_text = "That's all right, go ahead.";
-}
-if(missing_timeblocks_goback_text == default_text){
-    missing_timeblocks_goback_text = "No, let me go back and fill them in!";
-}
-if(registration_successful_text == default_text){
-    registration_successful_text = "Your preferences have been entered in the {{prog.niceName}} lottery!";
-}
-if(registration_successful_title_text == default_text){
-    registration_successful_title_text = "Lottery registration successful.";
-}
-</script>
-
-<!-- Main application -->
-<script type='text/javascript' src='/media/scripts/lottery_student_reg/ClassCheckboxes.js'></script>
-<script type='text/javascript' src='/media/scripts/lottery_student_reg/TimeslotPanel.js'></script>
-<script type='text/javascript' src='/media/scripts/lottery_student_reg/StudentRegInterface.js'></script>
-
-<!-- STYLE -->
-<!--link id='sch_css' href='/media/styles/scheduling.css' type='text/css' rel='stylesheet' />
-<link id='tooltip_css' href='/media/styles/tooltips.css' type='text/css' rel='stylesheet' /-->
-<link id='default_css' href='/media/scripts/lottery_student_reg/extjs/resources/css/ext-all.css', type='text/css' rel='stylesheet'/>
-<!-- ENDSTYLE -->
-
-<!-- APP -->
-<!-- ENDAPP -->
-
-</head>
-<body>
-<noscript>
-<h1>Error: JavaScript disabled</h1>
-
-<p>Your Web browser has had its JavaScript features disabled.  This page needs JavaScript in order to display.  If you're not sure how to enable JavaScript, we'd encourage you to look around online for instructions for your particular value.  The website <a href="http://activatejavascript.org/">http://activatejavascript.org/</a> may be useful to you, though it's not maintained by us so we can't make any guarantees.</p>
-</noscript>
-<!--[if lte IE 7]><font color="red">Warning: You are using an old version of Internet Explorer!  This page may not work properly on versions older than IE 8.  Running Windows Update is recommended.</font><![endif]-->
-<div id="reg_panel" style="width: 100%; height: 100%;"></div>
-</body>
-</html>
+{% endblock %}

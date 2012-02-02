@@ -88,20 +88,19 @@ show_app = function(timeslots){
     //should display a list of timeslots as hyperlinks 
     //and some instructions in a div that we will replace with checkboxes
 
-    table_content = '<table id="timeslot_list" style="text-align: center" align="center" width="400"></table>'
+    //table_content = '<table id="timeslot_list" style="text-align: center" align="center" width="400"></table>'
     table_row = '<a href="" onclick="show_timeslot(%ID%)">%LABEL%</a><br>'
  
-    $j("#content").append(table_content);
+    //adds timeslot links to table
     for(id in timeslots){
 	t = timeslots[id]
 	new_table_row = table_row.replace("%ID%", t.id).replace("%LABEL%", t.label); 
 	$j("#timeslot_list").append(new_table_row);
     }
-
 };
 
 show_timeslot = function(id){
-    //t = timeslots(id);
+    t = timeslots(id);
     
 };
 
