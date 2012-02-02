@@ -90,11 +90,11 @@ urlpatterns += patterns('',
 urlpatterns += patterns('esp.web.views.bio',
 
                         # bios
-                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ \.]+)/(?P<first>[-A-Za-z_ \.]+)(?P<usernum>[0-9]*)/bio.html$', 'bio'),
-                        (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio.html$', 'bio'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ \.]+)/(?P<first>[-A-Za-z_ \.]+)(?P<usernum>[0-9]*)/bio\.html$', 'bio'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio\.html$', 'bio'),
                         (r'^myesp/teacherbio/?$', 'bio_edit'),
-                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ ]+)/(?P<first>[-A-Za-z_ ]+)(?P<usernum>[0-9]*)/bio.edit.html/?(.*)$', 'bio_edit'),
-                        (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio.edit.html/?(.*)$', 'bio_edit'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<last>[-A-Za-z0-9_ ]+)/(?P<first>[-A-Za-z_ ]+)(?P<usernum>[0-9]*)/bio\.edit\.html/?(.*)$', 'bio_edit'),
+                        (r'^(?P<tl>teach|learn)/teachers/(?P<username>[^/]+)/bio\.edit\.html/?(.*)$', 'bio_edit'),
                         )
 
 urlpatterns += patterns('',
@@ -106,7 +106,7 @@ urlpatterns += patterns('',
                         )
 
 urlpatterns += patterns('esp.qsd.views',
-                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/(?P<url>.*).html$', 'qsd'),
+                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/(?P<url>.*)\.html$', 'qsd'),
                         (r'^(?P<url>.*)\.html$', 'qsd'),
                         )
 
@@ -145,7 +145,7 @@ urlpatterns += patterns('esp.web.views.main',
     # Contact Us! pages
     (r'^contact/contact/?$', 'contact'),
     (r'^contact/contact/(?P<section>[^/]+)/?$', 'contact'),
-#    (r'^contact/submit.html$', 'contact_submit'),
+#    (r'^contact/submit\.html$', 'contact_submit'),
 
 
     # Program stuff
