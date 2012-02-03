@@ -49,7 +49,7 @@ dojo.addOnLoad(function() {
 		dataType:'json',
 		async:false,
 		success: function(form_data) {
-			console.log(form_data);
+			//console.log(form_data);
 			createGrid(form_data);
 		}
 	});
@@ -57,7 +57,7 @@ dojo.addOnLoad(function() {
 
 var getStore=function(answers) {
 	//Returns the ItemFileReadStore object for this grid
-	console.log('in getStore');
+	//console.log('in getStore');
     
     //  Join together segments of compound fields (perhaps they should be displayed as separate columns)
     for (var i = 0; i < answers.length; i++)
@@ -70,16 +70,16 @@ var getStore=function(answers) {
         }
     }
 
-	console.log(answers);
+	//console.log(answers);
 	var store=new dojo.data.ItemFileReadStore({data:{'items':answers}});
-	console.log('out getStore');
-	console.log(store);	
+	//console.log('out getStore');
+	//console.log(store);	
 	return store;
 };
 
 var getLayout=function(data) {
 	//Returns the layout for this grid
-	console.log('in getLayout');
+	//console.log('in getLayout');
 	var layout=[];
 	$j.each(data, function(idx, val){
 		layout.push({
@@ -89,15 +89,15 @@ var getLayout=function(data) {
 			datatype:'string'
 		});
 	});
-	console.log('out getLayout');
-	console.log(layout);
+	//console.log('out getLayout');
+	//console.log(layout);
 	return layout;
 };
 
 var createGrid=function(form_data){
 	//Created the data-grid
-	console.log('in createGrid');
-	console.log(form_data)
+	//console.log('in createGrid');
+	//console.log(form_data)
 	var stor, layt, grid;
 	layt=getLayout(form_data['questions']);
 	stor=getStore(form_data['answers']);
@@ -117,7 +117,7 @@ var createGrid=function(form_data){
 	
 	dojo.byId("gridContainer").appendChild(grid.domNode);
 	grid.startup();
-	console.log('out createGrid');
+	//console.log('out createGrid');
 };
 
 var copyObject=function(answers){

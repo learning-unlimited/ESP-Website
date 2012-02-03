@@ -297,7 +297,7 @@ var getPerms=function(prog_id){
 			dataType:'json',
 			async:false,
 			success: function(retval) {
-				console.log(retval);
+				//console.log(retval);
 				perms=retval;
 				populatePerms(perms);
 			}
@@ -1177,358 +1177,6 @@ var addElement=function(item, $prevField) {
 	return $wrap;	
 };
 
-/*
-var addElement = function(item,$prevField) {
-	
-	// This function adds the selected field to the form. Data like help-text is stored in the wrapper div using jQuery's $j.data
-	
-	var i,$new_elem,$new_elem_label, 
-		$wrap=$j('<div></div>').addClass('field_wrapper').hover(function() {
-			if($j(this).hasClass('field_selected'))
-				return;
-			$j(this).toggleClass('field_hover');
-			$j(this).find(".wrapper_button").toggleClass("wrapper_button_hover");
-		}).toggle(function(){onSelectField($j(this), $j.data(this, 'data'));}, deSelectField),
-		label_text=$j.trim($j('#id_question').attr('value')),
-		help_text=$j.trim($j('#id_instructions').attr('value')),
-		html_name=item+"_"+elemTypes[item], html_id="id_"+item+"_"+elemTypes[item],
-		data={};
-	
-	$new_elem_label=$j(createLabel(label_text,$j('#id_required').attr('checked'))).appendTo($wrap);
-	$j('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($wrap);
-	
-	//Populating common data attributes
-	data.question_text=label_text;
-	data.help_text=help_text;
-	data.field_type=item;
-	data.required=$j('#id_required').attr('checked');
-	data.parent_id=-1; //Useful for modifications
-	data.attrs={};
-	
-	//Generic fields first
-	if(item=="textField"){
-		$new_elem=$j('<input/>', {
-			type:"text",
-			name:html_name,
-			id:html_id,
-			size:"30"
-		});
-		var key;
-		if($j('#charOrWord').val()=='chars')
-			key='charlimits';
-		else key='wordlimits';	
-		data['attrs'][key]=$j('#text_min').attr('value') + ',' + $j('#text_max').attr('value');
-	}
-	else if(item=="longTextField"){
-		$new_elem=$j('<input/>', {
-			type:"text",
-			name:html_name,
-			id:html_id,
-			size:"60"
-		});
-		var key;
-		if($j('#charOrWord').val()=='chars')
-			key='charlimits';
-		else key='wordlimits';	
-		data['attrs'][key]=$j('#text_min').attr('value') + ',' + $j('#text_max').attr('value');
-	}
-	else if(item=="longAns") {
-		$new_elem=$j('<textarea>', {
-			name:html_name,
-			id:html_id,
-			rows:"8",
-			cols:"50"
-		});
-		var key;
-		if($j('#charOrWord').val()=='chars')
-			key='charlimits';
-		else key='wordlimits';	
-		data['attrs'][key]=$j('#text_min').attr('value') + ',' + $j('#text_max').attr('value');
-	}
-	else if(item=="reallyLongAns") {
-		$new_elem=$j('<textarea>', {
-			name:html_name,
-			id:html_id,
-			rows:"14",
-			cols:"70"
-		});
-		var key;
-		if($j('#charOrWord').val()=='chars')
-			key='charlimits';
-		else key='wordlimits';	
-		data['attrs'][key]=$j('#text_min').attr('value') + ',' + $j('#text_max').attr('value');
-	}
-	else if(item=="radio") {
-		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
-		$new_elem=$j("<div>", {
-			id:html_id
-		});
-		$text_inputs.each(function(idx,el) {
-				$one_option=$j('<input>', {
-						type:"radio",
-						name:html_name,
-						value:$j(el).attr('value')
-				});
-				options_string+=$j(el).attr('value')+"|";	
-				$new_elem.append($j("<p>").append($one_option).append($j("<span>"+$j(el).attr('value')+"</span>")));
-		});
-		data['attrs']['options']=options_string;
-	}
-	else if(item=="dropdown") {
-		$new_elem=$j('<select>',{
-			name:html_name,
-			id:html_id
-		});
-		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
-		$text_inputs.each(function(idx,el) {
-				$one_option=$j('<option>', {
-						value:$j(el).attr('value')
-				});	
-				options_string+=$j(el).attr('value')+"|";
-				$one_option.html($j(el).attr('value'));
-				$new_elem.append($one_option);
-		});
-		data['attrs']['options']=options_string;
-	}
-	else if(item=="multiselect") {
-		$new_elem=$j('<select>',{
-			name:html_name,
-			id:html_id,
-			'multiple':'multiple'
-		});
-		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
-		$text_inputs.each(function(idx,el) {
-				$one_option=$j('<option>', {
-						value:$j(el).attr('value')
-				});	
-				options_string+=$j(el).attr('value')+"|";
-				$one_option.html($j(el).attr('value'));
-				$new_elem.append($one_option);
-		});
-		data['attrs']['options']=options_string;
-	}
-	else if(item=="checkboxes"){
-		var $text_inputs=$j('#multi_options input:text'), $one_option, options_string="";
-		$new_elem=$j("<div>", {
-			id:html_id
-		});
-		$text_inputs.each(function(idx,el) {
-				$one_option=$j('<input>', {
-						type:"checkbox",
-						name:html_name,
-						value:$j(el).attr('value')
-				});
-				options_string+=$j(el).attr('value')+"|";	
-				$new_elem.append($j("<p>").append($one_option).append($j("<span>"+$j(el).attr('value')+"</span>")));
-		});
-		data['attrs']['options']=options_string;
-	}
-	else if(item=="numeric"){
-		$new_elem=$j('<input/>', {
-			type:"text",
-			name:html_name,
-			id:html_id,
-			size:"20"
-		});
-		data['attrs']['limits']=$j('#id_minVal').attr('value') + ',' + $j('#id_maxVal').attr('value');
-	}
-	else if(item=='date'){
-		$new_elem=$j("<div>", {
-			id:html_id
-		});
-		var $mm,$dd,$yyyy;
-		$mm=$j('<input/>', {
-			type:"text",
-			name:html_name+"_mm",
-			size:"2",
-			value:"mm"
-		});
-		$dd=$j('<input/>', {
-			type:"text",
-			name:html_name+"_dd",
-			size:"2",
-			value:"dd"
-		});
-		$yyyy=$j('<input/>', {
-			type:"text",
-			name:html_name+"_yy",
-			size:"4",
-			value:"yyyy",
-		});
-		$new_elem.append($j('<p>').append($mm).append($j('<span> / </span>')).append($dd).append($j('<span> / </span>')).append($yyyy));
-	}
-	else if(item=='time'){
-		$new_elem=$j("<div>", {
-			id:html_id
-		});
-		var $hh,$m,$ss,$ampm;
-		$hh=$j('<input/>', {
-			type:"text",
-			name:html_name+"_hh",
-			size:"2",
-			value:"hh"
-		});
-		$m=$j('<input/>', {
-			type:"text",
-			name:html_name+"_m",
-			size:"2",
-			value:"mm"
-		});
-		$ss=$j('<input/>', {
-			type:"text",
-			name:html_name+"_ss",
-			size:"2",
-			value:"ss"
-		});
-		$ampm=$j('<select>', {
-			name:html_name+"_ampm"
-		}).append($j('<option value="AM">AM</option>')).append($j('<option value="PM">PM</option>'));
-		$new_elem.append($j('<p>').append($hh).append($j('<span> : </span>')).append($m).append($j('<span> : </span>')).append($ss).append('&nbsp;').append($ampm));
-	}
-	else if(item=="file"){
-		$new_elem=$j('<input/>', {
-			type:"file",
-			name:html_name,
-			id:html_id,
-			size:"40"
-		});
-	}
-	else if(item=='section'){
-		//this one's processed differently from the others
-		
-		var $outline=$j('<div class="outline"></div>');
-		$outline.append('<hr/>').append($j('<h2 class="section_header">'+label_text+'</h2>')).append($j('<p class="field_text">'+help_text+'</p>'));
-		$currSection=$j('<div>', {
-			id:'section_'+secCount,
-			'class':'section'
-		});
-		$outline.append($currSection);
-		$j('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($outline);
-		$outline.toggle(function() {
-			onSelectField($j(this), $j.data(this, 'data'));
-			$j(this).children(".wrapper_button").addClass("wrapper_button_hover");
-		}, function(){
-			$j(this).children(".wrapper_button").removeClass("wrapper_button_hover");
-			$j(this).removeClass('field_selected');
-			$j('#cat_selector').children('select[value=Generic]').attr('selected','selected');
-			onSelectCategory('Generic');
-			onSelectElem('textField');
-		});
-		$outline.appendTo($currPage).dblclick(function(){
-			$currSection=$j(this).children('div.section');
-		});
-		$currPage.sortable();
-		secCount++;
-		$j.data($outline[0],'data',data);
-		return $outline;
-	}
-	else if(item=='page'){
-		//First putting in the page break text
-		var $page_break = $j('<div class="page_break"><span>** Page Break **</span></div>');
-		$page_break.dblclick(function(){
-			$currPage=$j(this).next('div.form_preview'); 
-			//$currSection=$j(this).children(":last").children("div.section");
-		}).toggle(function(){$j(this).next('div.form_preview').children(".wrapper_button").addClass("wrapper_button_hover");}, 
-				function(){$j(this).next('div.form_preview').children(".wrapper_button").removeClass("wrapper_button_hover");}
-				).appendTo($j('div.preview_area'));
-		
-		//Now putting in the page div
-		$currPage=$j('<div class="form_preview"></div>');
-		$currSection=$j('<div class="section"></div>');
-		$currPage.append($j('<div class="outline"></div>').append($currSection));
-		$j('<input/>',{type:'button',value:'X'}).click(removeField).addClass("wrapper_button").appendTo($currPage);
-		$currPage.toggle( function(){$j(this).children(".wrapper_button").addClass("wrapper_button_hover");}, 
-						function(){$j(this).children(".wrapper_button").removeClass("wrapper_button_hover");});
-		$currPage.dblclick(function(){
-			$currPage=$j(this);
-			//$currSection=$j(this).children(":last").children("div.section");
-		});
-		$currPage.appendTo($j('div.preview_area'));
-		$j.data(($currSection.parent())[0], 'data', {'question_text':'', 'help_text':'', 'parent_id':-1});
-		$j.data($currPage[0], 'data', {'parent_id':-1});
-		return $currPage;
-	}
-	
-	//'Personal Information' Fields
-	else if(item=="name"){
-		$new_elem=$j('<div>').css('display','inline-block');
-		var $first_div, $last_div;
-		$first_div=$j('<div>').append($j('<input/>',{
-			type:'text',
-			size:'20'
-		})).append($j('<p class="field_text">First</p>')).css('float','left');
-		$last_div=$j('<div>').append($j('<input/>',{
-			type:'text',
-			size:'20'
-		})).append($j('<p class="field_text">Last</p>')).css('float','left');
-		$new_elem.append($first_div).append($last_div).append('<br/>');
-	}
-	else if(item=='gender'){
-		$new_elem=$j('<p>');
-		$new_elem.append($j('<input/>', {
-			type:'radio',
-			value:'Male',
-			name:'gender'
-		})).append($j('<span class="field_text">Male&nbsp;&nbsp;</span>')).append($j('<input/>', {
-				type:'radio',
-				value:'Female',
-				name:'gender'
-		})).append($j('<span class="field_text">Female</span>'))
-	}	
-	else if(item=="phone"){
-		$new_elem=$j('<input/>', {
-			type:"text",
-			size:'30'
-		});
-	}
-	else if(item=='email'){
-		$new_elem=$j('<input/>', {
-			type:"email",
-			size:'30'
-		});
-	}
-	else if(item=='address'){
-		$new_elem=$j('<div>');
-		$new_elem.append($j('<p class="field_text">Street Address</p>')).append($j('<textarea>',{
-			'rows':4,
-			'cols':22
-		}));
-		$new_elem.append($j('<p>').append($j('<span class="field_text">City&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>')).append($j('<input/>', {
-			type:'text',
-			size:'20'
-		})).append('&nbsp;&nbsp;').append($j('<span class="field_text">State</span>')).append($j('<select>')));
-		$new_elem.append($j('<p>').append($j('<span class="field_text">Zip code</span>')).append($j('<input/>',{
-			type:'text'
-		})));
-	}
-	else if(item=='state'){
-		$new_elem=$j('<select>');
-	}
-	else if(item=='city'){
-		$new_elem=$j('<input/>', {
-			type:"text",
-			size:'30'
-		});
-	}
-	else if(item=='courses'){
-		$new_elem=$j('<select>');
-	}
-	
-	elemTypes[item]++;
-	$new_elem.appendTo($wrap);
-	$j.data($wrap[0],'data',data);
-	
-	if($prevField.length==0)
-		$wrap.prependTo($currSection);
-	else
-		$wrap.insertAfter($prevField);
-	
-	//Making fields draggable
-	$currSection.sortable();
-	return $wrap;
-};
-*/
-
 var submit=function() {
 	//submits the created form to the server
 	
@@ -1596,7 +1244,7 @@ var submit=function() {
 		alert("Sorry, that's an empty form.");
 		return;
 	}
-	console.log(form);
+	//console.log(form);
 	//POSTing to server
 	var post_url='/customforms/submit/';
 	if($j('#id_modify').attr('checked')){
@@ -1608,7 +1256,7 @@ var submit=function() {
 		data:JSON.stringify(form),
 		type:'POST',
 		success: function(value) {
-			console.log(value);
+			//console.log(value);
 			if(value=='OK')
 				window.location='/customforms/';
 		}
@@ -1669,13 +1317,13 @@ var rebuild=function(metadata) {
 	//Setting form's title and description
 	$j('#input_form_title').attr('value', metadata['title']).change();
 	$j('#input_form_description').attr('value',metadata['desc']).change();
-	console.log(metadata);
+	//console.log(metadata);
 	//Setting other form options
 	if(metadata['anonymous'])
 		$j('#id_anonymous').attr('checked', true);
 	//Setting fkey-only links
 	$j('#links_id_main').val(metadata['link_type']);
-	console.log($j('#links_id_main').val());
+	//console.log($j('#links_id_main').val());
 	onChangeMainLink();
 	if(metadata['link_id']!=-1){
 		$j('#links_id_specify').val('particular');
