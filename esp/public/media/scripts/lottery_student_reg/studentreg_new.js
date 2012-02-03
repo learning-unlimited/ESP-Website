@@ -87,21 +87,24 @@ $j(document).ready(function() {
 show_app = function(timeslots){
     //should display a list of timeslots as hyperlinks 
     //and some instructions in a div that we will replace with checkboxes
-
-    //table_content = '<table id="timeslot_list" style="text-align: center" align="center" width="400"></table>'
-    table_row = '<a onclick="show_timeslot(%ID%)">%LABEL%</a><br>'
  
-    //adds timeslot links to table
+    //adds timeslot links to page
     for(id in timeslots){
-	t = timeslots[id]
-	new_table_row = table_row.replace("%ID%", t.id).replace("%LABEL%", t.label); 
-	$j("#timeslot_list").append(new_table_row);
+	t = timeslots[id];
+	$j("#lsr_content").append(get_timeslot_html(t));
     }
 };
 
+get_timeslot_html = function(timeslot_data)
+{
+    template = "<a href='#' onclick='$j(\"#%TIMESLOT_ID%\").slideToggle(); return false;'><b>%TIMESLOT_LABEL% </b></a> <div id='%TIMESLOT_ID%'></div><br>";
+    template = template.replace(/%TIMESLOT_ID%/g, 'TS_' + timeslot_data['id']).replace(/%TIMESLOT_LABEL%/g, timeslot_data['label']);
+    return template;
+}
+
+
 show_timeslot = function(id){
-    $j("#instructions").hide();
-    t = timeslots[id];
+    /*t = timeslots[id];
     class_id_list = t['sections'];
 
     //add checkboxes and radio buttons for each class
@@ -109,7 +112,7 @@ show_timeslot = function(id){
 	id = class_id_list[i];
 	console.log();
 	$j("#lsr_content").append(get_class_checkbox_html(sections[id], t['label']));
-    }
+	}*/
 };
 
 get_class_checkbox_html = function(class_data, timeslot_name){
