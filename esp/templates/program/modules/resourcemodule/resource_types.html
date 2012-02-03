@@ -26,7 +26,7 @@
     </tr>
     {% for h in resource_types %}
         <tr>
-            <td>{{ h.name }} {% if h.is_global %}(global){% endif %}
+            <td><div id="restype-{{ h.id }}">{{ h.name }}</div> {% if h.is_global %}(global){% endif %}
             <br />
                 <a href="/manage/{{ prog.url }}/resources/restype?op=edit&id={{ h.id }}">[Edit]</a>
                 <a href="/manage/{{ prog.url }}/resources/restype?op=delete&id={{ h.id }}">[Delete]</a>

@@ -404,12 +404,10 @@ class ClassSection(models.Model):
 
         return sections
     
-    
+    @cache_function
     def get_meeting_times(self):
-        if not hasattr(self, "_events"):
-            self._events = self.meeting_times.all()
-
-        return self._events
+        return self.meeting_times.all()
+    get_meeting_times.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
     
     #   Some properties for traits that are actually traits of the ClassSubjects.
     def _get_parent_program(self):
