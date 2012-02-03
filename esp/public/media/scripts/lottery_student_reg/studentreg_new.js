@@ -89,7 +89,7 @@ show_app = function(timeslots){
     //and some instructions in a div that we will replace with checkboxes
 
     //table_content = '<table id="timeslot_list" style="text-align: center" align="center" width="400"></table>'
-    table_row = '<a href="" onclick="show_timeslot(%ID%)">%LABEL%</a><br>'
+    table_row = '<a onclick="show_timeslot(%ID%)">%LABEL%</a><br>'
  
     //adds timeslot links to table
     for(id in timeslots){
@@ -100,7 +100,23 @@ show_app = function(timeslots){
 };
 
 show_timeslot = function(id){
-    t = timeslots(id);
-    
+    $j("#instructions").hide();
+    t = timeslots[id];
+    class_id_list = t['sections'];
+
+    //add checkboxes and radio buttons for each class
+    for(i in class_id_list){
+	id = class_id_list[i];
+	console.log();
+	$j("#lsr_content").append(get_class_checkbox_html(sections[id], t['label']));
+    }
 };
 
+get_class_checkbox_html = function(class_data, timeslot_name){
+    console.log(class_data);
+    template = "<input type=radio name=%TIMESLOT%_priority value=%PRIORITY%></input> <input type=checkbox name=%CLASS_ID%_interested></checkbox> %CLASS_ID%: %CLASS_TITLE%<br>";
+    template = template.replace("%TIMESLOT%", timeslot_name).replace("%PRIORITY%", class_data['lottery_priority']).replace(/%CLASS_ID%/g, class_data['emailcode'])
+    .replace('%CLASS_TITLE%', class_data['title']);
+    console.log(template);
+    return template;
+};
