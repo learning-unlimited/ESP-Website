@@ -40,6 +40,9 @@ class DynamicModelHandler:
         'email': {'typeMap': models.CharField, 'attrs': {'max_length': 30,}, 'args':[]},
         'state': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
         'gender': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
+        'radio_yesno': {'typeMap': models.CharField, 'attrs':{'max_length': 5,}, 'args':[]},
+        'boolean': {'typeMap': models.BooleanField, 'attrs':{}, 'args':[]},
+        'null_boolean': {'typeMap': models.NullBooleanField, 'attrs':{}, 'args':[]},
         'instructions': {'typeMap': None},
     }
     

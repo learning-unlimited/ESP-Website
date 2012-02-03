@@ -21,7 +21,7 @@ generic_fields = {
     'email': {'typeMap': forms.EmailField, 'attrs': {'max_length': 30, 'widget': forms.TextInput,}, 'widget_attrs': {'class': 'email '}},
     'state': {'typeMap': USStateField, 'attrs': {'widget': USStateSelect}, 'widget_attrs': {'class': ''}},
     'gender': {'typeMap': forms.ChoiceField, 'attrs': {'widget': forms.RadioSelect, 'choices': [('F', 'Female'), ('M', 'Male')]}, 'widget_attrs': {'class': 'gender '}, },
-    'radio_yesno': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.RadioSelect, 'choices': ((True, 'Yes'), (False, 'No'))}},
+    'radio_yesno': {'typeMap': forms.ChoiceField, 'attrs': {'widget': forms.RadioSelect, 'choices': ((True, 'Yes'), (False, 'No'))}, 'widget_attrs': {'class': ''}},
     'boolean': {'typeMap': forms.BooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs': {'class': ''}},
     'null_boolean': {'typeMap': forms.NullBooleanField, 'attrs': {'widget': forms.CheckboxInput}, 'widget_attrs': {'class': ''}},
     'instructions': {'typeMap': DummyField, 'attrs': {'widget': None}, 'widget_attrs': {'class': ''}},
