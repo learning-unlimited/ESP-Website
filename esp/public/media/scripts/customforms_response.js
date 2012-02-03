@@ -1,7 +1,7 @@
 dojo.addOnLoad(function() {
 	
 	//csrf stuff
-	$(document).ajaxSend(function(event, xhr, settings) {
+	$j(document).ajaxSend(function(event, xhr, settings) {
 	    function getCookie(name) {
 	        var cookieValue = null;
 	        if (document.cookie && document.cookie != '') {
@@ -40,9 +40,9 @@ dojo.addOnLoad(function() {
 	//end of csrf stuff
 	
 	//Grabbing the form-id
-	var form_id=$('#form_id').val();
+	var form_id=$j('#form_id').val();
 	//Getting response data
-	$.ajax({
+	$j.ajax({
 		url:'/customforms/getData/',
 		data:{'form_id':form_id},
 		type:'GET',
@@ -81,7 +81,7 @@ var getLayout=function(data) {
 	//Returns the layout for this grid
 	console.log('in getLayout');
 	var layout=[];
-	$.each(data, function(idx, val){
+	$j.each(data, function(idx, val){
 		layout.push({
 			field:val[0],
 			name:val[1],
@@ -123,9 +123,9 @@ var createGrid=function(form_data){
 var copyObject=function(answers){
 	//Copies the 'answers' array into another array
 	ret_val=[];
-	$.each(answers, function(idx,el){
+	$j.each(answers, function(idx,el){
 		ret_val.push({});
-		$.extend(ret_val[idx], el);
+		$j.extend(ret_val[idx], el);
 	});
 	//return ret_val;
 }
