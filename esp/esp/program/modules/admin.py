@@ -39,7 +39,12 @@ from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo,
 from esp.program.modules.module_ext import RemoteProfile
 from esp.program.modules.base import ProgramModuleObj
 
-admin_site.register(DBReceipt)
+class Admin_DBReceipt(admin.ModelAdmin):
+    list_display = (
+        'action',
+        'program',
+    )
+admin_site.register(DBReceipt, Admin_DBReceipt)
 
 admin_site.register(SATPrepAdminModuleInfo)
 
@@ -53,7 +58,13 @@ class CRMIAdmin(admin.ModelAdmin):
 admin_site.register(ClassRegModuleInfo, CRMIAdmin)
 
 class ProgramModelObjAdmin(admin.ModelAdmin):
-    list_display = ('program', 'module')
+    list_display = (
+        'program',
+        'module',
+        'seq',
+        'required',
+        'required_label',
+    )
     list_filter = ('program', 'module')
     search_fields = ('program__anchor__friendly_name', 'program__anchor__parent__friendly_name', 'module__admin_title', 'module__link_title')
 admin_site.register(ProgramModuleObj, ProgramModelObjAdmin)
