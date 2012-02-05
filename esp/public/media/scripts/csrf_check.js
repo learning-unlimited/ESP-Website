@@ -27,7 +27,7 @@ function strip_tags(str)
 var check_csrf_cookie = function(form)
 {
     //console.log("CSRF check!");
-    csrfAlert.dialog('open');
+    //csrfAlert.dialog('open');
     //If the form is null, return false
     if (!form) return false;
 
