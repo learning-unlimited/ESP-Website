@@ -8,7 +8,9 @@
 {% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
 
 {% block xtrajs %}
+<script type="text/javascript">    var program_base_url = "/json/{{ program.getUrlBase }}/";  </script>
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/studentreg_new.js"></script>
+<script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
 <script type="text/javascript">
 /**$j(document).ready(function() { 
     

@@ -75,13 +75,13 @@ sections = {
 }
 
 $j(document).ready(function() { 
-    /**$.getJSON({
-       '/learn/Spark/2011/timeslots_json/',
-       function(data){
-          $j("#content").append( "<p> HI! </p>");
-	  }
-    });**/
-	show_app(timeslots);
+    data_components = [
+        'timeslots',
+        'sections',
+        'lottery_preferences'
+    ];
+    json_fetch(data_components, function (data) {test_data = data; console.log("Completed initial data fetch"); show_app(data);});
+
 });              
 
 show_app = function(timeslots){
