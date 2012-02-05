@@ -95,7 +95,7 @@ var apply_fragment_changes = function(data)
     }
 }
 
-var handle_response = function(data, textStatus, jqXHR)
+var handle_success = function(data, textStatus, jqXHR)
 {
     if ('error' in data)
     {
@@ -117,7 +117,6 @@ var handle_submit = function(mode, attrs, eventObject)
         return false;
     }
 
-    //  console.log("Handling " + mode + " submission of object: " + JSON.stringify(attrs, null, '\t') + ", element: " + JSON.stringify(element, null, '\t'));
     if (attrs.post_form != null)
     {
         attrs.form = attrs.post_form;
@@ -203,4 +202,4 @@ $j(document).ready(function()
 {
     reset_forms();
     fetch_fragments();
-}
+});
