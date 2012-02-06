@@ -35,6 +35,10 @@ show_app = function(data){
 	$j("#lsr_content").append(get_timeslot_html(t));
 	add_classes_to_timeslot(t, sections);
     }
+
+    //adds submit button
+    var button_html = "<button>Submit Preferences</button>";
+    $j("#lsr_content").append(button_html);
 };
 
 get_timeslot_html = function(timeslot_data)
