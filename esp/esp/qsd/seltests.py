@@ -111,4 +111,4 @@ class TestQsdCachePurging(SeleniumTestCase):
 
     def tearDown(self):
         super(TestQsdCachePurging, self).tearDown()
-        self.driver.testserver_port = getattr(settings, 'SELENIUM_TESTSERVER_PORT', 8011)
+        self.driver.testserver_port = getattr(settings, 'SELENIUM_TESTSERVER_PORT')
