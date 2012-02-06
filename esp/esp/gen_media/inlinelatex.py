@@ -104,7 +104,7 @@ class InlineLatex(GenImageBase):
         tex_file.write(tex.encode('utf-8'))
         tex_file.close()
 
-        if os.system('cd %s && %s -interaction=nonstopmode %s > %s' % \
+        if os.system('cd %s && %s -interaction=nonstopmode -halt-on-error %s > %s' % \
                 (TMP, COMMANDS['latex'], tmppath, NULL_FILE)) is not 0:
             raise ESPError(False), 'latex compilation failed.'
 
