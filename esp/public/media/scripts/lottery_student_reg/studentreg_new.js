@@ -35,11 +35,17 @@ get_timeslot_html = function(timeslot_data)
 
 add_classes_to_timeslot = function(timeslot, sections){
     class_id_list = t['sections'];
+    user_grade = esp_user['cur_grade'];
 
     //add checkboxes and radio buttons for each class
     for(i in class_id_list){
 	id = class_id_list[i];
-	$j("#"+ts_div_from_id(timeslot['id'])).append(get_class_checkbox_html(sections[id], t['label']));
+	section = sections[id];
+
+	//grade check
+	if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
+	    $j("#"+ts_div_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['label']));
+	}
     }
 };
 
