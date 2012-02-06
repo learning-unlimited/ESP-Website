@@ -13,6 +13,8 @@ $j(document).ready(function() {
     json_fetch(data_components, show_app);
 });              
 
+// adds timeslots to content and adds classes to timeslots
+// called once class data arrives from the server
 show_app = function(data){
     timeslots = data['timeslots'];
     sections = data['sections'];
@@ -31,10 +33,6 @@ get_timeslot_html = function(timeslot_data)
     return template;
 };
 
-ts_div_from_id = function(id){
-    return "TS_"+id;
-};
-
 add_classes_to_timeslot = function(timeslot, sections){
     class_id_list = t['sections'];
 
@@ -45,13 +43,17 @@ add_classes_to_timeslot = function(timeslot, sections){
     }
 };
 
-show_timeslot = function(id){
-    $j("#"+ts_div_from_id(id)).slideToggle();
-};
-
 get_class_checkbox_html = function(class_data, timeslot_name){
     template = "<input type=radio name=%TIMESLOT%_priority value=%PRIORITY%></input> <input type=checkbox name=%CLASS_ID%_interested></checkbox> %CLASS_ID%: %CLASS_TITLE%<br>";
     template = template.replace("%TIMESLOT%", timeslot_name).replace("%PRIORITY%", class_data['lottery_priority']).replace(/%CLASS_ID%/g, class_data['emailcode'])
     .replace('%CLASS_TITLE%', class_data['title']);
     return template;
+};
+
+ts_div_from_id = function(id){
+    return "TS_"+id;
+};
+
+show_timeslot = function(id){
+    $j("#"+ts_div_from_id(id)).slideToggle();
 };

@@ -21,11 +21,10 @@
 
 
 {% block content %} 
-    
     {% inline_qsd_block prog.anchor "lsr_title" request.user %}Class Lottery for {{prog.niceName}}{% end_inline_qsd_block %}
 
-    <table id="timeslot_list" style="text-align: center" align="center" width="400"></table>
     <div id=lsr_content>
+        <a onclick="$j('#instructions').slideToggle();"><b>Instructions</b><br></a>     
         <div id=instructions>
             {% inline_qsd_block prog.anchor "lsr_instructions" request.user %}Write instructions here!{% end_inline_qsd_block %}
 	</div>
