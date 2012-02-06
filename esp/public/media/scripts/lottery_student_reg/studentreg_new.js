@@ -22,9 +22,16 @@ show_app = function(data){
     //initialize array which will hold the class id of the last clicked class priority radio
     last_priority = {};
 
-    //adds timeslot links to page
+    //creates a list of the timeslots sorted by start time
+    sorted_timeslots = [];
     for(id in timeslots){
-	t = timeslots[id];
+	sorted_timeslots.push(timeslots[id]);
+    }
+    sorted_timeslots.sort(function(a, b) { return a['start'] - b['start']; });
+
+    //adds timeslot links to page
+    for(index in sorted_timeslots){
+	t = sorted_timeslots[index];
 	$j("#lsr_content").append(get_timeslot_html(t));
 	add_classes_to_timeslot(t, sections);
     }
