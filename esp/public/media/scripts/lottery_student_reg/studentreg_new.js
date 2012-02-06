@@ -18,6 +18,10 @@ $j(document).ready(function() {
 show_app = function(data){
     timeslots = data['timeslots'];
     sections = data['sections'];
+
+    //initialize array which will hold the class id of the last clicked class priority radio
+    last_priority = {};
+
     //adds timeslot links to page
     for(id in timeslots){
 	t = timeslots[id];
@@ -53,14 +57,30 @@ add_classes_to_timeslot = function(timeslot, sections){
 };
 
 get_class_checkbox_html = function(class_data, timeslot_name){
-    template = "<input type=radio name=%TIMESLOT%_priority value=%PRIORITY%></input> <input type=checkbox name=%CLASS_ID%_interested></checkbox> %CLASS_ID%: %CLASS_TITLE%<br>";
-    template = template.replace("%TIMESLOT%", timeslot_name).replace("%PRIORITY%", class_data['lottery_priority']).replace(/%CLASS_ID%/g, class_data['emailcode'])
-    .replace('%CLASS_TITLE%', class_data['title']);
+    template = "<input id=%RADIO_ID% type=radio onChange='priority_changed(\"%CLASS_ID%\", \"%TIMESLOT%\")' name=\"%TIMESLOT%_priority\" value=%PRIORITY%></input> <input type=checkbox name=%CLASS_ID%_interested></checkbox> %CLASS_EMAILCODE%: %CLASS_TITLE%<br>";
+    template = template.replace(/%TIMESLOT%/g, timeslot_name).replace("%PRIORITY%", class_data['lottery_priority']).replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
+    .replace('%CLASS_TITLE%', class_data['title']).replace(/%CLASS_ID%/g, class_data['id']).replace(/%RADIO_ID%g/);
     return template;
+};
+
+priority_changed = function(id, timeslot){
+    console.log(last_priority[timeslot]);
+    //unprioritize previous selection
+    if(last_priority[timeslot]){
+	sections[last_priority[timeslot]]['lottery_priority'] = false;
+    }
+    //prioritize this selection
+    sections[id]['lottery_priority'] = true;
+    //remember this selection 
+    last_priority[timeslot] = id;
 };
 
 ts_div_from_id = function(id){
     return "TS_"+id;
+};
+
+class_radio_id = function(id){
+    return "class_radio_" + id;
 };
 
 show_timeslot = function(id){
