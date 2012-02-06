@@ -57,14 +57,13 @@ add_classes_to_timeslot = function(timeslot, sections){
 };
 
 get_class_checkbox_html = function(class_data, timeslot_name){
-    template = "<input id=%RADIO_ID% type=radio onChange='priority_changed(\"%CLASS_ID%\", \"%TIMESLOT%\")' name=\"%TIMESLOT%_priority\" value=%PRIORITY%></input> <input type=checkbox name=%CLASS_ID%_interested></checkbox> %CLASS_EMAILCODE%: %CLASS_TITLE%<br>";
+    template = "<input type=radio onChange='priority_changed(%CLASS_ID%, \"%TIMESLOT%\")' name=\"%TIMESLOT%_priority\" value=%PRIORITY%></input> <input type=checkbox onChange='interested_changed(%CLASS_ID%)' name=%CLASS_ID%_interested></checkbox> %CLASS_EMAILCODE%: %CLASS_TITLE%<br>";
     template = template.replace(/%TIMESLOT%/g, timeslot_name).replace("%PRIORITY%", class_data['lottery_priority']).replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
-    .replace('%CLASS_TITLE%', class_data['title']).replace(/%CLASS_ID%/g, class_data['id']).replace(/%RADIO_ID%g/);
+    .replace('%CLASS_TITLE%', class_data['title']).replace(/%CLASS_ID%/g, class_data['id']);
     return template;
 };
 
 priority_changed = function(id, timeslot){
-    console.log(last_priority[timeslot]);
     //unprioritize previous selection
     if(last_priority[timeslot]){
 	sections[last_priority[timeslot]]['lottery_priority'] = false;
@@ -73,6 +72,10 @@ priority_changed = function(id, timeslot){
     sections[id]['lottery_priority'] = true;
     //remember this selection 
     last_priority[timeslot] = id;
+};
+
+interested_changed = function(id){
+    sections[id]['lottery_interested'] = !sections[id]['lottery_interested'];
 };
 
 ts_div_from_id = function(id){
