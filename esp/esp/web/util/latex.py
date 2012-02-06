@@ -124,7 +124,7 @@ def gen_latex(texcode, type='pdf', landscape=False):
     elif type=='ps':
         mime = 'application/postscript'
         os.system('cd %s; latex %s %s.tex' % (TEX_TEMP, latex_options, file_base))
-        os.system('cd %s; dvips %s -t letter -o %s.ps' % (TEX_TEMP, file_base, file_base))
+        os.system('cd %s; dvips %s %s -o %s.ps' % (TEX_TEMP, dvips_options, file_base, file_base))
         if remove_files:
             os.remove('%s.dvi' % file_base)
         
@@ -135,7 +135,7 @@ def gen_latex(texcode, type='pdf', landscape=False):
     elif type=='svg':
         mime = 'image/svg+xml'
         os.system('cd %s; pwd; latex %s %s.tex' % (TEX_TEMP, latex_options, file_base))
-        os.system('cd %s; dvips -t letter %s.dvi' % (TEX_TEMP, file_base))
+        os.system('cd %s; dvips %s %s.dvi' % (TEX_TEMP, dvips_options, file_base))
         os.system('cd %s; ps2pdf %s.ps' % (TEX_TEMP, file_base))
         os.system('cd %s; inkscape %s.pdf -l %s.svg' % (TEX_TEMP, file_base, file_base))
         if remove_files:
