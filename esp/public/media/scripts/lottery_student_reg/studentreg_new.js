@@ -42,9 +42,12 @@ add_classes_to_timeslot = function(timeslot, sections){
 	id = class_id_list[i];
 	section = sections[id];
 
-	//grade check
-	if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
-	    $j("#"+ts_div_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['label']));
+	//walkins check
+	if(section['emailcode'].charAt(0) != 'W'){
+	    //grade check
+	    if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
+		$j("#"+ts_div_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['label']));
+	    }
 	}
     }
 };
