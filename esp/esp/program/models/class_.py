@@ -733,7 +733,7 @@ class ClassSection(models.Model):
         cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
         cache.delete(cache_key)
     
-    def assign_room(self, base_room, compromise=True, clear_others=False, allow_partial=False):
+    def assign_room(self, base_room, compromise=True, clear_others=False, allow_partial=False, lock=0):
         """ Assign the classroom given, at the times needed by this class. """
         rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all()))
         
@@ -756,7 +756,7 @@ class ClassSection(models.Model):
         
         for i, r in enumerate(rooms_to_assign):
             r.clear_schedule_cache(self.parent_program)
-            result = self.assignClassRoom(r)
+            result = self.assignClassRoom(r, lock)
             if not result:
                 status = False
                 occupiers_str = ''
@@ -875,7 +875,7 @@ class ClassSection(models.Model):
     def clearFloatingResources(self):
         self.resourceassignments().delete()
 
-    def assignClassRoom(self, classroom):
+    def assignClassRoom(self, classroom, lock_level=0):
         #   Assign an individual resource to this class.
         from esp.resources.models import ResourceAssignment
         
@@ -885,6 +885,7 @@ class ClassSection(models.Model):
             new_assignment = ResourceAssignment()
             new_assignment.resource = classroom
             new_assignment.target = self
+            new_assignment.lock_level = lock_level
             new_assignment.save()
             return True
 
