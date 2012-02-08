@@ -64,10 +64,8 @@ add_classes_to_timeslot = function(timeslot, sections){
 
     //adds the "no priority" radio button
     var no_priority_template = "<input type=radio name=\"%TS_RADIO_NAME%\"></input> I would not like to specify a priority class for this timeblock.\n";
-    console.log(ts_radio_name(timeslot['label']));
     no_priority_template = no_priority_template.replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslot['label']));
     $j("#"+ts_div_from_id(timeslot['id'])).append(no_priority_template);
-    console.log(ts_radio_name(timeslot['label']));
 
     //add checkboxes and radio buttons for each class
     if (Object.keys(class_id_list).length > 0){
@@ -91,7 +89,6 @@ add_classes_to_timeslot = function(timeslot, sections){
 };
 
 get_class_checkbox_html = function(class_data, timeslot_name){
-    console.log(timeslot_name);
     template = "<input type=radio onChange='priority_changed(%CLASS_ID%, \"%TIMESLOT%\")' name=\"%TS_RADIO_NAME%\" value=%PRIORITY%></input> <input type=checkbox onChange='interested_changed(%CLASS_ID%)' name=%CLASS_ID%_interested></checkbox> %CLASS_EMAILCODE%: %CLASS_TITLE%<br>";
     template = template.replace(/%TIMESLOT%/g, timeslot_name)
         .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslot_name))
@@ -112,6 +109,7 @@ priority_changed = function(id, timeslot){
     //remember this selection 
     last_priority[timeslot] = id;
 };
+
 
 interested_changed = function(id){
     sections[id]['lottery_interested'] = !sections[id]['lottery_interested'];

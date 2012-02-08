@@ -66,9 +66,28 @@ function renderTimeblockPrefs(data, containerDiv, timeslotIndex)
 // Append a submit button
 function addSubmitButton(containerDiv)
 {
-    containerDiv.append("<button>Submit my preferences!</button>");
+    containerDiv.append("<button onclick=\"submit_preferences()\" >Submit my preferences!</button>");
 }
 	
+
+function submit_preferences(){
+    console.log("submitting preferences");
+    submit_data = {};
+    for(id in sections){
+	s = sections[id];
+	submit_data[s[id]] = s['lottery_interested'];
+	submit_data['flag_'+s[id]] = s['lottery_priority']; 
+    }
+
+    jQuery.ajax({
+             url: '/learn/'+base_url+'/lsr_submit',
+             failure: function() {
+                alert("There has been an error on the website. Please contact esp@mit.edu to report this problem.");
+             },
+             params: {'json_data': submit_data, 'url_base': base_url},
+		//headers: {'X-CSRFToken': }
+     });
+};
     
 // Create all the preferences in the div with id="preferences"
 function renderPreferences(data)
