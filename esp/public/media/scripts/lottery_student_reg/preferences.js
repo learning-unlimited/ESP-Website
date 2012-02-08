@@ -79,13 +79,16 @@ function submit_preferences(){
 	submit_data['flag_'+s[id]] = s['lottery_priority']; 
     }
 
+    var submit_url = '/learn/'+base_url+'/lsr_submit';
+
     jQuery.ajax({
-             url: '/learn/'+base_url+'/lsr_submit',
-             failure: function() {
+	     type: 'POST',
+             url: submit_url,
+	     error: function(a, b, c) {
                 alert("There has been an error on the website. Please contact esp@mit.edu to report this problem.");
              },
-             params: {'json_data': submit_data, 'url_base': base_url},
-		//headers: {'X-CSRFToken': }
+             data: {'json_data': submit_data },
+		headers: {'X-CSRFToken': $j.cookie("csrftoken")}
      });
 };
     
