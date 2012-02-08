@@ -28,7 +28,6 @@ show_app = function(data){
 	sorted_timeslots.push(timeslots[id]);
     }
     sorted_timeslots.sort(compare_timeslot_starts);
-    console.log(sorted_timeslots);
 
     //adds timeslot links to page
     for(index in sorted_timeslots){
@@ -63,6 +62,13 @@ add_classes_to_timeslot = function(timeslot, sections){
     class_id_list = t['sections'];
     user_grade = esp_user['cur_grade'];
 
+    //adds the "no priority" radio button
+    var no_priority_template = "<input type=radio name=\"%TS_RADIO_NAME%\"></input> I would not like to specify a priority class for this timeblock.\n";
+    console.log(ts_radio_name(timeslot['label']));
+    no_priority_template = no_priority_template.replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslot['label']));
+    $j("#"+ts_div_from_id(timeslot['id'])).append(no_priority_template);
+    console.log(ts_radio_name(timeslot['label']));
+
     //add checkboxes and radio buttons for each class
     if (Object.keys(class_id_list).length > 0){
 	for(i in class_id_list){
@@ -74,7 +80,7 @@ add_classes_to_timeslot = function(timeslot, sections){
 		//grade check
 		if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
 		    $j("#"+ts_div_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['label']));
-		}
+ 		}
 	    }
 	}
     }
@@ -85,9 +91,14 @@ add_classes_to_timeslot = function(timeslot, sections){
 };
 
 get_class_checkbox_html = function(class_data, timeslot_name){
-    template = "<input type=radio onChange='priority_changed(%CLASS_ID%, \"%TIMESLOT%\")' name=\"%TIMESLOT%_priority\" value=%PRIORITY%></input> <input type=checkbox onChange='interested_changed(%CLASS_ID%)' name=%CLASS_ID%_interested></checkbox> %CLASS_EMAILCODE%: %CLASS_TITLE%<br>";
-    template = template.replace(/%TIMESLOT%/g, timeslot_name).replace("%PRIORITY%", class_data['lottery_priority']).replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
-    .replace('%CLASS_TITLE%', class_data['title']).replace(/%CLASS_ID%/g, class_data['id']);
+    console.log(timeslot_name);
+    template = "<input type=radio onChange='priority_changed(%CLASS_ID%, \"%TIMESLOT%\")' name=\"%TS_RADIO_NAME%\" value=%PRIORITY%></input> <input type=checkbox onChange='interested_changed(%CLASS_ID%)' name=%CLASS_ID%_interested></checkbox> %CLASS_EMAILCODE%: %CLASS_TITLE%<br>";
+    template = template.replace(/%TIMESLOT%/g, timeslot_name)
+        .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslot_name))
+        .replace("%PRIORITY%", class_data['lottery_priority'])
+        .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
+        .replace('%CLASS_TITLE%', class_data['title'])
+        .replace(/%CLASS_ID%/g, class_data['id']);
     return template;
 };
 
@@ -108,6 +119,10 @@ interested_changed = function(id){
 
 ts_div_from_id = function(id){
     return "TS_"+id;
+};
+
+ts_radio_name = function(ts_name){
+    return ts_name + '_priority';
 };
 
 class_radio_id = function(id){
