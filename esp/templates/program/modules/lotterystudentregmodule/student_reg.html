@@ -10,6 +10,7 @@
 {% block xtrajs %}
 <script type="text/javascript">    var program_base_url = "/json/{{ program.getUrlBase }}/";  </script>
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/studentreg_new.js"></script>
+<script type="text/javascript" src="/media/scripts/lottery_student_reg/preferences.js"></script>
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
 <script type="text/javascript">
 /**$j(document).ready(function() { 
@@ -23,11 +24,16 @@
 {% block content %} 
     {% inline_qsd_block prog.anchor "lsr_title" request.user %}Class Lottery for {{prog.niceName}}{% end_inline_qsd_block %}
 
-    <div id=lsr_content>
+    <div id="lsr_content">
         <a onclick="$j('#instructions').slideToggle();"><b>Instructions</b><br></a>     
-        <div id=instructions>
+        <div id="instructions">
             {% inline_qsd_block prog.anchor "lsr_instructions" request.user %}Write instructions here!{% end_inline_qsd_block %}
 	</div>
+
+	<div id="timeslots"></div>
+
+	<a onclick="$j('#preferences').slideToggle();"><b>Confirm Preferences</b><br/></a>
+	<div id="preferences" hidden="true"></div>
     </div>
 
 {% endblock %}

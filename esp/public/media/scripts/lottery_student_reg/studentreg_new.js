@@ -11,7 +11,7 @@ $j(document).ready(function() {
     ];
 
     json_fetch(data_components, show_app);
-});              
+});
 
 // adds timeslots to content and adds classes to timeslots
 // called once class data arrives from the server
@@ -32,13 +32,12 @@ show_app = function(data){
     //adds timeslot links to page
     for(index in sorted_timeslots){
 	t = sorted_timeslots[index];
-	$j("#lsr_content").append(get_timeslot_html(t));
+	$j("#timeslots").append(get_timeslot_html(t));
 	add_classes_to_timeslot(t, sections);
     }
 
-    //adds submit button
-    var button_html = "<button>Submit Preferences</button>";
-    $j("#lsr_content").append(button_html);
+    //adds preferences section
+    renderPreferences(data);
 };
 
 get_timeslot_html = function(timeslot_data)
@@ -53,17 +52,23 @@ add_classes_to_timeslot = function(timeslot, sections){
     user_grade = esp_user['cur_grade'];
 
     //add checkboxes and radio buttons for each class
-    for(i in class_id_list){
-	id = class_id_list[i];
-	section = sections[id];
-
-	//walkins check
-	if(section['emailcode'].charAt(0) != 'W'){
-	    //grade check
-	    if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
-		$j("#"+ts_div_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['label']));
+    if (Object.keys(class_id_list).length > 0){
+	for(i in class_id_list){
+	    id = class_id_list[i];
+	    section = sections[id];
+	    
+	    //walkins check
+	    if(section['emailcode'].charAt(0) != 'W'){
+		//grade check
+		if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
+		    $j("#"+ts_div_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['label']));
+		}
 	    }
 	}
+    }
+    else{
+	//hopefully nobody will ever see this :)
+	$j("#"+ts_div_from_id(timeslot['id'])).append("<i><font color='red'>(None)</font></i>");
     }
 };
 

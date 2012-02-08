@@ -1,96 +1,40 @@
-// Example data for testing, normally this would be set globally by the JSON views API
-data = {
-    timeslots: [
-	{
-	    id: 0,
-	    label: "9AM",
-	    start: 9,
-	    end: 10,
-	    sections: [0, 1]
-	},
-	{
-	    id: 1,
-	    label: "10AM",
-	    start: 10,
-	    end: 11,
-	    sections: [2]
-	}
-    ],
-    sections: [
-	{
-	    id: 0,
-	    emailcode: "A1",
-	    title: "Winrar: An Introduction",
-	    timeslots: [0],
-	    grade_min: 7,
-	    grade_max: 12,
-	    capacity: 100,
-	    num_students: 20,
-	    lottery_priority: true,
-	    lottery_interested: false
-	},
-	{
-	    id: 1,
-	    emailcode: "A2",
-	    title: "Winrar: An Introduction",
-	    timeslots: [1],
-	    grade_min: 7,
-	    grade_max: 12,
-	    capacity: 100,
-	    num_students: 20,
-	    lottery_priority: false,
-	    lottery_interested: false
-	},
-	{
-	    id: 2,
-	    emailcode: "B1",
-	    title: "How to be Awesome",
-	    timeslots: [0, 1],
-	    grade_min: 7,
-	    grade_max: 12,
-	    capacity: 100,
-	    num_students: 20,
-	    lottery_priority: true,
-	    lottery_interested: true
-	}
-    ]
-};
-
-
 // Appends an individual class section to the containerDiv
-function renderClassSection(containerDiv, classSection)
+function renderClassSection(data, containerDiv, classSection)
 {
     containerDiv.append(data.sections[classSection].emailcode + ": " + data.sections[classSection].title + "<br />");
 }
 
 // Appends the block of priority preferences followed by the interested
 // preferences for a given timeblock
-function renderTimeblockPrefs(containerDiv, timeslotIndex)
+function renderTimeblockPrefs(data, containerDiv, timeslotIndex)
 {
+    // Create the title
     containerDiv.append("<h2>" + data.timeslots[timeslotIndex].label + "</h2><br/>");
-    sections = data.timeslots[timeslotIndex].sections;
+    // Make a local reference to the sections for readability
+    data_sections = data.timeslots[timeslotIndex].sections;
     prioritySections = [];
     interestedSections = [];
-    for(var i = 0; i < sections.length; i++)
+    for(i in data_sections)
     {
-	if(data.sections[sections[i]].lottery_priority)
+	if(data.sections[data_sections[i]].lottery_priority)
 	{
-	    prioritySections.push(sections[i]);
+	    prioritySections.push(data_sections[i]);
 	}
-	if(data.sections[sections[i]].lottery_interested)
+	if(data.sections[data_sections[i]].lottery_interested)
 	{
-	    interestedSections.push(sections[i]);
+	    interestedSections.push(data_sections[i]);
 	}
     }
 
+   
     // Priority classes
     containerDiv.append("<b>Priority flagged classes:<br/></b>");
     if (prioritySections.length > 0)
     {
 	// Render all the priority classes
-	for (var i = 0; i < prioritySections.length; i++)
+	for (i in prioritySections)
 	{
-	    renderClassSection(containerDiv, prioritySections[i]);
+	    renderClassSection(data, containerDiv, prioritySections[i]);
 	}
     }
     else
@@ -108,7 +52,7 @@ function renderTimeblockPrefs(containerDiv, timeslotIndex)
 	// Render all the interested classes
 	for (var j = 0; j < interestedSections.length; j++)
 	{
-	    renderClassSection(containerDiv, interestedSections[j]);
+	    renderClassSection(data, containerDiv, interestedSections[j]);
 	}
     }
     else
@@ -118,24 +62,84 @@ function renderTimeblockPrefs(containerDiv, timeslotIndex)
     }
     containerDiv.append("<br /><br />");
 }
+
+// Append a submit button
+function addSubmitButton(containerDiv)
+{
+    containerDiv.append("<button>Submit my preferences!</button>");
+}
 	
     
 // Create all the preferences in the div with id="preferences"
-function renderPreferences()
+function renderPreferences(data)
 {
+    /*
+    // Example data for testing, normally this would be set globally by the JSON views API
+    data = {
+	timeslots: [
+	    {
+		id: 0,
+		label: "9AM",
+		start: 9,
+		end: 10,
+		sections: [0, 1]
+	    },
+	    {
+		id: 1,
+		label: "10AM",
+		start: 10,
+		end: 11,
+		sections: [2]
+	    }
+	],
+	sections: [
+	    {
+		id: 0,
+		emailcode: "A1",
+		title: "Winrar: An Introduction",
+		timeslots: [0],
+		grade_min: 7,
+		grade_max: 12,
+		capacity: 100,
+		num_students: 20,
+		lottery_priority: true,
+		lottery_interested: false
+	    },
+	    {
+		id: 1,
+		emailcode: "A2",
+		title: "Winrar: An Introduction",
+		timeslots: [1],
+		grade_min: 7,
+		grade_max: 12,
+		capacity: 100,
+		num_students: 20,
+		lottery_priority: false,
+		lottery_interested: false
+	    },
+	    {
+		id: 2,
+		emailcode: "B1",
+		title: "How to be Awesome",
+		timeslots: [0, 1],
+		grade_min: 7,
+		grade_max: 12,
+		capacity: 100,
+		num_students: 20,
+		lottery_priority: true,
+		lottery_interested: true
+	    }
+    ]
+    };
+    */
+
+
     var preferencesDiv = $j("#preferences");
 
-    for (var i = 0; i < data.timeslots.length; i++)
+    for (timeslot in data.timeslots)
     {
-	renderTimeblockPrefs(preferencesDiv, data.timeslots[i].id);
+	renderTimeblockPrefs(data, preferencesDiv, data.timeslots[timeslot].id);
     }
-}
 
-/*
-TODO: This gets triggered too early for some reason... fix this and then use it instead
-$j(document).ready()
-{
-    console.log("Document ready");
-    renderPreferences();
+    addSubmitButton(preferencesDiv);
 }
-*/
