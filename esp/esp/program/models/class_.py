@@ -889,6 +889,16 @@ class ClassSection(models.Model):
             new_assignment.save()
             return True
 
+    """ These two functions make it easier to set whether a section is fair game
+        for adjustment by automatic scheduling. """
+
+    def lock_schedule(self, lock_level=1):
+        self.resourceassignment_set.all().update(lock_level=lock_level)
+        
+    def unlock_schedule(self, lock_level=0):
+        self.resourceassignment_set.all().update(lock_level=lock_level)
+
+
     @cache_function
     def timeslot_ids(self):
         return self.meeting_times.all().values_list('id', flat=True)
