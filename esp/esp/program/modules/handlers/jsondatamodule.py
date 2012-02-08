@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, main_call, aux_call
 
 from esp.program.models import ClassSection, ClassSubject, StudentRegistration
 
@@ -112,14 +112,18 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     
     @aux_call
     @json_response()
+    @needs_account
     def timeslots(self, request, tl, one, two, module, extra, prog):
-        timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'label'))
+        timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'label', 'start', 'end'))
         for i in range(len(timeslots)):
             timeslots[i]['sections'] = list(ClassSection.objects.filter(meeting_times=timeslots[i]['id']).order_by('id').values_list('id', flat=True))
+            timeslots[i]['start'] = timeslots[i]['start'].isoformat()
+            timeslots[i]['end'] = timeslots[i]['end'].isoformat()        
         return {'timeslots': timeslots}
         
     @aux_call
     @json_response({'parent_class__anchor__friendly_name': 'title', 'parent_class__id': 'parent_class', 'parent_class__anchor__name': 'emailcode', 'parent_class__grade_max': 'grade_max', 'parent_class__grade_min': 'grade_min', 'enrolled_students': 'num_students'})
+    @needs_account
     def sections(self, request, tl, one, two, module, extra, prog):
         sections = list(prog.sections().values('id', 'parent_class__anchor__friendly_name', 'parent_class__id', 'parent_class__anchor__name', 'parent_class__grade_max', 'parent_class__grade_min', 'enrolled_students'))
         return {'sections': sections}

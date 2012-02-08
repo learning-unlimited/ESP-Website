@@ -27,7 +27,8 @@ show_app = function(data){
     for(id in timeslots){
 	sorted_timeslots.push(timeslots[id]);
     }
-    sorted_timeslots.sort(function(a, b) { return a['start'] - b['start']; });
+    sorted_timeslots.sort(compare_timeslot_starts);
+    console.log(sorted_timeslots);
 
     //adds timeslot links to page
     for(index in sorted_timeslots){
@@ -38,6 +39,17 @@ show_app = function(data){
 
     //adds preferences section
     renderPreferences(data);
+};
+
+//returns 1 if a starts after b, and -1 otherwis.
+//for use sorting timeslots by start time
+compare_timeslot_starts = function(a, b){
+    var dateA = new Date(a['start']);
+    var dateB = new Date(b['start']);
+    if (dateA > dateB){
+	return 1;
+    }
+    return -1;
 };
 
 get_timeslot_html = function(timeslot_data)
