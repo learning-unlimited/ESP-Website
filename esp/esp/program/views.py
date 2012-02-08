@@ -118,7 +118,7 @@ def lsr_submit(request, program = None):
     # First check whether the user is actually a student.
     if not request.user.isStudent():
         raise ESPError(False), "You must be a student in order to access student registration."
-    
+
     data = json.loads(request.POST['json_data'])
     
     if priority_limit > 1: 

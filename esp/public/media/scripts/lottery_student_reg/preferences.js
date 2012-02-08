@@ -71,13 +71,16 @@ function addSubmitButton(containerDiv)
 	
 
 function submit_preferences(){
-    console.log("submitting preferences");
     submit_data = {};
     for(id in sections){
 	s = sections[id];
-	submit_data[s[id]] = s['lottery_interested'];
-	submit_data['flag_'+s[id]] = s['lottery_priority']; 
+	submit_data[id] = s['lottery_interested'];
+	submit_data['flag_'+id] = s['lottery_priority']; 
     }
+    
+    console.log(submit_data);
+    
+    submit_data_string = JSON.stringify(submit_data);
 
     var submit_url = '/learn/'+base_url+'/lsr_submit';
 
@@ -87,8 +90,8 @@ function submit_preferences(){
 	     error: function(a, b, c) {
                 alert("There has been an error on the website. Please contact esp@mit.edu to report this problem.");
              },
-             data: {'json_data': submit_data },
-		headers: {'X-CSRFToken': $j.cookie("csrftoken")}
+	     data: {'json_data': submit_data_string },
+	     headers: {'X-CSRFToken': $j.cookie("csrftoken")}
      });
 };
     
