@@ -62,10 +62,12 @@ add_classes_to_timeslot = function(timeslot, sections){
     class_id_list = t['sections'];
     user_grade = esp_user['cur_grade'];
 
-    //adds the "no priority" radio button
-    var no_priority_template = "<input type=radio name=\"%TS_RADIO_NAME%\"></input> I would not like to specify a priority class for this timeblock.\n";
-    no_priority_template = no_priority_template.replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslot['label']));
+    //adds the "no priority" radio button and defaults it to checked (this will change if we load a different, previously specified preference)
+    var no_priority_template = "<input type=radio name=\"%TS_RADIO_NAME%\" id=\"%TS_NO_PREFERENCE_ID%\" checked></input> I would not like to specify a priority class for this timeblock.\n";
+    no_priority_template = no_priority_template.replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslot['label']))
+        .replace(/%TS_NO_PREFERENCE_ID%/g, ts_no_preference_id(timeslot['label']));
     $j("#"+ts_div_from_id(timeslot['id'])).append(no_priority_template);
+    //$j("#"+ts_no_preference_id(timeslot['label'])).prop("checked", true);
 
     //add checkboxes and radio buttons for each class
     if (Object.keys(class_id_list).length > 0){
@@ -78,6 +80,7 @@ add_classes_to_timeslot = function(timeslot, sections){
 		//grade check
 		if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
 		    $j("#"+ts_div_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['label']));
+		    load_old_preferences(section);
  		}
 	    }
 	}
@@ -89,14 +92,28 @@ add_classes_to_timeslot = function(timeslot, sections){
 };
 
 get_class_checkbox_html = function(class_data, timeslot_name){
-    template = "<input type=radio onChange='priority_changed(%CLASS_ID%, \"%TIMESLOT%\")' name=\"%TS_RADIO_NAME%\" value=%PRIORITY%></input> <input type=checkbox onChange='interested_changed(%CLASS_ID%)' name=%CLASS_ID%_interested></checkbox> %CLASS_EMAILCODE%: %CLASS_TITLE%<br>";
+    template = "<input type=radio onChange='priority_changed(%CLASS_ID%, \"%TIMESLOT%\")' id=\"%CLASS_RADIO_ID%\" name=\"%TS_RADIO_NAME%\"></input> <input type=checkbox onChange='interested_changed(%CLASS_ID%)' name=%CLASS_CHECKBOX_ID% id=%CLASS_CHECKBOX_ID%></checkbox>  %CLASS_EMAILCODE%: %CLASS_TITLE%<br>";
     template = template.replace(/%TIMESLOT%/g, timeslot_name)
         .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslot_name))
-        .replace("%PRIORITY%", class_data['lottery_priority'])
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
         .replace('%CLASS_TITLE%', class_data['title'])
-        .replace(/%CLASS_ID%/g, class_data['id']);
+        .replace(/%CLASS_ID%/g, class_data['id'])
+        .replace(/%CLASS_CHECKBOX_ID%/g, class_checkbox_id(class_data['id']))
+        .replace(/%CLASS_RADIO_ID%/g, class_radio_id(class_data['id']));
     return template;
+};
+
+load_old_preferences = function(class_data){
+    id = class_data['id'];
+    if( class_data['lottery_priority'] )
+    {
+	console.log($j("#"+class_radio_id(id)));
+	$j("#"+class_radio_id(id)).prop("checked", true);
+    }
+    if( class_data['lottery_interested'] )
+    {
+	$j("#"+class_checkbox_id(id)).prop("checked", true);
+    }
 };
 
 priority_changed = function(id, timeslot){
@@ -123,8 +140,16 @@ ts_radio_name = function(ts_name){
     return ts_name + '_priority';
 };
 
+ts_no_preference_id = function(ts_name){
+    return ts_name + '_no_preference';
+};
+
 class_radio_id = function(id){
     return "class_radio_" + id;
+};
+
+class_checkbox_id = function(id){
+    return "interested_"+ id;
 };
 
 show_timeslot = function(id){

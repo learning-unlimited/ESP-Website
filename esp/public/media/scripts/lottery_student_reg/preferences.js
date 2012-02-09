@@ -78,18 +78,21 @@ function submit_preferences(){
 	submit_data['flag_'+id] = s['lottery_priority']; 
     }
     
-    console.log(submit_data);
-    
     submit_data_string = JSON.stringify(submit_data);
 
     var submit_url = '/learn/'+base_url+'/lsr_submit';
 
+    //actually submit and redirect to student reg
     jQuery.ajax({
 	     type: 'POST',
              url: submit_url,
 	     error: function(a, b, c) {
                 alert("There has been an error on the website. Please contact esp@mit.edu to report this problem.");
              },
+	     success: function(a, b, c){
+		alert("Your preferences have been successfuly saved.");
+		window.location = "studentreg";
+	     },
 	     data: {'json_data': submit_data_string },
 	     headers: {'X-CSRFToken': $j.cookie("csrftoken")}
      });
