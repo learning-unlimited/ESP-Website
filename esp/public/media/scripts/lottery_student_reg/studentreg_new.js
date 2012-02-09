@@ -37,7 +37,7 @@ show_app = function(data){
     }
 
     //adds preferences section
-    renderPreferences(data);
+    updatePreferences(data);
 };
 
 get_timeslot_html = function(timeslot_data)
@@ -88,10 +88,12 @@ priority_changed = function(id, timeslot){
     sections[id]['lottery_priority'] = true;
     //remember this selection 
     last_priority[timeslot] = id;
+    updatePreferences({'timeslots':timeslots, 'sections':sections});
 };
 
 interested_changed = function(id){
     sections[id]['lottery_interested'] = !sections[id]['lottery_interested'];
+    updatePreferences({'timeslots':timeslots, 'sections':sections});
 };
 
 ts_div_from_id = function(id){
