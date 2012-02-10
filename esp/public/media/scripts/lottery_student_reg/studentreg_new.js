@@ -4,6 +4,8 @@
 
 
 $j(document).ready(function() { 
+    $j("#timeslots_anchor").html("Loading timeslots... <br/>").css("display", "block");
+
     $j("#lsr_content").accordion({
 	header: "a.header",
 	autoHeight: false
@@ -35,6 +37,7 @@ show_app = function(data){
     sorted_timeslots.sort(compare_timeslot_starts);
 
     //adds timeslot links to page
+    $j("#timeslots_anchor").css("display", "none");
     for(index in sorted_timeslots){
 	t = sorted_timeslots[index];
 	$j("#timeslots_anchor").before(get_timeslot_html(t));
