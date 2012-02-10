@@ -4,6 +4,11 @@
 
 
 $j(document).ready(function() { 
+    $j("#lsr_content").accordion({
+	header: "a.header",
+	autoHeight: false
+    });
+
     data_components = [
         'timeslots',
         'sections',
@@ -32,12 +37,18 @@ show_app = function(data){
     //adds timeslot links to page
     for(index in sorted_timeslots){
 	t = sorted_timeslots[index];
-	$j("#timeslots").append(get_timeslot_html(t));
+	$j("#timeslots_anchor").before(get_timeslot_html(t));
 	add_classes_to_timeslot(t, sections);
     }
 
     //adds preferences section
     updatePreferences(data);
+
+    //recreate the accordion now to update for the timeslots
+    $j("#lsr_content").accordion('destroy').accordion({
+	header: 'a.header',
+	autoHeight: false
+    });
 };
 
 //returns 1 if a starts after b, and -1 otherwis.
@@ -53,7 +64,7 @@ compare_timeslot_starts = function(a, b){
 
 get_timeslot_html = function(timeslot_data)
 {
-    template = "<a onclick='show_timeslot(%TIMESLOT_ID%)'><b>%TIMESLOT_LABEL% </b></a> <div id='%TIMESLOT_DIV%' hidden=true></div><br>";
+    template = "<a href='#' class='header'><b>%TIMESLOT_LABEL% </b></a> <div id='%TIMESLOT_DIV%'></div><br>";
     template = template.replace(/%TIMESLOT_ID%/g, timeslot_data['id']).replace(/%TIMESLOT_DIV%/g, ts_div_from_id(timeslot_data['id'])).replace(/%TIMESLOT_LABEL%/g, timeslot_data['label']);
     return template;
 };

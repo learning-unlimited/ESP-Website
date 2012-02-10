@@ -13,6 +13,7 @@
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/studentreg_new.js"></script>
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/preferences.js"></script>
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery-ui-1.8.13.custom.min.js"></script>
 <script type="text/javascript">
 /**$j(document).ready(function() { 
     
@@ -26,14 +27,14 @@
     {% inline_qsd_block prog.anchor "lsr_title" request.user %}Class Lottery for {{prog.niceName}}{% end_inline_qsd_block %}
 
     <div id="lsr_content">
-        <a onclick="$j('#instructions').slideToggle();"><b>Instructions</b><br></a>     
+        <a a href="#" class="header"><b>Instructions</b><br></a>     
         <div id="instructions">
             {% inline_qsd_block prog.anchor "lsr_instructions" request.user %}Write instructions here!{% end_inline_qsd_block %}
 	</div>
 
-	<div id="timeslots"></div>
+	<div id="timeslots_anchor" style="display:none;"></div>
 
-	<a onclick="$j('#preferences').slideToggle();"><b>Confirm Preferences</b><br/></a>
+	<a href="#" class="header"><b>Confirm Preferences</b><br/></a>
 	<div id="preferences" hidden="true"></div>
     </div>
 
