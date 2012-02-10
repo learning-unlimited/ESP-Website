@@ -31,3 +31,6 @@ class OnSiteSATPrepRegForm(forms.Form):
 
 class OnSiteRapidCheckinForm(forms.Form):
     user = AjaxForeignKeyNewformField(field=RegistrationProfile.user.field, label='Student')
+
+class TeacherCheckinForm(forms.Form):
+    user = AjaxForeignKeyNewformField(field=RegistrationProfile.user.field, label='Teacher')
