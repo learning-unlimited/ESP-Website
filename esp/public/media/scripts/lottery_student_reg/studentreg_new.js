@@ -107,7 +107,6 @@ load_old_preferences = function(class_data){
     id = class_data['id'];
     if( class_data['lottery_priority'] )
     {
-	console.log($j("#"+class_radio_id(id)));
 	$j("#"+class_radio_id(id)).prop("checked", true);
     }
     if( class_data['lottery_interested'] )

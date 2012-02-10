@@ -96,7 +96,15 @@ class LotteryStudentRegModule(ProgramModuleObj):
         it gets all of its content from AJAX callbacks.
         """
         context = {'prog': prog }
-        #return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', {'prog': self.program})
+
+        ProgInfo = prog.getModuleExtension('StudentClassRegModuleInfo')
+
+        print ProgInfo.use_priority
+        print ProgInfo.priority_limit
+        #HSSP-style lottery
+        if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:
+            return render_to_response('program/modules/lotterystudentregmodule/student_reg_old.html', request, (prog, tl), context)
+        #Splark/Spash style lottery
         return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, (prog, tl), context)
 
     @aux_call
