@@ -3,6 +3,11 @@
 
 {% block title %} Class Lottery Registration for {{prog.niceName}} {% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui-1.8.13.custom.css"/>
+{% endblock %}
+
 {% load subsection %}
 {% block subsection %}
 {% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
@@ -32,7 +37,11 @@
             {% inline_qsd_block prog.anchor "lsr_instructions" request.user %}Write instructions here!{% end_inline_qsd_block %}
 	</div>
 
+	<br/>
+
 	<div id="timeslots_anchor" style="display:none;"></div>
+
+	<br/>
 
 	<a href="#" class="header"><b>Confirm Preferences</b><br/></a>
 	<div id="preferences" hidden="true"></div>
