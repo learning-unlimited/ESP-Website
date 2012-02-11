@@ -10,7 +10,7 @@ $j(document).ready(function() {
 
     // Create the accordion settings
     accordionSettings = {
-	header: "a.header",
+	header: ".header",
 	autoHeight: false,
 	changestart: function(event, ui) {
 	    if (ui.newContent.attr("id") == "preferences")
@@ -74,7 +74,7 @@ compare_timeslot_starts = function(a, b){
 
 get_timeslot_html = function(timeslot_data)
 {
-    template = "<a href='#' class='header'><b>%TIMESLOT_LABEL% </b></a> <div id='%TIMESLOT_DIV%'><table id='%TIMESLOT_TABLE%' cellspacing='10'><tr><td>Priority</td><td>Interested</td><td>Class</td></table></div><br>"
+    template = "<h3 class='header'><a href='#'><b>%TIMESLOT_LABEL% </b></a></h3> <div id='%TIMESLOT_DIV%'><table id='%TIMESLOT_TABLE%' cellspacing='10'><tr><td>Priority</td><td>Interested</td><td>Class</td></table></div><br>"
 	.replace(/%TIMESLOT_ID%/g, timeslot_data['id'])
 	.replace(/%TIMESLOT_DIV%/g, ts_div_from_id(timeslot_data['id']))
 	.replace(/%TIMESLOT_TABLE%/g, ts_table_from_id(timeslot_data['id']))

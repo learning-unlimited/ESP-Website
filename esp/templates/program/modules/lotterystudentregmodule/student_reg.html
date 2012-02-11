@@ -5,7 +5,7 @@
 
 {% block stylesheets %}
 {{ block.super }}
-<link href="/media/styles/jquery-ui-1.8.17.custom.css" rel="stylesheet" type="text/css"/>
+<link href="/media/styles/jquery-ui/jquery-ui-1.8.17.custom.css" rel="stylesheet" type="text/css"/>
 {% endblock %}
 
 {% load subsection %}
@@ -32,7 +32,7 @@
     {% inline_qsd_block prog.anchor "lsr_title" request.user %}Class Lottery for {{prog.niceName}}{% end_inline_qsd_block %}
 
     <div id="lsr_content">
-        <a href="#" class="header"><b>Instructions</b></a>
+        <h3 class="header"><a href="#">Instructions</a></h3>
         <div id="instructions">
             {% inline_qsd_block prog.anchor "lsr_instructions" request.user %}Write instructions here!{% end_inline_qsd_block %}
 	</div>
@@ -43,8 +43,8 @@
 
 	<br/>
 
-	<a href="#" class="header"><b>Save Preferences</b></a>
-	<div id="preferences" hidden="true"></div>
+	<h3 class="header"><a href="#">Save Preferences</a></h3>
+	<div id="preferences"></div>
     </div>
 
 {% endblock %}
