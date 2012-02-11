@@ -107,7 +107,7 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
 // Append a submit button
 function addSubmitButton(containerDiv)
 {
-    containerDiv.append("<button id='submitButton' onclick=\"submit_preferences()\" >Submit my preferences!</button>");
+    containerDiv.append("<button id='submitButton' onclick=\"submit_preferences()\" >Save my preferences!</button>");
 }
 	
 
