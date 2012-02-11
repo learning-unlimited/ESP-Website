@@ -1,11 +1,11 @@
-{% extends "main.html" %}
+{% extends "main.html" %}p
 {% load render_qsd %}
 
 {% block title %} Class Lottery Registration for {{prog.niceName}} {% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}
-<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui-1.8.13.custom.css"/>
+<link href="/media/styles/jquery-ui-1.8.17.custom.css" rel="stylesheet" type="text/css"/>
 {% endblock %}
 
 {% load subsection %}
@@ -32,7 +32,7 @@
     {% inline_qsd_block prog.anchor "lsr_title" request.user %}Class Lottery for {{prog.niceName}}{% end_inline_qsd_block %}
 
     <div id="lsr_content">
-        <a a href="#" class="header"><b>Instructions</b><br></a>     
+        <a href="#" class="header"><b>Instructions</b></a>
         <div id="instructions">
             {% inline_qsd_block prog.anchor "lsr_instructions" request.user %}Write instructions here!{% end_inline_qsd_block %}
 	</div>
@@ -43,7 +43,7 @@
 
 	<br/>
 
-	<a href="#" class="header"><b>Confirm Preferences</b><br/></a>
+	<a href="#" class="header"><b>Confirm Preferences</b></a>
 	<div id="preferences" hidden="true"></div>
     </div>
 

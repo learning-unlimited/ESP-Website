@@ -77,7 +77,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     user_grade = esp_user['cur_grade'];
 
     //adds the "no priority" radio button and defaults it to checked (this will change if we load a different, previously specified preference)
-    var no_priority_template = "<input type=radio name=\"%TS_RADIO_NAME%\" id=\"%TS_NO_PREFERENCE_ID%\" checked></input> I would not like to specify a priority class for this timeblock.\n";
+    var no_priority_template = "<input type=radio name=\"%TS_RADIO_NAME%\" id=\"%TS_NO_PREFERENCE_ID%\" checked></input> I would not like to specify a priority class for this timeblock.<br/>";
     no_priority_template = no_priority_template.replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslot['label']))
         .replace(/%TS_NO_PREFERENCE_ID%/g, ts_no_preference_id(timeslot['label']));
     $j("#"+ts_div_from_id(timeslot['id'])).append(no_priority_template);
@@ -101,7 +101,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     }
     else{
 	//hopefully nobody will ever see this :)
-	$j("#"+ts_div_from_id(timeslot['id'])).append("<i><font color='red'>(None)</font></i>");
+	$j("#"+ts_div_from_id(timeslot['id'])).append("<i><font color='red'>(No classes)</font></i>");
     }
 };
 
