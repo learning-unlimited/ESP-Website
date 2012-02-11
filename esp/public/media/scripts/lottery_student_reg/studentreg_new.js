@@ -74,8 +74,11 @@ compare_timeslot_starts = function(a, b){
 
 get_timeslot_html = function(timeslot_data)
 {
-    template = "<a href='#' class='header'><b>%TIMESLOT_LABEL% </b></a> <div id='%TIMESLOT_DIV%'></div><br>";
-    template = template.replace(/%TIMESLOT_ID%/g, timeslot_data['id']).replace(/%TIMESLOT_DIV%/g, ts_div_from_id(timeslot_data['id'])).replace(/%TIMESLOT_LABEL%/g, timeslot_data['label']);
+    template = "<a href='#' class='header'><b>%TIMESLOT_LABEL% </b></a> <div id='%TIMESLOT_DIV%'><table id='%TIMESLOT_TABLE%' cellspacing='10'><tr><td>Priority</td><td>Interested</td><td>Class</td></table></div><br>"
+	.replace(/%TIMESLOT_ID%/g, timeslot_data['id'])
+	.replace(/%TIMESLOT_DIV%/g, ts_div_from_id(timeslot_data['id']))
+	.replace(/%TIMESLOT_TABLE%/g, ts_table_from_id(timeslot_data['id']))
+	.replace(/%TIMESLOT_LABEL%/g, timeslot_data['label']);
     return template;
 };
 
@@ -84,11 +87,11 @@ add_classes_to_timeslot = function(timeslot, sections){
     user_grade = esp_user['cur_grade'];
 
     //adds the "no priority" radio button and defaults it to checked (this will change if we load a different, previously specified preference)
-    var no_priority_template = "<input type=radio name=\"%TS_RADIO_NAME%\" onChange='priority_changed(null, %TIMESLOT_ID%)' id=\"%TS_NO_PREFERENCE_ID%\" checked></input> I would not like to specify a priority class for this timeblock.<br/>";
+    var no_priority_template = "<tr><td><input type=radio name=\"%TS_RADIO_NAME%\" onChange='priority_changed(null, %TIMESLOT_ID%)' id=\"%TS_NO_PREFERENCE_ID%\" checked></input></td> <td></td> <td>I would not like to specify a priority class for this timeblock.</td></tr>";
     no_priority_template = no_priority_template.replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslot['label']))
 	.replace(/%TIMESLOT_ID%/g, timeslot.id)
         .replace(/%TS_NO_PREFERENCE_ID%/g, ts_no_preference_id(timeslot['label']));
-    $j("#"+ts_div_from_id(timeslot['id'])).append(no_priority_template);
+    $j("#"+ts_table_from_id(timeslot['id'])).append(no_priority_template);
     //$j("#"+ts_no_preference_id(timeslot['label'])).prop("checked", true);
 
     //add checkboxes and radio buttons for each class
@@ -101,7 +104,7 @@ add_classes_to_timeslot = function(timeslot, sections){
 	    if(section['emailcode'].charAt(0) != 'W'){
 		//grade check
 		if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
-		    $j("#"+ts_div_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['id']));
+		    $j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['id']));
 		    load_old_preferences(section);
  		}
 	    }
@@ -114,8 +117,8 @@ add_classes_to_timeslot = function(timeslot, sections){
 };
 
 get_class_checkbox_html = function(class_data, timeslot_id){
-    template = "<input type=radio onChange='priority_changed(%CLASS_ID%, %TIMESLOT_ID%)' id=\"%CLASS_RADIO_ID%\" name=\"%TS_RADIO_NAME%\"></input> <input type=checkbox onChange='interested_changed(%CLASS_ID%)' name=%CLASS_CHECKBOX_ID% id=%CLASS_CHECKBOX_ID%></checkbox>  %CLASS_EMAILCODE%: %CLASS_TITLE%<br>";
-    template = template.replace(/%TIMESLOT_ID%/g, timeslot_id)
+    template = "<tr><td><input type=radio onChange='priority_changed(%CLASS_ID%, %TIMESLOT_ID%)' id=\"%CLASS_RADIO_ID%\" name=\"%TS_RADIO_NAME%\"></input></td> <td><input type=checkbox onChange='interested_changed(%CLASS_ID%)' name=%CLASS_CHECKBOX_ID% id=%CLASS_CHECKBOX_ID%></checkbox></td> <td>%CLASS_EMAILCODE%: %CLASS_TITLE%</td></tr>"
+	.replace(/%TIMESLOT_ID%/g, timeslot_id)
         .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslots[timeslot_id].label))
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
         .replace('%CLASS_TITLE%', class_data['title'])
@@ -157,6 +160,10 @@ interested_changed = function(id){
 
 ts_div_from_id = function(id){
     return "TS_"+id;
+};
+
+ts_table_from_id = function(id){
+    return "TS_TABLE_"+id;
 };
 
 ts_radio_name = function(ts_name){
