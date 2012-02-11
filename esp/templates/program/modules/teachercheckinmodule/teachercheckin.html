@@ -19,18 +19,16 @@
 .nocheckmark { border: 1px solid black; }
 </style>
 <br />
-<br />
-
-<br /><br />
 <h1>Teacher Check-in &mdash; For {{ program.niceName }}</h1>
 
 <div id='program_form'>
 
 <p style="text-align: center">
-Welcome to teacher check-in for {{program.niceName}}.
 
 {% if message %}
 <p align="center">{{ message }}</p>
+{% else %}
+Welcome to teacher check-in for {{program.niceName}}.
 {% endif %}
 
 <form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
@@ -47,19 +45,28 @@ Welcome to teacher check-in for {{program.niceName}}.
         </table>
     </td>
     <td align="center">
-        <input class="button" type="submit" value="Check-In" />
+        <input class="button" type="submit" value="Check In" />
     </td>
 </tr>
-
 </table>
-
 </form>
+
+</div>
+
+<ul>
+{% for time in time_slots %}
+<li>
+    {% if time == now %}<b>{% endif %}
+    <a href="missingteachers?start={{ time.id }}">View missing teachers for classes starting at {{ time.pretty_start_time }}</a>
+    {% if time == now %}</b>{% endif %}
+</li>
+{% endfor %}
+</ul>
 
 <br />
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "onsite:status" %}
 
-</div>
 
 
 {% endblock %}

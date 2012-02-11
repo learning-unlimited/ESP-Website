@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.forms.onsite import TeacherCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
+from esp.program.models.class_ import ClassSubject
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
@@ -91,15 +92,30 @@ class TeacherCheckinModule(ProgramModuleObj):
         
         context['module'] = self
         context['form'] = form
+        
+        context['time_slots'] = prog.getTimeSlots()
+        now = prog.getTimeSlots().filter(start__gte=datetime.now() - timedelta(minutes=30)).order_by('start')
+        if now.exists():
+            context['now'] = now[0]
+        else:
+            context['now'] = None
+        
         return render_to_response(self.baseDir()+'teachercheckin.html', request, (prog, tl), context)
     
     @aux_call
     @needs_admin
-    def missingteachers(self, request, tl, one, two, module, extra, prog):
-        if 'start' in request.GET:
-            starttime = Event.objects.get(id=request.GET['start'])
-        else:
-            starttime = Event.objects.filter(start__gte=datetime.now() - timedelta(minutes=30)).order_by('start')[0]
+    def ajaxteachercheckin(self, request, tl, one, two, module, extra, prog):
+        json_data = {}
+        if 'teacher' in request.POST:
+            teachers = ESPUser.objects.filter(username=request.POST['teacher'])
+            if not teachers.exists():
+                json_data['message'] = 'User not found!'
+            else:
+                json_data['message'] = self.checkIn(teachers[0], prog)
+        return HttpResponse(json.dumps(json_data), mimetype='text/json')
+    
+    def getMissingTeachers(self, starttime, prog):
+        """Return a list of class sections with missing teachers"""
         sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(
                         status=10, parent_class__status=10,
                         begin_time=starttime.start
@@ -116,19 +132,35 @@ class TeacherCheckinModule(ProgramModuleObj):
                                            parent_class__anchor__userbit_qsc__verb=GetNode('V/Flags/Registration/Teacher'))
         userbits = UserBit.valid_objects().filter(qsc__classsubject__sections__in=missing_sections,
                                                   verb=GetNode('V/Flags/Registration/Teacher')) \
-                                          .values_list('user', 'qsc__classsubject', 'qsc__friendly_name')
-        teacher_data = {}
+                                          .distinct() \
+                                          .values_list('user', 'qsc__classsubject', 'qsc__friendly_name') \
+                                          .order_by('user__last_name', 'user__first_name')
+        teacher_dict = {}
         for teacher in arrived:
-            teacher_data[teacher.id] = {'name': teacher.name(), 'arrived': True}
+            teacher_dict[teacher.id] = {'username': teacher.username, 'name': teacher.name(), 'arrived': True}
         for teacher in missing:
-            teacher_data[teacher.id] = {'name': teacher.name(), 'arrived': False}
-        class_data = {}
+            teacher_dict[teacher.id] = {'username': teacher.username, 'name': teacher.name(), 'arrived': False}
+        class_dict = {}
+        class_arr = []
         for teacher_id, class_id, class_name in userbits:
-            if class_id not in class_data:
-                class_data[class_id] = {'name': class_name, 'teachers':[]}
-            class_data[class_id]['teachers'].append(teacher_id)
-        json_data = {'teachers': teacher_data, 'classes': class_data}
-        return HttpResponse(json.dumps(json_data))
+            if class_id not in class_dict:
+                class_dict[class_id] = {'id': ClassSubject.objects.get(id=class_id).emailcode(), 'name': class_name, 'teachers':[]}
+                class_arr.append(class_dict[class_id])
+            class_dict[class_id]['teachers'].append(teacher_dict[teacher_id])
+        return class_arr
+    
+    @aux_call
+    @needs_admin
+    def missingteachers(self, request, tl, one, two, module, extra, prog):
+        if 'start' in request.GET:
+            starttime = Event.objects.get(id=request.GET['start'])
+        else:
+            starttime = Event.objects.filter(start__gte=datetime.now() - timedelta(minutes=30)).order_by('start')[0]
+        context = {}
+        context['sections'] = self.getMissingTeachers(starttime, prog)
+        context['start_time'] = starttime
+        context['form'] = TeacherCheckinForm()
+        return render_to_response(self.baseDir()+'missingteachers.html', request, (prog, tl), context)
     
     class Meta:
         abstract = True

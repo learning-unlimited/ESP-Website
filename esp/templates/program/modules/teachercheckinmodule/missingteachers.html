@@ -1,0 +1,114 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Missing Teachers for {{program.niceName}}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+    <style type="text/css">
+        .nocheckmark { border: 1px solid black; }
+        .not-checked-in { font-weight: bold; }
+        .checked-in { text-decoration: line-through; }
+    </style>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script>
+        function checkIn(username, button){
+            refresh_csrf_cookie();
+            $j.post('ajaxteachercheckin', {teacher: username, csrfmiddlewaretoken: csrf_token()}, "json")
+            .success(function(response) {
+                window.foo=response;
+                if(button && button.parentNode){
+                    var td=button.parentNode;
+                    td.innerHTML = response.message;
+                    td.previousElementSibling.children[0].className="checked-in";
+                }
+            })
+            if(button){
+                button.value += "...";
+            }
+        }
+    </script>
+{% endblock %}
+
+{% block content %}
+<h1>Missing Teachers for {{ program.niceName }}</h1>
+
+<div id='program_form'>
+
+<form id="checkinform" name="checkinform" method="POST" action="teachercheckin">
+<table>
+<tr>
+    <th colspan="2">
+        Choose Teacher to Check In
+    </th>
+</tr>
+<tr>
+    <td>
+        <table>
+            {{ form }}
+        </table>
+    </td>
+    <td align="center">
+        <input class="button" type="submit" value="Check In" />
+    </td>
+</tr>
+
+</table>
+
+</form>
+
+<br/><a href="teachercheckin">&lt;&lt;Back</a>
+
+<p style="text-align: center">
+
+<table>
+<tr>
+    <th colspan="3">
+        Missing teachers for classes starting at {{ start_time.pretty_start_time }}
+    </th>
+</tr>
+{% for section in sections %}
+<tr>
+    <td rowspan="{{ section.teachers|length }}">
+        {{ section.id }}: {{ section.name }}
+    </td>
+    {% for teacher in section.teachers %}
+    <td>
+        {% if teacher.arrived %}
+        <span class="checked-in">
+        {% else %}
+        <span class="not-checked-in">
+        {% endif %}
+            <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
+        </span>
+    </td>
+    <td>
+        {% if not teacher.arrived %}
+        <input class="button" type="button" onclick="checkIn('{{ teacher.username }}', this)" value="Check In" />
+        {% else %}
+        Already checked-in
+        {% endif %}
+    </td>
+    </tr>
+    <tr>
+    {% endfor %}
+    <td colspan="4"><hr/></td>
+</tr>
+{% endfor %}
+</table>
+
+<br/><a href="teachercheckin">&lt;&lt;Back</a><br/>
+
+<br />
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "onsite:status" %}
+
+</div>
+
+
+{% endblock %}
