@@ -28,7 +28,7 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
 	timeslotDiv = $j("<div id='" + prefs_ts_div_from_id(timeslotId) + "'></div>");
 	containerDiv.append(timeslotDiv);
 	// Create the title
-	timeslotDiv.append("<h2>" + data.timeslots[timeslotIndex].label + "</h2><br/>");
+	timeslotDiv.append("<h3>" + data.timeslots[timeslotIndex].label + "</h3><br/>");
     }
 
     // Check if the interested div doesn't exist yet, and set interestedDiv at
