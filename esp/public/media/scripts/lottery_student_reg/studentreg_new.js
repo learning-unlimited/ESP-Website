@@ -1,15 +1,27 @@
 
 /**    timeslots: map (id) -> JS object with attributes id, label, start, end, sections (list of IDs)
        sections: map (id) -> JS object with attributes id, emailcode, title, timeslots (sorted list of IDs), grade_min, grade_max, capacity, num_students, lottery_priority, lottery_interested **/
-
+	
+var accordionSettings;	
 
 $j(document).ready(function() { 
     $j("#timeslots_anchor").html("Loading timeslots... <br/>").css("display", "block");
 
-    $j("#lsr_content").accordion({
+
+    // Create the accordion settings
+    accordionSettings = {
 	header: "a.header",
-	autoHeight: false
-    });
+	autoHeight: false,
+	changestart: function(event, ui) {
+	    if (ui.newContent.attr("id") == "preferences")
+	    {
+		console.log("Updating preferences");
+		updatePreferences({'timeslots': timeslots, 'sections': sections});
+	    }
+	}
+    };
+
+    $j("#lsr_content").accordion(accordionSettings);
 
     data_components = [
         'timeslots',
@@ -25,6 +37,7 @@ $j(document).ready(function() {
 show_app = function(data){
     timeslots = data['timeslots'];
     sections = data['sections'];
+
 
     //initialize array which will hold the class id of the last clicked class priority radio
     last_priority = {};
@@ -44,14 +57,8 @@ show_app = function(data){
 	add_classes_to_timeslot(t, sections);
     }
 
-    //adds preferences section
-    updatePreferences(data);
-
     //recreate the accordion now to update for the timeslots
-    $j("#lsr_content").accordion('destroy').accordion({
-	header: 'a.header',
-	autoHeight: false
-    });
+    $j("#lsr_content").accordion('destroy').accordion(accordionSettings);
 };
 
 //returns 1 if a starts after b, and -1 otherwis.
@@ -77,8 +84,9 @@ add_classes_to_timeslot = function(timeslot, sections){
     user_grade = esp_user['cur_grade'];
 
     //adds the "no priority" radio button and defaults it to checked (this will change if we load a different, previously specified preference)
-    var no_priority_template = "<input type=radio name=\"%TS_RADIO_NAME%\" id=\"%TS_NO_PREFERENCE_ID%\" checked></input> I would not like to specify a priority class for this timeblock.<br/>";
+    var no_priority_template = "<input type=radio name=\"%TS_RADIO_NAME%\" onChange='priority_changed(null, %TIMESLOT_ID%)' id=\"%TS_NO_PREFERENCE_ID%\" checked></input> I would not like to specify a priority class for this timeblock.<br/>";
     no_priority_template = no_priority_template.replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslot['label']))
+	.replace(/%TIMESLOT_ID%/g, timeslot.id)
         .replace(/%TS_NO_PREFERENCE_ID%/g, ts_no_preference_id(timeslot['label']));
     $j("#"+ts_div_from_id(timeslot['id'])).append(no_priority_template);
     //$j("#"+ts_no_preference_id(timeslot['label'])).prop("checked", true);
@@ -93,7 +101,7 @@ add_classes_to_timeslot = function(timeslot, sections){
 	    if(section['emailcode'].charAt(0) != 'W'){
 		//grade check
 		if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
-		    $j("#"+ts_div_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['label']));
+		    $j("#"+ts_div_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['id']));
 		    load_old_preferences(section);
  		}
 	    }
@@ -105,10 +113,10 @@ add_classes_to_timeslot = function(timeslot, sections){
     }
 };
 
-get_class_checkbox_html = function(class_data, timeslot_name){
-    template = "<input type=radio onChange='priority_changed(%CLASS_ID%, \"%TIMESLOT%\")' id=\"%CLASS_RADIO_ID%\" name=\"%TS_RADIO_NAME%\"></input> <input type=checkbox onChange='interested_changed(%CLASS_ID%)' name=%CLASS_CHECKBOX_ID% id=%CLASS_CHECKBOX_ID%></checkbox>  %CLASS_EMAILCODE%: %CLASS_TITLE%<br>";
-    template = template.replace(/%TIMESLOT%/g, timeslot_name)
-        .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslot_name))
+get_class_checkbox_html = function(class_data, timeslot_id){
+    template = "<input type=radio onChange='priority_changed(%CLASS_ID%, %TIMESLOT_ID%)' id=\"%CLASS_RADIO_ID%\" name=\"%TS_RADIO_NAME%\"></input> <input type=checkbox onChange='interested_changed(%CLASS_ID%)' name=%CLASS_CHECKBOX_ID% id=%CLASS_CHECKBOX_ID%></checkbox>  %CLASS_EMAILCODE%: %CLASS_TITLE%<br>";
+    template = template.replace(/%TIMESLOT_ID%/g, timeslot_id)
+        .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslots[timeslot_id].label))
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
         .replace('%CLASS_TITLE%', class_data['title'])
         .replace(/%CLASS_ID%/g, class_data['id'])
@@ -129,22 +137,22 @@ load_old_preferences = function(class_data){
     }
 };
 
-priority_changed = function(id, timeslot){
-    //unprioritize previous selection
-    if(last_priority[timeslot]){
-	sections[last_priority[timeslot]]['lottery_priority'] = false;
+priority_changed = function(id, timeslot_id){
+    //unprioritize all selections
+    for (i in timeslots[timeslot_id].sections){
+	sections[timeslots[timeslot_id].sections[i]]['lottery_priority'] = false;
     }
-    //prioritize this selection
-    sections[id]['lottery_priority'] = true;
-    //remember this selection 
-    last_priority[timeslot] = id;
-    updatePreferences({'timeslots':timeslots, 'sections':sections});
+
+    if(id){
+	//prioritize this selection
+	sections[id]['lottery_priority'] = true;
+	//remember this selection 
+    }
 };
 
 
 interested_changed = function(id){
     sections[id]['lottery_interested'] = !sections[id]['lottery_interested'];
-    updatePreferences({'timeslots':timeslots, 'sections':sections});
 };
 
 ts_div_from_id = function(id){
