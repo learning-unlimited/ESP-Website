@@ -114,6 +114,8 @@ function addSubmitButton(containerDiv)
 	
 
 function submit_preferences(){
+    $j("#submitButton").text("Submitting...");
+
     submit_data = {};
     for(id in sections){
 	s = sections[id];
