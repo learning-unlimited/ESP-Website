@@ -95,7 +95,14 @@ add_classes_to_timeslot = function(timeslot, sections){
     //$j("#"+ts_no_preference_id(timeslot['label'])).prop("checked", true);
 
     //add checkboxes and radio buttons for each class
-    if (Object.keys(class_id_list).length > 0){
+    //a little bit of a hack to check if the class_is_list has any keys
+    var has_classes = false;
+    for (key in class_id_list)
+    {
+	has_classes = true;
+	break;
+    }
+    if (has_classes){
 	for(i in class_id_list){
 	    id = class_id_list[i];
 	    section = sections[id];
