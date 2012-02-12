@@ -95,29 +95,24 @@ add_classes_to_timeslot = function(timeslot, sections){
     //$j("#"+ts_no_preference_id(timeslot['label'])).prop("checked", true);
 
     //add checkboxes and radio buttons for each class
-    //a little bit of a hack to check if the class_is_list has any keys
+
     var has_classes = false;
-    for (key in class_id_list)
-    {
+    for(i in class_id_list){
 	has_classes = true;
-	break;
-    }
-    if (has_classes){
-	for(i in class_id_list){
-	    id = class_id_list[i];
-	    section = sections[id];
-	    
-	    //walkins check
-	    if(section['emailcode'].charAt(0) != 'W'){
-		//grade check
-		if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
-		    $j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['id']));
-		    load_old_preferences(section);
- 		}
-	    }
+	id = class_id_list[i];
+	section = sections[id];
+	
+	//walkins check
+	if(section['emailcode'].charAt(0) != 'W'){
+	    //grade check
+	    if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
+		$j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['id']));
+		load_old_preferences(section);
+ 	    }
 	}
     }
-    else{
+
+    if(!has_classes){
 	//hopefully nobody will ever see this :)
 	$j("#"+ts_div_from_id(timeslot['id'])).append("<i><font color='red'>(No classes)</font></i>");
     }
