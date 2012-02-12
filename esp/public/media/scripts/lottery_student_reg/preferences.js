@@ -11,7 +11,7 @@ function prefs_ts_div_by_priority(id, priority)
 // Appends an individual class section to the containerDiv
 function renderClassSection(data, containerDiv, classSection)
 {
-    containerDiv.html(data.sections[classSection].emailcode + ": " + data.sections[classSection].title + "<br />");
+    containerDiv.append(data.sections[classSection].emailcode + ": " + data.sections[classSection].title + "<br />");
 }
 
 // Appends the slot of priority preferences followed by the interested
@@ -75,6 +75,7 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
     // Render all the priority classes
     if (prioritySections.length > 0)
     {
+	priorityDiv.html('');
 	for (i in prioritySections)
 	{
 	    renderClassSection(data, priorityDiv, prioritySections[i]);
@@ -90,6 +91,7 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
     // Render all the interested classes
     if (interestedSections.length > 0)
     {
+	interestedDiv.html('');
 	for (j in interestedSections)
 	{
 	    renderClassSection(data, interestedDiv, interestedSections[j]);

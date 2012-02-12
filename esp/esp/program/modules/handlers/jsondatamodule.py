@@ -211,4 +211,5 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         teacher_list = [{'id': t.id, 'first_name': t.first_name, 'last_name': t.last_name} for t in cls._teachers]
         return {'classes': [cls_dict], 'teachers': teacher_list}
         
-        
+    class Meta:
+        abstract = True
