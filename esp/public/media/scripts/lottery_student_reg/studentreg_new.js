@@ -1,4 +1,3 @@
-
 /**    timeslots: map (id) -> JS object with attributes id, label, start, end, sections (list of IDs)
        sections: map (id) -> JS object with attributes id, emailcode, title, timeslots (sorted list of IDs), grade_min, grade_max, capacity, num_students, lottery_priority, lottery_interested **/
 	
@@ -74,10 +73,11 @@ compare_timeslot_starts = function(a, b){
 
 get_timeslot_html = function(timeslot_data)
 {
-    template = "<h3 class='header'><a href='#'><b>%TIMESLOT_LABEL% </b></a></h3> <div id='%TIMESLOT_DIV%'><table id='%TIMESLOT_TABLE%' cellspacing='10'><tr><td>Priority</td><td>Interested</td><td>Class</td></table></div><br>"
-	.replace(/%TIMESLOT_ID%/g, timeslot_data['id'])
-	.replace(/%TIMESLOT_DIV%/g, ts_div_from_id(timeslot_data['id']))
-	.replace(/%TIMESLOT_TABLE%/g, ts_table_from_id(timeslot_data['id']))
+    template = "<h3 class='header'><a href='#'><b>%TIMESLOT_LABEL% </b></a></h3> <div id='%TIMESLOT_DIV%'><h2>Walk-in Seminars</h2><div id='%TIMESLOT_WALKIN_DIV%' style='margin:1em 1em 1em 1em'></div><h2>Regular Classes</h2><table id='%TIMESLOT_TABLE%' cellspacing='10'><tr><td><p>Priority</p></td><td><p>Interested</p></td><td><p>Class</p></td></table></div><br>"
+        .replace(/%TIMESLOT_ID%/g, timeslot_data['id'])
+        .replace(/%TIMESLOT_DIV%/g, ts_div_from_id(timeslot_data['id']))
+        .replace(/%TIMESLOT_TABLE%/g, ts_table_from_id(timeslot_data['id']))
+        .replace(/%TIMESLOT_WALKIN_DIV%/g, ts_walkin_div_from_id(timeslot_data['id']))
 	.replace(/%TIMESLOT_LABEL%/g, timeslot_data['label']);
     return template;
 };
@@ -87,7 +87,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     user_grade = esp_user['cur_grade'];
 
     //adds the "no priority" radio button and defaults it to checked (this will change if we load a different, previously specified preference)
-    var no_priority_template = "<tr><td><input type=radio name=\"%TS_RADIO_NAME%\" onChange='priority_changed(null, %TIMESLOT_ID%)' id=\"%TS_NO_PREFERENCE_ID%\" checked></input></td> <td></td> <td>I would not like to specify a priority class for this timeblock.</td></tr>";
+    var no_priority_template = "<tr><td><p><input type=radio name=\"%TS_RADIO_NAME%\" onChange='priority_changed(null, %TIMESLOT_ID%)' id=\"%TS_NO_PREFERENCE_ID%\" checked></input></p></td> <td></td> <td><p>I would not like to specify a priority class for this timeblock.</p></td></tr>";
     no_priority_template = no_priority_template.replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslot['label']))
 	.replace(/%TIMESLOT_ID%/g, timeslot.id)
         .replace(/%TS_NO_PREFERENCE_ID%/g, ts_no_preference_id(timeslot['label']));
@@ -97,18 +97,23 @@ add_classes_to_timeslot = function(timeslot, sections){
     //add checkboxes and radio buttons for each class
 
     var has_classes = false;
+    var walkins_list = [];
+    var classes_list = [];
     for(i in class_id_list){
 	has_classes = true;
 	id = class_id_list[i];
 	section = sections[id];
 	
-	//walkins check
-	if(section['emailcode'].charAt(0) != 'W'){
-	    //grade check
-	    if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
-		$j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(section, t['id']));
-		load_old_preferences(section);
+	//grade check
+	if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
+	    //walkins check
+	    if(section['emailcode'].charAt(0) == 'W'){
+		walkins_list.push(section);
  	    }
+	    else{
+		classes_list.push(section);
+	    }
+
 	}
     }
 
@@ -116,10 +121,22 @@ add_classes_to_timeslot = function(timeslot, sections){
 	//hopefully nobody will ever see this :)
 	$j("#"+ts_div_from_id(timeslot['id'])).append("<i><font color='red'>(No classes)</font></i>");
     }
+
+    //add all the classes then walkins
+    else{
+	for(i in walkins_list){
+	    $j("#"+ts_walkin_div_from_id(timeslot['id'])).append(get_walkin_html(walkins_list[i], timeslot['id']));
+	}
+	for(i in classes_list){
+	    $j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(classes_list[i], timeslot['id']));
+	    load_old_preferences(classes_list[i]);
+	}
+    }
+
 };
 
 get_class_checkbox_html = function(class_data, timeslot_id){
-    template = "<tr><td><input type=radio onChange='priority_changed(%CLASS_ID%, %TIMESLOT_ID%)' id=\"%CLASS_RADIO_ID%\" name=\"%TS_RADIO_NAME%\"></input></td> <td><input type=checkbox onChange='interested_changed(%CLASS_ID%)' name=%CLASS_CHECKBOX_ID% id=%CLASS_CHECKBOX_ID%></checkbox></td> <td>%CLASS_EMAILCODE%: %CLASS_TITLE%</td></tr>"
+    template = "<tr><td><p><input type=radio onChange='priority_changed(%CLASS_ID%, %TIMESLOT_ID%)' id=\"%CLASS_RADIO_ID%\" name=\"%TS_RADIO_NAME%\"></input></p></td> <td><p><input type=checkbox onChange='interested_changed(%CLASS_ID%)' name=%CLASS_CHECKBOX_ID% id=%CLASS_CHECKBOX_ID%></checkbox></p></td> <td><p>%CLASS_EMAILCODE%: %CLASS_TITLE%</p></td></tr>"
 	.replace(/%TIMESLOT_ID%/g, timeslot_id)
         .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslots[timeslot_id].label))
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
@@ -127,6 +144,13 @@ get_class_checkbox_html = function(class_data, timeslot_id){
         .replace(/%CLASS_ID%/g, class_data['id'])
         .replace(/%CLASS_CHECKBOX_ID%/g, class_checkbox_id(class_data['id']))
         .replace(/%CLASS_RADIO_ID%/g, class_radio_id(class_data['id']));
+    return template;
+};
+
+get_walkin_html = function(class_data, timeslot_id){
+    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE%</p>"
+        .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
+        .replace('%CLASS_TITLE%', class_data['title']);
     return template;
 };
 
@@ -162,6 +186,10 @@ interested_changed = function(id){
 
 ts_div_from_id = function(id){
     return "TS_"+id;
+};
+
+ts_walkin_div_from_id = function(id){
+    return "TS_W_"+id;
 };
 
 ts_table_from_id = function(id){
