@@ -158,9 +158,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'sections': sections}
         
     @aux_call
+    @cache_control(public=True, max_age=300)
     @json_response()
-    @cache_control(max_age=300)
-    @disable_csrf_cookie_update
     def class_info(self, request, tl, one, two, module, extra, prog):
         if 'section_id' in request.GET:
             section_id = int(request.GET['section_id'])
