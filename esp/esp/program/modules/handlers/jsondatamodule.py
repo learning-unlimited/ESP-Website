@@ -38,7 +38,8 @@ from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student
 from esp.program.models import ClassSection, ClassSubject, StudentRegistration
 
 from django.http import HttpResponse
-from django.db.models import Model
+from django.db.models import Model, Q
+from esp.cal.models import Event
 
 import simplejson
 
@@ -115,13 +116,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def timeslots(self, request, tl, one, two, module, extra, prog):
         timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'label', 'start', 'end'))
         for i in range(len(timeslots)):
-            print "Generating sections"
-            timeslots[i]['sections'] = list(ClassSection.objects.filter(meeting_times=timeslots[i]['id']))
-            print timeslots[i]['sections']
-            print timeslots[i]['sections'][0].start_time().id
-            #print [{'section': sec.id, 'starts': sec.start_time().id == timeslots[i]['id']} for sec in timeslots[i]['sections']]
-            timeslots[i]['sections'] = [{'id': sec.id, 'starts': sec.start_time().id == timeslots[i]['id']} for sec in timeslots[i]['sections']]
-            print timeslots[i]['sections']
+            timeslot_start = Event.objects.get(pk=timeslots[i]['id']).start
+            timeslots_before = Event.objects.filter(start__lt=timeslot_start)
+            timeslots[i]['starting_sections'] = list(ClassSection.objects.exclude(meeting_times__in=timeslots_before).filter(meeting_times=timeslots[i]['id']).order_by('id').values_list('id', flat=True))
+            timeslots[i]['sections'] = list(ClassSection.objects.filter(meeting_times=timeslots[i]['id']).order_by('id').values_list('id', flat=True))
 
             # Extract data from the start date
             startDate = timeslots[i]['start']

@@ -36,7 +36,6 @@ show_app = function(data){
     timeslots = data['timeslots'];
     sections = data['sections'];
 
-
     //initialize array which will hold the class id of the last clicked class priority radio
     last_priority = {};
 
@@ -100,7 +99,8 @@ get_timeslot_html = function(timeslot_data)
 };
 
 add_classes_to_timeslot = function(timeslot, sections){
-    class_list = t['sections'];
+    carryover_id_list = t['sections'];
+    class_id_list = t['starting_sections'];
     user_grade = esp_user['cur_grade'];
 
     //adds the "no priority" radio button and defaults it to checked (this will change if we load a different, previously specified preference)
@@ -119,8 +119,8 @@ add_classes_to_timeslot = function(timeslot, sections){
     var walkins_list = [];
     var classes_list = [];
     var carryovers_list = [];
-    for(i in class_list){
-	id = class_list[i].id;
+    for(i in class_id_list){
+	id = class_id_list[i];
 	section = sections[id];
 	
 	//grade check
@@ -130,16 +130,26 @@ add_classes_to_timeslot = function(timeslot, sections){
 		has_walkins = true;
 		walkins_list.push(section);
  	    }
-	    else if(class_list[i].starts){
+	    else{
 		has_classes = true;
 		classes_list.push(section);
 	    }
-	    else{
+	}
+    }
+
+    for(i in carryover_id_list){
+	id = carryover_id_list[i];
+	section = sections[id];
+
+	//grade check
+	if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
+	    if($j.inArray(section, classes_list) == -1){
 		has_carryovers = true;
 		carryovers_list.push(section);
 	    }
 	}
     }
+
 
     //add all the classes then walkins
     if(!has_walkins){
@@ -212,10 +222,8 @@ load_old_preferences = function(class_data){
 
 priority_changed = function(id, timeslot_id){
     //unprioritize all selections
-    for (i in timeslots[timeslot_id].sections){
-	if (timeslots[timeslot_id].sections.starts){
-	    sections[timeslots[timeslot_id].sections[i].id]['lottery_priority'] = false;
-	}
+    for (i in timeslots[timeslot_id].starting_sections){
+	    sections[timeslots[timeslot_id].starting_sections[i].id]['lottery_priority'] = false;
     }
 
     if(id){

@@ -57,18 +57,18 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
 
 
     // Make a local reference to the sections for readability
-    data_sections = data.timeslots[timeslotIndex].sections;
+    data_starting_sections = data.timeslots[timeslotIndex].starting_sections;
     prioritySections = [];
     interestedSections = [];
-    for(i in data_sections)
+    for(i in data_starting_sections)
     {
-	if(data_sections[i].starts && data.sections[data_sections[i].id].lottery_priority)
+	if(data.sections[data_starting_sections[i].id].lottery_priority)
 	{
-	    prioritySections.push(data_sections[i].id);
+	    prioritySections.push(data_starting_sections[i].id);
 	}
-	if(data_sections[i].starts && data.sections[data_sections[i].id].lottery_interested)
+	if(data.sections[data_starting_sections[i].id].lottery_interested)
 	{
-	    interestedSections.push(data_sections[i].id);
+	    interestedSections.push(data_starting_sections[i].id);
 	}
     }
 
