@@ -35,51 +35,15 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, main_call, aux_call
 
+from esp.cal.models import Event
 from esp.program.models import ClassSection, ClassSubject, StudentRegistration
+from esp.resources.models import ResourceAssignment
 
-from django.http import HttpResponse
-from django.db.models import Model
+from esp.cache.key_set import wildcard
+from esp.utils.decorators import cached_module_view, json_response
+from esp.utils.no_autocookie import disable_csrf_cookie_update
 
-import simplejson
-
-def json_response(field_map={}):
-    """ Converts a serializable data structure into the appropriate HTTP response. 
-        Allows changing the field names using field_map, which might be complicated
-        if related lookups were used. 
-    """
-    
-    def map_fields(item):
-        if isinstance(item, Model):
-            item = item.__dict__
-        assert(isinstance(item, dict))
-        result = {}
-        for key in item:
-            if key in field_map:
-                result[field_map[key]] = item[key]
-            else:
-                result[key] = item[key]
-        return result
-
-    def dec(func):
-
-        def _evaluate(*args, **kwargs):
-            result = func(*args, **kwargs)
-            if isinstance(result, HttpResponse):
-                return result
-            else:
-                new_result = {}
-                for key in result:
-                    new_list = []
-                    for item in result[key]:
-                        new_list.append(map_fields(item))
-                    new_result[key] = new_list
-                resp = HttpResponse(mimetype='application/json')
-                simplejson.dump(new_result, resp)
-                return resp
-                
-        return _evaluate
-        
-    return dec
+from django.views.decorators.cache import cache_control
 
 
 class JSONDataModule(ProgramModuleObj, CoreModule):
@@ -101,28 +65,40 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @aux_call
     @json_response()
     @needs_admin
-    def counts(self, request, tl, one, two, module, extra, prog):
+    @cached_module_view
+    def counts(prog):
         return {'sections': list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).values('id', 'enrolled_students'))}
+    counts.method.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
+    counts.method.cached_function.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program})
     
     @aux_call
     @json_response({'resourceassignment__resource__name': 'name', 'resourceassignment__resource__num_students': 'num_students', 'resourceassignment__resource__event': 'timeslot'})
     @needs_admin
-    def rooms(self, request, tl, one, two, module, extra, prog):
+    @cached_module_view
+    def rooms(prog):
         return {'rooms': list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name').values('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students', 'resourceassignment__resource__event'))}
+    rooms.method.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
+    rooms.method.cached_function.depend_on_row(ResourceAssignment, lambda ra: {'prog': ra.target.parent_class.parent_program})
     
     @aux_call
     @json_response()
-    def timeslots(self, request, tl, one, two, module, extra, prog):
+    @cached_module_view
+    def timeslots(prog):
         timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'label'))
         for i in range(len(timeslots)):
             timeslots[i]['sections'] = list(ClassSection.objects.filter(meeting_times=timeslots[i]['id']).order_by('id').values_list('id', flat=True))
         return {'timeslots': timeslots}
+    timeslots.cached_function.depend_on_model(Event)
+    timeslots.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
         
     @aux_call
     @json_response({'parent_class__anchor__friendly_name': 'title', 'parent_class__id': 'parent_class', 'parent_class__anchor__name': 'emailcode', 'parent_class__grade_max': 'grade_max', 'parent_class__grade_min': 'grade_min', 'enrolled_students': 'num_students'})
-    def sections(self, request, tl, one, two, module, extra, prog):
+    @cached_module_view
+    def sections(prog):
         sections = list(prog.sections().values('id', 'parent_class__anchor__friendly_name', 'parent_class__id', 'parent_class__anchor__name', 'parent_class__grade_max', 'parent_class__grade_min', 'enrolled_students'))
         return {'sections': sections}
+    sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
+    sections.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
         
     @aux_call
     @json_response()
@@ -144,7 +120,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         
     @aux_call
     @json_response()
-    @needs_student
+    @cache_control(max_age=300)
+    @disable_csrf_cookie_update
     def class_info(self, request, tl, one, two, module, extra, prog):
         if 'section_id' in request.GET:
             section_id = int(request.GET['section_id'])
@@ -173,4 +150,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         teacher_list = [{'id': t.id, 'first_name': t.first_name, 'last_name': t.last_name} for t in cls._teachers]
         return {'classes': [cls_dict], 'teachers': teacher_list}
         
+    class Meta:
+        abstract = True
         
