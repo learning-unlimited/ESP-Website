@@ -62,13 +62,13 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
     interestedSections = [];
     for(i in data_sections)
     {
-	if(data.sections[data_sections[i]].lottery_priority)
+	if(data.sections[data_sections[i].id].lottery_priority)
 	{
-	    prioritySections.push(data_sections[i]);
+	    prioritySections.push(data_sections[i].id);
 	}
-	if(data.sections[data_sections[i]].lottery_interested)
+	if(data.sections[data_sections[i].id].lottery_interested)
 	{
-	    interestedSections.push(data_sections[i]);
+	    interestedSections.push(data_sections[i].id);
 	}
     }
 

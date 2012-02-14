@@ -73,17 +73,39 @@ compare_timeslot_starts = function(a, b){
 
 get_timeslot_html = function(timeslot_data)
 {
-    template = "<h3 class='header'><a href='#'><b>%TIMESLOT_LABEL% </b></a></h3> <div id='%TIMESLOT_DIV%'><h2>Walk-in Seminars</h2><div id='%TIMESLOT_WALKIN_DIV%' style='margin:1em 1em 1em 1em'></div><h2>Regular Classes</h2><table id='%TIMESLOT_TABLE%' cellspacing='10'><tr><td><p>Priority</p></td><td><p>Interested</p></td><td><p>Class</p></td></table></div><br>"
+    console.log(timeslot_data);
+    console.log(timeslots);
+    console.log(sections);
+
+    template = "\
+    <h3 class='header'><a href='#'><b>%TIMESLOT_LABEL% </b></a></h3>\
+    <div id='%TIMESLOT_DIV%'>\
+        <h3>Walk-in Seminars</h3>\
+        <div id='%TIMESLOT_WALKIN_DIV%' style='margin:1em 1em 1em 1em'></div>\
+\
+        <h3>Classes that start in another timeblock</h3>\
+        <div id='%TIMESLOT_CARRYOVER_DIV%' style='margin:1em 1em 1em 1em'></div>\
+\
+        <h3>Regular Classes</h3>\
+        <table id='%TIMESLOT_TABLE%' cellspacing='10'>\
+            <tr>\
+                <td><p>Priority</p></td>\
+                <td><p>Interested</p></td>\
+                <td><p>Class</p></td>\
+            </tr>\
+        </table>\
+    </div><br>"
         .replace(/%TIMESLOT_ID%/g, timeslot_data['id'])
         .replace(/%TIMESLOT_DIV%/g, ts_div_from_id(timeslot_data['id']))
         .replace(/%TIMESLOT_TABLE%/g, ts_table_from_id(timeslot_data['id']))
         .replace(/%TIMESLOT_WALKIN_DIV%/g, ts_walkin_div_from_id(timeslot_data['id']))
+        .replace(/%TIMESLOT_CARRYOVER_DIV%/g, ts_carryover_div_from_id(timeslot_data['id']))
 	.replace(/%TIMESLOT_LABEL%/g, timeslot_data['label']);
     return template;
 };
 
 add_classes_to_timeslot = function(timeslot, sections){
-    class_id_list = t['sections'];
+    class_list = t['sections'];
     user_grade = esp_user['cur_grade'];
 
     //adds the "no priority" radio button and defaults it to checked (this will change if we load a different, previously specified preference)
@@ -96,40 +118,60 @@ add_classes_to_timeslot = function(timeslot, sections){
 
     //add checkboxes and radio buttons for each class
 
+    var has_walkins = false;
     var has_classes = false;
+    var has_carryovers = false;
     var walkins_list = [];
     var classes_list = [];
-    for(i in class_id_list){
-	has_classes = true;
-	id = class_id_list[i];
+    var carryovers_list = [];
+    for(i in class_list){
+	id = class_list[i].id;
 	section = sections[id];
 	
 	//grade check
 	if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
 	    //walkins check
 	    if(section['emailcode'].charAt(0) == 'W'){
+		has_walkins = true;
 		walkins_list.push(section);
  	    }
-	    else{
+	    else if(class_list[i].starts){
+		has_classes = true;
 		classes_list.push(section);
 	    }
-
+	    else{
+		has_carryovers = true;
+		carryovers_list.push(section);
+	    }
 	}
     }
 
-    if(!has_classes){
-	//hopefully nobody will ever see this :)
-	$j("#"+ts_div_from_id(timeslot['id'])).append("<i><font color='red'>(No classes)</font></i>");
-    }
-
     //add all the classes then walkins
+    if(!has_walkins){
+	//hopefully nobody will ever see this :)
+	$j("#"+ts_walkin_div_from_id(timeslot['id'])).append("<i><font color='red'>(No walk-ins)</font></i>");
+    }
     else{
 	for(i in walkins_list){
 	    $j("#"+ts_walkin_div_from_id(timeslot['id'])).append(get_walkin_html(walkins_list[i], timeslot['id']));
 	}
+    }
+    if(!has_classes){
+	//hopefully nobody will ever see this either :)
+	$j("#"+ts_div_from_id(timeslot['id'])).append("<i><font color='red'>(No classes)</font></i>");
+    }
+    else{
 	for(i in classes_list){
 	    $j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(classes_list[i], timeslot['id']));
 	    load_old_preferences(classes_list[i]);
+	}
+    }
+    if(!has_carryovers){
+	$j("#"+ts_carryover_div_from_id(timeslot['id'])).append("<i><font color='red'>(No carry-overs)</font></i>");
+    }
+    else{
+	for(i in carryovers_list){
+	    $j("#"+ts_carryover_div_from_id(timeslot['id'])).append(get_carryover_html(carryovers_list[i], timeslot['id']));
 	}
     }
 
@@ -154,6 +196,13 @@ get_walkin_html = function(class_data, timeslot_id){
     return template;
 };
 
+get_carryover_html = function(class_data, timeslot_id){
+    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE%</p>"
+	.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
+	.replace(/%CLASS_TITLE%/g, class_data['title']);
+    return template;
+};
+
 load_old_preferences = function(class_data){
     id = class_data['id'];
     if( class_data['lottery_priority'] )
@@ -169,7 +218,7 @@ load_old_preferences = function(class_data){
 priority_changed = function(id, timeslot_id){
     //unprioritize all selections
     for (i in timeslots[timeslot_id].sections){
-	sections[timeslots[timeslot_id].sections[i]]['lottery_priority'] = false;
+	sections[timeslots[timeslot_id].sections[i].id]['lottery_priority'] = false;
     }
 
     if(id){
@@ -190,6 +239,10 @@ ts_div_from_id = function(id){
 
 ts_walkin_div_from_id = function(id){
     return "TS_W_"+id;
+};
+
+ts_carryover_div_from_id = function(id){
+    return "TS_C_"+id;
 };
 
 ts_table_from_id = function(id){
