@@ -125,12 +125,7 @@ add_classes_to_timeslot = function(timeslot, sections){
 	
 	//grade check
 	if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
-	    //walkins check
-	    if(section['emailcode'].charAt(0) == 'W'){
-		has_walkins = true;
-		walkins_list.push(section);
- 	    }
-	    else{
+	    if(section['emailcode'].charAt(0) != 'W'){
 		has_classes = true;
 		classes_list.push(section);
 	    }
@@ -143,7 +138,11 @@ add_classes_to_timeslot = function(timeslot, sections){
 
 	//grade check
 	if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
-	    if($j.inArray(section, classes_list) == -1){
+	    if(section['emailcode'].charAt(0) == 'W'){
+		has_walkins = true;
+		walkins_list.push(section);
+	    }
+	    else if($j.inArray(section, classes_list) == -1){
 		has_carryovers = true;
 		carryovers_list.push(section);
 	    }
