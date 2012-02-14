@@ -115,6 +115,7 @@ function addSubmitButton(containerDiv)
 
 function submit_preferences(){
     $j("#submitButton").text("Submitting...");
+    $j("#submitButton").attr("disabled", "disabled");
 
     submit_data = {};
     for(id in sections){
