@@ -14,7 +14,6 @@ $j(document).ready(function() {
 	changestart: function(event, ui) {
 	    if (ui.newContent.attr("id") == "preferences")
 	    {
-		console.log("Updating preferences");
 		updatePreferences({'timeslots': timeslots, 'sections': sections});
 	    }
 	}
@@ -73,10 +72,6 @@ compare_timeslot_starts = function(a, b){
 
 get_timeslot_html = function(timeslot_data)
 {
-    console.log(timeslot_data);
-    console.log(timeslots);
-    console.log(sections);
-
     template = "\
     <h3 class='header'><a href='#'><b>%TIMESLOT_LABEL% </b></a></h3>\
     <div id='%TIMESLOT_DIV%'>\
