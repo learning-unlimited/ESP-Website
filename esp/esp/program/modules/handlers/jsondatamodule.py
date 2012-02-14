@@ -115,7 +115,13 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def timeslots(self, request, tl, one, two, module, extra, prog):
         timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'label', 'start', 'end'))
         for i in range(len(timeslots)):
-            timeslots[i]['sections'] = list(ClassSection.objects.filter(meeting_times=timeslots[i]['id']).order_by('id').values_list('id', flat=True))
+            print "Generating sections"
+            timeslots[i]['sections'] = list(ClassSection.objects.filter(meeting_times=timeslots[i]['id']))
+            print timeslots[i]['sections']
+            print timeslots[i]['sections'][0].start_time().id
+            #print [{'section': sec.id, 'starts': sec.start_time().id == timeslots[i]['id']} for sec in timeslots[i]['sections']]
+            timeslots[i]['sections'] = [{'id': sec.id, 'starts': sec.start_time().id == timeslots[i]['id']} for sec in timeslots[i]['sections']]
+            print timeslots[i]['sections']
 
             # Extract data from the start date
             startDate = timeslots[i]['start']
