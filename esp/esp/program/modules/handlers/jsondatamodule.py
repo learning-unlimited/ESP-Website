@@ -112,7 +112,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     
     @aux_call
     @json_response()
-    @needs_account
     def timeslots(self, request, tl, one, two, module, extra, prog):
         timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'label', 'start', 'end'))
         for i in range(len(timeslots)):
@@ -157,7 +156,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         
     @aux_call
     @json_response({'parent_class__anchor__friendly_name': 'title', 'parent_class__id': 'parent_class', 'parent_class__anchor__name': 'emailcode', 'parent_class__grade_max': 'grade_max', 'parent_class__grade_min': 'grade_min', 'enrolled_students': 'num_students'})
-    @needs_account
     def sections(self, request, tl, one, two, module, extra, prog):
         sections = list(prog.sections().values('id', 'parent_class__anchor__friendly_name', 'parent_class__id', 'parent_class__anchor__name', 'parent_class__grade_max', 'parent_class__grade_min', 'enrolled_students'))
         return {'sections': sections}
