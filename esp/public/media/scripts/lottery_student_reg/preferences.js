@@ -11,7 +11,7 @@ function prefs_ts_div_by_priority(id, priority)
 // Appends an individual class section to the containerDiv
 function renderClassSection(data, containerDiv, classSection)
 {
-    containerDiv.html(data.sections[classSection].emailcode + ": " + data.sections[classSection].title + "<br />");
+    containerDiv.append(data.sections[classSection].emailcode + ": " + data.sections[classSection].title + "<br/>");
 }
 
 // Appends the slot of priority preferences followed by the interested
@@ -28,7 +28,7 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
 	timeslotDiv = $j("<div id='" + prefs_ts_div_from_id(timeslotId) + "'></div>");
 	containerDiv.append(timeslotDiv);
 	// Create the title
-	timeslotDiv.append("<h2>" + data.timeslots[timeslotIndex].label + "</h2><br/>");
+	timeslotDiv.append("<h3>" + data.timeslots[timeslotIndex].label + "</h3><br/>");
     }
 
     // Check if the interested div doesn't exist yet, and set interestedDiv at
@@ -36,9 +36,9 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
     if ((interestedDiv = $j("#"+prefs_ts_div_by_priority(timeslotId, false))).length == 0)
     {
 	// Create the div
-	interestedDiv = $j("<div id='" + prefs_ts_div_by_priority(timeslotId, false) + "'></div.");
+	interestedDiv = $j("<p id='" + prefs_ts_div_by_priority(timeslotId, false) + "'></p>");
 	// Give it a title
-	timeslotDiv.append("<b>Interested classes:<br /></b>");
+	timeslotDiv.append("<p><u>Interested classes:</u></p>");
 	timeslotDiv.append(interestedDiv);
     }
 	
@@ -48,33 +48,34 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
     if ((priorityDiv = $j("#"+prefs_ts_div_by_priority(timeslotId, true))).length == 0)
     {
 	// Create the div
-	priorityDiv = $j("<div id='" + prefs_ts_div_by_priority(timeslotId, true) + "'></div>");
+	priorityDiv = $j("<p id='" + prefs_ts_div_by_priority(timeslotId, true) + "'></p>");
 	// Give it a title
-	timeslotDiv.append("<b>Priority flagged classes:<br/></b>");
+	timeslotDiv.append("<p><u>Priority flagged classes:</u></p>");
 	timeslotDiv.append(priorityDiv);
     }
 
 
 
     // Make a local reference to the sections for readability
-    data_sections = data.timeslots[timeslotIndex].sections;
+    data_starting_sections = data.timeslots[timeslotIndex].starting_sections;
     prioritySections = [];
     interestedSections = [];
-    for(i in data_sections)
+    for(i in data_starting_sections)
     {
-	if(data.sections[data_sections[i]].lottery_priority)
+	if(data.sections[data_starting_sections[i]].lottery_priority)
 	{
-	    prioritySections.push(data_sections[i]);
+	    prioritySections.push(data_starting_sections[i]);
 	}
-	if(data.sections[data_sections[i]].lottery_interested)
+	if(data.sections[data_starting_sections[i]].lottery_interested)
 	{
-	    interestedSections.push(data_sections[i]);
+	    interestedSections.push(data_starting_sections[i]);
 	}
     }
 
     // Render all the priority classes
     if (prioritySections.length > 0)
     {
+	priorityDiv.html('');
 	for (i in prioritySections)
 	{
 	    renderClassSection(data, priorityDiv, prioritySections[i]);
@@ -85,11 +86,12 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
 	// Write "(None)" if there are no classes
 	priorityDiv.html("<i><font color='red'>(None)<br/></font></i>");
     }
-    priorityDiv.append("<br/>");
+    priorityDiv.append("<br/><br/>");
 
     // Render all the interested classes
     if (interestedSections.length > 0)
     {
+	interestedDiv.html('');
 	for (j in interestedSections)
 	{
 	    renderClassSection(data, interestedDiv, interestedSections[j]);
@@ -100,16 +102,46 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
 	// Write "(None)" if there are no classes
 	interestedDiv.html("<i><font color='red'>(None)<br/></font></i>");
     }
-    interestedDiv.append("<br /><br />");
+    interestedDiv.append("<br/>");
     
 }
 
 // Append a submit button
 function addSubmitButton(containerDiv)
 {
-    containerDiv.append("<button id='submitButton'>Submit my preferences!</button>");
+    containerDiv.append("<button id='submitButton' onclick=\"submit_preferences()\" >Save my preferences!</button>");
 }
 	
+
+function submit_preferences(){
+    $j("#submitButton").text("Submitting...");
+
+    submit_data = {};
+    for(id in sections){
+	s = sections[id];
+	submit_data[id] = s['lottery_interested'];
+	submit_data['flag_'+id] = s['lottery_priority']; 
+    }
+    
+    submit_data_string = JSON.stringify(submit_data);
+
+    var submit_url = '/learn/'+base_url+'/lsr_submit';
+
+    //actually submit and redirect to student reg
+    jQuery.ajax({
+	     type: 'POST',
+             url: submit_url,
+	     error: function(a, b, c) {
+                alert("There has been an error on the website. Please contact esp@mit.edu to report this problem.");
+             },
+	     success: function(a, b, c){
+		alert("Your preferences have been successfully saved.");
+		window.location = "studentreg";
+	     },
+	     data: {'json_data': submit_data_string },
+	     headers: {'X-CSRFToken': $j.cookie("csrftoken")}
+     });
+};
     
 // Create all the preferences in the div with id="preferences" if they don't already exist
 function updatePreferences(data)
@@ -126,65 +158,4 @@ function updatePreferences(data)
 	addSubmitButton(preferencesDiv);
     }
 }
-
-
-    /*
-    // Example data for testing, normally this would be set globally by the JSON views API
-    data = {
-	timeslots: [
-	    {
-		id: 0,
-		label: "9AM",
-		start: 9,
-		end: 10,
-		sections: [0, 1]
-	    },
-	    {
-		id: 1,
-		label: "10AM",
-		start: 10,
-		end: 11,
-		sections: [2]
-	    }
-	],
-	sections: [
-	    {
-		id: 0,
-		emailcode: "A1",
-		title: "Winrar: An Introduction",
-		timeslots: [0],
-		grade_min: 7,
-		grade_max: 12,
-		capacity: 100,
-		num_students: 20,
-		lottery_priority: true,
-		lottery_interested: false
-	    },
-	    {
-		id: 1,
-		emailcode: "A2",
-		title: "Winrar: An Introduction",
-		timeslots: [1],
-		grade_min: 7,
-		grade_max: 12,
-		capacity: 100,
-		num_students: 20,
-		lottery_priority: false,
-		lottery_interested: false
-	    },
-	    {
-		id: 2,
-		emailcode: "B1",
-		title: "How to be Awesome",
-		timeslots: [0, 1],
-		grade_min: 7,
-		grade_max: 12,
-		capacity: 100,
-		num_students: 20,
-		lottery_priority: true,
-		lottery_interested: true
-	    }
-    ]
-    };
-    */
 
