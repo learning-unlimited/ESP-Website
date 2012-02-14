@@ -213,7 +213,9 @@ load_old_preferences = function(class_data){
 priority_changed = function(id, timeslot_id){
     //unprioritize all selections
     for (i in timeslots[timeslot_id].sections){
-	sections[timeslots[timeslot_id].sections[i].id]['lottery_priority'] = false;
+	if (timeslots[timeslot_id].sections.starts){
+	    sections[timeslots[timeslot_id].sections[i].id]['lottery_priority'] = false;
+	}
     }
 
     if(id){
