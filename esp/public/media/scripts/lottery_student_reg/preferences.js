@@ -11,7 +11,7 @@ function prefs_ts_div_by_priority(id, priority)
 // Appends an individual class section to the containerDiv
 function renderClassSection(data, containerDiv, classSection)
 {
-    containerDiv.append(data.sections[classSection].emailcode + ": " + data.sections[classSection].title + "<br />");
+    containerDiv.append(data.sections[classSection].emailcode + ": " + data.sections[classSection].title + "<br/>");
 }
 
 // Appends the slot of priority preferences followed by the interested
@@ -36,9 +36,9 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
     if ((interestedDiv = $j("#"+prefs_ts_div_by_priority(timeslotId, false))).length == 0)
     {
 	// Create the div
-	interestedDiv = $j("<div id='" + prefs_ts_div_by_priority(timeslotId, false) + "'></div.");
+	interestedDiv = $j("<p id='" + prefs_ts_div_by_priority(timeslotId, false) + "'></p>");
 	// Give it a title
-	timeslotDiv.append("<b>Interested classes:<br /></b>");
+	timeslotDiv.append("<p><u>Interested classes:</u></p>");
 	timeslotDiv.append(interestedDiv);
     }
 	
@@ -48,9 +48,9 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
     if ((priorityDiv = $j("#"+prefs_ts_div_by_priority(timeslotId, true))).length == 0)
     {
 	// Create the div
-	priorityDiv = $j("<div id='" + prefs_ts_div_by_priority(timeslotId, true) + "'></div>");
+	priorityDiv = $j("<p id='" + prefs_ts_div_by_priority(timeslotId, true) + "'></p>");
 	// Give it a title
-	timeslotDiv.append("<b>Priority flagged classes:<br/></b>");
+	timeslotDiv.append("<p><u>Priority flagged classes:</u></p>");
 	timeslotDiv.append(priorityDiv);
     }
 
@@ -86,7 +86,7 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
 	// Write "(None)" if there are no classes
 	priorityDiv.html("<i><font color='red'>(None)<br/></font></i>");
     }
-    priorityDiv.append("<br/>");
+    priorityDiv.append("<br/><br/>");
 
     // Render all the interested classes
     if (interestedSections.length > 0)
@@ -102,7 +102,7 @@ function updateTimeslotPrefs(data, containerDiv, timeslotIndex)
 	// Write "(None)" if there are no classes
 	interestedDiv.html("<i><font color='red'>(None)<br/></font></i>");
     }
-    interestedDiv.append("<br /><br />");
+    interestedDiv.append("<br/>");
     
 }
 
@@ -135,7 +135,7 @@ function submit_preferences(){
                 alert("There has been an error on the website. Please contact esp@mit.edu to report this problem.");
              },
 	     success: function(a, b, c){
-		alert("Your preferences have been successfuly saved.");
+		alert("Your preferences have been successfully saved.");
 		window.location = "studentreg";
 	     },
 	     data: {'json_data': submit_data_string },
