@@ -11,6 +11,7 @@ $j(document).ready(function() {
     accordionSettings = {
 	header: ".header",
 	autoHeight: false,
+	collapsible: true,
 	changestart: function(event, ui) {
 	    if (ui.newContent.attr("id") == "preferences")
 	    {
@@ -192,7 +193,7 @@ add_classes_to_timeslot = function(timeslot, sections){
 get_class_checkbox_html = function(class_data, timeslot_id){
     template = "\
     <tr>\
-        <td><p>
+        <td><p>\
             <input type='radio'\
                    onChange='priority_changed(%CLASS_ID%, %TIMESLOT_ID%)'\
                    id=\"%CLASS_RADIO_ID%\"\
