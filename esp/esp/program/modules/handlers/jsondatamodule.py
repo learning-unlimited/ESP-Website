@@ -131,10 +131,25 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     timeslots.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
         
     @aux_call
-    @json_response({'parent_class__anchor__friendly_name': 'title', 'parent_class__id': 'parent_class', 'parent_class__anchor__name': 'emailcode', 'parent_class__grade_max': 'grade_max', 'parent_class__grade_min': 'grade_min', 'enrolled_students': 'num_students'})
+    @json_response({
+            'parent_class__anchor__friendly_name': 'title',
+            'parent_class__id': 'parent_class',
+            'parent_class__anchor__name': 'emailcode',
+            'parent_class__category__symbol': 'category',
+            'parent_class__grade_max': 'grade_max',
+            'parent_class__grade_min': 'grade_min',
+            'enrolled_students': 'num_students'})
     @cached_module_view
     def sections(prog):
-        sections = list(prog.sections().values('id', 'parent_class__anchor__friendly_name', 'parent_class__id', 'parent_class__anchor__name', 'parent_class__grade_max', 'parent_class__grade_min', 'enrolled_students'))
+        sections = list(prog.sections().values(
+                'id',
+                'parent_class__anchor__friendly_name',
+                'parent_class__id',
+                'parent_class__category__symbol',
+                'parent_class__anchor__name',
+                'parent_class__grade_max',
+                'parent_class__grade_min',
+                'enrolled_students'))
         return {'sections': sections}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
