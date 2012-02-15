@@ -104,7 +104,15 @@ add_classes_to_timeslot = function(timeslot, sections){
     user_grade = esp_user['cur_grade'];
 
     //adds the "no priority" radio button and defaults it to checked (this will change if we load a different, previously specified preference)
-    var no_priority_template = "<tr><td><p><input type=radio name=\"%TS_RADIO_NAME%\" onChange='priority_changed(null, %TIMESLOT_ID%)' id=\"%TS_NO_PREFERENCE_ID%\" checked></input></p></td> <td></td> <td><p>I would not like to specify a priority class for this timeblock.</p></td></tr>";
+    var no_priority_template = "\
+    <tr>\
+        <td><p>\
+            <input type=radio name=\"%TS_RADIO_NAME%\" onChange='priority_changed(null, %TIMESLOT_ID%)' id=\"%TS_NO_PREFERENCE_ID%\" checked></input>\
+        </p></td>\
+\
+        <td></td>\
+        <td><p>I would not like to specify a priority class for this timeblock.</p></td>\
+    </tr>";
     no_priority_template = no_priority_template.replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslot['label']))
 	.replace(/%TIMESLOT_ID%/g, timeslot.id)
         .replace(/%TS_NO_PREFERENCE_ID%/g, ts_no_preference_id(timeslot['label']));
@@ -182,7 +190,24 @@ add_classes_to_timeslot = function(timeslot, sections){
 };
 
 get_class_checkbox_html = function(class_data, timeslot_id){
-    template = "<tr><td><p><input type=radio onChange='priority_changed(%CLASS_ID%, %TIMESLOT_ID%)' id=\"%CLASS_RADIO_ID%\" name=\"%TS_RADIO_NAME%\"></input></p></td> <td><p><input type=checkbox onChange='interested_changed(%CLASS_ID%)' name=%CLASS_CHECKBOX_ID% id=%CLASS_CHECKBOX_ID%></checkbox></p></td> <td><p>%CLASS_EMAILCODE%: %CLASS_TITLE%</p></td></tr>"
+    template = "\
+    <tr>\
+        <td><p>
+            <input type='radio'\
+                   onChange='priority_changed(%CLASS_ID%, %TIMESLOT_ID%)'\
+                   id=\"%CLASS_RADIO_ID%\"\
+                   name=\"%TS_RADIO_NAME%\">\
+            </input>\
+        </p></td>\
+        <td><p>\
+            <input type='checkbox'\
+                   onChange='interested_changed(%CLASS_ID%)'\
+                   name=%CLASS_CHECKBOX_ID%\
+                   id=%CLASS_CHECKBOX_ID%>\
+            </input>\
+        </p></td>\
+        <td><p>%CLASS_EMAILCODE%: %CLASS_TITLE%</p></td>\
+    </tr>"
 	.replace(/%TIMESLOT_ID%/g, timeslot_id)
         .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslots[timeslot_id].label))
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
