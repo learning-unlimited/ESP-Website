@@ -211,7 +211,7 @@ get_class_checkbox_html = function(class_data, timeslot_id){
     </tr>"
 	.replace(/%TIMESLOT_ID%/g, timeslot_id)
         .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslots[timeslot_id].label))
-        .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
+        .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'] + 's' + class_data['index'])
         .replace('%CLASS_TITLE%', class_data['title'])
         .replace(/%CLASS_ID%/g, class_data['id'])
         .replace(/%CLASS_CHECKBOX_ID%/g, class_checkbox_id(class_data['id']))
@@ -221,14 +221,14 @@ get_class_checkbox_html = function(class_data, timeslot_id){
 
 get_walkin_html = function(class_data, timeslot_id){
     template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE%</p>"
-        .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
+        .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'] + 's' + class_data['index'])
         .replace('%CLASS_TITLE%', class_data['title']);
     return template;
 };
 
 get_carryover_html = function(class_data, timeslot_id){
     template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE%</p>"
-	.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
+	.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'] + 's' + class_data['index'])
 	.replace(/%CLASS_TITLE%/g, class_data['title']);
     return template;
 };

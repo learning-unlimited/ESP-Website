@@ -150,6 +150,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'parent_class__grade_max',
                 'parent_class__grade_min',
                 'enrolled_students'))
+        for section in sections:
+            section['index'] = ClassSection.objects.get(id=section['id']).index()
         return {'sections': sections}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})

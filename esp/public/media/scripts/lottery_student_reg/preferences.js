@@ -11,7 +11,7 @@ function prefs_ts_div_by_priority(id, priority)
 // Appends an individual class section to the containerDiv
 function renderClassSection(data, containerDiv, classSection)
 {
-    containerDiv.append(data.sections[classSection].emailcode + ": " + data.sections[classSection].title + "<br/>");
+    containerDiv.append(data.sections[classSection].emailcode + "s" + data.sections[classSection].index + ": " + data.sections[classSection].title + "<br/>");
 }
 
 // Appends the slot of priority preferences followed by the interested
