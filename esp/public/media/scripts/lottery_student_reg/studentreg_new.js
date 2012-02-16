@@ -261,27 +261,50 @@ create_class_info_dialog = function(){
 };
 
 var class_info = {};
+// initial popup that tells the user we're loading the class data
+loading_class_desc = function(){
+    class_desc_popup.dialog('option', 'title', 'Loading');
+    class_desc_popup.dialog('option', 'width', 200);
+    class_desc_popup.dialog('option', 'height', 100);
+    class_desc_popup.dialog('option', 'position', 'center');
+    class_desc_popup.html('Loading class info...');
+    class_desc_popup.dialog('open');
+};
+
+// function to fill the class description popup
+fill_class_desc = function(class_id){
+    var parent_class_id = sections[class_id].parent_class;
+    extra_info = class_info[parent_class_id];
+    class_desc_popup.dialog('option', 'title', sections[class_id].emailcode + "s" + sections[class_id].index + ": " + extra_info.title);
+    class_desc_popup.dialog('option', 'width', 600);
+    class_desc_popup.dialog('option', 'height', 400);
+    class_desc_popup.dialog('option', 'position', 'center');
+    class_desc_popup.html('');
+    class_desc_popup.append("<p><b>Category:</b> " + extra_info.category + "</p>");
+    //class_desc_popup.append("<p>Difficulty: " + extra_info.difficulty + "</p>");
+    class_desc_popup.append("<p><b>Description:</b> " + extra_info.class_info + "</p>");
+};
+
+// called to open a class description
 open_class_desc = function(class_id){
-    parent_class_id = sections[class_id].parent_class;
+    // display a loading popup while we wait
+    loading_class_desc();
+
+    // get the class info if we don't have it already
+    var parent_class_id = sections[class_id].parent_class;
     if (!class_info[parent_class_id]){
 	json_get('class_info', {'class_id': parent_class_id}, function(data){
+	    // once we get the class data, store it for later, then go
+	    // fill the popup
 	    class_info[parent_class_id] = data.classes[parent_class_id];
-	    open_class_desc(class_id);
+	    fill_class_desc(class_id);
 	    console.log(class_info);
 	});
     }
     else{
+	// if we already have the data, go fill the popup
 	console.log(class_info[parent_class_id]);
-	extra_info = class_info[parent_class_id];
-	class_desc_popup.dialog('option', 'title', sections[class_id].emailcode + "s" + sections[class_id].index + ": " + extra_info.title);
-	class_desc_popup.dialog('option', 'width', 600);
-	class_desc_popup.dialog('option', 'height', 400);
-	class_desc_popup.dialog('option', 'position', 'center');
-	class_desc_popup.html('');
-	class_desc_popup.append("<p><b>Category:</b> " + extra_info.category + "</p>");
-	//class_desc_popup.append("<p>Difficulty: " + extra_info.difficulty + "</p>");
-	class_desc_popup.append("<p><b>Description:</b> " + extra_info.class_info + "</p>");
-	class_desc_popup.dialog('open');
+	fill_class_desc(class_id);
     }
 };
 
