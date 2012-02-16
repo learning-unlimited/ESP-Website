@@ -260,17 +260,20 @@ create_class_info_dialog = function(){
     });
 };
 
+var class_info = {};
 open_class_desc = function(class_id){
-    if (!sections[class_id].extra_info){
-	json_get('class_info', {'section_id': class_id}, function(data){
-	    sections[class_id].extra_info = data;
+    parent_class_id = sections[class_id].parent_class;
+    if (!class_info[parent_class_id]){
+	json_get('class_info', {'class_id': parent_class_id}, function(data){
+	    class_info[parent_class_id] = data.classes[parent_class_id];
 	    open_class_desc(class_id);
+	    console.log(class_info);
 	});
     }
     else{
-	console.log(sections[class_id]);
-	extra_info = sections[class_id].extra_info.classes['0'];
-	class_desc_popup.dialog('option', 'title', sections[class_id].emailcode + "s" + sections[class_id].index + ": " + sections[class_id].extra_info.classes['0'].title);
+	console.log(class_info[parent_class_id]);
+	extra_info = class_info[parent_class_id];
+	class_desc_popup.dialog('option', 'title', sections[class_id].emailcode + "s" + sections[class_id].index + ": " + extra_info.title);
 	class_desc_popup.dialog('option', 'width', 600);
 	class_desc_popup.dialog('option', 'height', 400);
 	class_desc_popup.dialog('option', 'position', 'center');

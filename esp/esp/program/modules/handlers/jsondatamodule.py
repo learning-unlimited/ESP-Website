@@ -177,6 +177,17 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @aux_call
     @cache_control(public=True, max_age=300)
     @json_response()
+    #'category': 'category',
+    #'class_info': 'class_info',
+    #'difficulty': 'difficulty',
+    #'emailcode': 'emailcode',
+    #'prereqs': 'prereqs',
+    #'sections': 'sections',
+    #'teachers': 'teachers',
+    #'title': 'title',
+    #'first_name': 'first_name',
+    #'last_name': 'last_name'
+
     def class_info(self, request, tl, one, two, module, extra, prog):
         if 'section_id' in request.GET:
             section_id = int(request.GET['section_id'])
@@ -202,7 +213,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'sections': [x.id for x in cls._sections],
             'teachers': [x.id for x in cls._teachers],
         }
-        teacher_list = [{'id': t.id, 'first_name': t.first_name, 'last_name': t.last_name} for t in cls._teachers]
+        teacher_list = [{'id': t.id, 'first_name': t.first_name, 'last\
+_name': t.last_name} for t in cls._teachers]
         return {'classes': [cls_dict], 'teachers': teacher_list}
         
     class Meta:

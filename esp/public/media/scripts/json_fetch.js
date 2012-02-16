@@ -53,7 +53,9 @@ function handle_json_response(data, component, data_fetch_status, new_data, text
     
     //  Set flags
     //  console.log("Setting to ready: " + component);
-    data_fetch_status[component] = "Ready";
+    if(component){
+	data_fetch_status[component] = "Ready";
+    }
 }
 
 function json_fetch(components, on_complete, result_data)
@@ -99,7 +101,9 @@ function json_get(json_view, args, on_complete)
         url: program_base_url + json_view,
 	data: args,
         success: function(result_data, text_status, jqxhr) {
-	    on_complete(result_data);
+	    final_data = {};
+	    handle_json_response(final_data, null, null, result_data, text_status, jqxhr);
+	    on_complete(final_data);
 	}
     });
 }
