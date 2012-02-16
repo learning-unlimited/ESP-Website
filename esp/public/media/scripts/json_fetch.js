@@ -92,3 +92,14 @@ function json_fetch_complete(components, on_complete, data, data_fetch_status)
         setTimeout(function (){json_fetch_complete(components, on_complete, data, data_fetch_status);}, 100);
     }
 }
+
+function json_get(json_view, args, on_complete)
+{
+    $j.ajax({
+        url: program_base_url + json_view,
+	data: args,
+        success: function(result_data, text_status, jqxhr) {
+	    on_complete(result_data);
+	}
+    });
+}

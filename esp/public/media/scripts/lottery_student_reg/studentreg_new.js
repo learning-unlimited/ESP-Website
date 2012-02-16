@@ -3,9 +3,26 @@
 	
 var accordionSettings;	
 
+
+
 $j(document).ready(function() { 
     $j("#timeslots_anchor").html("Loading timeslots... <br/>").css("display", "block");
 
+    jquery_ui_init();
+
+    data_components = [
+        'timeslots',
+        'sections',
+        'lottery_preferences'
+    ];
+
+    json_fetch(data_components, show_app);
+});
+
+// called when jQuery UI has loaded
+jquery_ui_init = function(){
+    // create the dialog used to show class info
+    create_class_info_dialog();
 
     // Create the accordion settings
     accordionSettings = {
@@ -21,15 +38,7 @@ $j(document).ready(function() {
     };
 
     $j("#lsr_content").accordion(accordionSettings);
-
-    data_components = [
-        'timeslots',
-        'sections',
-        'lottery_preferences'
-    ];
-
-    json_fetch(data_components, show_app);
-});
+};
 
 // adds timeslots to content and adds classes to timeslots
 // called once class data arrives from the server
@@ -207,7 +216,7 @@ get_class_checkbox_html = function(class_data, timeslot_id){
                    id=%CLASS_CHECKBOX_ID%>\
             </input>\
         </p></td>\
-        <td><p>%CLASS_EMAILCODE%: %CLASS_TITLE%</p></td>\
+        <td><p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p></td>\
     </tr>"
 	.replace(/%TIMESLOT_ID%/g, timeslot_id)
         .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslots[timeslot_id].label))
@@ -220,17 +229,57 @@ get_class_checkbox_html = function(class_data, timeslot_id){
 };
 
 get_walkin_html = function(class_data, timeslot_id){
-    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE%</p>"
+    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'] + 's' + class_data['index'])
-        .replace('%CLASS_TITLE%', class_data['title']);
+        .replace('%CLASS_TITLE%', class_data['title'])
+        .replace(/%CLASS_ID%/g, class_data['id']);
     return template;
 };
 
 get_carryover_html = function(class_data, timeslot_id){
-    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE%</p>"
+    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
 	.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'] + 's' + class_data['index'])
-	.replace(/%CLASS_TITLE%/g, class_data['title']);
+	.replace(/%CLASS_TITLE%/g, class_data['title'])
+        .replace(/%CLASS_ID%/g, class_data['id']);
     return template;
+};
+
+var class_desc_popup;
+create_class_info_dialog = function(){
+    class_desc_popup = $j('<div></div>').dialog({
+	autoOpen: false,
+	minWidth: 400,
+	minHeight: 300,
+	modal: true,
+	buttons: {
+	    Ok: function() {
+		$j(this).dialog("close");
+	    }
+	},
+	title: ''
+    });
+};
+
+open_class_desc = function(class_id){
+    if (!sections[class_id].extra_info){
+	json_get('class_info', {'section_id': class_id}, function(data){
+	    sections[class_id].extra_info = data;
+	    open_class_desc(class_id);
+	});
+    }
+    else{
+	console.log(sections[class_id]);
+	extra_info = sections[class_id].extra_info.classes['0'];
+	class_desc_popup.dialog('option', 'title', sections[class_id].emailcode + "s" + sections[class_id].index + ": " + sections[class_id].extra_info.classes['0'].title);
+	class_desc_popup.dialog('option', 'width', 600);
+	class_desc_popup.dialog('option', 'height', 400);
+	class_desc_popup.dialog('option', 'position', 'center');
+	class_desc_popup.html('');
+	class_desc_popup.append("<p><b>Category:</b> " + extra_info.category + "</p>");
+	//class_desc_popup.append("<p>Difficulty: " + extra_info.difficulty + "</p>");
+	class_desc_popup.append("<p><b>Description:</b> " + extra_info.class_info + "</p>");
+	class_desc_popup.dialog('open');
+    }
 };
 
 load_old_preferences = function(class_data){
