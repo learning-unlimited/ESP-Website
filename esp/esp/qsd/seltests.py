@@ -13,6 +13,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium import selenium
 from sys import stdout, stderr, exc_info
+from django_selenium import settings
 import time
 
 # Make sure our varnish settings exist
@@ -74,6 +75,8 @@ class TestQsdCachePurging(SeleniumTestCase):
         qsd_rec_new.description = ''
         qsd_rec_new.keywords    = ''
         qsd_rec_new.save()
+
+        # Set the port that the webdriver will try to access
         self.driver.testserver_port = VARNISH_PORT
 
         # Add the varnish_purge tag
@@ -106,5 +109,6 @@ class TestQsdCachePurging(SeleniumTestCase):
     def test_regular(self):
         self.check_page("/test.html")
 
-    def cleanUp(self):
-        self.driver.testserver_port = 8000 # Find where this number is actually stored        
+    def tearDown(self):
+        super(TestQsdCachePurging, self).tearDown()
+        self.driver.testserver_port = getattr(settings, 'SELENIUM_TESTSERVER_PORT')

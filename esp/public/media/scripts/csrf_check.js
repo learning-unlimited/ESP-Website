@@ -53,7 +53,7 @@ var check_csrf_cookie = function(form)
         return false;
     }
 
-    if (csrf_cookie != form.csrfmiddlewaretoken)
+    if (csrf_cookie != $j(form.csrfmiddlewaretoken).val())
     {
         console.log('Not matching. csrf_cookie: ' + csrf_cookie + ', csrfmiddlewaretoken: ' + csrf_token);
     }
