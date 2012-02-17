@@ -95,7 +95,19 @@ class TeacherBioAdmin(admin.ModelAdmin):
 admin_site.register(TeacherBio, TeacherBioAdmin)
     
 admin_site.register(FinancialAidRequest)
-admin_site.register(SplashInfo)
+
+class Admin_SplashInfo(admin.ModelAdmin):
+    list_display = (
+        'student',
+        'program',
+    )
+    search_fields = [
+        'student__username',
+        'student__last_name',
+        'student__email',
+    ]
+    list_filter = [ 'program', ]
+admin_site.register(SplashInfo, Admin_SplashInfo)
 
 ## Schedule stuff (wish it was schedule_.py)
 
@@ -114,7 +126,13 @@ class BooleanExpressionAdmin(admin.ModelAdmin):
         return len(obj.get_stack())
 admin_site.register(BooleanExpression, BooleanExpressionAdmin)   
 
-admin_site.register(ScheduleConstraint)
+class Admin_ScheduleConstraint(admin.ModelAdmin):
+    list_display = (
+        'program',
+        'condition',
+        'requirement',
+    )
+admin_site.register(ScheduleConstraint, Admin_ScheduleConstraint)
 
 class ScheduleTestOccupiedAdmin(admin.ModelAdmin):
     list_display = ('timeblock', 'expr', 'seq', subclass_instance_type, 'text')
@@ -137,7 +155,9 @@ class ProgramCheckItemAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'program')
 admin_site.register(ProgramCheckItem, ProgramCheckItemAdmin)
 
-admin_site.register(RegistrationType)
+class Admin_RegistrationType(admin.ModelAdmin):
+    list_display = ('name', 'category', )
+admin_site.register(RegistrationType, Admin_RegistrationType)
 
 def expire_student_registrations(modeladmin, request, queryset):
     for reg in queryset:
@@ -145,7 +165,7 @@ def expire_student_registrations(modeladmin, request, queryset):
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = ['user__last_name', 'user__first_name', 'id', 'section__id']
+    search_fields = ['user__last_name', 'user__first_name', 'user__email', 'id', 'section__id']
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
 def sec_classrooms(obj):
@@ -166,12 +186,43 @@ class SubjectAdmin(admin.ModelAdmin):
     search_fields = ['class_info', 'anchor__friendly_name']
 admin_site.register(ClassSubject, SubjectAdmin)
 
-admin_site.register(ClassCategories)
-admin_site.register(ClassSizeRange)
+class Admin_ClassCategories(admin.ModelAdmin):
+     list_display = ('category', 'symbol', 'seq', )
+admin_site.register(ClassCategories, Admin_ClassCategories)
+
+class Admin_ClassSizeRange(admin.ModelAdmin):
+     list_display = ('program', 'range_min', 'range_max', )
+admin_site.register(ClassSizeRange, Admin_ClassSizeRange)
 
 ## app_.py
 
 admin_site.register(StudentApplication)
-admin_site.register(StudentAppQuestion)
-admin_site.register(StudentAppResponse)
-admin_site.register(StudentAppReview)
+
+class Admin_StudentAppQuestion(admin.ModelAdmin):
+    list_display = (
+        'program',
+        'subject',
+        'question',
+    )
+    list_display_links = ('program', 'subject', )
+    list_filter = ('subject__parent_program', 'program', )
+admin_site.register(StudentAppQuestion, Admin_StudentAppQuestion)
+
+class Admin_StudentAppResponse(admin.ModelAdmin):
+    list_display = (
+        'question',
+        'response',
+        'complete',
+    )
+    list_display_links = list_display
+    list_filter = ('question__subject__parent_program', 'question__program', )
+admin_site.register(StudentAppResponse, Admin_StudentAppResponse)
+
+class Admin_StudentAppReview(admin.ModelAdmin):
+    list_display = (
+        'reviewer',
+        'date',
+        'score',
+        'comments',
+    )
+admin_site.register(StudentAppReview, Admin_StudentAppReview)
