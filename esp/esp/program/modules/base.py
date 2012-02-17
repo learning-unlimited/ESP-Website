@@ -558,6 +558,7 @@ def needs_teacher(method):
             return render_to_response('errors/program/notateacher.html', request, (moduleObj.program, 'teach'), {})
         return method(moduleObj, request, *args, **kwargs)
     _checkTeacher.call_tl = 'teach'
+    _checkTeacher.method = method
     return _checkTeacher
 
 def needs_admin(method):
@@ -575,6 +576,7 @@ def needs_admin(method):
                 return render_to_response('errors/program/notanadmin.html', request, (moduleObj.program, 'manage'), {})
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'manage'
+    _checkAdmin.method = method
     return _checkAdmin
 
 def needs_onsite(method):
@@ -592,6 +594,7 @@ def needs_onsite(method):
             user.switch_back(request)
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
+    _checkAdmin.method = method
     return _checkAdmin
 
 def needs_onsite_no_switchback(method):
@@ -608,6 +611,7 @@ def needs_onsite_no_switchback(method):
                 return render_to_response('errors/program/notonsite.html', request, (moduleObj.program, 'onsite'), {})
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
+    _checkAdmin.method = method
     return _checkAdmin
 
 def needs_student(method):
@@ -622,6 +626,7 @@ def needs_student(method):
                 return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
         return method(moduleObj, request, *args, **kwargs)
     _checkStudent.call_tl = 'learn'
+    _checkStudent.method = method
     return _checkStudent        
 
 def needs_account(method):
@@ -630,6 +635,7 @@ def needs_account(method):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
             
         return method(moduleObj, request, *args, **kwargs)
+    _checkAccount.method = method
     return _checkAccount
 
 def meets_grade(method):
