@@ -1,11 +1,7 @@
 /**    timeslots: map (id) -> JS object with attributes id, label, start, end, sections (list of IDs)
        sections: map (id) -> JS object with attributes id, emailcode, title, timeslots (sorted list of IDs), grade_min, grade_max, capacity, num_students, lottery_priority, lottery_interested **/
 	
-var accordionSettings;	
-
-
-
-$j(document).ready(function() { 
+$j(document).ready(function() {
     $j("#timeslots_anchor").html("Loading timeslots... <br/>").css("display", "block");
 
     jquery_ui_init();
@@ -19,25 +15,31 @@ $j(document).ready(function() {
     json_fetch(data_components, show_app);
 });
 
-// called when jQuery UI has loaded
+
+var accordion_settings;	
+
+// Initializes various jQuery UI things
 jquery_ui_init = function(){
-    // create the dialog used to show class info
+    // Create the dialog used to show class info
     create_class_info_dialog();
 
     // Create the accordion settings
-    accordionSettings = {
+    accordion_settings = {
+	// Class 'header' elements will be considered headers by the accordion
 	header: ".header",
 	autoHeight: false,
 	collapsible: true,
 	changestart: function(event, ui) {
+	    // If we're switching to the preferences tab, update it
 	    if (ui.newContent.attr("id") == "preferences")
 	    {
-		updatePreferences({'timeslots': timeslots, 'sections': sections});
+		update_preferences({'timeslots': timeslots, 'sections': sections});
 	    }
 	}
     };
 
-    $j("#lsr_content").accordion(accordionSettings);
+    // Initialize the lsr_content div to an accordion
+    $j("#lsr_content").accordion(accordion_settings);
 };
 
 // adds timeslots to content and adds classes to timeslots
@@ -65,10 +67,10 @@ show_app = function(data){
     }
 
     //recreate the accordion now to update for the timeslots
-    $j("#lsr_content").accordion('destroy').accordion(accordionSettings);
+    $j("#lsr_content").accordion('destroy').accordion(accordion_settings);
 };
 
-//returns 1 if a starts after b, and -1 otherwis.
+//returns 1 if a starts after b, and -1 otherwise
 //for use sorting timeslots by start time
 compare_timeslot_starts = function(a, b){
     var dateA = new Date(a.start.year, a.start.month, a.start.day, a.start.hour, a.start.minute, a.start.second, 0);
@@ -81,6 +83,8 @@ compare_timeslot_starts = function(a, b){
 
 get_timeslot_html = function(timeslot_data)
 {
+    // Create some html for the timeslot, making use of keywords which are
+    // replaced by values below
     template = "\
     <h3 class='header'><a href='#'><b>%TIMESLOT_LABEL% </b></a></h3>\
     <div id='%TIMESLOT_DIV%'>\
@@ -168,30 +172,35 @@ add_classes_to_timeslot = function(timeslot, sections){
     }
 
 
-    //add all the classes then walkins
+    // Add walkins section
     if(!has_walkins){
 	//hopefully nobody will ever see this :)
 	$j("#"+ts_walkin_div_from_id(timeslot['id'])).append("<i><font color='red'>(No walk-ins)</font></i>");
     }
     else{
+	// Add all the walkins classes
 	for(i in walkins_list){
 	    $j("#"+ts_walkin_div_from_id(timeslot['id'])).append(get_walkin_html(walkins_list[i], timeslot['id']));
 	}
     }
+    // Add classes (starting in this timeblock) section
     if(!has_classes){
 	//hopefully nobody will ever see this either :)
 	$j("#"+ts_div_from_id(timeslot['id'])).append("<i><font color='red'>(No classes)</font></i>");
     }
     else{
+	// Adds all classes that start in this timeblock
 	for(i in classes_list){
 	    $j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(classes_list[i], timeslot['id']));
 	    load_old_preferences(classes_list[i]);
 	}
     }
+    // Add carried over classes section
     if(!has_carryovers){
 	$j("#"+ts_carryover_div_from_id(timeslot['id'])).append("<i><font color='red'>(No carry-overs)</font></i>");
     }
     else{
+	// Adds all classes that are carried over from the previous timeblock
 	for(i in carryovers_list){
 	    $j("#"+ts_carryover_div_from_id(timeslot['id'])).append(get_carryover_html(carryovers_list[i], timeslot['id']));
 	}
@@ -200,6 +209,7 @@ add_classes_to_timeslot = function(timeslot, sections){
 };
 
 get_class_checkbox_html = function(class_data, timeslot_id){
+    // Create the class div using a template that has keywords replaced with values below
     template = "\
     <tr>\
         <td><p>\
@@ -229,6 +239,7 @@ get_class_checkbox_html = function(class_data, timeslot_id){
 };
 
 get_walkin_html = function(class_data, timeslot_id){
+    // Create a walkin div using a template with keywords replaced below
     template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'] + 's' + class_data['index'])
         .replace('%CLASS_TITLE%', class_data['title'])
@@ -237,6 +248,7 @@ get_walkin_html = function(class_data, timeslot_id){
 };
 
 get_carryover_html = function(class_data, timeslot_id){
+    // Create a carried-over class div using a template with keywords replaced below
     template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
 	.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'] + 's' + class_data['index'])
 	.replace(/%CLASS_TITLE%/g, class_data['title'])
@@ -244,7 +256,10 @@ get_carryover_html = function(class_data, timeslot_id){
     return template;
 };
 
+// The class description popup is a global variable, because we only want
+// one object, and we don't want to recreate it each time
 var class_desc_popup;
+// Function to initially create the class description popup (using jQuery UI dialogs)
 create_class_info_dialog = function(){
     class_desc_popup = $j('<div></div>').dialog({
 	autoOpen: false,
@@ -260,18 +275,19 @@ create_class_info_dialog = function(){
     });
 };
 
+// Dictionary to keep track of classes' extra info as and when we load them
 var class_info = {};
-// initial popup that tells the user we're loading the class data
+// Initial popup that tells the user we're loading the class data
 loading_class_desc = function(){
     class_desc_popup.dialog('option', 'title', 'Loading');
-    class_desc_popup.dialog('option', 'width', 200);
-    class_desc_popup.dialog('option', 'height', 100);
+    class_desc_popup.dialog('option', 'width', 400);
+    class_desc_popup.dialog('option', 'height', 200);
     class_desc_popup.dialog('option', 'position', 'center');
     class_desc_popup.html('Loading class info...');
     class_desc_popup.dialog('open');
 };
 
-// function to fill the class description popup
+// Function to fill the class description popup
 fill_class_desc = function(class_id){
     var parent_class_id = sections[class_id].parent_class;
     extra_info = class_info[parent_class_id];
@@ -285,16 +301,16 @@ fill_class_desc = function(class_id){
     class_desc_popup.append("<p><b>Description:</b> " + extra_info.class_info + "</p>");
 };
 
-// called to open a class description
+// Called to open a class description
 open_class_desc = function(class_id){
-    // display a loading popup while we wait
+    // Display a loading popup while we wait
     loading_class_desc();
 
-    // get the class info if we don't have it already
+    // Get the class info if we don't have it already
     var parent_class_id = sections[class_id].parent_class;
     if (!class_info[parent_class_id]){
 	json_get('class_info', {'class_id': parent_class_id}, function(data){
-	    // once we get the class data, store it for later, then go
+	    // Once we get the class data, store it for later, then go
 	    // fill the popup
 	    class_info[parent_class_id] = data.classes[parent_class_id];
 	    fill_class_desc(class_id);
@@ -302,12 +318,12 @@ open_class_desc = function(class_id){
 	});
     }
     else{
-	// if we already have the data, go fill the popup
-	console.log(class_info[parent_class_id]);
+	// If we already have the data, go fill the popup
 	fill_class_desc(class_id);
     }
 };
 
+// Function to populate a class div with existing preference data
 load_old_preferences = function(class_data){
     id = class_data['id'];
     if( class_data['lottery_priority'] )
@@ -320,56 +336,46 @@ load_old_preferences = function(class_data){
     }
 };
 
+// Callback for when a priority radio is changed
 priority_changed = function(id, timeslot_id){
-    //unprioritize all selections
+    // Unprioritize all selections in the timeblock
     for (i in timeslots[timeslot_id].starting_sections){
 	    sections[timeslots[timeslot_id].starting_sections[i]]['lottery_priority'] = false;
     }
 
     if(id){
-	//prioritize this selection
+	// Prioritize this selection
 	sections[id]['lottery_priority'] = true;
-	//remember this selection 
     }
 };
 
-
+// Callback for when an interested checkbox is changed
 interested_changed = function(id){
     sections[id]['lottery_interested'] = !sections[id]['lottery_interested'];
 };
 
+// Various functions to create id strings to be used in HTML
 ts_div_from_id = function(id){
     return "TS_"+id;
 };
-
 ts_walkin_div_from_id = function(id){
     return "TS_W_"+id;
 };
-
 ts_carryover_div_from_id = function(id){
     return "TS_C_"+id;
 };
-
 ts_table_from_id = function(id){
     return "TS_TABLE_"+id;
 };
-
 ts_radio_name = function(ts_name){
     return ts_name + '_priority';
 };
-
 ts_no_preference_id = function(ts_name){
     return ts_name + '_no_preference';
 };
-
 class_radio_id = function(id){
     return "class_radio_" + id;
 };
-
 class_checkbox_id = function(id){
     return "interested_"+ id;
-};
-
-show_timeslot = function(id){
-    $j("#"+ts_div_from_id(id)).slideToggle();
 };
