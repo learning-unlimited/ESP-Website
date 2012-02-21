@@ -90,42 +90,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             timeslots_before = Event.objects.filter(start__lt=timeslot_start)
             timeslots[i]['starting_sections'] = list(ClassSection.objects.exclude(meeting_times__in=timeslots_before).filter(meeting_times=timeslots[i]['id']).order_by('id').values_list('id', flat=True))
             timeslots[i]['sections'] = list(ClassSection.objects.filter(meeting_times=timeslots[i]['id']).order_by('id').values_list('id', flat=True))
+            timeslots[i]['start'] = timeslots[i]['start'].timetuple()[:6]
+            timeslots[i]['end'] = timeslots[i]['end'].timetuple()[:6]
 
-            # Extract data from the start date
-            startDate = timeslots[i]['start']
-            startYear = startDate.year
-            startMonth = startDate.month
-            startDay = startDate.day
-            startHour = startDate.hour
-            startMinute = startDate.minute
-            startSecond = startDate.second
-
-            # Extract data from the end date
-            endDate = timeslots[i]['end']
-            endYear = endDate.year
-            endMonth = endDate.month
-            endDay = endDate.day
-            endHour = endDate.hour
-            endMinute = endDate.minute
-            endSecond = endDate.second
-
-            # Split up and reassign start data
-            timeslots[i]['start'] = {}
-            timeslots[i]['start']['year'] = startYear
-            timeslots[i]['start']['month'] = startMonth
-            timeslots[i]['start']['day'] = startDay
-            timeslots[i]['start']['hour'] = startHour
-            timeslots[i]['start']['minute'] = startMinute
-            timeslots[i]['start']['second'] = startSecond
-
-            # Split up and reassign end data
-            timeslots[i]['end'] = {}
-            timeslots[i]['end']['year'] = endYear
-            timeslots[i]['end']['month'] = endMonth
-            timeslots[i]['end']['day'] = endDay
-            timeslots[i]['end']['hour'] = endHour
-            timeslots[i]['end']['minute'] = endMinute
-            timeslots[i]['end']['second'] = endSecond
         return {'timeslots': timeslots}
     timeslots.cached_function.depend_on_model(Event)
     timeslots.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
