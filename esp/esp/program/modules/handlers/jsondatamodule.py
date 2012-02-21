@@ -81,6 +81,22 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     rooms.method.cached_function.depend_on_row(ResourceAssignment, lambda ra: {'prog': ra.target.parent_class.parent_program})
     
     @aux_call
+    @json_response({'resourceassignment__resource__name': 'room'})
+    @needs_admin
+    @cached_module_view
+    def schedule_assignments(prog):
+        data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'SELECT string_agg(to_char(resources_resource.event_id, \'999\'), \',\') FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id'}).values('id', 'resourceassignment__resource__name', 'timeslots').distinct()
+        #   Convert comma-separated timeslot IDs to lists
+        for i in range(len(data)):
+            if data[i]['timeslots']:
+                data[i]['timeslots'] = [int(x) for x in data[i]['timeslots'].strip().split(',')]
+            else:
+                data[i]['timeslots'] = []
+        return {'sections': list(data)}
+    schedule_assignments.method.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
+    schedule_assignments.method.cached_function.depend_on_row(ResourceAssignment, lambda ra: {'prog': ra.target.parent_class.parent_program})
+    
+    @aux_call
     @json_response()
     @cached_module_view
     def timeslots(prog):
