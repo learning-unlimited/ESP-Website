@@ -81,7 +81,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     rooms.method.cached_function.depend_on_row(ResourceAssignment, lambda ra: {'prog': ra.target.parent_class.parent_program})
     
     @aux_call
-    @json_response({'resourceassignment__resource__name': 'room'})
+    @json_response({'resourceassignment__resource__name': 'room_name'})
     @needs_admin
     @cached_module_view
     def schedule_assignments(prog):
@@ -92,7 +92,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 data[i]['timeslots'] = [int(x) for x in data[i]['timeslots'].strip().split(',')]
             else:
                 data[i]['timeslots'] = []
-        return {'sections': list(data)}
+        return {'schedule_assignments': list(data)}
     schedule_assignments.method.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     schedule_assignments.method.cached_function.depend_on_row(ResourceAssignment, lambda ra: {'prog': ra.target.parent_class.parent_program})
     
@@ -100,7 +100,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @json_response()
     @cached_module_view
     def timeslots(prog):
-        timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'label', 'start', 'end'))
+        timeslots = list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values('id', 'short_description', 'label', 'start', 'end'))
         for i in range(len(timeslots)):
             timeslot_start = Event.objects.get(pk=timeslots[i]['id']).start
             timeslots_before = Event.objects.filter(start__lt=timeslot_start)

@@ -103,8 +103,10 @@ ESP.Scheduling = function(){
         }
 
         // times
-        for (var i = 0; i < data.times.length; i++) {
-            var t = data.times[i];
+        for (var i in data.timeslots) {
+	    // Handle prototype being unhappy
+	    if (typeof data.timeslots[i] === 'function') {continue;}
+            var t = data.timeslots[i];
             // constructors for native classes can't be called via apply()... :-(
             var start = new Date(t.start[0],t.start[1],t.start[2],t.start[3],t.start[4],t.start[5]).getTime();
             var end = new Date(t.end[0],t.end[1],t.end[2],t.end[3],t.end[4],t.end[5]).getTime();
@@ -112,6 +114,7 @@ ESP.Scheduling = function(){
             processed_data.times.push(r =
                     Resources.create('Time',
                         { uid: t.id, text: t.short_description, start: start, end: end, length: end - start + 15*60000 }));
+
             if (processed_data.lunch_timeslots.indexOf(r.uid) != -1)
                 r.is_lunch = true;
             else
@@ -243,15 +246,20 @@ ESP.Scheduling = function(){
         var rsrc_sec = {}
         var sa;
 
-        for (var i = 0; i < assignments.length; i++) {
+        for (var i in data.schedule_assignments) {
+	    // Handles prototype being angry
+	    if (typeof data.schedule_assignments[i] === 'function') {continue;}
             sa = data.schedule_assignments[i];
 
-            if (!(rsrc_sec[sa.classsection_id])) {
-                rsrc_sec[sa.classsection_id] = [];
+            if (!(rsrc_sec[sa.id])) {
+                rsrc_sec[sa.id] = [];
             }
 
-            rsrc_sec[sa.classsection_id].push(Resources.get('Block', [sa.resource_time_id,sa.resource_id]));
-         }
+	    for (var j = 0; j < sa.timeslots.length; j++)
+	    {
+		rsrc_sec[sa.id].push(Resources.get('Block', [sa.timeslots[j],sa.room_name]));
+	    }
+        }
 
         var Section;
         var sec_id;
@@ -445,14 +453,16 @@ $j(function(){
 
     var data = {};
     var success_count = 0;
-    var files = ['times','rooms','sections','resources','resourcetypes','teachers','schedule_assignments','lunch_timeslots'];
+    var files = ['rooms','sections','resources','resourcetypes','teachers','lunch_timeslots'];
+    var json_components = ['timeslots', 'schedule_assignments'];
+    var num_files = files.length + json_components.length;
     var ajax_verify = function(name) {
         return function(d, status) {
             if (status != "success") {
                 alert(status + '[' + name + ']');
             } else {
                 data[name] = d;
-                if (++success_count == files.length) {
+                if (++success_count == num_files) {
                     ESP.Scheduling.init(data);
                 }
             }
@@ -476,6 +486,20 @@ $j(function(){
     for (var i = 0; i < files.length; i++) {
         $j.ajax({url: 'ajax_' + files[i], dataType: 'json', success: ajax_verify(files[i]), error: ajax_retry(files[i])});
     }
+
+    var json_data = {};
+    json_fetch(json_components, function(d) {
+	for (c in json_components) {
+	    // Deal with prototype failing
+	    if (typeof json_components[c] !== 'function') {
+		data[json_components[c]] = d[json_components[c]];
+		success_count++;
+	    }
+	}
+	if (success_count >= num_files) {
+	    ESP.Scheduling.init(data);
+	}
+    }, json_data);
 
 
     setInterval(function() {

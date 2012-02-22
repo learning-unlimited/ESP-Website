@@ -81,7 +81,7 @@ ESP.declare('ESP.Scheduling.Resources',function(){
             return false;
         }
     });
-    
+
     Resources.Time = Class.create(RClass, {
         type: "Time",
         __defaults__: {

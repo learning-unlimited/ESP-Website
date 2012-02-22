@@ -5,6 +5,9 @@ function check_json_status(components, data_fetch_status)
     {
         for (var i in components)
         {
+	    // Handle prototype issues
+	    if (typeof components[i] === 'function') {continue;}
+
             var key = components[i];
             if (data_fetch_status[key] != "Ready")
             {
@@ -34,6 +37,8 @@ function handle_json_response(data, component, data_fetch_status, new_data, text
 
         for (var index in new_data[key])
         {
+	    // Handle prototype issues
+	    if (typeof new_data[key][index] === 'function') {continue}
             var item = new_data[key][index];
             if (data[key].hasOwnProperty(item.id))
             {
@@ -68,6 +73,8 @@ function json_fetch(components, on_complete, result_data)
     }
     for (var i in components)
     {
+	// Handle prototype issues
+	if (typeof components[i] === 'function') { continue; }
         data_fetch_status[components[i]] = "Waiting";
         //  The 'with' statement creates new variables named 'component' which are properly scoped
         //  so that the handle_json_response() calls see the correct values.

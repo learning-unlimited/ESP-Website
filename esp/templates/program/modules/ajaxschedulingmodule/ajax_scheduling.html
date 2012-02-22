@@ -21,7 +21,11 @@
 <script type='text/javascript'>
 var $j = jQuery.noConflict(); // grr... stupid prototype fail
 </script>
+<!--<script type='text/javascript' src='/media/scripts/class.min.js'></script>-->
 <script language="JavaScript" src="/media/scripts/csrf_init.js"></script>
+<script type="text/javascript">    var base_url = "{{ program.getUrlBase }}";  </script>
+<script type="text/javascript">    var program_base_url = "/json/"+base_url+"/";  </script>
+<script type='text/javascript' src='/media/scripts/json_fetch.js'></script>
 <!-- app -->
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/ESP.js'></script>
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Util.js'></script>
