@@ -14,9 +14,11 @@ def waitForAjaxForms(driver):
         time.sleep(1)
 
 def try_login(driver, username, password):
-    elem = driver.find_element_by_name("username")
+    elem = WebDriverWait(driver, 10).until(
+        lambda driver: driver.find_element_by_name("username"))
     elem.send_keys(username)
-    elem = driver.find_element_by_name("password")
+    elem = WebDriverWait(driver, 10).until(
+        lambda driver: driver.find_element_by_name("password"))
     elem.send_keys(password)
     elem.submit()
 

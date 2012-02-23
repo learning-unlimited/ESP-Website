@@ -19,6 +19,7 @@ class CsrfTestCase(SeleniumTestCase):
              self.good_version = to.next_version() - 1
 
     def tearDown(self):
+        super(CsrfTestCase, self).tearDown()
         if (self.good_version > 1):
             # Tear down the template override for consistent behavior
             last_good_to = TemplateOverride.objects.filter(name='index.html', version=self.good_version)
@@ -67,10 +68,6 @@ class CsrfTestCase(SeleniumTestCase):
         self.delete_cookie("csrftoken")
 
         try_ajax_login(self, "student", "student")
-        self.failUnless(self.is_text_present('Please log in to access program registration'))
-        logout(self)
-
-        try_ajax_login(self, "student", "student")
         self.failUnless(self.is_text_present('Student Student'))
         logout(self)
 
@@ -88,3 +85,5 @@ class CsrfTestCase(SeleniumTestCase):
         try_normal_login(self, "student", "student")
         self.failUnless(self.is_text_present('Student Student'))
         logout(self)
+
+        self.close()
