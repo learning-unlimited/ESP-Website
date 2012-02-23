@@ -1661,6 +1661,10 @@ class ScheduleMap:
     def add_section(self, sec):
         for t in sec.timeslot_ids():
             self.map[t].append(sec)
+            
+    def remove_section(self, sec):
+        for t in sec.timeslot_ids():
+            self.map[t].remove(sec)
 
     def __marinade__(self):
         import hashlib
