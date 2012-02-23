@@ -905,8 +905,8 @@ class ClassSection(models.Model):
             sm.add_section(self)
 
             for exp in relevantConstraints:
-                if not exp.evaluate(sm):
-                    return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title(), exp.requirement.label)
+                if not exp.evaluate(sm, recursive=autocorrect_constraints):
+                    return "Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this." % (self.title(), exp.requirement.label)
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         if not scrmi.use_priority:
