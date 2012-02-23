@@ -1771,6 +1771,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             res = section.cannotAdd(user, checkFull, autocorrect_constraints=False)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
+        #   Pass on any errors that were triggered by the individual sections
+        if res:
+            return res
 
         # res can't have ever been False--so we must have an error. Pass it along.
         return 'This class conflicts with your schedule!'
