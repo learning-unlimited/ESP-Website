@@ -13,6 +13,8 @@
     <p>Please select the timeslots you would like to be used for lunch.</p>
     <p>If you would not like to set up lunch constraints, no action is necessary.</p>
 
+{% include "program/modules/admincore/returnlink.html" %}
+
     <div id="program_form">
     <form action="/manage/{{ program.getUrlBase }}/lunch_constraints/" method="post">
     <table align="center" width="500">
