@@ -262,16 +262,14 @@ def _get_type_url(type):
         return self._type_url[type]
 
     return _really_get_type_url
-        
     
 
-    
 class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     
     #from esp.program.models.class_ import ClassCategories
 
-	#customforms definitions
+    #customforms definitions
     form_link_name='Program'
     
     anchor = AjaxForeignKey(DataTree,unique=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
