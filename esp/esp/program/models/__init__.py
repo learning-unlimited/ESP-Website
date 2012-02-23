@@ -40,7 +40,7 @@ from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
 from esp.datatree.models import *
 from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.core.cache import cache
 from django.db.models import Q
 from django.db.models.query import QuerySet
@@ -714,6 +714,14 @@ class Program(models.Model, CustomFormsLinkModel):
             time_sum = time_sum + (t.end - t.start)
         return time_sum
 
+    def dates(self):
+        result = []
+        for ts in self.getTimeSlotList():
+            ts_day = date(ts.start.year, ts.start.month, ts.start.day)
+            if ts_day not in result:
+                result.append(ts_day)
+        return result
+    
     def date_range(self):
         dates = self.getTimeSlots()
         d1 = min(dates).start
