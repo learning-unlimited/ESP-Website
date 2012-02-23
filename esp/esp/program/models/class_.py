@@ -404,12 +404,10 @@ class ClassSection(models.Model):
 
         return sections
     
-    
+    @cache_function
     def get_meeting_times(self):
-        if not hasattr(self, "_events"):
-            self._events = self.meeting_times.all()
-
-        return self._events
+        return self.meeting_times.all()
+    get_meeting_times.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
     
     #   Some properties for traits that are actually traits of the ClassSubjects.
     def _get_parent_program(self):
@@ -1831,12 +1829,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                     
         #   Check that adding this teacher as a coteacher would not overcommit them
         #   to more hours of teaching than the program allows.
-        avail = Event.collapse(teacher.getAvailableTimes(self.parent_program, ignore_classes=True), tol=timedelta(minutes=15))
+        avail = Event.collapse(user.getAvailableTimes(self.parent_program, ignore_classes=True), tol=timedelta(minutes=15))
         time_avail = 0.0
         for tg in avail:
             td = tg.end - tg.start
             time_avail += (td.seconds / 3600.0)
-        for cls in teacher.getTaughtClasses(self.parent_program):
+        for cls in user.getTaughtClasses(self.parent_program):
             for sec in cls.get_sections():
                 time_avail -= float(str(sec.duration))
         time_needed = 0.0
