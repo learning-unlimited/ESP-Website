@@ -133,7 +133,10 @@ ESP.Scheduling = function(){
 
         // rooms / blocks
         var BlockStatus = Resources.BlockStatus;
-        for (var i = 0; i < data.rooms.length; i++) {
+        for (var i in data.rooms) {
+	    // Deal with prototype putting random functions in everything
+	    if (typeof data.rooms[i] === 'function') { continue; }
+
             var r = data.rooms[i];
             var assd_resources =  r.associated_resources.map(function(x){
                 var res = Resources.get('RoomResource',x);
@@ -453,8 +456,8 @@ $j(function(){
 
     var data = {};
     var success_count = 0;
-    var files = ['rooms','sections','resources','resourcetypes','teachers','lunch_timeslots'];
-    var json_components = ['timeslots', 'schedule_assignments'];
+    var files = ['sections','resources','resourcetypes','teachers','lunch_timeslots'];
+    var json_components = ['timeslots', 'schedule_assignments', 'rooms'];
     var num_files = files.length + json_components.length;
     var ajax_verify = function(name) {
         return function(d, status) {
@@ -500,7 +503,6 @@ $j(function(){
 	    ESP.Scheduling.init(data);
 	}
     }, json_data);
-
 
     setInterval(function() {
         ESP.Scheduling.status('warning','Pinging server...');

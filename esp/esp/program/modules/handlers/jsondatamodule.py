@@ -37,7 +37,7 @@ from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student
 
 from esp.cal.models import Event
 from esp.program.models import ClassSection, ClassSubject, StudentRegistration
-from esp.resources.models import ResourceAssignment
+from esp.resources.models import Resource, ResourceAssignment
 
 from esp.cache.key_set import wildcard
 from esp.utils.decorators import cached_module_view, json_response
@@ -45,6 +45,7 @@ from esp.utils.no_autocookie import disable_csrf_cookie_update
 
 from django.views.decorators.cache import cache_control
 
+from collections import defaultdict
 
 class JSONDataModule(ProgramModuleObj, CoreModule):
     """ A program module dedicated to returning program-specific data in JSON form. """
@@ -72,13 +73,28 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     counts.method.cached_function.depend_on_row(StudentRegistration, lambda sr: {'prog': sr.section.parent_class.parent_program})
     
     @aux_call
-    @json_response({'resourceassignment__resource__name': 'name', 'resourceassignment__resource__num_students': 'num_students', 'resourceassignment__resource__event': 'timeslot'})
+    @json_response()
     @needs_admin
     @cached_module_view
     def rooms(prog):
-        return {'rooms': list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name').values('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students', 'resourceassignment__resource__event'))}
-    rooms.method.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
-    rooms.method.cached_function.depend_on_row(ResourceAssignment, lambda ra: {'prog': ra.target.parent_class.parent_program})
+        classrooms = prog.getResources().filter(res_type__name="Classroom")
+        classrooms_grouped = defaultdict(list)
+
+        for room in classrooms:
+            classrooms_grouped[room.name].append(room)
+
+        classrooms_dicts = [
+            {
+                'id': room_id,
+                'uid': room_id,
+                'text': classrooms_grouped[room_id][0].name,
+                'availability': [ r.event_id for r in classrooms_grouped[room_id] ],
+                'associated_resources': [ar.res_type.id for ar in classrooms_grouped[room_id][0].associated_resources()],
+                'num_students': classrooms_grouped[room_id][0].num_students,
+            } for room_id in classrooms_grouped.keys() ]
+
+        return {'rooms': classrooms_dicts}
+    rooms.method.cached_function.depend_on_model(lambda: Resource)
     
     @aux_call
     @json_response({'resourceassignment__resource__name': 'room_name'})
