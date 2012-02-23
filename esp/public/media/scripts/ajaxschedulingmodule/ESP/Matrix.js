@@ -103,7 +103,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                         alert("Assignment failure!");
                     });
                 } else {
-                    ESP.Utilities.evm.fire('block_section_assignment_success', data);
+                    ESP.Utilities.evm.fire('block_section_assignment_local', data);
                 }
             }
             else {
@@ -149,9 +149,9 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                         cell.td.addClass('CLS_ROOM_rsrc_' + block.processed_room.resources[j].replace(/[^a-zA-Z]+/g, '-'));
                     }
                 }
-
-                ESP.Utilities.evm.fire('block_section_assignment_success', data);
             }
+
+            ESP.Utilities.evm.fire('block_section_assignment_success', data);
         }.bind(this));
         ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
             if (!(data.nowriteback)) {
