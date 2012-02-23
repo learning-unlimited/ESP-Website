@@ -893,6 +893,16 @@ class ClassSection(models.Model):
         return self.meeting_times.all().values_list('id', flat=True)
     timeslot_ids.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda instance, object: {'self': instance})
 
+    def cannotRemove(self, user):
+        relevantConstraints = self.parent_program.getScheduleConstraints()
+        if relevantConstraints:
+            sm = ScheduleMap(user, self.parent_program)
+            sm.remove_section(self)
+            for exp in relevantConstraints:
+                if not exp.evaluate(sm, recursive=False):
+                    return "You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this." % exp.requirement.label
+        return False
+
     def cannotAdd(self, user, checkFull=True, use_cache=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
         # Test any scheduling constraints
