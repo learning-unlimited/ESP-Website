@@ -903,7 +903,7 @@ class ClassSection(models.Model):
                     return "You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this." % exp.requirement.label
         return False
 
-    def cannotAdd(self, user, checkFull=True, use_cache=True):
+    def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
         # Test any scheduling constraints
         relevantConstraints = self.parent_program.getScheduleConstraints()
@@ -1768,7 +1768,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         # check to see if there's a conflict with each section of the subject, or if the user
         # has already signed up for one of the sections of this class
         for section in self.get_sections():
-            res = section.cannotAdd(user, checkFull)
+            res = section.cannotAdd(user, checkFull, autocorrect_constraints=False)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
 
