@@ -176,33 +176,38 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @aux_call
     @cache_control(public=True, max_age=300)
     @json_response()
-    #'category': 'category',
-    #'class_info': 'class_info',
-    #'difficulty': 'difficulty',
-    #'emailcode': 'emailcode',
-    #'prereqs': 'prereqs',
-    #'sections': 'sections',
-    #'teachers': 'teachers',
-    #'title': 'title',
-    #'first_name': 'first_name',
-    #'last_name': 'last_name'
-
     def class_info(self, request, tl, one, two, module, extra, prog):
+        return_key = None
+        if 'return_key' in request.GET:
+            return_key = request.GET['return_key']
+
         if 'section_id' in request.GET:
+            if return_key == None: return_key = 'sections'
             section_id = int(request.GET['section_id'])
-            target_qs = ClassSubject.objects.filter(sections=section_id)
+            if return_key == 'sections':
+                section = ClassSection.objects.get(pk=section_id)
+            else:
+                target_qs = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
+            if return_key == None: return_key = 'classes'
             class_id = int(request.GET['class_id'])
             target_qs = ClassSubject.objects.filter(id=class_id)
         else:
             raise ESPError(False), 'Need a section or subject ID to fetch catalog info'
-            
-        matching_classes = ClassSubject.objects.catalog_cached(prog, initial_queryset=target_qs)
-        assert(len(matching_classes) == 1)
-        
-        cls = matching_classes[0]
-        cls_dict = {
-            'id': cls.id,
+
+        # If we're here, we don't have a section_id, so default to classes
+        if not return_key:
+            return_key = 'classes'
+
+        if return_key == 'sections':
+            cls = section.parent_class
+        else:
+            matching_classes = ClassSubject.objects.catalog_cached(prog, initial_queryset=target_qs)
+            assert(len(matching_classes) == 1)
+            cls = matching_classes[0]
+
+        return_dict = {
+            'id': cls.id if return_key == 'classes' else section_id,
             'emailcode': cls.emailcode(),
             'title': cls.title(),
             'class_info': cls.class_info, 
@@ -211,10 +216,100 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'prereqs': cls.prereqs, 
             'sections': [x.id for x in cls._sections],
             'teachers': [x.id for x in cls._teachers],
+            'class_size_max': cls.class_size_max,
         }
         teacher_list = [{'id': t.id, 'first_name': t.first_name, 'last\
 _name': t.last_name} for t in cls._teachers]
-        return {'classes': [cls_dict], 'teachers': teacher_list}
+
+        return {return_key: [return_dict], 'teachers': teacher_list}
+
+    @aux_call
+    @cache_control(public=True, max_age=300)
+    @json_response()
+    def class_size_info(self, request, tl, one, two, module, extra, prog):
+        if 'return_key' in request.GET:
+            return_key = request.GET['return_key']
+
+        if 'section_id' in request.GET:
+            if return_key == None: return_key = 'sections'
+            section_id = int(request.GET['section_id'])
+            if return_key == 'sections':
+                section = ClassSection.objects.get(pk=section_id)
+            else:
+                target_qs = ClassSubject.objects.filter(sections=section_id)
+        elif 'class_id' in request.GET:
+            if return_key == None: return_key = 'classes'
+            class_id = int(request.GET['class_id'])
+            target_qs = ClassSubject.objects.filter(id=class_id)
+        else:
+            raise ESPError(False), 'Need a section or subject ID to fetch catalog info'
+
+        # If we're here, we don't have a section_id, so default to classes
+        if not return_key:
+            return_key = 'classes'
+
+        if return_key == 'sections':
+            cls = section.parent_class
+        else:
+            matching_classes = ClassSubject.objects.catalog_cached(prog, initial_queryset=target_qs)
+            assert(len(matching_classes) == 1)
+            cls = matching_classes[0]
+        
+        return_dict = {
+            'id': cls.id if return_key == 'classes' else section_id,
+            'class_size_min': cls.class_size_min,
+            'class_size_max': cls.class_size_max,
+            'optimal_class_size': cls.class_size_optimal,
+            'optimal_class_size_ranges': cls.optimal_class_size_range.range_str() if cls.optimal_class_size_range else None,
+            'allowable_class_size_ranges': [ cr.range_str() for cr in cls.get_allowable_class_size_ranges() ]
+        }
+
+        if return_key == 'sections':
+            return_dict['max_class_capacity'] = section.max_class_capacity
+        
+        return {return_key: [return_dict]}
+            
+
+    @aux_call
+    @cache_control(public=True, max_age=300)
+    @json_response()
+    def class_admin_info(self, request, tl, one, two, module, extra, prog):
+        if 'return_key' in request.GET:
+            return_key = request.GET['return_key']
+
+        if 'section_id' in request.GET:
+            if return_key == None: return_key = 'sections'
+            section_id = int(request.GET['section_id'])
+            if return_key == 'sections':
+                section = ClassSection.objects.get(pk=section_id)
+            else:
+                target_qs = ClassSubject.objects.filter(sections=section_id)
+        elif 'class_id' in request.GET:
+            if return_key == None: return_key = 'classes'
+            class_id = int(request.GET['class_id'])
+            target_qs = ClassSubject.objects.filter(id=class_id)
+        else:
+            raise ESPError(False), 'Need a section or subject ID to fetch catalog info'
+
+        # If we're here, we don't have a section_id, so default to classes
+        if not return_key:
+            return_key = 'classes'
+
+        if return_key == 'sections':
+            cls = section.parent_class
+        else:
+            matching_classes = ClassSubject.objects.catalog_cached(prog, initial_queryset=target_qs)
+            assert(len(matching_classes) == 1)
+            cls = matching_classes[0]
+            
+        cls = section.parent_class
+        return_dict = {
+            'id': cls.id if return_key == 'classes' else section_id,
+            'status': cls.status,
+            'comments': cls.message_for_directors,
+        }
+        
+        return {return_key: [return_dict]}
         
     class Meta:
         abstract = True
