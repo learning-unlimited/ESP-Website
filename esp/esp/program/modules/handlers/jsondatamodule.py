@@ -142,6 +142,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def sections(prog):
         sections = list(prog.sections().values(
                 'id',
+                'status',
                 'parent_class__anchor__friendly_name',
                 'parent_class__id',
                 'parent_class__category__symbol',
@@ -150,7 +151,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'parent_class__grade_min',
                 'enrolled_students'))
         for section in sections:
-            section['index'] = ClassSection.objects.get(id=section['id']).index()
+            s = ClassSection.objects.get(id=section['id'])
+            section['index'] = s.index()
+            section['length'] = float(s.duration)
         return {'sections': sections}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
@@ -180,7 +183,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return_key = None
         if 'return_key' in request.GET:
             return_key = request.GET['return_key']
-
         if 'section_id' in request.GET:
             if return_key == None: return_key = 'sections'
             section_id = int(request.GET['section_id'])
@@ -305,7 +307,6 @@ _name': t.last_name} for t in cls._teachers]
         cls = section.parent_class
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
-            'status': cls.status,
             'comments': cls.message_for_directors,
         }
         

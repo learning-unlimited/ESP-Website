@@ -1,4 +1,4 @@
-/*
+0/*
  * the main application class
  */
 ESP.Scheduling = function(){
@@ -116,7 +116,7 @@ ESP.Scheduling = function(){
                         { uid: t.id, text: t.short_description, start: start, end: end, length: end - start + 15*60000 }));
 
             if (processed_data.lunch_timeslots.indexOf(r.uid) != -1)
-                r.is_lunch = true;
+		r.is_lunch = true;
             else
                 r.is_lunch = false;
             // console.log("Added block " + r.text + " (" + r.length + " ms)");
@@ -194,8 +194,12 @@ ESP.Scheduling = function(){
         }
     
         // sections
-        for (var i = 0; i < data.sections.length; i++) {
+        for (var i in data.sections) {
+	    // Deal with prototype
+	    if (typeof data.sections[i] === 'function') { continue; }
+
             var c = data.sections[i];
+	    /*
             var size_info = [
                 " max size=" + c.class_size_max.toString(),
                 c.max_class_capacity ? " max cap=" + c.max_class_capacity.toString() : "",
@@ -203,7 +207,7 @@ ESP.Scheduling = function(){
                 c.optimal_class_size_range ? " optimal size range=" + c.optimal_class_size_range : ""
                 ];
             var popup_data = {
-                    'Title:': c.text,
+                    'Title:': c.title,
                     'Teachers': c.teachers.map(function(x){ return Resources.get('Teacher', x).text; }),
                     'Requests:': c.resource_requests.map(function(x){
                         var res = Resources.get('RoomResource', x[0]);
@@ -216,29 +220,30 @@ ESP.Scheduling = function(){
                 };
             if (c.allowable_class_size_ranges.size() > 0)
                 popup_data['Allowable Class-Size Ranges:'] = c.allowable_class_size_ranges;
+	    */
             var s;
             processed_data.sections.push(s = Resources.create('Section',{
                 uid: c.id,
-                class_id: c.class_id,
+                class_id: c.parent_class,
                 code: c.emailcode,
-                block_contents: ESP.Utilities.genPopup(c.emailcode, popup_data, true),
+                block_contents: ESP.Utilities.genPopup(c.emailcode, {}, true), //popup_data, true),
                 category: c.category,
                 length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
                 length_hr: Math.round(c.length * 2) / 2,
                 id:c.id,
-                status:c.status,
-                text:c.text,
-                teachers:c.teachers.map(function(x){ return Resources.get('Teacher',x); }),
-                resource_requests:c.resource_requests.map(function(x){ return [Resources.get('RoomResource', x[0]), x[1]]; }),
-                grade_min: c.grades[0],
-                grade_max: c.grades[1],
-                max_class_capacity: c.max_class_capacity,
-                optimal_class_size: c.optimal_class_size,
-                optimal_class_size_range: c.optimal_class_size_range
+                //status:c.status,
+                text:c.title,
+                //teachers:c.teachers.map(function(x){ return Resources.get('Teacher',x); }),
+                //resource_requests:c.resource_requests.map(function(x){ return [Resources.get('RoomResource', x[0]), x[1]]; }),
+                grade_min: c.grade_min,
+                grade_max: c.grade_max,
+                //max_class_capacity: c.max_class_capacity,
+                //optimal_class_size: c.optimal_class_size,
+                //optimal_class_size_range: c.optimal_class_size_range
                 
             }));
             // console.log("Added section: " + s.code + " (time " + s.length + " = " + s.length_hr + " hr "); 
-            s.teachers.map(function(x){ x.sections.push(s); });
+            //s.teachers.map(function(x){ x.sections.push(s); });
         }
     
         return processed_data;
@@ -457,7 +462,7 @@ $j(function(){
     var data = {};
     var success_count = 0;
     var files = ['sections','resources','resourcetypes','teachers','lunch_timeslots'];
-    var json_components = ['timeslots', 'schedule_assignments', 'rooms'];
+    var json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections'];
     var num_files = files.length + json_components.length;
     var ajax_verify = function(name) {
         return function(d, status) {
@@ -490,19 +495,39 @@ $j(function(){
         $j.ajax({url: 'ajax_' + files[i], dataType: 'json', success: ajax_verify(files[i]), error: ajax_retry(files[i])});
     }
 
-    var json_data = {};
-    json_fetch(json_components, function(d) {
-	for (c in json_components) {
-	    // Deal with prototype failing
-	    if (typeof json_components[c] !== 'function') {
+    var json_fetch_data = function(json_components) {
+	var json_data = {};
+	// Regular components
+	json_fetch(json_components, function(d) {
+	    for (c in json_components) {
+		// Deal with prototype failing
+		if (typeof json_components[c] === 'function') { continue; }
+
 		data[json_components[c]] = d[json_components[c]];
 		success_count++;
 	    }
+	    if (success_count >= num_files) {
+		ESP.Scheduling.init(data);
+	    }
+	}, json_data);
+
+	/*
+	// Some components we need to pass args, so these we call individually
+	for (var i in json_individual_components) {
+	    if (typeof json_individual_components[i] === 'function') { continue; }
+
+	    c = json_individual_components[i];
+	    console.log("Requesting an individual component: " + c);
+	    json_get(c, {'return_key': 'sections'}, function(d) {
+		if (++success_count >= num_files) {
+		    ESP.Scheduling.init(data);
+		}
+	    });
 	}
-	if (success_count >= num_files) {
-	    ESP.Scheduling.init(data);
-	}
-    }, json_data);
+	*/
+	    
+    };
+    json_fetch_data(json_components);
 
     setInterval(function() {
         ESP.Scheduling.status('warning','Pinging server...');
@@ -513,9 +538,10 @@ $j(function(){
                     success_count = 0;
                     ESP.version_uuid = d['val'];
                     data = {};
-                    for (var i = 0; i < files.length; i++) {
-                        $j.getJSON('ajax_' + files[i], ajax_verify(files[i]));
-                    }
+		    for (var i = 0; i < files.length; i++) {
+			$j.ajax({url: 'ajax_' + files[i], dataType: 'json', success: ajax_verify(files[i]), error: ajax_retry(files[i])});
+		    }
+		    json_fetch_data(json_components);
                 }
             } else {
                 ESP.Scheduling.status('error','Unable to refresh data from server.');

@@ -114,14 +114,14 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             var update = typeof update == 'undefined' ? true : update;
             if (Object.isArray(entry)) {
                 $j.each(entry, function(i,x){
-                    if (x.status == 10){ // skip non-Approved classes
+                    //if (x.status == 10){ // skip non-Approved classes
                         this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, x));
-                    }
+                    //}
                 }.bind(this));
             } else {
-                if (entry.status == 10) { // skip non-Approved classes
+                //if (entry.status == 10) { // skip non-Approved classes
                     this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, entry));
-                }
+                //}
             }
             if (update) this.filter();
         },
@@ -146,11 +146,13 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
             this.el.addClass('CLS_status_' + section.status);
             this.el.addClass('CLS_grade_min_' + section.grade_min);
             this.el.addClass('CLS_grade_max_' + section.grade_max);
+	    /*
             for (var i = 0; i < section.resource_requests.length; i++) {
                 if (section.resource_requests[i][0]) {
                     this.el.addClass('CLS_rsrc_req_' + section.resource_requests[i][0].text.replace(/[^a-zA-Z]+/g, '-'));
                 }
             }
+	    */
 
             this.tds = {};
             $j.each(this.directory.properties,function(index, prop){
