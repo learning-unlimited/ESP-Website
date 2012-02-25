@@ -74,8 +74,8 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         
         // set up scrolling
         cell_body.scroll(function(evt){
-            row_header.css('top','-'+cell_body.attr('scrollTop')+'px');
-            col_header.children('tbody').css('left','-'+cell_body.attr('scrollLeft')+'px');
+            row_header.css('top','-'+cell_body.scrollTop()+'px');
+            col_header.children('tbody').css('left','-'+cell_body.scrollLeft()+'px');
         });
         
         var BlockStatus = ESP.Scheduling.Resources.BlockStatus;
