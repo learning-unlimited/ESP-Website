@@ -230,7 +230,7 @@ get_class_checkbox_html = function(class_data, timeslot_id){
     </tr>"
 	.replace(/%TIMESLOT_ID%/g, timeslot_id)
         .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslots[timeslot_id].label))
-        .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'] + 's' + class_data['index'])
+        .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
         .replace('%CLASS_TITLE%', class_data['title'])
         .replace(/%CLASS_ID%/g, class_data['id'])
         .replace(/%CLASS_CHECKBOX_ID%/g, class_checkbox_id(class_data['id']))
@@ -241,7 +241,7 @@ get_class_checkbox_html = function(class_data, timeslot_id){
 get_walkin_html = function(class_data, timeslot_id){
     // Create a walkin div using a template with keywords replaced below
     template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
-        .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'] + 's' + class_data['index'])
+        .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
         .replace('%CLASS_TITLE%', class_data['title'])
         .replace(/%CLASS_ID%/g, class_data['id']);
     return template;
@@ -250,7 +250,7 @@ get_walkin_html = function(class_data, timeslot_id){
 get_carryover_html = function(class_data, timeslot_id){
     // Create a carried-over class div using a template with keywords replaced below
     template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
-	.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'] + 's' + class_data['index'])
+	.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
 	.replace(/%CLASS_TITLE%/g, class_data['title'])
         .replace(/%CLASS_ID%/g, class_data['id']);
     return template;
@@ -291,7 +291,7 @@ loading_class_desc = function(){
 fill_class_desc = function(class_id){
     var parent_class_id = sections[class_id].parent_class;
     extra_info = class_info[parent_class_id];
-    class_desc_popup.dialog('option', 'title', sections[class_id].emailcode + "s" + sections[class_id].index + ": " + extra_info.title);
+    class_desc_popup.dialog('option', 'title', sections[class_id].emailcode + ": " + extra_info.title);
     class_desc_popup.dialog('option', 'width', 600);
     class_desc_popup.dialog('option', 'height', 400);
     class_desc_popup.dialog('option', 'position', 'center');

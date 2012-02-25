@@ -153,6 +153,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         for section in sections:
             s = ClassSection.objects.get(id=section['id'])
             section['index'] = s.index()
+            section['parent_class__anchor__name'] += "s" + str(section['index'])
             section['length'] = float(s.duration)
         return {'sections': sections}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
