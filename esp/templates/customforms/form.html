@@ -11,10 +11,11 @@
     <em class="step_count">Step {{ step }} of {{ step_count }}</em>
     <em class="req_text">(Fields in blue are required)</em>
     
-    <form action="." method="post" id="cstform" class="form-stacked">
+    <form action="." method="post" {% if form.is_multipart %} enctype="multipart/form-data" {% endif %} id="cstform" class="form-stacked">
     {% include "customforms/single_form_fragment.html" %}
     <input type="hidden" name="{{ step_field }}" value="{{ step0 }}" />
     {{ previous_fields|safe }}
     <input type="submit" class="btn primary">
     </form>
-{% endblock %}  
+{% endblock %}
+

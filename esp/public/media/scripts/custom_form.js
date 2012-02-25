@@ -12,6 +12,7 @@ var formElements={
 		numeric:{'disp_name':'Numeric Field','ques':''},
 		date:{'disp_name':'Date','ques':'Date'},
 		time:{'disp_name':'Time','ques':'Time'},
+		file:{'disp_name':'File','ques':'Upload a file'},
 		section:{'disp_name':'Section', 'ques':'Section'},
 		page:{'disp_name':'Page', 'ques':'Page'},
 		radio_yesno: {'disp_name': 'Yes/No Field', 'ques': 'Choose Yes or No'},
@@ -939,6 +940,17 @@ var renderNormalField=function(item, field_options, data){
 		});
 		$ampm=$j('<select>').append($j('<option value="AM">AM</option>')).append($j('<option value="PM">PM</option>'));
 		$new_elem.append($j('<p>').append($hh).append($j('<span> : </span>')).append($m).append($j('<span> : </span>')).append($ss).append('&nbsp;').append($ampm));
+	}
+	// TODO Since customforms uses Django's FormWizard which, as of Django v1.3, 
+    // only supports FileFields being on the last page of the form,
+    // we should enforce that a user can only place a FileField on the last page
+    // of the form AND that a user can't add a new page when there is a FileField.
+    // For now, we trust the user to not make a multi-page form including a FileField.
+    // jmoldow, 02/25/2012
+    else if(item=='file'){
+		$new_elem=$('<input/>', {
+			type:"file",
+		});
 	}
 	else if(item=='phone' || item=='email'){
 		$new_elem=$j('<input/>', {

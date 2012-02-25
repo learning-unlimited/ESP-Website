@@ -17,6 +17,7 @@ from esp.program.models import Program
 from esp.customforms.linkfields import cf_cache, generic_fields, custom_fields
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+from esp.middleware import ESPError
 
 class BaseCustomForm(BetterForm):
     """
@@ -373,6 +374,12 @@ class ComboForm(FormWizard):
             #   Check that this value didn't come from a dummy field
             if key.split('_')[0] == 'question' and generic_fields[fields[int(key.split('_')[1])]]['typeMap'] == DummyField:
                 del data[key]
+            if key.split('_')[0] == 'question' and generic_fields[fields[int(key.split('_')[1])]]['typeMap'] == forms.FileField:
+                data[key] = request.FILES.pop(key, None)
+                if isinstance(data[key],list) and len(data[key]) == 1:
+                    data[key] = data[key][0]
+                elif isinstance(data[key],list):
+                    raise ESPError()
         dynModel.objects.create(**data)    
         return HttpResponseRedirect('/customforms/success/%d/' % self.form.id)
         
