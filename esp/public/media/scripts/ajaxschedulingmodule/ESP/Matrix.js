@@ -129,9 +129,8 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                 var block = blocks[i];
                 var cell = this.block_cells[block.room.uid][block.time.uid];
                 //  cell.td.text(data.section.class_id);
-                cell.td.html(data.section.block_contents);
+                cell.td.html(data.section.block_contents.clone(true));
                 cell.status(BlockStatus.RESERVED);
-
                 var section = data.section;
                 cell.td.addClass('CLS_category_' + section.category);
                 cell.td.addClass('CLS_id_' + section.id);

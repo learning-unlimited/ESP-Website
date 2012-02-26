@@ -1,4 +1,4 @@
-0/*
+/*
  * the main application class
  */
 ESP.Scheduling = function(){
@@ -146,9 +146,9 @@ ESP.Scheduling = function(){
                 uid: r.uid,
                 text: r.text,
                 block_contents: ESP.Utilities.genPopup(r.text, {
-                    'Size:': r.num_students.toString(), 
-                    'Resources:': assd_resources
-                    }, true),
+		    'Size:': r.num_students.toString(),
+		    'Resources:': assd_resources,
+		}, false),
                 resources: assd_resources,
                 size: r.num_students
             });
@@ -222,11 +222,12 @@ ESP.Scheduling = function(){
                 popup_data['Allowable Class-Size Ranges:'] = c.allowable_class_size_ranges;
 	    */
             var s;
+
             processed_data.sections.push(s = Resources.create('Section',{
                 uid: c.id,
                 class_id: c.parent_class,
                 code: c.emailcode,
-                block_contents: ESP.Utilities.genPopup(c.emailcode, {}, true), //popup_data, true),
+                block_contents: ESP.Utilities.genPopup(c.emailcode, {}, false), //popup_data, true),
                 category: c.category,
                 length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
                 length_hr: Math.round(c.length * 2) / 2,
@@ -464,6 +465,7 @@ $j(function(){
     var files = ['sections','resources','resourcetypes','teachers','lunch_timeslots'];
     var json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections'];
     var num_files = files.length + json_components.length;
+
     var ajax_verify = function(name) {
         return function(d, status) {
             if (status != "success") {
