@@ -66,7 +66,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         """Check teacher into program for the rest of the day"""
         if teacher.isTeacher() and teacher.getTaughtClassesFromProgram(prog).exists():
             now = datetime.now()
-            endtime = datetime(now.year, now.month, now.day+1) - timedelta(seconds=1)
+            endtime = datetime(now.year, now.month, now.day) + timedelta(days=1, seconds=-1)
             new_bit, created = UserBit.objects.get_or_create(user=teacher,
                                                                 qsc=prog.anchor,
                                                                 verb=GetNode('V/Flags/Registration/Teacher/Arrived'),
