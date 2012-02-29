@@ -136,10 +136,14 @@ class TeacherCheckinModule(ProgramModuleObj):
                                           .values_list('user', 'qsc__classsubject', 'qsc__friendly_name') \
                                           .order_by('user__last_name', 'user__first_name')
         teacher_dict = {}
-        for teacher in arrived:
-            teacher_dict[teacher.id] = {'username': teacher.username, 'name': teacher.name(), 'arrived': True}
+        for teacher in list(arrived) + list(missing):
+            contact = teacher.getLastProfile().contact_user
+            teacher_dict[teacher.id] = {'username': teacher.username,
+                                        'name': teacher.name(),
+                                        'phone': contact.phone_cell or contact.phone_day,
+                                        'arrived': True}
         for teacher in missing:
-            teacher_dict[teacher.id] = {'username': teacher.username, 'name': teacher.name(), 'arrived': False}
+            teacher_dict[teacher.id]['arrived'] = False
         class_dict = {}
         class_arr = []
         for teacher_id, class_id, class_name in userbits:

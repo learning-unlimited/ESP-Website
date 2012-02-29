@@ -68,7 +68,7 @@
 
 <table>
 <tr>
-    <th colspan="4">
+    <th colspan="5">
         Missing teachers for classes starting at {{ start_time.pretty_start_time }}
     </th>
 </tr>
@@ -95,10 +95,11 @@
         Already checked-in
         {% endif %}
     </td>
+    <td> {{ teacher.phone }} </td>
     </tr>
     <tr>
     {% endfor %}
-    <td colspan="4"><hr/></td>
+    <td colspan="5"><hr/></td>
 </tr>
 {% endfor %}
 </table>
