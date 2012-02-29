@@ -45,7 +45,7 @@ from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string, select_template
-from django.db.models import Min
+from django.db.models.aggregates import Min
 from datetime import datetime, timedelta
 
 import simplejson as json
