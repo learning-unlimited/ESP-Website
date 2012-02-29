@@ -147,6 +147,9 @@ class TeacherCheckinModule(ProgramModuleObj):
                 class_dict[class_id] = {'id': ClassSubject.objects.get(id=class_id).emailcode(), 'name': class_name, 'teachers':[]}
                 class_arr.append(class_dict[class_id])
             class_dict[class_id]['teachers'].append(teacher_dict[teacher_id])
+        for sec in missing_sections:
+            if sec.parent_class.id in class_dict:
+                class_dict[sec.parent_class.id]['room'] = sec.prettyrooms()[0]
         return class_arr
     
     @aux_call
