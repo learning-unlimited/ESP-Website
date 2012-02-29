@@ -145,7 +145,7 @@ ESP.Scheduling = function(){
             var room = Resources.create('Room',{
                 uid: r.uid,
                 text: r.text,
-                block_contents: ESP.Utilities.genPopup(r.text, {
+                block_contents: ESP.Utilities.genPopup(r.uid, r.text, {
 		    'Size:': r.num_students.toString(),
 		    'Resources:': assd_resources,
 		}, false),
@@ -183,7 +183,7 @@ ESP.Scheduling = function(){
             processed_data.teachers.push(Resources.create('Teacher',{
                 uid: t.uid,
                 text: t.text,
-                block_contents: ESP.Utilities.genPopup(t.text, {'Available Times:':
+                block_contents: ESP.Utilities.genPopup(t.uid, t.text, {'Available Times:':
                     t.availability.map(function(x){
                         var res = Resources.get('Time',x);
                         return res ? res.text : "N/A";
@@ -198,55 +198,124 @@ ESP.Scheduling = function(){
 	    // Deal with prototype
 	    if (typeof data.sections[i] === 'function') { continue; }
 
-            var c = data.sections[i];
-	    /*
-            var size_info = [
-                " max size=" + c.class_size_max.toString(),
-                c.max_class_capacity ? " max cap=" + c.max_class_capacity.toString() : "",
-                c.optimal_class_size ? " optimal size=" + c.optimal_class_size.toString() : "",
-                c.optimal_class_size_range ? " optimal size range=" + c.optimal_class_size_range : ""
-                ];
-            var popup_data = {
-                    'Title:': c.title,
-                    'Teachers': c.teachers.map(function(x){ return Resources.get('Teacher', x).text; }),
-                    'Requests:': c.resource_requests.map(function(x){
-                        var res = Resources.get('RoomResource', x[0]);
-                        return (res ? (res.text + ": " + x[1]) : null);
-                    }),
-                    'Size:': size_info.filter(function (x) {return (x.length > 0);}).join(", "),
-                    'Grades:': c.grades ? (c.grades[0] + "-" + c.grades[1]) : "(n/a)",
-                    "Prereq's:": c.prereqs,
-                    'Comments:': c.comments
-                };
-            if (c.allowable_class_size_ranges.size() > 0)
-                popup_data['Allowable Class-Size Ranges:'] = c.allowable_class_size_ranges;
-	    */
-            var s;
+	    // Causes scoping correctly... there's probably a better way to do this
+	    (function() {
+		var c = data.sections[i];
+		var s;
+	
+		// Function to handle hovering over a section -- we need to trigger the dynamic
+		// loading of extra data needed for the popup
+		var onHoverHandler = function(node) {
+		    // Determine which JSON views need to be loaded
+		    var json_list = [];
+		    if (!s.class_info) {
+			json_list.push('class_info');
+		    }
+		    if (!s.class_size_info) {
+			json_list.push('class_size_info');
+		    }
+		    if (!s.class_admin_info) {
+			json_list.push('class_admin_info');
+		    }
 
-            processed_data.sections.push(s = Resources.create('Section',{
-                uid: c.id,
-                class_id: c.parent_class,
-                code: c.emailcode,
-                block_contents: ESP.Utilities.genPopup(c.emailcode, {}, false), //popup_data, true),
-                category: c.category,
-                length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
-                length_hr: Math.round(c.length * 2) / 2,
-                id:c.id,
-                //status:c.status,
-                text:c.title,
-                //teachers:c.teachers.map(function(x){ return Resources.get('Teacher',x); }),
-                //resource_requests:c.resource_requests.map(function(x){ return [Resources.get('RoomResource', x[0]), x[1]]; }),
-                grade_min: c.grade_min,
-                grade_max: c.grade_max,
-                //max_class_capacity: c.max_class_capacity,
-                //optimal_class_size: c.optimal_class_size,
-                //optimal_class_size_range: c.optimal_class_size_range
-                
-            }));
-            // console.log("Added section: " + s.code + " (time " + s.length + " = " + s.length_hr + " hr "); 
-            //s.teachers.map(function(x){ x.sections.push(s); });
-        }
-    
+		    // Function to actually populate the class popup with the new data
+		    var populate_class_popup = function(called_node) {
+			// Create the size and popup data
+			var size_info = [
+			    " max size=" + s.class_size_max.toString(),
+			    s.max_class_capacity ? " max cap=" + s.max_class_capacity.toString() : "",
+			    s.optimal_class_size ? " optimal size=" + s.optimal_class_size.toString() : "",
+			    s.optimal_class_size_range ? " optimal size range=" + s.optimal_class_size_range : ""
+			];
+			var popup_data = {
+			    'Title:': s.text,
+			    'Teachers': s.teachers.map(function(x){ return x.text; }),
+			    'Requests:': s.resource_requests ? 
+				s.resource_requests.map(function(x){
+				    var res = Resources.get('RoomResource', x[0]);
+				    return (res ? (res.text + ": " + x[1]) : null);
+				}) : "(none)",
+			    'Size:': size_info.filter(function (x) {return (x.length > 0);}).join(", "),
+			    'Grades:': s.grade_min ? (s.grade_min + "-" + s.grade_max) : "(n/a)",
+			    "Prereq's:": s.prereqs,
+			    'Comments:': s.comments
+			};
+			if (s.allowable_class_size_ranges.size() > 0)
+			    popup_data['Allowable Class-Size Ranges:'] = c.allowable_class_size_ranges;
+			called_node.children(".tooltip_popup").html('');
+			s.block_contents = ESP.Utilities.fillPopup(s.id, popup_data, false);
+		    };
+		    
+		    if (json_list.length > 0) {
+			node.children('.tooltip_popup').html("Loading...");
+			var json_left = json_list.length;
+
+			for (var i in json_list) {
+			    // Deal with prototype
+			    if (typeof json_list[i] === 'function') { continue; }
+
+			    // Handle scoping issues; once again, probably a better way to do this
+			    (function() {
+				var json_component = json_list[i];
+				json_get(json_component, {'section_id': s.id}, function(data) {
+				    if (json_component == 'class_info') {
+					s.class_info = true;
+					s_data = data.sections[s.id];
+					s.teachers = s_data.teachers.map(function(x){ return Resources.get('Teacher',x); });
+					s.prereqs = s_data.prereqs;
+				    }
+				    else if (json_component == 'class_size_info') {
+					s.class_size_info = true;
+					s_data = data.sections[s.id];
+					s.class_size_max = s_data.class_size_max;
+					s.optimal_class_size = s_data.optimal_class_size;
+					s.optimal_class_size_range = s_data.optimal_class_size_ranges;
+					s.allowable_class_size_ranges = s_data.allowable_class_size_ranges;
+					s.max_class_capacity = s_data.max_class_capacity;
+				    }
+				    else if (json_component == 'class_admin_info') {
+					s.class_admin_info = true;
+					s_data = data.sections[s.id];
+					if (s_data.resource_requests[s.id]) {
+					    s.resource_requests = s_data.resource_requests[s.id].map(function(x){ return [Resources.get('RoomResource', x[0]), x[1]]; });
+					}
+					else {
+					    s.resource_requests = null;
+					}
+					s.comments = s_data.comments;
+				    }
+				    
+				    // If we've processed everything...
+				    if(--json_left == 0) {
+					populate_class_popup(node);
+				    }
+				});
+			    })();
+			}
+		    }
+		};
+
+		// Finally, create our Resource with what we have now
+		processed_data.sections.push(s = Resources.create('Section',{
+                    uid: c.id,
+                    class_id: c.parent_class,
+                    code: c.emailcode,
+		    class_info: false,
+		    class_size_info: false,
+		    class_admin_info: false,
+                    block_contents: ESP.Utilities.genPopup(c.id, c.emailcode, {}, onHoverHandler, false),
+                    category: c.category,
+                    length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
+                    length_hr: Math.round(c.length * 2) / 2,
+                    id:c.id,
+                    text:c.title,
+		    status:c.status,
+                    grade_min: c.grade_min,
+                    grade_max: c.grade_max,
+		}));
+		// console.log("Added section: " + s.code + " (time " + s.length + " = " + s.length_hr + " hr "); 
+            })();
+	}
         return processed_data;
     };
     
@@ -462,7 +531,7 @@ $j(function(){
 
     var data = {};
     var success_count = 0;
-    var files = ['sections','resources','resourcetypes','teachers','lunch_timeslots'];
+    var files = ['resources','resourcetypes','teachers','lunch_timeslots'];
     var json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections'];
     var num_files = files.length + json_components.length;
 

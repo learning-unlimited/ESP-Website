@@ -91,7 +91,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_sections_cached(self, prog):
         sections = prog.sections().select_related()
 
-        rrequests = ResourceRequest.objects.filter(target__in = sections)
+        rrequests = ResouorceRequest.objects.filter(target__in = sections)
 
         rrequest_dict = defaultdict(list)
         for r in rrequests:
@@ -314,7 +314,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         
         if action == 'deletereg':
             # raise ESPError(), "Tried to delete a class via AJAX-Scheduling!"
-
+            
             cls.clearRooms()
             cls.clear_meeting_times()
 
@@ -352,7 +352,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             cannot_schedule = cls.cannotSchedule(times)
             if cannot_schedule:
                 return makeret(ret=False, msg=cannot_schedule)
-
+            
             cls.assign_meeting_times(times)
             status, errors = cls.assign_room(classroom)
 

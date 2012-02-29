@@ -41,11 +41,16 @@ ESP.Utilities = function(){
 
     // Takes a dictionary of key/value pairs, and returns a popup <a> DOM-object that displays them
     // JS dictionaries are apparently supposed to be ordered.  We'll see if that's actually true...
-    Utilities.genPopup = function(label, elts, asString) {
+    Utilities.genPopup = function(id, label, elts, onhover, asString) {
+	console.log("genPopup");
+	console.log(elts);
         var root = $j("<a></a>");
-        root.attr('class', 'tooltip');
+        root.attr('class', 'tooltip tooltip-id-' + id);
         root.append(label);
 	root.hover(function() {
+	    if (onhover) {
+		onhover($j(this));
+	    }
 	    $j(this).toggleClass('tooltip_hover');
 	    $j(this).children('.tooltip_popup').toggle();
 	});
@@ -56,7 +61,7 @@ ESP.Utilities = function(){
         root.append(span);
 
         for (key in elts) {
-              var val = elts[key];
+            var val = elts[key];
             if (val == null) {
                 break;
             }
@@ -82,7 +87,7 @@ ESP.Utilities = function(){
                 if (any_good_vals) {
                   span.append(ul);
                 } else {
-                  span.append("(none)");
+                  span.append(" (none) <br/>");
                 }
                 //span.appendChild( document.createElement('br') );
             }
@@ -101,30 +106,18 @@ ESP.Utilities = function(){
     // Takes a dictionary of key/value pairs as well as the root node of a pre-existing popup
     // and fills it in with the given values. Use this to create a popup and then fill it in
     // with dynamically loaded data
-    Utilities.fillPopup = function(node, elts, asString) {
-	// If we get in a string...
-	if (typeof node === 'string') {
-	    console.log("got in a string");
-	    root = $j(node);
-	    console.log(root);
-	}
-	// If we get in a jQuery node
-	else {
-	    root = node;
-	}
+    Utilities.fillPopup = function(id, elts, asString) {
+	console.log("fillPopup");
+	console.log(elts);
+	root = $j(".tooltip-id-" + id);
 
 	span = root.children("span.tooltip_popup");
 	if (span.length <= 0) {
 	    return 0;
 	}
-	// Debug call for now
-	console.log("string input");
-	console.log(span);
-
-
 
         for (key in elts) {
-              var val = elts[key];
+            var val = elts[key];
             if (val == null) {
                 break;
             }
@@ -150,25 +143,27 @@ ESP.Utilities = function(){
                 if (any_good_vals) {
                   span.append(ul);
                 } else {
-                  span.append("(none)");
+                  span.append(" (none) <br\>");
                 }
                 //span.appendChild( document.createElement('br') );
             }
         }
 
-	console.log("returning:");
-	console.log(root);
-
         if (asString) {
 	    var tmpNode =$j("<tmp></tmp>");
-	    console.log(tmpNode);
             tmpNode.append(root);
             return tmpNode.html();
         } else {
             return root;
         }
     };
-    
+
+    // Clear the contents of a tooltip popup specified by the id
+    Utilities.clearPopup = function(id) {
+	root = $j(".tooltip-id-"+id);
+	root.children(".tooltip-popup").html('');
+    };
+
     return Utilities;
 }();
 

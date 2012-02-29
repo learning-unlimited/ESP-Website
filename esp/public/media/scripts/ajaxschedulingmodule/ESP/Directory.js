@@ -21,7 +21,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             var header = this.header = $j('<tr/>').addClass('header');
             thead.append(header);
             $j.each(this.properties, function(key, prop){
-                var td = $j('<td style="'+(prop.css||'')+'"><span>' + (prop.label || key) + '</span></td>');
+                var td = $j('<td style="'+(prop.css()||'')+'"><span>' + (prop.label || key) + '</span></td>');
                 prop.header = td;
                 if (prop.sort) {
                     td.addClass('sortable');
@@ -44,42 +44,112 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
         // table columns
         properties: {
         'ID': {
-            get: function(x){ return x.block_contents; },
+            get: function(x){ return x.block_contents.clone(true); },
             //css: 'text-align:center; text-decoration:underline; font-weight:bold;',
-            sort: function(x,y){
+            so: function(x,y){
                 // use code instead of emailcode; that's how Scheduling.process_data names it
                 var diff = x.section.class_id - y.section.class_id;
                 return diff == 0 ? cmp(x.section.code, y.section.code) : diff;
             },
-            css: 'width:100px;'
+	    //css: 'width:100px;'
+	    /* Code to style unapproved classes differently */
+            css: function(x){
+		var default_css = 'width:100px;';
+		var unapproved_css = "color:#ff0000; font-style:italic;";
+		// if we're just calling it for the general properties of the ID td
+		// or if it's approved, return the default css
+		if (!x || x.status == 10) {
+		    return default_css;
+		}
+		// if the class is not approved, apply the unapproved styling to it
+		else {
+		    return default_css + unapproved_css;
+		}
+	    }
         },
         'Title': {
             get: function(x){ return x.text; },
             sort: function(x,y){
                 return cmp(x.section.text, y.section.text);
             },
-            css: 'width:400px;'
+	    // css: 'width:400px;'
+	    /* Code to style unapproved classes differently */
+            css: function(x){ 
+		var default_css = 'width:400px;';
+		var unapproved_css = "color:#ff0000; font-style:italic;";
+		// if we're just calling it for the general properties of the ID td
+		// or if it's approved, return the default css
+		if (!x || x.status == 10) {
+		    return default_css;
+		}
+		// if the class is not approved, apply the unapproved styling to it
+		else {
+		    return default_css + unapproved_css;
+		}
+	    }
         },
         'Category': {
             get: function(x){ return x.category; },
             sort: function(x,y){
                 return cmp(x.section.category, y.section.category);
             },
-            css: 'width:100px;'
+	    // css: 'width:100px;'
+	    /* Code to style unapproved classes differently */
+            css: function(x){
+		var default_css = 'width:100px;';
+		var unapproved_css = "color:#ff0000; font-style:italic;";
+		// if we're just calling it for the general properties of the ID td
+		// or if it's approved, return the default css
+		if (!x || x.status == 10) {
+		    return default_css;
+		}
+		// if the class is not approved, apply the unapproved styling to it
+		else {
+		    return default_css + unapproved_css;
+		}
+	    }
         },
         'Teacher': {
             get: function(x) { return ""+x.teachers.map(function(x){return x.block_contents;}); },
             sort: function(x,y){
                 return cmp(""+x.section.teachers.map(function(z){return z.text;}), ""+y.section.teachers.map(function(z){return z.text;}));
             },
-            css: 'width:200px;'
+	    // css: 'width:200px;'
+	    /* Code to style unapproved classes differently */
+            css: function(x){
+		var default_css = 'width:200px;';
+		var unapproved_css = "color:#ff0000; font-style:italic;";
+		// if we're just calling it for the general properties of the ID td
+		// or if it's approved, return the default css
+		if (!x || x.status == 10) {
+		    return default_css;
+		}
+		// if the class is not approved, apply the unapproved styling to it
+		else {
+		    return default_css + unapproved_css;
+		}
+	    }
         },
         'Length': {
             get: function(x) { return x.length_hr; },
             sort: function(x,y) {
                 return x.section.length - y.section.length;
             },
-            css: 'width:50px;'
+	    // css: 'width:50px;'
+	    /* Code to style unapproved classes differently */
+            css: function(x){
+		var default_css = 'width:50px;';
+		var unapproved_css = "color:#ff0000; font-style:italic;";
+		// if we're just calling it for the general properties of the ID td
+		// or if it's approved, return the default css
+		if (!x || x.status == 10) {
+		    return default_css;
+		}
+		// if the class is not approved, apply the unapproved styling to it
+		else {
+		    return default_css + unapproved_css;
+		}
+	    }
         }
         },
         
@@ -144,7 +214,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
             this.el.addClass('CLS_id_' + section.id);
             this.el.addClass('CLS_length_' + section.length_hr + '_hrs');
             this.el.addClass('CLS_status_' + section.status);
-            this.el.addClass('CLS_grade_min_' + section.grade_min);
+            this.el.addClass('CLS_grade_min_' + section.gradpe_min);
             this.el.addClass('CLS_grade_max_' + section.grade_max);
 	    /*
             for (var i = 0; i < section.resource_requests.length; i++) {
@@ -156,7 +226,8 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
 
             this.tds = {};
             $j.each(this.directory.properties,function(index, prop){
-                var td = $j('<td style="' + (prop.css||'') + '">' + prop.get(section) + '</td>');
+                var td = $j('<td style="' + (prop.css(section)||'') + '"></td>');
+		td.append(prop.get(section));
                 this.tds[prop] = td;
                 this.el.append(td);
             }.bind(this));

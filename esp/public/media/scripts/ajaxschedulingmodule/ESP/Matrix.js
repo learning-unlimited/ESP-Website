@@ -96,6 +96,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                             ESP.version_uuid = data.val;
                             ESP.Utilities.evm.fire('block_section_assignment_local', data);
                         } else {
+			    ESP.Scheduling.directory.filter();
                             ESP.Scheduling.status('error', "Failed to assign " + data.section.code + ": " + ajax_data.msg);
                         }
                     })
@@ -130,7 +131,12 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                 var cell = this.block_cells[block.room.uid][block.time.uid];
                 //  cell.td.text(data.section.class_id);
                 cell.td.html(data.section.block_contents.clone(true));
-                cell.status(BlockStatus.RESERVED);
+		if(data.section.status == 10) {
+                    cell.status(BlockStatus.RESERVED);
+		}
+		else {
+		    cell.status(BlockStatus.UNREVIEWED);
+		}
                 var section = data.section;
                 cell.td.addClass('CLS_category_' + section.category);
                 cell.td.addClass('CLS_id_' + section.id);
@@ -176,7 +182,6 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             }
         }.bind(this));
         ESP.Utilities.evm.bind('block_section_unassignment_local', function(e, data) {
-            console.log("Unassignment local");
             //Update the actual data
             data.section.blocks = [];
             for (var i = 0; i < data.blocks.length; i++) {
@@ -410,6 +415,7 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
     StatusClasses[BlockStatus.NOT_OURS] = 'inactive';
     StatusClasses[BlockStatus.AVAILABLE] = 'active';
     StatusClasses[BlockStatus.RESERVED] = 'filled';
+    StatusClasses[BlockStatus.UNREVIEWED] = 'unreviewed';
     
     Matrix.BlockCell = Class.create(Matrix.Cell,{
         initialize: function($super,block){
@@ -433,7 +439,7 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
                 this.td.removeClass(StatusClasses[this.block.status]);
                 this.block.status = status;
                 this.td.addClass(StatusClasses[status]);
-                this.td.draggable(status == BlockStatus.RESERVED ? 'enable' : 'disable');
+                this.td.draggable(status == BlockStatus.RESERVED || status == BlockStatus.UNREVIEWED ? 'enable' : 'disable');
             } else {
                 return this.block.status;
             }

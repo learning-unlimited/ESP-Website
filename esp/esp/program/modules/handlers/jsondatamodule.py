@@ -37,7 +37,7 @@ from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student
 
 from esp.cal.models import Event
 from esp.program.models import ClassSection, ClassSubject, StudentRegistration
-from esp.resources.models import Resource, ResourceAssignment
+from esp.resources.models import Resource, ResourceAssignment, ResourceRequest
 
 from esp.cache.key_set import wildcard
 from esp.utils.decorators import cached_module_view, json_response
@@ -101,7 +101,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @needs_admin
     @cached_module_view
     def schedule_assignments(prog):
-        data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'SELECT string_agg(to_char(resources_resource.event_id, \'999\'), \',\') FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id'}).values('id', 'resourceassignment__resource__name', 'timeslots').distinct()
+        data = ClassSection.objects.filter(status__gte=0, parent_class__status__gte=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name', 'resourceassignment__resource__event').extra({'timeslots': 'SELECT string_agg(to_char(resources_resource.event_id, \'999\'), \',\') FROM resources_resource, resources_resourceassignment WHERE resources_resource.id = resources_resourceassignment.resource_id AND resources_resourceassignment.target_id = program_classsection.id'}).values('id', 'resourceassignment__resource__name', 'timeslots').distinct()
         #   Convert comma-separated timeslot IDs to lists
         for i in range(len(data)):
             if data[i]['timeslots']:
@@ -183,7 +183,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def class_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
         if 'return_key' in request.GET:
-            return_key = request.GET['return_key']
+            rnneturn_key = request.GET['return_key']
         if 'section_id' in request.GET:
             if return_key == None: return_key = 'sections'
             section_id = int(request.GET['section_id'])
@@ -214,15 +214,15 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'emailcode': cls.emailcode(),
             'title': cls.title(),
             'class_info': cls.class_info, 
-            'category': cls._category_cache.category, 
+            'category': cls.category.category, 
             'difficulty': cls.hardness_rating,
             'prereqs': cls.prereqs, 
-            'sections': [x.id for x in cls._sections],
-            'teachers': [x.id for x in cls._teachers],
+            'sections': [x.id for x in cls.sections.all()],
+            'teachers': [x.id for x in cls.teachers()],
             'class_size_max': cls.class_size_max,
         }
         teacher_list = [{'id': t.id, 'first_name': t.first_name, 'last\
-_name': t.last_name} for t in cls._teachers]
+_name': t.last_name} for t in cls.teachers()]
 
         return {return_key: [return_dict], 'teachers': teacher_list}
 
@@ -230,6 +230,7 @@ _name': t.last_name} for t in cls._teachers]
     @cache_control(public=True, max_age=300)
     @json_response()
     def class_size_info(self, request, tl, one, two, module, extra, prog):
+        return_key = None
         if 'return_key' in request.GET:
             return_key = request.GET['return_key']
 
@@ -264,7 +265,7 @@ _name': t.last_name} for t in cls._teachers]
             'class_size_max': cls.class_size_max,
             'optimal_class_size': cls.class_size_optimal,
             'optimal_class_size_ranges': cls.optimal_class_size_range.range_str() if cls.optimal_class_size_range else None,
-            'allowable_class_size_ranges': [ cr.range_str() for cr in cls.get_allowable_class_size_ranges() ]
+            'allowable_class_size_ranges': [ cr.range_str() for cr in cls.get_allowable_class_size_ranges() ]            
         }
 
         if return_key == 'sections':
@@ -277,6 +278,7 @@ _name': t.last_name} for t in cls._teachers]
     @cache_control(public=True, max_age=300)
     @json_response()
     def class_admin_info(self, request, tl, one, two, module, extra, prog):
+        return_key = None
         if 'return_key' in request.GET:
             return_key = request.GET['return_key']
 
@@ -304,13 +306,22 @@ _name': t.last_name} for t in cls._teachers]
             matching_classes = ClassSubject.objects.catalog_cached(prog, initial_queryset=target_qs)
             assert(len(matching_classes) == 1)
             cls = matching_classes[0]
-            
+
+        if return_key == 'sections':
+            rrequests = ResourceRequest.objects.filter(target = section)
+        else:
+            rrequests = ResourceRequest.objects.filter(target__in = cls.sections.all())
+        rrequest_dict = defaultdict(list)
+        for r in rrequests:
+            rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
+
         cls = section.parent_class
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
+            'resource_requests': rrequest_dict,
             'comments': cls.message_for_directors,
         }
-        
+
         return {return_key: [return_dict]}
         
     class Meta:
