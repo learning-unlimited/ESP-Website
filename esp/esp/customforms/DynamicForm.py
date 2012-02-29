@@ -517,11 +517,19 @@ class FormHandler:
                             initial_data[handler.seq].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
         return initial_data                
     
-    def getWizard(self):
+    def getWizard(self, initial_data={}):
         """
         Returns the ComboForm instance for this form
         """
-        self.wizard = ComboForm(self._getFormList(), self.form, self, self._getInitialData(self.form, self.user))    
+        linked_initial_data = self._getInitialData(self.form, self.user)
+        combined_initial_data = {}
+        for i in range(len(self.handlers)):
+            combined_initial_data[i] = {}
+            if i in linked_initial_data:
+                combined_initial_data[i].update(linked_initial_data[i])
+            if i in initial_data:
+                combined_initial_data[i].update(initial_data[i])
+        self.wizard = ComboForm(self._getFormList(), self.form, self, combined_initial_data)    
         return self.wizard
         
     def deleteForm(self):
