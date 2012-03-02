@@ -50,7 +50,10 @@ var $j = jQuery.noConflict(); // grr... stupid prototype fail
 </head>
 
 <body>
-<div id='statusbar-wrapper'><span id='statusbar'>Loading...</span></div>
+<div id='statusbar-wrapper'>
+  <div id='progressbar' onload="$j(this).progressbar({ value: 50 })"></div>
+  <span id='statusbar'>Loading...</span>
+</div>
 <div id='body'>
 <div id='matrix-target'></div>
 <div id='directory-target'></div>

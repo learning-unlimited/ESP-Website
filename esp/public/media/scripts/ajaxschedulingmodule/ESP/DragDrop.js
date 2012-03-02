@@ -27,6 +27,9 @@ ESP.declare('ESP.Scheduling.DragDrop', function(){
                     var b = blocks[i];
                     b._temp_accept = (b.section == section) || ESP.Scheduling.validate_block_assignment(b, section, false);
                     b._temp_accept_start = (b.section == section) || ESP.Scheduling.validate_start_time(b.time, section, false);
+		    console.log(b);
+		    console.log(b._temp_accept_start);
+		    console.log(ESP.Scheduling.validate_start_time(b.time, section, true));
                 }
                 target.data('section', section);
                 //     console.log("Started to drag section " + section.code);

@@ -43,7 +43,7 @@ ESP.Utilities = function(){
     // JS dictionaries are apparently supposed to be ordered.  We'll see if that's actually true...
     Utilities.genPopup = function(id, label, elts, onhover, asString) {
 	console.log("genPopup");
-	console.log(elts);
+
         var root = $j("<a></a>");
         root.attr('class', 'tooltip tooltip-id-' + id);
         root.append(label);
@@ -96,8 +96,11 @@ ESP.Utilities = function(){
         if (asString) {
             var tmpNode = $j('<tmp></tmp>');
             tmpNode.append(root);
+	    console.log("returning as string: " + tmpNode.html());
             return tmpNode.html();
         } else {
+	    console.log("returning as node");
+	    console.log(root);
             return root;
         }
     }

@@ -34,10 +34,11 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, main_call, aux_call
-
+from esp.users.models import UserAvailability
 from esp.cal.models import Event
 from esp.program.models import ClassSection, ClassSubject, StudentRegistration
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest
+from esp.datatree.models import *
 
 from esp.cache.key_set import wildcard
 from esp.utils.decorators import cached_module_view, json_response
@@ -183,7 +184,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def class_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
         if 'return_key' in request.GET:
-            rnneturn_key = request.GET['return_key']
+            return_key = request.GET['return_key']
         if 'section_id' in request.GET:
             if return_key == None: return_key = 'sections'
             section_id = int(request.GET['section_id'])
@@ -221,9 +222,16 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'teachers': [x.id for x in cls.teachers()],
             'class_size_max': cls.class_size_max,
         }
-        teacher_list = [{'id': t.id, 'first_name': t.first_name, 'last\
-_name': t.last_name} for t in cls.teachers()]
 
+        # Build up teacher availability
+        availabilities = UserAvailability.objects.filter(user__in=cls.teachers()).filter(QTree(event__anchor__below = prog.anchor)).values('user_id', 'event_id')
+        avail_for_user = defaultdict(list)
+        for avail in availabilities:
+            avail_for_user[avail['user_id']].append(avail['event_id'])
+
+        teacher_list = [{'id': t.id, 'first_name': t.first_name, 'last\
+_name': t.last_name, 'availability': avail_for_user[t.id]} for t in cls.teachers()]
+        
         return {return_key: [return_dict], 'teachers': teacher_list}
 
     @aux_call

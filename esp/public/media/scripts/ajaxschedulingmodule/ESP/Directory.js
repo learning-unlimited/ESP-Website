@@ -46,7 +46,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
         'ID': {
             get: function(x){ return x.block_contents.clone(true); },
             //css: 'text-align:center; text-decoration:underline; font-weight:bold;',
-            so: function(x,y){
+            sort: function(x,y){
                 // use code instead of emailcode; that's how Scheduling.process_data names it
                 var diff = x.section.class_id - y.section.class_id;
                 return diff == 0 ? cmp(x.section.code, y.section.code) : diff;
@@ -110,7 +110,18 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    }
         },
         'Teacher': {
-            get: function(x) { return ""+x.teachers.map(function(x){return x.block_contents;}); },
+            get: function(x) {
+		if (x.teachers) {
+		    var ret_node = $j("");
+		    $j.each(x.teachers.map(function(x){return x.block_contents.clone(true)}), function(index, value){
+			ret_node = ret_node.add(value);
+		    });
+		    return ret_node;
+		}
+		else {
+		    return "Loading...";
+		}
+	    },
             sort: function(x,y){
                 return cmp(""+x.section.teachers.map(function(z){return z.text;}), ""+y.section.teachers.map(function(z){return z.text;}));
             },
@@ -237,8 +248,11 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
         },
         update: function(){
             $j.each(this.directory.properties,function(index, prop){
-                this.tds[prop].text(prop.get(this.section));
+		$j(this.tds[prop]).html('');
+                $j(this.tds[prop]).append(prop.get(this.section));
             }.bind(this));
+	    console.log("updated");
+	    console.log($j(this.tds));
             return this;
         }
     }));
