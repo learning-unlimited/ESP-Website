@@ -72,11 +72,11 @@ class TeacherCheckinModule(ProgramModuleObj):
                                                                 verb=GetNode('V/Flags/Registration/Teacher/Arrived'),
                                                                 enddate=endtime)
             if created:
-                return '%s %s is checked in until %s.' % (teacher.first_name, teacher.last_name, str(endtime))
+                return '%s is checked in until %s.' % (teacher.name(), str(endtime))
             else:
-                return '%s %s has already been checked in until %s.' % (teacher.first_name, teacher.last_name, str(endtime))
+                return '%s has already been checked in until %s.' % (teacher.name(), str(endtime))
         else:
-            return '%s %s is not a teacher for %s.' % (teacher.first_name, teacher.last_name, prog.niceName())
+            return '%s is not a teacher for %s.' % (teacher.name(), prog.niceName())
     
     @main_call
     @needs_admin
@@ -140,6 +140,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             contact = teacher.getLastProfile().contact_user
             teacher_dict[teacher.id] = {'username': teacher.username,
                                         'name': teacher.name(),
+                                        'last_name': teacher.last_name,
                                         'phone': contact.phone_cell or contact.phone_day,
                                         'arrived': True}
         for teacher in missing:
@@ -166,7 +167,6 @@ class TeacherCheckinModule(ProgramModuleObj):
         context = {}
         context['sections'] = self.getMissingTeachers(starttime, prog)
         context['start_time'] = starttime
-        context['form'] = TeacherCheckinForm()
         return render_to_response(self.baseDir()+'missingteachers.html', request, (prog, tl), context)
     
     class Meta:

@@ -8,59 +8,41 @@
     {{ block.super }}
     <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
     <style type="text/css">
-        .nocheckmark { border: 1px solid black; }
-        .not-checked-in { font-weight: bold; }
+        #shortcuts-box {
+            position: fixed;
+            left: 10px;
+            top: 150px;
+            width: 200px;
+            border: 1px solid gray;
+            padding: 5px;
+            z-index: 100;
+            background-color: white
+        }
+        
+        .not-checked-in a { font-weight: bold; }
         .checked-in { text-decoration: line-through; }
+        .selected + span:after { content: "◀"; font-weight: bold; }
+        .checkin-column { min-width: 90px; }
     </style>
 {% endblock %}
 
 {% block javascript %}
     {{ block.super }}
-    <script>
-        function checkIn(username, button){
-            refresh_csrf_cookie();
-            $j.post('ajaxteachercheckin', {teacher: username, csrfmiddlewaretoken: csrf_token()}, "json")
-            .success(function(response) {
-                window.foo=response;
-                if(button && button.parentNode){
-                    var td=button.parentNode;
-                    td.innerHTML = response.message;
-                    td.previousElementSibling.children[0].className="checked-in";
-                }
-            })
-            if(button){
-                button.value += "...";
-            }
-        }
-    </script>
+    <script src="/media/scripts/onsite/teacher_checkin.js"></script>
 {% endblock %}
 
 {% block content %}
 <h1>Missing Teachers for {{ program.niceName }}</h1>
 
+<div id="shortcuts-box">
+    <input type="text" />
+    <p>Type to search</p>
+    <p>Up/Down/PgUp/PgDown to select teacher</p>
+    <p>'?' to view information about teacher</p>
+    <p>'Enter' to check in teacher</p>
+</div>
+
 <div id='program_form'>
-
-<form id="checkinform" name="checkinform" method="POST" action="teachercheckin">
-<table>
-<tr>
-    <th colspan="2">
-        Choose Teacher to Check In
-    </th>
-</tr>
-<tr>
-    <td>
-        <table>
-            {{ form }}
-        </table>
-    </td>
-    <td align="center">
-        <input class="button" type="submit" value="Check In" />
-    </td>
-</tr>
-
-</table>
-
-</form>
 
 <br/><a href="teachercheckin">&lt;&lt;Back</a>
 
@@ -77,27 +59,25 @@
     <td rowspan="{{ section.teachers|length }}">
         {{ section.id }}: {{ section.name }}
     </td>
-    <td rowspan="{{ section.teachers|length }}">{{ section.room }}</td>
+    <td class="room" rowspan="{{ section.teachers|length }}">{{ section.room }}</td>
     {% for teacher in section.teachers %}
-    <td>
         {% if teacher.arrived %}
-        <span class="checked-in">
+        <td class="checked-in">
         {% else %}
-        <span class="not-checked-in">
+        <td class="not-checked-in">
         {% endif %}
             <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
-        </span>
-    </td>
-    <td>
-        {% if not teacher.arrived %}
-        <input class="button" type="button" onclick="checkIn('{{ teacher.username }}', this)" value="Check In" />
-        {% else %}
-        Already checked-in
-        {% endif %}
-    </td>
-    <td> {{ teacher.phone }} </td>
-    </tr>
-    <tr>
+        </td>
+        <td class="checkin-column">
+            {% if not teacher.arrived %}
+            <input id="checkin_{{ teacher.username }}" class="button checkin" type="button" name="{{ teacher.last_name }}" value="Check In" /><span />
+            {% else %}
+            Already checked-in
+            {% endif %}
+        </td>
+        <td class="phone"> {{ teacher.phone }} </td>
+        </tr>
+        <tr>
     {% endfor %}
     <td colspan="5"><hr/></td>
 </tr>
