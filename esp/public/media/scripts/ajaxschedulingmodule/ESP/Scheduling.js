@@ -250,8 +250,7 @@ ESP.Scheduling = function(){
 			};
 			if (s.allowable_class_size_ranges.size() > 0)
 			    popup_data['Allowable Class-Size Ranges:'] = c.allowable_class_size_ranges;
-			called_node.children(".tooltip_popup").html('');
-			s.block_contents = ESP.Utilities.fillPopup("s-" + s.id, popup_data, false);
+			ESP.Utilities.fillPopup("s-" + s.id, s.block_contents, popup_data, false);
 		    };
 		    
 		    if (json_list.length > 0) {
@@ -273,7 +272,6 @@ ESP.Scheduling = function(){
 					$j.each(s.teachers, function(index, value) {
 					    var t = data.teachers[value];
 					    var t_res;
-					    console.log(t);
 					    if (Resources.__cache__['Teacher'] && (t_res = Resources.get('Teacher', t.id))) {
 						t_res.sections.push(s);
 					    }
@@ -356,8 +354,6 @@ ESP.Scheduling = function(){
 		    s.teachers = [];
 		    $j.each(s_data.teachers, function(index, value) {
 			var t = data.teachers[value];
-			console.log("Adding teacher");
-			console.log(t);
 			var t_res;
 			if (Resources.__cache__['Teacher'] && (t_res = Resources.get('Teacher', t.id))) {
 			    t_res.sections.push(s);
@@ -381,8 +377,6 @@ ESP.Scheduling = function(){
 			s.teachers.push(t_res);
 		    });
 		    s.prereqs = s_data.prereqs;
-		    console.log("adding directory entry");
-		    console.log(s);
 		    ESP.Scheduling.directory.addEntry(s, true);
 		});
             })();
@@ -430,20 +424,15 @@ ESP.Scheduling = function(){
     var validate_block_assignment = function(block, section, str_err) {
         // check status
         if (block.status != ESP.Scheduling.Resources.BlockStatus.AVAILABLE) {
-            console.log("Room " + block.room + " at " + block.time + " is not available"); 
+            // console.log("Room " + block.room + " at " + block.time + " is not available"); 
             return false;
         }
 
         var time = block.time;
 
-	console.log("validating section");
-	console.log(section);
-    
         for (var i = 0; i < section.teachers.length; i++) {
             var valid = false;
             var teacher = section.teachers[i];
-	    console.log("checking teacher");
-	    console.log(section.teachers[i]);
             for (var j = 0; j < teacher.available_times.length; j++) {
                 if (teacher.available_times[j] == time) {
                     valid = true;

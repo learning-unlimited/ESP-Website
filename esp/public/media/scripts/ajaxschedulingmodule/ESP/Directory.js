@@ -239,7 +239,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
             $j.each(this.directory.properties,function(index, prop){
                 var td = $j('<td style="' + (prop.css(section)||'') + '"></td>');
 		td.append(prop.get(section));
-                this.tds[prop] = td;
+                this.tds[index] = td;
                 this.el.append(td);
             }.bind(this));
         },
@@ -248,11 +248,8 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
         },
         update: function(){
             $j.each(this.directory.properties,function(index, prop){
-		$j(this.tds[prop]).html('');
-                $j(this.tds[prop]).append(prop.get(this.section));
+                this.tds[index].html(prop.get(this.section));
             }.bind(this));
-	    console.log("updated");
-	    console.log($j(this.tds));
             return this;
         }
     }));

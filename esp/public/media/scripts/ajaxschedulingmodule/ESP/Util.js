@@ -42,7 +42,6 @@ ESP.Utilities = function(){
     // Takes a dictionary of key/value pairs, and returns a popup <a> DOM-object that displays them
     // JS dictionaries are apparently supposed to be ordered.  We'll see if that's actually true...
     Utilities.genPopup = function(id, label, elts, onhover, asString) {
-	console.log("genPopup");
 
         var root = $j("<a></a>");
         root.attr('class', 'tooltip tooltip-id-' + id);
@@ -96,25 +95,21 @@ ESP.Utilities = function(){
         if (asString) {
             var tmpNode = $j('<tmp></tmp>');
             tmpNode.append(root);
-	    console.log("returning as string: " + tmpNode.html());
             return tmpNode.html();
         } else {
-	    console.log("returning as node");
-	    console.log(root);
             return root;
         }
     }
 
 
-    // Takes a dictionary of key/value pairs as well as the root node of a pre-existing popup
-    // and fills it in with the given values. Use this to create a popup and then fill it in
-    // with dynamically loaded data
-    Utilities.fillPopup = function(id, elts, asString) {
-	console.log("fillPopup");
-	console.log(elts);
-	root = $j(".tooltip-id-" + id);
+    // Takes a dictionary of key/value pairs as well as the root node of a
+    // pre-existing popup and fills it in with the given values. Use this
+    // to fill in a popup with dynamically loaded data
+    Utilities.fillPopup = function(id, orig_node, elts, asString) {
+	root = orig_node;
+	nodes = $j(".tooltip-id-" + id);
 
-	span = root.children("span.tooltip_popup");
+	span = root.children("span.tooltip_popup").html('');
 	if (span.length <= 0) {
 	    return 0;
 	}
@@ -151,6 +146,11 @@ ESP.Utilities = function(){
                 //span.appendChild( document.createElement('br') );
             }
         }
+
+	for(var i = 0; i < nodes.length; i++) {
+	    if (typeof nodes[i] === 'function') { continue; }
+	    $j(nodes[i]).replaceWith(root.clone(true));
+	}
 
         if (asString) {
 	    var tmpNode =$j("<tmp></tmp>");

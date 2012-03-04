@@ -129,8 +129,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             for (var i = 0; i < blocks.length; i++) {
                 var block = blocks[i];
                 var cell = this.block_cells[block.room.uid][block.time.uid];
-                //  cell.td.text(data.section.class_id);
-                cell.td.html(data.section.block_contents.clone(true));
+                cell.td.html(ESP.Scheduling.Resources.get('Section', data.section.id).block_contents.clone(true));
 		if(data.section.status == 10) {
                     cell.status(BlockStatus.RESERVED);
 		}
@@ -398,7 +397,7 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
             $super()
             this.room = room;
             this.tr = $j('<tr/>').addClass('matrix-row-body');
-            this.td.html(room.block_contents);
+            this.td.html(room.block_contents.clone(true));
             this.td.addClass('matrix-row-header');
             for (var j = 0; j < room.resources.length; j++) {
                 if (room.resources[j]) {
