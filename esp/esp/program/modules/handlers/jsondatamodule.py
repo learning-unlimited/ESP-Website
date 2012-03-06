@@ -129,6 +129,17 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'timeslots': timeslots}
     timeslots.cached_function.depend_on_model(Event)
     timeslots.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program})
+
+    @aux_call
+    @json_response()
+    @cached_module_view
+    def lunch_timeslots(prog):
+        lunch_timeslots = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values('id'))
+        print lunch_timeslots
+        for i in range(len(lunch_timeslots)):
+            lunch_timeslots[i]['is_lunch'] = True
+        print lunch_timeslots
+        return {'timeslots': lunch_timeslots}
         
     @aux_call
     @json_response({

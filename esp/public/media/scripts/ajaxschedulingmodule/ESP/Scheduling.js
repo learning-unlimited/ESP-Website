@@ -90,11 +90,9 @@ ESP.Scheduling = function(){
             block_index: {},
             teachers: [],
             schedule_assignments: [],
-            lunch_timeslots: []
         };
 
         processed_data.schedule_assignments = data.schedule_assignments;
-        processed_data.lunch_timeslots = data.lunch_timeslots;
 
         var Resources = ESP.Scheduling.Resources;
 
@@ -115,12 +113,7 @@ ESP.Scheduling = function(){
             var r;
             processed_data.times.push(r =
                     Resources.create('Time',
-                        { uid: t.id, text: t.short_description, start: start, end: end, length: end - start + 15*60000 }));
-
-            if (processed_data.lunch_timeslots.indexOf(r.uid) != -1)
-		r.is_lunch = true;
-            else
-                r.is_lunch = false;
+				     { uid: t.id, text: t.short_description, start: start, end: end, length: end - start + 15*60000, is_lunch: t.is_lunch?t.is_lunch:false }));
             // console.log("Added block " + r.text + " (" + r.length + " ms)");
         }
         processed_data.times.sort(function(x,y){
@@ -599,8 +592,8 @@ $j(function(){
 
     var data = {};
     var success_count = 0;
-    var files = ['resources','resourcetypes','teachers', 'lunch_timeslots'];
-    var json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections'];
+    var files = ['resources','resourcetypes'];
+    var json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections', 'lunch_timeslots'];
     var num_files = files.length + json_components.length;
 
     var ajax_verify = function(name) {
@@ -638,33 +631,18 @@ $j(function(){
 	var json_data = {};
 	// Regular components
 	json_fetch(json_components, function(d) {
-	    for (c in json_components) {
+	    for (var i in d) {
 		// Deal with prototype failing
-		if (typeof json_components[c] === 'function') { continue; }
-
-		data[json_components[c]] = d[json_components[c]];
-		success_count++;
+		if (typeof d[i] === 'function') { continue; }
+		data[i] = d[i];
 	    }
+
+	    success_count += json_components.length;
+
 	    if (success_count >= num_files) {
 		ESP.Scheduling.init(data);
 	    }
 	}, json_data);
-
-	/*
-	// Some components we need to pass args, so these we call individually
-	for (var i in json_individual_components) {
-	    if (typeof json_individual_components[i] === 'function') { continue; }
-
-	    c = json_individual_components[i];
-	    console.log("Requesting an individual component: " + c);
-	    json_get(c, {'return_key': 'sections'}, function(d) {
-		if (++success_count >= num_files) {
-		    ESP.Scheduling.init(data);
-		}
-	    });
-	}
-	*/
-	    
     };
     json_fetch_data(json_components);
 

@@ -176,6 +176,12 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             this.active_rows = active_rows;
             this.sort();
         },
+
+        // filter for determining active section or not
+        activeFilter: function(section) {
+	    var lunch_symbol = "L";
+	    return section.category != lunch_symbol;
+	},
         
         // sort active rows
         sort: function(prop){
