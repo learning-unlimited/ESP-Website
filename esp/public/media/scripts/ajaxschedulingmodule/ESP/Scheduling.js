@@ -90,6 +90,7 @@ ESP.Scheduling = function(){
             block_index: {},
             teachers: [],
             schedule_assignments: [],
+	    resource_types: [],
         };
 
         processed_data.schedule_assignments = data.schedule_assignments;
@@ -97,8 +98,8 @@ ESP.Scheduling = function(){
         var Resources = ESP.Scheduling.Resources;
 
         // resourcetypes
-        for (var i = 0; i < data.resourcetypes.length; i++) {
-            var rt = data.resourcetypes[i];
+        for (var i = 0; i < data.resource_types.length; i++) {
+            var rt = data.resource_types[i];
             Resources.create('RoomResource', { uid: rt.uid, text: rt.name, description: rt.description, attributes: rt.attributes });
         }
 
@@ -534,36 +535,31 @@ ESP.Scheduling = function(){
     
     var validate_start_time = function(time, section, str_err) {
         //  Check for not scheduling across a contiguous group of lunch periods - check start block only
-        if (section.blocks && (section.blocks.length > 0)) {
-            var test_time = time;
-            var covered_lunch_start = false;
-            
-            //  Start with the proposed start time and iterate over all time blocks the section will need
-            for (var i = 0; i < section.blocks.length; i++)
-            {
-                if (test_time.is_lunch && !covered_lunch_start)
-                {
-                    //  Check that this is the first lunch in the group:
-                    //  - this is the first time slot, or
-                    //  - the previous time slot is not a lunch block
-                    if ((ESP.Scheduling.data.times.indexOf(test_time) == 0) || !(ESP.Scheduling.data.times[ESP.Scheduling.data.times.indexOf(test_time) - 1].is_lunch))
-                        covered_lunch_start = true;
-                }
-
-                //  If this is the last timeslot of the program, don't sweat it... this assignment
-                //  is invalid anyway.
-                if (!test_time.seq)
-                    break;
-                    
-                //  But, if our class period overlapped with the beginning of the lunch sequence
-                //  and now also overlaps with the end of the lunch sequence, that's a conflict.
-                if (covered_lunch_start && !(test_time.seq.is_lunch))
-                    return (str_err ? "Section " + section.code + " starting at " + time.text + " would conflict with a group of lunch periods" : false);
-                    
-                //  Move on to the next time slot.
-                test_time = test_time.seq;
-            }
+        var test_time = time;
+        var covered_lunch_start = false;
+        
+        if (test_time.is_lunch && !covered_lunch_start)
+        {
+            //  Check that this is the first lunch in the group:
+            //  - this is the first time slot, or
+            //  - the previous time slot is not a lunch block
+            if ((ESP.Scheduling.data.times.indexOf(test_time) == 0) || !(ESP.Scheduling.data.times[ESP.Scheduling.data.times.indexOf(test_time) - 1].is_lunch))
+                covered_lunch_start = true;
         }
+	
+        //  If this is the last timeslot of the program, don't sweat it... this assignment
+        //  is invalid anyway.
+        if (!test_time.seq)
+            return 
+
+        //  But, if our class period overlapped with the beginning of the lunch sequence
+        //  and now also overlaps with the end of the lunch sequence, that's a conflict.
+        if (covered_lunch_start && !(test_time.seq.is_lunch))
+	    return (str_err ? "Section " + section.code + " starting at " + time.text + " would conflict with a group of lunch periods" : false);
+        
+        //  Move on to the next time slot.
+        test_time = test_time.seq;
+	
         
         return (str_err ? "OK" : true);
     };
@@ -592,8 +588,8 @@ $j(function(){
 
     var data = {};
     var success_count = 0;
-    var files = ['resources','resourcetypes'];
-    var json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections', 'lunch_timeslots'];
+    var files = [];
+    var json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections', 'lunch_timeslots', 'resource_types'];
     var num_files = files.length + json_components.length;
 
     var ajax_verify = function(name) {
