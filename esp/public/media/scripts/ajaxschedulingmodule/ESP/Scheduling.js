@@ -323,41 +323,6 @@ ESP.Scheduling = function(){
 
 					     
 		// console.log("Added section: " + s.code + " (time " + s.length + " = " + s.length_hr + " hr "); 
-
-		// Load class_info now, because we want some of this stuff (though it's not
-		// urget so we can afford to wait 
-		json_get('class_info', {'section_id': s.id}, function(data) {
-		    // Update the section info
-		    s.class_info = true;
-		    s_data = data.sections[s.id];
-		    s.teachers = [];
-		    $j.each(s_data.teachers, function(index, value) {
-			var t = data.teachers[value];
-			var t_res;
-			if (Resources.__cache__['Teacher'] && (t_res = Resources.get('Teacher', t.id))) {
-			    t_res.sections.push(s);
-			}
-			else {
-			    processed_data.teachers.push(t_res = Resources.create('Teacher',{
-				uid: t.id,
-				text: t.first_name + " " + t.last_name,
-				block_contents: ESP.Utilities.genPopup("t-" + t.id, t.first_name + " " + t.last_name,
-					        {'Available Times:':
-						 t.availability.map(function(x){
-						     var res = Resources.get('Time',x);
-						     return res ? res.text : "N/A";
-						 }) }, null, false),
-				available_times: t.availability.map(function(x){
-				    return Resources.get('Time',x);
-				}),
-				sections: [s]
-			    }));
-			}
-			s.teachers.push(t_res);
-		    });
-		    s.prereqs = s_data.prereqs;
-		    ESP.Scheduling.directory.addEntry(s, true);
-		});
             })();
 	}
 
