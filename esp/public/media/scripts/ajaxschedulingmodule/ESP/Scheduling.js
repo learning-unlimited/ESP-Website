@@ -540,8 +540,7 @@ ESP.Scheduling = function(){
  * initialize the page
  */
 $j(function(){
-    var version_uuid = null;
-    ESP.version_uuid = version_uuid;
+    ESP.version_uuid = null;
 
     $j.getJSON('ajax_schedule_last_changed', function(d, status) {
         if (status == "success") {
@@ -550,60 +549,19 @@ $j(function(){
     });
 
     var data = {};
-    var success_count = 0;
-    var files = [];
     var json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections', 'lunch_timeslots', 'resource_types'];
-    var num_files = files.length + json_components.length;
 
-    var ajax_verify = function(name) {
-        return function(d, status) {
-            if (status != "success") {
-                alert(status + '[' + name + ']');
-            } else {
-                data[name] = d;
-                if (++success_count == num_files) {
-                    ESP.Scheduling.init(data);
-                }
-            }
-        };
-    };
-    var ajax_retry = function(name) {
-        return function(xhtr, textStatus, errorThrown) {
-            if (textStatus == "timeout" || textStatus == "error") {
-                setTimeout(function() {
-                    $j.ajax({url: 'ajax_' + name, dataType: 'json', success: ajax_verify(name), error: ajax_retry(name)});
-                }, 1000);
-            } else if (textStatus == "parsererror") {
-                alert("Error:  Invalid JSON data from '" + name + "'!");
-            } else if (textStatus == "notmodified") {
-                console.log("textStatus == 'notmodified'.  What, this actually happens?");
-            } else {
-                alert("Server reported unknown error condition: " + textStatus);
-            }
-        }
-    }
-    for (var i = 0; i < files.length; i++) {
-        $j.ajax({url: 'ajax_' + files[i], dataType: 'json', success: ajax_verify(files[i]), error: ajax_retry(files[i])});
-    }
-
-    var json_fetch_data = function(json_components) {
-	var json_data = {};
-	// Regular components
-	json_fetch(json_components, function(d) {
-	    for (var i in d) {
-		// Deal with prototype failing
-		if (typeof d[i] === 'function') { continue; }
-		data[i] = d[i];
-	    }
-
-	    success_count += json_components.length;
-
-	    if (success_count >= num_files) {
-		ESP.Scheduling.init(data);
-	    }
-	}, json_data);
-    };
-    json_fetch_data(json_components);
+    var json_data = {};
+    // Fetch regular JSON components
+    json_fetch(json_components, function(d) {
+	for (var i in d) {
+	    // Deal with prototype failing
+	    if (typeof d[i] === 'function') { continue; }
+	    data[i] = d[i];
+	}
+	
+	ESP.Scheduling.init(data);
+    }, json_data);
 
     setInterval(function() {
         ESP.Scheduling.status('warning','Pinging server...');
