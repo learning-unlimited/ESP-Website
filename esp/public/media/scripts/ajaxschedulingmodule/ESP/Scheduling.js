@@ -32,8 +32,6 @@ ESP.Scheduling = function(){
             this.roomfilter = new ESP.Scheduling.Widgets.RoomFilter(this.matrix);
         else
             this.roomfilter.restore(this.matrix);
-        this.directory = new ESP.Scheduling.Widgets.Directory([]);
-        this.searchbox = new ESP.Scheduling.Widgets.SearchBox(this.directory);
         this.garbage   = new ESP.Scheduling.Widgets.GarbageBin();
         $j('#directory-target').text('');
         $j('#directory-target').append(this.searchbox.el);
@@ -323,6 +321,9 @@ ESP.Scheduling = function(){
 
 					     
 		// console.log("Added section: " + s.code + " (time " + s.length + " = " + s.length_hr + " hr "); 
+
+		// Make sure the Directory now knows this section exists
+		ESP.Scheduling.directory.addEntry(s, true);
             })();
 	}
 
@@ -553,15 +554,18 @@ $j(function(){
 
     var json_data = {};
     // Fetch regular JSON components
-    json_fetch(json_components, function(d) {
-	for (var i in d) {
-	    // Deal with prototype failing
-	    if (typeof d[i] === 'function') { continue; }
-	    data[i] = d[i];
-	}
-	
-	ESP.Scheduling.init(data);
-    }, json_data);
+    var json_fetch_data = function(json_components, json_data) {
+	json_fetch(json_components, function(d) {
+	    for (var i in d) {
+		// Deal with prototype failing
+		if (typeof d[i] === 'function') { continue; }
+		data[i] = d[i];
+	    }
+	    
+	    ESP.Scheduling.init(data);
+	}, json_data);
+    };
+    json_fetch_data(json_components, json_data);
 
     setInterval(function() {
         ESP.Scheduling.status('warning','Pinging server...');
@@ -569,13 +573,9 @@ $j(function(){
             if (status == "success") {
                 ESP.Scheduling.status('success','Refreshed data from server.');
                 if (d['val'] != ESP.version_uuid) {
-                    success_count = 0;
                     ESP.version_uuid = d['val'];
-                    data = {};
-		    for (var i = 0; i < files.length; i++) {
-			$j.ajax({url: 'ajax_' + files[i], dataType: 'json', success: ajax_verify(files[i]), error: ajax_retry(files[i])});
-		    }
-		    json_fetch_data(json_components);
+                    json_data = {};
+		    json_fetch_data(json_components, json_data);
                 }
             } else {
                 ESP.Scheduling.status('error','Unable to refresh data from server.');
