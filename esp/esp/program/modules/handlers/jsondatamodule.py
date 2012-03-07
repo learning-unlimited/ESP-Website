@@ -37,7 +37,7 @@ from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student
 from esp.users.models import UserAvailability
 from esp.cal.models import Event
 from esp.program.models import ClassSection, ClassSubject, StudentRegistration
-from esp.resources.models import Resource, ResourceAssignment, ResourceRequest
+from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
 from esp.datatree.models import *
 
 from esp.cache.key_set import wildcard
@@ -96,6 +96,29 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'rooms': classrooms_dicts}
     rooms.method.cached_function.depend_on_model(lambda: Resource)
+
+    @aux_call
+    @json_response()
+    @cached_module_view
+    def resource_types(prog):
+        res_types = ResourceType.objects.filter(program = prog)
+        if len(res_types) == 0:
+            res_types = ResourceType.objects.filter(program__isnull=True)
+
+        res_types_dicts = [
+            {
+                'id': rt.id,
+                'uid': rt.id,
+                'name': rt.name,
+                'description': rt.description,
+                # Comment carried over from ajaxschedulingmodule.py -- gurtej 03/06/2012
+                ## .attributes wasn't working properly; so just using this for now -- aseering 10/21/2010
+                'attributes': rt.attributes_pickled.split("|"),
+            }
+            for rt in res_types ]
+
+        return {'resource_types': res_types_dicts}
+    resource_types.cached_function.depend_on_model(ResourceType)
     
     @aux_call
     @json_response({'resourceassignment__resource__name': 'room_name'})
@@ -140,7 +163,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             lunch_timeslots[i]['is_lunch'] = True
         print lunch_timeslots
         return {'timeslots': lunch_timeslots}
-        
+
     @aux_call
     @json_response({
             'parent_class__anchor__friendly_name': 'title',

@@ -98,7 +98,10 @@ ESP.Scheduling = function(){
         var Resources = ESP.Scheduling.Resources;
 
         // resourcetypes
-        for (var i = 0; i < data.resource_types.length; i++) {
+        for (var i in data.resource_types) {
+	    // Handle prototype adding random stuff
+	    if (typeof data.resource_types[i] === 'function') continue;
+
             var rt = data.resource_types[i];
             Resources.create('RoomResource', { uid: rt.uid, text: rt.name, description: rt.description, attributes: rt.attributes });
         }
@@ -234,14 +237,18 @@ ESP.Scheduling = function(){
 			    'Teachers': s.teachers.map(function(x){ return x.text; }),
 			    'Requests:': s.resource_requests ? 
 				s.resource_requests.map(function(x){
-				    var res = Resources.get('RoomResource', x[0]);
-				    return (res ? (res.text + ": " + x[1]) : null);
+				    var res = x[0];
+				    var text = x[1] || "(none)";
+				    return (res ? (res.text + ": " + text) : null);
 				}) : "(none)",
 			    'Size:': size_info.filter(function (x) {return (x.length > 0);}).join(", "),
 			    'Grades:': s.grade_min ? (s.grade_min + "-" + s.grade_max) : "(n/a)",
 			    "Prereq's:": s.prereqs,
 			    'Comments:': s.comments
 			};
+			console.log("generating popup");
+			console.log(s.resource_requests);
+			console.log(popup_data);
 			if (s.allowable_class_size_ranges.size() > 0)
 			    popup_data['Allowable Class-Size Ranges:'] = c.allowable_class_size_ranges;
 			ESP.Utilities.fillPopup("s-" + s.id, s.block_contents, popup_data, false);
