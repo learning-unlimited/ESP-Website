@@ -76,14 +76,24 @@ $j(function(){
     
     var lastLength=0;
     input.change(function(e){
-        if(input.val().length > lastLength){
+        if(input.val().length == 0)
+            input.removeClass();
+        else if(input.val().length > lastLength || input.hasClass("not-found")){
+            var found=false;
             var buttons = $j(".checkin");
-            for(var n=0; n<buttons.length; n++)
+            for(var n=0; !found && n<buttons.length; n++)
                 if(buttons[n].name.toLowerCase().indexOf(input.val().toLowerCase())==0){
                     selected=n;
-                    updateSelected(true);
-                    break;
+                    found=true;
                 }
+            for(var n=0; !found && n<buttons.length; n++)
+                if($j(buttons[n]).parent().prev().children("a").html().toLowerCase().indexOf(input.val().toLowerCase())==0){
+                    selected=n;
+                    found=true;
+                }
+            if(found)
+                updateSelected(true);
+            input.removeClass().addClass(found?"found":"not-found");
         }
         lastLength = input.val().length;
     });

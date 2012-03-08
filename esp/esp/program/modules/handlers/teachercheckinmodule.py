@@ -135,6 +135,7 @@ class TeacherCheckinModule(ProgramModuleObj):
                                           .distinct() \
                                           .values_list('user', 'qsc__classsubject', 'qsc__friendly_name') \
                                           .order_by('user__last_name', 'user__first_name')
+        
         teacher_dict = {}
         for teacher in list(arrived) + list(missing):
             contact = teacher.getLastProfile().contact_user
@@ -145,16 +146,31 @@ class TeacherCheckinModule(ProgramModuleObj):
                                         'arrived': True}
         for teacher in missing:
             teacher_dict[teacher.id]['arrived'] = False
+        
         class_dict = {}
         class_arr = []
         for teacher_id, class_id, class_name in userbits:
             if class_id not in class_dict:
-                class_dict[class_id] = {'id': ClassSubject.objects.get(id=class_id).emailcode(), 'name': class_name, 'teachers':[]}
+                class_dict[class_id] = {'id': ClassSubject.objects.get(id=class_id).emailcode(),
+                                        'name': class_name,
+                                        'teachers': [],
+                                        'any_arrived': False}
                 class_arr.append(class_dict[class_id])
             class_dict[class_id]['teachers'].append(teacher_dict[teacher_id])
+        
         for sec in missing_sections:
             if sec.parent_class.id in class_dict:
                 class_dict[sec.parent_class.id]['room'] = sec.prettyrooms()[0]
+        
+        #Move sections where at least one teacher showed up to end of list
+        for sec in class_arr:
+            for teacher in sec['teachers']:
+                if teacher['arrived']:
+                    sec['any_arrived'] = True
+                    break
+        class_arr = [sec for sec in class_arr if sec['any_arrived'] == False] + \
+                    [sec for sec in class_arr if sec['any_arrived'] == True]
+        
         return class_arr
     
     @aux_call
