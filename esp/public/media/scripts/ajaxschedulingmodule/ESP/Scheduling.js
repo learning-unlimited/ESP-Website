@@ -10,6 +10,9 @@ ESP.Scheduling = function(){
         ESP.Scheduling.classes_by_time_type = null;
         ESP.Scheduling.ms_classes_by_time = null;
 
+        this.directory = new ESP.Scheduling.Widgets.Directory([]);
+        this.searchbox = new ESP.Scheduling.Widgets.SearchBox(this.directory);
+
         var pd = this.data = process_data(test_data_set);
         this.raw_data = test_data_set;
         if (!this.status) {
@@ -176,27 +179,24 @@ ESP.Scheduling = function(){
             return x.uid < y.uid ? -1 : x.uid == y.uid ? 0 : 1;
         });
     
-	/*
-	console.log("processing teachers");
-	console.log(data.teachers);
         // teachers
-        for (var i = 0; i < data.teachers.length; i++) {
+        for (var i in data.teachers) {
+	    // Deal with prototype adding stuff to objects
+	    if (typeof data.teachers[i] === 'function') continue;
+
             var t = data.teachers[i];
             processed_data.teachers.push(Resources.create('Teacher',{
-                uid: t.uid,
-                text: t.text,
-                block_contents: ESP.Utilities.genPopup(t.uid, t.text, {'Available Times:':
+		id: t.id,
+                text: t.first_name + " " + t.last_name,
+                block_contents: ESP.Utilities.genPopup(t.id, t.first_name + " " + t.last_name, {'Available Times:':
                     t.availability.map(function(x){
                         var res = Resources.get('Time',x);
                         return res ? res.text : "N/A";
                     }) }, null, false),
                 available_times: t.availability.map(function(x){return Resources.get('Time',x);}),
-                sections: []
+                sections: t.sections
             }));
         }
-	console.log("processed teachers");
-	console.log(processed_data.teachers);
-	*/
     
         // sections
         for (var i in data.sections) {
@@ -246,9 +246,6 @@ ESP.Scheduling = function(){
 			    "Prereq's:": s.prereqs,
 			    'Comments:': s.comments
 			};
-			console.log("generating popup");
-			console.log(s.resource_requests);
-			console.log(popup_data);
 			if (s.allowable_class_size_ranges.size() > 0)
 			    popup_data['Allowable Class-Size Ranges:'] = c.allowable_class_size_ranges;
 			ESP.Utilities.fillPopup("s-" + s.id, s.block_contents, popup_data, false);
@@ -269,30 +266,6 @@ ESP.Scheduling = function(){
 				    if (json_component == 'class_info') {
 					s.class_info = true;
 					s_data = data.sections[s.id];
-					s.teachers = [];
-					$j.each(s.teachers, function(index, value) {
-					    var t = data.teachers[value];
-					    var t_res;
-					    if (Resources.__cache__['Teacher'] && (t_res = Resources.get('Teacher', t.id))) {
-						t_res.sections.push(s);
-					    }
-					    else {
-						processed_data.teachers.push(t_res = Resources.create('Teacher',{
-						    uid: t.id,
-						    text: t.first_name + " " = t.last_name,
-						    block_contents: ESP.Utilities.genPopup("t-" + t.uid, t.first_name + " " + t.last_name,
-						    {'Available Times:': t.availability.map(function(x){
-							var res = Resources.get('Time',x);
-							return res ? res.text : "N/A";
-						    }) }, null, false),
-						    available_times: t.availability.map(function(x){
-							return Resources.get('Time',x);
-						    }),
-						    sections: []
-						}));
-					    }
-					    s.teachers.push(t_res);
-					});
 					s.prereqs = s_data.prereqs;
 				    }
 				    else if (json_component == 'class_size_info') {
@@ -338,12 +311,17 @@ ESP.Scheduling = function(){
                     category: c.category,
                     length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
                     length_hr: Math.round(c.length * 2) / 2,
-                    id:c.id,
-                    text:c.title,
-		    status:c.status,
+                    id: c.id,
+		    teachers: c.teachers.map(function(x) {
+			return Resources.get('Teacher', x);
+		    }),
+		    text: c.title,
+		    status: c.status,
                     grade_min: c.grade_min,
                     grade_max: c.grade_max,
 		}));
+
+					     
 		// console.log("Added section: " + s.code + " (time " + s.length + " = " + s.length_hr + " hr "); 
 
 		// Load class_info now, because we want some of this stuff (though it's not
@@ -383,6 +361,16 @@ ESP.Scheduling = function(){
             })();
 	}
 
+	//Finish teachers -- map the sections now that they exist
+	for (var i in processed_data.teachers) {
+	    // Deal with prototype
+	    if (typeof processed_data.teachers[i] === 'function') continue;
+
+	    processed_data.teachers[i].sections = processed_data.teachers[i].sections.map(function(x) {
+		return Resources.get('Section', x);
+	    });
+	}
+
 	console.log("Final processed data");
 	console.log(processed_data);
         return processed_data;
@@ -419,6 +407,9 @@ ESP.Scheduling = function(){
                     nowriteback: true /* Don't tell the server about this assignment */
                 });
             }
+	    else {
+		// TODO: Fire an AJAX reqeuest for class_info for all unscheduled classes
+	    }
         }
     }
 

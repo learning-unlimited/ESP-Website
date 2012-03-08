@@ -158,10 +158,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @cached_module_view
     def lunch_timeslots(prog):
         lunch_timeslots = list(Event.objects.filter(meeting_times__parent_class__category__category="Lunch", meeting_times__parent_class__parent_program=prog).values('id'))
-        print lunch_timeslots
         for i in range(len(lunch_timeslots)):
             lunch_timeslots[i]['is_lunch'] = True
-        print lunch_timeslots
         return {'timeslots': lunch_timeslots}
 
     @aux_call
@@ -175,6 +173,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'enrolled_students': 'num_students'})
     @cached_module_view
     def sections(prog):
+        teacher_dict = {}
+        teachers = []
         sections = list(prog.sections().values(
                 'id',
                 'status',
@@ -190,9 +190,23 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             section['index'] = s.index()
             section['parent_class__anchor__name'] += "s" + str(section['index'])
             section['length'] = float(s.duration)
-        return {'sections': sections}
+            section['teachers'] = [t.id for t in s.parent_class.teachers()]
+            for t in s.parent_class.teachers():
+                if teacher_dict.has_key(t.id):
+                    continue
+                teacher_dict[t.id] = True
+                # Build up teacher availability
+                availabilities = UserAvailability.objects.filter(user__in=s.parent_class.teachers()).filter(QTree(event__anchor__below = prog.anchor)).values('user_id', 'event_id')
+                avail_for_user = defaultdict(list)
+                for avail in availabilities:
+                    avail_for_user[avail['user_id']].append(avail['event_id'])
+                teachers.append({'id': t.id, 'first_name': t.first_name, 'last\
+_name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for x in t.getTaughtSectionsFromProgram(prog)]})
+    
+        return {'sections': sections, 'teachers': teachers}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
+    sections.cached_function.depend_on_cache(ClassSubject.teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
         
     @aux_call
     @json_response()
@@ -253,20 +267,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'difficulty': cls.hardness_rating,
             'prereqs': cls.prereqs, 
             'sections': [x.id for x in cls.sections.all()],
-            'teachers': [x.id for x in cls.teachers()],
             'class_size_max': cls.class_size_max,
         }
 
-        # Build up teacher availability
-        availabilities = UserAvailability.objects.filter(user__in=cls.teachers()).filter(QTree(event__anchor__below = prog.anchor)).values('user_id', 'event_id')
-        avail_for_user = defaultdict(list)
-        for avail in availabilities:
-            avail_for_user[avail['user_id']].append(avail['event_id'])
-
-        teacher_list = [{'id': t.id, 'first_name': t.first_name, 'last\
-_name': t.last_name, 'availability': avail_for_user[t.id]} for t in cls.teachers()]
-        
-        return {return_key: [return_dict], 'teachers': teacher_list}
+        return {return_key: [return_dict]}
 
     @aux_call
     @cache_control(public=True, max_age=300)

@@ -200,6 +200,11 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
         addEntry: function(entry, update){
             var update = typeof update == 'undefined' ? true : update;
             if (Object.isArray(entry)) {
+		// we need basic class info
+		if (!entry.class_info) {
+		    // TODO: fill this in
+		}
+
                 $j.each(entry, function(i,x){
                     //if (x.status == 10){ // skip non-Approved classes
                         this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, x));
