@@ -15,6 +15,7 @@ var settings = {
     show_full_classes: true,
     override_full: false,
     disable_grade_filter: false,
+    compact_classes: true,
     categories_to_display: []
 };
 
@@ -126,6 +127,13 @@ function handle_students(new_data, text_status, jqxhr)
         handle_completed();
 }
 
+function handle_compact_classes()
+{
+    var div = $j('div[id=compact-classes-body]');
+    var val = settings.compact_classes;
+    div.toggleClass( "compact-classes" , val);
+}
+
 //  I wonder why this variable is necessary...
 var last_settings_event;
 function handle_settings_change(event)
@@ -133,6 +141,7 @@ function handle_settings_change(event)
     last_settings_event = event;
     setup_settings();
     render_table(state.display_mode, state.student_id);
+    handle_compact_classes();
     update_checkboxes();
 }
 
@@ -141,15 +150,18 @@ function setup_settings()
     $j("#hide_full_control").unbind("change");
     $j("#override_control").unbind("change");
     $j("#grade_limits_control").unbind("change");
+    $j("#compact_classes").unbind("change");
     
     //  Apply settings
     settings.show_full_classes = $j("#hide_full_control").prop("checked");
     settings.override_full = $j("#override_control").prop("checked");
     settings.disable_grade_filter = $j("#grade_limits_control").prop("checked");
+    settings.compact_classes = $j("#compact_classes").prop("checked");
     
     $j("#hide_full_control").change(handle_settings_change);
     $j("#override_control").change(handle_settings_change);
     $j("#grade_limits_control").change(handle_settings_change);
+    $j("#compact_classes").change(handle_settings_change);
 }
 
 /*  Event handlers  */
@@ -224,7 +236,11 @@ function update_checkboxes()
         for (var j in section.timeslots)
         {
             var studentcheckbox = $j("#classchange_" + section.id + "_" + state.student_id + "_" + section.timeslots[j]);
-            $j("#section_" + section.id + "_" + section.timeslots[j]).addClass("student_enrolled");
+            var section_elem = $j("#section_" + section.id + "_" + section.timeslots[j]);
+            section_elem.addClass("student_enrolled");
+            var section_col = section_elem.parent();
+            section_elem.detach();
+            section_col.prepend(section_elem);
             studentcheckbox.attr("checked", "checked");
             studentcheckbox.removeAttr("disabled");
             studentcheckbox.change(handle_checkbox);
@@ -521,6 +537,7 @@ function render_table(display_mode, student_id)
         var ts_div = $j("#" + div_name);
         
         ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
+        var classes_div = $j("<div/>");
         for (var i in data.timeslots[ts_id].sections)
         {
             var section = data.sections[data.timeslots[ts_id].sections[i]];
@@ -558,10 +575,17 @@ function render_table(display_mode, student_id)
             //  Create a tooltip with more information about the class
             new_div.addClass("tooltip");
             var tooltip_div = $j("<span/>").addClass("tooltip_hover").attr("id", div_name);
-            tooltip_div.append($j("<div/>").addClass("tooltip_title").html(section.title + " - Grades " + data.classes[section.class_id].grade_min.toString() + "--" + data.classes[section.class_id].grade_max.toString()));
+            var class_data = data.classes[section.class_id];
+            var short_data = section.title + " - Grades " + class_data.grade_min.toString() + "--" + class_data.grade_max.toString();
+            if(class_data.hardness_rating) short_data = class_data.hardness_rating + " " + short_data;
+            tooltip_div.append($j("<div/>").addClass("tooltip_title").html(short_data));
             tooltip_div.append($j("<div/>").html(section.num_students_checked_in.toString() + " students checked in, " + section.num_students_enrolled + " enrolled; capacity = " + section.capacity));
-            tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(data.classes[section.class_id].teacher_names));
-            tooltip_div.append($j("<div/>").attr("id", "tooltip_" + section.id + "_" + ts_id + "_desc").addClass("tooltip_description").html(data.classes[section.class_id].class_info));
+            tooltip_div.append($j("<div/>").addClass("tooltip_teachers").html(class_data.teacher_names));
+            tooltip_div.append($j("<div/>").attr("id", "tooltip_" + section.id + "_" + ts_id + "_desc").addClass("tooltip_description").html(class_data.class_info));
+            if(class_data.prereqs)
+            {
+                tooltip_div.append($j("<div/>").attr("id", "tooltip_" + section.id + "_" + ts_id + "_prereq").addClass("tooltip_prereq").html("Prereqs: " + class_data.prereqs));
+            }
             new_div.append(tooltip_div);
             
             //  Set color of the cell based on check-in and enrollment of the section
@@ -579,8 +603,9 @@ function render_table(display_mode, student_id)
             new_div.css("background", hslToHTML(hue, saturation, lightness));
             new_div.attr("id", "section_" + section.id + "_" + ts_id);
 
-            ts_div.append(new_div);
+            classes_div.append(new_div);
         }
+        ts_div.append(classes_div);
         ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
     }
 }

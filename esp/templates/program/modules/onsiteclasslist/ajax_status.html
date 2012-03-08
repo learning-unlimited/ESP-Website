@@ -9,6 +9,8 @@
         $j.getScript("/media/scripts/csrf_init.js");
         $j.getScript("/media/scripts/csrf_check.js");
     });
+    function set_compact_classes() {
+    }
 </script>
 <script type="text/javascript" src="/media/scripts/onsite/hsl_colors.js"></script>
 <script type="text/javascript" src="/media/scripts/onsite/ajax_status.js"></script>
@@ -50,21 +52,25 @@
 </select>
 </div>
 
+<div id='compact-classes-body' class='compact-classes'>
 <table class="narrow bordered">
 <tr>{% for timeslot in timeslots %}
     <td width="270px" valign="top"><div id="timeslot_{{ timeslot.id }}"></div></td>{% endfor %}
 </tr>
 </table>
+</div>
 
 <div id="space_at_bottom" style="height: 400px;">&nbsp;</div>
 
 <a name="settings" />
 <div id="settings_controls">
 <b>Advanced settings</b>
+<!-- make sure to update onsite/ajax_status.js when changing this -->
 <ul>
 <li><input type="checkbox" id="hide_full_control" checked="checked"/>Show full classes</li>
 <li><input type="checkbox" id="override_control"/>Override size limits</li>
 <li><input type="checkbox" id="grade_limits_control"/>Show classes outside student's grade range</li>
+<li><input type="checkbox" id="compact_classes" checked="checked" />Display only class numbers</li>
 </ul>
 </div>
 
