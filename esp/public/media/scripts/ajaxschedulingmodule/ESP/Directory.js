@@ -169,8 +169,6 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             var filter = filter || this.activeFilter || function(){ return true; };
             this.activeFilter = filter;
             var active_rows = [];
-	    console.log("filtering");
-	    console.log(this.entries);
             $j.each(this.entries, function(i,entry){
                 if (entry.section.blocks.length == 0 && filter(entry.section))
                     active_rows.push(entry);
