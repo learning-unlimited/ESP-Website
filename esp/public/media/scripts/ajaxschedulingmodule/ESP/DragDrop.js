@@ -72,7 +72,7 @@ ESP.declare('ESP.Scheduling.DragDrop', function(){
                     block = block.seq;
                 }
                 target_block._temp_glom = blocks;
-                
+
                 return target_block._temp_accept_flag = true;
             },
             drop: function(e, ui) {

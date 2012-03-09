@@ -38,7 +38,6 @@ ESP.Scheduling = function(){
         $j('#directory-target').append(this.garbage.el.addClass('float-right'));
         $j('#directory-target').append(this.directory.el);
     
-        //ESP.Utilities.evm.bind('drag_started',function(data){alert('!!!');});
         ESP.Utilities.evm.bind('drag_dropped', function(event, data){
             var extra = {
                 blocks:data.blocks, section:data.section
@@ -498,34 +497,55 @@ ESP.Scheduling = function(){
     };
     
     var validate_start_time = function(time, section, str_err) {
+	var length = 0;
+	if (section.blocks && (section.blocks.length > 0)) {
+	    length = section.blocks.length;
+	}
+	else if (section.length_hr > 0) {
+	    length = Math.ceil(section.length_hr);
+	}
+	else {
+	    return (str_err ? "No length defined!" : false)
+	}
+
+	    
         //  Check for not scheduling across a contiguous group of lunch periods - check start block only
         var test_time = time;
         var covered_lunch_start = false;
-        
-        if (test_time.is_lunch && !covered_lunch_start)
-        {
-            //  Check that this is the first lunch in the group:
-            //  - this is the first time slot, or
-            //  - the previous time slot is not a lunch block
-            if ((ESP.Scheduling.data.times.indexOf(test_time) == 0) || !(ESP.Scheduling.data.times[ESP.Scheduling.data.times.indexOf(test_time) - 1].is_lunch))
-                covered_lunch_start = true;
-        }
 	
-        //  If this is the last timeslot of the program, don't sweat it... this assignment
-        //  is invalid anyway.
-        if (!test_time.seq)
-            return 
+	// Start with the proposed start time and iterate over all time blocks the section will need
+	for (var i = 0; i < length; i++)
+	{
+	    if (test_time.is_lunch && !covered_lunch_start)
+	    {
+		//  Check that this is the first lunch in the group:
+		//  - this is the first time slot, or
+		//  - the previous time slot is not a lunch block
+		if ((ESP.Scheduling.data.times.indexOf(test_time) == 0) || !(ESP.Scheduling.data.times[ESP.Scheduling.data.times.indexOf(test_time) - 1].is_lunch))
+		{
+		    covered_lunch_start = true;
+		}
+	    }
+	    
+	    //  If this is the last timeslot of the program, don't sweat it... this assignment
+	    //  is invalid anyway.
+	    if (!test_time.seq && i != length - 1)
+	    {
+		return (str_err ? "Section " + section.code + " has an invalid assignment" : false);
+	    }
+	    
+	    //  But, if our class period overlapped with the beginning of the lunch sequence
+	    //  and now also overlaps with the end of the lunch sequence, that's a conflict.
+	    if (covered_lunch_start && !(test_time.seq.is_lunch))
+	    {
+		return (str_err ? "Section " + section.code + " starting at " + time.text + " would conflict with a group of lunch periods" : false);
+	    }
+	    
+	    //  Move on to the next time slot.
+	    test_time = test_time.seq;
+	}
 
-        //  But, if our class period overlapped with the beginning of the lunch sequence
-        //  and now also overlaps with the end of the lunch sequence, that's a conflict.
-        if (covered_lunch_start && !(test_time.seq.is_lunch))
-	    return (str_err ? "Section " + section.code + " starting at " + time.text + " would conflict with a group of lunch periods" : false);
-        
-        //  Move on to the next time slot.
-        test_time = test_time.seq;
-	
-        
-        return (str_err ? "OK" : true);
+	return (str_err ? "OK" : true);
     };
     
     var self = {
