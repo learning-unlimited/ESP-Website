@@ -542,9 +542,17 @@ then
         done
         kill $!
 
-        cat >>$DROPBOX_STARTUP_SCRIPT <<EOF
-    HOME=${DROPBOX_BASE_DIR}/$SITENAME ${DROPBOX_PATH}/dropboxd &
-EOF
+        FILENAME=${DROPBOX_STARTUP_SCRIPT}
+        MATCH_TEXT="exit 0"
+        INSERT_TEXT="HOME=${DROPBOX_BASE_DIR}/$SITENAME ${DROPBOX_PATH}/dropboxd &"
+        TEMPFILE=`mktemp`
+
+        cp $FILENAME $TEMPFILE
+        TOTAL_LINES=`cat $FILENAME | wc -l`
+        LINES=`grep -n "$MATCH_TEXT" $FILENAME | tail -n 1 | cut -f 1 -d ':'`
+        head -n $((LINES - 1)) $TEMPFILE > $FILENAME
+        echo $INSERT_TEST >> $FILENAME
+        tail -n $((TOTAL_LINES - LINES + 1)) $TEMPFILE >> $FILENAME
 
         echo "Dropbox for $SITENAME will run on startup from now on."
         echo "To change, edit ${DROPBOX_STARTUP_SCRIPT}."

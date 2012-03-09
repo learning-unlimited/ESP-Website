@@ -42,9 +42,14 @@ class LITAdmin(admin.ModelAdmin):
 admin_site.register(LineItemType, LITAdmin)
 
 class TXNAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['id', 'timestamp', 'text', 'complete', ]
+    list_display_links = list_display
 admin_site.register(Transaction, TXNAdmin)
 
+def transaction_id(lineitem):
+    return lineitem.transaction_id
+transaction_id.admin_order_field = 'transaction__id'
+
 class LIAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['id', transaction_id, 'amount', 'anchor', 'user', 'text', ]
 admin_site.register(LineItem, LIAdmin)

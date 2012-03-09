@@ -1024,3 +1024,31 @@ class ModuleControlTest(ProgramFrameworkTest):
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
         self.assertTrue('Steps for Registration' in response.content)
         
+class MeetingTimesTest(ProgramFrameworkTest):
+    def assertSetEquals(self, a, b):
+        self.assertTrue(set(a) == set(b), 'set(%s) != set(%s)' % (a, b))
+
+    def runTest(self):
+        #   Get a class section
+        section = self.program.sections()[0]
+        
+        #   Make sure it is not scheduled
+        section.meeting_times.clear()
+        section.classroomassignments().delete()
+        self.assertSetEquals(section.get_meeting_times(), [])
+        
+        #   Assign a meeting times
+        ts_list = self.program.getTimeSlots()
+        ts1 = ts_list[0]
+        ts2 = ts_list[1]
+        
+        #   Check whether changes appear as we make them
+        section.meeting_times.add(ts1)
+        self.assertSetEquals(section.get_meeting_times(), [ts1])
+        section.meeting_times.add(ts2)
+        self.assertSetEquals(section.get_meeting_times(), [ts1, ts2])
+        section.meeting_times.remove(ts1)
+        self.assertSetEquals(section.get_meeting_times(), [ts2])
+        section.meeting_times.remove(ts2)
+        self.assertSetEquals(section.get_meeting_times(), [])
+        
