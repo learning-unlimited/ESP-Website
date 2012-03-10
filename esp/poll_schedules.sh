@@ -1,7 +1,7 @@
 #!/bin/bash
 
-PROGRAM="Splash"
-INSTANCE="2010"
+PROGRAM="Spark"
+INSTANCE="2012"
 
 echo "What printer do you want to print to? (lpr printer name)"
 read PRINTERNAME
@@ -22,7 +22,7 @@ curl -b "${CURL_COOKIE_STORE}" -c "${CURL_COOKIE_STORE}" -d "username=${USERNAME
 echo "Logged in!"
 
 while (true); do
-	TMPFILE="`mktemp -t esp_print_tmp`"	
+	TMPFILE="`mktemp`"
 	curl -b "${CURL_COOKIE_STORE}" "https://esp.mit.edu/onsite/${PROGRAM}/${INSTANCE}/printschedules?gen_img&img_format=ps" -o "${TMPFILE}" 2>/dev/null
 
 	if [ -n "`cat "${TMPFILE}"`" ]; then
