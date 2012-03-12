@@ -928,6 +928,8 @@ class ESPUser(User, AnonymousUser):
 
     @staticmethod
     def current_schoolyear():
+        # Note: school year numbers are indicated using the year in the SPRING
+        # e.g., AY2012 is the 2011--2012 school year
         now = datetime.now()
         curyear = now.year
         # Changed from 6/1 to 5/1 rollover so as not to affect start of Summer HSSP registration

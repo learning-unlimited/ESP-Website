@@ -723,7 +723,7 @@ def meets_any_deadline(extensions=[]):
         return _checkDeadline
     return meets_deadline
 
-#   Line meets_any_deadline above, but requires that all deadlines are met.
+#   Like meets_any_deadline above, but requires that all deadlines are met.
 def meets_all_deadlines(extensions=[]):
     def meets_deadline(method):
         def _checkDeadline(moduleObj, request, tl, *args, **kwargs):
