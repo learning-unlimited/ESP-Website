@@ -145,8 +145,8 @@ add_classes_to_timeslot = function(timeslot, sections){
 	id = class_id_list[i];
 	section = sections[id];
 	
-	//grade check
-	if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
+	// check grade in range or admin
+	if((user_grade >= section['grade_min'] && user_grade <= section['grade_max']) || esp_user['cur_admin'] == 1){
 	    if(section['category'] != 'W'){
 		has_classes = true;
 		classes_list.push(section);
@@ -158,8 +158,8 @@ add_classes_to_timeslot = function(timeslot, sections){
 	id = carryover_id_list[i];
 	section = sections[id];
 
-	//grade check
-	if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
+	//check grade in range or admin
+	if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] || esp_user['cur_admin'] == 1){
 	    if(section['category'] == 'W'){
 		has_walkins = true;
 		walkins_list.push(section);
