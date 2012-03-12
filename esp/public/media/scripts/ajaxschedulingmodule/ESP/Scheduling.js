@@ -322,9 +322,10 @@ ESP.Scheduling = function(){
 		// console.log("Added section: " + s.code + " (time " + s.length + " = " + s.length_hr + " hr "); 
 
 		// Make sure the Directory now knows this section exists
-		ESP.Scheduling.directory.addEntry(s, true);
+		ESP.Scheduling.directory.addEntry(s, false);
             })();
 	}
+	ESP.Scheduling.directory.filter();
 
 	//Finish teachers -- map the sections now that they exist
 	for (var i in processed_data.teachers) {
