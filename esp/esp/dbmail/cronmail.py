@@ -48,17 +48,20 @@ from esp.miniblog.models import Entry
 
 from django.conf import settings
 
+import os
+
 @transaction.autocommit
 def process_messages():
     """ Go through all unprocessed messages and process them. """
-    messages = MessageRequest.objects.filter(Q(processed_by__lte=datetime.now()) |
-                                             Q(processed_by__isnull=True),
-                                             processed=False)
-    num_messages = len(messages)
-    for message in messages:
-        message.processed_by = datetime.now() + timedelta(seconds=10 * num_messages)
-        message.save()
+    
+    #   Perform an atomic update in order to claim which messages we will be processing.
+    my_pid = os.getpid()
+    MessageRequest.objects.filter(Q(processed_by__lte=datetime.now()) | Q(processed_by__isnull=True)).filter(processed_pid__isnull=True, processed=False).update(processed_pid=my_pid, processed_by=datetime.now() + timedelta(seconds=10))
+    
+    #   Identify the messages we just claimed.
+    messages = MessageRequest.objects.filter(processed_pid=my_pid, processed=False)
 
+    #   Process message requests
     for message in messages:
         try:
             message.process(True)
