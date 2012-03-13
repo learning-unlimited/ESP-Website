@@ -34,9 +34,9 @@ ESP.Scheduling = function(){
             this.roomfilter.restore(this.matrix);
         this.garbage   = new ESP.Scheduling.Widgets.GarbageBin();
         $j('#directory-target').text('');
-        $j('#directory-target').append(this.searchbox.el);
-        $j('#directory-target').append(this.garbage.el.addClass('float-right'));
         $j('#directory-target').append(this.directory.el);
+        $j('#directory-target').append(this.searchbox.el);
+        $j('#directory-target').append(this.garbage.el);
     
         ESP.Utilities.evm.bind('drag_dropped', function(event, data){
             var extra = {

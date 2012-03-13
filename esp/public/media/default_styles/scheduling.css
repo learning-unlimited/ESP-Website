@@ -35,13 +35,15 @@ top: 50px; bottom: 10px; right: 10px; left: 10px;
 }
 
 #matrix-target {
-height: 62%; max-height: 62%; /*overflow: auto;*/
-padding-bottom: 5px; /*border: 1px solid black;*/
+height: 100%; max-height: 100%; /*overflow: auto;*/
+width: 68%;
+float: left;
 position: relative;
 }
 #directory-target {
-height: 38%; max-height: 38%; /*overflow: auto;*/
-padding-top: 5px; /*border: 1px solid black;*/
+height: 100%; max-height: 100%; /*overflow: auto;*/
+width: 28%;
+float: right;
 position: relative;
 }
 
@@ -141,7 +143,7 @@ opacity: .6;
  */
 .directory-table-wrapper {
 position: absolute;
-top: 50px; left: 0px; right: 0px; bottom: 10px;
+top: 0px; left: 0px; right: 0px; bottom: 50px;
 border: 1px solid black;
 }
 
@@ -185,7 +187,7 @@ top: 41px; bottom: 0; left: 0; right: 0;
 
 .searchbox {
 position: absolute;
-left: 10px; top: 20px;
+left: 10px; bottom: 10px;
 right: 10px; height: 20px;
 }
 
@@ -197,9 +199,10 @@ margin-bottom: 20px;
 .garbage {
 width: 100px;
 height: 40px;
+position: absolute;
+bottom: 0px; right: 0px;
 background: grey;
 border: 1px solid black;
-margin-right: 200px;
 color: white;
 font-family: Arial, Helvetica, sans-serif;
 font-size: 0.8em;
