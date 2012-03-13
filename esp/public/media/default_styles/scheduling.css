@@ -144,12 +144,11 @@ opacity: .6;
 .directory-table-wrapper {
 position: absolute;
 top: 0px; left: 0px; right: 0px; bottom: 50px;
-border: 1px solid black;
+border: 2px solid black;
 }
 
 .directory {
 position: relative; height: 100%; width: 100%;
-border: 1px solid black;
 border-spacing: 0px; border-collapse: collapse;
 }
 .directory .header td { height: auto; }
