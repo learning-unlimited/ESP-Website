@@ -17,6 +17,7 @@
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/prototype.js'></script>
 <script type='text/javascript' src='/media/scripts/jquery.js'></script>
 <script type='text/javascript' src='/media/scripts/jquery-ui.js'></script>
+<script type='text/javascript' src='/media/scripts/jquery.splitter.js'></script>
 <script language="JavaScript" src="/media/scripts/jquery.cookie.js"></script>
 <script type='text/javascript'>
 var $j = jQuery.noConflict(); // grr... stupid prototype fail
@@ -55,8 +56,9 @@ var $j = jQuery.noConflict(); // grr... stupid prototype fail
   <span id='statusbar'>Loading...</span>
 </div>
 <div id='body'>
-<div id='matrix-target'></div>
-<div id='directory-target'></div>
+  <div id='matrix-target'></div>
+  <div id='directory-target'></div>
+  <div id='drag-handle-wrapper'><div id='drag-handle'></div></div>
 </div>
 </body>
 </html>

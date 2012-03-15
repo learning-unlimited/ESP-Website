@@ -38,6 +38,20 @@ ESP.Scheduling = function(){
         $j('#directory-target').append(this.garbage.el);
         $j('#directory-target').append(this.searchbox.el);
     
+	var origDirWidth = -1;
+	var origMatWidth = -1;
+	$j('#drag-handle-wrapper').draggable({
+	    axis: 'x',
+	    start: function(event, ui) {
+		origDirWidth = $j('#directory-target').width();
+		origMatWidth = $j('#matrix-target').width();
+	    },
+	    drag: function(event, ui) {
+		$j('#directory-target').width(origDirWidth + (ui.originalPosition.left - ui.position.left));
+		$j('#matrix-target').width(origMatWidth - (ui.originalPosition.left - ui.position.left));
+	    }
+	});
+
         ESP.Utilities.evm.bind('drag_dropped', function(event, data){
             var extra = {
                 blocks:data.blocks, section:data.section
@@ -63,7 +77,8 @@ ESP.Scheduling = function(){
         ESP.Utilities.evm.bind('block_section_assignment_success', function(event, data){
             dir.filter();
         });
-        $j('#body').show()
+
+        $j('#body').show();
 
         console.log("Classes of each type in each timeblock:");
         for (var time in ESP.Scheduling.classes_by_time_type) {

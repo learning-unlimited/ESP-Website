@@ -46,7 +46,18 @@ width: 28%;
 float: right;
 position: relative;
 }
-
+#drag-handle-wrapper {
+width: 10px;
+height: 100%;
+position: absolute;
+right: 30%;
+margin-right: -5px;
+}
+#drag-handle {
+position: absolute;
+top: 10px; bottom: 10px; left: 0; right: 0;
+background-color: #aaa;
+}
 
 /*
  * the Matrix
