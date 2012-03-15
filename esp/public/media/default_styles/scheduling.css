@@ -188,7 +188,7 @@ display: block;
 
 .searchbox {
 position: absolute;
-left: 10px; bottom: 10px;
+bottom: 10px;
 right: 10px; height: 20px;
 }
 
@@ -201,7 +201,7 @@ margin-bottom: 20px;
 width: 100px;
 height: 40px;
 position: absolute;
-bottom: 0px; right: 0px;
+bottom: 0px; left: 0px;
 background: grey;
 border: 1px solid black;
 color: white;
