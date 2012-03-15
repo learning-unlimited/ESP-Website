@@ -46,6 +46,10 @@ width: 28%;
 float: right;
 position: relative;
 }
+
+/*
+ * The Drag Handle
+ */
 #drag-handle-wrapper {
 width: 10px;
 height: 100%;
@@ -56,7 +60,17 @@ margin-right: -5px;
 #drag-handle {
 position: absolute;
 top: 10px; bottom: 10px; left: 0; right: 0;
-background-color: #aaa;
+background-color: #eee;
+color: #aaa;
+border: 1px solid #aaa;
+text-align: center;
+}
+.drag-dash {
+margin: 0;
+font-size: 12px;
+line-height: 5px;
+width: 100%;
+height: 100%;
 }
 
 /*
