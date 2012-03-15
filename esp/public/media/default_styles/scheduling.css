@@ -156,7 +156,7 @@ border-spacing: 0px; border-collapse: collapse;
 .directory .sort-by.desc span { background: url(media/down_arrow.png) no-repeat right center; }
 .directory .sort-by.asc span { background: url(media/up_arrow.png) no-repeat right center; }
 
-.directory tr { width: 100%; display: block; }
+.directory tr { width: 100%; }
 .directory tr {
 border-bottom: 1px solid #999;	
 }
@@ -176,12 +176,14 @@ background-color: #cfc;
 background-color: #eee; border-bottom: 1px solid black;
 position: absolute;
 top: 0; height: 40px; left: 0; right: 0;
+display: block;
 }
 
 .directory tbody {
 overflow: auto;
 position: absolute;
 top: 41px; bottom: 0; left: 0; right: 0;
+display: block;
 }
 
 .searchbox {

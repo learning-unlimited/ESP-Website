@@ -8,7 +8,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             this.active_filter = null;
         
             // set up display
-            this.table = $j("<table/>").addClass('directory');
+            this.table = $j("<table/>").addClass('directory').css('table-layout', 'fixed');
             this.el = $j("<div/>").addClass('directory-table-wrapper');
             this.el.append(this.table);
         
@@ -54,7 +54,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    //css: 'width:100px;'
 	    /* Code to style unapproved classes differently */
             css: function(x){
-		var default_css = 'width:100px;';
+		var default_css = 'width:15%; max-width:15%;';
 		var unapproved_css = "color:#ff0000; font-style:italic;";
 		// if we're just calling it for the general properties of the ID td
 		// or if it's approved, return the default css
@@ -75,7 +75,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    // css: 'width:400px;'
 	    /* Code to style unapproved classes differently */
             css: function(x){ 
-		var default_css = 'width:400px;';
+		var default_css = 'width:40%; max-width:40%;';
 		var unapproved_css = "color:#ff0000; font-style:italic;";
 		// if we're just calling it for the general properties of the ID td
 		// or if it's approved, return the default css
@@ -96,7 +96,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    // css: 'width:100px;'
 	    /* Code to style unapproved classes differently */
             css: function(x){
-		var default_css = 'width:100px;';
+		var default_css = 'width:10%; max-width:10%;';
 		var unapproved_css = "color:#ff0000; font-style:italic;";
 		// if we're just calling it for the general properties of the ID td
 		// or if it's approved, return the default css
@@ -128,7 +128,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    // css: 'width:200px;'
 	    /* Code to style unapproved classes differently */
             css: function(x){
-		var default_css = 'width:200px;';
+		var default_css = 'width:25%;max-width:25%;';
 		var unapproved_css = "color:#ff0000; font-style:italic;";
 		// if we're just calling it for the general properties of the ID td
 		// or if it's approved, return the default css
@@ -149,7 +149,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    // css: 'width:50px;'
 	    /* Code to style unapproved classes differently */
             css: function(x){
-		var default_css = 'width:50px;';
+		var default_css = 'width:10%; max-width:10%;';
 		var unapproved_css = "color:#ff0000; font-style:italic;";
 		// if we're just calling it for the general properties of the ID td
 		// or if it's approved, return the default css
