@@ -42,6 +42,7 @@ ESP.Scheduling = function(){
 	var origMatWidth = -1;
 	$j('#drag-handle-wrapper').draggable({
 	    axis: 'x',
+	    cursor: 'ew-resize',
 	    start: function(event, ui) {
 		origDirWidth = $j('#directory-target').width();
 		origMatWidth = $j('#matrix-target').width();
