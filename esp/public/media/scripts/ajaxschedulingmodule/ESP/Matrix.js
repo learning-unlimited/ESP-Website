@@ -454,7 +454,7 @@ ESP.declare('ESP.Scheduling.Widgets.GarbageBin', Class.create({
             var options = $j.extend({
                 hoverClass: 'dd-hover',
                 tolerance: 'pointer',
-                accept: function(d){ return true; },
+                accept: function(d){ if (d.data('section')) {return true;} else {return false;}},
                 drop: function(e, ui) {
                     target.removeClass(activeClass);
                     ESP.Utilities.evm.fire('drag_dropped',{

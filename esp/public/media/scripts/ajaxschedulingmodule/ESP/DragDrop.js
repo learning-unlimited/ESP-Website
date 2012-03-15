@@ -54,6 +54,7 @@ ESP.declare('ESP.Scheduling.DragDrop', function(){
                 var blocks = [];
             
                 var section = d.data('section');
+		if(!section) return false;
                 
                 //  Check errors from the section starting on the first proposed time block
                 if (block == null || !block._temp_accept_start)
