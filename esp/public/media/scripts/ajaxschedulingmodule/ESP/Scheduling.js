@@ -45,8 +45,8 @@ ESP.Scheduling = function(){
 	    cursor: 'ew-resize',
 	    containment: $j("#drag-container"),
 	    start: function(event, ui) {
-		origDirWidth = $j('#directory-target').width();
-		origMatWidth = $j('#matrix-target').width();
+		origDirWidth = $j("body").width() - $j('#drag-handle-wrapper').position().left - (0.02 * $j("body").width()) - 5;
+		origMatWidth = $j("#drag-handle-wrapper").position().left - (0.02 * $j("body").width()) + 5;
 	    },
 	    drag: function(event, ui) {
 		var positionDiff = ui.originalPosition.left - ui.position.left;
