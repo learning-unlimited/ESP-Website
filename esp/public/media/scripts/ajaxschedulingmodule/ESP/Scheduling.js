@@ -52,8 +52,8 @@ ESP.Scheduling = function(){
 		var positionDiff = ui.originalPosition.left - ui.position.left;
 		var rightPercentage = 100.0 * (1 - ((ui.position.left + 10) / $j(document).width()));
 		$j('#drag-handle-wrapper').css("right", rightPercentage + "%");
-		$j('#directory-target').width(origDirWidth + positionDiff);
-		$j('#matrix-target').width(origMatWidth - positionDiff);
+		$j('#directory-target').css("width", 100.0 * (origDirWidth + positionDiff)/$j("body").width() + "%");
+		$j('#matrix-target').css("width", 100.0 * (origMatWidth - positionDiff)/$j("body").width() + "%");
 	    }
 	});
 
