@@ -51,15 +51,16 @@ position: relative;
  * The Drag Handle
  */
 #drag-container {
-height: 100%;
 position: fixed;
 right: 25%; left: 30%;
+top: 50px; bottom: 10px;
 }
 #drag-handle-wrapper {
 width: 10px;
-height: 100%;
 position: fixed;
 right: 30%;
+left: auto !important;
+top: 50px; bottom: 10px;
 }
 #drag-handle {
 position: absolute;
@@ -219,11 +220,14 @@ display: block;
 position: absolute;
 bottom: 10px;
 right: 10px; height: 20px;
+max-width: 500px; min-width: 100px; width: 60%;
+text-align: right;
 }
 
 .searchbox input {
-width: 300px;
-margin-bottom: 20px;
+width: 80%;
+margin-left: 5px;
+float: right;
 }
 
 .garbage {

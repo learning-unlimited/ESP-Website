@@ -50,6 +50,8 @@ ESP.Scheduling = function(){
 	    },
 	    drag: function(event, ui) {
 		var positionDiff = ui.originalPosition.left - ui.position.left;
+		var rightPercentage = 100.0 * (1 - ((ui.position.left + 10) / $j(document).width()));
+		$j('#drag-handle-wrapper').css("right", rightPercentage + "%");
 		$j('#directory-target').width(origDirWidth + positionDiff);
 		$j('#matrix-target').width(origMatWidth - positionDiff);
 	    }
