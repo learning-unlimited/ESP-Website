@@ -43,13 +43,15 @@ ESP.Scheduling = function(){
 	$j('#drag-handle-wrapper').draggable({
 	    axis: 'x',
 	    cursor: 'ew-resize',
+	    containment: $j("#drag-container"),
 	    start: function(event, ui) {
 		origDirWidth = $j('#directory-target').width();
 		origMatWidth = $j('#matrix-target').width();
 	    },
 	    drag: function(event, ui) {
-		$j('#directory-target').width(origDirWidth + (ui.originalPosition.left - ui.position.left));
-		$j('#matrix-target').width(origMatWidth - (ui.originalPosition.left - ui.position.left));
+		var positionDiff = ui.originalPosition.left - ui.position.left;
+		$j('#directory-target').width(origDirWidth + positionDiff);
+		$j('#matrix-target').width(origMatWidth - positionDiff);
 	    }
 	});
 

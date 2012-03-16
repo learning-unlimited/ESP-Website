@@ -36,13 +36,13 @@ top: 50px; bottom: 10px; right: 10px; left: 10px;
 
 #matrix-target {
 height: 100%; max-height: 100%; /*overflow: auto;*/
-width: 68%;
+width: 68%; min-width: 200px;
 float: left;
 position: relative;
 }
 #directory-target {
 height: 100%; max-height: 100%; /*overflow: auto;*/
-width: 28%;
+width: 28%; min-width: 100px;
 float: right;
 position: relative;
 }
@@ -50,12 +50,16 @@ position: relative;
 /*
  * The Drag Handle
  */
+#drag-container {
+height: 100%;
+position: fixed;
+right: 25%; left: 30%;
+}
 #drag-handle-wrapper {
 width: 10px;
 height: 100%;
-position: absolute;
+position: fixed;
 right: 30%;
-margin-right: -5px;
 }
 #drag-handle {
 position: absolute;
