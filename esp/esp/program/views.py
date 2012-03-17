@@ -761,7 +761,7 @@ def statistics(request, program=None):
         #   Handle case where all we want is a new form
         if 'update_form' in request.GET:
             form.hide_unwanted_fields()
-            
+
             #   Return result
             context = {'form': form}
             context['clear_first'] = True

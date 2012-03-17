@@ -176,24 +176,24 @@ class StatisticsQueryForm(forms.Form):
         result.sort(key=lambda x: x[1])
         return result
 
-    query = forms.ChoiceField(choices=stats_questions, widget=forms.Select(attrs={'dojoType': 'dijit.form.Select'}), help_text='What question would you like to ask?')
-    limit = forms.IntegerField(required=False, min_value=0, widget=forms.TextInput(attrs={'dojoType': 'dijit.form.NumberTextBox'}), help_text='Limit number of aggregate results to display (leave blank or enter 0 to display all results)')
+    query = forms.ChoiceField(choices=stats_questions, widget=forms.Select(), help_text='What question would you like to ask?')
+    limit = forms.IntegerField(required=False, min_value=0, widget=forms.TextInput(), help_text='Limit number of aggregate results to display (leave blank or enter 0 to display all results)')
 
-    program_type_all = forms.BooleanField(required=False, initial=False, widget=forms.CheckboxInput(attrs={'dojoType': "dijit.form.CheckBox"}), label='Search All Programs?', help_text='Uncheck to select a program type')
-    program_type = forms.ChoiceField(required=False, choices=((None, ''),), widget=forms.Select(attrs={'dojoType': 'dijit.form.Select'}), help_text='Type of Program')
-    program_instance_all = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(attrs={'dojoType': "dijit.form.CheckBox"}), label='Search All Instances?', help_text='Uncheck to select specific instances')
-    program_instances = forms.MultipleChoiceField(required=False, choices=((None, ''),), widget=forms.SelectMultiple(attrs={'dojoType': 'dijit.form.MultiSelect'}), label='Instance[s] of Program')  #   Choices will be replaced by Ajax request if necessary
+    program_type_all = forms.BooleanField(required=False, initial=False, widget=forms.CheckboxInput(), label='Search All Programs?', help_text='Uncheck to select a program type')
+    program_type = forms.ChoiceField(required=False, choices=((None, ''),), widget=forms.Select(), help_text='Type of Program')
+    program_instance_all = forms.BooleanField(required=False, initial=True, widget=forms.CheckboxInput(), label='Search All Instances?', help_text='Uncheck to select specific instances')
+    program_instances = forms.MultipleChoiceField(required=False, choices=((None, ''),), widget=forms.SelectMultiple(), label='Instance[s] of Program')  #   Choices will be replaced by Ajax request if necessary
     
-    reg_types = forms.MultipleChoiceField(choices=reg_categories, widget=forms.SelectMultiple(attrs={'dojoType': 'dijit.form.MultiSelect'}), initial=['classreg'], label='Registration Categories')
+    reg_types = forms.MultipleChoiceField(choices=reg_categories, widget=forms.SelectMultiple(), initial=['classreg'], label='Registration Categories')
     
-    school_query_type = forms.ChoiceField(choices=(('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school[s] from list')), initial='all', widget=forms.RadioSelect(attrs={'dojoType': 'dijit.form.RadioButton'}), label='School Query Type')
-    school_name = forms.CharField(required=False, widget=forms.TextInput(attrs={'dojoType': 'dijit.form.TextBox'}), label='[Partial] School Name')
-    school_multisel = forms.MultipleChoiceField(required=False, choices=(), widget=forms.SelectMultiple(attrs={'dojoType': 'dijit.form.MultiSelect'}), label='School[s]', help_text='Hold down Ctrl to select more than one')
+    school_query_type = forms.ChoiceField(choices=(('all', 'Match any school'), ('name', 'Enter partial school name'), ('list', 'Select school[s] from list')), initial='all', widget=forms.RadioSelect(), label='School Query Type')
+    school_name = forms.CharField(required=False, widget=forms.TextInput(), label='[Partial] School Name')
+    school_multisel = forms.MultipleChoiceField(required=False, choices=(), widget=forms.SelectMultiple(), label='School[s]', help_text='Hold down Ctrl to select more than one')
     
-    zip_query_type = forms.ChoiceField(choices=(('all', 'Any Zip code'), ('exact', 'Exact match'), ('partial', 'Partial match'), ('distance', 'Distance from Zip code')), initial='all', widget=forms.RadioSelect(attrs={'dojoType': 'dijit.form.RadioButton'}), label='Zip Code Query Type')
-    zip_code = forms.CharField(required=False, widget=forms.TextInput(attrs={'dojoType': 'dijit.form.NumberTextBox'}))
-    zip_code_partial = forms.CharField(required=False, widget=forms.TextInput(attrs={'dojoType': 'dijit.form.NumberTextBox'}), label='Beginning digits of Zip code')
-    zip_code_distance = forms.IntegerField(required=False, widget=forms.TextInput(attrs={'dojoType': 'dijit.form.NumberTextBox'}), label='Maximum distance from Zip code', help_text='Enter an integer distance in miles')
+    zip_query_type = forms.ChoiceField(choices=(('all', 'Any Zip code'), ('exact', 'Exact match'), ('partial', 'Partial match'), ('distance', 'Distance from Zip code')), initial='all', widget=forms.RadioSelect(), label='Zip Code Query Type')
+    zip_code = forms.CharField(required=False, widget=forms.TextInput())
+    zip_code_partial = forms.CharField(required=False, widget=forms.TextInput(), label='Beginning digits of Zip code')
+    zip_code_distance = forms.IntegerField(required=False, widget=forms.TextInput(), label='Maximum distance from Zip code', help_text='Enter an integer distance in miles')
     
     def __init__(self, *args, **kwargs):
         if 'program' in kwargs:
@@ -285,8 +285,6 @@ class StatisticsQueryForm(forms.Form):
             if hasattr(self, 'initial'):
                 data.update(self.initial)
             
-        print data
-        
         #   Program selection
         if 'program_type_all' in data and data['program_type_all']:
             self.hide_field('program_type')
@@ -295,28 +293,32 @@ class StatisticsQueryForm(forms.Form):
         elif 'program_instance_all' in data and data['program_instance_all']:
             self.hide_field('program_instances')
         self.disable_if_useless('program_type', ['program_type_all'])
-        
+
         #   School selection
-        if data['school_query_type'] == 'all':
-            self.hide_field('school_name')
-            self.hide_field('school_multisel')
-        elif data['school_query_type'] == 'name':
-            self.hide_field('school_multisel')
-        elif data['school_query_type'] == 'list':
-            self.hide_field('school_name')
+        if 'school_query_type' in data:
+            if data['school_query_type'] == 'all':
+                self.hide_field('school_name')
+                self.hide_field('school_multisel')
+            elif data['school_query_type'] == 'name':
+                self.hide_field('school_multisel')
+            elif data['school_query_type'] == 'list':
+                self.hide_field('school_name')        
+
         #   Zip code selection
-        if data['zip_query_type'] == 'all':
-            self.hide_field('zip_code')
-            self.hide_field('zip_code_partial')
-            self.hide_field('zip_code_distance')
-        elif data['zip_query_type'] == 'exact':
-            self.hide_field('zip_code_partial')
-            self.hide_field('zip_code_distance')
-        elif data['zip_query_type'] == 'partial':
-            self.hide_field('zip_code')
-            self.hide_field('zip_code_distance')
-        elif data['zip_query_type'] == 'distance':
-            self.hide_field('zip_code_partial')
+        if 'zip_query_type' in data:
+            if data['zip_query_type'] == 'all':
+                self.hide_field('zip_code')
+                self.hide_field('zip_code_partial')
+                self.hide_field('zip_code_distance')
+            elif data['zip_query_type'] == 'exact':
+                self.hide_field('zip_code_partial')
+                self.hide_field('zip_code_distance')
+            elif data['zip_query_type'] == 'partial':
+                self.hide_field('zip_code')
+                self.hide_field('zip_code_distance')
+            elif data['zip_query_type'] == 'distance':
+                self.hide_field('zip_code_partial')
+                
         #   Limit queries
         if 'query' not in data or data['query'] not in ['zipcodes', 'heardabout', 'schools']:
             self.hide_field('limit')

@@ -47,13 +47,14 @@ The default form rendering takes care of this, but the below might be a starting
 {% endif %}
 {% endcomment %}
 
-<form dojoType="dijit.form.Form" id="statistics_form" method="POST" action="/manage/statistics/">
+<form id="statistics_form" method="POST" action="/manage/statistics/">
 
 <div id="statistics_form_contents">
 {% include "program/statistics/form.html" %}
 </div>
 </form>
 
+<script type="text/javascript" src="/media/scripts/ajax_tools.js"></script>
 <script type="text/javascript">
 
 dojo.require("dijit.dijit");
@@ -70,18 +71,50 @@ dojo.require("dijit.form.NumberTextBox");
 
 function clear_widget(field_name)
 {
+    if (savedVals[field_name]) {
+        delete savedVals[field_name];
+    }
+    /*
     if (dijit.byId)
         if (dijit.byId("id_" + field_name)) 
         {
             dijit.byId("id_" + field_name).destroy();
         }
+    */
 }
 
 function setup_update(field_name)
 {
-    if (handles[field_name])
-        dojo.disconnect(handles[field_name]);
-        
+//if (handles[field_name])
+//dojo.disconnect(handles[field_name]);
+    $j("#id_" + field_name).change(function() {
+        serializedFormData = $j("#statistics_form").serializeArray();
+        console.log(field_name + " changed");
+        $j.post("/manage/statistics/?update_form",
+            {
+                form: 'statistics_form',
+                csrfmiddlewaretoken: csrf_token(),
+            },
+            function() {
+                // Recreate the form with additional fields
+                apply_fragment_changes();
+                // Reload the form data
+                for (var i in serializedFormData) {
+                    field_object = serializedFormData[i];
+                    j_field_object = $j("#id_" + field_object.name);
+                    // If this is a checkbox, it must be checked, because not checked is not saved
+                    if(j_field_object.type == 'checkbox') {
+                        j_field_object.checked = true;
+                    }
+                    else {
+                        j_field_object.val(field_object.value);
+                    }
+                }
+            },
+            "json");
+    });
+    
+    /*        
     handles[field_name] = dojo.connect(dojo.byId("id_" + field_name), "onchange", function () {
         xhrArgs={
             url:'/manage/statistics/?update_form',
@@ -92,16 +125,17 @@ function setup_update(field_name)
         var deferred=dojo.xhrPost(xhrArgs);
         //  console.log(field_name + " changed");
     });
+    */
 }
 
-var handles = {};
+var serializedFormData;
 
 function setup_callbacks()
 {
     {% include "program/statistics/script.js" %}
 }
 
-dojo.addOnLoad(setup_callbacks);
+$j(document).ready(setup_callbacks);
 </script>
 
 <p>
