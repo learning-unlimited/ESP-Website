@@ -85,50 +85,39 @@ function clear_widget(field_name)
 
 function setup_update(field_name)
 {
-//if (handles[field_name])
-//dojo.disconnect(handles[field_name]);
     $j("#id_" + field_name).change(function() {
-        serializedFormData = $j("#statistics_form").serializeArray();
-        console.log(field_name + " changed");
+        var multi_select_data = [];
+        ajax_data = {
+            form: 'statistics_form',
+            csrfmiddlewaretoken: csrf_token(),
+        };
+        $j("#statistics_form :input").each(function() {
+             $j.each($j(this).serializeArray(), function(index, val) {
+                 ajax_data[val.name] = val.value;
+             });
+        });
+
+        console.log("Submitting");
+        console.log(ajax_data);
+            
         $j.post("/manage/statistics/?update_form",
-            {
-                form: 'statistics_form',
-                csrfmiddlewaretoken: csrf_token(),
-            },
-            function() {
+            ajax_data,
+            function(data) {
                 // Recreate the form with additional fields
-                apply_fragment_changes();
-                // Reload the form data
-                for (var i in serializedFormData) {
-                    field_object = serializedFormData[i];
-                    j_field_object = $j("#id_" + field_object.name);
-                    // If this is a checkbox, it must be checked, because not checked is not saved
-                    if(j_field_object.type == 'checkbox') {
-                        j_field_object.checked = true;
+                apply_fragment_changes(data);
+                // Reload the form data for multiple selects
+                $j("#statistics_form :input").each(function() {
+                    if ($j(this).is('select') && $j(this).attr("multiple") == "multiple") {
+                        console.log("Updating val for: " + $j(this).attr("name"));
+                        console.log($j(this));
+                        console.log(ajax_data[$j(this).attr("name")]);
+                        $j(this).val(ajax_data[$j(this).attr("name")]);
                     }
-                    else {
-                        j_field_object.val(field_object.value);
-                    }
-                }
+                });
             },
             "json");
     });
-    
-    /*        
-    handles[field_name] = dojo.connect(dojo.byId("id_" + field_name), "onchange", function () {
-        xhrArgs={
-            url:'/manage/statistics/?update_form',
-            handleAs:'json',
-            load: apply_fragment_changes,
-            form: 'statistics_form',
-		};
-        var deferred=dojo.xhrPost(xhrArgs);
-        //  console.log(field_name + " changed");
-    });
-    */
 }
-
-var serializedFormData;
 
 function setup_callbacks()
 {

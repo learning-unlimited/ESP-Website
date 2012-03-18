@@ -246,6 +246,8 @@ class StatisticsQueryForm(forms.Form):
         return self.cleaned_data
 
     def hide_field(self, field_name, default=None):
+        print "Hiding field", field_name, self.fields[field_name].widget
+        print self.fields[field_name].widget.media.render()
         self.fields[field_name]._old_widget = self.fields[field_name].widget
         self.fields[field_name].widget = forms.HiddenInput()
         if default:
@@ -284,6 +286,9 @@ class StatisticsQueryForm(forms.Form):
                     data[field_name] = self.fields[field_name].initial
             if hasattr(self, 'initial'):
                 data.update(self.initial)
+
+        print "Initial data", self.data
+        print "Cleaned data", data
             
         #   Program selection
         if 'program_type_all' in data and data['program_type_all']:

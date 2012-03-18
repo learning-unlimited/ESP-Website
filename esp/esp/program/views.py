@@ -756,6 +756,7 @@ def statistics(request, program=None):
             if field_name in post_data and post_data[field_name] == '':
                 del post_data[field_name]
         
+        print "post_data", post_data
         form = StatisticsQueryForm(post_data, program=program)
 
         #   Handle case where all we want is a new form
