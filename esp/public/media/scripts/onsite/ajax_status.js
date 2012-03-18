@@ -608,6 +608,7 @@ function render_table(display_mode, student_id)
         ts_div.append(classes_div);
         ts_div.append($j("<div/>").addClass("timeslot_header").html(data.timeslots[ts_id].label));
     }
+    update_category_filters(); // show/hide classes by category
 }
     
 function render_status_table()
@@ -685,6 +686,11 @@ function populate_classes()
             settings.categories_to_display.push(new_category.symbol);
         }
     }
+    var walkins = {
+        symbol:'W',
+        category:'Walk-in Seminar'
+    };
+    data.categories['W'] = walkins;
     
     //  Fill in timeslots (we need these)
     for (var i in data.catalog.timeslots)
