@@ -756,7 +756,6 @@ def statistics(request, program=None):
             if field_name in post_data and post_data[field_name] == '':
                 del post_data[field_name]
         
-        print "post_data", post_data
         form = StatisticsQueryForm(post_data, program=program)
 
         #   Handle case where all we want is a new form
@@ -842,7 +841,6 @@ def statistics(request, program=None):
                 return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
         else:
             #   Form was submitted but there are problems with it
-            print form.errors
             form.hide_unwanted_fields()
             context = {'form': form}
             context['clear_first'] = False
