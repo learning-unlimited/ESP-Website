@@ -56,10 +56,12 @@ def process_messages():
     
     #   Perform an atomic update in order to claim which messages we will be processing.
     my_pid = os.getpid()
-    MessageRequest.objects.filter(Q(processed_by__lte=datetime.now()) | Q(processed_by__isnull=True)).filter(processed_pid__isnull=True, processed=False).update(processed_pid=my_pid, processed_by=datetime.now() + timedelta(seconds=10))
+    now = datetime.now()
+    target_time = now + timedelta(seconds=10)
+    MessageRequest.objects.filter(Q(processed_by__lte=now) | Q(processed_by__isnull=True)).filter(processed=False).update(processed_by=target_time)
     
     #   Identify the messages we just claimed.
-    messages = MessageRequest.objects.filter(processed_pid=my_pid, processed=False)
+    messages = MessageRequest.objects.filter(processed_by=target_time, processed=False)
 
     #   Process message requests
     for message in messages:
