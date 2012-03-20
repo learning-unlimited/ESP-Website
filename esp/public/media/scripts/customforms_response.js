@@ -1,5 +1,4 @@
-dojo.addOnLoad(function() {
-	
+$(document).ready(function() {
 	//csrf stuff
 	$(document).ajaxSend(function(event, xhr, settings) {
 	    function getCookie(name) {
@@ -42,82 +41,42 @@ dojo.addOnLoad(function() {
 	//Grabbing the form-id
 	var form_id=$('#form_id').val();
 	//Getting response data
-	$.ajax({
+        $.ajax({
 		url:'/customforms/getData/',
 		data:{'form_id':form_id},
 		type:'GET',
 		dataType:'json',
 		async:false,
 		success: function(form_data) {
-			console.log(form_data);
 			createGrid(form_data);
 		}
 	});
 });
 
-var getStore=function(answers) {
-	//Returns the ItemFileReadStore object for this grid
-	console.log('in getStore');
-    
-    //  Join together segments of compound fields (perhaps they should be displayed as separate columns)
-    for (var i = 0; i < answers.length; i++)
-    {
-        var item = answers[i];
-        for (var key in item)
-        {
-            if (item[key] instanceof Array)
-                answers[i][key] = item[key].join(" ");
-        }
-    }
-
-	console.log(answers);
-	var store=new dojo.data.ItemFileReadStore({data:{'items':answers}});
-	console.log('out getStore');
-	console.log(store);	
-	return store;
-};
-
-var getLayout=function(data) {
-	//Returns the layout for this grid
-	console.log('in getLayout');
-	var layout=[];
-	$.each(data, function(idx, val){
-		layout.push({
-			field:val[0],
-			name:val[1],
-			width:'80px',
-			datatype:'string'
-		});
-	});
-	console.log('out getLayout');
-	console.log(layout);
-	return layout;
-};
-
 var createGrid=function(form_data){
-	//Created the data-grid
-	console.log('in createGrid');
-	console.log(form_data)
-	var stor, layt, grid;
-	layt=getLayout(form_data['questions']);
-	stor=getStore(form_data['answers']);
-	grid=new dojox.grid.EnhancedGrid({
-		store:stor,
-		clientSort:true,
-		structure:layt,
-		columnReordering:true,
-		jsId:grid,
-		rowSelector:'20px',
-		loadingMessage:"Please wait while your data is fetched",
-		plugins:{
-			filter:true
-		}
-	},
-	document.createElement('div'));
-	
-	dojo.byId("gridContainer").appendChild(grid.domNode);
-	grid.startup();
-	console.log('out createGrid');
+    $("#jqGrid").jqGrid({
+	datatype: "local",
+	height: 250,
+	colNames: $.map(form_data['questions'], function(val, index) {
+	    return val[1];
+	}),
+	colModel: $.map(form_data['questions'], function(val, index) {
+	    return {name:val[0], index: val[0]}
+	}),
+	caption: "Form responses",
+	rowNum: 10,
+	pager: "#jqGridPager"
+    });
+    $("#jqGrid").jqGrid('navGrid', '#jqGridPager',
+			{view: true, edit: false, add: false, del: false},
+			{}, {}, {}, 
+			{multipleSearch: true, closeOnEscape: true},
+		        {closeOnEscape: true});
+
+    $.each(form_data['answers'], function(index, val) {
+	delete val.id;
+	$("#jqGrid").jqGrid('addRowData', index+1, val);
+    });
 };
 
 var copyObject=function(answers){
