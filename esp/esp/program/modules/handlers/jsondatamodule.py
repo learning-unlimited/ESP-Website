@@ -39,7 +39,7 @@ from esp.cal.models import Event
 from esp.program.models import ClassSection, ClassSubject, StudentRegistration
 from esp.resources.models import ResourceAssignment
 
-from esp.cache.key_set import wildcard
+#from esp.cache.key_set import wildcard
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 
@@ -153,8 +153,11 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         for section in sections:
             section['index'] = ClassSection.objects.get(id=section['id']).index()
         return {'sections': sections}
+    def get_wildcard():
+        from esp.cache.key_set import wildcard
+        return wildcard
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
-    sections.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
+    sections.cached_function.depend_on_cache(ClassSubject.title, lambda self=get_wildcard(), **kwargs: {'prog': self.parent_program})
         
     @aux_call
     @json_response()
