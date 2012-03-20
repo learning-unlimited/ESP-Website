@@ -37,6 +37,7 @@ from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType
+from esp.program.models.class_ import open_class_category
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.datatree.models import *
 from esp.tagdict.models          import Tag
@@ -44,7 +45,7 @@ from esp.web.util                import render_to_response
 from django.template.loader      import render_to_string
 from esp.middleware              import ESPError
 from django.utils.datastructures import MultiValueDict
-from django.core.mail            import send_mail
+from esp.dbmail.models           import send_mail
 from django.template.loader      import render_to_string
 from django.http                 import HttpResponse
 from esp.miniblog.models         import Entry
@@ -485,6 +486,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     cls.subscribe(teacher)
                     cls.makeAdmin(teacher, self.teacher_class_noedit)                    
                 cls.update_cache()
+                ClassCreationController(self.program).send_class_mail_to_directors(cls)
                 return self.goToCore(tl)
 
 
@@ -602,8 +604,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
 
-        # Dirty hack to special-case the new "open classes".  Feel free to make more general/elegant. --rye
-        if cls.category.category == "Walk-in Seminar":
+        if cls.category.category == open_class_category().category:
             action = 'editopenclass'
         else:
             action = 'edit'
@@ -648,6 +649,13 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
                 if do_question:
                     return HttpResponseRedirect(newclass.parent_program.get_teach_url() + "app_questions")
+                if request.POST.has_key('manage') and request.POST['manage'] == 'manage':
+                    if request.POST['manage_submit'] == 'reload':
+                        return HttpResponseRedirect(request.get_full_path()+'?manage=manage')
+                    elif request.POST['manage_submit'] == 'dashboard':
+                        return HttpResponseRedirect('/manage/%s/dashboard' % self.program.getUrlBase())
+                    elif request.POST['manage_submit'] == 'main':
+                        return HttpResponseRedirect('/manage/%s/main' % self.program.getUrlBase())
                 return self.goToCore(tl)
 
             except ClassCreationValidationError, e:
@@ -783,22 +791,32 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             context['classroom_form_advisories'] += '__open_class'
         context['classtype'] = context['classes'][context['isopenclass']]['type']
         context['otherclass'] = context['classes'][1 - context['isopenclass']]
-
+        
+        context['manage'] = False
+        if ((request.method == "POST" and request.POST.has_key('manage') and request.POST['manage'] == 'manage') or 
+            (request.method == "GET" and request.GET.has_key('manage') and request.GET['manage'] == 'manage')) and request.user.isAdministrator():
+            context['manage'] = True
+        
         return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
 
 
     @aux_call
     @needs_teacher    
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
+        
+        # Search for teachers with names that start with search string
+        if not request.GET.has_key('name') or request.POST.has_key('name'):
+            return self.goToCore(tl)
+        
+        return TeacherClassRegModule.teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass)
+    
+    @staticmethod
+    def teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
         from esp.web.views.json import JsonResponse
         from esp.users.models import UserBit
 
         Q_teacher = Q(userbit__verb = GetNode('V/Flags/UserRole/Teacher'))
-
-        # Search for teachers with names that start with search string
-        if not request.GET.has_key('name') or request.POST.has_key('name'):
-            return self.goToCore(tl)
 
         queryset = ESPUser.objects.filter(Q_teacher)
         
@@ -839,7 +857,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             users = user_dict.values()
 
             # Construct combo-box items
-            obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]
+            obj_list = [{'name': "%s, %s (%s)" % (user.last_name, user.first_name, user.username), 'username': user.username, 'id': user.id} for user in users]
         else:
             obj_list = []
 

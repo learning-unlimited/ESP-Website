@@ -190,24 +190,32 @@ ESP.Scheduling = function(){
         // sections
         for (var i = 0; i < data.sections.length; i++) {
             var c = data.sections[i];
-            var s;
-            processed_data.sections.push(s = Resources.create('Section',{
-                uid: c.id,
-                class_id: c.class_id,
-                code: c.emailcode,
-                block_contents: ESP.Utilities.genPopup(c.emailcode, {
+            var size_info = [
+                " max size=" + c.class_size_max.toString(),
+                c.max_class_capacity ? " max cap=" + c.max_class_capacity.toString() : "",
+                c.optimal_class_size ? " optimal size=" + c.optimal_class_size.toString() : "",
+                c.optimal_class_size_range ? " optimal size range=" + c.optimal_class_size_range : ""
+                ];
+            var popup_data = {
                     'Title:': c.text,
                     'Teachers': c.teachers.map(function(x){ return Resources.get('Teacher', x).text; }),
                     'Requests:': c.resource_requests.map(function(x){
                         var res = Resources.get('RoomResource', x[0]);
                         return (res ? (res.text + ": " + x[1]) : null);
                     }),
-                    'Size:': (c.class_size_max > 0 ? " max size=" + c.class_size_max.toString() + "," : "") + (c.max_class_capacity ? " max cap=" + c.max_class_capacity.toString() + ","  : "") + (c.optimal_class_size ? " optimal size=" + c.optimal_class_size.toString() + "," : "") + (c.optimal_class_size_range ? " optimal size range=" + c.optimal_class_size_range : "" ),
-                    'Allowable Class-Size Ranges:': c.allowable_class_size_ranges,
+                    'Size:': size_info.filter(function (x) {return (x.length > 0);}).join(", "),
                     'Grades:': c.grades ? (c.grades[0] + "-" + c.grades[1]) : "(n/a)",
                     "Prereq's:": c.prereqs,
                     'Comments:': c.comments
-                }, true),
+                };
+            if (c.allowable_class_size_ranges.size() > 0)
+                popup_data['Allowable Class-Size Ranges:'] = c.allowable_class_size_ranges;
+            var s;
+            processed_data.sections.push(s = Resources.create('Section',{
+                uid: c.id,
+                class_id: c.class_id,
+                code: c.emailcode,
+                block_contents: ESP.Utilities.genPopup(c.emailcode, popup_data, true),
                 category: c.category,
                 length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
                 length_hr: Math.round(c.length * 2) / 2,

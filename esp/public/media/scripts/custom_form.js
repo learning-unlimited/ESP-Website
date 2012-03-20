@@ -13,7 +13,10 @@ var formElements={
 		date:{'disp_name':'Date','ques':'Date'},
 		time:{'disp_name':'Time','ques':'Time'},
 		section:{'disp_name':'Section', 'ques':'Section'},
-		page:{'disp_name':'Page', 'ques':'Page'}
+		page:{'disp_name':'Page', 'ques':'Page'},
+		radio_yesno: {'disp_name': 'Yes/No Field', 'ques': 'Choose Yes or No'},
+		'boolean': {'disp_name': 'Boolean Field', 'ques': ''},
+		null_boolean: {'disp_name': 'Null Boolean Field', 'ques':''}
 	},
     'Personal':
     {
@@ -969,7 +972,6 @@ var renderNormalField=function(item, field_options, data){
 			});
 			$new_elem.append($("<p>").append($one_option).append($("<span>"+el+"</span>")));
 		});
-		data['attrs']['options']=options_string;
 	}
     else if(item=="radio_yesno") {
 		var $text_inputs=$('#multi_options input:text'), $one_option, options_string="";

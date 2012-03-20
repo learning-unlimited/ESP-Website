@@ -135,7 +135,9 @@ class ProgramModuleObj(models.Model):
                 self._main_view = None
         return self._main_view
     main_view = property(get_main_view)
-    main_view_fn = lambda self, *args, **kwargs: getattr(self, self.main_view)(*args, **kwargs)
+    
+    def main_view_fn(self, request, tl, one, two, call_txt, extra, prog):
+        return getattr(self, self.get_main_view(tl))(request, tl, one, two, call_txt, extra, prog)
     
     def get_all_views(self):
         if not hasattr(self, '_views'):
@@ -159,7 +161,7 @@ class ProgramModuleObj(models.Model):
         modules = self.program.getModules(get_current_request().user, tl)
         for module in modules:
             if isinstance(module, CoreModule):
-                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.main_view
+                 return '/'+tl+'/'+self.program.getUrlBase()+'/'+module.get_main_view(tl)
 
     def goToCore(self, tl):
         return HttpResponseRedirect(self.getCoreURL(tl))
@@ -556,6 +558,7 @@ def needs_teacher(method):
             return render_to_response('errors/program/notateacher.html', request, (moduleObj.program, 'teach'), {})
         return method(moduleObj, request, *args, **kwargs)
     _checkTeacher.call_tl = 'teach'
+    _checkTeacher.method = method
     return _checkTeacher
 
 def needs_admin(method):
@@ -573,6 +576,7 @@ def needs_admin(method):
                 return render_to_response('errors/program/notanadmin.html', request, (moduleObj.program, 'manage'), {})
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'manage'
+    _checkAdmin.method = method
     return _checkAdmin
 
 def needs_onsite(method):
@@ -590,6 +594,7 @@ def needs_onsite(method):
             user.switch_back(request)
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
+    _checkAdmin.method = method
     return _checkAdmin
 
 def needs_onsite_no_switchback(method):
@@ -606,6 +611,7 @@ def needs_onsite_no_switchback(method):
                 return render_to_response('errors/program/notonsite.html', request, (moduleObj.program, 'onsite'), {})
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
+    _checkAdmin.method = method
     return _checkAdmin
 
 def needs_student(method):
@@ -620,6 +626,7 @@ def needs_student(method):
                 return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
         return method(moduleObj, request, *args, **kwargs)
     _checkStudent.call_tl = 'learn'
+    _checkStudent.method = method
     return _checkStudent        
 
 def needs_account(method):
@@ -628,6 +635,7 @@ def needs_account(method):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
             
         return method(moduleObj, request, *args, **kwargs)
+    _checkAccount.method = method
     return _checkAccount
 
 def meets_grade(method):
@@ -664,7 +672,7 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
     from esp.users.models import UserBit
     from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
     if tl != 'learn' and tl != 'teach':
-        return True
+        return (True, None)
     response = None
     canView = False
     if not_logged_in(request):

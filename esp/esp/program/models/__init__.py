@@ -278,8 +278,8 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField()
-    class_size_min = models.IntegerField()
-    class_size_max = models.IntegerField()
+    class_size_min = models.IntegerField(default=5)
+    class_size_max = models.IntegerField(default=200)
     program_size_max = models.IntegerField(null=True)
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule)
@@ -592,6 +592,14 @@ class Program(models.Model, CustomFormsLinkModel):
     getScheduleConstraints.depend_on_model(get_sc_model)
     getScheduleConstraints.depend_on_model(get_bt_model)
 
+    def lock_schedule(self, lock_level=1):
+        """ Locks all schedule assignments for the program, for convenience
+            (e.g. between scheduling some sections manually and running
+            automatic scheduling).
+        """
+        from esp.resources.models import ResourceAssignment
+        ResourceAssignment.objects.filter(target__parent_class__parent_program=self, lock_level__lt=lock_level).update(lock_level=lock_level)
+
     def isConfirmed(self, espuser):
         v = GetNode('V/Flags/Public')
         userbits = UserBit.objects.filter(verb = v, user = espuser,
@@ -640,24 +648,10 @@ class Program(models.Model, CustomFormsLinkModel):
             result[c].timegroup = Event.collapse(result[c].timeslots)
         
         return result
-    
-    def classroom_group_key(self):
-        return 'program__groupedclassrooms:%d' % self.id
-    
-    def clear_classroom_cache(self):
-        from django.core.cache import cache
-        
-        cache_key = self.classroom_group_key()
-        cache.delete(cache_key)
-    
+
+    @cache_function
     def groupedClassrooms(self):
-        from django.core.cache import cache
-        
-        cache_key = self.classroom_group_key()
-        result = cache.get(cache_key)
-        if result is not None:
-            return result
-        
+
         classrooms = self.getClassrooms()
         
         result = self.collapsed_dict(classrooms)
@@ -665,8 +659,13 @@ class Program(models.Model, CustomFormsLinkModel):
         key_list.sort()
         #   Turn this into a list instead of a dictionary.
         ans = [result[key] for key in key_list]
-        cache.set(cache_key, ans)
+
         return ans
+    def get_resource_model():
+        from esp.resources.models import Resource
+        return Resource
+    groupedClassrooms.depend_on_row(get_resource_model, lambda res: {'self': res.event.parent_program()})
+    groupedClassrooms.depend_on_row(Event, lambda event: {'self': event.parent_program()})
         
     def addClassroom(self, classroom_form):
         from esp.program.modules.forms.resources import ClassroomForm

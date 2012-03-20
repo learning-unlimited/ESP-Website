@@ -7,7 +7,7 @@ from esp.resources.models import ResourceType, ResourceRequest
 from esp.datatree.models import GetNode
 from esp.tagdict.models import Tag
 
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 from django.core.exceptions import ValidationError
 from django.template.loader import render_to_string
 from django.utils.datastructures import SortedDict
@@ -16,6 +16,7 @@ from django.db import transaction
 from datetime import timedelta
 from decimal import Decimal
 import simplejson as json
+from django.conf import settings
 
 def get_custom_fields():
     result = SortedDict()
@@ -54,7 +55,7 @@ class ClassCreationController(object):
         
         self.force_availability(user)  ## So the default DB state reflects the default form state of "all times work"
 
-        self.send_class_mail_to_directors(cls, user)
+        self.send_class_mail_to_directors(cls)
 
         return cls
 
@@ -75,7 +76,7 @@ class ClassCreationController(object):
         
         self.force_availability(user)  ## So the default DB state reflects the default form state of "all times work"
 
-        self.send_class_mail_to_directors(cls, user)
+        self.send_class_mail_to_directors(cls)
 
         return cls
         
@@ -239,9 +240,14 @@ class ClassCreationController(object):
         return (rt, rr)
 
 
-    def generate_director_mail_context(self, cls, user):
+    def generate_director_mail_context(self, cls):
         new_data = cls.__dict__
         mail_ctxt = dict(new_data.iteritems())
+        
+        mail_ctxt['title'] = cls.title()
+        mail_ctxt['one'] = cls.parent_program.anchor.parent.name
+        mail_ctxt['two'] = cls.parent_program.anchor.name
+        mail_ctxt['DEFAULT_HOST'] = settings.DEFAULT_HOST
         
         # Make some of the fields in new_data nicer for viewing.
         mail_ctxt['category'] = ClassCategories.objects.get(id=new_data['category_id']).category
@@ -260,34 +266,37 @@ class ClassCreationController(object):
             # If the allowable_class_size_ranges field doesn't exist, just don't do anything.
             pass
         
-        # Provide information about whether or not teacher's from MIT.
-        last_profile = user.getLastProfile()
-        if last_profile.teacher_info != None:
-            mail_ctxt['from_here'] = last_profile.teacher_info.from_here
-            mail_ctxt['college'] = last_profile.teacher_info.college
-        else: # This teacher never filled out their teacher profile!
-            mail_ctxt['from_here'] = "[Teacher hasn't filled out teacher profile!]"
-            mail_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
+        mail_ctxt['teachers'] = []
+        for teacher in cls.teachers():
+            teacher_ctxt = {'teacher': teacher}
+            # Provide information about whether or not teacher's from MIT.
+            last_profile = teacher.getLastProfile()
+            if last_profile.teacher_info != None:
+                teacher_ctxt['from_here'] = last_profile.teacher_info.from_here
+                teacher_ctxt['college'] = last_profile.teacher_info.college
+            else: # This teacher never filled out their teacher profile!
+                teacher_ctxt['from_here'] = "[Teacher hasn't filled out teacher profile!]"
+                teacher_ctxt['college'] = "[Teacher hasn't filled out teacher profile!]"
 
-        # Get a list of the programs this person has taught for in the past, if any.
-        taught_programs = user.getTaughtPrograms().order_by('pk').exclude(id=self.program.id)
-        mail_ctxt['taught_programs'] = taught_programs
-
+            # Get a list of the programs this person has taught for in the past, if any.
+            teacher_ctxt['taught_programs'] = u', '.join([prog.niceName() for prog in teacher.getTaughtPrograms().order_by('pk').exclude(id=self.program.id)])
+            mail_ctxt['teachers'].append(teacher_ctxt)
         return mail_ctxt
 
 
-    def send_class_mail_to_directors(self, cls, user):
-        mail_ctxt = self.generate_director_mail_context(cls, user)
+    def send_class_mail_to_directors(self, cls):
+        mail_ctxt = self.generate_director_mail_context(cls)
         
-        recipients = [teacher.email for teacher in cls.teachers()]        
+        recipients = [teacher.email for teacher in cls.teachers()]
         if recipients:
             send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
-                      ('%s <%s>' % (user.first_name + ' ' + user.last_name, user.email,)), \
-                      recipients, True)
+                      ('%s Class Registration <%s>' % (self.program.anchor.parent.name, self.program.director_email)), \
+                      recipients, False)
 
         if self.program.director_email:
+            mail_ctxt['admin'] = True
             send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
-                      ('%s <%s>' % (user.first_name + ' ' + user.last_name, user.email,)), \
-                      [self.program.director_email], True)
+                      ('%s Class Registration <%s>' % (self.program.anchor.parent.name, self.program.director_email)), \
+                      [self.program.director_email], False)

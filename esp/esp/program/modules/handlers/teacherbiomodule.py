@@ -63,19 +63,20 @@ class TeacherBioModule(ProgramModuleObj):
     @main_call
     @needs_teacher
     def biography(self, request, tl, one, two, module, extra, prog):
-    	""" Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
+        """ Display the registration profile page, the page that contains the contact information for a student, as attached to a particular program """
         from esp.web.views.bio import bio_edit_user_program
         result = bio_edit_user_program(request, request.user, self.program, external=True)
 
         if result is not True:
             return result
-
+        
         return self.goToCore(tl)
 
     def isCompleted(self):
+        #   TeacherBio.getLastForProgram() returns a new bio if one already exists.
+        #   So, mark this step completed if there is an existing (i.e. non-empty) bio.
         lastBio = TeacherBio.getLastForProgram(get_current_request().user, self.program)
-        return lastBio.id is not None
-
+        return ((lastBio.id is not None) and lastBio.bio and lastBio.slugbio)
 
     class Meta:
         abstract = True

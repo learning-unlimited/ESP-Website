@@ -40,6 +40,9 @@ class DynamicModelHandler:
         'email': {'typeMap': models.CharField, 'attrs': {'max_length': 30,}, 'args':[]},
         'state': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
         'gender': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
+        'radio_yesno': {'typeMap': models.CharField, 'attrs':{'max_length': 1,}, 'args':[]},
+        'boolean': {'typeMap': models.BooleanField, 'attrs':{}, 'args':[]},
+        'null_boolean': {'typeMap': models.NullBooleanField, 'attrs':{}, 'args':[]},
         'instructions': {'typeMap': None},
     }
     
@@ -127,7 +130,7 @@ class DynamicModelHandler:
         if not self.field_list:
             self._getModelFieldList()
         
-        if not transaction.is_managed:
+        if not transaction.is_managed():
             db.start_transaction()
             db.create_table(self._tname, tuple(self.field_list))
             

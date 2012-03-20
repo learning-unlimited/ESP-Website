@@ -118,7 +118,7 @@ def lsr_submit(request, program = None):
     # First check whether the user is actually a student.
     if not request.user.isStudent():
         raise ESPError(False), "You must be a student in order to access student registration."
-    
+
     data = json.loads(request.POST['json_data'])
     
     if priority_limit > 1: 
@@ -193,7 +193,7 @@ def lsr_submit(request, program = None):
 
     if len(errors) != 0:
         s = StringIO()
-        pprint(errors, s)
+        print(errors, s)
         mail_admins('Error in class reg', s.getvalue(), fail_silently=True)
 
     cfe = ConfirmationEmailController()
@@ -411,6 +411,7 @@ def userview(request):
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
         del change_grade_form.fields['graduation_year'].widget.attrs['disabled']
     change_grade_form.fields['graduation_year'].initial = ESPUser.YOGFromGrade(user.getGrade())
+    change_grade_form.fields['graduation_year'].choices = filter(lambda choice: bool(choice[0]), change_grade_form.fields['graduation_year'].choices)
     
     context = {
         'user': user,

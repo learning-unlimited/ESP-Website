@@ -124,7 +124,7 @@ ORDER BY program_registrationprofile.id DESC
 LIMIT 1
         """ % ESPUser.current_schoolyear()
         #   To ensure we don't miss anyone, fetch students who have a profile for the program
-        data = ESPUser.objects.filter(registrationprofile__program=prog).extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
+        data = ESPUser.objects.filter(registrationprofile__program=prog, userbit__verb__uri='V/Flags/UserRole/Student').extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
         simplejson.dump(list(data), resp)
         return resp
     

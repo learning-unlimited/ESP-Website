@@ -41,7 +41,7 @@ from esp.datatree.models import GetNode
 
 from django.template import Template, Context
 from django.template.loader import select_template
-from django.core.mail import send_mail
+from esp.dbmail.models import send_mail
 
 class ConfirmationEmailController(object):
     def send_confirmation_email(self, user, program, repeat=False, override=False):
@@ -59,5 +59,5 @@ class ConfirmationEmailController(object):
             send_mail("Thank you for registering for %s!" %(program.niceName()), \
                       receipt_template.render(Context({'user': user, 'program': program}, autoescape=False)), \
                       ("%s <%s>" %(program.niceName() + " Directors", program.director_email)), \
-                      [user.email, DEFAULT_EMAIL_ADDRESSES['archive']], True)
+                      [user.email], True)
     

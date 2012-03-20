@@ -46,7 +46,7 @@ from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, Resource
 from esp.settings                import SERVER_EMAIL, EMAIL_HOST_SENDER
 from django.template.loader      import render_to_string
-from django.core.mail            import send_mail
+from esp.dbmail.models           import send_mail
 from datetime                    import timedelta, datetime
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -167,7 +167,7 @@ class AvailabilityModule(ProgramModuleObj):
                                  'program': self.program,
                                  'curtime': datetime.now()}
                 email_contents = render_to_string(self.baseDir()+'update_email.txt', email_context)
-                email_to = ['%s <%s>' % (request.user.name(), request.user.email), '%s Directors <%s>' % (self.program.anchor.parent.name, self.program.director_email)]
+                email_to = ['%s <%s>' % (request.user.name(), request.user.email)]
                 send_mail(email_title, email_contents, email_from, email_to, False)
                 
                 #   Return to the main registration page

@@ -3,10 +3,8 @@ from django import forms
 from django.contrib.auth.models import User
 from django.db.models.query import Q
 
-from esp.utils.forms import CaptchaForm
 from esp.users.models import ESPUser
-
-from esp.utils.forms import CaptchaForm, SizedCharField
+from esp.utils.forms import CaptchaForm, StrippedCharField
 from esp.users.forms.user_profile import PhoneNumberField
 
 class ValidHostEmailField(forms.EmailField):
@@ -38,8 +36,8 @@ class UserRegForm(forms.Form):
     """
     A form for users to register for the ESP web site.
     """
-    first_name = forms.CharField(max_length=30, widget=forms.TextInput(attrs={'onkeyup':'checkBasicText(this);','onblur':'checkErrorBasicText(this);'}))
-    last_name  = forms.CharField(max_length=30, widget=forms.TextInput(attrs={'onkeyup':'checkBasicText(this);','onblur':'checkErrorBasicText(this);'}))
+    first_name = StrippedCharField(max_length=30, widget=forms.TextInput(attrs={'onkeyup':'checkBasicText(this);','onblur':'checkErrorBasicText(this);'}))
+    last_name  = StrippedCharField(max_length=30, widget=forms.TextInput(attrs={'onkeyup':'checkBasicText(this);','onblur':'checkErrorBasicText(this);'}))
 
     username = forms.CharField(help_text="At least 5 characters, must contain only alphanumeric characters.",
                                min_length=5, max_length=30, widget=forms.TextInput(attrs={'onkeyup':'checkUsername(this);', 'onblur':'checkErrorUsername(this);'}))
@@ -54,7 +52,7 @@ class UserRegForm(forms.Form):
     #   The choices for this field will be set later in __init__()
     initial_role = forms.ChoiceField(choices = [], widget=forms.Select(attrs={'onChange':'checkSelect(this);','onblur':'checkErrorSelect(this);'}))
 
-    email = ValidHostEmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=75, widget=forms.TextInput(attrs={'onkeyup':'checkEmail(this);','onblur':'checkErrorEmail(this);'}))
+    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75, widget=forms.TextInput(attrs={'onkeyup':'checkEmail(this);','onblur':'checkErrorEmail(this);'}))
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
@@ -89,7 +87,7 @@ class UserRegForm(forms.Form):
         if not (('confirm_password' in self.cleaned_data) and ('password' in self.cleaned_data)) or (self.cleaned_data['confirm_password'] != self.cleaned_data['password']):
             raise forms.ValidationError('Make sure the password and password verification are the same.')
         return self.cleaned_data['confirm_password']
-
+    
     def __init__(self, *args, **kwargs):
         #   Set up the default form
         super(UserRegForm, self).__init__(*args, **kwargs)
@@ -105,8 +103,8 @@ class EmailUserForm(CaptchaForm):
 
 class EmailPrefForm(forms.Form):
     email = ValidHostEmailField(label='E-Mail Address', required = True)
-    first_name = SizedCharField(label='First Name', length=30, max_length=64, required=True)
-    last_name = SizedCharField(label='Last Name', length=30, max_length=64, required=True)
+    first_name = StrippedCharField(label='First Name', length=30, max_length=64, required=True)
+    last_name = StrippedCharField(label='Last Name', length=30, max_length=64, required=True)
     sms_number = PhoneNumberField(label='Cell Phone', required = False,
                                   help_text='Optional: If you provide us your cell phone number, we can send you SMS text notifications')
 #    sms_opt_in = forms.BooleanField(label='Send Me Text Updates', initial = True, required = False)

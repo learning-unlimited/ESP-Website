@@ -419,7 +419,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
              },
              params: {'json_data': data, 'url_base': url_base},
              method: 'POST',
-             headers: {'X-CSRFToken': Ext.util.Cookies.get('csrftoken')}
+             headers: {'X-CSRFToken': Ext.util.Cookie('csrftoken')}
          });
     }
 });

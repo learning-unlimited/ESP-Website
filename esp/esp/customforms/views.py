@@ -15,13 +15,13 @@ from esp.users.models import ESPUser
 from esp.middleware import ESPError
 
 def landing(request):
-    if request.user.is_authenticated(): # and not ESPUser(request.user).isStudent():
+    if request.user.is_authenticated() and (ESPUser(request.user).isTeacher() or ESPUser(request.user).isAdministrator()):
         forms = Form.objects.filter(created_by=request.user)
         return render_to_response("customforms/landing.html", {'form_list': forms}, context_instance=RequestContext(request))
     return HttpResponseRedirect('/')    
 
 def formBuilder(request):
-    if request.user.is_authenticated(): # and not ESPUser(request.user).isStudent():
+    if request.user.is_authenticated() and (ESPUser(request.user).isTeacher() or ESPUser(request.user).isAdministrator()):
         prog_list = Program.objects.all()
         form_list = Form.objects.filter(created_by=request.user)
         return render_to_response(
@@ -276,7 +276,7 @@ def viewResponse(request, form_id):
     """
     Viewing response data
     """
-    if request.user.is_authenticated and not ESPUser(request.user).isStudent():
+    if request.user.is_authenticated and (ESPUser(request.user).isTeacher() or ESPUser(request.user).isAdministrator()):
         try:
             form_id = int(form_id)
         except ValueError:
