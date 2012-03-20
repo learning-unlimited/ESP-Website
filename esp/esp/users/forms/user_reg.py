@@ -17,7 +17,7 @@ class ValidHostEmailField(forms.EmailField):
         email = super(ValidHostEmailField, self).clean(value)
         email_parts = email.split("@")
         if len(email_parts) != 2:
-            raise forms.ValidationError('E-mail addresses must be of the form "name@host"')
+            raise forms.ValidationError('Email addresses must be of the form "name@host"')
 
         email_host = email_parts[1].encode('ascii')
 
@@ -26,7 +26,7 @@ class ValidHostEmailField(forms.EmailField):
             try:
                 DNS.DiscoverNameServers()
                 if len(DNS.Request(qtype='a').req(email_host).answers) == 0 and len(DNS.Request(qtype='mx').req(email_host).answers) == 0:
-                    raise forms.ValidationError('"%s" is not a valid e-mail host' % email_host)
+                    raise forms.ValidationError('This doesn\'t seem to be a real email address')
             except (IOError, DNS.DNSError): # (no resolv.conf, no nameservers)
                 pass
         except ImportError: # no PyDNS
@@ -38,28 +38,28 @@ class UserRegForm(forms.Form):
     """
     A form for users to register for the ESP web site.
     """
-    first_name = forms.CharField(max_length=30)
-    last_name  = forms.CharField(max_length=30)
+    first_name = forms.CharField(max_length=30, widget=forms.TextInput(attrs={'onkeyup':'checkBasicText(this);','onblur':'checkErrorBasicText(this);'}))
+    last_name  = forms.CharField(max_length=30, widget=forms.TextInput(attrs={'onkeyup':'checkBasicText(this);','onblur':'checkErrorBasicText(this);'}))
 
     username = forms.CharField(help_text="At least 5 characters, must contain only alphanumeric characters.",
-                               min_length=5, max_length=30)
+                               min_length=5, max_length=30, widget=forms.TextInput(attrs={'onkeyup':'checkUsername(this);', 'onblur':'checkErrorUsername(this);'}))
 
 
-    password = forms.CharField(widget = forms.PasswordInput(),
+    password = forms.CharField(widget = forms.PasswordInput(attrs={'onkeyup':'checkPassword(this);','onblur':'checkErrorPassword(this);'}),
                                min_length=5)
 
-    confirm_password = forms.CharField(widget = forms.PasswordInput(),
+    confirm_password = forms.CharField(widget = forms.PasswordInput(attrs={'onkeyup':'checkVerifyPassword(this);','onblur':'checkErrorVerifyPassword(this);'}),
                                        min_length=5)
 
     #   The choices for this field will be set later in __init__()
-    initial_role = forms.ChoiceField(choices = [])
+    initial_role = forms.ChoiceField(choices = [], widget=forms.Select(attrs={'onChange':'checkSelect(this);','onblur':'checkErrorSelect(this);'}))
 
-    email = ValidHostEmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=75)
+    email = ValidHostEmailField(help_text = "Please provide a valid email address. We won't spam you.",max_length=75, widget=forms.TextInput(attrs={'onkeyup':'checkEmail(this);','onblur':'checkErrorEmail(this);'}))
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
         if data == u'':
-            raise forms.ValidationError('Please select an initial role')
+            raise forms.ValidationError('Don\'t forget to enter your role')
         return data
 
     def clean_username(self):
@@ -73,21 +73,21 @@ class UserRegForm(forms.Form):
 
         set_of_data = set(data)
         if not(good_chars & set_of_data == set_of_data):
-            raise forms.ValidationError('Username contains invalid characters.')
+            raise forms.ValidationError('Only letters and numbers are allowed in a username (no spaces)')
  
         #   Check for duplicate accounts, but avoid triggering for users that are:
         #   - awaiting initial activation
         #   - currently on the e-mail list only (they can be 'upgraded' to a full account)
         awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
         if User.objects.filter(username__iexact = data).exclude(password = 'emailuser').exclude(awaiting_activation).count() > 0:
-            raise forms.ValidationError('Username already in use.')
+            raise forms.ValidationError('Unfortunately, this username is already in use.')
 
         data = data.strip()
         return data
 
     def clean_confirm_password(self):
         if not (('confirm_password' in self.cleaned_data) and ('password' in self.cleaned_data)) or (self.cleaned_data['confirm_password'] != self.cleaned_data['password']):
-            raise forms.ValidationError('Ensure the password and password confirmation are equal.')
+            raise forms.ValidationError('Make sure the password and password verification are the same.')
         return self.cleaned_data['confirm_password']
 
     def __init__(self, *args, **kwargs):

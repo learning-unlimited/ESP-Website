@@ -25,7 +25,8 @@ function update_user_classes() {
     hidden_name = esp_user.cur_roles[i] + "_hidden";
     $j(type_name).removeClass(hidden_name);
   }
-  
+
+  var greetings = ["Hey there", "Hi", "Hello", "Howdy", "Hey", "Aloha", "Hola", "Bonjour", "Welcome"] ;  
   //    Write user's name in the appropriate spot in the login box
-  $j("#loginbox_user_name").html("Hello, " + esp_user.cur_first_name + " " + esp_user.cur_last_name + "!");
+  $j("#loginbox_user_name").html(greetings[Math.floor(Math.random()*greetings.length)] + ", " + esp_user.cur_first_name + "!");
 }
