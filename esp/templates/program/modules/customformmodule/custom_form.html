@@ -1,0 +1,30 @@
+{% extends "customforms/form_base.html" %}
+
+{% block title %}Additional Profile Information for {{ prog.niceName }}{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+
+<h1>Additional Profile Information for {{ prog.niceName }}</h1>
+
+<div id="program_form">
+
+{% load render_qsd %}
+{% render_inline_qsd prog.anchor "{{ tl }}:customform_header" %}
+
+{% if form.errors %}
+Some of your responses are incorrect!  Please consult our instructions and fill in the right answers.
+{% endif %}
+
+<form method="post" action="{{ request.path }}" class="form-stacked">
+{% include "customforms/single_form_fragment.html" %}
+<div style="text-align: center;"><input type="submit" value="Done!" /></div>
+
+</form>
+
+<br />
+
+</div>
+
+{% endblock %}
