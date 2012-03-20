@@ -543,7 +543,7 @@ class Program(models.Model, CustomFormsLinkModel):
         if QObject:
             return union
         else:
-            return User.objects.filter(union).distinct()    
+            return ESPUser.objects.filter(union).distinct()    
 
     def isFull(self, use_cache=True):
         """ Can this program accept any more students? """
