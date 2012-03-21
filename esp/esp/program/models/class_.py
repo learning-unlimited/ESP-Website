@@ -1117,8 +1117,11 @@ class ClassSection(models.Model):
             return reduce(lambda x,y: x+y, [r.num_students for r in ir]) 
             
     def isFull(self, ignore_changes=False):
-        return (self.num_students() >= self._get_capacity(ignore_changes))
-
+        if (self.num_students() == self._get_capacity(ignore_changes) == 0):
+            return False
+        else:
+            return (self.num_students() >= self._get_capacity(ignore_changes))
+            
     def time_blocks(self):
         return self.friendly_times(raw=True)
 
