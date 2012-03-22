@@ -126,15 +126,6 @@ var handle_submit = function(mode, attrs, eventObject)
         attrs.form = attrs.id;
     }
 
-    /*
-    params = {};
-    params["url"] = attrs.url;
-    params["form"] = attrs.form;
-    params["content"] = attrs.content;
-    params["handleAs"] = "json";
-    params["handle"] = dojo_handle;
-    */
-
     //  I'm not sure if these calls are correct -- test this
     if (mode == 'post')
     {

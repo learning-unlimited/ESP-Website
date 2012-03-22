@@ -151,6 +151,16 @@ function render_catalog() {
 }
 
 function get_catalog_data() {
+    $j.get("catalog_json",
+	   save_catalog,
+	   "text");
+    $j.get("/media/templates/program/modules/studentclassregmodule/categories.html",
+	   save_categories_template,
+	   "text");
+    $j.get("/media/templates/program/modules/studentclassregmodule/class.html",
+	   save_class_template,
+	   "text");
+    /*
     dojo.xhrGet({
 	    url: "catalog_json",
 	        handleAs: "text",
@@ -166,4 +176,5 @@ function get_catalog_data() {
 	        handleAs: "text",
 	        load: save_class_template
 		});
+    */
 }
