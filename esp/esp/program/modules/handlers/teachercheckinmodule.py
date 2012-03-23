@@ -78,6 +78,18 @@ class TeacherCheckinModule(ProgramModuleObj):
         else:
             return '%s is not a teacher for %s.' % (teacher.name(), prog.niceName())
     
+    def undoCheckIn(self, teacher, prog):
+        """Undo what checkIn does"""
+        userbits = UserBit.valid_objects().filter(user=teacher,
+                                                qsc=prog.anchor,
+                                                verb=GetNode('V/Flags/Registration/Teacher/Arrived'))
+        if userbits:
+            userbits.update(enddate=datetime.now())
+            UserBit.updateCache(teacher.id)
+            return '%s is no longer checked in.' % teacher.name()
+        else:
+            return '%s was not checked in for %s.' % (teacher.name(), prog.niceName())
+    
     @main_call
     @needs_admin
     def teachercheckin(self, request, tl, one, two, module, extra, prog):
@@ -111,7 +123,11 @@ class TeacherCheckinModule(ProgramModuleObj):
             if not teachers.exists():
                 json_data['message'] = 'User not found!'
             else:
-                json_data['message'] = self.checkIn(teachers[0], prog)
+                json_data['name'] = teachers[0].name()
+                if 'undo' in request.POST and request.POST['undo'].lower() == 'true':
+                    json_data['message'] = self.undoCheckIn(teachers[0], prog)
+                else:
+                    json_data['message'] = self.checkIn(teachers[0], prog)
         return HttpResponse(json.dumps(json_data), mimetype='text/json')
     
     def getMissingTeachers(self, starttime, prog):
