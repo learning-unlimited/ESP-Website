@@ -12,9 +12,20 @@
 </script>
 <!--<script type="text/javascript" src="/media/scripts/jquery-ui-sc/jquery-1.3.2.min.js"></script>
 <script type="text/javascript" src="/media/scripts/jquery-ui-sc/jquery.bgiframe.min.js"></script>-->
-<script type="text/javascript" src="/media/scripts/jquery-ui-sc/jquery.sexy-combo.min.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery-ui-sc/jquery.sexy-combo.js"></script>
 <script type="text/javascript">
+  // Define a function to convert the string to a username if applicable
+  var cleanTeacherSubmit = function(form) {
+    var input = $j("#stateInput")
+    if (input.data("sc:autoFilled") == "yes") {
+      input.val(input.data("sc:autoFilledText"));
+    }
+  };
+
+
+
   $j(document).ready(function() {
+    // Make our input a "sexyCombo" input
     $j("#stateInput").sexyCombo({
       emptyText: "Enter a teacher's name",
       initEventsCallback: function() {
@@ -22,15 +33,21 @@
         console.log(this.input.val());
         this.input.val('');
       },
+      /*
+      listItemClickedCallback: function(item) {
+        console.log("clicked");
+        console.log(item);
+      },
+      */
       textChangeCallback: function() {
-        if(this.input.data("sc:autoFilled" == "yes")) {
-          var text = this.input.data("sc:autoFilledText");
+        if($j("#stateInput").data("sc:autoFilled") == "yes") {
+          var text = $j("#stateInput").data("sc:autoFilledText");
           if (text != this.input.val()) {
-            this.input.data("sc:autoFilled", "no");
+            $j("#stateInput").data("sc:autoFilled", "no");
           }
         }
-        if(this.input.data("sc:autoFilledEvent") == "yes") {
-          this.input.data("sc:autoFilledEvent", "no");
+        if($j("#stateInput").data("sc:autoFilledEvent") == "yes") {
+          $j("#stateInput").data("sc:autoFilledEvent", "no");
           return;
         }
         console.log(this);
@@ -129,7 +146,7 @@ There are currently no teachers associated with this class.
 </table>
 </form>
 {% endif %}
-<form action="{{request.path}}" method="post" name="addteacher">
+<form action="{{request.path}}" method="post" name="addteacher" onsubmit="cleanTeacherSubmit($j(this))">
 <table align="center" width="400">
     <tr>
         <th colspan="2">Add More Teachers</th>
