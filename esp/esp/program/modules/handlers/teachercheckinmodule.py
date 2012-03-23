@@ -39,7 +39,7 @@ from esp.program.modules import module_ext
 from esp.program.models.class_ import ClassSubject
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser, UserBit, User
+from esp.users.models    import ESPUser, UserBit, User, ContactInfo
 from esp.cal.models import Event
 from esp.datatree.models import *
 from django              import forms
@@ -155,6 +155,8 @@ class TeacherCheckinModule(ProgramModuleObj):
         teacher_dict = {}
         for teacher in list(arrived) + list(missing):
             contact = teacher.getLastProfile().contact_user
+            if contact is None:
+                contact = ContactInfo(phone_cell='N/A')
             teacher_dict[teacher.id] = {'username': teacher.username,
                                         'name': teacher.name(),
                                         'last_name': teacher.last_name,

@@ -36,19 +36,30 @@ $j(function(){
     }
     updateSelected(false);
     
+    function checkIn(username, callback, undo){
+        refresh_csrf_cookie();
+        var data = {teacher: username, csrfmiddlewaretoken: csrf_token()};
+        if(undo)
+            data.undo = true;
+        $j.post('ajaxteachercheckin', data, "json").success(callback)
+        .error(function(){
+            alert("An error occurred while atempting to " + (undo?"un-check-in ":"check-in ") + username + ".");
+        });
+    }
+    
+    function undoCheckIn(username, callback){
+        checkIn(username, callback, true);
+    }
+    
     $j(".checkin").click(function(){
         var username = this.id.replace("checkin_", "");
-        refresh_csrf_cookie();
         var td = this.parentNode;
-        var oldTd = $j(td).clone(true)[0]
-        $j.post('ajaxteachercheckin', {teacher: username, csrfmiddlewaretoken: csrf_token()}, "json")
-        .success(function(response) {
+        var oldTd = $j(td).clone(true)[0];
+        checkIn(username, function(response) {
             td.innerHTML = response.message;
             td.previousElementSibling.className = "checked-in";
             checkins.push({username: username, name: response.name, td: td, oldTd: oldTd});
             updateSelected(false);
-        }).error(function(response) {
-            alert("An unknown error occured while attempting to check in " + username + ".");
         });
         this.value += "...";
     });
@@ -61,19 +72,17 @@ $j(function(){
         }
         else if(e.which==122 && e.ctrlKey){
             if(checkins.length>0){
-                var lastCheckin = checkins.pop();
+                var lastCheckin = checkins[checkins.length - 1];
                 var username = lastCheckin.username;
                 var td = lastCheckin.td;
                 var oldTd = lastCheckin.oldTd;
-                refresh_csrf_cookie();
-                $j.post('ajaxteachercheckin', {teacher: username, csrfmiddlewaretoken: csrf_token(), undo: true}, "json")
-                .success(function(response) {
+                undoCheckIn(username, function(response) {
+                    if(checkins[checkins.length - 1] === lastCheckin)
+                        checkins.pop();
                     $j(td).replaceWith($j(oldTd).prepend(response.message+"<br/>"));
                     oldTd.previousElementSibling.className = "not-checked-in";
                     selected = $j(".checkin").index($j(oldTd).find("input"));
                     updateSelected(true);
-                }).error(function(response) {
-                    alert("An unknown error occured while attempting to un-check-in " + username + ".");
                 });
                 td.innerHTML += " Undo...";
             }
