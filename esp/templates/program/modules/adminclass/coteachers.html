@@ -18,7 +18,7 @@
   var cleanTeacherSubmit = function(form) {
     var input = $j("#stateInput")
     if (input.data("sc:autoFilled") == "yes") {
-      input.val(input.data("sc:autoFilledText"));
+      input.val(input.data("sc:autoFilledValue"));
     }
   };
 
@@ -29,16 +29,14 @@
     $j("#stateInput").sexyCombo({
       emptyText: "Enter a teacher's name",
       initEventsCallback: function() {
-        console.log("initevents");
-        console.log(this.input.val());
         this.input.val('');
       },
-      /*
-      listItemClickedCallback: function(item) {
-        console.log("clicked");
-        console.log(item);
+      listItemSelectedCallback: function(item) {
+        $j("#stateInput").data("sc:autoFilled", "yes");
+        $j("#stateInput").data("sc:autoFilledEvent", "yes");
+        $j("#stateInput").data("sc:autoFilledText", item.text());
+        $j("#stateInput").data("sc:autoFilledValue", item.attr("value"));
       },
-      */
       textChangeCallback: function() {
         if($j("#stateInput").data("sc:autoFilled") == "yes") {
           var text = $j("#stateInput").data("sc:autoFilledText");
@@ -50,7 +48,6 @@
           $j("#stateInput").data("sc:autoFilledEvent", "no");
           return;
         }
-        console.log(this);
         $j.ajax({
           url: "/manage/{{ program.getUrlBase }}/teacherlookup/",
           data: {name: this.input.val()},
@@ -59,9 +56,7 @@
           success: function(data) {
             $j("#stateInput option").remove();
             $j.each(data, function(index, val) {
-              console.log("adding:");
-              console.log(val);
-              $j("#stateInput").append("<option value='"+val.username+"'>"+val.name+"</option>");
+              $j("#stateInput").append("<option value='"+val.id+"'>"+val.name+"</option>");
             });
             //$j.sexyCombo.changeOptions($j("#stateInput"));
             //Do it by hand instead, because changeOptions doesn't quite do what we want
