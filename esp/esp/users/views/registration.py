@@ -1,5 +1,3 @@
-
-
 from esp.users.models import User, UserBit, ESPUser_Profile, ESPUser
 from esp.users.forms.user_reg import UserRegForm, EmailUserForm
 from esp.web.util.main import render_to_response
@@ -48,9 +46,17 @@ def join_emaillist(request):
     return render_to_response('registration/emailuser.html',
                               request, request.get_node('Q/Web/myesp'), {'form':form})
 
-            
 
-def user_registration(request):
+def user_registration_validate(request):
+    pass
+
+def user_registration_checkemail(request):
+    pass
+
+def user_registration_phase1(request):
+    pass
+
+def user_registration_phase2(request):
     """
     Registration view -- takes care of users who want to create a
     new account.
