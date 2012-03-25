@@ -51,10 +51,36 @@ def user_registration_validate(request):
     pass
 
 def user_registration_checkemail(request):
-    pass
+    """Check the initially submitted registration for validity.
+
+If the form data isn't valid (eg, invalid email address), send back to phase 1.
+If there are already accounts with that email address, send to phase 2, but with a warning.
+Otherwise, just send to phase 2."""
+    if request.method == 'POST':
+        form = EmailUserRegForm(request.POST)
+
+        if form.is_valid():         
+            ## First, check to see if we have any users with the same e-mail
+            if Tag.getTag('ask_about_duplicate_accounts', default='False') == 'True':
+                existing_accounts = ESPUser.objects.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
+                if len(existing_accounts) != 0:
+                    return render_to_response('registration/newuser.html',
+                                              request, request.get_node('Q/Web/myesp'),
+                                              { 'accounts': existing_accounts, 'email':form.cleaned_data['email'], 'site': Site.objects.get_current() })       
+        else: #form is not valid
+            return render_top_response('registration/newuser_phase1.html',
+                                       request, request.get_node('Q/Web/myesp'),
+                                       {'form':form, 'site': Site.objects.get_current()})#might not need site, unsure what it does
 
 def user_registration_phase1(request):
-    pass
+    if request.user.is_authenticated():
+        return render_to_response('registration/already_logged_in.html',
+                                  request, request.get_node('Q/Web/myesp'), {})
+    else:
+        form = EmailUserRegForm()
+
+    return render_to_response('registration/newuser.html',
+                              request, request.get_node('Q/Web/myesp'),{'form':form})
 
 def user_registration_phase2(request):
     """
