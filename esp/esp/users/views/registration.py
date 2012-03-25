@@ -1,5 +1,5 @@
 from esp.users.models import User, UserBit, ESPUser_Profile, ESPUser
-from esp.users.forms.user_reg import UserRegForm, EmailUserForm
+from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm
 from esp.web.util.main import render_to_response
 from esp.datatree.models import GetNode
 from esp.mailman import add_list_member
@@ -15,7 +15,7 @@ import hashlib
 import random
 from esp import settings
 
-__all__ = ['join_emaillist','user_registration']
+__all__ = ['join_emaillist','user_registration_phase1', 'user_registration_phase2', 'user_registration_validate', 'user_registration_checkemail']
 
 def join_emaillist(request):
     """
@@ -41,7 +41,7 @@ def join_emaillist(request):
 
             return HttpResponseRedirect('/')
     else:
-        form = EmailUserForm(request=request)    
+        form = EmailUserRegForm(request=request)    
 
     return render_to_response('registration/emailuser.html',
                               request, request.get_node('Q/Web/myesp'), {'form':form})
@@ -64,11 +64,18 @@ Otherwise, just send to phase 2."""
             if Tag.getTag('ask_about_duplicate_accounts', default='False') == 'True':
                 existing_accounts = ESPUser.objects.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
                 if len(existing_accounts) != 0:
+                    print "no existing accounts"
                     return render_to_response('registration/newuser.html',
                                               request, request.get_node('Q/Web/myesp'),
-                                              { 'accounts': existing_accounts, 'email':form.cleaned_data['email'], 'site': Site.objects.get_current() })       
+                                              { 'accounts': existing_accounts, 'email':form.cleaned_data['email'], 'site': Site.objects.get_current(), 'form': UserRegForm() })    
+                else:
+                    print "exist accounts"
+                return render_to_response('registration/newuser.html',
+                                      request, request.get_node('Q/Web/myesp'),
+                                      { 'accounts': existing_accounts, 'email':form.cleaned_data['email'], 'site': Site.objects.get_current(), 'form': UserRegForm() })     
         else: #form is not valid
-            return render_top_response('registration/newuser_phase1.html',
+            print "form not valid"
+            return render_to_response('registration/newuser_phase1.html',
                                        request, request.get_node('Q/Web/myesp'),
                                        {'form':form, 'site': Site.objects.get_current()})#might not need site, unsure what it does
 
@@ -79,7 +86,7 @@ def user_registration_phase1(request):
     else:
         form = EmailUserRegForm()
 
-    return render_to_response('registration/newuser.html',
+    return render_to_response('registration/newuser_phase1.html',
                               request, request.get_node('Q/Web/myesp'),{'form':form})
 
 def user_registration_phase2(request):

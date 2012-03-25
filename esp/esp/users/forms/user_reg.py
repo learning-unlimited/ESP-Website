@@ -32,6 +32,9 @@ class ValidHostEmailField(forms.EmailField):
 
         return email
 
+class EmailUserRegForm(forms.Form):
+    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75)
+
 class UserRegForm(forms.Form):
     """
     A form for users to register for the ESP web site.
