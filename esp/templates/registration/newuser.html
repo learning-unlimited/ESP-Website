@@ -13,35 +13,6 @@
 {% endblock %}
 
 {% block content %}
-{% if accounts %}
-<div class="note">
-<p>
-<b>Warning: Account not created!</b>  It looks like other accounts already exist for this
-e-mail address.  Do you already have an {{ site }} account?  If so,
-try logging in with one of the following username(s).  (If not, just
-click "Create account" again below.)
-</p>
-
-<ul>
-  {% for u in accounts %}
-  <li>Username: "{{ u.username }}" (
-  <form method="post" action="/myesp/login">
-    <input type="hidden" name="username" value="{{ u.username }}" />
-    <input type="hidden" name="password" value="" />
-    <input type="hidden" name="next" value="/myesp/profile/" />
-    <input type="submit" value="Try logging in" />
-  </form>
-  <form action="/myesp/passwdrecover/" method="post">
-    <input type="hidden" name="email" value="{{ u.email }}" />
-    <input type="hidden" name="username" value="{{ u.username }}" />
-    <input type="submit" value="I forgot my password!" />
-  </form>
-  )
-  </li>
-  {% endfor %}
-</ul>
-</div>
-{% endif %}
 <h1>Create a new account</h1>
 {% load render_qsd %}
 {% inline_qsd_block Q/Web/myesp create_new_account_headertext request.user %}
@@ -80,7 +51,6 @@ are errors{% endif %} in the below form. Please fix and resubmit.
 {% endif %}
 
 {{ form }}
-{% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 <tr>
   <th colspan="2" class="submit">
     <input type="submit" value="{% if accounts %}Confirm: Create another account for this e-mail{% else %}Create account, proceed to profile creation{% endif %}" name="submit" />
