@@ -1,4 +1,6 @@
 from django import template
+import simplejson as json
+
 register = template.Library()
 
 @register.filter
@@ -44,7 +46,7 @@ def bool_or(obj1,obj2):
 def bool_and(obj1,obj2):
     #print str(obj1) + " and " + str(obj2) + " --> " + str(obj1 and obj2)
     return obj1 and obj2
-
+#theme would serve as a default template scheme
 theme = {
     '': 'yellowgreen',
     'Splash': 'blue',
@@ -59,6 +61,16 @@ theme = {
     'manage': 'black'
 }
 
+#provide a {{ '{ "":"color1","Splash":"color2","Spark":"color3"}'|get_colors}} in the template override 
+@register.filter
+def get_colors(json_str):
+    try:
+        json_arr=json.loads(json_str)
+        for i in theme.keys():
+            theme[i]=str(json_arr.get(i,False))
+    except:
+        pass
+    
 @register.filter
 def extract_theme(str):
     str = (str + '//').split('/')
