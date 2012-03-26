@@ -133,7 +133,7 @@ function submit_preferences(){
 	     type: 'POST',
              url: submit_url,
 	     error: function(a, b, c) {
-                alert("There has been an error on the website. Please contact esp@mit.edu to report this problem.");
+                alert("There has been an error on the website. Please contact " + support + " to report this problem.");
              },
 	     success: function(a, b, c){
 		alert("Your preferences have been successfully saved.");
