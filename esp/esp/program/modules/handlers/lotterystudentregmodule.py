@@ -95,7 +95,8 @@ class LotteryStudentRegModule(ProgramModuleObj):
         This is just a static page;
         it gets all of its content from AJAX callbacks.
         """
-        context = {'prog': prog }
+        from django.conf import settings
+        context = {'prog': prog, 'support': settings.DEFAULT_EMAIL_ADDRESSES['support']}
 
         ProgInfo = prog.getModuleExtension('StudentClassRegModuleInfo')
 

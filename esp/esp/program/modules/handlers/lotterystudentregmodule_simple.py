@@ -96,9 +96,11 @@ class LotteryStudentRegModule_Simple(LotteryStudentRegModule):
         it gets all of its content from AJAX callbacks.
         """
 
+        from django.conf import settings
+
         #print "blooble"
         #print request.user.username
-        return render_to_response('program/modules/lotterystudentregmodule_simple/student_reg_simple.html', {'prog': self.program})
+        return render_to_response('program/modules/lotterystudentregmodule_simple/student_reg_simple.html', {'prog': self.program, 'support': settings.DEFAULT_EMAIL_ADDRESSES['support']})
 
     @aux_call
     @meets_deadline('/Classes/Lottery')

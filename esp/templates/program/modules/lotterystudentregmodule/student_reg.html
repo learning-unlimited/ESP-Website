@@ -14,7 +14,9 @@
 
 {% block xtrajs %}
 <script type="text/javascript">    var base_url = "{{ program.getUrlBase }}";  </script>
-<script type="text/javascript">    var program_base_url = "/json/"+base_url+"/";  </script>
+<script type="text/javascript">    var program_base_url = "/json/"+base_url+"/";
+var support = "{{ support }}";
+</script>
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/student_reg.js"></script>
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/preferences.js"></script>
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
