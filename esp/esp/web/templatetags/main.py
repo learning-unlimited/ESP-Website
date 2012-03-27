@@ -66,8 +66,8 @@ theme = {
 def get_colors(json_str):
     try:
         json_arr=json.loads(json_str)
-        for i in theme.keys():
-            theme[i]=str(json_arr.get(i,False))
+        for i in json_arr.keys():
+            theme[i]=str(json_arr[i])
     except:
         pass
     
