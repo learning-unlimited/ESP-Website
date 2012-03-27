@@ -142,70 +142,69 @@ add_classes_to_timeslot = function(timeslot, sections){
     var classes_list = [];
     var carryovers_list = [];
     for(i in class_id_list){
-	id = class_id_list[i];
-	section = sections[id];
-	
-	//grade check
-	if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
-	    if(section['category'] != 'W'){
-		has_classes = true;
-		classes_list.push(section);
-	    }
-	}
+        id = class_id_list[i];
+        section = sections[id];
+
+        //grade check
+        if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
+            if(section['category'] != 'W'){
+                has_classes = true;
+                classes_list.push(section);
+            }
+        }
     }
 
     for(i in carryover_id_list){
-	id = carryover_id_list[i];
-	section = sections[id];
+        id = carryover_id_list[i];
+        section = sections[id];
 
-	//grade check
-	if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
-	    if(section['category'] == 'W'){
-		has_walkins = true;
-		walkins_list.push(section);
-	    }
-	    else if($j.inArray(section, classes_list) == -1){
-		has_carryovers = true;
-		carryovers_list.push(section);
-	    }
-	}
+        //grade check
+        if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
+            if(section['category'] == 'W'){
+                has_walkins = true;
+                walkins_list.push(section);
+            }
+            else if($j.inArray(section, classes_list) == -1){
+                has_carryovers = true;
+                carryovers_list.push(section);
+            }
+        }
     }
 
 
     // Add walkins section
     if(!has_walkins){
-	//hopefully nobody will ever see this :)
-	$j("#"+ts_walkin_div_from_id(timeslot['id'])).append("<i><font color='red'>(No walk-ins)</font></i>");
+    //hopefully nobody will ever see this :)
+        $j("#"+ts_walkin_div_from_id(timeslot['id'])).append("<i><font color='red'>(No walk-ins)</font></i>");
     }
     else{
-	// Add all the walkins classes
-	for(i in walkins_list){
-	    $j("#"+ts_walkin_div_from_id(timeslot['id'])).append(get_walkin_html(walkins_list[i], timeslot['id']));
-	}
+    // Add all the walkins classes
+        for(i in walkins_list){
+            $j("#"+ts_walkin_div_from_id(timeslot['id'])).append(get_walkin_html(walkins_list[i], timeslot['id']));
+        }
     }
     // Add classes (starting in this timeblock) section
     if(!has_classes){
-	//hopefully nobody will ever see this either :)
-	$j("#"+ts_div_from_id(timeslot['id'])).append("<i><font color='red'>(No classes)</font></i>");
+    //hopefully nobody will ever see this either :)
+        $j("#"+ts_div_from_id(timeslot['id'])).append("<i><font color='red'>(No classes)</font></i>");
     }
     else{
-	// Adds all classes that start in this timeblock
-	for(i in classes_list){
-	    $j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(classes_list[i], timeslot['id']));
-	    load_old_preferences(classes_list[i]);
-	}
+    // Adds all classes that start in this timeblock
+        for(i in classes_list){
+            $j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(classes_list[i], timeslot['id']));
+            load_old_preferences(classes_list[i]);
+        }
     }
     // Add carried over classes section
     if(!has_carryovers){
-	$j("#"+ts_carryover_div_from_id(timeslot['id'])).append("<i><font color='red'>(No carry-overs)</font></i>");
+        $j("#"+ts_carryover_div_from_id(timeslot['id'])).append("<i><font color='red'>(No carry-overs)</font></i>");
     }
     else{
-	// Adds all classes that are carried over from the previous timeblock
-	for(i in carryovers_list){
-	    $j("#"+ts_carryover_div_from_id(timeslot['id'])).append(get_carryover_html(carryovers_list[i], timeslot['id']));
-	}
+    // Adds all classes that are carried over from the previous timeblock
+        for(i in carryovers_list){
+            $j("#"+ts_carryover_div_from_id(timeslot['id'])).append(get_carryover_html(carryovers_list[i], timeslot['id']));
+        }
     }
-
 };
 
 get_class_checkbox_html = function(class_data, timeslot_id){
