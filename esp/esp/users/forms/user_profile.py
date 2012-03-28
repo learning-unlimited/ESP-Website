@@ -85,14 +85,14 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
 
     first_name = StrippedCharField(length=25, max_length=64)
     last_name = StrippedCharField(length=30, max_length=64)
-    e_mail = forms.EmailField()
-    phone_day = USPhoneNumberField(required=False)
-    phone_cell = USPhoneNumberField(required=False)
+    e_mail = forms.EmailField(widget=forms.TextInput(attrs={'style':'width:230px;'}))
+    phone_day = USPhoneNumberField(required=False, widget=forms.TextInput(attrs={'style':'width:100px;'}))
+    phone_cell = USPhoneNumberField(required=False, widget=forms.TextInput(attrs={'style':'width:100px;'}))
     receive_txt_message = forms.BooleanField(required=False)
     address_street = StrippedCharField(length=40, max_length=100)
     address_city = StrippedCharField(length=20, max_length=50)
-    address_state = forms.ChoiceField(choices=zip(_states,_states))
-    address_zip = StrippedCharField(length=5, max_length=5)
+    address_state = forms.ChoiceField(choices=zip(_states,_states), initial="CA", widget=forms.Select(attrs={'style':'width:50px;'}))
+    address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'style':'width:40px;'}))
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
@@ -118,13 +118,13 @@ class EmergContactForm(FormUnrestrictedOtherUser):
 
     emerg_first_name = StrippedCharField(length=25, max_length=64)
     emerg_last_name = StrippedCharField(length=30, max_length=64)
-    emerg_e_mail = forms.EmailField(required=False)
-    emerg_phone_day = USPhoneNumberField()
-    emerg_phone_cell = USPhoneNumberField(required=False)
+    emerg_e_mail = forms.EmailField(required=False, widget=forms.TextInput(attrs={'style':'width:230px;'}))
+    emerg_phone_day = USPhoneNumberField(widget=forms.TextInput(attrs={'style':'width:100px;'}))
+    emerg_phone_cell = USPhoneNumberField(required=False, widget=forms.TextInput(attrs={'style':'width:100px;'}))
     emerg_address_street = StrippedCharField(length=40, max_length=100)
     emerg_address_city = StrippedCharField(length=20, max_length=50)
-    emerg_address_state = forms.ChoiceField(choices=zip(_states,_states))
-    emerg_address_zip = StrippedCharField(length=5, max_length=5)
+    emerg_address_state = forms.ChoiceField(choices=zip(_states,_states), initial="CA", widget=forms.Select(attrs={'style':'width:50px;'}))
+    emerg_address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'style':'width:40px;'}))
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def clean(self):
@@ -140,9 +140,9 @@ class GuardContactForm(FormUnrestrictedOtherUser):
     guard_first_name = StrippedCharField(length=25, max_length=64)
     guard_last_name = StrippedCharField(length=30, max_length=64)
     guard_no_e_mail = forms.BooleanField(required=False)
-    guard_e_mail = forms.EmailField(required=False)
-    guard_phone_day = USPhoneNumberField()
-    guard_phone_cell = USPhoneNumberField(required=False)
+    guard_e_mail = forms.EmailField(required=False, widget=forms.TextInput(attrs={'style':'width:230px;'}))
+    guard_phone_day = USPhoneNumberField(widget=forms.TextInput(attrs={'style':'width:100px;'}))
+    guard_phone_cell = USPhoneNumberField(required=False, widget=forms.TextInput(attrs={'style':'width:100px;'}))
 
     def __init__(self, *args, **kwargs):
         super(GuardContactForm, self).__init__(*args, **kwargs)
@@ -209,7 +209,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     from esp.users.models import ESPUser
     from esp.users.models import shirt_sizes, shirt_types, food_choices
 
-    graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
+    graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)], widget=forms.Select(attrs={'style':'width:50px;'}))
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     unmatched_school = forms.BooleanField(required=False)
     school = forms.CharField(max_length=128, required=False)
@@ -426,13 +426,13 @@ class TeacherInfoForm(FormWithRequiredCss):
 
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
     is_graduate_student = forms.BooleanField(required=False, label='Graduate student?')
-    from_here = forms.ChoiceField(choices=from_here_answers, widget = forms.RadioSelect(), label='Are you currently enrolled at %s?' % INSTITUTION_NAME)
+    from_here = forms.ChoiceField(choices=from_here_answers, widget = forms.RadioSelect(attrs={'onclick':'fromStanford();'}), label='Are you currently enrolled at %s?' % INSTITUTION_NAME)
     school = SizedCharField(length=24, max_length=128, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
     shirt_type = forms.ChoiceField(choices=([('','')]+list(shirt_types)), required=False)
     full_legal_name = SizedCharField(length=24, max_length=128, required=False)
-    university_email = forms.EmailField(required=False)
+    university_email = forms.EmailField(required=False, widget=forms.TextInput(attrs={'style':'width:230px;'}))
     student_id = SizedCharField(length=24, max_length=128, required=False)
     mail_reimbursement = forms.ChoiceField(choices=reimbursement_choices, widget=forms.RadioSelect(), required=False)
 

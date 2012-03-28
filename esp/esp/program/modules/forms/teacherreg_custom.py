@@ -36,7 +36,7 @@ from django import forms
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 
 class StanfordTeacherQuestionsForm(FormWithRequiredCss):
-    schedule_acknowledgement = forms.BooleanField(label='Acknowledgement', help_text='Splash will be on Halloween weekend (Oct. 29-30)!  Please acknowledge that you are aware of this and commit to teaching at one of the times you have specified for your availability.')
+    schedule_acknowledgement = forms.BooleanField(label='Acknowledgement', help_text='Splash will take place on April 21-22, 2012.   I hereby commit to teach for Splash on the days and times my class is scheduled.')
 
 class BCTeacherQuestionsForm(FormWithRequiredCss):
     qualifications = forms.CharField(label='Qualifications', help_text='What are your qualifications for teaching this course?', widget=forms.Textarea(attrs={'cols': 40, 'rows': 4}))

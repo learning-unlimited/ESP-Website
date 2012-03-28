@@ -110,6 +110,7 @@ class MessageRequest(models.Model):
     creator = AjaxForeignKey(ESPUser) # the person who sent this message
     processed = models.BooleanField(default=False, db_index=True) # Have we made EmailRequest objects from this MessageRequest yet?
     processed_by = models.DateTimeField(null=True, default=None, db_index=True) # When should this be processed by?
+    processed_pid = models.IntegerField(null=True)
     email_all = models.BooleanField(default=True) # do we just want to create an emailrequest for each user?
     priority_level = models.IntegerField(null=True, blank=True) # Priority of a message; may be used in the future to make a message non-digested, or to prevent a low-priority message from being sent
 

@@ -120,12 +120,15 @@ class SplitDateWidget(forms.MultiWidget):
 
     # Put labels in
     def format_output(self, rendered_widgets):
-        output = u'\n<label for="dob_0">Month:</label>\n'
+        output = u'\n<p><label for="dob_0">Month*</label>\n'
         output += rendered_widgets[0]
-        output += u'\n<label for="dob_1">Day:</label>\n'
+        output += u'\n</p\n'
+        output += u'\n<p><label for="dob_1">Day*</label>\n'
         output += rendered_widgets[1]
-        output += u'\n<label for="dob_2">Year:</label>\n'
+        output += u'\n</p\n'
+        output += u'\n<p><label for="dob_2">Year*</label>\n'
         output += rendered_widgets[2]
+        output += u'\n</p\n'
         return output
 
 class CaptchaWidget(forms.widgets.TextInput):

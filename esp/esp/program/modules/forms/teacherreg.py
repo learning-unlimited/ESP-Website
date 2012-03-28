@@ -61,30 +61,30 @@ class TeacherClassRegForm(FormWithRequiredCss):
     ]
     
     # Grr, TypedChoiceField doesn't seem to exist yet
-    title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
-    category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
+    title          = StrippedCharField(    label='Course Title', length=50, max_length=200, widget=forms.TextInput(attrs={'style':'width:230px;'}))
+    category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget(attrs={'style':'width:240px;'}) )
     class_info     = StrippedCharField(   label='Course Description', widget=forms.Textarea(),
                                         help_text='Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)' )
     prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(attrs={'rows': 4}), required=False,
                                         help_text='If your course does not have prerequisites, leave this box blank.')
     
-    duration       = forms.ChoiceField( label='Duration of a Class Meeting', help_text='(hours:minutes)', choices=[('0.0', 'Program default')], widget=BlankSelectWidget() )
-    num_sections   = forms.ChoiceField( label='Number of Sections', choices=[(1,1)], widget=BlankSelectWidget(),
+    duration       = forms.ChoiceField( label='Duration of a Class Meeting', help_text='(hours:minutes)', choices=[('0.0', 'Program default')], widget=BlankSelectWidget(attrs={'style':'width:60px;'}) )
+    num_sections   = forms.ChoiceField( label='Number of Sections', choices=[(1,1)], widget=BlankSelectWidget(attrs={'style':'width:50px;'}),
                                         help_text='(How many independent sections (copies) of your class would you like to teach?)' )
     session_count  = forms.ChoiceField( label='Number of Days of Class', choices=[(1,1)], widget=BlankSelectWidget(),
                                         help_text='(How many days will your class take to complete?)' )
 
 
-    grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
-    grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
-    class_size_max = forms.ChoiceField( label='Maximum Number of Students', choices=[(0, 0)], widget=BlankSelectWidget(),
+    grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget(attrs={'style':'width:50px;'}) )
+    grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget(attrs={'style':'width:50px;'}) )
+    class_size_max = forms.ChoiceField( label='Maximum Number of Students', choices=[(0, 0)], widget=BlankSelectWidget(attrs={'style':'width:50px;'}),
                                         help_text='The above class-size and grade-range values are absolute, not the "optimum" nor "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
     class_size_optimal = forms.IntegerField( label='Optimal Number of Students', help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
     optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', choices=[(0, 0)], widget=BlankSelectWidget() )
     allowable_class_size_ranges = forms.MultipleChoiceField( label='Allowable Class Size Ranges', choices=[(0, 0)], widget=forms.CheckboxSelectMultiple(), 
                                                              help_text="Please select all class size ranges you are comfortable teaching." )
     hardness_rating = forms.ChoiceField( label='Difficulty',choices=hardness_choices, initial="**",
-        help_text="Which best describes how hard your class will be for your students?")
+        help_text="Which best describes how hard your class will be for your students?", widget=forms.Select(attrs={'style':'width:400px;'}))
     allow_lateness = forms.ChoiceField( label='Punctuality', choices=lateness_choices, widget=forms.RadioSelect() )
     
     has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect(), required=False )

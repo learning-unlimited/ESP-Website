@@ -404,7 +404,7 @@ StudentRegInterface = Ext.extend(Ext.TabPanel, {
              url: '/learn/'+url_base+'/lsr_submit',
              success: handle_submit_response,
              failure: function() {
-                alert("There has been an error on the website. Please contact esp@mit.edu to report this problem.");
+                alert("There has been an error on the website. Please contact " + support + " to report this problem.");
              },
              params: {'json_data': data, 'url_base': url_base},
              method: 'POST',

@@ -543,7 +543,7 @@ class Program(models.Model, CustomFormsLinkModel):
         if QObject:
             return union
         else:
-            return User.objects.filter(union).distinct()    
+            return ESPUser.objects.filter(union).distinct()    
 
     def isFull(self, use_cache=True):
         """ Can this program accept any more students? """
@@ -591,6 +591,14 @@ class Program(models.Model, CustomFormsLinkModel):
         return BooleanToken    
     getScheduleConstraints.depend_on_model(get_sc_model)
     getScheduleConstraints.depend_on_model(get_bt_model)
+
+    def lock_schedule(self, lock_level=1):
+        """ Locks all schedule assignments for the program, for convenience
+            (e.g. between scheduling some sections manually and running
+            automatic scheduling).
+        """
+        from esp.resources.models import ResourceAssignment
+        ResourceAssignment.objects.filter(target__parent_class__parent_program=self, lock_level__lt=lock_level).update(lock_level=lock_level)
 
     def isConfirmed(self, espuser):
         v = GetNode('V/Flags/Public')

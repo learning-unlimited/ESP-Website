@@ -64,8 +64,8 @@ class SplashInfoForm(forms.Form):
     discount_choices = [(False, 'I am the first in my household enrolling in Splash (+ $40)'),
                         (True, 'I have a brother/sister already enrolled in Splash  (+ $20).')]
                   
-    lunchsat = forms.ChoiceField(choices=default_choices)
-    lunchsun = forms.ChoiceField(choices=default_choices)
+    lunchsat = forms.ChoiceField(choices=default_choices, widget=forms.Select(attrs={"style":"width:50px"}))
+    lunchsun = forms.ChoiceField(choices=default_choices, widget=forms.Select(attrs={"style":"width:50px"}))
     siblingdiscount = forms.ChoiceField(choices=discount_choices, widget=forms.RadioSelect)
     siblingname = forms.CharField(max_length=128, required=False)
     

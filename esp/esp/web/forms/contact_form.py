@@ -76,9 +76,9 @@ class ContactForm(forms.Form):
     subject = forms.CharField(max_length=100, label=_("Subject"))
 
     message = forms.CharField(label=_("Message"),
-                              widget = forms.Textarea(attrs={'cols': 60,
+                              widget = forms.Textarea(attrs={'cols': 40,
                                                              'rows': 15,
-                                                             'style': "width: 400px"}))
+                                                             'style': "width: 340px"}))
 
     # If this is true, then the user has seen and clicked through a message
     # checking whether they want to recover login information.

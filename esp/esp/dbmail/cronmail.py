@@ -48,17 +48,20 @@ from esp.miniblog.models import Entry
 
 from django.conf import settings
 
+import os
+
 @transaction.autocommit
 def process_messages():
     """ Go through all unprocessed messages and process them. """
-    messages = MessageRequest.objects.filter(Q(processed_by__lte=datetime.now()) |
-                                             Q(processed_by__isnull=True),
-                                             processed=False)
-    num_messages = len(messages)
-    for message in messages:
-        message.processed_by = datetime.now() + timedelta(seconds=10 * num_messages)
-        message.save()
+    
+    #   Perform an atomic update in order to claim which messages we will be processing.
+    my_pid = os.getpid()
+    MessageRequest.objects.filter(Q(processed_by__lte=datetime.now()) | Q(processed_by__isnull=True)).filter(processed_pid__isnull=True, processed=False).update(processed_pid=my_pid, processed_by=datetime.now() + timedelta(seconds=10))
+    
+    #   Identify the messages we just claimed.
+    messages = MessageRequest.objects.filter(processed_pid=my_pid, processed=False)
 
+    #   Process message requests
     for message in messages:
         try:
             message.process(True)
@@ -68,25 +71,29 @@ def process_messages():
         else:
             message.processed = True
             message.save()
-
+    return list(messages)
 
 @transaction.autocommit
-def send_email_requests():
+def send_email_requests(messages):
     """ Go through all email requests that aren't sent and send them. """
+    
+    #   Find e-mail requests only for the specified messages.
     mailtxts = TextOfEmail.objects.filter(Q(sent_by__lte=datetime.now()) |
                                           Q(sent_by__isnull=True),
-                                          sent__isnull=True)
-    num_mailtxts = len(mailtxts)
-    for mailtxt in mailtxts:
-        mailtxt.sent_by = datetime.now() + timedelta(seconds=30 * num_mailtxts)
-        mailtxt.save()
-
+                                          sent__isnull=True,
+                                          emailrequest__msgreq__in=messages)
+    mailtxts_list = list(mailtxts)
+    
+    #   Update these TextOfEmails so we won't try to send them ever again
+    mailtxts.update(sent_by = datetime.now() + timedelta(seconds=10))
+    
     if hasattr(settings, 'EMAILTIMEOUT') and settings.EMAILTIMEOUT is not None:
         wait = settings.EMAILTIMEOUT
     else:
         wait = 1.5
     
-    for mailtxt in mailtxts:
+    num_sent = 0
+    for mailtxt in mailtxts_list:
         try:
             mailtxt.send()
         except:
@@ -97,8 +104,11 @@ def send_email_requests():
         else:
             mailtxt.sent = datetime.now()
             mailtxt.save()
+            num_sent += 1
 
         time.sleep(wait)
+    if num_sent > 0:
+        print 'Sent %d messages' % num_sent
     
 @transaction.autocommit
 def event_to_message(event):

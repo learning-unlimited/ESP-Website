@@ -79,7 +79,7 @@ class PasswordResetForm(forms.Form):
         try:
             user = User.objects.get(username=self.cleaned_data['username'])
         except User.DoesNotExist:
-            raise forms.ValidationError, "User '%s' does not exist." % self.cleaned_data['username']
+            raise forms.ValidationError, "Sorry, the username '%s' doesn\'t exist." % self.cleaned_data['username']
 
         return self.cleaned_data['username'].strip()
 
@@ -90,7 +90,7 @@ class PasswordResetForm(forms.Form):
         if len(User.objects.filter(email__iexact=self.cleaned_data['email']).values('id')[:1])>0:
             return self.cleaned_data['email'].strip()
 
-        raise forms.ValidationError('No user has email %s' % self.cleaned_data['email'])
+        raise forms.ValidationError('Sorry, no user has the email address %s' % self.cleaned_data['email'])
 
 
 class NewPasswordSetForm(forms.Form):
