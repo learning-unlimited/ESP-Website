@@ -3,7 +3,7 @@ function check_json_status(components, data_fetch_status)
 {
     if (components != null)
     {
-        for (var i in components)
+        for (var i = 0; i < components.length; i++)
         {
             var key = components[i];
             if (data_fetch_status[key] != "Ready")
@@ -32,7 +32,7 @@ function handle_json_response(data, component, data_fetch_status, new_data, text
         if (!data.hasOwnProperty(key))
             data[key] = {};
 
-        for (var index in new_data[key])
+        for (var index = 0; index < new_data[key].length; index++)
         {
             var item = new_data[key][index];
             if (data[key].hasOwnProperty(item.id))
@@ -66,7 +66,7 @@ function json_fetch(components, on_complete, result_data)
         result_data = Object();
         console.log("Initialized result data to empty object");
     }
-    for (var i in components)
+    for (var i = 0; i < components.length; i++)
     {
         data_fetch_status[components[i]] = "Waiting";
         //  The 'with' statement creates new variables named 'component' which are properly scoped

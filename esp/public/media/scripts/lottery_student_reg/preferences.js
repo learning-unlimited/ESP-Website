@@ -60,7 +60,7 @@ function update_timeslot_prefs(data, container_div, timeslot_index)
     data_starting_sections = data.timeslots[timeslot_index].starting_sections;
     priority_sections = [];
     interested_sections = [];
-    for(i in data_starting_sections)
+    for(var i = 0; i < data_starting_sections.length; i++)
     {
 	if(data.sections[data_starting_sections[i]].lottery_priority)
 	{
@@ -76,7 +76,7 @@ function update_timeslot_prefs(data, container_div, timeslot_index)
     if (priority_sections.length > 0)
     {
 	priority_div.html('');
-	for (i in priority_sections)
+	for (var i = 0; i < priority_sections.length; i++)
 	{
 	    render_class_section(data, priority_div, priority_sections[i]);
 	}
@@ -92,7 +92,7 @@ function update_timeslot_prefs(data, container_div, timeslot_index)
     if (interested_sections.length > 0)
     {
 	interested_div.html('');
-	for (j in interested_sections)
+	for (var j = 0; j < interested_sections.length; j++)
 	{
 	    render_class_section(data, interested_div, interested_sections[j]);
 	}

@@ -53,14 +53,14 @@ show_app = function(data){
 
     //creates a list of the timeslots sorted by start time
     sorted_timeslots = [];
-    for(id in timeslots){
+    for(var id in timeslots){
 	sorted_timeslots.push(timeslots[id]);
     }
     sorted_timeslots.sort(compare_timeslot_starts);
 
     //adds timeslot links to page
     $j("#timeslots_anchor").css("display", "none");
-    for(index in sorted_timeslots){
+    for(var index = 0; index < sorted_timeslots.length; index++){
 	t = sorted_timeslots[index];
 	$j("#timeslots_anchor").before(get_timeslot_html(t));
 	add_classes_to_timeslot(t, sections);
@@ -151,7 +151,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     var walkins_list = [];
     var classes_list = [];
     var carryovers_list = [];
-    for(i in class_id_list){
+    for(var i = 0; i < class_id_list.length; i++){
         id = class_id_list[i];
         section = sections[id];
 
@@ -164,7 +164,7 @@ add_classes_to_timeslot = function(timeslot, sections){
         }
     }
 
-    for(i in carryover_id_list){
+    for(var i = 0; i < carryover_id_list.length; i++){
         id = carryover_id_list[i];
         section = sections[id];
 
@@ -189,7 +189,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     }
     else if (open_class_registration){
     // Add all the walkins classes
-        for(i in walkins_list){
+        for(var i = 0; i < walkins_list.length; i++){
             $j("#"+ts_walkin_div_from_id(timeslot['id'])).append(get_walkin_html(walkins_list[i], timeslot['id']));
         }
     }
@@ -211,7 +211,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     }
     else{
     // Adds all classes that are carried over from the previous timeblock
-        for(i in carryovers_list){
+        for(var i = 0; i < carryovers_list.length; i++){
             $j("#"+ts_carryover_div_from_id(timeslot['id'])).append(get_carryover_html(carryovers_list[i], timeslot['id']));
         }
     }
@@ -348,7 +348,7 @@ load_old_preferences = function(class_data){
 // Callback for when a priority radio is changed
 priority_changed = function(id, timeslot_id){
     // Unprioritize all selections in the timeblock
-    for (i in timeslots[timeslot_id].starting_sections){
+    for (var i = 0; i < timeslots[timeslot_id].starting_sections.length; i++){
 	    sections[timeslots[timeslot_id].starting_sections[i]]['lottery_priority'] = false;
     }
 
