@@ -103,7 +103,6 @@ def user_registration_validate(request):
                                           request, request.get_node('Q/Web/myesp'),
                                           {'user': user, 'site': Site.objects.get_current()})
         else:
-            print "form not valid"
             return render_to_response('registration/newuser.html',
                                       request, request.get_node('Q/Web/myesp'),{'form':form})
 
@@ -132,7 +131,11 @@ When there are already accounts with this email address (depending on some tags)
             return render_to_response('registration/newuser_phase1.html',
                                       request, request.get_node('Q/Web/myesp'),
                                       {'form':form, 'site': Site.objects.get_current()})
-    
+    else:
+        return render_to_response('registration/newuser_phase1.html',
+                                  request, request.get_node('Q/Web/myesp'),
+                                  {'form':form, 'site': Site.objects.get_current()})
+        
 
 def user_registration_phase1(request):
     """Displays phase 1, and recieves and passes off phase 1 submissions."""
