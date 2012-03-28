@@ -19,13 +19,33 @@
             background-color: white
         }
         
-        .not-checked-in a { font-weight: bold; }
-        .checked-in { text-decoration: line-through; }
-        .selected + span:after { content: "◀"; font-weight: bold; }
-        .checkin-column { min-width: 90px; }
+        .not-checked-in a {
+            font-weight: bold;
+        }
         
-        input.found { background-color: #AAFFAA; }
-        input.not-found { background-color: #FFAAAA; }
+        .checked-in {
+            text-decoration: line-through;
+        }
+        
+        .selected .checkin + span:after {
+            content: "◀"; font-weight: bold;
+        }
+        
+        .selected .not-checked-in, .selected .checkin-column, .selected .phone {
+            background-color: #FFFF00;
+        }
+        
+        .checkin-column {
+            min-width: 90px;
+        }
+        
+        input.found {
+            background-color: #AAFFAA;
+        }
+        
+        input.not-found {
+            background-color: #FFAAAA;
+        }
         
     </style>
 {% endblock %}

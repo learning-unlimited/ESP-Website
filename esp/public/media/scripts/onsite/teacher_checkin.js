@@ -20,9 +20,9 @@ $j(function(){
             selected = buttons.length-1;
         if(selected < 0)
             selected = 0;
-        buttons.removeClass("selected");
+        $j(".selected").removeClass("selected");
         var button = $j(buttons[selected]);
-        button.addClass("selected");
+        button.parent().parent().addClass("selected");
         if(scroll){
             if(button.offset().top < $j(document).scrollTop() + window.innerHeight*0.25)
                 $j(document).scrollTop(button.offset().top - window.innerHeight*0.25);
@@ -75,7 +75,7 @@ $j(function(){
     
     $j(document).keypress(function(e){
         if(e.which==13 && e.shiftKey){
-            $j(".selected").click();
+            $j(".selected .checkin").click();
             e.preventDefault();
             input.val("");
         }
@@ -98,7 +98,7 @@ $j(function(){
             e.preventDefault();
         }
         else if(e.which==63){
-            window.open($j(".selected").parent().prev().find("a")[0].href);
+            window.open($j(".selected a")[0].href);
             e.preventDefault();
         }
     }).keydown(function(e){
