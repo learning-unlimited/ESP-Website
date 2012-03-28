@@ -64,6 +64,15 @@ $j(function(){
         this.value += "...";
     });
     
+    $j(".uncheckin").click(function(){
+        var username = this.id.replace("uncheckin_", "");
+        undoCheckIn(username, function(response) {
+            alert(response.message);
+            location.reload();
+        });
+        this.value += "...";
+    });
+    
     $j(document).keypress(function(e){
         if(e.which==13 && e.shiftKey){
             $j(".selected").click();

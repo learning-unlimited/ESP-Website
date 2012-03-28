@@ -189,7 +189,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         class_arr = [sec for sec in class_arr if sec['any_arrived'] == False] + \
                     [sec for sec in class_arr if sec['any_arrived'] == True]
         
-        return class_arr
+        return class_arr, teacher_dict
     
     @aux_call
     @needs_admin
@@ -199,7 +199,8 @@ class TeacherCheckinModule(ProgramModuleObj):
         else:
             starttime = Event.objects.filter(start__gte=datetime.now() - timedelta(minutes=30)).order_by('start')[0]
         context = {}
-        context['sections'] = self.getMissingTeachers(starttime, prog)
+        context['sections'], teachers = self.getMissingTeachers(starttime, prog)
+        context['arrived'] = [teacher for teacher in teachers.values() if teacher['arrived']]
         context['start_time'] = starttime
         return render_to_response(self.baseDir()+'missingteachers.html', request, (prog, tl), context)
     

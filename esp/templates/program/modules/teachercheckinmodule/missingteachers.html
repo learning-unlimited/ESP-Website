@@ -89,6 +89,27 @@
 {% endfor %}
 </table>
 
+<br/>
+
+<table>
+<tr>
+    <th colspan="3">
+        Teachers who have checked in for classes starting at {{ start_time.pretty_start_time }}
+    </th>
+</tr>
+{% for teacher in arrived %}
+<tr>
+    <td class="checked-in">
+        <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
+    </td>
+    <td>
+        <input id="uncheckin_{{ teacher.username }}" class="button uncheckin" type="button" value="Undo Check-In" />
+    </td>
+    <td class="phone"> {{ teacher.phone }} </td>
+</tr>
+{% endfor %}
+</table>
+
 <br/><a href="teachercheckin">&lt;&lt;Back</a><br/>
 
 <br />
