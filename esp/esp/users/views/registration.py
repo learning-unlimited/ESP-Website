@@ -53,7 +53,6 @@ def user_registration_validate(request):
     form = UserRegForm(request.POST)
 
     if form.is_valid():         
-        print "form valid"
         #I'm not sure what all the try/catch is here, but it possibly has to do with dummy volunteer accounts
         try:
             user = ESPUser.objects.get(email=form.cleaned_data['email'],
@@ -65,46 +64,46 @@ def user_registration_validate(request):
             except User.DoesNotExist:
                 user = ESPUser(email = form.cleaned_data['email'])
 
-            user.username   = form.cleaned_data['username']
-            user.last_name  = form.cleaned_data['last_name']
-            user.first_name = form.cleaned_data['first_name']
-            user.set_password(form.cleaned_data['password'])
+        user.username   = form.cleaned_data['username']
+        user.last_name  = form.cleaned_data['last_name']
+        user.first_name = form.cleaned_data['first_name']
+        user.set_password(form.cleaned_data['password'])
             
-            #   Append key to password and disable until activation if desired
-            if Tag.getTag('require_email_validation', default='False') == 'True':
-                userkey = random.randint(0,2**31 - 1)
-                user.password += "_%d" % userkey
-                user.is_active = False
+        #   Append key to password and disable until activation if desired
+        if Tag.getTag('require_email_validation', default='False') == 'True':
+            userkey = random.randint(0,2**31 - 1)
+            user.password += "_%d" % userkey
+            user.is_active = False
 
-            user.save()
-            ESPUser_Profile.objects.get_or_create(user = user)
+        user.save()
+        ESPUser_Profile.objects.get_or_create(user = user)
 
-            role_verb = GetNode('V/Flags/UserRole/%s' % form.cleaned_data['initial_role'])
-
-            role_bit  = UserBit.objects.create(user = user,
+        role_verb = GetNode('V/Flags/UserRole/%s' % form.cleaned_data['initial_role'])
+        role_bit  = UserBit.objects.create(user = user,
                                                verb = role_verb,
                                                qsc  = request.get_node('Q'),
                                                recursive = False)
 
-            if Tag.getTag('require_email_validation', default='False') == 'False':
-                user = authenticate(username=form.cleaned_data['username'],
+        if Tag.getTag('require_email_validation', default='False') == 'False':
+            user = authenticate(username=form.cleaned_data['username'],
                                     password=form.cleaned_data['password'])
                 
-                login(request, user)
-                return HttpResponseRedirect('/myesp/profile/')
-            else:
-                from django.template import Context as RawContext
-                t = loader.get_template('registration/activation_email.txt')
-                c = RawContext({'user': user, 'activation_key': userkey, 'site': Site.objects.get_current()})
-
-                send_mail("Account Activation", t.render(c), settings.SERVER_EMAIL, [user.email], fail_silently = False)
-
-                return render_to_response('registration/account_created_activation_required.html',
-                                          request, request.get_node('Q/Web/myesp'),
-                                          {'user': user, 'site': Site.objects.get_current()})
+            login(request, user)
+            return HttpResponseRedirect('/myesp/profile/')
         else:
-            return render_to_response('registration/newuser.html',
-                                      request, request.get_node('Q/Web/myesp'),{'form':form})
+            from django.template import Context as RawContext
+            t = loader.get_template('registration/activation_email.txt')
+            c = RawContext({'user': user, 'activation_key': userkey, 'site': Site.objects.get_current()})
+
+            send_mail("Account Activation", t.render(c), settings.SERVER_EMAIL, [user.email], fail_silently = False)
+
+            return render_to_response('registration/account_created_activation_required.html',
+                                      request, request.get_node('Q/Web/myesp'),
+                                      {'user': user, 'site': Site.objects.get_current()})
+    else:
+        print "form invalid"
+        return render_to_response('registration/newuser.html',
+                                  request, request.get_node('Q/Web/myesp'),{'form':form})
 
 def user_registration_checkemail(request):
     """Method to handle the first phase of registration when submitted as a form.
@@ -125,17 +124,12 @@ When there are already accounts with this email address (depending on some tags)
                 return render_to_response('registration/newuser_phase1.html',
                                           request, request.get_node('Q/Web/myesp'),
                                           { 'accounts': existing_accounts, 'email':form.cleaned_data['email'], 'site': Site.objects.get_current(), 'form': form })    
-            #form is valid, and not multiple accounts 
-            return HttpResponseRedirect(reverse('users.views.user_registration_phase2')+'?email='+form.cleaned_data['email'])#some nonclean for urls issue to be fixed later
-        else: #form is not valid
-            return render_to_response('registration/newuser_phase1.html',
-                                      request, request.get_node('Q/Web/myesp'),
-                                      {'form':form, 'site': Site.objects.get_current()})
-    else:
+        #form is valid, and not multiple accounts 
+        return HttpResponseRedirect(reverse('users.views.user_registration_phase2')+'?email='+form.cleaned_data['email'])#some nonclean for urls issue to be fixed later
+    else: #form is not valid
         return render_to_response('registration/newuser_phase1.html',
                                   request, request.get_node('Q/Web/myesp'),
                                   {'form':form, 'site': Site.objects.get_current()})
-        
 
 def user_registration_phase1(request):
     """Displays phase 1, and recieves and passes off phase 1 submissions."""
