@@ -200,8 +200,12 @@ add_classes_to_timeslot = function(timeslot, sections){
     }
     else{
     // Adds all classes that start in this timeblock
-        for(i in classes_list){
-            $j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(classes_list[i], timeslot['id']));
+        var text_to_insert = '';
+        for(var i = 0; i < classes_list.length; i++){
+            text_to_insert += get_class_checkbox_html(classes_list[i], timeslot['id']);
+        }
+        $j("#"+ts_table_from_id(timeslot['id'])).append($j(text_to_insert));
+        for(var i = 0; i < classes_list.length; i++){
             load_old_preferences(classes_list[i]);
         }
     }
@@ -222,25 +226,25 @@ get_class_checkbox_html = function(class_data, timeslot_id){
     template = "\
     <tr>\
         <td><p>\
-            <input type='radio'\
-                   onChange='priority_changed(%CLASS_ID%, %TIMESLOT_ID%)'\
+            <input type=\"radio\"\
+                   onChange=\"priority_changed(%CLASS_ID%, %TIMESLOT_ID%)\"\
                    id=\"%CLASS_RADIO_ID%\"\
                    name=\"%TS_RADIO_NAME%\">\
             </input>\
         </p></td>\
         <td><p>\
-            <input type='checkbox'\
-                   onChange='interested_changed(%CLASS_ID%)'\
-                   name=%CLASS_CHECKBOX_ID%\
-                   id=%CLASS_CHECKBOX_ID%>\
+            <input type=\"checkbox\"\
+                   onChange=\"interested_changed(%CLASS_ID%)\"\
+                   name=\"%CLASS_CHECKBOX_ID%\"\
+                   id=\"%CLASS_CHECKBOX_ID%\">\
             </input>\
         </p></td>\
-        <td><p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p></td>\
+        <td><p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href=\"javascript:open_class_desc(%CLASS_ID%)\">More info</a>]</p></td>\
     </tr>"
 	.replace(/%TIMESLOT_ID%/g, timeslot_id)
         .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslots[timeslot_id].label))
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'] + 's' + class_data['index'])
-        .replace('%CLASS_TITLE%', class_data['title'])
+        .replace(/%CLASS_TITLE%/g, class_data['title'])
         .replace(/%CLASS_ID%/g, class_data['id'])
         .replace(/%CLASS_CHECKBOX_ID%/g, class_checkbox_id(class_data['id']))
         .replace(/%CLASS_RADIO_ID%/g, class_radio_id(class_data['id']));
@@ -251,7 +255,7 @@ get_walkin_html = function(class_data, timeslot_id){
     // Create a walkin div using a template with keywords replaced below
     template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'] + 's' + class_data['index'])
-        .replace('%CLASS_TITLE%', class_data['title'])
+        .replace(/%CLASS_TITLE%/g, class_data['title'])
         .replace(/%CLASS_ID%/g, class_data['id']);
     return template;
 };
