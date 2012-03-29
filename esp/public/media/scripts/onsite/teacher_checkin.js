@@ -51,7 +51,7 @@ $j(function(){
         checkIn(username, callback, true);
     }
     
-    $j(".checkin").click(function(){
+    $j(".checkin:enabled").click(function(){
         var username = this.id.replace("checkin_", "");
         var td = this.parentNode;
         var oldTd = $j(td).clone(true)[0];
@@ -64,7 +64,7 @@ $j(function(){
         this.value += "...";
     });
     
-    $j(".uncheckin").click(function(){
+    $j(".uncheckin:enabled").click(function(){
         var username = this.id.replace("uncheckin_", "");
         undoCheckIn(username, function(response) {
             alert(response.message);

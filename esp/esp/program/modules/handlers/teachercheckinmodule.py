@@ -94,11 +94,13 @@ class TeacherCheckinModule(ProgramModuleObj):
     @needs_admin
     def teachercheckin(self, request, tl, one, two, module, extra, prog):
         context = {}
-        if request.method == 'POST':
-            form = TeacherCheckinForm(request.POST)
+        if 'when' in request.GET:
+            form = TeacherCheckinForm(request.GET)
             if form.is_valid():
-                teacher = ESPUser(form.cleaned_data['user'])
-                context['message'] = self.checkIn(teacher, prog)
+                when = form.cleaned_data['when']
+                if when is not None:
+                    context['when'] = when
+                    context['url_when'] = request.GET['when']
         else:
             form = TeacherCheckinForm()
         
@@ -204,7 +206,15 @@ class TeacherCheckinModule(ProgramModuleObj):
         else:
             starttime = None
         context = {}
-        context['sections'], teachers = self.getMissingTeachers(prog, starttime)
+        form = TeacherCheckinForm(request.GET)
+        if form.is_valid():
+            when = form.cleaned_data['when']
+            if when is not None:
+                context['when'] = when
+                context['url_when'] = request.GET['when']
+        else:
+            when = None
+        context['sections'], teachers = self.getMissingTeachers(prog, starttime, when)
         context['arrived'] = [teacher for teacher in teachers.values() if teacher['arrived']]
         context['start_time'] = starttime
         return render_to_response(self.baseDir()+'missingteachers.html', request, (prog, tl), context)

@@ -69,7 +69,7 @@
 
 <div id='program_form'>
 
-<br/><a href="teachercheckin">&lt;&lt;Back</a>
+<br/><a href="teachercheckin{% if when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a>
 
 <p style="text-align: center">
 
@@ -81,6 +81,7 @@
         {% else %}
             Missing teachers for all classes
         {% endif %}
+        {% if when %} as of {{ when }} {% endif %}
     </th>
 </tr>
 {% for section in sections %}
@@ -105,7 +106,8 @@
         </td>
         <td class="checkin-column">
             {% if not teacher.arrived %}
-            <input id="checkin_{{ teacher.username }}" class="button checkin" type="button" name="{{ teacher.last_name }}" value="Check In" /><span />
+            <input id="checkin_{{ teacher.username }}" name="{{ teacher.last_name }}" 
+                   class="button checkin" type="button" value="Check In" {% if when %}disabled="disabled"{% endif %} /><span />
             {% else %}
             Already checked-in
             {% endif %}
@@ -124,7 +126,9 @@
 <table>
 <tr>
     <th colspan="3">
-        Teachers who have checked in {% if start_time %} for classes starting at {{ start_time.pretty_start_time }} {% endif %}
+        Teachers who have checked in
+        {% if start_time %} for classes starting at {{ start_time.pretty_start_time }} {% endif %}
+        {% if when %} as of {{ when }} {% endif %}
     </th>
 </tr>
 {% for teacher in arrived %}
@@ -133,14 +137,15 @@
         <a href="/manage/userview?username={{ teacher.username }}" target="_blank">{{ teacher.name }}</a>
     </td>
     <td>
-        <input id="uncheckin_{{ teacher.username }}" class="button uncheckin" type="button" value="Undo Check-In" />
+        <input id="uncheckin_{{ teacher.username }}" class="button uncheckin" type="button" value="Undo Check-In"
+               {% if when %}disabled="disabled"{% endif %} />
     </td>
     <td class="phone"> {{ teacher.phone }} </td>
 </tr>
 {% endfor %}
 </table>
 
-<br/><a href="teachercheckin">&lt;&lt;Back</a><br/>
+<br/><a href="teachercheckin{% if when %}?when={{ url_when }}{% endif %}">&lt;&lt;Back</a><br/>
 
 <br />
 {% load render_qsd %}

@@ -7,11 +7,14 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+    <link rel="stylesheet" type="text/css" href="/media/calendar/calendar-blue.css" />
 {% endblock %}
 
 {% block javascript %}
     {{ block.super }}
-    
+    <script type="text/javascript" src="/media/calendar/calendar.js"></script>
+    <script type="text/javascript" src="/media/calendar/lang/calendar-en.js"></script>
+    <script type="text/javascript" src="/media/calendar/calendar-setup.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -19,50 +22,61 @@
 .nocheckmark { border: 1px solid black; }
 </style>
 <br />
-<h1>Teacher Check-in &mdash; For {{ program.niceName }}</h1>
-
-<div id='program_form'>
+<h1>Teacher Check-in for {{ program.niceName }}</h1>
 
 <p style="text-align: center">
-
 {% if message %}
 <p align="center">{{ message }}</p>
 {% else %}
 Welcome to teacher check-in for {{program.niceName}}.
+<br/>
+Please select a timeslot:
 {% endif %}
-
-<form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
-<table>
-<tr>
-    <th colspan="2">
-        Choose Teachers to Check In
-    </th>
-</tr>
-<tr>
-    <td>
-        <table>
-            {{ form }}
-        </table>
-    </td>
-    <td align="center">
-        <input class="button" type="submit" value="Check In" />
-    </td>
-</tr>
-</table>
-</form>
-
-</div>
+</p>
 
 <ul>
 {% for time in time_slots %}
 <li>
     {% if time == now %}<b>{% endif %}
-    <a href="missingteachers?start={{ time.id }}">View missing teachers for classes starting at {{ time.pretty_start_time }}</a>
+    {% if when %}
+        <a href="missingteachers?start={{ time.id }}&when={{ url_when }}">
+            View teachers from {{ when }} with classes starting at {{ time.pretty_start_time }}
+        </a>
+    {% else %}
+        <a href="missingteachers?start={{ time.id }}">Check in teachers with classes starting at {{ time.pretty_start_time }}</a>
+    {% endif %}
     {% if time == now %}</b>{% endif %}
 </li>
 {% endfor %}
-<li><a href="missingteachers">View missing teachers for all classes</a></li>
+<li><a href="missingteachers{% if when %}?when={{ url_when }}{% endif %}">
+    {% if when %}
+        View all teachers from {{ when }}
+    {% else %}
+        Check in all teachers
+    {% endif %}
+</a></li>
 </ul>
+
+{% if when %}<a href="teachercheckin">&lt;&lt;Back to the present</a><br/>{% endif %}
+
+<br />
+
+<div id='program_form'>
+
+<form id="checkinform" name="checkinform" method="GET" action="{{ request.path }}">
+<h2>View teachers who checked-in (or were missing) on a previous day:</h2>
+<table align="center">
+    {{ form }}
+    <tr>
+        <td align="center" colspan="2">
+            <input class="button" type="submit" value="Go" />
+        </td>
+    </tr>
+</table>
+
+</form>
+
+</div>
 
 <br />
 {% load render_qsd %}
