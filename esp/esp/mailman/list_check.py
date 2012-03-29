@@ -10,7 +10,7 @@ def get_teachers_by_class(class_string):
     return cls.teachers()
 
 def get_teachers_by_section(section_string):
-    class_string,num = section_string.rsplit('s')
+    class_string,num = section_string.rsplit('s',1)
     section = ClassSection.objects.get(anchor__parent__name=class_string.upper(),anchor__name="Section"+num)
     return section.teachers
     #for whatever reason, sections have teachers as a property, 
@@ -21,7 +21,7 @@ def get_students_by_class(class_string):
     return cls.students()
 
 def get_students_by_section(section_string):
-    class_string,num = section_string.rsplit('s')
+    class_string,num = section_string.rsplit('s',1)
     section = ClassSection.objects.get(anchor__parent__name=class_string.upper(),anchor__name="Section"+num)
     return section.students()
 
@@ -46,9 +46,23 @@ def list_compare(list_name):
     else: #not one of the above types of lists
         return
 
-    MM_not_website=[x for x in mailman_list if x not in website_list]
     website_not_MM=[x for x in website_list if x not in mailman_list]
+
+    #the following naive line is not quite right, since there might be 
+    #multiple accounts with the same email, and we'll get accounts that
+    #have an email on the mm list but aren't reg'd.
+    #MM_not_website=[x for x in mailman_list if x not in website_list]
+    website_list_emails=[x.email for x in website_list]
+    MM_not_website=[x for x in mailman_list 
+                    if x.email not in website_list_emails]
+
 
     if len(MM_not_website)+len(website_not_MM) == 0: return
     print "In MM but not website",MM_not_website
     print "In website but not MM",website_not_MM    
+
+#current bugs: 
+#- No -class lists
+#- Doesn't account for teacher being on student mailing lists
+#- Doesn't account for multiple accounts with the same email, such that
+#   one of the accounts IS in the class and the rest aren't.
