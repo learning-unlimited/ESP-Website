@@ -126,11 +126,11 @@ When there are already accounts with this email address (depending on some tags)
                                           request, request.get_node('Q/Web/myesp'),
                                           { 'accounts': existing_accounts, 'email':form.cleaned_data['email'], 'site': Site.objects.get_current(), 'form': form })    
             #form is valid, and not multiple accounts 
-            return HttpResponseRedirect(reverse('users.views.user_registration_phase2')+'?email='+form.cleaned_data['email'])#some nonclean for urls issue to be fixed later
-        else: #form is not valid
-            return render_to_response('registration/newuser_phase1.html',
-                                      request, request.get_node('Q/Web/myesp'),
-                                      {'form':form, 'site': Site.objects.get_current()})
+        return HttpResponseRedirect(reverse('users.views.user_registration_phase2')+'?email='+form.cleaned_data['email'])#some nonclean for urls issue to be fixed later
+    else: #form is not valid
+        return render_to_response('registration/newuser_phase1.html',
+                                  request, request.get_node('Q/Web/myesp'),
+                                  {'form':form, 'site': Site.objects.get_current()})
     
 
 def user_registration_phase1(request):
