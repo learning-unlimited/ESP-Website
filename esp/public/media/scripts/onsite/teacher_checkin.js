@@ -79,7 +79,7 @@ $j(function(){
             e.preventDefault();
             input.val("");
         }
-        else if(e.which==122 && e.ctrlKey){
+        else if((e.which==122 || e.which==26) && e.ctrlKey){
             if(checkins.length>0){
                 var lastCheckin = checkins[checkins.length - 1];
                 var username = lastCheckin.username;
