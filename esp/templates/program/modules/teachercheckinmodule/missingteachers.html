@@ -76,7 +76,11 @@
 <table>
 <tr>
     <th colspan="5">
-        Missing teachers for classes starting at {{ start_time.pretty_start_time }}
+        {% if start_time %}
+            Missing teachers for classes starting at {{ start_time.pretty_start_time }}
+        {% else %}
+            Missing teachers for all classes
+        {% endif %}
     </th>
 </tr>
 {% for section in sections %}
@@ -84,7 +88,13 @@
     <td rowspan="{{ section.teachers|length }}">
         {{ section.id }}: {{ section.name }}
     </td>
-    <td class="room" rowspan="{{ section.teachers|length }}">{{ section.room }}</td>
+    <td class="room" rowspan="{{ section.teachers|length }}">
+        {% if start_time %}
+            {{ section.room }}
+        {% else %}
+            {{ section.time }}
+        {% endif %}
+    </td>
     {% for teacher in section.teachers %}
         {% if teacher.arrived %}
         <td class="checked-in">
@@ -114,7 +124,7 @@
 <table>
 <tr>
     <th colspan="3">
-        Teachers who have checked in for classes starting at {{ start_time.pretty_start_time }}
+        Teachers who have checked in {% if start_time %} for classes starting at {{ start_time.pretty_start_time }} {% endif %}
     </th>
 </tr>
 {% for teacher in arrived %}

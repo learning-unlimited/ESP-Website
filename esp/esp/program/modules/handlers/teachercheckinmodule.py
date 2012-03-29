@@ -106,7 +106,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         context['form'] = form
         
         context['time_slots'] = prog.getTimeSlots()
-        now = prog.getTimeSlots().filter(start__gte=datetime.now() - timedelta(minutes=30)).order_by('start')
+        now = prog.getTimeSlots().filter(start__gte=datetime.now()).order_by('start')
         if now.exists():
             context['now'] = now[0]
         else:
@@ -130,23 +130,23 @@ class TeacherCheckinModule(ProgramModuleObj):
                     json_data['message'] = self.checkIn(teachers[0], prog)
         return HttpResponse(json.dumps(json_data), mimetype='text/json')
     
-    def getMissingTeachers(self, starttime, prog):
+    def getMissingTeachers(self, prog, starttime=None, when=None):
         """Return a list of class sections with missing teachers"""
-        sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(
-                        status=10, parent_class__status=10,
-                        begin_time=starttime.start
-                        )
-        teachers = ESPUser.objects.filter(userbit__in=UserBit.valid_objects(),
+        sections = prog.sections().annotate(begin_time=Min("meeting_times__start")) \
+                                  .filter(status=10, parent_class__status=10, begin_time__isnull=False)
+        if starttime is not None:
+            sections = sections.filter(begin_time=starttime.start)
+        teachers = ESPUser.objects.filter(userbit__in=UserBit.valid_objects(when),
                                           userbit__qsc__classsubject__sections__in=sections,
                                           userbit__verb=GetNode('V/Flags/Registration/Teacher'))
-        arrived = teachers.filter(userbit__in=UserBit.valid_objects(),
+        arrived = teachers.filter(userbit__in=UserBit.valid_objects(when),
                                   userbit__qsc=prog.anchor,
                                   userbit__verb=GetNode('V/Flags/Registration/Teacher/Arrived'))
         missing = teachers.exclude(id__in=arrived)
-        missing_sections = sections.filter(parent_class__anchor__userbit_qsc__in=UserBit.valid_objects(),
+        missing_sections = sections.filter(parent_class__anchor__userbit_qsc__in=UserBit.valid_objects(when),
                                            parent_class__anchor__userbit_qsc__user__in=missing,
                                            parent_class__anchor__userbit_qsc__verb=GetNode('V/Flags/Registration/Teacher'))
-        userbits = UserBit.valid_objects().filter(qsc__classsubject__sections__in=missing_sections,
+        userbits = UserBit.valid_objects(when).filter(qsc__classsubject__sections__in=missing_sections,
                                                   verb=GetNode('V/Flags/Registration/Teacher')) \
                                           .distinct() \
                                           .values_list('user', 'qsc__classsubject', 'qsc__friendly_name') \
@@ -178,7 +178,12 @@ class TeacherCheckinModule(ProgramModuleObj):
         
         for sec in missing_sections:
             if sec.parent_class.id in class_dict:
-                class_dict[sec.parent_class.id]['room'] = sec.prettyrooms()[0]
+                class_ = class_dict[sec.parent_class.id]
+                class_['room'] = (sec.prettyrooms() or [None])[0]
+                if 'time' in class_:
+                    class_['time'] = min(class_['time'], sec.begin_time)
+                else:
+                    class_['time'] = sec.begin_time
         
         #Move sections where at least one teacher showed up to end of list
         for sec in class_arr:
@@ -197,9 +202,9 @@ class TeacherCheckinModule(ProgramModuleObj):
         if 'start' in request.GET:
             starttime = Event.objects.get(id=request.GET['start'])
         else:
-            starttime = Event.objects.filter(start__gte=datetime.now() - timedelta(minutes=30)).order_by('start')[0]
+            starttime = None
         context = {}
-        context['sections'], teachers = self.getMissingTeachers(starttime, prog)
+        context['sections'], teachers = self.getMissingTeachers(prog, starttime)
         context['arrived'] = [teacher for teacher in teachers.values() if teacher['arrived']]
         context['start_time'] = starttime
         return render_to_response(self.baseDir()+'missingteachers.html', request, (prog, tl), context)
