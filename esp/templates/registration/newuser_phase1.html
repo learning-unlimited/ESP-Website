@@ -13,7 +13,7 @@
 {% endblock %}
 
 {% block content %}
-{% if accounts %}
+{% if accounts or awaitings%}
 <div class="note">
 <p>
 <b>Warning: You may already have an account!</b>  It looks like other accounts already exist for this
@@ -39,6 +39,15 @@ click "Create account" again below.)
   )
   </li>
   {% endfor %}
+  {% for u in awaitings %}
+  <li>Username: "{{ u.username }}" (
+  <form action="/myesp/resend/" method="post">
+    <input type="hidden" name="username" value="{{ u.username }}" />
+    <input type="submit" value="Resend Activation Email!" />
+  </form>
+  )
+  </li>
+  {% endfor %}
 </ul>
 </div>
 {% endif %}
@@ -51,14 +60,14 @@ an account with us. After you register account, you will be allowed to register
 for programs, sign up for classes, among other things.
 </p>
 <p>
-  If you just want to receive e-mail announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> announcements list. (The latter gets emails about longer term ESP programs, targeted at people in the Boston area, while the former gets emails about programs that might be worth travelling for.) If you create an account, you will be automatically subscribed to our main Announcements list.
+  If you just want to receive e-mail announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> announcements list. If you create an account, you will be automatically subscribed to our main Announcements list.
 </p>
 {% end_inline_qsd_block %}
 
 
 <div id="program_form">
 <form action="{{ request.path }}" method="post" name="newuser_form">
-{% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
+{% if accounts or awaitings %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
 <table>
 <thead>
 <tr>

@@ -109,3 +109,16 @@ class EmailPrefForm(forms.Form):
     sms_number = PhoneNumberField(label='Cell Phone', required = False,
                                   help_text='Optional: If you provide us your cell phone number, we can send you SMS text notifications')
 #    sms_opt_in = forms.BooleanField(label='Send Me Text Updates', initial = True, required = False)
+
+class AwaitingActivationEmailForm(forms.Form):
+    """Form used to verify a user is yet to be activated"""
+    username = forms.CharField(min_length=5, max_length=30)
+
+    def clean_username(self):
+        data = self.cleaned_data['username']
+        awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
+        if User.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(awaiting_activation).count() == 0:
+            raise forms.ValidationError('That username isn\'t waiting to be activated.')
+        
+        data = data.strip()
+        return data
