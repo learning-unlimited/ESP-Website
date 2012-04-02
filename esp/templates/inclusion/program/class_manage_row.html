@@ -5,8 +5,8 @@
       <span       {% if cls.isAccepted %}
       class="approved"
       {% else %}
-      class="unapproved"
-      {% endif %}>{{ cls.title|stringformat:".40s" }}{% if cls.title|stringformat:".40s"|length_is:40 and not cls.title|length_is:40 %}...{% endif %}</span>
+      class="unapproved" 
+      {% endif %}{% if cls.status==0 %} style="color:#0276FD; font-weight:bold;"{% endif %}>{{ cls.title|stringformat:".40s" }}{% if cls.title|stringformat:".40s"|length_is:40 and not cls.title|length_is:40 %}...{% endif %}</span>
       </span>
     </td>
     <td class="clsmiddle" style="font-size: 12px" width="40px">
