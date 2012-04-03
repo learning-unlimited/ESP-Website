@@ -416,6 +416,8 @@ def userview(request):
     context = {
         'user': user,
         'taught_classes' : user.getTaughtClasses().order_by('parent_program'),
+        'enrolled_classes' : user.getEnrolledSections().order_by('parent_class__parent_program'),
+        'taken_classes' : user.getSections().order_by('parent_class__parent_program'),
         'teacherbio': teacherbio,
         'domain': SITE_INFO[1],
         'change_grade_form': change_grade_form,

@@ -138,7 +138,7 @@ Change grade to:
 {% endfor %}
 {% endif %}{% endwith %}
 
-{% with user.getEnrolledSections as classes %}{% if classes %}
+{% with enrolled_classes as classes %}{% if classes %}
 <h2>Classes Enrolled In (currently or previously):</h2>
 {% for class in classes %}
 {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
@@ -147,7 +147,7 @@ Change grade to:
 {% endfor %}
 {% endif %}{% endwith %}
 
-{% with user.getSections as classes %}{% if classes %}
+{% with taken_classes as classes %}{% if classes %}
 <h2>Classes Taken Or Applied For:</h2>
 {% for class in classes %}
 {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
