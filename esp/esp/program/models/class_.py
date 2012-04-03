@@ -1045,17 +1045,19 @@ class ClassSection(models.Model):
         from django.contrib.sites.models import Site
         from esp.dbmail.models import send_mail
 
+        student_verbs = ['Enrolled', 'Interested', 'Priority/1']
+
         context = {'sec': self, 'prog': self.parent_program, 'explanation': explanation}
         context['full_group_name'] = Tag.getTag('full_group_name') or '%s %s' % (INSTITUTION_NAME, ORGANIZATION_SHORT_NAME)
         context['site_url'] = Site.objects.get_current().domain
         context['email_students'] = email_students
-        context['num_students'] = self.num_students()
+        context['num_students'] = self.num_students(student_verbs)
         email_title = 'Class Cancellation at %s - Section %s' % (self.parent_program.niceName(), self.emailcode())
         if email_students:
             email_content = render_to_string('email/class_cancellation.txt', context)
             template = Template(email_content)
             #   Send e-mail to each student
-            for student in self.students():
+            for student in self.students(student_verbs):
                 to_email = ['%s <%s>' % (student.name(), student.email)]
                 from_email = '%s at %s <%s>' % (self.parent_program.anchor.parent.friendly_name, INSTITUTION_NAME, self.parent_program.director_email)
                 msgtext = template.render(Context({'user': student}))
