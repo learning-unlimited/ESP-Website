@@ -143,6 +143,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     def sections(prog):
         sections = list(prog.sections().values(
                 'id',
+                'status',
                 'parent_class__anchor__friendly_name',
                 'parent_class__id',
                 'parent_class__category__symbol',
