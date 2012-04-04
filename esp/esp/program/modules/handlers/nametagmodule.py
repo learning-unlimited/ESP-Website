@@ -42,8 +42,7 @@ from esp.users.views  import get_user_list
 from esp.middleware import ESPError
 from esp.web.util.latex import render_to_latex
 from esp.tagdict.models import Tag
-from esp.settings import INSTITUTION_NAME, ORGANIZATION_SHORT_NAME
-
+from django.conf import settings
 class NameTagModule(ProgramModuleObj):
     """ This module allows you to generate a bunch of IDs for everyone in the program. """
     @classmethod
@@ -180,7 +179,7 @@ class NameTagModule(ProgramModuleObj):
                     users.append(expanded[j][i])
 
         context['users'] = users
-        context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (INSTITUTION_NAME, ORGANIZATION_SHORT_NAME)
+        context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['phone_number'] = Tag.getTag('group_phone_number')
             
         return render_to_response(self.baseDir()+'ids.html', request, (prog, tl), context)

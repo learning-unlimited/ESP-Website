@@ -234,8 +234,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def coursecatalog(self, request, tl, one, two, module, extra, prog):
         " This renders the course catalog in LaTeX. "
-        from esp.settings import INSTITUTION_NAME, ORGANIZATION_SHORT_NAME
-
+        from django.conf import settings
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
         if request.GET.has_key('mingrade'):
@@ -270,7 +269,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         group_name = Tag.getTag('full_group_name')
         if not group_name:
-            group_name = '%s %s' % (INSTITUTION_NAME, ORGANIZATION_SHORT_NAME)
+            group_name = '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['group_name'] = group_name
 
         #   Hack for timeblock sorting
@@ -699,8 +698,7 @@ class ProgramPrintables(ProgramModuleObj):
             from django.template import Template
             from esp.middleware.threadlocalrequest import AutoRequestContext as Context
             from django.template.loader import find_template_source
-            from esp.settings import TEMPLATE_DIRS
-                
+            from django.conf import settings   
             prof = user.getLastProfile()
             
             li_types = prof.program.getLineItemTypes(user)
@@ -720,7 +718,7 @@ class ProgramPrintables(ProgramModuleObj):
             context_dict['itemizedcosttotal'] = invoice.cost()
             context_dict['owe_money'] = ( context_dict['itemizedcosttotal'] != 0 )
             
-            t = Template(open(TEMPLATE_DIRS + '/program/receipts/' + str(prof.program.id) + '_custom_receipt.txt').read())
+            t = Template(open(settings.TEMPLATE_DIRS + '/program/receipts/' + str(prof.program.id) + '_custom_receipt.txt').read())
             c = Context(context_dict)
             result_str = t.render(c)
 
