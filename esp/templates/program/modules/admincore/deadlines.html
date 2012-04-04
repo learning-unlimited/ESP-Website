@@ -13,7 +13,7 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
-    <link rel="stylesheet" type="text/css" href="/media/calendar/calendar-blue.css" />
+    <link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
     <style type="text/css">
     #userbitforms table
     {
@@ -126,10 +126,9 @@
 {% endblock %}
 
 {% block xtrajs %}
-    <!-- The calendar date/time selector. -->
-    <script type="text/javascript" src="/media/calendar/calendar.js"></script>
-    <script type="text/javascript" src="/media/calendar/lang/calendar-en.js"></script>
-    <script type="text/javascript" src="/media/calendar/calendar-setup.js"></script>
+    <!-- Include jQueryUI for the calendar date/time selector. -->
+    <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+    <script type="text/javascript" src="/media/scripts/jquery-ui.timepicker.js"></script>
 {% endblock %}
 
 {% block content %}
