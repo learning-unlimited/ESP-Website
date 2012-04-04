@@ -1041,12 +1041,12 @@ class ClassSection(models.Model):
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
 
     def cancel(self, email_students=True, explanation=None):
-        from esp.settings import INSTITUTION_NAME, ORGANIZATION_SHORT_NAME, DEFAULT_EMAIL_ADDRESSES
+        from django.conf import settings
         from django.contrib.sites.models import Site
         from esp.dbmail.models import send_mail
 
         context = {'sec': self, 'prog': self.parent_program, 'explanation': explanation}
-        context['full_group_name'] = Tag.getTag('full_group_name') or '%s %s' % (INSTITUTION_NAME, ORGANIZATION_SHORT_NAME)
+        context['full_group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['site_url'] = Site.objects.get_current().domain
         context['email_students'] = email_students
         context['num_students'] = self.num_students()
@@ -1057,7 +1057,7 @@ class ClassSection(models.Model):
             #   Send e-mail to each student
             for student in self.students():
                 to_email = ['%s <%s>' % (student.name(), student.email)]
-                from_email = '%s at %s <%s>' % (self.parent_program.anchor.parent.friendly_name, INSTITUTION_NAME, self.parent_program.director_email)
+                from_email = '%s at %s <%s>' % (self.parent_program.anchor.parent.friendly_name, settings.INSTITUTION_NAME, self.parent_program.director_email)
                 msgtext = template.render(Context({'user': student}))
                 send_mail(email_title, msgtext, from_email, to_email)
 
