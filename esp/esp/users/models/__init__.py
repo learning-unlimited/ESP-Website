@@ -1946,7 +1946,7 @@ class DBList(object):
     QObject  = None
 
     def count(self, override = False):
-        """ This is used to count how many objects wer are talking about.
+        """ This is used to count how many objects we are talking about.
             If override is true, it will not retrieve the number from cache
             or from this instance. If it's true, it will try.
         """
