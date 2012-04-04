@@ -1,4 +1,5 @@
 {# expects program and class #}
+    <h6> Blue stands for unreviewed classes and Red for Rejectec classes </h6>
     <td class="clsleft classname">
       <span title="{{cls}}">
       <strong>{{cls.emailcode }}.</strong>
@@ -6,7 +7,13 @@
       class="approved"
       {% else %}
       class="unapproved" 
-      {% endif %}{% if cls.status==0 %} style="color:#0276FD; font-weight:bold;"{% endif %}>{{ cls.title|stringformat:".40s" }}{% if cls.title|stringformat:".40s"|length_is:40 and not cls.title|length_is:40 %}...{% endif %}</span>
+      {% endif %}
+      {% if cls.status==0 %}
+         style="color:#0276FD; font-weight:bold;"     {# Blue and bold for Unreviewed classes #}
+      {% endif %}
+      {% if cls.status==-10 } 
+         style="color:#FF0000 ; font-style:italic;"   {# red and italic for rejected classes #}
+      {% endif %} >{{ cls.title|stringformat:".40s" }}{% if cls.title|stringformat:".40s"|length_is:40 and not cls.title|length_is:40 %}...{% endif %}</span>
       </span>
     </td>
     <td class="clsmiddle" style="font-size: 12px" width="40px">
