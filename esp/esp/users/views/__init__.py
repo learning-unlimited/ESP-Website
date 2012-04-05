@@ -150,10 +150,16 @@ def signed_out_message(request):
                               request, request.get_node('Q/Web/myesp'),
                               {})
                               
-@login_required
+#@login_required
 def disable_account(request):
-    
-    curUser = request.user
+    flag = 0        # in order to detect direct unsubscription
+    if 'id' in request.GET:
+        uid = int(request.GET['id'])
+        curUser = User.objects.filter(id=uid)[0]
+        flag = 1
+
+    else:
+        curUser = request.user
     
     if 'enable' in request.GET:
         curUser.is_active = True
@@ -161,6 +167,8 @@ def disable_account(request):
     elif 'disable' in request.GET:
         curUser.is_active = False
         curUser.save()
+        if flag = 1:
+            return HttpResponse("<p>You have been successfully unsubscribed.</p>")
         
     context = {'user': curUser}
         
