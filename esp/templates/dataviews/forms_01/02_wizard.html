@@ -3,9 +3,6 @@
 {{ block.super }}
 <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
 <script type="text/javascript">
-//dojo.require("dijit.layout.TabContainer");
-//dojo.require("dijit.layout.ContentPane");
-
 function initTabs() {
     // Set up the tabbing
     var form_div = $j("#id_{{ step0 }}-form_div");
@@ -45,7 +42,6 @@ $j(document).ready(function() {
 {% endblock %}
 {% block stylesheets %}
 {{ block.super }}
-<link rel="stylesheet" type="text/css" href="http://ajax.googleapis.com/ajax/libs/dojo/1.6/dijit/themes/claro/claro.css" />
 <link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
 <style type="text/css">
 div.pathgroup>ul {
