@@ -57,13 +57,6 @@ The default form rendering takes care of this, but the below might be a starting
 <script type="text/javascript" src="/media/scripts/ajax_tools.js"></script>
 <script type="text/javascript">
 
-function clear_widget(field_name)
-{
-    if (savedVals[field_name]) {
-        delete savedVals[field_name];
-    }
-}
-
 function setup_update(field_name)
 {
     $j("#id_" + field_name).change(function() {
