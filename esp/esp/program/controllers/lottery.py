@@ -196,7 +196,7 @@ class LotteryAssignmentController(object):
                 return False
         
         #   Get students who have indicated interest in the section
-        possible_students = signup[:, si]
+        possible_students = numpy.copy(signup[:, si])
         #   print possible_students.shape
         
         #   Filter students by who has all of the section's timeslots available
