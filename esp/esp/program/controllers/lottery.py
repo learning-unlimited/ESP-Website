@@ -50,7 +50,7 @@ class LotteryAssignmentController(object):
         self.num_students = self.program.students()['lotteried_students'].count()
         self.num_sections = len(self.program.sections())
         
-        self.Kp = kwargs.get('Kp', 1.1)     #   Originally known as: 2* (twostar)
+        self.Kp = kwargs.get('Kp', 1.2)     #   Originally known as: 2* (twostar)
         self.Ki = kwargs.get('Ki', 1.1)     #   Originally known as: 2** (twostarstar)
         
         numpy.random.seed(datetime.now().microsecond)
@@ -107,8 +107,6 @@ class LotteryAssignmentController(object):
         
         #   Get student, section, timeslot IDs and prepare lookup table
         (self.student_ids, self.student_indices) = self.get_ids_and_indices(self.program.students()['lotteried_students'])
-        #   print self.student_ids[:20]
-        #   print self.student_indices[self.student_ids[10:30]]
         (self.section_ids, self.section_indices) = self.get_ids_and_indices(self.program.sections())
         (self.timeslot_ids, self.timeslot_indices) = self.get_ids_and_indices(self.program.getTimeSlots())
         
@@ -122,41 +120,32 @@ class LotteryAssignmentController(object):
             ts_day = date(ts.start.year, ts.start.month, ts.start.day)
             if ts_day not in dates:
                 dates.append(ts_day)
-        
         lunch_by_day = [[] for x in dates]
         for ts in lunch_timeslots:
             d = date(ts.start.year, ts.start.month, ts.start.day)
             lunch_by_day[dates.index(d)].append(ts.id)
             self.lunch_schedule[self.timeslot_indices[ts.id]] = True
         self.lunch_timeslots = numpy.array(lunch_by_day)
-        #   print self.lunch_timeslots
         
         #   Populate interest matrix
         interest_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Interested').values_list('user__id', 'section__id').distinct()
         ira = numpy.array(interest_regs, dtype=numpy.uint32)
-        #   print ira[:, 0]
-        #   print self.student_indices[ira[:, 0]]
         self.interest[self.student_indices[ira[:, 0]], self.section_indices[ira[:, 1]]] = True
-        #   print self.interest_matrix.shape
-        #   print numpy.nonzero(self.interest_matrix)[0].shape, interest_regs.count()
         
         #   Populate priority matrix
         priority_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Priority/1').values_list('user__id', 'section__id').distinct()
-        #   print priority_regs[:20]
         pra = numpy.array(priority_regs, dtype=numpy.uint32)
         self.priority[self.student_indices[pra[:, 0]], self.section_indices[pra[:, 1]]] = True
         
         #   Populate section schedule
         section_times = numpy.array(self.program.sections().filter(meeting_times__id__isnull=False).distinct().values_list('id', 'meeting_times__id'))
         self.section_schedules[self.section_indices[section_times[:, 0]], self.timeslot_indices[section_times[:, 1]]] = True
-        #   print numpy.nonzero(self.section_schedules)[0].shape
-
+        
         #   Find section capacities (TODO: convert to single query)
         for sec in self.program.sections():
             self.section_capacities[self.section_indices[sec.id]] = sec.capacity
-        #   print self.section_capacities
     
-    def fill_section(self, si, priority=False, stats_display=True, debug_display=False):
+    def fill_section(self, si, priority=False, stats_display=True):
         """ Assigns students to the section with index si.
             Performs some checks along the way to make sure this didn't break anything. """
         
@@ -178,10 +167,6 @@ class LotteryAssignmentController(object):
         else:
             signup = self.interest
             weight_factor = self.Ki
-        
-        if debug_display:
-            print 'Section timeslots:'
-            print timeslots
             
         #   Check that there is at least one timeslot associated with this section
         if timeslots.shape[0] == 0:
@@ -197,11 +182,9 @@ class LotteryAssignmentController(object):
         
         #   Get students who have indicated interest in the section
         possible_students = numpy.copy(signup[:, si])
-        #   print possible_students.shape
         
         #   Filter students by who has all of the section's timeslots available
         for i in range(timeslots.shape[0]):
-            #   print (True - self.student_schedules[:, timeslots[i]]).shape
             possible_students *= (True - self.student_schedules[:, timeslots[i]])
             
         #   Filter students by lunch constraint - if class overlaps with lunch period, student must have 1 additional free spot
@@ -209,18 +192,12 @@ class LotteryAssignmentController(object):
         for i in range(timeslots.shape[0]):
             if numpy.sum(self.lunch_timeslots == self.timeslot_ids[timeslots[i]]) > 0:
                 lunch_day = numpy.nonzero(self.lunch_timeslots == self.timeslot_ids[timeslots[i]])[0][0]
-                #   print 'Identified lunch on day %d' % lunch_day
                 for j in range(self.lunch_timeslots.shape[1]):
                     timeslot_index = self.timeslot_indices[self.lunch_timeslots[lunch_day, j]]
                     if timeslot_index != timeslots[i]:
-                        #   print 'Excluding students with a section scheduled for timeslot %d' % timeslot_index
                         possible_students *= (True - self.student_schedules[:, timeslot_index])
                         
         candidate_students = numpy.nonzero(possible_students)[0]
-        if debug_display:
-            print 'Candidate students after filtering:'
-            print candidate_students
-        
         if candidate_students.shape[0] <= num_spaces:
             #   If the section has enough space for all students that applied, let them all in.
             selected_students = candidate_students
@@ -233,10 +210,6 @@ class LotteryAssignmentController(object):
             weights /= numpy.sum(weights)
             selected_students = numpy.random.choice(candidate_students, num_spaces, replace=False, p=weights)
             section_filled = True
-            
-        if debug_display:
-            print 'Selected students:'
-            print selected_students
 
         #   Update student section assignments
         #   Check that none of these students are already assigned to this section
@@ -251,21 +224,12 @@ class LotteryAssignmentController(object):
         
         #   Update student weights
         self.student_weights[selected_students] /= weight_factor
-        if debug_display: 
-            print 'Weights of selected students:'
-            print self.student_weights[selected_students]
         
         if stats_display: print '   Added %d/%d students (section filled: %s)' % (selected_students.shape[0], candidate_students.shape[0], section_filled)
         
-        #   Fail immediately whenever a constraint is violated
-        #   (warning: slows things down substantially when enabled)
-        paranoia = False
-        if paranoia:
-            self.check_assignments()
-        
         return section_filled
 
-    def compute_assignments(self, check_result=True, stats_display=False, debug_display=False):
+    def compute_assignments(self, check_result=True, stats_display=False):
         """ Figure out what students should be assigned to what sections.
             Doesn't actually store results in the database.
             Can be run any number of times. """
@@ -276,7 +240,7 @@ class LotteryAssignmentController(object):
         random_section_indices = numpy.random.choice(self.num_sections, self.num_sections, replace=False)
         if stats_display: print '\n== Assigning priority students'
         for section_index in random_section_indices:
-            self.fill_section(section_index, priority=True, stats_display=stats_display, debug_display=debug_display)
+            self.fill_section(section_index, priority=True, stats_display=stats_display)
         
         #   Sort sections in increasing order of number of interesting students
         #   TODO: Check with Alex that this is the desired algorithm
@@ -284,7 +248,7 @@ class LotteryAssignmentController(object):
         sorted_section_indices = numpy.argsort(interested_counts)
         if stats_display: print '\n== Assigning interested students'
         for section_index in sorted_section_indices:
-            self.fill_section(section_index, priority=False, stats_display=stats_display, debug_display=debug_display)
+            self.fill_section(section_index, priority=False, stats_display=stats_display)
         
         if check_result:
             self.check_assignments()
@@ -298,8 +262,6 @@ class LotteryAssignmentController(object):
         #   Check that no student's schedule violates the lunch constraints: 1 or more open lunch periods per day
         for i in range(self.lunch_timeslots.shape[0]):
             timeslots = self.timeslot_indices[self.lunch_timeslots[i, :]]
-            #   print 'Checking lunch timeslots %s (indices %s) for day %d' % (self.lunch_timeslots[i, :], timeslots, i)
-            #   print numpy.sum(self.student_schedules[:, timeslots], 1)
             assert(numpy.sum(numpy.sum(self.student_schedules[:, timeslots], 1) > (self.lunch_timeslots.shape[1] - 1)) == 0)
         
         #   Check that each student's schedule is consistent with their assigned sections
@@ -327,6 +289,8 @@ class LotteryAssignmentController(object):
         stats['interest_requested'] = interest_requested
         stats['interest_assigned'] = interest_assigned
         
+        stats['overall_priority_ratio'] = float(numpy.sum(priority_assigned)) / numpy.sum(priority_requested)
+        stats['overall_interest_ratio'] = float(numpy.sum(interest_assigned)) / numpy.sum(interest_requested)
         stats['num_registrations'] = numpy.sum(self.student_sections)
         stats['num_full_classes'] = numpy.sum(self.section_capacities == numpy.sum(self.student_sections, 0))
         stats['total_spaces'] = numpy.sum(self.section_capacities)
@@ -354,7 +318,7 @@ class LotteryAssignmentController(object):
             #   Note: can be switched to bulk_create once Django 1.4 is out
             StudentRegistration.objects.create(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship)
             if i % 1000 == 0 and debug_display:
-                print 'Created %d registrations' % i
+                print 'Created %d/%d registrations' % (i, student_ids.shape[0])
     
     def clear_saved_assignments(self, delete=False):
         """ Expire/delete all previous StudentRegistration enrollments associated with the program. """
