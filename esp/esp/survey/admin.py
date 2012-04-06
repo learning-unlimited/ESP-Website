@@ -36,26 +36,62 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
+from django.conf import settings
 from esp.admin import admin_site
 from esp.survey.models import Survey, SurveyResponse, QuestionType, Question, Answer
+from esp.datatree.models import *
 
 from copy import deepcopy
+from StringIO import StringIO
+import tempfile
 
-# TODO: Update the anchors on the questions as well
+def save_survey(survey, outfile):
+    anchor_uri = survey.anchor.uri
+    anchor_uri_len = len(anchor_uri)
+
+    questions = survey.questions.order_by('id')
+
+    for q in questions:
+        str_fragments = []
+        str_fragments.append('%d' % q.seq)
+        str_fragments.append(q.anchor.uri[anchor_uri_len:])
+        str_fragments.append(q._param_values)
+        str_fragments.append('%d' % q.question_type_id)
+        str_fragments.append(q.name)
+        outfile.write('":"'.join(str_fragments))
+        outfile.write('\n.\n')
+
+def load_survey(survey_anchor, survey_name, category, infile):
+    # create survey
+    survey, created = Survey.objects.get_or_create(name=survey_name, anchor=survey_anchor, category=category)
+    survey.save()
+    
+    auri = survey_anchor.uri
+
+    data = infile.read()
+    entries = data.split('\n.\n')[:-1]
+    for entry in entries:
+        qlist = entry.split('":"')
+        seq = int(qlist[0])
+        anchor = DataTree.get_by_uri(auri + qlist[1])
+        pv = qlist[2]
+        qt = QuestionType.objects.get(id=qlist[3])
+        name = qlist[4]
+        q, c = Question.objects.get_or_create(survey=survey, name=name, question_type=qt, _param_values=pv, anchor=anchor, seq=seq)
+        q.save()
+
 def copy_surveys(modeladmin, request, queryset):
     for survey in queryset:
-        new_survey = deepcopy(survey)
-        new_survey.name = survey.name + " (copy)"
-        new_survey.id = None
-        new_survey.save()
-        for question in survey.questions.all():
-            new_question = deepcopy(question)
-            new_question.id = None
-            new_question.survey = new_survey
-            new_question.save()
+        # Use a memory file instead of a real one, because it will be faster. This assumes
+        # the survey will not be unreasonably large.
+        tmp_mem_file = StringIO()
+        save_survey(survey, tmp_mem_file)
+        tmp_mem_file.seek(0)
+        load_survey(survey.anchor, survey.name + " (copy)", survey.category, tmp_mem_file)
+        tmp_mem_file.close()
+
 class SurveyAdmin(admin.ModelAdmin):
-    #actions = [ copy_surveys, ]
-    pass
+    actions = [ copy_surveys, ]
 admin_site.register(Survey, SurveyAdmin)
 
 class SurveyResponseAdmin(admin.ModelAdmin):
