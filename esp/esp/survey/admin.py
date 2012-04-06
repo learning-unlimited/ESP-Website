@@ -92,6 +92,14 @@ def copy_surveys(modeladmin, request, queryset):
 
 class SurveyAdmin(admin.ModelAdmin):
     actions = [ copy_surveys, ]
+
+    def save_model(self, request, obj, form, change):
+        # Ensure that our questions always match up with the form
+        for q in obj.questions.all():
+            q.anchor = obj.anchor
+            q.save()
+        obj.save()
+
 admin_site.register(Survey, SurveyAdmin)
 
 class SurveyResponseAdmin(admin.ModelAdmin):
