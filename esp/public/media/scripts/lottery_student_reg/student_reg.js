@@ -158,8 +158,11 @@ add_classes_to_timeslot = function(timeslot, sections){
         //grade check
         if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] ){
             if(!open_class_registration || section['category'] != open_class_category){
-                has_classes = true;
-                classes_list.push(section);
+                if (section['status'] > 0)
+                {
+                    has_classes = true;
+                    classes_list.push(section);
+                }
             }
         }
     }
