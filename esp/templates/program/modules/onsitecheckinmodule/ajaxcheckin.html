@@ -54,6 +54,9 @@ Welcome to student check-in for {{program.niceName}}.  Make sure that the studen
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "onsite:status" %}
 
+<br />
+<a href="/onsite/{{ program.url }}/checkin">View and edit student check ins</a>
+
 </div>
 
 
