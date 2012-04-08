@@ -3,10 +3,37 @@
 {# These includes are not consistent with our local copy of the yahoo apis, but it doesn't seem to break anything yet... -ageng 2008-11-01 #}
 <script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/yahoo/yahoo-min.js"></script> 
 <script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/event/event-min.js"></script> 
-<script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/connection/connection-min.js"></script> 
+<script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/connection/connection-min.js"></script>
+<script type="text/javascript"> var base_url = "{{ program.getUrlBase }}" </script>
+<script type="text/javascript"> var program_base_url = "/json/"+base_url+"/"; </script>
+<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+<script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
 
 <script type="text/javascript">
 /* <![CDATA[ */
+
+$j(document).ready(function() {
+  class_desc_popup = $j('<div></div>').dialog({
+    autoOpen: false,
+    minWidth: 400,
+    minHeight: 300,
+    modal: true,
+    buttons: {
+      "Approve (all sections)": function() {
+        approve_class($j(this).attr('clsid'));
+        $j(this).dialog("close");
+      },
+      "Unreview": function() {
+        unreview_class($j(this).attr('clsid'));
+        $j(this).dialog("close");
+      },
+      "Reject (all sections)": function() {
+        reject_class($j(this).attr('clsid'));
+        $j(this).dialog("close");
+      },
+    }
+  });
+});
 
 function deleteClass() {
     if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students. \n Deleting is hard to undo, so consider instead marking it unreviewed or rejected.')) {
@@ -103,12 +130,98 @@ function manage_class(clsid) {
 
 }
 
+function show_loading_class_popup() {
+  class_desc_popup.dialog('option', 'title', 'Loading');
+  class_desc_popup.dialog('option', 'width', 400);
+  class_desc_popup.dialog('option', 'height', 200);
+  class_desc_popup.dialog('option', 'position', 'center');
+  class_desc_popup.html('Loading class info...');
+  class_desc_popup.dialog('open');
+}
+
+function fill_class_popup(clsid, classes_data) {
+  class_info = classes_data.classes[clsid];
+  class_desc_popup.dialog('option', 'title', class_info.title);
+  class_desc_popup.dialog('option', 'width', 600);
+  class_desc_popup.dialog('option', 'height', 400);
+  class_desc_popup.dialog('option', 'position', 'center');
+  class_desc_popup
+    .html('')
+    .append("<p><b>Category:</b> " + class_info.category + "</p>")
+    //.append("<p>Difficulty: " + class_info.difficulty + "</p>")
+    .append("<p><b>Description:</b> " + class_info.class_info + "</p>")
+    .attr('clsid', clsid);
+}
+
+function show_approve_class_popup(clsid) {
+  // Show an intermediate screen while we load class data
+  show_loading_class_popup();
+
+  // Load the class data and fill the popup using it
+  json_get('class_info', {'class_id': clsid},
+    function(data) {
+       fill_class_popup(clsid, data);
+    },
+    function(jqXHR, status, errorThrown) {
+      if (errorThrown == "NOT FOUND") {
+        class_desc_popup.dialog('option', 'title', 'Error');
+        class_desc_popup.html("Error: JSON view not found.<br/>Possible fix: Enable the JSON Data Module.");
+        class_desc_popup.dialog('option', 'buttons', [{
+          text: "Ok",
+          click: function() {
+            $j(this).dialog("close");
+          }
+        }]);
+      }
+    });
+}
+
+function approve_class(clsid) {
+  $j.ajax({
+    url: "/manage/{{ program.url }}/reviewClass",
+    type: "post",
+    data: {
+      class_id: clsid,
+      review_status: "ACCEPT",
+      csrfmiddlewaretoken: csrf_token()
+    },
+    async: false
+  });  
+}
+
+function unreview_class(clsid) {
+  $j.ajax({
+    url: "/manage/{{ program.url }}/reviewClass",
+    type: "post",
+    data: {
+      class_id: clsid,
+      review_status: "UNREVIEW",
+      csrfmiddlewaretoken: csrf_token()
+    },
+    async: false
+  });  
+}
+
+function reject_class(clsid) {
+  $j.ajax({
+    url: "/manage/{{ program.url }}/reviewClass",
+    type: "post",
+    data: {
+      class_id: clsid,
+      review_status: "REJECT",
+      csrfmiddlewaretoken: csrf_token()
+    },
+    async: false
+  });  
+}
+
 /* ]]> */
 </script>
 
 {% endblock %}
 
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/jquery-ui/jquery-ui.css" type="text/css" />
 <style type="text/css">
   .unapproved { 
       font-style: italic;

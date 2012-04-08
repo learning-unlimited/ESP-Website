@@ -38,7 +38,12 @@
     <td class="clsmiddle">
       <a href="/manage/{{program.getUrlBase}}/manageclass/{{cls.id}}" title="Manage {{cls.title}}"
        class="abutton" style="white-space: nowrap;"><!--onclick="manage_class('{{ cls.id}}'); return false;">-->
-        Manage Class
+        Manage
+      </a>
+    </td>
+    <td class="clsmiddle">
+      <a href="#" title="Approve {{cls.title}}" class="abutton" style="white-space: nowrap;" onclick="show_approve_class_popup({{cls.id}}); return false;">
+	Approve
       </a>
     </td>
 

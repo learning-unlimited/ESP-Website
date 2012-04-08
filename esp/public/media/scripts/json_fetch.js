@@ -102,7 +102,7 @@ function json_fetch_complete(components, on_complete, data, data_fetch_status)
     }
 }
 
-function json_get(json_view, args, on_complete)
+function json_get(json_view, args, on_success, on_error)
 {
     $j.ajax({
         url: program_base_url + json_view,
@@ -110,7 +110,8 @@ function json_get(json_view, args, on_complete)
         success: function(result_data, text_status, jqxhr) {
 	    final_data = {};
 	    handle_json_response(final_data, null, null, result_data, text_status, jqxhr);
-	    on_complete(final_data);
-	}
+	    on_success(final_data);
+	},
+	error: on_error
     });
 }
