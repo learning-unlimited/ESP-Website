@@ -9,10 +9,10 @@
       class="unapproved" 
       {% endif %}
       {% if cls.status==0 %}
-         style="color:#0276FD; font-weight:bold;"     {# Blue and bold for Unreviewed classes #}
+         id="blue-bold"   {# Blue and bold for Unreviewed classes #}
       {% endif %}
       {% if cls.status==-10 %} 
-         style="color:#FF0000 ; font-style:italic;"   {# red and italic for rejected classes #}
+         id="red-italic"  {# red and italic for rejected classes #}
       {% endif %} >{{ cls.title|stringformat:".40s" }}{% if cls.title|stringformat:".40s"|length_is:40 and not cls.title|length_is:40 %}...{% endif %}</span>
       </span>
     </td>
