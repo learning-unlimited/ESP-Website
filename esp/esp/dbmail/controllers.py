@@ -37,7 +37,7 @@ from esp.datatree.models import *
 from esp.users.models import UserBit
 from esp.dbmail.models import MessageRequest, TextOfEmail, EmailRequest
 from django.contrib.site.models import Site
-import string
+import string, md5
 
 class EmailController(object):
     """ The workflow for a broadcast e-mail (distinct from e-mail sent to a specific user)
@@ -137,7 +137,7 @@ MessageRequest """
                 msg_text = "Daily Digest\n============\n\n"             
    
                 address = Site.objects.get_current().domain
-                address = string.join([address.domain,'/myesp/disableaccount','?disable&id=',str(user.id)],'')
+                address = string.join([address.domain,'/myesp/disableaccount','?disable&id=',str(user.id), '&hex=', md5.md5(str(user.date_joined)).hexdigest()],'')
                 
                 # Generate a shell TextOfEmail
                 textreq = TextOfEmail()
