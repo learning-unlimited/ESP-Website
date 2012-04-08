@@ -1,0 +1,34 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Lunch Constraints{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+    <h1>{{program.niceName}} Lunch Constraints</h1>
+    <br />
+    <p>Please select the timeslots you would like to be used for lunch.</p>
+    <p>If you would not like to set up lunch constraints, no action is necessary.</p>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+    <div id="program_form">
+    <form action="/manage/{{ program.getUrlBase }}/lunch_constraints/" method="post">
+    <table align="center" width="500">
+    <tr><th colspan="2">Lunch configuration for {{ program.niceName }}</th></tr>
+    {{ form }}
+    <tr><td colspan="2" align="center"><input type="submit" value="Submit" /></td></tr>
+    </table>
+    </form>
+    <br /><br />
+    {% if POST and saved %}
+        <h3 style="font-weight:bold;">Settings successfully saved.</h3><br /><br />
+    {% endif %}
+    {% if POST and not saved %}
+        <h3 style="font-weight:bold; color:red;">There was an error with saving your settings. Please try again.</h3><br /><br />
+    {% endif %}
+    </div>
+{% endblock %}

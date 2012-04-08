@@ -127,6 +127,24 @@ class AdminCore(ProgramModuleObj, CoreModule):
     
     @aux_call
     @needs_admin
+    def lunch_constraints(self, request, tl, one, two, module, extra, prog):
+        from esp.program.modules.forms.admincore import LunchConstraintsForm
+        context = {}
+        if request.method == 'POST':
+            context['POST'] = True
+            form = LunchConstraintsForm(prog, request.POST)
+            if form.is_valid():
+                form.save_data()
+                context['saved'] = True
+            else:
+                context['saved'] = False
+        else:
+            form = LunchConstraintsForm(prog)
+        context['form'] = form
+        return render_to_response(self.baseDir()+'lunch_constraints.html', request, (prog, tl), context)
+    
+    @aux_call
+    @needs_admin
     def deadline_management(self, request, tl, one, two, module, extra, prog):
         #   Define a formset for editing multiple user bits simultaneously.
         EditUserbitFormset = formset_factory(EditUserbitForm)

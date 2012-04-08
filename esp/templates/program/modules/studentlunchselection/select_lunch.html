@@ -1,0 +1,43 @@
+{% extends "main.html" %}
+
+{% load render_qsd %}
+
+{% block title %}Schedule Lunch Period{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<br /><br />
+<h1>Schedule a lunch period </h1>
+<br />
+
+<div id="program_form">
+
+{% if errors %}<p align="center" style="color: red;">Please correct the form below before continuing.</p>{% endif %}
+
+{% inline_qsd_block program.anchor studentlunchinstructions request.user %}
+<h2>Directions</h2>
+<p>If you are taking classes in both the morning and the afternoon, you'll need to reserve at least one timeslot for lunch.  You may select a lunch period below.  To change your selection, you can return to this page by clicking the "Select Lunch Period" link on the main registration page, or manually remove "Lunch Period" from your schedule and register for "Lunch Period" at the desired time.
+</p>
+{% end_inline_qsd_block %}
+
+{% if messages %}
+{% for msg in messages %}
+<p><span style="color: red; font-weight: bold;">{{ msg }}</span></p>
+{% endfor %}
+{% endif %}
+
+<form action="/learn/{{ prog.getUrlBase }}/select_lunch" method="post">
+<table align="center" width="500">
+{% for form in forms %}
+<tr><th colspan="2">Lunch Period for {{ form.day|date:"l, N d" }}</th></tr>
+{{ form }}
+{% endfor %}
+<tr><td colspan="2" align="center"><input type="submit" value="Submit" /></td></tr>
+</table>
+</form>
+
+{% endblock %}
