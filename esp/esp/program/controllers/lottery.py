@@ -343,11 +343,41 @@ class LotteryAssignmentController(object):
         stats['num_full_classes'] = numpy.sum(self.section_capacities == numpy.sum(self.student_sections, 0))
         stats['total_spaces'] = numpy.sum(self.section_capacities)
         
+        #   Compute histograms of assigned vs. requested classes
+        hist_priority = {}
+        for i in range(self.num_students):
+            key = (priority_assigned[i], priority_requested[i])
+            if key not in hist_priority:
+                hist_priority[key] = 0
+            hist_priority[key] += 1
+        stats['hist_priority'] = hist_priority
+        
+        hist_interest = {}
+        for i in range(self.num_students):
+            key = (interest_assigned[i], interest_requested[i])
+            if key not in hist_interest:
+                hist_interest[key] = 0
+            hist_interest[key] += 1
+        stats['hist_interest'] = hist_interest
+        
         if self.options['stats_display']:
             print 'Summary statistics:'
             print stats
             
         return stats
+    
+    def get_computed_schedule(self, student_id, mode='assigned'):
+        #   mode can be 'assigned', 'interested', or 'priority'
+        if mode == 'assigned':
+            assignments = numpy.nonzero(self.student_sections[self.student_indices[student_id], :])[0]
+        elif mode == 'interested':
+            assignments = numpy.nonzero(self.interest[self.student_indices[student_id], :])[0]
+        elif mode == 'priority':
+            assignments = numpy.nonzero(self.priority[self.student_indices[student_id], :])[0]
+        result = []
+        for i in range(assignments.shape[0]):
+            result.append(ClassSection.objects.get(id=self.section_ids[assignments[i]]))
+        return result
     
     def save_assignments(self, debug_display=False):
         """ Store lottery assignments in the database once they have been computed.
