@@ -14,7 +14,7 @@ from django.contrib.auth.decorators import login_required
 
 from esp.tagdict.models import Tag
 from esp.users.models.forwarder import UserForwarder
-import md5
+import hashlib
 
 def filter_username(username, password):
     #   Allow login by e-mail address if so specified
@@ -158,7 +158,7 @@ def disable_account(request):
         try:
             uid = int(request.GET['id'])
             curUser = User.objects.filter(id=uid)[0]
-            if md5.md5(str(curUser.date_joined)).hexdigest() == request.GET['hex']: #verify the passed key
+            if hashlib.sha256(str(curUser.date_joined)+str(curUser.id)).hexdigest() == request.GET['key']: #verify the passed key
                 verify = True    # request verified   
         except:
             pass
