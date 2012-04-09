@@ -239,11 +239,11 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             if return_key == 'sections':
                 section = ClassSection.objects.get(pk=section_id)
             else:
-                target_qs = ClassSubject.objects.filter(sections=section_id)
+                matching_classes = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
             if return_key == None: return_key = 'classes'
             class_id = int(request.GET['class_id'])
-            target_qs = ClassSubject.objects.filter(id=class_id)
+            matching_classes = ClassSubject.objects.filter(id=class_id)
         else:
             raise ESPError(False), 'Need a section or subject ID to fetch catalog info'
 
@@ -254,8 +254,6 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         if return_key == 'sections':
             cls = section.parent_class
         else:
-            matching_classes = ClassSubject.objects.catalog_cached(prog, initial_queryset=target_qs)
-            assert(len(matching_classes) == 1)
             cls = matching_classes[0]
 
         return_dict = {

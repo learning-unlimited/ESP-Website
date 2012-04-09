@@ -174,9 +174,17 @@ class AdminClass(ProgramModuleObj):
             review_status = request.POST['review_status']
 
             if review_status == 'ACCEPT':
+                # We can't just do class_subject.accept() since this only
+                # accepts sections that were previously unreviewed
+                for sec in class_subject.sections.all():
+                    sec.status = 10
+                    sec.save()
                 class_subject.accept()
             elif review_status == 'UNREVIEW':
                 class_subject.status = 0
+                for sec in class_subject.sections.all():
+                    sec.status = 0
+                    sec.save()
             elif review_status == 'REJECT':
                 class_subject.reject()
             else:
