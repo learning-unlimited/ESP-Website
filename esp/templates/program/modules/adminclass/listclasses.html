@@ -13,26 +13,13 @@
 /* <![CDATA[ */
 
 $j(document).ready(function() {
-  class_desc_popup = $j('<div></div>').dialog({
-    autoOpen: false,
-    minWidth: 400,
-    minHeight: 300,
-    modal: true,
-    buttons: {
-      "Approve (all sections)": function() {
-        approve_class($j(this).attr('clsid'));
-        $j(this).dialog("close");
-      },
-      "Unreview": function() {
-        unreview_class($j(this).attr('clsid'));
-        $j(this).dialog("close");
-      },
-      "Reject (all sections)": function() {
-        reject_class($j(this).attr('clsid'));
-        $j(this).dialog("close");
-      },
-    }
-  });
+  class_desc_popup = $j('<div></div>').attr('id', "class_status_popup")
+    .dialog({
+      autoOpen: false,
+      minWidth: 400,
+      minHeight: 300,
+      modal: true,
+    });
 });
 
 function deleteClass() {
@@ -131,21 +118,50 @@ function manage_class(clsid) {
 }
 
 function show_loading_class_popup() {
-  class_desc_popup.dialog('option', 'title', 'Loading');
-  class_desc_popup.dialog('option', 'width', 400);
-  class_desc_popup.dialog('option', 'height', 200);
-  class_desc_popup.dialog('option', 'position', 'center');
-  class_desc_popup.html('Loading class info...');
-  class_desc_popup.dialog('open');
+  class_desc_popup
+    .dialog('option', 'title', 'Loading')
+    .dialog('option', 'width', 400)
+    .dialog('option', 'height', 200)
+    .dialog('option', 'position', 'center')
+    .dialog('option', 'buttons', [])
+    .html('Loading class info...')
+    .dialog('open');
+}
+
+function show_saving_popup() {
+  class_desc_popup
+    .dialog('option', 'title', 'Saving')
+    .html('Saving the class status...')
+    .dialog('option', 'buttons', [])
+    .dialog('open');
 }
 
 function fill_class_popup(clsid, classes_data) {
   class_info = classes_data.classes[clsid];
-  class_desc_popup.dialog('option', 'title', class_info.title);
-  class_desc_popup.dialog('option', 'width', 600);
-  class_desc_popup.dialog('option', 'height', 400);
-  class_desc_popup.dialog('option', 'position', 'center');
   class_desc_popup
+    .dialog('option', 'title', class_info.title)
+    .dialog('option', 'width', 600)
+    .dialog('option', 'height', 400)
+    .dialog('option', 'position', 'center')
+    .dialog('option', 'buttons', [
+      {
+        text: "Approve (all sections)",
+        click: function() {
+          approve_class($j(this).attr('clsid'));
+        },
+      },
+      {
+        text: "Unreview",
+        click: function() {
+          unreview_class($j(this).attr('clsid'));
+        },
+      },
+      {
+        text: "Reject (all sections)",
+        click: function() {
+          reject_class($j(this).attr('clsid'));
+        },
+      }])
     .html('')
     .append("<p><b>Category:</b> " + class_info.category + "</p>")
     //.append("<p>Difficulty: " + class_info.difficulty + "</p>")
@@ -177,6 +193,10 @@ function show_approve_class_popup(clsid) {
 }
 
 function approve_class(clsid) {
+  // Show a popup while saving to avoid a "laggy" feeling
+  show_saving_popup();
+
+  // Make the AJAX request to actually set the class status
   $j.ajax({
     url: "/manage/{{ program.url }}/reviewClass",
     type: "post",
@@ -185,11 +205,22 @@ function approve_class(clsid) {
       review_status: "ACCEPT",
       csrfmiddlewaretoken: csrf_token()
     },
-    async: false
-  });  
+    complete: function() {
+      class_desc_popup.dialog("close");
+    }
+  });
+
+  // Set the appropriate styling
+  $j("#"+clsid+"-row").find(".unapproved")
+      .removeClass("unapproved")
+      .addClass("approved");
 }
 
 function unreview_class(clsid) {
+  // Show a popup while saving to avoid a "laggy" feeling
+  show_saving_popup();
+
+  // Make the AJAX request to actually set the class status
   $j.ajax({
     url: "/manage/{{ program.url }}/reviewClass",
     type: "post",
@@ -198,11 +229,22 @@ function unreview_class(clsid) {
       review_status: "UNREVIEW",
       csrfmiddlewaretoken: csrf_token()
     },
-    async: false
-  });  
+    complete: function() {
+      class_desc_popup.dialog("close");
+    }
+  });
+
+  // Set the appropriate styling
+  $j("#"+clsid+"-row").find(".approved")
+      .removeClass("approved")
+      .addClass("unapproved");
 }
 
 function reject_class(clsid) {
+  // Show a popup while saving to avoid a "laggy" feeling
+  show_saving_popup();
+
+  // Make the AJAX request to actually set the class status
   $j.ajax({
     url: "/manage/{{ program.url }}/reviewClass",
     type: "post",
@@ -211,8 +253,15 @@ function reject_class(clsid) {
       review_status: "REJECT",
       csrfmiddlewaretoken: csrf_token()
     },
-    async: false
+    complete: function() {
+      class_desc_popup.dialog("close");
+    }
   });  
+
+  // Set the appropriate styling
+  $j("#"+clsid+"-row").find(".approved")
+      .removeClass("approved")
+      .addClass("unapproved");
 }
 
 /* ]]> */
