@@ -1,4 +1,5 @@
 import re
+import os
 
 from django.db import models
 from south.db import db
@@ -9,7 +10,19 @@ from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
 from esp.customforms.linkfields import cf_cache
+from esp.qsdmedia.models import root_file_path
+from esp.settings import MEDIA_ROOT
 from django.contrib.contenttypes.models import ContentType
+
+def get_file_upload_path(instance, filename):
+    """
+    Returns the upload path for the file that is to be saved.
+    Files are saved in the directory MEDIA_ROOT/uploaded/Response_[form_id]
+    """
+    save_dir = 'uploaded/%s' % instance.__class__.__name__
+    save_dir = os.path.join(MEDIA_ROOT, save_dir)
+    save_path = os.path.join(save_dir, filename)
+    return save_path 
 
 class DynamicModelHandler:
     """
@@ -36,6 +49,7 @@ class DynamicModelHandler:
         'numeric': {'typeMap': models.IntegerField, 'attrs': {'null': True, }, 'args': []},
         'date': {'typeMap': models.CharField, 'attrs': {'max_length': 10, }, 'args': []},
         'time': {'typeMap': models.CharField, 'attrs': {'max_length': 10, }, 'args': []},
+        'file': {'typeMap': models.FileField, 'attrs': {'max_length': 200, 'upload_to': get_file_upload_path, }, 'args': []},
         'phone': {'typeMap': models.CharField, 'attrs': {'max_length': 15}, 'args': []},
         'email': {'typeMap': models.CharField, 'attrs': {'max_length': 30,}, 'args':[]},
         'state': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},

@@ -5,6 +5,7 @@ from form_utils.forms import BetterForm
 from django.utils.datastructures import SortedDict
 # from django.contrib.formtools.wizard import FormWizard
 from formwizard.views import SessionWizardView
+from django.core.files.storage import FileSystemStorage
 from django.shortcuts import redirect, render_to_response, HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
@@ -18,6 +19,7 @@ from esp.program.models import Program
 from esp.customforms.linkfields import cf_cache, generic_fields, custom_fields
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+from esp.middleware import ESPError
 
 class BaseCustomForm(BetterForm):
     """
@@ -291,12 +293,27 @@ class CustomFormHandler():
         return page_form        
         
 
+class FormStorage(FileSystemStorage):
+    """
+    The Storage sublass used to temporarily store submitted files.
+    """
+    pass
+
 class ComboForm(SessionWizardView):
-    
+    """
+    The WizardView subclass used to implement the FormWizard
+    """
+
+    # TODO ->   The WizardView doesn't delete old files if the 
+    #           form doesn't submit successfully. Need to figure
+    #           out how to perform this cleanup.
+    #           vdugar, 4/10/12
+
     template_name = 'customforms/form.html'
     curr_request = None
     form_handler = None
     form = None
+    file_storage = FormStorage()
 
     def get_context_data(self, form, **kwargs):
         """
@@ -385,6 +402,7 @@ class ComboForm(SessionWizardView):
             #   Check that this value didn't come from a dummy field
             if key.split('_')[0] == 'question' and generic_fields[fields[int(key.split('_')[1])]]['typeMap'] == DummyField:
                 del data[key]
+
         dynModel.objects.create(**data)    
         return HttpResponseRedirect('/customforms/success/%d/' % self.form.id)
         
@@ -398,7 +416,7 @@ class ComboForm(SessionWizardView):
 
 class FormHandler:
     """
-    Handles creation of a form (single page or multi-page). Uses Django's FormWizard.
+    Handles creation of a form (single page or multi-page). Uses Django's form wizard.
     """
     
     def __init__(self, form, request, user=None):
@@ -584,12 +602,12 @@ class FormHandler:
         
         # Add in the user column if form is not anonymous
         if not form.anonymous:
-            response_data['questions'].append(['user_id', 'User'])
+            response_data['questions'].append(['user_id', 'User', 'fk'])
             
         # Add in the column for link fields, if any
         if form.link_type != "-1":
             only_fkey_model = cf_cache.only_fkey_models[form.link_type]
-            response_data['questions'].append(["link_%s_id" % only_fkey_model.__name__, form.link_type])
+            response_data['questions'].append(["link_%s_id" % only_fkey_model.__name__, form.link_type, 'fk'])
         else:
             only_fkey_model = None      
         
@@ -603,10 +621,10 @@ class FormHandler:
                 
                 # Now let's see what fields need to be set
                 add_fields[qname] = [model, cf_cache.getLinkFieldData(ftype)['model_field']]
-                response_data['questions'].append([qname, field['label']])
+                response_data['questions'].append([qname, field['label'], ftype])
                 # Include this field only if it isn't a dummy field
             elif generic_fields[ftype]['typeMap'] is not DummyField:
-                response_data['questions'].append([qname, field['label']])
+                response_data['questions'].append([qname, field['label'], ftype])
             
         # Now let's set up the responses
         for response in responses:
