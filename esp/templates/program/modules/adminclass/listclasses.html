@@ -13,13 +13,20 @@
 /* <![CDATA[ */
 
 $j(document).ready(function() {
-  class_desc_popup = $j('<div></div>').attr('id', "class_status_popup")
-    .dialog({
-      autoOpen: false,
-      minWidth: 400,
-      minHeight: 300,
-      modal: true,
-    });
+  // Check if rapid approval is enabled
+  {% load tagdict %}
+  if ("{% getProgramTag 'use_rapid_approval' program%}" == "True")
+  {
+    $j(".rapid_approval_button").show();
+    // Create the class description popup for the Status button
+    class_desc_popup = $j('<div></div>').attr('id', "class_status_popup")
+      .dialog({
+        autoOpen: false,
+        minWidth: 400,
+        minHeight: 300,
+        modal: true,
+      });
+  }
 });
 
 function deleteClass() {

@@ -22,11 +22,11 @@ class GetProgramTagNode(Node):
         key = parser.compile_filter(tokens[1])
         program = None
         default = None
+        if len(tokens) > 2:
+            program = parser.compile_filter(tokens[2])
         if len(tokens) > 3:
-            program = parser.compile_filter(token[2])
-        if len(tokens) > 4:
-            default = parser.compile_filter(token[3])
-     
+            default = parser.compile_filter(tokens[3])
+
         return cls(key, program, default)
       
 
@@ -37,7 +37,7 @@ class GetProgramTagNode(Node):
         else:
             program = None
         if self.default:
-           u default = self.default.resolve(context)
+            default = self.default.resolve(context)
         else:
             default = None
         return str(Tag.getProgramTag(key, program, default))

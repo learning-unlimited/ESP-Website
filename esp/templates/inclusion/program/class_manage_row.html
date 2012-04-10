@@ -1,4 +1,3 @@
-{% load tagdict %}
 {# expects program and class #}
     <td class="clsleft classname">
       <span title="{{cls}}">
@@ -42,12 +41,11 @@
         Manage
       </a>
     </td>
-    <td class="clsmiddle">
+    <td class="clsmiddle rapid_approval_button" style="display:none">
       <a href="#" title="Set the status of {{cls.title}}" class="abutton" style="white-space: nowrap;" onclick="show_approve_class_popup({{cls.id}}); return false;">
 	Status
       </a>
     </td>
-
 {% load class_checkmarks %}
 {# checklist ... #}
 {% for check in program.checkitems_all_cached %}
