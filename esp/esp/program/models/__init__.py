@@ -592,14 +592,6 @@ class Program(models.Model, CustomFormsLinkModel):
     getScheduleConstraints.depend_on_model(get_sc_model)
     getScheduleConstraints.depend_on_model(get_bt_model)
 
-    def lock_schedule(self, lock_level=1):
-        """ Locks all schedule assignments for the program, for convenience
-            (e.g. between scheduling some sections manually and running
-            automatic scheduling).
-        """
-        from esp.resources.models import ResourceAssignment
-        ResourceAssignment.objects.filter(target__parent_class__parent_program=self, lock_level__lt=lock_level).update(lock_level=lock_level)
-
     def isConfirmed(self, espuser):
         v = GetNode('V/Flags/Public')
         userbits = UserBit.objects.filter(verb = v, user = espuser,

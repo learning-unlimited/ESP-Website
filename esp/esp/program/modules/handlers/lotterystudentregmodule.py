@@ -95,17 +95,10 @@ class LotteryStudentRegModule(ProgramModuleObj):
         This is just a static page;
         it gets all of its content from AJAX callbacks.
         """
-        context = {'prog': prog }
 
-        ProgInfo = prog.getModuleExtension('StudentClassRegModuleInfo')
-
-        print ProgInfo.use_priority
-        print ProgInfo.priority_limit
-        #HSSP-style lottery
-        if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:
-            return render_to_response('program/modules/lotterystudentregmodule/student_reg_old.html', request, (prog, tl), context)
-        #Splark/Spash style lottery
-        return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, (prog, tl), context)
+        #print "blooble"
+        #print request.user.username
+        return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', {'prog': self.program})
 
     @aux_call
     @meets_deadline('/Classes/Lottery')
@@ -167,13 +160,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         else: context['iempty'] = False
 
         return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, (prog, tl), context)
-    
-    @aux_call
-    def jstest(self, request, tl, one, two, module, extra, prog):
-        context = {}
-        context['program'] = prog
-        return render_to_response(self.baseDir()+'jstest.html', request, (prog, tl), context)
-    
+
     class Meta:
         abstract = True
 

@@ -33,16 +33,6 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.cache import cache_function
-from esp.cache.function import describe_func
-
-from django.http import HttpResponse
-from django.db.models import Model
-
-from inspect import getargspec
-from functools import wraps
-import simplejson
-
 class OptionalDecorator(object):
     """ A simple decorator to turn a function into a no-op.  If the argument evaluates
         to true, it's transparent.  Otherwise it generates a decorator that causes
@@ -67,76 +57,3 @@ class OptionalDecorator(object):
             return _do_nothing
 
 enable_with_setting = OptionalDecorator
-
-def json_response(field_map={}):
-    """ Converts a serializable data structure into the appropriate HTTP response. 
-        Allows changing the field names using field_map, which might be complicated
-        if related lookups were used. 
-    """
-    
-    def map_fields(item):
-        if isinstance(item, Model):
-            item = item.__dict__
-        assert(isinstance(item, dict))
-        result = {}
-        for key in item:
-            if key in field_map:
-                result[field_map[key]] = item[key]
-            else:
-                result[key] = item[key]
-        return result
-
-    def dec(func):
-        @wraps(func)
-        def _evaluate(*args, **kwargs):
-            result = func(*args, **kwargs)
-            if isinstance(result, HttpResponse):
-                return result
-            else:
-                new_result = {}
-                for key in result:
-                    new_list = []
-                    for item in result[key]:
-                        new_list.append(map_fields(item))
-                    new_result[key] = new_list
-                resp = HttpResponse(mimetype='application/json')
-                simplejson.dump(new_result, resp)
-                return resp
-                
-        return _evaluate
-        
-    return dec
-
-
-class CachedModuleViewDecorator(object):
-    """ Employs some of the techniques used by the cached inclusion tag to 
-        make caching a simple program module view easier. """
-    
-    def __init__(self, func):
-        parent_obj = self
-
-        def prepare_dec(func):
-            self.params, xx, xxx, defaults = getargspec(func)
-            self.cached_function = cache_function(func, uid_extra='*'+describe_func(func))
-
-            def actual_func(self, request, tl, one, two, module, extra, prog):
-                #   Construct argument list
-                param_name_list = ['self', 'request', 'tl', 'one', 'two', 'module', 'extra', 'prog']
-                param_list = [self, request, tl, one, two, module, extra, prog]
-                args_for_func = []
-                for i in range(len(param_list)):
-                    if param_name_list[i] in parent_obj.params:
-                        args_for_func.append(param_list[i])
-                return parent_obj.cached_function(*args_for_func)
-            
-            return actual_func
-            
-        self.inner_func = prepare_dec(func)
-
-    def __call__(self, *args):
-        return self.inner_func(*args)
-        
-    def __getattr__(self, attr):
-        return getattr(self.inner_func, attr)
-
-cached_module_view = CachedModuleViewDecorator

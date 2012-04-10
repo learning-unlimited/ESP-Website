@@ -1594,30 +1594,6 @@ class ProgramPrintables(ProgramModuleObj):
         response['Content-Disposition'] = 'attachment; filename=ok_times_concise.csv'
         return response
 
-    @aux_call
-    @needs_admin
-    def csv_schedule(self, request, tl, one, two, module, extra, prog):
-        """ A CSV-formatted list of existing schedule assignments, intended to
-            be used as initial conditions for automatic scheduling.  The response
-            has 4 columns:
-                -   ID of the class section
-                -   Name of the classroom
-                -   ID of the timeslot
-                -   Lock level (usually 0 for unlocked, 1 or higher for locked)
-        """
-        import csv
-        from django.http import HttpResponse
-        from esp.resources.models import ResourceAssignment
-        response = HttpResponse(mimetype="text/csv")
-        write_csv = csv.writer(response)
-        
-        data = ResourceAssignment.objects.filter(target__parent_class__parent_program=prog).order_by('target__id', 'resource__event__id').values_list('target__id', 'resource__name', 'resource__event__id', 'lock_level')
-        for row in data:
-            write_csv.writerow(row)
-        
-        response['Content-Disposition'] = 'attachment; filename=csv_schedule.csv'
-        return response
-
     class Meta:
         abstract = True
 

@@ -416,7 +416,6 @@ class ResourceAssignment(models.Model):
                                                
     target = models.ForeignKey('program.ClassSection', null=True)
     target_subj = models.ForeignKey('program.ClassSubject', null=True)
-    lock_level = models.IntegerField(default=0)
 
     def save(self, *args, **kwargs):
         cache_key_QObjects = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.resource.id
@@ -431,10 +430,7 @@ class ResourceAssignment(models.Model):
         
     
     def __unicode__(self):
-        result = u'Resource assignment for %s' % unicode(self.getTargetOrSubject())
-        if self.lock_level > 0:
-            result += u' (locked)'
-        return result
+        return 'Resource assignment for %s' % unicode(self.getTargetOrSubject())
     
     def getTargetOrSubject(self):
         """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """
