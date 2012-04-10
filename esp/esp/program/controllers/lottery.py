@@ -140,13 +140,15 @@ class LotteryAssignmentController(object):
             self.lunch_schedule[self.timeslot_indices[ts.id]] = True
         self.lunch_timeslots = numpy.array(lunch_by_day)
         
+        now = datetime.now()
+        
         #   Populate interest matrix
-        interest_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Interested').values_list('user__id', 'section__id').distinct()
+        interest_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Interested', end_date__gte=now).values_list('user__id', 'section__id').distinct()
         ira = numpy.array(interest_regs, dtype=numpy.uint32)
         self.interest[self.student_indices[ira[:, 0]], self.section_indices[ira[:, 1]]] = True
         
         #   Populate priority matrix
-        priority_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Priority/1').values_list('user__id', 'section__id').distinct()
+        priority_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Priority/1', end_date__gte=now).values_list('user__id', 'section__id').distinct()
         pra = numpy.array(priority_regs, dtype=numpy.uint32)
         self.priority[self.student_indices[pra[:, 0]], self.section_indices[pra[:, 1]]] = True
         
