@@ -114,7 +114,7 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
             errormsg = error1
         else:  # there's some section for which we can add this class; does that hold for this one?
             if section:
-                errormsg = section.cannotAdd(user)
+                errormsg = section.cannotAdd(user, autocorrect_constraints=False)
         
     show_class =  (not filter) or (not errormsg)
     
