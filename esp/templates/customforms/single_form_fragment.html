@@ -1,5 +1,8 @@
-	{% if form.non_field_errors %}{{ form.non_field_errors }}{% endif %}
-	{% for fieldset in form.fieldsets %}
+	{{ wizard.management_form }}
+	{% if wizard.form.non_field_errors %}
+		{{ wizard.form.non_field_errors }}
+	{% endif %}
+	{% for fieldset in wizard.form.fieldsets %}
 	  <fieldset class="{{ fieldset.classes }}">
 	  {% if fieldset.legend %}
 	    <h2 class="sect_title">{{ fieldset.legend }}</h2>
