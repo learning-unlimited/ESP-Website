@@ -480,13 +480,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     cls.removeAdmin(teacher)
 
                 # add bits for all new coteachers
+                ccc = ClassCreationController(self.program)
                 for teacher in to_be_added:
-                    self.program.teacherSubscribe(teacher)
-                    cls.makeTeacher(teacher)
-                    cls.subscribe(teacher)
-                    cls.makeAdmin(teacher, self.teacher_class_noedit)                    
+                    ccc.associate_teacher_with_class(cls, teacher)
                 cls.update_cache()
-                ClassCreationController(self.program).send_class_mail_to_directors(cls)
+                ccc.send_class_mail_to_directors(cls)
                 return self.goToCore(tl)
 
 
