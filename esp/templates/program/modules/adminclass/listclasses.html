@@ -144,7 +144,27 @@ function show_saving_popup() {
 }
 
 function fill_class_popup(clsid, classes_data) {
-  class_info = classes_data.classes[clsid];
+  var class_info = classes_data.classes[clsid];
+  var status_string;
+  switch(class_info.status)
+  {
+    case -20:
+      status_string = "Cancelled";
+      break;
+    case -10:
+      status_string = "Rejected";
+      break;
+    case 0:
+      status_string = "Unreviewed";
+      break;
+    case 5:
+      status_string = "Accepted but hidden";
+      break;
+    case 10:
+      status_string = "Accepted";
+      break;
+  }
+
   class_desc_popup
     .dialog('option', 'title', class_info.title)
     .dialog('option', 'width', 600)
@@ -170,8 +190,12 @@ function fill_class_popup(clsid, classes_data) {
         },
       }])
     .html('')
+    .append("<p><b>Status:</b> " + status_string + "</p>")
+    .append("<p><b>Sections:</b> " + class_info.sections.length + "</p>")
+    .append("<p><b>Max Size:</b> " + class_info.class_size_max + "</p>")
     .append("<p><b>Category:</b> " + class_info.category + "</p>")
     //.append("<p>Difficulty: " + class_info.difficulty + "</p>")
+    .append("<p><b>Prereqs:</b> " + class_info.prereqs + "</p>")
     .append("<p><b>Description:</b> " + class_info.class_info + "</p>")
     .attr('clsid', clsid);
 }

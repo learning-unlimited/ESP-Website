@@ -258,6 +258,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
 
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
+            'status': cls.status,
             'emailcode': cls.emailcode(),
             'title': cls.title(),
             'class_info': cls.class_info, 
