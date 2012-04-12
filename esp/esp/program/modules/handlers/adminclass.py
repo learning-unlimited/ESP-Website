@@ -562,10 +562,11 @@ class AdminClass(ProgramModuleObj):
                     cls.removeAdmin(teacher)
 
                 # add bits for all new (and old) coteachers
+                ccc = ClassCreationController(self.program)
                 for teacher in coteachers:
-                    cls.makeTeacher(teacher)
-                    cls.makeAdmin(teacher)                    
-                ClassCreationController(self.program).send_class_mail_to_directors(cls)
+                    ccc.associate_teacher_with_class(cls, teacher)
+                cls.update_cache()
+                ccc.send_class_mail_to_directors(cls)
                 return self.goToCore(tl)
 
 
