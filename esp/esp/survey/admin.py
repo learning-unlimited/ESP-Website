@@ -45,59 +45,27 @@ from copy import deepcopy
 from StringIO import StringIO
 import tempfile
 
-def save_survey(survey, outfile):
-    anchor_uri = survey.anchor.uri
-    anchor_uri_len = len(anchor_uri)
-
-    questions = survey.questions.order_by('id')
-
-    for q in questions:
-        str_fragments = []
-        str_fragments.append('%d' % q.seq)
-        str_fragments.append(q.anchor.uri[anchor_uri_len:])
-        str_fragments.append(q._param_values)
-        str_fragments.append('%d' % q.question_type_id)
-        str_fragments.append(q.name)
-        outfile.write('":"'.join(str_fragments))
-        outfile.write('\n.\n')
-
-def load_survey(survey_anchor, survey_name, category, infile):
-    # create survey
-    survey, created = Survey.objects.get_or_create(name=survey_name, anchor=survey_anchor, category=category)
-    survey.save()
-    
-    auri = survey_anchor.uri
-
-    data = infile.read()
-    entries = data.split('\n.\n')[:-1]
-    for entry in entries:
-        qlist = entry.split('":"')
-        seq = int(qlist[0])
-        anchor = DataTree.get_by_uri(auri + qlist[1])
-        pv = qlist[2]
-        qt = QuestionType.objects.get(id=qlist[3])
-        name = qlist[4]
-        q, c = Question.objects.get_or_create(survey=survey, name=name, question_type=qt, _param_values=pv, anchor=anchor, seq=seq)
-        q.save()
-
 def copy_surveys(modeladmin, request, queryset):
     for survey in queryset:
-        # Use a memory file instead of a real one, because it will be faster. This assumes
-        # the survey will not be unreasonably large.
-        tmp_mem_file = StringIO()
-        save_survey(survey, tmp_mem_file)
-        tmp_mem_file.seek(0)
-        load_survey(survey.anchor, survey.name + " (copy)", survey.category, tmp_mem_file)
-        tmp_mem_file.close()
+        anchor_uri = survey.anchor.uri
+        anchor_uri_len = len(anchor_uri)
+
+        newsurvey, created = Survey.objects.get_or_create(name=survey.name + " (copy)", anchor=survey.anchor, category = survey.category)
+        questions = survey.questions.order_by('id')
+
+        for q in questions:
+            # Create a new question for the new survey
+            newq, created = Question.objects.get_or_create(survey=newsurvey, name=q.name, question_type=q.question_type, _param_values=q._param_values, anchor=q.anchor, seq=q.seq)
+            newq.save()
+
+        newsurvey.save()
 
 class SurveyAdmin(admin.ModelAdmin):
     actions = [ copy_surveys, ]
 
     def save_model(self, request, obj, form, change):
         # Ensure that our questions always match up with the form
-        for q in obj.questions.all():
-            q.anchor = obj.anchor
-            q.save()
+        obj.questions.all().update(anchor=obj.anchor)
         obj.save()
 
 admin_site.register(Survey, SurveyAdmin)
