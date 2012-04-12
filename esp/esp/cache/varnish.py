@@ -13,8 +13,8 @@ def purge_page(url, host = None):
     print "purge_page called"
     if host == None:
         try:
-            from esp.settings import VARNISH_HOST, VARNISH_PORT
-            host = VARNISH_HOST + ":" + str(VARNISH_PORT)
+            from django.conf import settings
+            host = settings.VARNISH_HOST + ":" + str(settings.VARNISH_PORT)
         except ImportError:
             stderr.write("No proxy cache!\n")
             return False

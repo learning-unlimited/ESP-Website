@@ -36,7 +36,7 @@ from django.db import models
 from django.core.files import File
 
 from esp.datatree.models import *
-from esp.settings import MEDIA_ROOT, MEDIA_URL
+from django.conf import settings
 from esp.db.fields import AjaxForeignKey
 from time import strftime
 
@@ -82,8 +82,8 @@ class Media(models.Model):
         """ Delete entry; provide hack to fix old absolute-path-storing. """
         import os
         # If needby, strip URL prefix
-        if os.path.isabs(self.target_file.name) and self.target_file.name.startswith(MEDIA_URL):
-            self.target_file.name = self.target_file.name[len(MEDIA_URL):]
+        if os.path.isabs(self.target_file.name) and self.target_file.name.startswith(settings.MEDIA_URL):
+            self.target_file.name = self.target_file.name[len(settings.MEDIA_URL):]
             # In case trailing slash missing
             if self.target_file.name[0] is '/':
                 self.target_file.name = self.target_file.name[1:]

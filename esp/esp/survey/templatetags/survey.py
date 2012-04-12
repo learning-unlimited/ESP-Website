@@ -106,9 +106,9 @@ def stdev(lst):
 @register.filter
 def histogram(answer_list, format='html'):
     """ Generate Postscript code for a histogram of the provided results, save it and return a string pointing to it. """
-    from esp.settings import MEDIA_ROOT, TEMPLATE_DIRS
+    from django.conf import settings
     HISTOGRAM_PATH = 'images/histograms/'
-    HISTOGRAM_DIR = MEDIA_ROOT + HISTOGRAM_PATH
+    HISTOGRAM_DIR = settings.MEDIA_ROOT + HISTOGRAM_PATH
     from esp.web.util.latex import get_rand_file_base
     import os
     import tempfile
@@ -158,7 +158,7 @@ def histogram(answer_list, format='html'):
     import hashlib
     file_base = hashlib.sha1(pickle.dumps(context)).hexdigest()
     file_name = os.path.join(tempfile.gettempdir(), file_base+'.eps')
-    template_file = TEMPLATE_DIRS[0] + '/survey/histogram_base.eps'
+    template_file = settings.TEMPLATE_DIRS[0] + '/survey/histogram_base.eps'
 
     context['file_name'] = file_name # This guy depends on the SHA-1
     

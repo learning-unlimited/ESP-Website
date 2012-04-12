@@ -61,8 +61,7 @@ from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import LineItemType, CompletedTransactionException
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
-from esp.settings import SITE_INFO
-
+from django.conf import settings
 import pickle
 import operator
 import simplejson as json
@@ -419,7 +418,7 @@ def userview(request):
         'enrolled_classes' : user.getEnrolledSections().order_by('parent_class__parent_program'),
         'taken_classes' : user.getSections().order_by('parent_class__parent_program'),
         'teacherbio': teacherbio,
-        'domain': SITE_INFO[1],
+        'domain': settings.SITE_INFO[1],
         'change_grade_form': change_grade_form,
     }
     return render_to_response("users/userview.html", request, GetNode("Q/Web"), context )
