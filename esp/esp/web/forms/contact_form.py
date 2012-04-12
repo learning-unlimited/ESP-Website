@@ -36,8 +36,7 @@ Learning Unlimited, Inc.
 from django import forms
 from django.utils.translation import gettext_lazy as _
 
-from esp.settings import email_addresses, email_choices
-
+from django.conf import settings
 # if the picked email address isn't in the above, it will send to this.
 fallback_address = 'esp@mit.edu'
 
@@ -70,7 +69,7 @@ class ContactForm(forms.Form):
     person_type  = forms.ChoiceField(choices = person_type, label=_("I am a(n)"))
 
     hear_about   = forms.ChoiceField(choices = hear_about, label="How did you hear about us?")
-    topic   = forms.ChoiceField(choices = email_choices, label=_("Topic"),
+    topic   = forms.ChoiceField(choices = settings.email_choices, label=_("Topic"),
                                 help_text = "(This determines who gets the message.)")
 
     subject = forms.CharField(max_length=100, label=_("Subject"))

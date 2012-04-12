@@ -4,13 +4,12 @@ from esp.program.models import Program, ClassSubject, ClassSection
 from esp.mailman import create_list, load_list_settings, add_list_member, set_list_moderator_password, apply_list_settings
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
-from esp.settings import USE_MAILMAN
-
+from django.conf import settings
 
 class ClassList(BaseHandler):
 
     def process(self, user, class_id, user_type):
-        if USE_MAILMAN:
+        if settings.USE_MAILMAN:
             self.process_mailman(user, class_id, user_type)
         else:
             self.process_nomailman(user, class_id, user_type)

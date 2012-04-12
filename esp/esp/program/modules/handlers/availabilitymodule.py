@@ -44,7 +44,7 @@ from esp.tagdict.models          import Tag
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, Resource
-from esp.settings                import SERVER_EMAIL, EMAIL_HOST_SENDER
+from django.conf import settings
 from django.template.loader      import render_to_string
 from esp.dbmail.models           import send_mail
 from datetime                    import timedelta, datetime
@@ -161,7 +161,7 @@ class AvailabilityModule(ProgramModuleObj):
                 
                 #   Send an e-mail showing availability to directors and teachers
                 email_title = 'Availability for %s: %s' % (self.program.niceName(), teacher.name())
-                email_from = '%s Registration System <server@%s>' % (self.program.anchor.parent.name, EMAIL_HOST_SENDER)
+                email_from = '%s Registration System <server@%s>' % (self.program.anchor.parent.name, settings.EMAIL_HOST_SENDER)
                 email_context = {'teacher': teacher,
                                  'timeslots': timeslots,
                                  'program': self.program,

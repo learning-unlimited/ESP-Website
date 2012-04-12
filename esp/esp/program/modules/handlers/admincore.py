@@ -104,7 +104,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
     def registrationtype_management(self, request, tl, one, two, module, extra, prog):
         
         from esp.program.modules.forms.admincore import VisibleRegistrationTypeForm as VRTF
-        from esp.settings import DEFAULT_EMAIL_ADDRESSES
+        from django.conf import settings
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
         
         context = {}
@@ -113,7 +113,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['prog'] = prog
         context['POST'] = False
         context['saved'] = False
-        context['support'] = DEFAULT_EMAIL_ADDRESSES['support']
+        context['support'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
         
         if request.method == 'POST':
             context['POST'] = True
