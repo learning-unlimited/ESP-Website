@@ -39,12 +39,10 @@ from esp.cal.models import Event
 from esp.program.models import ClassSection, ClassSubject, StudentRegistration
 from esp.resources.models import ResourceAssignment
 
-from esp.cache.key_set import wildcard
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 
 from django.views.decorators.cache import cache_control
-
 
 class JSONDataModule(ProgramModuleObj, CoreModule):
     """ A program module dedicated to returning program-specific data in JSON form. """
@@ -155,6 +153,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             section['index'] = ClassSection.objects.get(id=section['id']).index()
         return {'sections': sections}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
+    # Put this import here rather than at the toplevel, because wildcard messes things up
+    from esp.cache.key_set import wildcard
     sections.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
         
     @aux_call
