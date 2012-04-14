@@ -40,7 +40,6 @@ from esp.program.models import ClassSection, ClassSubject, StudentRegistration
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
 from esp.datatree.models import *
 
-from esp.cache.key_set import wildcard
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 
@@ -205,6 +204,8 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     
         return {'sections': sections, 'teachers': teachers}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
+    # Put this import here rather than at the toplevel, because wildcard messes things up
+    from esp.cache.key_set import wildcard
     sections.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
     sections.cached_function.depend_on_cache(ClassSubject.teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
         

@@ -81,6 +81,17 @@ compare_timeslot_starts = function(a, b){
     return -1;
 };
 
+get_walkin_header_html = function()
+{
+    if (open_class_registration) {
+        return "<h3>Walk-in Seminars</h3>\
+        <div id='%TIMESLOT_WALKIN_DIV%' style='margin:1em 1em 1em 1em'></div>";
+    }
+    return "";
+}
+
+walkin_header_html = get_walkin_header_html();
+
 get_timeslot_html = function(timeslot_data)
 {
     // Create some html for the timeslot, making use of keywords which are
@@ -88,8 +99,7 @@ get_timeslot_html = function(timeslot_data)
     template = "\
     <h3 class='header'><a href='#'><b>%TIMESLOT_LABEL% </b></a></h3>\
     <div id='%TIMESLOT_DIV%'>\
-        <h3>Walk-in Seminars</h3>\
-        <div id='%TIMESLOT_WALKIN_DIV%' style='margin:1em 1em 1em 1em'></div>\
+    " + walkin_header_html + "\
 \
         <h3>Classes that start in another timeblock</h3>\
         <div id='%TIMESLOT_CARRYOVER_DIV%' style='margin:1em 1em 1em 1em'></div>\
@@ -102,13 +112,13 @@ get_timeslot_html = function(timeslot_data)
                 <td><p>Class</p></td>\
             </tr>\
         </table>\
-    </div><br>"
-        .replace(/%TIMESLOT_ID%/g, timeslot_data['id'])
-        .replace(/%TIMESLOT_DIV%/g, ts_div_from_id(timeslot_data['id']))
-        .replace(/%TIMESLOT_TABLE%/g, ts_table_from_id(timeslot_data['id']))
-        .replace(/%TIMESLOT_WALKIN_DIV%/g, ts_walkin_div_from_id(timeslot_data['id']))
-        .replace(/%TIMESLOT_CARRYOVER_DIV%/g, ts_carryover_div_from_id(timeslot_data['id']))
-	.replace(/%TIMESLOT_LABEL%/g, timeslot_data['label']);
+    </div><br>";
+    template = template.replace(/%TIMESLOT_ID%/g, timeslot_data['id']);
+    template = template.replace(/%TIMESLOT_DIV%/g, ts_div_from_id(timeslot_data['id']));
+    template = template.replace(/%TIMESLOT_TABLE%/g, ts_table_from_id(timeslot_data['id']));
+    template = template.replace(/%TIMESLOT_WALKIN_DIV%/g, ts_walkin_div_from_id(timeslot_data['id']));
+    template = template.replace(/%TIMESLOT_CARRYOVER_DIV%/g, ts_carryover_div_from_id(timeslot_data['id']));
+    template = template.replace(/%TIMESLOT_LABEL%/g, timeslot_data['label']);
     return template;
 };
 
@@ -173,39 +183,38 @@ add_classes_to_timeslot = function(timeslot, sections){
 
 
     // Add walkins section
-    if(!has_walkins){
-	//hopefully nobody will ever see this :)
-	$j("#"+ts_walkin_div_from_id(timeslot['id'])).append("<i><font color='red'>(No walk-ins)</font></i>");
+    if(open_class_registration && !has_walkins){
+    //hopefully nobody will ever see this :)
+        $j("#"+ts_walkin_div_from_id(timeslot['id'])).append("<i><font color='red'>(No walk-ins)</font></i>");
     }
-    else{
-	// Add all the walkins classes
-	for(i in walkins_list){
-	    $j("#"+ts_walkin_div_from_id(timeslot['id'])).append(get_walkin_html(walkins_list[i], timeslot['id']));
-	}
+    else if (open_class_registration){
+    // Add all the walkins classes
+        for(i in walkins_list){
+            $j("#"+ts_walkin_div_from_id(timeslot['id'])).append(get_walkin_html(walkins_list[i], timeslot['id']));
+        }
     }
     // Add classes (starting in this timeblock) section
     if(!has_classes){
-	//hopefully nobody will ever see this either :)
-	$j("#"+ts_div_from_id(timeslot['id'])).append("<i><font color='red'>(No classes)</font></i>");
+    //hopefully nobody will ever see this either :)
+        $j("#"+ts_div_from_id(timeslot['id'])).append("<i><font color='red'>(No classes)</font></i>");
     }
     else{
-	// Adds all classes that start in this timeblock
-	for(i in classes_list){
-	    $j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(classes_list[i], timeslot['id']));
-	    load_old_preferences(classes_list[i]);
-	}
+    // Adds all classes that start in this timeblock
+        for(i in classes_list){
+            $j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(classes_list[i], timeslot['id']));
+            load_old_preferences(classes_list[i]);
+        }
     }
     // Add carried over classes section
     if(!has_carryovers){
-	$j("#"+ts_carryover_div_from_id(timeslot['id'])).append("<i><font color='red'>(No carry-overs)</font></i>");
+        $j("#"+ts_carryover_div_from_id(timeslot['id'])).append("<i><font color='red'>(No carry-overs)</font></i>");
     }
     else{
-	// Adds all classes that are carried over from the previous timeblock
-	for(i in carryovers_list){
-	    $j("#"+ts_carryover_div_from_id(timeslot['id'])).append(get_carryover_html(carryovers_list[i], timeslot['id']));
-	}
+    // Adds all classes that are carried over from the previous timeblock
+        for(i in carryovers_list){
+            $j("#"+ts_carryover_div_from_id(timeslot['id'])).append(get_carryover_html(carryovers_list[i], timeslot['id']));
+        }
     }
-
 };
 
 get_class_checkbox_html = function(class_data, timeslot_id){
