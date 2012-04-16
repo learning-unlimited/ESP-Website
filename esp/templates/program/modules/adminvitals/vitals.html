@@ -48,6 +48,14 @@
 {% endif %}
 {% endfor %}
 <tr>
+  <th class="smaller">Total # of Lunch Classes</th>
+{% for cat in categories %}
+{% if cat.category == "Lunch" %}
+  <td>{{ cat.num_subjects }}</td>
+{% endif %}
+{% endfor %}
+</tr>
+<tr>
   <th class="smaller">Total # of Classes <span style="color: #00C;">Unreviewed</span></th>
   <td>{{ vitals.classunreviewed.count }}</td>
 </tr>
