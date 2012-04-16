@@ -650,6 +650,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 if request.POST.has_key('manage') and request.POST['manage'] == 'manage':
                     if request.POST['manage_submit'] == 'reload':
                         return HttpResponseRedirect(request.get_full_path()+'?manage=manage')
+                    elif request.POST['manage_submit'] == 'manageclass':
+                        return HttpResponseRedirect('/manage/%s/manageclass/%s' % (self.program.getUrlBase(), extra))
                     elif request.POST['manage_submit'] == 'dashboard':
                         return HttpResponseRedirect('/manage/%s/dashboard' % self.program.getUrlBase())
                     elif request.POST['manage_submit'] == 'main':
