@@ -36,26 +36,38 @@ Learning Unlimited, Inc.
 """
 
 from django.contrib import admin
+from django.conf import settings
 from esp.admin import admin_site
 from esp.survey.models import Survey, SurveyResponse, QuestionType, Question, Answer
+from esp.datatree.models import *
 
 from copy import deepcopy
+from StringIO import StringIO
+import tempfile
 
-# TODO: Update the anchors on the questions as well
 def copy_surveys(modeladmin, request, queryset):
     for survey in queryset:
-        new_survey = deepcopy(survey)
-        new_survey.name = survey.name + " (copy)"
-        new_survey.id = None
-        new_survey.save()
-        for question in survey.questions.all():
-            new_question = deepcopy(question)
-            new_question.id = None
-            new_question.survey = new_survey
-            new_question.save()
+        anchor_uri = survey.anchor.uri
+        anchor_uri_len = len(anchor_uri)
+
+        newsurvey, created = Survey.objects.get_or_create(name=survey.name + " (copy)", anchor=survey.anchor, category = survey.category)
+        questions = survey.questions.order_by('id')
+
+        for q in questions:
+            # Create a new question for the new survey
+            newq, created = Question.objects.get_or_create(survey=newsurvey, name=q.name, question_type=q.question_type, _param_values=q._param_values, anchor=q.anchor, seq=q.seq)
+            newq.save()
+
+        newsurvey.save()
+
 class SurveyAdmin(admin.ModelAdmin):
-    #actions = [ copy_surveys, ]
-    pass
+    actions = [ copy_surveys, ]
+
+    def save_model(self, request, obj, form, change):
+        # Ensure that our questions always match up with the form
+        obj.questions.all().update(anchor=obj.anchor)
+        obj.save()
+
 admin_site.register(Survey, SurveyAdmin)
 
 class SurveyResponseAdmin(admin.ModelAdmin):
