@@ -17,6 +17,7 @@ generic_fields = {
     'numeric': {'typeMap': forms.IntegerField, 'attrs': {'widget': forms.TextInput,}, 'widget_attrs': {'class': 'digits '},},
     'date': {'typeMap': forms.DateField,'attrs': {'widget': forms.DateInput,}, 'widget_attrs': {'class': 'ddate ', 'format': '%m-%d-%Y'},},
     'time': {'typeMap': forms.TimeField, 'attrs': {'widget': forms.TimeInput,}, 'widget_attrs': {'class': 'time '},},
+    'file': {'typeMap': forms.FileField, 'attrs': {'widget': forms.ClearableFileInput,}, 'widget_attrs': {'class': 'file'},},
     'phone': {'typeMap': USPhoneNumberField, 'attrs': {'widget': forms.TextInput,}, 'widget_attrs': {'class': 'USPhone '}},
     'email': {'typeMap': forms.EmailField, 'attrs': {'max_length': 30, 'widget': forms.TextInput,}, 'widget_attrs': {'class': 'email '}},
     'state': {'typeMap': USStateField, 'attrs': {'widget': USStateSelect}, 'widget_attrs': {'class': ''}},
@@ -174,3 +175,4 @@ class CustomFormsCache:
             if field in options['fields']: return options['model']                    
         
 cf_cache = CustomFormsCache()
+

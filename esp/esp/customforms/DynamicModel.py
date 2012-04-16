@@ -9,6 +9,7 @@ from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
 from esp.customforms.linkfields import cf_cache
+from esp.qsdmedia.models import root_file_path
 from django.contrib.contenttypes.models import ContentType
 
 class DynamicModelHandler:
@@ -36,6 +37,7 @@ class DynamicModelHandler:
         'numeric': {'typeMap': models.IntegerField, 'attrs': {'null': True, }, 'args': []},
         'date': {'typeMap': models.CharField, 'attrs': {'max_length': 10, }, 'args': []},
         'time': {'typeMap': models.CharField, 'attrs': {'max_length': 10, }, 'args': []},
+        'file': {'typeMap': models.FileField, 'attrs': {'max_length': 200, 'upload_to': root_file_path, }, 'args': []},
         'phone': {'typeMap': models.CharField, 'attrs': {'max_length': 15}, 'args': []},
         'email': {'typeMap': models.CharField, 'attrs': {'max_length': 30,}, 'args':[]},
         'state': {'typeMap': models.CharField, 'attrs': {'max_length': 2}, 'args': []},
@@ -278,3 +280,4 @@ class DynamicModelHandler:
         
 # Giving it an alias that's less of a mouthful        
 DMH = DynamicModelHandler
+

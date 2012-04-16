@@ -10,26 +10,29 @@ from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.customforms.DynamicForm import FormHandler
 from esp.customforms.linkfields import cf_cache
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth.decorators import user_passes_test
 
 from esp.users.models import ESPUser
 from esp.middleware import ESPError
 
-def landing(request):
-    if request.user.is_authenticated() and (ESPUser(request.user).isTeacher() or ESPUser(request.user).isAdministrator()):
-        forms = Form.objects.filter(created_by=request.user)
-        return render_to_response("customforms/landing.html", {'form_list': forms}, context_instance=RequestContext(request))
-    return HttpResponseRedirect('/')    
+def test_func(user):
+    return user.is_authenticated() and (ESPUser(user).isTeacher() or ESPUser(user).isAdministrator())
 
+@user_passes_test(test_func)
+def landing(request):
+    forms = Form.objects.filter(created_by=request.user)
+    return render_to_response("customforms/landing.html", {'form_list': forms}, context_instance=RequestContext(request))
+
+@user_passes_test(test_func)
 def formBuilder(request):
-    if request.user.is_authenticated() and (ESPUser(request.user).isTeacher() or ESPUser(request.user).isAdministrator()):
-        prog_list = Program.objects.all()
-        form_list = Form.objects.filter(created_by=request.user)
-        return render_to_response(
-                                'customforms/index.html', 
-                                {'prog_list': prog_list, 'form_list': form_list, 'only_fkey_models': cf_cache.only_fkey_models.keys()}
-                                ) 
-    return HttpResponseRedirect('/')
+    prog_list = Program.objects.all()
+    form_list = Form.objects.filter(created_by=request.user)
+    return render_to_response(
+                            'customforms/index.html',
+                            {'prog_list': prog_list, 'form_list': form_list, 'only_fkey_models': cf_cache.only_fkey_models.keys()}
+                            )
     
+@user_passes_test(test_func)
 def formBuilderData(request):
     if request.is_ajax():
         if request.method == 'GET':
@@ -67,6 +70,7 @@ def getPerms(request):
             return HttpResponse(json.dumps(perms))
     return HttpResponse(status=400)                                        
 
+@user_passes_test(test_func)
 @transaction.commit_on_success
 def onSubmit(request):
     #Stores form metadata in the database.
@@ -126,6 +130,7 @@ def get_or_create_altered_obj(model, initial_id, **attrs):
 def get_new_or_altered_obj(*args, **kwargs):
     return get_or_create_altered_obj(*args, **kwargs)[0]
 
+@user_passes_test(test_func)
 @transaction.commit_on_success        
 def onModify(request):
     """
@@ -272,6 +277,7 @@ def success(request, form_id):
                                                             'success_url': form.success_url}, 
                                                             context_instance=RequestContext(request))
 
+@user_passes_test(test_func)
 def viewResponse(request, form_id):
     """
     Viewing response data
@@ -286,6 +292,7 @@ def viewResponse(request, form_id):
     else:
         return HttpResponseRedirect('/')
         
+@user_passes_test(test_func)
 def getExcelData(request, form_id):
     """
     Returns the response data as an excel spreadsheet
@@ -303,6 +310,7 @@ def getExcelData(request, form_id):
     response['Content-Disposition']='attachment; filename=%s.xls' % form.title
     return response                   
         
+@user_passes_test(test_func)
 def getData(request):
     """
     Returns response data via Ajax
@@ -319,6 +327,7 @@ def getData(request):
             return HttpResponse(resp_data)
     return HttpResponse(status=400)
         
+@user_passes_test(test_func)
 def getRebuildData(request):
     """
     Returns form metadata for rebuilding via AJAX
@@ -335,6 +344,7 @@ def getRebuildData(request):
             return HttpResponse(metadata)
     return HttpResponse(status=400)    
     
+@user_passes_test(test_func)
 def get_links(request):
     """
     Returns the instances for the specified model, to link to in the form builder.
