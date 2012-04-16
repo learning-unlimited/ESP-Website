@@ -6,13 +6,15 @@
       <span       {% if cls.isAccepted %}
          {% if cls.status==0 %}
              class="approved blue" {# Blue and bold for Unreviewed classes #}
-         {% elif cls.status==-10 %}
+         {% endif %} 
+         {% if cls.status==-10 %}
              class="approved red"   {# red and italic for rejected classes #}
          {% endif %}
       {% else %}
          {% if cls.status==0 %}
              class="unapproved blue"
-         {% elif cls.status==-10 %}
+         {% endif %}
+         {% if cls.status==-10 %}
             class="unapproved red"
          {% endif %}
       {% endif %}
