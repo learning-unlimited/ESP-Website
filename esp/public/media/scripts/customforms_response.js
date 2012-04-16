@@ -87,7 +87,7 @@ var getLayout=function(data) {
 	//Returns the layout for this grid
 	
 	var layout=[];
-	$.each(data, function(idx, val){
+	$j.each(data, function(idx, val){
 		if(val[2] == 'file')
 			layout.push({
 				field:val[0],
@@ -125,7 +125,7 @@ var createGrid=function(form_data){
 		}
 	},
 	document.createElement('div'));
-	
+    
 	dojo.byId("gridContainer").appendChild(grid.domNode);
 	grid.startup();
 };
