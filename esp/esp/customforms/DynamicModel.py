@@ -11,7 +11,7 @@ from esp.users.models import ESPUser
 from esp.program.models import ClassSubject
 from esp.customforms.linkfields import cf_cache
 from esp.qsdmedia.models import root_file_path
-from esp.settings import MEDIA_ROOT
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 
 def get_file_upload_path(instance, filename):
@@ -20,7 +20,7 @@ def get_file_upload_path(instance, filename):
     Files are saved in the directory MEDIA_ROOT/uploaded/Response_[form_id]
     """
     save_dir = 'uploaded/%s' % instance.__class__.__name__
-    save_dir = os.path.join(MEDIA_ROOT, save_dir)
+    save_dir = os.path.join(settings.MEDIA_ROOT, save_dir)
     save_path = os.path.join(save_dir, filename)
     return save_path 
 
