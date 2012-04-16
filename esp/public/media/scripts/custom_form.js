@@ -948,7 +948,7 @@ var renderNormalField=function(item, field_options, data){
     // For now, we trust the user to not make a multi-page form including a FileField.
     // jmoldow, 02/25/2012
     else if(item=='file'){
-		$new_elem=$('<input/>', {
+		$new_elem=$j('<input/>', {
 			type:"file",
 		});
 	}
