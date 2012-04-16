@@ -114,12 +114,12 @@ function manage_class(clsid) {
       font-style: italic;
       color: #900;
    }
-   .red
+   .dashboard_red
    {
    	font-style:italic;
    	color : #FF0000;
    }
-   .blue
+   .dashboard_blue
    {
    	font-weight:bold;
    	color: #3333FF; 
@@ -298,7 +298,9 @@ and <tt>M100-class@{{ EMAIL_HOST }}</tt> will email everyone in the class.
 {% for check in program.checkitems_all_cached %}<td>&nbsp;</td>{% endfor %}
    </tr>
   {% endif %}
-
+  <tr><td class="clsleft classname" colspan="6">
+    Note: <span class="unapproved dashboard_blue">Blue</span> stands for unreviewed classes and <span class="dashboard_red">Red</span> for rejected classes
+  </td></tr>
 {% load class_manage_row %}
   {% for cls in classes %}
   <tr id="{{cls.id}}-row">
