@@ -72,13 +72,14 @@ ESP.declare('ESP.Scheduling.DragDrop', function(){
                     block = block.seq;
                 }
                 target_block._temp_glom = blocks;
-                
+
                 return target_block._temp_accept_flag = true;
             },
             drop: function(e, ui) {
                 var blocks = getBlock()._temp_glom;
                 for (var i = 0; i < blocks.length; i++) {
                     // grr.. stupid JQuery fail (deactivate isn't called on the drop target)
+		    blocks[i]._temp_accept_flag = false;
                     blocks[i].__td.removeClass('dd-highlight');
                 }
             
@@ -87,8 +88,13 @@ ESP.declare('ESP.Scheduling.DragDrop', function(){
                     blocks:blocks, section:ui.draggable.data('section')
                 });
             },
-            activate: function(e, ui) { target.addClass('dd-highlight'); },
-            deactivate: function(e, ui) { target.removeClass('dd-highlight'); }
+            activate: function(e, ui) {
+		target.addClass('dd-highlight');
+	    },
+            deactivate: function(e, ui) {
+		getBlock()._temp_accept_flag = false;
+		target.removeClass('dd-highlight');
+	    }
         }, options || {});
         target.droppable(options);
     };

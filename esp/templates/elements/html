@@ -36,22 +36,6 @@
     <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
     <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
 
-    <!-- Internet Explorer refuses to load media content over HTTP by default
-        when the page has been loaded over HTTPS.  This is a security policy.
-        However, Dojo has HTTP references hard-coded in a few places.  This
-        script below provides a workaround until we stop using Dojo.   -->
-    <script type="text/javascript">
-    djConfig = {
-        modulePaths: {
-            "dojo": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo",
-            "dijit": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dijit",
-            "dojox": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojox"
-        },
-        parseOnLoad: true
-    };
-    </script>
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo/dojo.xd.js"></script>
-
     <script language="JavaScript">
     $j(document).ready(function() {
         update_user_classes();
@@ -61,9 +45,6 @@
 
 {% block stylesheets %}
 <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
-<style type="text/css">
-        @import "https://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css";
-</style>
 {% endblock %}
 
 {% block xtrajs %}{% endblock %}

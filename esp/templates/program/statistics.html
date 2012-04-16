@@ -47,61 +47,65 @@ The default form rendering takes care of this, but the below might be a starting
 {% endif %}
 {% endcomment %}
 
-<form dojoType="dijit.form.Form" id="statistics_form" method="POST" action="/manage/statistics/">
+<form id="statistics_form" method="POST" action="/manage/statistics/">
 
 <div id="statistics_form_contents">
 {% include "program/statistics/form.html" %}
 </div>
 </form>
 
+<script type="text/javascript" src="/media/scripts/ajax_tools.js"></script>
 <script type="text/javascript">
-
-dojo.require("dijit.dijit");
-dojo.require("dojo.parser");
-
-dojo.require("dijit.form.Form");
-dojo.require("dijit.form.Button");
-dojo.require("dijit.form.RadioButton");
-dojo.require("dijit.form.CheckBox");
-dojo.require("dijit.form.Select");
-dojo.require("dijit.form.MultiSelect");
-dojo.require("dijit.form.TextBox");
-dojo.require("dijit.form.NumberTextBox");
-
-function clear_widget(field_name)
-{
-    if (dijit.byId)
-        if (dijit.byId("id_" + field_name)) 
-        {
-            dijit.byId("id_" + field_name).destroy();
-        }
-}
 
 function setup_update(field_name)
 {
-    if (handles[field_name])
-        dojo.disconnect(handles[field_name]);
-        
-    handles[field_name] = dojo.connect(dojo.byId("id_" + field_name), "onchange", function () {
-        xhrArgs={
-            url:'/manage/statistics/?update_form',
-            handleAs:'json',
-            load: apply_fragment_changes,
+    $j("#id_" + field_name).change(function() {
+        var multi_select_data = [];
+        ajax_data = {
             form: 'statistics_form',
-		};
-        var deferred=dojo.xhrPost(xhrArgs);
-        //  console.log(field_name + " changed");
+            csrfmiddlewaretoken: csrf_token(),
+        };
+        $j("#statistics_form :input").each(function() {
+             if ($j(this).is('select') && $j(this).attr("multiple") == "multiple") {
+                 var multArray = [];
+                 $j.each($j(this).serializeArray(), function(index, val) {
+                     multArray.push(val.value);
+                 });
+                 ajax_data[$j(this).attr("name")] = multArray;
+             }
+             else {
+                 $j.each($j(this).serializeArray(), function(index, val) {
+                     ajax_data[val.name] = val.value;
+                 });
+             }
+        });
+
+        $j.ajax({
+            url: "/manage/statistics/?update_form",
+            data: ajax_data,
+            traditional: true,
+            success: function(data) {
+                // Recreate the form with additional fields
+                apply_fragment_changes(data);
+                // Reload the form data for multiple selects
+                $j("#statistics_form :input").each(function() {
+                    if ($j(this).is('select') && $j(this).attr("multiple") == "multiple") {
+                        $j(this).val(ajax_data[$j(this).attr("name")]);
+                    }
+                });
+            },
+            dataType: "json",
+            type: "post"
+        });
     });
 }
-
-var handles = {};
 
 function setup_callbacks()
 {
     {% include "program/statistics/script.js" %}
 }
 
-dojo.addOnLoad(setup_callbacks);
+$j(document).ready(setup_callbacks);
 </script>
 
 <p>

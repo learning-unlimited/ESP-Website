@@ -81,7 +81,7 @@ ESP.declare('ESP.Scheduling.Resources',function(){
             return false;
         }
     });
-    
+
     Resources.Time = Class.create(RClass, {
         type: "Time",
         __defaults__: {
@@ -106,7 +106,8 @@ ESP.declare('ESP.Scheduling.Resources',function(){
     Resources.BlockStatus = {
         NOT_OURS: 1,
         AVAILABLE: 2,
-        RESERVED: 4
+	UNREVIEWED: 3,
+        RESERVED: 4,
     };
     
     Resources.Block = Class.create(RClass, {

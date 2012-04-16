@@ -117,7 +117,7 @@ def lsr_submit(request, program = None):
     # First check whether the user is actually a student.
     if not request.user.isStudent():
         raise ESPError(False), "You must be a student in order to access student registration."
-    
+
     data = json.loads(request.POST['json_data'])
     
     if priority_limit > 1: 
@@ -192,7 +192,7 @@ def lsr_submit(request, program = None):
 
     if len(errors) != 0:
         s = StringIO()
-        pprint(errors, s)
+        print(errors, s)
         mail_admins('Error in class reg', s.getvalue(), fail_silently=True)
 
     cfe = ConfirmationEmailController()
@@ -762,7 +762,7 @@ def statistics(request, program=None):
         #   Handle case where all we want is a new form
         if 'update_form' in request.GET:
             form.hide_unwanted_fields()
-            
+
             #   Return result
             context = {'form': form}
             context['clear_first'] = True
@@ -842,7 +842,6 @@ def statistics(request, program=None):
                 return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
         else:
             #   Form was submitted but there are problems with it
-            print form.errors
             form.hide_unwanted_fields()
             context = {'form': form}
             context['clear_first'] = False
