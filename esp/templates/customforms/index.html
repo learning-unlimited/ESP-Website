@@ -1,18 +1,25 @@
-<html>
-	<head>
-		<title>Custom Forms</title>
-		<script src="/media/scripts/jquery-1.5.1.min.js"></script>
-		<script src="/media/scripts/jquery-ui-1.8.13.custom.min.js"></script>
-		<script src="/media/scripts/json2.js"></script>
-		<script src="/media/scripts/custom_form.js"></script> 
-		 
-		<link rel="stylesheet" type="text/css" href="/media/default_styles/reset-min.css">
-		<link rel="stylesheet" type="text/css" href="/media/default_styles/jquery-ui-1.8.13.custom.css">
-		<link rel="stylesheet" type="text/css" href="/media/default_styles/customforms-style.css">
-		
-	</head>
-	
-	<body>
+{% extends "elements/html" %}
+
+{% block fulltitle %}Custom Forms{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/default_styles/reset-min.css">
+    <link rel="stylesheet" type="text/css" href="/media/default_styles/jquery-ui-1.8.13.custom.css">
+    <link rel="stylesheet" type="text/css" href="/media/default_styles/customforms-style.css">
+{% endblock %}
+
+{% block jquery_version %}
+    <script src="/media/scripts/jquery-1.5.1.min.js"></script>
+    <script src="/media/scripts/jquery-ui-1.8.13.custom.min.js"></script>
+{% endblock %}
+{% block js1 %}
+    {{ block.super }}
+    <script src="/media/scripts/json2.js"></script>
+    <script src="/media/scripts/custom_form.js"></script>
+{% endblock %}
+
+{% block body %}
 		<div class="wrapper">
 			<input type="hidden" id="base_form_id" value="{{ base_form_id }}"/>
 			<div class="preview_area">
@@ -27,7 +34,6 @@
 						</div>
 					</div>		
 				</div>
-				<!--<input type="button" value="Create form" id="sbmt"/>-->
 			</div>
 			
 			<div id="form_toolbox">
@@ -162,5 +168,4 @@
 				<input type="button" id="submit" value="Create Form"/>
 			</div>		
 		</div>	
-	</body>
-</html>			
+{% endblock %}
