@@ -69,7 +69,7 @@ class ContactForm(forms.Form):
     person_type  = forms.ChoiceField(choices = person_type, label=_("I am a(n)"))
 
     hear_about   = forms.ChoiceField(choices = hear_about, label="How did you hear about us?")
-    topic   = forms.ChoiceField(choices = settings.email_choices, label=_("Topic"),
+    topic   = forms.ChoiceField(choices = settings.CONTACTFORM_EMAIL_CHOICES, label=_("Topic"),
                                 help_text = "(This determines who gets the message.)")
 
     subject = forms.CharField(max_length=100, label=_("Subject"))

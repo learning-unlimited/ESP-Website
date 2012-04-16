@@ -287,9 +287,7 @@ except ImportError:
     from utils.sslauth_create_user import find_ssl_user
 SSLAUTH_CREATE_USERNAME_CALLBACK = find_ssl_user
 
-
-
-email_choices = (
+CONTACTFORM_EMAIL_CHOICES = (
     ('esp','Unknown'),
     ('general','General ESP'),
     ('esp-web','Web Site Problems'),
@@ -297,7 +295,7 @@ email_choices = (
     )
 
 # corresponding email addresses                                                                                                                                                     
-email_addresses = {
+CONTACTFORM_EMAIL_ADDRESSES = {
     'esp'     : DEFAULT_EMAIL_ADDRESSES['default'],
     'general'     : DEFAULT_EMAIL_ADDRESSES['default'],
     'esp-web' : DEFAULT_EMAIL_ADDRESSES['support'],
