@@ -367,6 +367,7 @@ then
 	python -m easy_install django-selenium==0.3
 	python -m easy_install django-selenium-test-runner
 	python -m easy_install django-extensions
+    pip install django-formwizard
 	
 	#   This is special for Ubuntu 11.10; if you install python-psycopg2 using apt-get
 	#   you get psycopg2 version 2.4.2, which is too new for the current version of
