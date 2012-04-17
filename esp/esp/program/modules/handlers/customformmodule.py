@@ -40,7 +40,7 @@ from esp.datatree.models import *
 
 from esp.users.models import ESPUser, UserBit, User
 from esp.customforms.models import Form
-from esp.customforms.DynamicForm import FormHandler
+from esp.customforms.DynamicForm import FormHandler, ComboForm
 from esp.customforms.DynamicModel import DynamicModelHandler
 from esp.tagdict.models import Tag
 
@@ -87,8 +87,9 @@ class CustomFormModule(ProgramModuleObj):
         else:
             raise ESPError(False), 'Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the %s_extraform_id Tag.' % tl
         
-        form_wizard = FormHandler(cf, request, request.user).getWizard()
-    
+        form_wizard = FormHandler(cf, request, request.user).get_wizard()
+        form_wizard.curr_request = request
+        
         if request.method == 'POST':
             form = form_wizard.get_form(0, request.POST)
             if form.is_valid():
@@ -96,7 +97,7 @@ class CustomFormModule(ProgramModuleObj):
                 dmh = DynamicModelHandler(cf)
                 form_model = dmh.createDynModel()
                 form_model.objects.filter(user=request.user).delete()
-                form_wizard.done(request, [form])
+                form_wizard.done([form])
                 bit, created = UserBit.valid_objects().get_or_create(user=request.user, qsc=self.program.anchor, verb=self.reg_verb)
                 return self.goToCore(tl)
         else:
@@ -114,12 +115,12 @@ class CustomFormModule(ProgramModuleObj):
                             prev_result_data[field] = getattr(prev_results[0], field).split(';')
                         else:    
                             prev_result_data[field] = getattr(prev_results[0], field)
-                    form_wizard = FormHandler(cf, request, request.user).getWizard(initial_data={0: prev_result_data})
+                    form_wizard = FormHandler(cf, request, request.user).get_wizard(initial_data={0: prev_result_data})
             
             form = form_wizard.get_form(0)
-        
+            
         return render_to_response(self.baseDir()+'custom_form.html', request, (prog, tl), {'prog':prog, 'form': form, 'tl':tl})
-
+    
     class Meta:
         abstract = True
 

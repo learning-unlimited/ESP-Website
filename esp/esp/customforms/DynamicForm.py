@@ -546,12 +546,7 @@ class FormHandler:
                             initial_data[handler.seq].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
         return initial_data
 
-    def get_wizard_view(self, initial_data=None):
-        """
-        Calls the as_view() method of ComboForm with the appropriate arguments and returns the response
-        """
-
-        # First, let's get the initial data for all the steps
+    def get_initial_data(self, initial_data=None):
         if initial_data is None:
             initial_data = {}
         linked_initial_data = self._getInitialData(self.form, self.user)
@@ -562,6 +557,22 @@ class FormHandler:
                 combined_initial_data[i].update(linked_initial_data[i])
             if i in initial_data:
                 combined_initial_data[i].update(initial_data[i])
+        return combined_initial_data
+
+    def get_wizard(self, initial_data=None):
+        combined_initial_data = self.get_initial_data(initial_data)
+        return ComboForm(   form_list = self._getFormList(),
+                            initial_dict = combined_initial_data,
+                            form_handler = self,
+                            form = self.form)
+
+    def get_wizard_view(self, initial_data=None):
+        """
+        Calls the as_view() method of ComboForm with the appropriate arguments and returns the response
+        """
+        
+        # First, let's get the initial data for all the steps
+        combined_initial_data = self.get_initial_data(initial_data)
 
         # Now, return the appropriate response
         return ComboForm.as_view(
