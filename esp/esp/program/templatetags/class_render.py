@@ -3,7 +3,7 @@ from django.template.loader import render_to_string
 from esp.web.util.template import cache_inclusion_tag
 from esp.cache import cache_function
 from esp.users.models import ESPUser
-from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion
+from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion, StudentRegistration
 from esp.program.models.class_ import open_class_category
 from esp.cache.key_set import wildcard
 from esp.tagdict.models import Tag
@@ -76,6 +76,7 @@ def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, colla
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     return render_class_helper(cls, user, prereg_url, filter, timeslot)
 render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
+render_class.cached_function.depend_on_row(lambda: StudentRegistration, lambda reg: {'cls': reg.section.parent_class, 'user': reg.user})
 
 @cache_function
 def render_class_direct(cls, user=None, prereg_url=None, filter=False, timeslot=None):
@@ -113,7 +114,7 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
             errormsg = error1
         else:  # there's some section for which we can add this class; does that hold for this one?
             if section:
-                errormsg = section.cannotAdd(user)
+                errormsg = section.cannotAdd(user, autocorrect_constraints=False)
         
     show_class =  (not filter) or (not errormsg)
     

@@ -40,7 +40,7 @@ from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
 from esp.datatree.models import *
 from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.core.cache import cache
 from django.db.models import Q
 from django.db.models.query import QuerySet
@@ -261,16 +261,14 @@ def _get_type_url(type):
         return self._type_url[type]
 
     return _really_get_type_url
-        
     
 
-    
 class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     
     #from esp.program.models.class_ import ClassCategories
 
-	#customforms definitions
+    #customforms definitions
     form_link_name='Program'
     
     anchor = AjaxForeignKey(DataTree,unique=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
@@ -721,6 +719,14 @@ class Program(models.Model, CustomFormsLinkModel):
             time_sum = time_sum + (t.end - t.start)
         return time_sum
 
+    def dates(self):
+        result = []
+        for ts in self.getTimeSlotList():
+            ts_day = date(ts.start.year, ts.start.month, ts.start.day)
+            if ts_day not in result:
+                result.append(ts_day)
+        return result
+    
     def date_range(self):
         dates = self.getTimeSlots()
         d1 = min(dates).start
@@ -1610,7 +1616,7 @@ class BooleanExpression(models.Model):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
-            print 'Adding duplicate of token %s, type %s, to %s' % (token_or_value.id, token_type.__name__, unicode(self))
+            #   print 'Adding duplicate of token %s, type %s, to %s' % (token_or_value.id, token_type.__name__, unicode(self))
             new_token = token_type()
             #   Copy over fields that don't describe relations
             for item in new_token._meta.fields:
@@ -1662,6 +1668,10 @@ class ScheduleMap:
     def add_section(self, sec):
         for t in sec.timeslot_ids():
             self.map[t].append(sec)
+            
+    def remove_section(self, sec):
+        for t in sec.timeslot_ids():
+            self.map[t].remove(sec)
 
     def __marinade__(self):
         import hashlib
