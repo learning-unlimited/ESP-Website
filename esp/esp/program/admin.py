@@ -93,8 +93,11 @@ class TeacherBioAdmin(admin.ModelAdmin):
     search_fields = ['user__username', 'slugbio', 'bio']
 
 admin_site.register(TeacherBio, TeacherBioAdmin)
-    
-admin_site.register(FinancialAidRequest)
+
+class FinancialAidRequestAdmin(admin.ModelAdmin):
+    list_display = ('user', 'approved', 'reduced_lunch', 'program', 'household_income', 'extra_explaination')
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'id', 'program__anchor__parent__friendly_name', 'program__anchor__friendly_name']
+admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
 
 class Admin_SplashInfo(admin.ModelAdmin):
     list_display = (
