@@ -31,6 +31,25 @@
     <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
     <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
     <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
+    
+    <script type="text/javascript" src="https://d3eoax9i5htok0.cloudfront.net/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        messageStyle: "none",
+        displayAlign: "left",
+        displayIndent: "0em",
+        "HTML-CSS": {
+            styles: {
+                '.MathJax_Display': {
+                    display: "inline"
+                }
+            }
+        }
+    });
+    </script>
+
+    <script type="text/javascript" src="/media/scripts/jsprettify-all-latest.js"></script>
+    <script language="JavaScript"> window.jsprettify.run(); </script>
     {% endblock %}
 
     {% block user_classes %}
@@ -39,26 +58,8 @@
         update_user_classes();
     });
     </script>
-
-    <script type="text/javascript" src="https://d3eoax9i5htok0.cloudfront.net/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">
-  MathJax.Hub.Config({
-    messageStyle: "none",
-    displayAlign: "left",
-    displayIndent: "0em",
-    "HTML-CSS": {
-        styles: {
-            '.MathJax_Display': {
-                display: "inline"
-            }
-        }
-    }
-});
-    </script>
-
-    <script type="text/javascript" src="/media/scripts/jsprettify-all-latest.js"></script>
-    <script language="JavaScript"> window.jsprettify.run(); </script>
     {% endblock %}
+
 {% endblock %}
 
 {% block stylesheets %}
