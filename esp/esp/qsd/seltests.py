@@ -1,9 +1,13 @@
-from django.utils.unittest.case import skipIf
+from django.utils.unittest.case import skipUnless
 from django_selenium.testcases import SeleniumTestCase
 from esp.users.views.make_admin import make_user_admin
 from esp.users.models import ESPUser
 from esp.users.models import UserBit
-import esp.settings
+# Can't do "from django.conf import settings", because this uses
+# the settings from django_selenium
+from django.conf import settings
+import django_selenium.settings as selenium_settings
+from django.contrib.sites.models import Site
 from esp.datatree.models import GetNode
 from esp.seltests import try_normal_login, logout, noActiveAjaxJQuery
 from esp.qsd.models import QuasiStaticData
@@ -13,21 +17,12 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
 from selenium import selenium
 from sys import stdout, stderr, exc_info
-from django_selenium import settings
-import time
-
-# Make sure our varnish settings exist
-if hasattr(esp.settings, 'VARNISH_HOST') and hasattr(esp.settings, 'VARNISH_PORT'):
-    from esp.settings import VARNISH_PORT
-else:
-    # Set this for now, but it shouldn't actually be used
-    VARNISH_PORT = 8000
 
 class TestQsdCachePurging(SeleniumTestCase):
     """
-       This test requires Varnish (or some proxy caching server that accepts PURGE requests)
-       to be set up on the port and host specified in local_settings.py as VARNISH_HOST (a
-       string) and VARNISH_PORT (an int).
+       This test requires Varnish (or some proxy caching server that accepts
+       PURGE requests) to be set up on the port and host specified in
+       local_settings.py as VARNISH_HOST (a string) and VARNISH_PORT (an int).
     """
 
     PASSWORD_STRING = 'password'
@@ -77,10 +72,15 @@ class TestQsdCachePurging(SeleniumTestCase):
         qsd_rec_new.save()
 
         # Set the port that the webdriver will try to access
-        self.driver.testserver_port = VARNISH_PORT
+        self.driver.testserver_port = settings.VARNISH_PORT
 
         # Add the varnish_purge tag
         Tag.objects.get_or_create(key='varnish_purge', value='true')
+
+        # Set up the correct site
+        site = Site.objects.get_current()
+        site.domain = settings.VARNISH_HOST+":"+str(settings.VARNISH_PORT)
+        site.save()
 
     def check_page(self, page):
         self.open_url("/")
@@ -101,14 +101,14 @@ class TestQsdCachePurging(SeleniumTestCase):
         self.open_url(page)
         self.failUnless(self.is_text_present(self.TEST_STRING))
 
-    @skipIf(not hasattr(esp.settings, 'VARNISH_HOST') or not hasattr(esp.settings, 'VARNISH_PORT'), "Varnish settings weren't set")
+    @skipUnless(hasattr(settings, 'VARNISH_HOST') and hasattr(settings, 'VARNISH_PORT'), "Varnish settings weren't set")
     def test_inline(self):
         self.check_page("/")
 
-    @skipIf(not hasattr(esp.settings, 'VARNISH_HOST') or not hasattr(esp.settings, 'VARNISH_PORT'), "Varnish settings weren't set")
+    @skipUnless(hasattr(settings, 'VARNISH_HOST') and hasattr(settings, 'VARNISH_PORT'), "Varnish settings weren't set")
     def test_regular(self):
         self.check_page("/test.html")
 
     def tearDown(self):
         super(TestQsdCachePurging, self).tearDown()
-        self.driver.testserver_port = getattr(settings, 'SELENIUM_TESTSERVER_PORT')
+        self.driver.testserver_port = getattr(selenium_settings, 'SELENIUM_TESTSERVER_PORT')
