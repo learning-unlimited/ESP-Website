@@ -60,7 +60,7 @@ var createGrid=function(form_data){
 	colNames: $j.map(form_data['questions'], function(val, index) {
 	    return val[1];
 	}),
-	colModel: j$.map(form_data['questions'], function(val, index) {
+	colModel: $j.map(form_data['questions'], function(val, index) {
 	    return {name:val[0], index: val[0]}
 	}),
 	caption: "Form responses",
@@ -72,7 +72,6 @@ var createGrid=function(form_data){
 			{}, {}, {}, 
 			{multipleSearch: true, closeOnEscape: true},
 		        {closeOnEscape: true});
-
     $j.each(form_data['answers'], function(index, val) {
 	delete val.id;
 	$j("#jqGrid").jqGrid('addRowData', index+1, val);
