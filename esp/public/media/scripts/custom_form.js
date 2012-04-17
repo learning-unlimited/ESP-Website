@@ -1186,7 +1186,7 @@ var addElement=function(item, $prevField) {
 var submit=function() {
 	//submits the created form to the server
 	
-	var form={'title':$j('#form_title').html(), 'desc':$j('#form_description').html(), 'anonymous':$j('#id_anonymous').attr('checked'), 'pages':[]}, section, elem, page, section_seq, page_seq=0;
+	var form={'title':$j('#form_title').html(), 'desc':$j('#form_description').html(), 'anonymous':($j('#id_anonymous').attr('checked') == "checked"), 'pages':[]}, section, elem, page, section_seq, page_seq=0;
 	form['link_type']=$j('#links_id_main').val();
 	if(form['link_type']!='-1' && $j('#links_id_specify').val()=='particular')
 		form['link_id']=$j('#links_id_pick').val();
