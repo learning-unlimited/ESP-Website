@@ -904,7 +904,17 @@ class ClassSection(models.Model):
         return self.meeting_times.all().values_list('id', flat=True)
     timeslot_ids.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda instance, object: {'self': instance})
 
-    def cannotAdd(self, user, checkFull=True, use_cache=True):
+    def cannotRemove(self, user):
+        relevantConstraints = self.parent_program.getScheduleConstraints()
+        if relevantConstraints:
+            sm = ScheduleMap(user, self.parent_program)
+            sm.remove_section(self)
+            for exp in relevantConstraints:
+                if not exp.evaluate(sm, recursive=False):
+                    return "You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this." % exp.requirement.label
+        return False
+
+    def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
         # Test any scheduling constraints
         relevantConstraints = self.parent_program.getScheduleConstraints()
@@ -916,8 +926,8 @@ class ClassSection(models.Model):
             sm.add_section(self)
 
             for exp in relevantConstraints:
-                if not exp.evaluate(sm):
-                    return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title(), exp.requirement.label)
+                if not exp.evaluate(sm, recursive=autocorrect_constraints):
+                    return "Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this." % (self.title(), exp.requirement.label)
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         if not scrmi.use_priority:
@@ -1774,9 +1784,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         # check to see if there's a conflict with each section of the subject, or if the user
         # has already signed up for one of the sections of this class
         for section in self.get_sections():
-            res = section.cannotAdd(user, checkFull)
+            res = section.cannotAdd(user, checkFull, autocorrect_constraints=False)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
+        #   Pass on any errors that were triggered by the individual sections
+        if res:
+            return res
 
         # res can't have ever been False--so we must have an error. Pass it along.
         return 'This class conflicts with your schedule!'
