@@ -1847,15 +1847,20 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         #   to more hours of teaching than the program allows.
         avail = Event.collapse(user.getAvailableTimes(self.parent_program, ignore_classes=True), tol=timedelta(minutes=15))
         time_avail = 0.0
+        #   Start with amount of total time pledged as available
         for tg in avail:
             td = tg.end - tg.start
             time_avail += (td.seconds / 3600.0)
+        #   Subtract out time already pledged for teaching classes other than this one
         for cls in user.getTaughtClasses(self.parent_program):
-            for sec in cls.get_sections():
-                time_avail -= float(str(sec.duration))
+            if cls.id != self.id:
+                for sec in cls.get_sections():
+                    time_avail -= float(str(sec.duration))
+        #   Add up time that would be needed to teach this class
         time_needed = 0.0
         for sec in self.get_sections():
             time_needed += float(str(sec.duration))
+        #   See if the available time exceeds the required time
         if time_needed > time_avail:
             return True
             

@@ -78,7 +78,7 @@ class AvailabilityModule(ProgramModuleObj):
 
     def isCompleted(self):
         """ Make sure that they have indicated sufficient availability for all classes they have signed up to teach. """
-        available_slots = get_current_request().user.getAvailableTimes(self.program, ignore_classes=False)
+        available_slots = get_current_request().user.getAvailableTimes(self.program, ignore_classes=True)
         
         #   Check number of timeslots against Tag-specified minimum
         if Tag.getTag('min_available_timeslots'):
@@ -174,7 +174,10 @@ class AvailabilityModule(ProgramModuleObj):
                 return self.goToCore(tl)
         
         #   Show new form
-        available_slots = teacher.getAvailableTimes(self.program)
+        available_slots = teacher.getAvailableTimes(self.program, True)
+        # must set the ignore_classes=True parameter above, otherwise when a teacher tries to edit their
+        # availability, it will show their scheduled times as unavailable.
+
         if not (len(available_slots) or blank): # I'm not sure whether or not we want the "or blank"
             #   If they didn't enter anything, make everything checked by default.
             available_slots = self.program.getTimeSlots()

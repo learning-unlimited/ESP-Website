@@ -483,7 +483,7 @@ class ESPUser(User, AnonymousUser):
 
         valid_events = Event.objects.filter(useravailability__user=self, anchor=program.anchor).order_by('start')
 
-        if ignore_classes:
+        if not ignore_classes:
             #   Subtract out the times that they are already teaching.
             other_sections = self.getTaughtSections(program)
 
