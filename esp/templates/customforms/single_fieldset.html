@@ -1,0 +1,32 @@
+      <fieldset class="{{ fieldset.classes }}">
+	  {% if fieldset.legend %}
+	    <h2 class="sect_title">{{ fieldset.legend }}</h2>
+	  {% endif %}
+	  {% if fieldset.description %}
+	    <em class="sect_desc">{{ fieldset.description }}</em>
+	  {% endif %}
+	  <hr/>
+	  <div class="field_list">
+	  {% for field in fieldset %}
+	    {% if field.is_hidden %}
+	      {{ field }}
+	    {% else %}
+	      <div{{ field.row_attrs }}>
+	        {{ field.errors }}
+            {% if field.field.is_dummy_field %}
+                <div class="dummy_field_heading">{{ field.label_tag }}</div>
+                <div class="dummy_field_text">{{ field.help_text }}</div>
+            {% else %}
+				
+                {{ field.label_tag }}
+                {% if field.help_text %}
+                    <img src="/media/default_images/question_mark.jpg" class="qmark" title="{{field.help_text}}">
+                {% endif %}
+            {% endif %}
+		  <div class="form_field">{{ field }}</div>
+		</div>
+	    {% endif %}
+		
+	  {% endfor %}
+	  </div>
+	  </fieldset>

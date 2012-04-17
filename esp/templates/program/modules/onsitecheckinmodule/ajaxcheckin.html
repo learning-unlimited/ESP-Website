@@ -2,7 +2,7 @@
 
 {% block title %}{{program.niceName}} Management{% endblock %}
 
-{% block subsection_name %}Check-in for {{program.niceName}}{% endblock %}
+{% block subsection_name %}Rapid check-in for {{program.niceName}}{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
@@ -17,11 +17,11 @@
 <br />
 
 <br /><br />
-<h1>Checkin &mdash; For {{ program.niceName }}</h1>
+<h1>Rapid Checkin &mdash; For {{ program.niceName }}</h1>
 
 <div id='program_form'>
 
-<p style="text-align: center">
+<p style="margin: 10px">
 Welcome to student check-in for {{program.niceName}}.  Make sure that the students have handed in all necessary forms and payments.
 
 {% if message %}
@@ -53,6 +53,11 @@ Welcome to student check-in for {{program.niceName}}.  Make sure that the studen
 <br />
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "onsite:status" %}
+
+<h1>Advanced Checkin &mdash; For {{ program.niceName }}</h1>
+<p style="margin: 10px;">
+  <a href="/onsite/{{ program.url }}/checkin">Click here to view and edit the check-in of a user</a>
+</p>
 
 </div>
 

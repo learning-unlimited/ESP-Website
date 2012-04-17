@@ -1,7 +1,7 @@
 from django import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth import REDIRECT_FIELD_NAME
-from esp.settings import DEFAULT_REDIRECT
+from django.conf import settings
 from esp.utils.forms import SizedCharField, FormWithRequiredCss
 from esp.utils.widgets import BlankSelectWidget
 from esp.web.util.main import render_to_response
@@ -32,7 +32,7 @@ def login_byschool(request, *args, **kwargs):
     if request.user.is_authenticated():
         return registration_redirect(request)
         
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, DEFAULT_REDIRECT)
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, settings.DEFAULT_REDIRECT)
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)
@@ -53,7 +53,7 @@ def login_byschool_pickname(request, school_id, *args, **kwargs):
     
     if request.user.is_authenticated():
         return registration_redirect(request)
-    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, DEFAULT_REDIRECT)
+    redirect_to = request.REQUEST.get(REDIRECT_FIELD_NAME, settings.DEFAULT_REDIRECT)
     redirect_str = u''
     if redirect_to:
         redirect_str = u'?%s=%s' % (REDIRECT_FIELD_NAME, redirect_to)

@@ -738,9 +738,13 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         #   Narrow this down to one class if we're using the priority system.
         if request.GET.has_key('sec_id'):
             oldclasses = oldclasses.filter(id=request.GET['sec_id'])
-        #   Take the student out
+        #   Take the student out if constraints allow
         for sec in oldclasses:
-            sec.unpreregister_student(request.user)
+            result = sec.cannotRemove(request.user)
+            if result:
+                return result
+            else:
+                sec.unpreregister_student(request.user)
         #   Return the ID of classes that were removed.
         return oldclasses.values_list('id', flat=True)
 
@@ -749,7 +753,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @meets_any_deadline(['/Classes/OneClass','/Removal'])
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
-        if self.clearslot_logic(request, tl, one, two, module, extra, prog):
+        result = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        if isinstance(result, basestring):
+            raise ESPError(False), result
+        else:
             return self.goToCore(tl)
 
     @aux_call

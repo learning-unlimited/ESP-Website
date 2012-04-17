@@ -40,7 +40,7 @@ from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
 from esp.datatree.models import *
 from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.core.cache import cache
 from django.db.models import Q
 from django.db.models.query import QuerySet
@@ -49,8 +49,7 @@ from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError, AjaxError
 from esp.cache import cache_function
 from esp.tagdict.models import Tag
-from esp.settings import DEFAULT_HOST
-
+from django.conf import settings
 from collections import defaultdict
 import simplejson as json
 
@@ -262,16 +261,14 @@ def _get_type_url(type):
         return self._type_url[type]
 
     return _really_get_type_url
-        
     
 
-    
 class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     
     #from esp.program.models.class_ import ClassCategories
 
-	#customforms definitions
+    #customforms definitions
     form_link_name='Program'
     
     anchor = AjaxForeignKey(DataTree,unique=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
@@ -592,6 +589,14 @@ class Program(models.Model, CustomFormsLinkModel):
     getScheduleConstraints.depend_on_model(get_sc_model)
     getScheduleConstraints.depend_on_model(get_bt_model)
 
+    def lock_schedule(self, lock_level=1):
+        """ Locks all schedule assignments for the program, for convenience
+            (e.g. between scheduling some sections manually and running
+            automatic scheduling).
+        """
+        from esp.resources.models import ResourceAssignment
+        ResourceAssignment.objects.filter(target__parent_class__parent_program=self, lock_level__lt=lock_level).update(lock_level=lock_level)
+
     def isConfirmed(self, espuser):
         v = GetNode('V/Flags/Public')
         userbits = UserBit.objects.filter(verb = v, user = espuser,
@@ -714,6 +719,14 @@ class Program(models.Model, CustomFormsLinkModel):
             time_sum = time_sum + (t.end - t.start)
         return time_sum
 
+    def dates(self):
+        result = []
+        for ts in self.getTimeSlotList():
+            ts_day = date(ts.start.year, ts.start.month, ts.start.day)
+            if ts_day not in result:
+                result.append(ts_day)
+        return result
+    
     def date_range(self):
         dates = self.getTimeSlots()
         d1 = min(dates).start
@@ -1476,7 +1489,7 @@ class FinancialAidRequest(models.Model):
 
 
         string = "%s (%s@%s) for %s (%s, %s) %s"%\
-                 (ESPUser(self.user).name(), self.user.username, DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
+                 (ESPUser(self.user).name(), self.user.username, settings.DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
 
         if self.done:
             string = "Finished: [" + string + "]"
@@ -1603,7 +1616,7 @@ class BooleanExpression(models.Model):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
-            print 'Adding duplicate of token %s, type %s, to %s' % (token_or_value.id, token_type.__name__, unicode(self))
+            #   print 'Adding duplicate of token %s, type %s, to %s' % (token_or_value.id, token_type.__name__, unicode(self))
             new_token = token_type()
             #   Copy over fields that don't describe relations
             for item in new_token._meta.fields:
@@ -1655,6 +1668,10 @@ class ScheduleMap:
     def add_section(self, sec):
         for t in sec.timeslot_ids():
             self.map[t].append(sec)
+            
+    def remove_section(self, sec):
+        for t in sec.timeslot_ids():
+            self.map[t].remove(sec)
 
     def __marinade__(self):
         import hashlib

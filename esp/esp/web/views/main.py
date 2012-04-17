@@ -58,13 +58,14 @@ from esp.web.views.navBar import makeNavBar
 from esp.web.views.myesp import myesp_handlers
 from esp.web.views.archives import archive_handlers
 from esp.middleware import ESPError
-from esp.web.forms.contact_form import ContactForm, email_addresses
+from esp.web.forms.contact_form import ContactForm
 from esp.tagdict.models import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 
 from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
 from django.core.mail import mail_admins
+from django.conf import settings
 
 from django.views.decorators.csrf import csrf_exempt
 
@@ -343,7 +344,7 @@ def contact(request, section='esp'):
 
 
 			try:
-				to_email.append(email_addresses[form.cleaned_data['topic'].lower()])
+				to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
 			except KeyError:
 				to_email.append(fallback_address)
 

@@ -733,7 +733,7 @@ class ClassSection(models.Model):
         cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
         cache.delete(cache_key)
     
-    def assign_room(self, base_room, compromise=True, clear_others=False, allow_partial=False):
+    def assign_room(self, base_room, compromise=True, clear_others=False, allow_partial=False, lock=0):
         """ Assign the classroom given, at the times needed by this class. """
         rooms_to_assign = base_room.identical_resources().filter(event__in=list(self.meeting_times.all()))
         
@@ -756,7 +756,7 @@ class ClassSection(models.Model):
         
         for i, r in enumerate(rooms_to_assign):
             r.clear_schedule_cache(self.parent_program)
-            result = self.assignClassRoom(r)
+            result = self.assignClassRoom(r, lock)
             if not result:
                 status = False
                 occupiers_str = ''
@@ -875,7 +875,7 @@ class ClassSection(models.Model):
     def clearFloatingResources(self):
         self.resourceassignments().delete()
 
-    def assignClassRoom(self, classroom):
+    def assignClassRoom(self, classroom, lock_level=0):
         #   Assign an individual resource to this class.
         from esp.resources.models import ResourceAssignment
         
@@ -885,15 +885,36 @@ class ClassSection(models.Model):
             new_assignment = ResourceAssignment()
             new_assignment.resource = classroom
             new_assignment.target = self
+            new_assignment.lock_level = lock_level
             new_assignment.save()
             return True
+
+    """ These two functions make it easier to set whether a section is fair game
+        for adjustment by automatic scheduling. """
+
+    def lock_schedule(self, lock_level=1):
+        self.resourceassignment_set.all().update(lock_level=lock_level)
+        
+    def unlock_schedule(self, lock_level=0):
+        self.resourceassignment_set.all().update(lock_level=lock_level)
+
 
     @cache_function
     def timeslot_ids(self):
         return self.meeting_times.all().values_list('id', flat=True)
     timeslot_ids.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda instance, object: {'self': instance})
 
-    def cannotAdd(self, user, checkFull=True, use_cache=True):
+    def cannotRemove(self, user):
+        relevantConstraints = self.parent_program.getScheduleConstraints()
+        if relevantConstraints:
+            sm = ScheduleMap(user, self.parent_program)
+            sm.remove_section(self)
+            for exp in relevantConstraints:
+                if not exp.evaluate(sm, recursive=False):
+                    return "You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this." % exp.requirement.label
+        return False
+
+    def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
         # Test any scheduling constraints
         relevantConstraints = self.parent_program.getScheduleConstraints()
@@ -905,8 +926,8 @@ class ClassSection(models.Model):
             sm.add_section(self)
 
             for exp in relevantConstraints:
-                if not exp.evaluate(sm):
-                    return "You're violating a scheduling constraint.  Adding <i>%s</i> to your schedule requires that you: %s." % (self.title(), exp.requirement.label)
+                if not exp.evaluate(sm, recursive=autocorrect_constraints):
+                    return "Adding <i>%s</i> to your schedule requires that you %s.  You can go back and correct this." % (self.title(), exp.requirement.label)
         
         scrmi = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
         if not scrmi.use_priority:
@@ -1041,14 +1062,14 @@ class ClassSection(models.Model):
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
 
     def cancel(self, email_students=True, explanation=None):
-        from esp.settings import INSTITUTION_NAME, ORGANIZATION_SHORT_NAME, DEFAULT_EMAIL_ADDRESSES
+        from django.conf import settings
         from django.contrib.sites.models import Site
         from esp.dbmail.models import send_mail
 
         student_verbs = ['Enrolled', 'Interested', 'Priority/1']
 
         context = {'sec': self, 'prog': self.parent_program, 'explanation': explanation}
-        context['full_group_name'] = Tag.getTag('full_group_name') or '%s %s' % (INSTITUTION_NAME, ORGANIZATION_SHORT_NAME)
+        context['full_group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['site_url'] = Site.objects.get_current().domain
         context['email_students'] = email_students
         context['num_students'] = self.num_students(student_verbs)
@@ -1059,7 +1080,7 @@ class ClassSection(models.Model):
             #   Send e-mail to each student
             for student in self.students(student_verbs):
                 to_email = ['%s <%s>' % (student.name(), student.email)]
-                from_email = '%s at %s <%s>' % (self.parent_program.anchor.parent.friendly_name, INSTITUTION_NAME, self.parent_program.director_email)
+                from_email = '%s at %s <%s>' % (self.parent_program.anchor.parent.friendly_name, settings.INSTITUTION_NAME, self.parent_program.director_email)
                 msgtext = template.render(Context({'user': student}))
                 send_mail(email_title, msgtext, from_email, to_email)
 
@@ -1763,9 +1784,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         # check to see if there's a conflict with each section of the subject, or if the user
         # has already signed up for one of the sections of this class
         for section in self.get_sections():
-            res = section.cannotAdd(user, checkFull)
+            res = section.cannotAdd(user, checkFull, autocorrect_constraints=False)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
+        #   Pass on any errors that were triggered by the individual sections
+        if res:
+            return res
 
         # res can't have ever been False--so we must have an error. Pass it along.
         return 'This class conflicts with your schedule!'
@@ -1836,15 +1860,20 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         #   to more hours of teaching than the program allows.
         avail = Event.collapse(user.getAvailableTimes(self.parent_program, ignore_classes=True), tol=timedelta(minutes=15))
         time_avail = 0.0
+        #   Start with amount of total time pledged as available
         for tg in avail:
             td = tg.end - tg.start
             time_avail += (td.seconds / 3600.0)
+        #   Subtract out time already pledged for teaching classes other than this one
         for cls in user.getTaughtClasses(self.parent_program):
-            for sec in cls.get_sections():
-                time_avail -= float(str(sec.duration))
+            if cls.id != self.id:
+                for sec in cls.get_sections():
+                    time_avail -= float(str(sec.duration))
+        #   Add up time that would be needed to teach this class
         time_needed = 0.0
         for sec in self.get_sections():
             time_needed += float(str(sec.duration))
+        #   See if the available time exceeds the required time
         if time_needed > time_avail:
             return True
             

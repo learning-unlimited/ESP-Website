@@ -39,6 +39,14 @@
   <th class="smaller">Total # of Class Sections</th>
   <td>{{ vitals.classsections.count }}</td>
 </tr>
+{% for cat in categories %}
+{% if cat.category == "Lunch" %}
+<tr>
+  <th class="smaller">Total # of Lunch Classes</th>
+  <td>{{ cat.num_subjects }}</td>
+</tr>
+{% endif %}
+{% endfor %}
 <tr>
   <th class="smaller">Total # of Classes <span style="color: #00C;">Unreviewed</span></th>
   <td>{{ vitals.classunreviewed.count }}</td>

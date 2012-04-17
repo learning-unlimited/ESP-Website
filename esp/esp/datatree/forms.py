@@ -9,8 +9,7 @@ class AjaxTreeSelectorWidget(forms.Widget):
     """ A widget that shows a list of tree names and stores the ID of the selected tree name. """
     def render(self, name, value, attrs={}):
         #   Load HTML from template
-        from esp.settings import TEMPLATE_DIRS
-
+        from django.conf import settings
         self.attrs.update(attrs)
         
         try:
@@ -25,7 +24,7 @@ class AjaxTreeSelectorWidget(forms.Widget):
         
         context = {'field_name': name, 'initial_node': initial_node, 'root': root}
 
-        return loader.render_to_string(TEMPLATE_DIRS[0]+'/datatree/tree_select.html', context)
+        return loader.render_to_string(settings.TEMPLATE_DIRS[0]+'/datatree/tree_select.html', context)
 
 class AjaxTreeField(forms.IntegerField):
     widget = AjaxTreeSelectorWidget

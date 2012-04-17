@@ -15,7 +15,7 @@ function addWikiFormattingToolbar(jq) {
   function addButton(id, title, fn) {
     new_div.append('<a href="#" title="'+title+'" id="'+id+'"></a>');
     new_a = new_div.children("#"+id);
-    a = $(new_a).get(0);
+    a = $j(new_a).get(0);
     a.onclick = function() { try { fn() } catch (e) { } return false };
     a.tabIndex = 400;
     new_a.append('<img src="'+media_url+'images/markdownbar/'+id+'.png" '
@@ -89,9 +89,9 @@ function addWikiFormattingToolbar(jq) {
 }
 
 
-$(document).ready(function() {
-  $("textarea.markdown").each( function(i) {
-    addWikiFormattingToolbar($(this));
+$j(document).ready(function() {
+  $j("textarea.markdown").each( function(i) {
+    addWikiFormattingToolbar($j(this));
   });
 
 });

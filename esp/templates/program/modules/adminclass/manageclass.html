@@ -15,10 +15,6 @@
 
 <h1>Manage Class {{ class.id }}: {{ class.title }}</h1>
 
-<p>
-<b>Class description: </b><tt>{{ class.class_info }}</tt>
-</p>
-
 <div id="program_form">
 
 <table align="center" width="500">
@@ -42,8 +38,32 @@
             <span style="font-weight: bold; color: #C00;">Rejected</span>
             {% endif %}
             {% else %}
-            <span style="font-weight: bold; color: #00C;">Unreviewed</span>
+            <span style="font-weight: bold; color: #00C;">Unreviewed (<a href="/manage/{{ program.getUrlBase }}/approveclass/{{ class.id }}">Approve Now</a>)</span>
             {% endif %}
+        </td>
+    </tr>
+    <tr>
+        <th class="smaller">Course Description:</th>
+        <td>
+            {{ class.class_info }}
+        </td>
+    </tr>
+    <tr>
+        <th class="smaller">Prerequisites:</th>
+        <td>
+            {{ class.prereqs }}
+        </td>
+    </tr>
+    <tr>
+        <th class="smaller">Room Request:</th>
+        <td>
+            {{ class.requested_room }}
+        </td>
+    </tr>
+    <tr>
+        <th class="smaller">Planned Purchases:</th>
+        <td>
+            {{ class.purchase_requests }}
         </td>
     </tr>
     <tr>

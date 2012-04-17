@@ -42,7 +42,6 @@ from esp.web.util.main import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.qsdmedia.models import Media
 from esp.lib.markdownaddons import ESPMarkdown
-from esp.settings import MEDIA_ROOT, MEDIA_URL
 from os.path import basename, dirname
 from datetime import datetime
 from django.core.cache import cache

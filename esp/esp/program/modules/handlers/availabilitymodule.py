@@ -44,7 +44,7 @@ from esp.tagdict.models          import Tag
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser
 from esp.resources.models        import ResourceType, Resource
-from esp.settings                import SERVER_EMAIL, EMAIL_HOST_SENDER
+from django.conf import settings
 from django.template.loader      import render_to_string
 from esp.dbmail.models           import send_mail
 from datetime                    import timedelta, datetime
@@ -78,7 +78,7 @@ class AvailabilityModule(ProgramModuleObj):
 
     def isCompleted(self):
         """ Make sure that they have indicated sufficient availability for all classes they have signed up to teach. """
-        available_slots = get_current_request().user.getAvailableTimes(self.program, ignore_classes=False)
+        available_slots = get_current_request().user.getAvailableTimes(self.program, ignore_classes=True)
         
         #   Check number of timeslots against Tag-specified minimum
         if Tag.getTag('min_available_timeslots'):
@@ -161,7 +161,7 @@ class AvailabilityModule(ProgramModuleObj):
                 
                 #   Send an e-mail showing availability to directors and teachers
                 email_title = 'Availability for %s: %s' % (self.program.niceName(), teacher.name())
-                email_from = '%s Registration System <server@%s>' % (self.program.anchor.parent.name, EMAIL_HOST_SENDER)
+                email_from = '%s Registration System <server@%s>' % (self.program.anchor.parent.name, settings.EMAIL_HOST_SENDER)
                 email_context = {'teacher': teacher,
                                  'timeslots': timeslots,
                                  'program': self.program,
@@ -174,7 +174,10 @@ class AvailabilityModule(ProgramModuleObj):
                 return self.goToCore(tl)
         
         #   Show new form
-        available_slots = teacher.getAvailableTimes(self.program)
+        available_slots = teacher.getAvailableTimes(self.program, True)
+        # must set the ignore_classes=True parameter above, otherwise when a teacher tries to edit their
+        # availability, it will show their scheduled times as unavailable.
+
         if not (len(available_slots) or blank): # I'm not sure whether or not we want the "or blank"
             #   If they didn't enter anything, make everything checked by default.
             available_slots = self.program.getTimeSlots()

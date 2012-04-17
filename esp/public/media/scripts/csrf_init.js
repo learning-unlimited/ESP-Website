@@ -14,8 +14,8 @@ function add_csrf_token()
 }
 
 function set_onsubmit()
-{ 
-    $j("form[method=post]").submit(function() { return check_csrf_cookie(this); })
+{
+    $j("form[method=post]").submit(function() { return check_csrf_cookie(this); });
 }
 
 function refresh_csrf_cookie()
