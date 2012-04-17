@@ -762,7 +762,7 @@ def statistics(request, program=None):
         #   Handle case where all we want is a new form
         if 'update_form' in request.GET:
             form.hide_unwanted_fields()
-            
+
             #   Return result
             context = {'form': form}
             context['clear_first'] = True
@@ -842,7 +842,6 @@ def statistics(request, program=None):
                 return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
         else:
             #   Form was submitted but there are problems with it
-            print form.errors
             form.hide_unwanted_fields()
             context = {'form': form}
             context['clear_first'] = False

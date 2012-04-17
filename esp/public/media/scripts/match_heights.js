@@ -21,12 +21,7 @@ match_heights = function(div_ids){
         d=divs[i];
         contDivs[contDivs.length]=d;
         // determine height for <div> element
-        if(d.offsetHeight){
-             divHeight=d.offsetHeight;
-        }
-        else if(d.style.pixelHeight){
-             divHeight=d.style.pixelHeight;
-        }
+	divHeight = $j(d).height();
         // calculate maximum height
         maxHeight=Math.max(maxHeight,divHeight);
      }

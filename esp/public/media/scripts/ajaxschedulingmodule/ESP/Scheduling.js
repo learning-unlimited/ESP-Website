@@ -10,6 +10,9 @@ ESP.Scheduling = function(){
         ESP.Scheduling.classes_by_time_type = null;
         ESP.Scheduling.ms_classes_by_time = null;
 
+        this.directory = new ESP.Scheduling.Widgets.Directory([]);
+        this.searchbox = new ESP.Scheduling.Widgets.SearchBox(this.directory);
+
         var pd = this.data = process_data(test_data_set);
         this.raw_data = test_data_set;
         if (!this.status) {
@@ -29,15 +32,12 @@ ESP.Scheduling = function(){
             this.roomfilter = new ESP.Scheduling.Widgets.RoomFilter(this.matrix);
         else
             this.roomfilter.restore(this.matrix);
-        this.directory = new ESP.Scheduling.Widgets.Directory(pd.sections);
-        this.searchbox = new ESP.Scheduling.Widgets.SearchBox(this.directory);
         this.garbage   = new ESP.Scheduling.Widgets.GarbageBin();
         $j('#directory-target').text('');
         $j('#directory-target').append(this.searchbox.el);
         $j('#directory-target').append(this.garbage.el.addClass('float-right'));
         $j('#directory-target').append(this.directory.el);
     
-        //ESP.Utilities.evm.bind('drag_started',function(data){alert('!!!');});
         ESP.Utilities.evm.bind('drag_dropped', function(event, data){
             var extra = {
                 blocks:data.blocks, section:data.section
@@ -80,6 +80,8 @@ ESP.Scheduling = function(){
     
     // process data
     function process_data(data){
+	console.log("Processing raw data");
+	console.log(data);
         var processed_data = {
             times: [],
             rooms: [],
@@ -88,34 +90,34 @@ ESP.Scheduling = function(){
             block_index: {},
             teachers: [],
             schedule_assignments: [],
-            lunch_timeslots: []
+	    resource_types: [],
         };
 
         processed_data.schedule_assignments = data.schedule_assignments;
-        processed_data.lunch_timeslots = data.lunch_timeslots;
 
         var Resources = ESP.Scheduling.Resources;
 
         // resourcetypes
-        for (var i = 0; i < data.resourcetypes.length; i++) {
-            var rt = data.resourcetypes[i];
+        for (var i in data.resource_types) {
+	    // Handle prototype adding random stuff
+	    if (typeof data.resource_types[i] === 'function') continue;
+
+            var rt = data.resource_types[i];
             Resources.create('RoomResource', { uid: rt.uid, text: rt.name, description: rt.description, attributes: rt.attributes });
         }
 
         // times
-        for (var i = 0; i < data.times.length; i++) {
-            var t = data.times[i];
+        for (var i in data.timeslots) {
+	    // Handle prototype being unhappy
+	    if (typeof data.timeslots[i] === 'function') {continue;}
+            var t = data.timeslots[i];
             // constructors for native classes can't be called via apply()... :-(
             var start = new Date(t.start[0],t.start[1],t.start[2],t.start[3],t.start[4],t.start[5]).getTime();
             var end = new Date(t.end[0],t.end[1],t.end[2],t.end[3],t.end[4],t.end[5]).getTime();
             var r;
             processed_data.times.push(r =
                     Resources.create('Time',
-                        { uid: t.id, text: t.short_description, start: start, end: end, length: end - start + 15*60000 }));
-            if (processed_data.lunch_timeslots.indexOf(r.uid) != -1)
-                r.is_lunch = true;
-            else
-                r.is_lunch = false;
+				     { uid: t.id, text: t.short_description, start: start, end: end, length: end - start + 15*60000, is_lunch: t.is_lunch?t.is_lunch:false }));
             // console.log("Added block " + r.text + " (" + r.length + " ms)");
         }
         processed_data.times.sort(function(x,y){
@@ -130,7 +132,10 @@ ESP.Scheduling = function(){
 
         // rooms / blocks
         var BlockStatus = Resources.BlockStatus;
-        for (var i = 0; i < data.rooms.length; i++) {
+        for (var i in data.rooms) {
+	    // Deal with prototype putting random functions in everything
+	    if (typeof data.rooms[i] === 'function') { continue; }
+
             var r = data.rooms[i];
             var assd_resources =  r.associated_resources.map(function(x){
                 var res = Resources.get('RoomResource',x);
@@ -139,10 +144,10 @@ ESP.Scheduling = function(){
             var room = Resources.create('Room',{
                 uid: r.uid,
                 text: r.text,
-                block_contents: ESP.Utilities.genPopup(r.text, {
-                    'Size:': r.num_students.toString(), 
-                    'Resources:': assd_resources
-                    }, true),
+                block_contents: ESP.Utilities.genPopup("r-" + r.uid, r.text, {
+		    'Size:': r.num_students.toString(),
+		    'Resources:': assd_resources,
+		}, null, false),
                 resources: assd_resources,
                 size: r.num_students
             });
@@ -172,69 +177,168 @@ ESP.Scheduling = function(){
         });
     
         // teachers
-        for (var i = 0; i < data.teachers.length; i++) {
+        for (var i in data.teachers) {
+	    // Deal with prototype adding stuff to objects
+	    if (typeof data.teachers[i] === 'function') continue;
+
             var t = data.teachers[i];
             processed_data.teachers.push(Resources.create('Teacher',{
-                uid: t.uid,
-                text: t.text,
-                block_contents: ESP.Utilities.genPopup(t.text, {'Available Times:':
+		id: t.id,
+                text: t.first_name + " " + t.last_name,
+                block_contents: ESP.Utilities.genPopup(t.id, t.first_name + " " + t.last_name, {'Available Times:':
                     t.availability.map(function(x){
                         var res = Resources.get('Time',x);
                         return res ? res.text : "N/A";
-                    }) }, true),
+                    }) }, null, false),
                 available_times: t.availability.map(function(x){return Resources.get('Time',x);}),
-                sections: []
+                sections: t.sections
             }));
         }
     
         // sections
-        for (var i = 0; i < data.sections.length; i++) {
-            var c = data.sections[i];
-            var size_info = [
-                " max size=" + c.class_size_max.toString(),
-                c.max_class_capacity ? " max cap=" + c.max_class_capacity.toString() : "",
-                c.optimal_class_size ? " optimal size=" + c.optimal_class_size.toString() : "",
-                c.optimal_class_size_range ? " optimal size range=" + c.optimal_class_size_range : ""
-                ];
-            var popup_data = {
-                    'Title:': c.text,
-                    'Teachers': c.teachers.map(function(x){ return Resources.get('Teacher', x).text; }),
-                    'Requests:': c.resource_requests.map(function(x){
-                        var res = Resources.get('RoomResource', x[0]);
-                        return (res ? (res.text + ": " + x[1]) : null);
-                    }),
-                    'Size:': size_info.filter(function (x) {return (x.length > 0);}).join(", "),
-                    'Grades:': c.grades ? (c.grades[0] + "-" + c.grades[1]) : "(n/a)",
-                    "Prereq's:": c.prereqs,
-                    'Comments:': c.comments
-                };
-            if (c.allowable_class_size_ranges.size() > 0)
-                popup_data['Allowable Class-Size Ranges:'] = c.allowable_class_size_ranges;
-            var s;
-            processed_data.sections.push(s = Resources.create('Section',{
-                uid: c.id,
-                class_id: c.class_id,
-                code: c.emailcode,
-                block_contents: ESP.Utilities.genPopup(c.emailcode, popup_data, true),
-                category: c.category,
-                length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
-                length_hr: Math.round(c.length * 2) / 2,
-                id:c.id,
-                status:c.status,
-                text:c.text,
-                teachers:c.teachers.map(function(x){ return Resources.get('Teacher',x); }),
-                resource_requests:c.resource_requests.map(function(x){ return [Resources.get('RoomResource', x[0]), x[1]]; }),
-                grade_min: c.grades[0],
-                grade_max: c.grades[1],
-                max_class_capacity: c.max_class_capacity,
-                optimal_class_size: c.optimal_class_size,
-                optimal_class_size_range: c.optimal_class_size_range
-                
-            }));
-            // console.log("Added section: " + s.code + " (time " + s.length + " = " + s.length_hr + " hr "); 
-            s.teachers.map(function(x){ x.sections.push(s); });
-        }
-    
+        for (var i in data.sections) {
+	    // Deal with prototype
+	    if (typeof data.sections[i] === 'function') { continue; }
+
+	    // Causes scoping correctly... there's probably a better way to do this
+	    (function() {
+		var c = data.sections[i];
+		var s;
+	
+		// Function to handle hovering over a section -- we need to trigger the dynamic
+		// loading of extra data needed for the popup
+		var onHoverHandler = function(node) {
+		    // Determine which JSON views need to be loaded
+		    var json_list = [];
+		    if (!s.class_info) {
+			json_list.push('class_info');
+		    }
+		    if (!s.class_size_info) {
+			json_list.push('class_size_info');
+		    }
+		    if (!s.class_admin_info) {
+			json_list.push('class_admin_info');
+		    }
+
+		    // Function to actually populate the class popup with the new data
+		    var populate_class_popup = function(called_node) {
+			// Create the size and popup data
+			var size_info = [
+			    " max size=" + s.class_size_max.toString(),
+			    s.max_class_capacity ? " max cap=" + s.max_class_capacity.toString() : "",
+			    s.optimal_class_size ? " optimal size=" + s.optimal_class_size.toString() : "",
+			    s.optimal_class_size_range ? " optimal size range=" + s.optimal_class_size_range : ""
+			];
+			var popup_data = {
+			    'Title:': s.text,
+			    'Teachers': s.teachers.map(function(x){ return x.text; }),
+			    'Requests:': s.resource_requests ? 
+				s.resource_requests.map(function(x){
+				    var res = x[0];
+				    var text = x[1] || "(none)";
+				    return (res ? (res.text + ": " + text) : null);
+				}) : "(none)",
+			    'Size:': size_info.filter(function (x) {return (x.length > 0);}).join(", "),
+			    'Grades:': s.grade_min ? (s.grade_min + "-" + s.grade_max) : "(n/a)",
+			    "Prereq's:": s.prereqs,
+			    'Comments:': s.comments
+			};
+			if (s.allowable_class_size_ranges.size() > 0)
+			    popup_data['Allowable Class-Size Ranges:'] = c.allowable_class_size_ranges;
+			ESP.Utilities.fillPopup("s-" + s.id, s.block_contents, popup_data, false);
+		    };
+		    
+		    if (json_list.length > 0) {
+			node.children('.tooltip_popup').html("Loading...");
+			var json_left = json_list.length;
+
+			for (var i in json_list) {
+			    // Deal with prototype
+			    if (typeof json_list[i] === 'function') { continue; }
+
+			    // Handle scoping issues; once again, probably a better way to do this
+			    (function() {
+				var json_component = json_list[i];
+				json_get(json_component, {'section_id': s.id}, function(data) {
+				    if (json_component == 'class_info') {
+					s.class_info = true;
+					s_data = data.sections[s.id];
+					s.prereqs = s_data.prereqs;
+				    }
+				    else if (json_component == 'class_size_info') {
+					s.class_size_info = true;
+					s_data = data.sections[s.id];
+					s.class_size_max = s_data.class_size_max;
+					s.optimal_class_size = s_data.optimal_class_size;
+					s.optimal_class_size_range = s_data.optimal_class_size_ranges;
+					s.allowable_class_size_ranges = s_data.allowable_class_size_ranges;
+					s.max_class_capacity = s_data.max_class_capacity;
+				    }
+				    else if (json_component == 'class_admin_info') {
+					s.class_admin_info = true;
+					s_data = data.sections[s.id];
+					if (s_data.resource_requests[s.id]) {
+					    s.resource_requests = s_data.resource_requests[s.id].map(function(x){ return [Resources.get('RoomResource', x[0]), x[1]]; });
+					}
+					else {
+					    s.resource_requests = null;
+					}
+					s.comments = s_data.comments;
+				    }
+				    
+				    // If we've processed everything...
+				    if(--json_left == 0) {
+					populate_class_popup(node);
+				    }
+				});
+			    })();
+			}
+		    }
+		};
+
+		// Finally, create our Resource with what we have now
+		processed_data.sections.push(s = Resources.create('Section',{
+                    uid: c.id,
+                    class_id: c.parent_class,
+                    code: c.emailcode,
+		    class_info: false,
+		    class_size_info: false,
+		    class_admin_info: false,
+                    block_contents: ESP.Utilities.genPopup("s-" + c.id, c.emailcode, {}, onHoverHandler, null, false),
+                    category: c.category,
+                    length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
+                    length_hr: Math.round(c.length * 2) / 2,
+                    id: c.id,
+		    teachers: c.teachers.map(function(x) {
+			return Resources.get('Teacher', x);
+		    }),
+		    text: c.title,
+		    status: c.status,
+                    grade_min: c.grade_min,
+                    grade_max: c.grade_max,
+		}));
+
+					     
+		// console.log("Added section: " + s.code + " (time " + s.length + " = " + s.length_hr + " hr "); 
+
+		// Make sure the Directory now knows this section exists
+		ESP.Scheduling.directory.addEntry(s, false);
+            })();
+	}
+	ESP.Scheduling.directory.filter();
+
+	//Finish teachers -- map the sections now that they exist
+	for (var i in processed_data.teachers) {
+	    // Deal with prototype
+	    if (typeof processed_data.teachers[i] === 'function') continue;
+
+	    processed_data.teachers[i].sections = processed_data.teachers[i].sections.map(function(x) {
+		return Resources.get('Section', x);
+	    });
+	}
+
+	console.log("Final processed data");
+	console.log(processed_data);
         return processed_data;
     };
     
@@ -243,15 +347,20 @@ ESP.Scheduling = function(){
         var rsrc_sec = {}
         var sa;
 
-        for (var i = 0; i < assignments.length; i++) {
+        for (var i in data.schedule_assignments) {
+	    // Handles prototype being angry
+	    if (typeof data.schedule_assignments[i] === 'function') {continue;}
             sa = data.schedule_assignments[i];
 
-            if (!(rsrc_sec[sa.classsection_id])) {
-                rsrc_sec[sa.classsection_id] = [];
+            if (!(rsrc_sec[sa.id])) {
+                rsrc_sec[sa.id] = [];
             }
 
-            rsrc_sec[sa.classsection_id].push(Resources.get('Block', [sa.resource_time_id,sa.resource_id]));
-         }
+	    for (var j = 0; j < sa.timeslots.length; j++)
+	    {
+		rsrc_sec[sa.id].push(Resources.get('Block', [sa.timeslots[j],sa.room_name]));
+	    }
+        }
 
         var Section;
         var sec_id;
@@ -264,18 +373,21 @@ ESP.Scheduling = function(){
                     nowriteback: true /* Don't tell the server about this assignment */
                 });
             }
+	    else {
+		// TODO: Fire an AJAX reqeuest for class_info for all unscheduled classes
+	    }
         }
     }
 
     var validate_block_assignment = function(block, section, str_err) {
         // check status
         if (block.status != ESP.Scheduling.Resources.BlockStatus.AVAILABLE) {
-            console.log("Room " + block.room + " at " + block.time + " is not available"); 
+            // console.log("Room " + block.room + " at " + block.time + " is not available"); 
             return false;
         }
 
         var time = block.time;
-    
+
         for (var i = 0; i < section.teachers.length; i++) {
             var valid = false;
             var teacher = section.teachers[i];
@@ -386,39 +498,55 @@ ESP.Scheduling = function(){
     };
     
     var validate_start_time = function(time, section, str_err) {
-        //  Check for not scheduling across a contiguous group of lunch periods - check start block only
-        if (section.blocks && (section.blocks.length > 0)) {
-            var test_time = time;
-            var covered_lunch_start = false;
-            
-            //  Start with the proposed start time and iterate over all time blocks the section will need
-            for (var i = 0; i < section.blocks.length; i++)
-            {
-                if (test_time.is_lunch && !covered_lunch_start)
-                {
-                    //  Check that this is the first lunch in the group:
-                    //  - this is the first time slot, or
-                    //  - the previous time slot is not a lunch block
-                    if ((ESP.Scheduling.data.times.indexOf(test_time) == 0) || !(ESP.Scheduling.data.times[ESP.Scheduling.data.times.indexOf(test_time) - 1].is_lunch))
-                        covered_lunch_start = true;
-                }
+	var length = 0;
+	if (section.blocks && (section.blocks.length > 0)) {
+	    length = section.blocks.length;
+	}
+	else if (section.length_hr > 0) {
+	    length = Math.ceil(section.length_hr);
+	}
+	else {
+	    return (str_err ? "No length defined!" : false)
+	}
 
-                //  If this is the last timeslot of the program, don't sweat it... this assignment
-                //  is invalid anyway.
-                if (!test_time.seq)
-                    break;
-                    
-                //  But, if our class period overlapped with the beginning of the lunch sequence
-                //  and now also overlaps with the end of the lunch sequence, that's a conflict.
-                if (covered_lunch_start && !(test_time.seq.is_lunch))
-                    return (str_err ? "Section " + section.code + " starting at " + time.text + " would conflict with a group of lunch periods" : false);
-                    
-                //  Move on to the next time slot.
-                test_time = test_time.seq;
-            }
-        }
-        
-        return (str_err ? "OK" : true);
+	    
+        //  Check for not scheduling across a contiguous group of lunch periods - check start block only
+        var test_time = time;
+        var covered_lunch_start = false;
+	
+	// Start with the proposed start time and iterate over all time blocks the section will need
+	for (var i = 0; i < length; i++)
+	{
+	    if (test_time.is_lunch && !covered_lunch_start)
+	    {
+		//  Check that this is the first lunch in the group:
+		//  - this is the first time slot, or
+		//  - the previous time slot is not a lunch block
+		if ((ESP.Scheduling.data.times.indexOf(test_time) == 0) || !(ESP.Scheduling.data.times[ESP.Scheduling.data.times.indexOf(test_time) - 1].is_lunch))
+		{
+		    covered_lunch_start = true;
+		}
+	    }
+	    
+	    //  If this is the last timeslot of the program, don't sweat it... this assignment
+	    //  is invalid anyway.
+	    if (!test_time.seq && i != length - 1)
+	    {
+		return (str_err ? "Section " + section.code + " has an invalid assignment" : false);
+	    }
+	    
+	    //  But, if our class period overlapped with the beginning of the lunch sequence
+	    //  and now also overlaps with the end of the lunch sequence, that's a conflict.
+	    if (covered_lunch_start && !(test_time.seq.is_lunch))
+	    {
+		return (str_err ? "Section " + section.code + " starting at " + time.text + " would conflict with a group of lunch periods" : false);
+	    }
+	    
+	    //  Move on to the next time slot.
+	    test_time = test_time.seq;
+	}
+
+	return (str_err ? "OK" : true);
     };
     
     var self = {
@@ -434,8 +562,7 @@ ESP.Scheduling = function(){
  * initialize the page
  */
 $j(function(){
-    var version_uuid = null;
-    ESP.version_uuid = version_uuid;
+    ESP.version_uuid = null;
 
     $j.getJSON('ajax_schedule_last_changed', function(d, status) {
         if (status == "success") {
@@ -444,39 +571,22 @@ $j(function(){
     });
 
     var data = {};
-    var success_count = 0;
-    var files = ['times','rooms','sections','resources','resourcetypes','teachers','schedule_assignments','lunch_timeslots'];
-    var ajax_verify = function(name) {
-        return function(d, status) {
-            if (status != "success") {
-                alert(status + '[' + name + ']');
-            } else {
-                data[name] = d;
-                if (++success_count == files.length) {
-                    ESP.Scheduling.init(data);
-                }
-            }
-        };
-    };
-    var ajax_retry = function(name) {
-        return function(xhtr, textStatus, errorThrown) {
-            if (textStatus == "timeout" || textStatus == "error") {
-                setTimeout(function() {
-                    $j.ajax({url: 'ajax_' + name, dataType: 'json', success: ajax_verify(name), error: ajax_retry(name)});
-                }, 1000);
-            } else if (textStatus == "parsererror") {
-                alert("Error:  Invalid JSON data from '" + name + "'!");
-            } else if (textStatus == "notmodified") {
-                console.log("textStatus == 'notmodified'.  What, this actually happens?");
-            } else {
-                alert("Server reported unknown error condition: " + textStatus);
-            }
-        }
-    }
-    for (var i = 0; i < files.length; i++) {
-        $j.ajax({url: 'ajax_' + files[i], dataType: 'json', success: ajax_verify(files[i]), error: ajax_retry(files[i])});
-    }
+    var json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections', 'lunch_timeslots', 'resource_types'];
 
+    var json_data = {};
+    // Fetch regular JSON components
+    var json_fetch_data = function(json_components, json_data) {
+	json_fetch(json_components, function(d) {
+	    for (var i in d) {
+		// Deal with prototype failing
+		if (typeof d[i] === 'function') { continue; }
+		data[i] = d[i];
+	    }
+	    
+	    ESP.Scheduling.init(data);
+	}, json_data);
+    };
+    json_fetch_data(json_components, json_data);
 
     setInterval(function() {
         ESP.Scheduling.status('warning','Pinging server...');
@@ -484,12 +594,9 @@ $j(function(){
             if (status == "success") {
                 ESP.Scheduling.status('success','Refreshed data from server.');
                 if (d['val'] != ESP.version_uuid) {
-                    success_count = 0;
                     ESP.version_uuid = d['val'];
-                    data = {};
-                    for (var i = 0; i < files.length; i++) {
-                        $j.getJSON('ajax_' + files[i], ajax_verify(files[i]));
-                    }
+                    json_data = {};
+		    json_fetch_data(json_components, json_data);
                 }
             } else {
                 ESP.Scheduling.status('error','Unable to refresh data from server.');
