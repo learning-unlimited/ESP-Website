@@ -20,9 +20,9 @@ def purge_page(url, host = None):
             return False
 
     stdout.write("Purging: " + str(url) + "\n")
-    stdout.write("Host: " + host + "\n")
     conn = httplib.HTTPConnection(host)
     cur_domain = Site.objects.get_current().domain
+    stdout.write("Host: " + cur_domain + "\n")
     conn.request("PURGE", url, "", {'Host': cur_domain, 'Accept-Encoding': 'gzip'})
     ret = conn.getresponse()
     return (ret.status, ret.reason)
