@@ -83,8 +83,7 @@ body {
 
     <div id="navbar_content">
 
-    {% load smartypants %}
-    {% load markdown %}
+   {% load markdown %}
     {% for announce in announcements.announcementList %}
         <p>
         <span class="announcementlink_title{% if announce.section %}{{ announce.section }}{% endif %}">
@@ -94,7 +93,7 @@ body {
             {{ announce.makeTitle }}
         {% endif %}
         </span><br />
-        <span class="announcementlink">{% autoescape off %}{{ announce.content|markdown|smartypants }}{% endautoescape %}</span>
+        <span class="announcementlink prettify">{% autoescape off %}{{ announce.content|markdown }}{% endautoescape %}</span>
         </p>
     {% endfor %}
 

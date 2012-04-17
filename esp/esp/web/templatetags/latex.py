@@ -92,38 +92,6 @@ def texescape(value):
 
     return value
 
-@register.filter
-def teximages(value, dpi=150):
-    """ Parse string for "$$foo$$", replace with inline LaTeX image, at
-    the specified DPI, defauting to 150. """
-
-    value = force_unicode(value, errors='replace').strip()
-
-    strings = value.split('$$')
-    style   = 'DISPLAY'
-
-    converted = [ False for i in range(len(strings)) ]
-
-    for i in range(len(strings)):
-        if i % 2 == 1 and i < len(strings) - 1:
-            if len(strings[i].strip()) > 0:
-                try:
-                    latex = InlineLatex(strings[i], style=style, dpi=dpi)
-                    strings[i] = latex.img
-                    converted[i] = True
-                except:
-                    converted[i] = False
-
-    value = strings[0]
-
-    for i in range(1, len(strings)):
-        if converted[i] or converted[i-1]:
-            value += strings[i]
-        else:
-            value += '$$' + strings[i]
-        
-    return value
-teximages.is_safe = True
 
 
 

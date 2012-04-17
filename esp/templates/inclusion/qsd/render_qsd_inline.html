@@ -1,6 +1,4 @@
-{% load smartypants %}
 {% load markdown %}
-{% load latex %}
 
 <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 <script type="text/javascript" src="/media/scripts/json2.js"></script>
@@ -15,8 +13,8 @@
 		    </textarea>
         </div>
     </div>
-    <div class="qsd_view_visible" id="inline_qsd_{{ qsdrec.id }}">
-        {% autoescape off %}{{ qsdrec.content|markdown|smartypants|teximages }}{% endautoescape %}
+    <div class="qsd_view_visible prettify" id="inline_qsd_{{ qsdrec.id }}">
+        {% autoescape off %}{{ qsdrec.content|markdown }}{% endautoescape %}
     </div>
 
     <script language="JavaScript">
@@ -32,7 +30,7 @@
 		<div class="qsd_edit_hidden qsd_bits qsd_bits_hidden" id="inline_edit_{{ qsdname }}">
 			<textarea rows="8" cols="80" id="qsd_content_{{ qsdname }}" onblur="qsd_inline_create('{{ qsdname }}', {{ anchor_id }});" name="qsd_content" class="qsd_editor qsd_halfsize qsd_bits qsd_bits_hidden"></textarea>
 		</div>
-		<div class="qsd_view_visible" id="inline_qsd_{{ qsdname }}"></div>
+		<div class="qsd_view_visible prettify" id="inline_qsd_{{ qsdname }}"></div>
     </div>
 {% endif %}
 <br />
