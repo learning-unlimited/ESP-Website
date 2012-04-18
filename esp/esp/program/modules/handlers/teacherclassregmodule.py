@@ -59,6 +59,7 @@ from esp.mailman                 import add_list_member
 from django.http                 import HttpResponseRedirect
 from esp.middleware.threadlocalrequest import get_current_request
 import simplejson as json
+from copy import deepcopy
 
 class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
@@ -614,6 +615,46 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     @needs_teacher
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None)
+
+    @classmethod
+    def copy_class_subject(module_cls, cls, newprog):
+        ccc = ClassCreationController(newprog)
+        newcls = deepcopy(cls)
+        newcls.id = None
+        ccc.attach_class_to_program(newcls)
+        newcls.save()
+        return newcls
+
+    @aux_call
+    @meets_deadline('/Classes/Create')
+    @needs_teacher
+    def copyaclass(self, request, tl, one, two, module, extra, prog):
+        if not request.GET.has_key('cls'):
+            raise ESPError("False"), "No class specified!"
+        
+        cls_id = request.GET['cls']
+        classes = ClassSubject.objects.filter(id=cls_id)
+        if len(classes) == 0:
+            raise ESPError("False"), "No class found matching this ID!"
+        if len(classes) != 1:
+            raise ESPError("False")
+
+        cls = classes[0]
+
+        if cls.category.category == open_class_category().category:
+            action = 'editopenclass'
+        else:
+            action = 'edit'
+
+        cls_copy = TeacherClassRegModule.copy_class_subject(cls, prog)
+        
+        return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls_copy, action)
+
+    @aux_call
+    @meets_deadline('/Classes/Create')
+    @needs_teacher
+    def copyclasses(self, request, tl, one, two, module, extra, prog):
+        pass
 
     @aux_call
     @meets_deadline('/Classes/Create')
