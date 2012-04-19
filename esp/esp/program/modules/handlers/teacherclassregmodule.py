@@ -654,7 +654,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     @meets_deadline('/Classes/Create')
     @needs_teacher
     def copyclasses(self, request, tl, one, two, module, extra, prog):
-        pass
+        context = {}
+        context['all_class_list'] = request.user.getTaughtClasses()
+        context['noclasses'] = (len(context['all_class_list']) == 0)
+        return render_to_response(self.baseDir()+'listcopyclasses.html', request, (prog, tl), context)
 
     @aux_call
     @meets_deadline('/Classes/Create')
