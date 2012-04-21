@@ -4,6 +4,7 @@
 <script type="text/javascript"> var program_base_url = "/json/"+base_url+"/"; </script>
 <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
+<script type="text/javascript" src="/media/scripts/sorttable.js"></script>
 
 <script type="text/javascript">
 /* <![CDATA[ */
@@ -266,30 +267,32 @@ and <tt>M100-class@{{ EMAIL_HOST }}</tt> will email everyone in the class.
 <p>To update class attendees, please go <a href="attendees">here</a>.</p>
 
 <div id="battlescreen">
-<table cellpadding="4px" cellspacing="0" align="center">
-  <tr>
-    <th colspan="10">
-       Manage the classes of {{program.niceName}}
-    </th>
-  </tr>
+<h2 align="center">Manage the classes of {{program.niceName}}</h2>
+<p>Note: <span class="unapproved dashboard_blue">Blue</span> stands for unreviewed classes and <span class="dashboard_red">Red</span> for rejected classes </p>
+<table cellpadding="4px" cellspacing="0" align="center" class="sortable">
   {% if noclasses %}
-  <tr>
   <tr>
     <td class="clsleft classname">
       <em>(None available)</em>
     </td>
-{% for check in program.checkitems_all_cached %}<td>&nbsp;</td>{% endfor %}
    </tr>
   {% endif %}
-  <tr><td class="clsleft classname" colspan="6">
-    Note: <span class="unapproved dashboard_blue">Blue</span> stands for unreviewed classes and <span class="dashboard_red">Red</span> for rejected classes
-  </td></tr>
 {% load class_manage_row %}
+<thead>
+  <tr id="header-row">
+      <th class="dashboard_colheader">Class Code/Title</th>
+      <th class="dashboard_colheader sorttable_nosort">&nbsp;</th>
+      <th class="dashboard_colheader">Teachers</th>
+      <th class="dashboard_colheader sorttable_nosort" colspan="4">Management Options</th>
+  </tr>
+</thead>
+<tbody>
   {% for cls in classes %}
   <tr id="{{cls.id}}-row">
    {% render_class_row cls %}
    </tr>
    {% endfor %}
+</tbody>
 </table>
 </div>
 
