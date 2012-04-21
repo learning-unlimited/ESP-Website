@@ -461,6 +461,20 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return clean_counts
 
+    @cache_function
+    def getListDescriptions(self):
+        desc = {}
+        modules = self.getModules()
+        desc_functions = ['studentDesc', 'teacherDesc', 'volunteerDesc']
+        for module in modules:
+            for func in desc_functions:
+                if hasattr(module, func):
+                    tmpdict = getattr(module, func)()
+                    if tmpdict is not None:
+                        desc.update(tmpdict)
+        return desc
+    getListDescriptions.depend_on_m2m(lambda: Program, 'program_modules', lambda program, module: {'self': program})
+
     def getLists(self, QObjects=False):
         from esp.users.models import ESPUser
         
@@ -475,25 +489,13 @@ class Program(models.Model, CustomFormsLinkModel):
             lists[k] = {'list': v,
                         'description':''}
 
-        desc  = {}
-        for module in learnmodules:
-            tmpdict = module.studentDesc()
-            if tmpdict is not None:
-                desc.update(tmpdict)
-        for module in teachmodules:
-            tmpdict = module.teacherDesc()
-            if tmpdict is not None:
-                desc.update(tmpdict)
-        for module in teachmodules:
-            tmpdict = module.volunteerDesc()
-            if tmpdict is not None:
-                desc.update(tmpdict)
+        desc = self.getListDescriptions()
                 
         for k, v in desc.items():
-            lists[k]['description'] = v
+            if k in lists:
+                lists[k]['description'] = v
+                
         usertypes = ['Student', 'Teacher', 'Guardian', 'Educator', 'Volunteer']
-
-        
 
         for usertype in usertypes:
             lists['all_'+usertype.lower()+'s'] = {'description':
