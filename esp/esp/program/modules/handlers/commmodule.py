@@ -36,7 +36,8 @@ from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admi
 from esp.web.util        import render_to_response
 from esp.program.modules.forms.satprep import SATPrepInfoForm
 from esp.program.models import SATPrepRegInfo
-from esp.users.models   import ESPUser, User
+from esp.users.models   import ESPUser, PersistentQueryFilter
+from esp.users.controllers.usersearch import UserSearchController
 from django.db.models.query   import Q
 from esp.dbmail.models import ActionHandler
 from django.template import Template
@@ -193,6 +194,81 @@ class CommModule(ProgramModuleObj):
                                                'filterid': filterObj.id })
 
         #getFilterFromID(id, model)
+
+
+    @aux_call
+    @needs_admin
+    def commnew(self, request, tl, one, two, module, extra, prog):
+        context = {}
+        context['program'] = prog
+        
+        #   Parameters
+        user_types = ['students', 'teachers', 'volunteers']
+        preferred_lists = ['enrolled', 'studentfinaid', 'student_profile', 'class_approved', 'lotteried_students',  'teacher_profile', 'class_proposed', 'volunteer_all']
+        global_categories = [('Student', 'students'), ('Teacher', 'teachers'), ('Guardian', 'parents'), ('Educator', 'parents'), ('Volunteer', 'volunteers')]
+        
+        #   If list information was submitted, continue to prepare a message
+        if request.method == 'POST':
+            data = request.POST.copy()
+            if 'base_list' in data and 'recipient_type' in data:
+        
+                usc = UserSearchController()
+                
+                #   Get the program-specific part of the query (e.g. which list to use)
+                if data['recipient_type'] not in user_types:
+                    recipient_type = 'any'
+                    q_program = Q()
+                else:
+                    #   Map the recipient type to the appropriate form
+                    for pair in global_categories:
+                        if data['recipient_type'] == pair[1]:
+                            recipient_type = pair[0]
+                            break
+                            
+                    if data['base_list'].startswith('all'):
+                        q_program = Q()
+                    else:
+                        program_lists = getattr(prog, pair[1])(QObjects=True)
+                        q_program = program_lists[data['base_list']]
+                    
+                #   Get the user-specific part of the query (e.g. ID, name, school)
+                q_extra = usc.query_from_criteria(recipient_type, data)
+                
+                #   Get a persistent filter object combining these query criteria
+                filterObj = PersistentQueryFilter.create_from_Q(ESPUser, q_extra & q_program)
+                
+                context['filterid'] = filterObj.id
+                context['listcount'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+                return render_to_response(self.baseDir()+'step2.html', request, (prog, tl), context)
+                
+            else:
+                raise ESPError(True), 'What do I do without knowing what kind of users to look for?'
+        
+        #   Otherwise, render a page that shows the list selection options
+        category_lists = {}
+        list_descriptions = prog.getListDescriptions()
+        
+        #   Add in program-specific lists for most common user types
+        for user_type in user_types:
+            raw_lists = getattr(prog, user_type)(True)
+            category_lists[user_type] = [{'name': key, 'list': raw_lists[key], 'description': list_descriptions[key]} for key in raw_lists]
+            for item in category_lists[user_type]:
+                if item['name'] in preferred_lists:
+                    item['preferred'] = True
+                    
+        #   Add in global lists for each user type
+        for cat_pair in global_categories:
+            key = cat_pair[0].lower() + 's'
+            if cat_pair[1] not in category_lists:
+                category_lists[cat_pair[1]] = []
+            category_lists[cat_pair[1]].insert(0, {'name': 'all_%s' % key, 'list': ESPUser.getAllOfType(cat_pair[0]), 'description': 'All %s in the database' % key, 'preferred': True})
+        
+        #   Add in mailing list accounts
+        category_lists['emaillist'] = [{'name': 'all_emaillist', 'list': Q(password = 'emailuser'), 'description': 'Everyone signed up for the mailing list', 'preferred': True}]
+        
+        context['lists'] = category_lists
+        
+        return render_to_response(self.baseDir()+'commpanel_new.html', request, (prog, tl), context)
 
     @aux_call
     @needs_admin

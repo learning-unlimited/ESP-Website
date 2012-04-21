@@ -1,0 +1,7 @@
+div .commpanel_hidden {
+    display: none;
+}
+
+label .commpanel_list_preferred {
+    color: red;
+}

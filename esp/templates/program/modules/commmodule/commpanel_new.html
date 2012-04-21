@@ -1,0 +1,110 @@
+{% extends "main.html" %}
+
+{% block title %}Communications Portal{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" rel="stylesheet" />
+    <link type="text/css" href="/media/styles/commpanel.css" rel="stylesheet" />
+{% endblock %}
+
+{% block jquery %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+    <script type="text/javascript" src="/media/scripts/jquery.ui.button.js"></script>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/commpanel.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<h2>E-mail a list of users</h2>
+<p>This page will help you e-mail a set of users in your database, with filtering options specific to {{ program.niceName }}.  Choose from three different approaches to select your users:
+    <ul>
+        <li><b>Basic list</b>: A set of users that all have something in common.</li>
+        <li><b>Combination list</b>: A Boolean combination of basic lists.</li>
+        <li><b>Previous e-mails</b>: Start from the settings that were used for a previous e-mail message.</li>
+    </ul>
+</p>
+
+<div id="tabs">
+	<ul>
+		<li><a id="tab_select_basic" href="#tab_basic">Basic list</a></li>
+		<li><a id="tab_select_combo" href="#tab_combo">Combination list</a></li>
+        <li><a id="tab_select_previous" href="#tab_previous">Previous e-mails</a></li>
+	</ul>
+	<div id="tab_basic">
+        <form id="form_basic_list" method="POST" action="/manage/{{ program.getUrlBase }}/commnew">
+        
+        <div id="step_container">
+        
+		<div id="recipient_type_select">
+            Step 1: Who would you like to contact?
+            <div id="recipient_type_options">
+                <input type="radio" id="recipient_type_students" name="recipient_type" value="students" />
+                <label for="recipient_type_students">Students</label>
+                <input type="radio" id="recipient_type_teachers" name="recipient_type" value="teachers" />
+                <label for="recipient_type_teachers">Teachers</label>
+                <input type="radio" id="recipient_type_volunteers" name="recipient_type" value="volunteers" />
+                <label for="recipient_type_volunteers">Volunteers</label>
+                <input type="radio" id="recipient_type_parents" name="recipient_type" value="parents" />
+                <label for="recipient_type_parents">Parents</label>
+                <input type="radio" id="recipient_type_emaillist" name="recipient_type" value="emaillist" />
+                <label for="recipient_type_emaillist">Mailing list</label>
+            </div>
+        </div>
+        
+        <div id="recipient_list_select" class="commpanel_hidden">
+            Step 2: Which set of <span id="recipient_type_name"></span> would you like to contact?
+            {% for kv in lists.items %}
+            <div id="recipient_list_options_{{ kv.0 }}" class="commpanel_hidden">
+                <ul>
+                {% for item in kv.1 %}
+                <li id="list_entry_{{ item.name }}" class="commpanel_list_entry {% if item.preferred %}commpanel_list_preferred{% else %}commpanel_hidden{% endif %}">
+                    <input type="radio" name="base_list" id="list_{{ item.name }}" value="{{ item.name }}" />
+                    <label id="label_{{ item.name }}" for="list_{{ item.name }}">{{ item.description }}</label>
+                </li>
+                {% endfor %}
+                <li id="list_show_all_{{ kv.0 }}" class="commpanel_show_all">Show more list options</li>
+                <li id="list_show_preferred_{{ kv.0 }}" class="commpanel_show_preferred commpanel_hidden">Show fewer list options</li>
+                </ul>
+            </div>
+            {% endfor %}
+            <a name="#" id="recipient_list_back">Go back</a> 
+            <a name="#" id="recipient_list_done">Continue to compose e-mail</a>
+        </div>
+        
+        <div id="recipient_filter_select" class="commpanel_hidden">
+            Step 3: Do you need to filter this list down?
+            (For any criteria you don't need, just leave them blank.)
+            <br />
+            Currently selected: <span id="filter_current_list"></span>
+            <div id="filter_accordion">
+                <h4><a href="#">User ID</a></h4>
+                <div>Enter an ID number: <input type="text" size="6" name="userid" id="userid" /></div>
+                <h4><a href="#">User name</a></h4>
+                <div>Enter a username: <input type="text" size="30" name="username" id="username" /></div>
+            </div>
+            
+            <a name="#" id="recipient_filter_back">Go back</a>
+            <a name="#" id="recipient_filter_done">Continue to compose e-mail</a>
+        </div>
+        
+        
+        </div>
+        
+        </form>
+	</div>
+	<div id="tab_combo">
+		This is the "Combination list" tab
+	</div>
+    <div id="tab_previous">
+		This is the "Previous E-mails" tab
+	</div>
+</div>
+
+{% endblock %}
+
