@@ -1254,7 +1254,7 @@ class RegistrationProfile(models.Model):
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
         self.last_ts = datetime.now()
-        RegistrationProfile.objects.filter(user = self.user, most_recent_profile = True).update(most_recent_profile = False)
+        RegistratioProfile.objects.filter(user = self.user, most_recent_profile = True).update(most_recent_profile = False)
         self.most_recent_profile = True
         super(RegistrationProfile, self).save(*args, **kwargs)
         
@@ -1845,7 +1845,7 @@ class RegistrationType(models.Model):
     #   Purely for bookkeeping on the part of administrators 
     #   without reading the whole description
     category = models.CharField(max_length=32)
-    displayName = models.CharField(max_length=32)
+    displayName = models.CharField(max_length=32, blank=True, null=False)
 
     class Meta:
         unique_together = (("name", "category"),)
