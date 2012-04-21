@@ -5,7 +5,9 @@
 {% block subsection_name %}Register for {{program.niceName}}{% endblock %}
 
 {% block xtrajs %}
-{{block.super }}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery.ui.button.js"></script>
 <script type="text/javascript">
 <!--
 
@@ -14,34 +16,197 @@ function updateDocs(docs) {
 }
 //-->
 </script>
+
+<script language="JavaScript">
+function initialize()
+{
+    $j("#hide_complete_list").click(function () {
+        $j("#show_complete_list").removeClass("manage_hidden");
+        $j("#hide_complete_list").addClass("manage_hidden");
+        $j("#complete_list").addClass("manage_hidden");
+    });
+    $j("#show_complete_list").click(function () {
+        $j("#show_complete_list").addClass("manage_hidden");
+        $j("#hide_complete_list").removeClass("manage_hidden");
+        $j("#complete_list").removeClass("manage_hidden");
+    });
+    $j("div.module_link_large").button();
+}
+
+$j(document).ready(initialize);
+</script>
+
 {% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/jquery-ui/jquery-ui.css" type="text/css" />
+    
+    <style type="text/css">
+    .nocheckmark { border: 1px solid black; }
+    </style>
+
+    <style type="text/css">
+    div .manage_hidden {
+        display: none;
+        height: 0px;
+    }
+
+    div .module_group_body {
+        margin-bottom: 10px;
+    }
+
+    div .module_group_header {
+        width: 90%;
+        background-color: #f3ecc4;
+        font-size: 1.0em;
+        font-weight: bold;
+        padding: 5px;
+        margin-bottom: 5px;
+        box-shadow: 3px 3px 5px #CCCCCC;
+    }
+
+    div .header_special {
+        background-color: #acf5ff;
+        margin-bottom: 20px;
+    }
+
+    div .module_link_large {
+        width: 200px;
+        margin: 8px;
+        padding: 6px;
+        text-align: center;
+        float: left;
+    }
+    
+    div .module_link_separator {
+        clear: both;
+    }
+
+    div .module_link_main {
+        font-size: 1.2em;
+        font-weight: bold;
+    }
+
+    div .module_link_caption {
+        font-size: 0.7em;
+    }
+    </style>
+{% endblock %}
+
 {% block content %}
+
 {% load render_qsd %}
-<style type="text/css">
-.nocheckmark { border: 1px solid black; }
-</style>
 
-<h1>Admin Portal for {{program.niceName}} </h1>
+<h1>Admin Portal for {{ program.niceName }} </h1>
 
-<p style="text-align: center">
-Welcome to the Administrative Portal for {{program.niceName }}.<br />
-If you need any assistance, please email <tt>{{ DEFAULT_EMAIL_ADDRESSES.support }}</tt>.
-</p>
+{% inline_qsd_block program.anchor "manage:main_top" request.user %}
+Default instructions will be filled out here.
+{% end_inline_qsd_block %}
 
-<center>
-<strong>Your options:</strong>
-<br />
+<div class="module_group" id="module_group_1">
+    <div class="module_group_header">
+        Configure Your Program
+    </div>
+    <div class="module_group_body">
+        <a href="/manage/{{ program.getUrlBase }}/resources"><div class="module_link_large">
+            <div class="module_link_main">Resources</div>
+            <div class="module_link_caption">timeslots, classrooms</div>
+        </div></a>
+        <a href="/manage/{{ program.getUrlBase }}/deadlines"><div class="module_link_large">
+            <div class="module_link_main">Deadlines</div>
+            <div class="module_link_caption">open/close registration</div>
+        </div></a>
+        <div class="module_link_separator"></div>
+        <ul>
+            {% if manage_teacher_events %}<li><a href="/manage/{{ program.getUrlBase }}/teacher_events">Teacher Training and Interviews</a>: Teachers signed up for each slot</li>{% endif %}
+            {% if manage_lunch_constraints %}<li><a href="/manage/{{ program.getUrlBase }}/lunch_constraints">Lunch Constraints</a>: Rules for your students' schedules</li>{% endif %}
+            {% if manage_registrationtype_management %}<li><a href="/manage/{{ program.getUrlBase }}/registrationtype_management">Student Registration Types</a>: What students see on their schedule after a lottery</li>{% endif %}
+        </ul>
+    </div>
+</div>
+
+<div class="module_group" id="module_group_2">
+    <div class="module_group_header">
+        Coordinate with Participants
+    </div>
+    <div class="module_group_body">
+        <a href="/manage/{{ program.getUrlBase }}/maincomm"><div class="module_link_large">
+            <div class="module_link_main">E-mail</div>
+            <div class="module_link_caption">communications panel</div>
+        </div></a>
+        <a href="/manage/{{ program.getUrlBase }}/admin_morph"><div class="module_link_large">
+            <div class="module_link_main">Morph into User</div>
+            <div class="module_link_caption">&nbsp;</div>
+        </div></a>
+        <div class="module_link_separator"></div>
+    </div>
+</div>
+
+<div class="module_group" id="module_group_3">
+    <div class="module_group_header">
+        Manage Logistics
+    </div>
+    <div class="module_group_body">
+    
+        <a href="/manage/{{ program.getUrlBase }}/dashboard"><div class="module_link_large">
+            <div class="module_link_main">Dashboard</div>
+            <div class="module_link_caption">review classes and stats</div>
+        </div></a>
+        <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><div class="module_link_large">
+            <div class="module_link_main">Scheduling</div>
+            <div class="module_link_caption">assign rooms and times</div>
+        </div></a>
+        <a href="/manage/{{ program.getUrlBase }}/get_materials"><div class="module_link_large">
+            <div class="module_link_main">Documents</div>
+            <div class="module_link_caption">upload and view files</div>
+        </div></a>
+        <a href="/manage/{{ program.getUrlBase }}/volunteers"><div class="module_link_large">
+            <div class="module_link_main">Volunteers</div>
+            <div class="module_link_caption">create shifts, view signups</div>
+        </div></a>
+        <div class="module_link_separator"></div>
+    </div>
+</div>
+
+<div class="module_group" id="module_group_4">
+    <div class="module_group_header">
+        Quick Links
+    </div>
+    <div class="module_group_body">
+    <ul>
+        <li><a href="/learn/{{ program.getUrlBase }}/catalog">Catalog</a></li>
+        <li><a href="/learn/{{ program.getUrlBase }}/studentreg">Student Reg</a></li>
+        <li><a href="/teach/{{ program.getUrlBase }}/teacherreg">Teacher Reg</a></li>
+        <li><a href="/volunteer/{{ program.getUrlBase }}/signup">Volunteer Reg</a></li>
+        <li><a href="/onsite/{{ program.getUrlBase }}/main">Onsite</a></li>
+    </ul>
+    </div>
+</div>
+
+<div class="module_group" id="module_group_5">
+    <div class="module_group_header">
+        Generate Printables
+    </div>
+    <div class="module_group_body">
+    <ul>
+        <li><a href="/manage/{{ program.getUrlBase }}/catalog">PDF Catalog</a></li>
+        <li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a></li>
+        <li><a href="/manage/{{ program.getUrlBase }}/generatetags">Nametags</a></li>
+        <li><a href="/manage/{{ program.getUrlBase }}/selectList">Arbitrary User List</a></li>
+        <li><a href="/manage/{{ program.getUrlBase }}/printoptions">All Printables</a></li>
+    </ul>
+    </div>
+</div>
+
+<div id="show_complete_list" class="module_group_header header_special">Show Complete Module List</div>
+<div id="hide_complete_list" class="module_group_header header_special manage_hidden">Hide Complete Module List</div>
+
+<div id="complete_list" class="manage_hidden">
 <table border="0" width="100%">
-<tr>
- <td colspan="2">
-{% render_inline_qsd program.anchor "manage:main_top" %}
- </td>
-</tr>
 <tr>
  <td width="40%">
 <ul>
-
-
 <li><a href="/onsite/{{program.getUrlBase}}/main">
      Go To On-Site Page
     </a>
@@ -72,11 +237,11 @@ Please select an option to the left to continue, or look down below to select fu
 </div>
 </td>
 </tr>
-<tr>
+</table>
+</div>
+
 <td colspan="2">
 {% render_inline_qsd program.anchor "manage:main_bottom" %}
 </td>
-</tr>
-</table>
 
 {% endblock %}
