@@ -597,6 +597,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'hide_full': hide_full, 'collapse_full': collapse_full}
 
         scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        context['register_from_catalog'] = scrmi.register_from_catalog
 
         prog_color = prog.getColor()
         collapse_full_classes = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
