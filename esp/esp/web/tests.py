@@ -246,13 +246,17 @@ class JavascriptSyntaxTest(TestCase):
         os.system('java -jar %s/compiler.jar %s --js_output_file %s 2> %s' % (closure_path, file_args, closure_output_code, closure_output_file))
         checkfile = open(closure_output_file)
         
-        results = [line.strip() for line in checkfile.readlines() if len(line.strip()) > 0]
+        results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]
         
         if len(results) > 0:
-            print '-- Displaying Javascript syntax errors'
+            closure_result = results[-1].split(',')
+            num_errors = int(closure_result[0].split()[0])
+            num_warnings = int(closure_result[1].split()[0])
+        
+            print '-- Displaying Closure results: %d Javascript syntax errors, %d warnings' % (num_errors, num_warnings)
             for line in results:
                 print line
-            
-        self.assertEqual(len(results), 0, 'Closure compiler detected Javascript syntax errors')
+
+            self.assertEqual(num_errors, 0, 'Closure compiler detected Javascript syntax errors')
         
         
