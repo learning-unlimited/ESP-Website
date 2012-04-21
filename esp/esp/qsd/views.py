@@ -42,7 +42,6 @@ from esp.web.util.main import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.qsdmedia.models import Media
 from esp.lib.markdownaddons import ESPMarkdown
-from esp.settings import MEDIA_ROOT, MEDIA_URL
 from os.path import basename, dirname
 from datetime import datetime
 from django.core.cache import cache
@@ -276,8 +275,6 @@ def ajax_qsd(request):
     """ Ajax function for in-line QSD editing.  """
     from django.utils import simplejson
     from esp.lib.templatetags.markdown import markdown
-    from esp.web.templatetags.latex import teximages
-    from esp.web.templatetags.smartypants import smartypants
 
     EDIT_VERB = 'V/Administer/Edit/QSD'
 
@@ -296,7 +293,7 @@ def ajax_qsd(request):
         # Local change here, to enable QSD editing.
         qsd.save()
         result['status'] = 1
-        result['content'] = teximages(smartypants(markdown(qsd.content)))
+        result['content'] = markdown(qsd.content)
         result['id'] = qsd.id
     if post_dict['cmd'] == "create":
         qsd_path = DataTree.objects.get(id=post_dict['anchor'])
@@ -307,7 +304,7 @@ def ajax_qsd(request):
         qsd.author = request.user
         qsd.save()
         result['status'] = 1
-        result['content'] = teximages(smartypants(markdown(qsd.content)))
+        result['content'] = markdown(qsd.content)
         result['id'] = qsd.id
     
     return HttpResponse(simplejson.dumps(result))

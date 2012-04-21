@@ -91,7 +91,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_sections_cached(self, prog):
         sections = prog.sections().select_related()
 
-        rrequests = ResourceRequest.objects.filter(target__in = sections)
+        rrequests = ResouorceRequest.objects.filter(target__in = sections)
 
         rrequest_dict = defaultdict(list)
         for r in rrequests:
@@ -314,7 +314,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         
         if action == 'deletereg':
             # raise ESPError(), "Tried to delete a class via AJAX-Scheduling!"
-
+            
             cls.clearRooms()
             cls.clear_meeting_times()
 
@@ -352,7 +352,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             cannot_schedule = cls.cannotSchedule(times)
             if cannot_schedule:
                 return makeret(ret=False, msg=cannot_schedule)
-
+            
             cls.assign_meeting_times(times)
             status, errors = cls.assign_room(classroom)
 
@@ -421,7 +421,29 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'securityschedule.html', request, (prog, tl), context)
             
+    @aux_call
+    @needs_admin
+    def ajax_clear_schedule(self, request, tl, one, two, module, extra, prog):
+        """ A view that you can use to remove schedule assignments for all class
+            sections below a certain lock level.
+            Be very careful using this view since it can sometimes work quite well,
+            and there is currently no backup.
+        """
         
+        try:
+            lock_level = int(request.GET.get('lock_level', '0'))
+        except:
+            lock_level = 0
+        print lock_level
+            
+        affected_sections = ClassSection.objects.filter(parent_class__parent_program=prog, resourceassignment__lock_level__lte=lock_level)
+        num_affected_sections = affected_sections.distinct().count()
+        ResourceAssignment.objects.filter(target__in=affected_sections, lock_level__lte=lock_level).delete()
+        
+        data = {'message': 'Cleared schedule assignments for %d sections.' % (num_affected_sections)}
+        response = HttpResponse(content_type="application/json")
+        simplejson.dump(data, response)
+        return response
 
     class Meta:
         abstract = True

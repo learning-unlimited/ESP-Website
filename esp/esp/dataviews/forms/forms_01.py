@@ -167,11 +167,10 @@ def pathchoiceform_factory(model, all_paths):
         else: 
             fields[field_name] = MultipleChoiceField(choices=choices, widget=widgets.CheckboxSelectMultiple, label=model.__name__+u'/'+target_model.__name__ + u'.' + field + u'_' + query_term)
     def as_div(self): 
-        more = u'<input type="button" value="Show More" onclick="more(event);" />'
         return self._html_output(
-            normal_row = u'<div class="pathgroup" dojoType="dijit.layout.ContentPane" title="&nbsp;"><a class="pathlink" href="" target="_blank">Click here to see a version of this page with links to documenation.</a><br /><br />%(label)s %(field)s%(help_text)s'+more+u'</div>',
+            normal_row = u'<div class="pathgroup" title="&nbsp;"><a class="pathlink" href="" target="_blank">Click here to see a version of this page with links to documenation.</a><br /><br />%(label)s %(field)s%(help_text)s</div>',
             error_row = u'%s',
-            row_ender = more+u'</div>',
+            row_ender = u'</div>',
             help_text_html = u' <span class="helptext">%s</span>',
             errors_on_separate_row = True)
     fields['as_div'] = as_div

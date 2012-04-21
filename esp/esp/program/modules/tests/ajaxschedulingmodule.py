@@ -117,20 +117,20 @@ class AJAXSchedulingModuleTest(ProgramFrameworkTest):
         teachers[0].getTaughtSections(self.program)[0].assign_meeting_times(timeslots[:2])
         # Check the current state of availability.
         self.failUnless(all([
-                set(teachers[0].getAvailableTimes(self.program)) == set(timeslots[:2]),
+                set(teachers[0].getAvailableTimes(self.program, ignore_classes=True)) == set(timeslots[:2]),
                 set(teachers[1].getAvailableTimes(self.program)) == set(timeslots[:2]),
                 set(teachers[2].getAvailableTimes(self.program)) == set(),
-                set(teachers[0].getAvailableTimes(self.program, ignore_classes=True)) == set(),
+                set(teachers[0].getAvailableTimes(self.program)) == set(),
             ]), "Unexpected availability state.")
 
         # Force availability
         self.client.post('/manage/%s/force_availability' % self.program.getUrlBase(), {'sure': 'True'})
         # Check the state of availability again
         self.failUnless(all([
-                set(teachers[0].getAvailableTimes(self.program)) == set(timeslots[:2]),
+                set(teachers[0].getAvailableTimes(self.program, ignore_classes=True)) == set(timeslots[:2]),
                 set(teachers[1].getAvailableTimes(self.program)) == set(timeslots[:2]),
                 set(teachers[2].getAvailableTimes(self.program)) == set(timeslots),
-                set(teachers[0].getAvailableTimes(self.program, ignore_classes=True)) == set(),
+                set(teachers[0].getAvailableTimes(self.program)) == set(),
             ]), "Unexpected availability state.")
 
     def testWebAPI(self):

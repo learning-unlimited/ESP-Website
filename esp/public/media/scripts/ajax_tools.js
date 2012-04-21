@@ -4,12 +4,6 @@
 //  - Handle background submission of forms
 //  - Handle responses that rewrite DOM nodes by supplying a key of [NODENAME]_html in JSON
 
-dojo.require("dojo._base.xhr");
-
-if (!numAjaxConnections)
-{
-    var numAjaxConnections = 0;
-}
 //  Define an array for registered forms if they do not exist
 if (!registered_forms)
 {
@@ -23,10 +17,6 @@ if (!registered_links)
 {
     var registered_links = [];
 }
-if (!connection_map)
-{
-    var connection_map = {};
-}
 
 var reset_forms = function()
 {
@@ -35,17 +25,14 @@ var reset_forms = function()
     for (var i = 0; i < registered_forms.length; i++)
     {
         form = registered_forms[i];
-        var theForm = dojo.byId(form.id);
-        if (theForm)
+	var formId = '#' + form.id;
+	var theForm = $j(formId);
+        if (theForm.length > 0)
         {
-            if (connection_map[form.id] != "undefined")
-            {
-                //  console.log("Disconnecting connection_map[" + form.id + "] =" + connection_map[form.id]);
-                dojo.disconnect(connection_map[form.id]);
-            }
-            result = dojo.connect(theForm, "onsubmit", registered_forms[i], 'callback');
-            //  console.log("Setting up callback for " + form.id + " to " + JSON.stringify(registered_forms[i], null, '\t'));
-            connection_map[form.id] = result;
+	    // Clear existing connections
+	    theForm.unbind('submit');
+	    // Rebind the connection
+	    theForm.submit(registered_forms[i].callback);
         }
     }
     
@@ -54,17 +41,14 @@ var reset_forms = function()
     for (var i = 0; i < registered_links.length; i++)
     {
         link = registered_links[i];
-        var theLink = dojo.byId(link.id);
-        if (theLink)
+	var linkId = '#' + link.id;
+        var theLink = $j(linkId);
+        if (theLink.length > 0)
         {
             //  Clear existing connections
-            if (connection_map[link.id] != "undefined")
-            {
-                dojo.disconnect(connection_map[link.id]);
-            }
-            result = dojo.connect(theLink, "onclick", registered_links[i], 'callback');
-            //  console.log("Setting up callback for " + link.id + " to " + JSON.stringify(registered_links[i], null, '\t'));
-            connection_map[link.id] = result;
+	    theLink.unbind('click');
+	    //  Rebind the connection
+	    theLink.click(registered_links[i].callback);
         }
     }    
     
@@ -94,11 +78,12 @@ var apply_fragment_changes = function(data)
         if (re_match)
         {
             //  console.log("Found match: " + re_match[1]);
-            matching_node = dojo.byId(re_match[1])
-            if (matching_node)
+	    var matchId = '#' + re_match[1];
+            matching_node = $j(matchId);
+            if (matching_node.length > 0)
             {
                 //  console.log("Rewriting HTML for element: " + re_match[1])
-                matching_node.innerHTML = data[key];
+                matching_node.html(data[key]);
             }
         }
         
@@ -110,38 +95,28 @@ var apply_fragment_changes = function(data)
     }
 }
 
-var dojo_handle = function(data,args)
+var handle_success = function(data, textStatus, jqXHR)
 {
-    if (args.xhr.status != 200)
+    if ('error' in data)
     {
-        //  console.log("Received status = " + args.xhr.status + ", skipping handler.");
-    }
-    else
-    {
-        if ('error' in data)
-        {
-            //  Maybe this should be something more gentle like a floating div.
-            alert(data['error']);
-            return;
-        }   
-        //  Update portions of the page determined by response
-        apply_fragment_changes(data);
-        //  Reset the form event functions so they can be used again
-        reset_forms();
-    }
-    numAjaxConnections--;
+        //  Maybe this should be something more gentle like a floating div.
+        alert(data['error']);
+        return;
+    }   
+    //  Update portions of the page determined by response
+    apply_fragment_changes(data);
+    //  Reset the form event functions so they can be used again
+    reset_forms();
 }
 
-var handle_submit = function(mode, attrs, element)
+var handle_submit = function(mode, attrs, eventObject)
 {
-    element.preventDefault();
-
-    if(document.getElementById(attrs.id) && !check_csrf_cookie(document.getElementById(attrs.id)))
+    //  Check the csrf cookie and reject the submission if it fails
+    if($j(this).length > 0 && !check_csrf_cookie($j(this)))
     {
         return false;
     }
 
-    //  console.log("Handling " + mode + " submission of object: " + JSON.stringify(attrs, null, '\t') + ", element: " + JSON.stringify(element, null, '\t'));
     if (attrs.post_form != null)
     {
         attrs.form = attrs.post_form;
@@ -150,21 +125,16 @@ var handle_submit = function(mode, attrs, element)
     {
         attrs.form = attrs.id;
     }
-    params = {};
-    params["url"] = attrs.url;
-    params["form"] = attrs.form;
-    params["content"] = attrs.content;
-    params["handleAs"] = "json";
-    params["handle"] = dojo_handle;
+
+    //  I'm not sure if these calls are correct -- test this
     if (mode == 'post')
     {
-        dojo.xhrPost(params);
+	$j.post(attrs.url, attrs.content, handle_success, "json");
     }
     else
     {
-        dojo.xhrGet(params);
+	$j.get(attrs.url, attrs.content, handle_success, "json");
     }
-    numAjaxConnections++;
 }
 
 
@@ -173,11 +143,7 @@ var fetch_fragment = function(attrs)
 {
     //  console.log("Fetching fragment with attributes: " + JSON.stringify(attrs, null, '\t'));
     if (! attrs.url) { return; }
-    dojo.xhrGet({
-        url: attrs.url,
-        handleAs: "json",
-        handle: dojo_handle
-    });
+    $j.get(attrs.url, handle_success, "json");
 }
     
 function CallbackForm(id, url)
@@ -223,5 +189,8 @@ var register_fragment = function(fragment_attrs)
     //  console.log('Registered Ajax page fragement with attributes: ' + JSON.stringify(fragment_attrs, null, '\t'));
 }
 
-dojo.addOnLoad(reset_forms); 
-dojo.addOnLoad(fetch_fragments);
+$j(document).ready(function()
+{
+    reset_forms();
+    fetch_fragments();
+});

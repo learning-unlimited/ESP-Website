@@ -60,8 +60,7 @@ from esp.dblog.models import error
 from esp.tagdict.models import Tag
 from esp.middleware import ESPError
 from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
-from esp.settings import DEFAULT_HOST, DEFAULT_EMAIL_ADDRESSES, ORGANIZATION_SHORT_NAME, INSTITUTION_NAME
-
+from django.conf import settings
 import simplejson as json
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
@@ -323,7 +322,7 @@ class ESPUser(User, AnonymousUser):
             return otheruser.username
         elif key == 'recover_url':
             return 'http://%s/myesp/recoveremail/?code=%s' % \
-                         (DEFAULT_HOST, otheruser.password)
+                         (settings.DEFAULT_HOST, otheruser.password)
         elif key == 'recover_query':
             return "?code=%s" % otheruser.password
         return ''
@@ -484,7 +483,7 @@ class ESPUser(User, AnonymousUser):
 
         valid_events = Event.objects.filter(useravailability__user=self, anchor=program.anchor).order_by('start')
 
-        if ignore_classes:
+        if not ignore_classes:
             #   Subtract out the times that they are already teaching.
             other_sections = self.getTaughtSections(program)
 
@@ -815,15 +814,15 @@ class ESPUser(User, AnonymousUser):
 
         # email subject
         domainname = Site.objects.get_current().domain
-        subject = '[%s] Your Password Recovery For %s ' % (ORGANIZATION_SHORT_NAME, domainname)
+        subject = '[%s] Your Password Recovery For %s ' % (settings.ORGANIZATION_SHORT_NAME, domainname)
 
         # generate the email text
         t = loader.get_template('email/password_recover')
         msgtext = t.render(DjangoContext({'user': self,
                                     'ticket': ticket,
                                     'domainname': domainname,
-                                    'orgname': ORGANIZATION_SHORT_NAME,
-                                    'institution': INSTITUTION_NAME}))
+                                    'orgname': settings.ORGANIZATION_SHORT_NAME,
+                                    'institution': settings.INSTITUTION_NAME}))
 
         # Do NOT fail_silently. We want to know if there's a problem.
         send_mail(subject, msgtext, from_email, to_email)
@@ -1134,9 +1133,9 @@ class StudentInfo(models.Model):
         studentInfo.save()
         if new_data.get('studentrep', False):
             #   E-mail membership notifying them of the student rep request.
-            subj = '[%s Membership] Student Rep Request: %s %s' % (ORGANIZATION_SHORT_NAME, curUser.first_name, curUser.last_name)
-            to_email = [DEFAULT_EMAIL_ADDRESSES['membership']]
-            from_email = 'ESP Profile Editor <regprofile@%s>' % DEFAULT_HOST
+            subj = '[%s Membership] Student Rep Request: %s %s' % (settings.ORGANIZATION_SHORT_NAME, curUser.first_name, curUser.last_name)
+            to_email = [settings.DEFAULT_EMAIL_ADDRESSES['membership']]
+            from_email = 'ESP Profile Editor <regprofile@%s>' % settings.DEFAULT_HOST
             t = loader.get_template('email/studentreprequest')
             msgtext = t.render(Context({'user': curUser, 'info': studentInfo, 'prog': regProfile.program}))
             send_mail(subj, msgtext, from_email, to_email, fail_silently = True)
@@ -1946,7 +1945,7 @@ class DBList(object):
     QObject  = None
 
     def count(self, override = False):
-        """ This is used to count how many objects wer are talking about.
+        """ This is used to count how many objects we are talking about.
             If override is true, it will not retrieve the number from cache
             or from this instance. If it's true, it will try.
         """

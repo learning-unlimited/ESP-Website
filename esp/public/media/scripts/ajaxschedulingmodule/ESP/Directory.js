@@ -21,7 +21,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             var header = this.header = $j('<tr/>').addClass('header');
             thead.append(header);
             $j.each(this.properties, function(key, prop){
-                var td = $j('<td style="'+(prop.css||'')+'"><span>' + (prop.label || key) + '</span></td>');
+                var td = $j('<td style="'+(prop.css()||'')+'"><span>' + (prop.label || key) + '</span></td>');
                 prop.header = td;
                 if (prop.sort) {
                     td.addClass('sortable');
@@ -44,42 +44,123 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
         // table columns
         properties: {
         'ID': {
-            get: function(x){ return x.block_contents; },
+            get: function(x){ return x.block_contents.clone(true); },
             //css: 'text-align:center; text-decoration:underline; font-weight:bold;',
             sort: function(x,y){
                 // use code instead of emailcode; that's how Scheduling.process_data names it
                 var diff = x.section.class_id - y.section.class_id;
                 return diff == 0 ? cmp(x.section.code, y.section.code) : diff;
             },
-            css: 'width:100px;'
+	    //css: 'width:100px;'
+	    /* Code to style unapproved classes differently */
+            css: function(x){
+		var default_css = 'width:100px;';
+		var unapproved_css = "color:#ff0000; font-style:italic;";
+		// if we're just calling it for the general properties of the ID td
+		// or if it's approved, return the default css
+		if (!x || x.status == 10) {
+		    return default_css;
+		}
+		// if the class is not approved, apply the unapproved styling to it
+		else {
+		    return default_css + unapproved_css;
+		}
+	    }
         },
         'Title': {
             get: function(x){ return x.text; },
             sort: function(x,y){
                 return cmp(x.section.text, y.section.text);
             },
-            css: 'width:400px;'
+	    // css: 'width:400px;'
+	    /* Code to style unapproved classes differently */
+            css: function(x){ 
+		var default_css = 'width:400px;';
+		var unapproved_css = "color:#ff0000; font-style:italic;";
+		// if we're just calling it for the general properties of the ID td
+		// or if it's approved, return the default css
+		if (!x || x.status == 10) {
+		    return default_css;
+		}
+		// if the class is not approved, apply the unapproved styling to it
+		else {
+		    return default_css + unapproved_css;
+		}
+	    }
         },
         'Category': {
             get: function(x){ return x.category; },
             sort: function(x,y){
                 return cmp(x.section.category, y.section.category);
             },
-            css: 'width:100px;'
+	    // css: 'width:100px;'
+	    /* Code to style unapproved classes differently */
+            css: function(x){
+		var default_css = 'width:100px;';
+		var unapproved_css = "color:#ff0000; font-style:italic;";
+		// if we're just calling it for the general properties of the ID td
+		// or if it's approved, return the default css
+		if (!x || x.status == 10) {
+		    return default_css;
+		}
+		// if the class is not approved, apply the unapproved styling to it
+		else {
+		    return default_css + unapproved_css;
+		}
+	    }
         },
         'Teacher': {
-            get: function(x) { return ""+x.teachers.map(function(x){return x.block_contents;}); },
+            get: function(x) {
+		if (x.teachers) {
+		    var ret_node = $j("");
+		    $j.each(x.teachers.map(function(x){return x.block_contents.clone(true)}), function(index, value){
+			ret_node = ret_node.add(value);
+		    });
+		    return ret_node;
+		}
+		else {
+		    return "Loading...";
+		}
+	    },
             sort: function(x,y){
                 return cmp(""+x.section.teachers.map(function(z){return z.text;}), ""+y.section.teachers.map(function(z){return z.text;}));
             },
-            css: 'width:200px;'
+	    // css: 'width:200px;'
+	    /* Code to style unapproved classes differently */
+            css: function(x){
+		var default_css = 'width:200px;';
+		var unapproved_css = "color:#ff0000; font-style:italic;";
+		// if we're just calling it for the general properties of the ID td
+		// or if it's approved, return the default css
+		if (!x || x.status == 10) {
+		    return default_css;
+		}
+		// if the class is not approved, apply the unapproved styling to it
+		else {
+		    return default_css + unapproved_css;
+		}
+	    }
         },
         'Length': {
             get: function(x) { return x.length_hr; },
             sort: function(x,y) {
                 return x.section.length - y.section.length;
             },
-            css: 'width:50px;'
+	    // css: 'width:50px;'
+	    /* Code to style unapproved classes differently */
+            css: function(x){
+		var default_css = 'width:50px;';
+		var unapproved_css = "color:#ff0000; font-style:italic;";
+		// if we're just calling it for the general properties of the ID td
+		// or if it's approved, return the default css
+		if (!x || x.status == 10) {
+		    return default_css;
+		}
+		// if the class is not approved, apply the unapproved styling to it
+		else {
+		    return default_css + unapproved_css;
+		}
+	    }
         }
         },
         
@@ -95,6 +176,12 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             this.active_rows = active_rows;
             this.sort();
         },
+
+        // filter for determining active section or not
+        activeFilter: function(section) {
+	    var lunch_symbol = "L";
+	    return section.category != lunch_symbol;
+	},
         
         // sort active rows
         sort: function(prop){
@@ -113,15 +200,20 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
         addEntry: function(entry, update){
             var update = typeof update == 'undefined' ? true : update;
             if (Object.isArray(entry)) {
+		// we need basic class info
+		if (!entry.class_info) {
+		    // TODO: fill this in
+		}
+
                 $j.each(entry, function(i,x){
-                    if (x.status == 10){ // skip non-Approved classes
+                    //if (x.status == 10){ // skip non-Approved classes
                         this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, x));
-                    }
+                    //}
                 }.bind(this));
             } else {
-                if (entry.status == 10) { // skip non-Approved classes
+                //if (entry.status == 10) { // skip non-Approved classes
                     this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, entry));
-                }
+                //}
             }
             if (update) this.filter();
         },
@@ -144,18 +236,21 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
             this.el.addClass('CLS_id_' + section.id);
             this.el.addClass('CLS_length_' + section.length_hr + '_hrs');
             this.el.addClass('CLS_status_' + section.status);
-            this.el.addClass('CLS_grade_min_' + section.grade_min);
+            this.el.addClass('CLS_grade_min_' + section.gradpe_min);
             this.el.addClass('CLS_grade_max_' + section.grade_max);
+	    /*
             for (var i = 0; i < section.resource_requests.length; i++) {
                 if (section.resource_requests[i][0]) {
                     this.el.addClass('CLS_rsrc_req_' + section.resource_requests[i][0].text.replace(/[^a-zA-Z]+/g, '-'));
                 }
             }
+	    */
 
             this.tds = {};
             $j.each(this.directory.properties,function(index, prop){
-                var td = $j('<td style="' + (prop.css||'') + '">' + prop.get(section) + '</td>');
-                this.tds[prop] = td;
+                var td = $j('<td style="' + (prop.css(section)||'') + '"></td>');
+		td.append(prop.get(section));
+                this.tds[index] = td;
                 this.el.append(td);
             }.bind(this));
         },
@@ -164,7 +259,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
         },
         update: function(){
             $j.each(this.directory.properties,function(index, prop){
-                this.tds[prop].text(prop.get(this.section));
+                this.tds[index].html(prop.get(this.section));
             }.bind(this));
             return this;
         }

@@ -44,6 +44,7 @@ admin_site.register(LineItemType, LITAdmin)
 class TXNAdmin(admin.ModelAdmin):
     list_display = ['id', 'timestamp', 'text', 'complete', ]
     list_display_links = list_display
+    search_fields = ['id', 'text', ]
 admin_site.register(Transaction, TXNAdmin)
 
 def transaction_id(lineitem):
@@ -52,4 +53,5 @@ transaction_id.admin_order_field = 'transaction__id'
 
 class LIAdmin(admin.ModelAdmin):
     list_display = ['id', transaction_id, 'amount', 'anchor', 'user', 'text', ]
+    search_fields = ['id', 'user__first_name', 'user__last_name', 'user__username', 'text', 'anchor__uri', 'amount']
 admin_site.register(LineItem, LIAdmin)

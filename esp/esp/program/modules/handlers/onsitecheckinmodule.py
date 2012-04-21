@@ -124,6 +124,11 @@ class OnSiteCheckinModule(ProgramModuleObj):
                                     self.program_anchor_cached(),
                                     verb)
 
+    def timeCheckedIn(self):
+        verb = GetNode('V/Flags/Registration/Attended')
+        u = UserBit.objects.get(verb=verb, qsc=self.program_anchor_cached(), user=self.student)
+        return str(u.startdate.strftime("%H:%M %d/%m/%y"))
+
     @aux_call
     @needs_onsite
     def ajax_status(self, request, tl, one, two, module, extra, prog, context={}):

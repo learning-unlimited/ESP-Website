@@ -61,8 +61,7 @@ from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import LineItemType, CompletedTransactionException
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
-from esp.settings import SITE_INFO
-
+from django.conf import settings
 import pickle
 import operator
 import simplejson as json
@@ -118,7 +117,7 @@ def lsr_submit(request, program = None):
     # First check whether the user is actually a student.
     if not request.user.isStudent():
         raise ESPError(False), "You must be a student in order to access student registration."
-    
+
     data = json.loads(request.POST['json_data'])
     
     if priority_limit > 1: 
@@ -193,7 +192,7 @@ def lsr_submit(request, program = None):
 
     if len(errors) != 0:
         s = StringIO()
-        pprint(errors, s)
+        print(errors, s)
         mail_admins('Error in class reg', s.getvalue(), fail_silently=True)
 
     cfe = ConfirmationEmailController()
@@ -416,8 +415,10 @@ def userview(request):
     context = {
         'user': user,
         'taught_classes' : user.getTaughtClasses().order_by('parent_program'),
+        'enrolled_classes' : user.getEnrolledSections().order_by('parent_class__parent_program'),
+        'taken_classes' : user.getSections().order_by('parent_class__parent_program'),
         'teacherbio': teacherbio,
-        'domain': SITE_INFO[1],
+        'domain': settings.SITE_INFO[1],
         'change_grade_form': change_grade_form,
     }
     return render_to_response("users/userview.html", request, GetNode("Q/Web"), context )
@@ -761,7 +762,7 @@ def statistics(request, program=None):
         #   Handle case where all we want is a new form
         if 'update_form' in request.GET:
             form.hide_unwanted_fields()
-            
+
             #   Return result
             context = {'form': form}
             context['clear_first'] = True
@@ -841,7 +842,6 @@ def statistics(request, program=None):
                 return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
         else:
             #   Form was submitted but there are problems with it
-            print form.errors
             form.hide_unwanted_fields()
             context = {'form': form}
             context['clear_first'] = False

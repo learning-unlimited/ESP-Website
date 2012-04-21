@@ -1,7 +1,5 @@
 {% if show_class %}
-    {% load latex %}
-    {% load smartypants %}
-    {% load class_render %}
+  {% load class_render %}
 
     {% if not hide_full or not class.isFull %}
         <div class="show_class">
@@ -11,7 +9,7 @@
             <tr id="class_{{ class.id }}_regbuttons" class="classregbuttons">
             <td colspan="3" align="center" valign="middle" class="add_class">
             {% if errormsg %}
-                <p class="addbutton_error">{{ errormsg }}</p>
+                <p class="addbutton_error">{% autoescape off %}{{ errormsg }}{% endautoescape %}</p>
                 {% if user.onsite_local %}
                     <br />
                     <form name="prereg_{{ section.id }}" onsubmit="return submit_override_prereg('{{ section.id }}');" method="post" action="{{ prereg_url }}">

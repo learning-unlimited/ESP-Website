@@ -41,8 +41,7 @@ from django.contrib.auth.models import AnonymousUser
 from esp.program.models import Program
 from esp.qsd.models import ESPQuotations
 from esp.middleware import ESPError
-from esp.settings import DEFAULT_EMAIL_ADDRESSES, EMAIL_HOST
-
+from django.conf import settings
 import django.shortcuts
 
 def get_from_id(id, module, strtype = 'object', error = True):
@@ -85,8 +84,8 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
     # if there are only two arguments
     if context is None and prog is None:
         context = {'navbar_list': []}
-        context['DEFAULT_EMAIL_ADDRESSES'] = DEFAULT_EMAIL_ADDRESSES
-        context['EMAIL_HOST'] = EMAIL_HOST
+        context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
+        context['EMAIL_HOST'] = settings.EMAIL_HOST
         return django.shortcuts.render_to_response(template, requestOrContext, Context(context), mimetype=mimetype)
     
     if context is not None:
@@ -99,8 +98,8 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
             prog = prog[0]
             
         #   Add e-mail addresses
-        context['DEFAULT_EMAIL_ADDRESSES'] = DEFAULT_EMAIL_ADDRESSES
-        context['EMAIL_HOST'] = EMAIL_HOST
+        context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
+        context['EMAIL_HOST'] = settings.EMAIL_HOST
 
         if not context.has_key('program'):
             if type(prog) == Program:
@@ -134,15 +133,15 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
 """ Override Django error views to provide some context info. """
 def error404(request, template_name='404.html'):
     context = {'request_path': request.path}
-    context['DEFAULT_EMAIL_ADDRESSES'] = DEFAULT_EMAIL_ADDRESSES
-    context['EMAIL_HOST'] = EMAIL_HOST
+    context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
+    context['EMAIL_HOST'] = settings.EMAIL_HOST
     t = loader.get_template(template_name) # You need to create a 404.html template.
     return http.HttpResponseNotFound(t.render(RequestContext(request, context)))
 
 def error500(request, template_name='500.html'):
     context = {}
-    context['DEFAULT_EMAIL_ADDRESSES'] = DEFAULT_EMAIL_ADDRESSES
-    context['EMAIL_HOST'] = EMAIL_HOST
+    context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
+    context['EMAIL_HOST'] = settings.EMAIL_HOST
     context['request'] = request
     t = loader.get_template(template_name) # You need to create a 500.html template.
     return http.HttpResponseServerError(t.render(Context(context)))

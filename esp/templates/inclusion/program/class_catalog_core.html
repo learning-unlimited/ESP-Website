@@ -1,11 +1,9 @@
-{% load latex %}
-{% load smartypants %}
-    <tr onclick="swap_visible('class_{{ class.id }}_details');swap_visible('class_{{ class.id }}_content');swap_visible('class_{{ class.id }}_regbuttons');" style="cursor: pointer;">
+    <tr onclick="swap_visible('class_{{ class.id }}_details');swap_visible('class_{{ class.id }}_content');swap_visible('class_{{ class.id }}_regbuttons');" style="cursor: pointer;" class="prettify">
       <th colspan="2" style="padding: 5px; width: 70%;{{ colorstring }}">
           {% if class.got_index_qsd %}
-           <a href="Classes/{{ class.emailcode }}/index.html">{% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }}</a>
+           <a href="Classes/{{ class.emailcode }}/index.html">{% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }}</a>
           {% else %}
-           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape|teximages:150|smartypants }} {% if class.isFull and collapse_full %}<font color="#990000" style="font-size: 14px">Full!</font>{% else %}{% if class.isRegClosed %}<font color="#990000" style="font-size: 14px">Closed!</font>{% endif %}{% endif %}
+           {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }} {% if class.isFull and collapse_full %}<font color="#990000" style="font-size: 14px">Full!</font>{% else %}{% if class.isRegClosed %}<font color="#990000" style="font-size: 14px">Closed!</font>{% endif %}{% endif %}
           {% endif %}
 	 
 	 {% ifnotequal class.hardness_rating "Normal"  %} <br />
@@ -29,10 +27,10 @@
        </span>
        </th>
      </tr>
-     <tr id="class_{{ class.id }}_content" class="classcontent">
+     <tr id="class_{{ class.id }}_content" class="classcontent prettify">
        <td colspan="3" class="info">
         {% autoescape off %}
-         {{ class.class_info|escape|teximages:120|smartypants|linebreaksbr }}<br />
+         {{ class.class_info|escape|linebreaksbr }}<br />
         {% endautoescape %}
        {% if class.prereqs %}
        <br /><br />
@@ -43,13 +41,13 @@
        {% endif %}
        </td>
      </tr>
-    <tr id="class_{{ class.id }}_details" class="classdetails">
-      <td style="width: 50%;" valign="top">
+    <tr id="class_{{ class.id }}_details" class="classdetails prettify">
+      <td style="width: 50%;" valign="top" class="prettify>
         {% if show_meeting_times %}
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
 	  {% for sec in class.get_sections %}
-           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "|smartypants }} <br />{% endif %}
+           {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}} <br />{% endif %}
           {% endfor %}
         <br />
         {% endif %}

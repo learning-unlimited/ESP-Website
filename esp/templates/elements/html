@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+{% block doctype %}<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">{% endblock %}
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <title>{% block fulltitle %}{% endblock %}</title>
@@ -9,67 +9,67 @@
 <meta http-equiv="X-UA-Compatible" content="chrome=1">
 
 {% block javascript %}
+    {% block js0 %}
     <script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
-
-    <script type="text/javascript" src="/media/scripts/yui/yahoo/yahoo-min.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/dom/dom-min.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/connection/connection-min.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/animation/animation-min.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/autocomplete/autocomplete-min.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/logger/logger-min.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/dragdrop/dragdrop-debug.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/container/container-min.js"></script>
-
     <script type="text/javascript" src="/media/scripts/crashkit-javascript.js"> </script>
+    {% endblock %}
 
-    <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
-
+    {% block jquery %}
+    {% block jquery_version %}
     <script type="text/javascript" src="/media/scripts/jquery.js"> </script>
+    {% endblock %}
+    {% block jquery_cookie_version %}
     <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
+    {% endblock %}
 
     <script language="JavaScript">
     $j = $.noConflict();
     </script>
+    {% endblock %}
     
+    {% block js1 %}
     <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
     <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
     <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
-
-    <!-- Internet Explorer refuses to load media content over HTTP by default
-        when the page has been loaded over HTTPS.  This is a security policy.
-        However, Dojo has HTTP references hard-coded in a few places.  This
-        script below provides a workaround until we stop using Dojo.   -->
-    <script type="text/javascript">
-    djConfig = {
-        modulePaths: {
-            "dojo": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo",
-            "dijit": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dijit",
-            "dojox": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojox"
-        },
-        parseOnLoad: true
-    };
+    
+    <script type="text/javascript" src="https://d3eoax9i5htok0.cloudfront.net/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">
+    MathJax.Hub.Config({
+        messageStyle: "none",
+        displayAlign: "left",
+        displayIndent: "0em",
+        "HTML-CSS": {
+            styles: {
+                '.MathJax_Display': {
+                    display: "inline"
+                }
+            }
+        }
+    });
     </script>
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo/dojo.xd.js"></script>
 
+    <script type="text/javascript" src="/media/scripts/jsprettify-all-latest.js"></script>
+    <script language="JavaScript"> window.jsprettify.run(); </script>
+    {% endblock %}
+
+    {% block user_classes %}
     <script language="JavaScript">
     $j(document).ready(function() {
         update_user_classes();
     });
     </script>
+    {% endblock %}
+
 {% endblock %}
 
 {% block stylesheets %}
 <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
-<style type="text/css">
-        @import "https://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css";
-</style>
 {% endblock %}
 
 {% block xtrajs %}{% endblock %}
 
 </head>
-<body class="tundra" onload="MM_preloadImages( {% for img in preload_images %}'{{ img }}'{% if not forloop.last %}, {% endif %}{% endfor %})">
+<body class="{% block body_class %}tundra{% endblock %}" onload="MM_preloadImages( {% for img in preload_images %}'{{ img }}'{% if not forloop.last %}, {% endif %}{% endfor %})">
 
 {% block body %}{% endblock %}
 
