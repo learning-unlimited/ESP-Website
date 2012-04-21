@@ -1044,10 +1044,10 @@ class Program(models.Model, CustomFormsLinkModel):
     def by_prog_inst(cls, program, instance):
         prog_inst = Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
         return prog_inst
-    by_prog_inst.depend_on_row(lambda: Program, lambda prog: {'self': prog})
+    by_prog_inst.depend_on_row(lambda: Program, lambda prog: {'program': prog})
     def program_selector(node):
         if node.program_set.all().count() == 1:
-            return {'self': node.program_set.all()[0]}
+            return {'program': node.program_set.all()[0]}
         return {}
     by_prog_inst.depend_on_row(lambda: DataTree, program_selector)
     by_prog_inst = classmethod(by_prog_inst)
