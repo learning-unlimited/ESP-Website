@@ -130,7 +130,6 @@ LIMIT 1
         for student_type in student_types:
             students_Q = students_Q | students_dict[student_type]
         students = ESPUser.objects.filter(students_Q).distinct()
-        print 'Got %d students' % students.count()
         data = students.extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
         simplejson.dump(list(data), resp)
         return resp
@@ -286,6 +285,7 @@ LIMIT 1
         context['timeslots'] = prog.getTimeSlots()
         context['printers'] = GetNode('V/Publish/Print').children().values_list('name', flat=True)
         context['program'] = prog
+        context['initial_student'] = request.GET.get('student_id', '')
         return render_to_response(self.baseDir()+'ajax_status.html', request, (prog, tl), context)
 
     @aux_call
