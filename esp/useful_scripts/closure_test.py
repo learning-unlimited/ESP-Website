@@ -22,9 +22,10 @@ def test_js_compile(display=False):
     exclude_names = ['yui', 'extjs', 'jquery', 'showdown']
     
     #   Walk the directory tree and try compiling
-    result_dict = {}
     path_gen = os.walk(base_path)
     num_files = 0
+    file_list = []
+    
     for path_tup in path_gen:
         dirpath = path_tup[0]
         dirnames = path_tup[1]
@@ -48,24 +49,30 @@ def test_js_compile(display=False):
                 if exclude:
                     continue
                 
-                os.system('java -jar %s/compiler.jar --js %s/%s --js_output_file %s 2> %s' % (closure_path, dirpath, file, closure_output_code, closure_output_file))
-                checkfile = open(closure_output_file)
-                results = checkfile.read()
+                file_list.append('%s/%s' % (dirpath, file))
                 num_files += 1
-                if len(results.strip()) > 0:
-                    result_dict['%s/%s' % (dirpath, file)] = results
-                    if display:
-                        print '-- Found errors in: %s/%s' % (dirpath, file)
-                        print results
-                else:
-                    if display:
-                        print '-- Clean: %s/%s' % (dirpath, file)
-                checkfile.close()
+                
+    file_args = ' '.join([('--js %s' % file) for file in file_list])
+    os.system('java -jar %s/compiler.jar %s --js_output_file %s 2> %s' % (closure_path, file_args, closure_output_code, closure_output_file))
+    checkfile = open(closure_output_file)
+    results = [line.strip() for line in checkfile.readlines() if len(line.strip()) > 0]
+
+    if len(results) > 0:
+        if display:
+            print '-- Found errors'
+            for err in results: print err.strip()
+    else:
+        if display:
+            print '-- Clean'
+            
+    checkfile.close()
                 
     if display:
-        print 'Checked %d files; %d had errors/warnings' % (num_files, len(result_dict.keys()))
-    return result_dict
+        print 'Checked %d files; %d had errors/warnings' % (num_files, len(results))
+        
+    return results
     
 if __name__ == '__main__':
     closure_result = test_js_compile(display=True)
+    print 'Result: %s' % closure_result
     
