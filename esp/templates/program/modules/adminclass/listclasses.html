@@ -1,9 +1,5 @@
 {% block xtrajs %}
 
-{# These includes are not consistent with our local copy of the yahoo apis, but it doesn't seem to break anything yet... -ageng 2008-11-01 #}
-<script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/yahoo/yahoo-min.js"></script> 
-<script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/event/event-min.js"></script> 
-<script type="text/javascript" src="http://yui.yahooapis.com/2.6.0/build/connection/connection-min.js"></script>
 <script type="text/javascript"> var base_url = "{{ program.getUrlBase }}" </script>
 <script type="text/javascript"> var program_base_url = "/json/"+base_url+"/"; </script>
 <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
@@ -40,89 +36,8 @@ function assignRoom(clsid){
     form.submit();
 }
 
-var checks = {
-{% for check in program.checkitems_all_cached %}
-     "{{ check.id|addslashes }}": "{{check.title|addslashes}}",
-{% endfor %}
-};
-
-function clickCheckMark(clsid,check,id) {
-
-  var callback = {
-      failure:function(o){},
-      success:function(o){
-        if (o.responseText == 'On') {
-          off = ''; offTitle = '';
-        } else {
-          off = 'no'; offTitle = 'Not ';
-        }
-
-        document.getElementById(id).innerHTML = '<img src="{{MEDIA_URL}}images/'+off+'checkmark.gif" title="'+offTitle+checks[check]+'" />';
-      }
-  };
-
-  var url='/manage/{{program.getUrlBase}}/alter_checkmark/';
-  var post='class_id='+clsid+'&check_id='+check;
-
-  /* make the ajax call */
-  YAHOO.util.Connect.asyncRequest('POST', url, callback, post);
-
-}
-
-
-   var handleSubmit = function () { this.submit(); }
-   var handleCancel = function () { this.cancel(); }
-
-var manage_container;
-
-function dialog_init() {
-   YAHOO.namespace("example.container");
-
-  var handleSuccess = function(o) {
-       var response = o.responseText;
-       alert(response);
-  }
-  var handleFailure = function(o) {}
-     var buttons_list = [
-          { text:"Submit", handler:handleSubmit, isDefault:true },
-          { text:"Cancel", handler:handleCancel }
-     ];
-    
-     manage_container = new YAHOO.widget.Dialog("classmanager",
-	{ width : "600px",
-/*          fixedcenter : true,*/
-          visible : false,
-          modal:    true,
-/*          constraintoviewport : true,*/
-          buttons : buttons_list });
-
-     manage_container.callback  = { success: handleSuccess,
-	                   failure: handleFailure };
-
-     /*      YAHOO.util.Event.addListener("hide", "click", YAHOO.example.container.dialog1.hide, YAHOO.example.container.dialog1, true);*/
-}
-
-YAHOO.util.Event.addListener(window, "load", dialog_init);
-
-
-function manage_class(clsid) {
-  var callback = {
-      failure:function(o){},
-      success:function(o){
-         document.getElementById('classmanager').innerHTML = o.responseText;
-         manage_container.render();
-         manage_container.show();
-         document.getElementById('classmanager_c').style.top = '0px';
-      }
-  };
-
-  var url='/manage/{{program.getUrlBase}}/manageclass/?ajax=true';
-  var post='clsid='+clsid+'&ajax=true';
-
-  /* make the ajax call */
-  YAHOO.util.Connect.asyncRequest('POST', url, callback, post);
-
-}
+var handleSubmit = function () { this.submit(); }
+var handleCancel = function () { this.cancel(); }
 
 function show_loading_class_popup() {
   class_desc_popup
@@ -302,163 +217,38 @@ function reject_class(clsid) {
 
 <link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
 <link rel="stylesheet" href="/media/styles/jquery-ui/jquery-ui.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
+
 <style type="text/css">
-  .unapproved { 
-      font-style: italic;
-      color: #900;
-   }
-   .dashboard_red
-   {
-   	font-style:italic;
-   	color : #FF0000;
-   }
-   .dashboard_blue
-   {
-   	font-weight:bold;
-   	color: #3333FF; 
-   }
-   
-.class_checkitem { 
-   padding:0 !important;
-   margin: 0 !important;
+.unapproved {
+  font-style: italic;
+  color: #900;
+}
+.dashboard_red
+{
+font-style:italic;
+color : #FF0000;
+}
+.dashboard_blue
+{
+font-weight:bold;
+color: #3333FF;
+}
+
+.class_checkitem {
+padding:0 !important;
+margin: 0 !important;
 }
 
 .checkmark img {
-   border: 1px solid #999;
-   margin: 2px !important;
+border: 1px solid #999;
+margin: 2px !important;
 }
 
 .class_checkitem a:hover img {
-   border: 1px solid black !important;
-}
-
-#classmanager {
-   z-index: 10000;
-   position: absolute;
-   display: block;
-}
-
-.yui-panel-container {
-	position:absolute;
-	background-color:transparent;
-	z-index:6;
-	visibility:hidden;
-	overflow:visible;
-	width:auto;
-}
-
-.yui-panel-container.focused {
-}
-
-
-.yui-panel-container.matte {
-	padding:3px;
-	background-color:#FFF;
-}
-
-.yui-panel-container.matte .underlay {
-	display:none;
-}
-
-.yui-panel-container.shadow {
-	padding:0px;
-	background-color:transparent;
-}
-
-.yui-panel-container.shadow .underlay {
-	visibility:inherit;
-	position:absolute;
-	background-color:#000;
-	top:3px;left:3px;
-	z-index:0;
-	width:100%;
-	height:100%;
-    -moz-opacity: 0.12;
-    opacity:.12;
-    filter:alpha(opacity=12);
-	zoom:1;
-}
-
-.yui-panel {
-	visibility:hidden;
-	border-collapse:separate;
-	position:relative;
-	left:0px;top:0px;
-	font:1em Arial;
-	background-color:#FFF;
-	border:1px solid #000;
-	z-index:1;
-	overflow:hidden;
-}
-
-.yui-panel .hd {
-
-	font-size:100%;
-	line-height:100%;
-	border:1px solid #FFF;
-	font-weight:bold;
-	overflow:hidden;
-	padding:4px;
-}
-
-.yui-panel .bd {
-	overflow:hidden;
-	padding:4px;
-}
-
-.yui-panel .bd p {
-	margin:0 0 1em;
-}
-
-.yui-panel .container-close {
-	position:absolute;
-	top:5px;
-	right:4px;
-	z-index:6;
-	height:12px;
-	width:12px;
-	margin:0px;
-	padding:0px;
-	background:url(close12_1.gif) no-repeat;
-	cursor:pointer;
-	visibility:inherit;
-}
-
-.yui-panel .ft {
-	padding:4px;
-	overflow:hidden;
-}
-
-.yui-simple-dialog .bd .yui-icon {
-	background-repeat:no-repeat;
-	width:16px;
-	height:16px;
-	margin-right:10px;
-	float:left;
-}
-
-.yui-dialog .ft, 
-.yui-simple-dialog .ft {
-	padding-bottom:5px;
-	padding-right:5px;
-	text-align:right;
-}
-
-.yui-dialog form, 
-.yui-simple-dialog form {
-	margin:0;
-}
-
-.viable {
-  color: black;
-  background: #9f9;
-}
-
-.notviable {
-  color: #ccc;
+border: 1px solid black !important;
 }
 </style>
-<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
 
 <hr />
 
