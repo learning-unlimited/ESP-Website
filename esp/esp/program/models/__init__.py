@@ -1658,7 +1658,8 @@ class ScheduleMap:
             
     def remove_section(self, sec):
         for t in sec.timeslot_ids():
-            self.map[t].remove(sec)
+            if sec in self.map[t]:
+                self.map[t].remove(sec)
 
     def __marinade__(self):
         import hashlib
