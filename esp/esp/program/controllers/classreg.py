@@ -117,8 +117,6 @@ class ClassCreationController(object):
         #   If someone is editing the class who isn't teaching it, don't unapprove it.
         if user in cls.teachers():
             cls.propose()
-
-        cls.update_cache()
         
     def set_class_data(self, cls, reg_form):
         custom_fields = get_custom_fields()
