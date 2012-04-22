@@ -136,11 +136,11 @@ teachers[key]))
                 self.clslist = []
 
                 def count(self):
-                    lst = [0] + [x.num_students() for x in self.clslist]
+                    lst = [0] + [x.num_students() for x in self.clslist if x.category.category != 'Lunch']
                     return reduce(operator.add, lst)
 
                 def max_count(self):
-                    lst = [0] + [x.capacity for x in self.clslist]
+                    lst = [0] + [x.capacity for x in self.clslist if x.category.category != 'Lunch']
                     return reduce(operator.add, lst)
 
                 def __init__(self, newclslist):
@@ -169,7 +169,7 @@ teachers[key]))
         ## minimize the number of objects that we're creating.
         ## One dict and two Decimals per row, as opposed to
         ## an Object per field and all kinds of stuff...
-        for cls in self.program.classes().annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max'):
+        for cls in self.program.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max'):
             if cls['subject_duration']:
                 chours += cls['subject_duration']
                 shours += cls['subject_duration'] * (cls['class_size_max'] if cls['class_size_max'] else 0)
