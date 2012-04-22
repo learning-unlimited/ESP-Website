@@ -962,14 +962,11 @@ class Program(models.Model, CustomFormsLinkModel):
             return self._getColor
 
         mod = self.programmoduleobj_set.filter(module__admin_title='Teacher Signup Classes')
+        retVal = None
         if mod.count() == 1:
             modinfo = mod[0].classregmoduleinfo_set.all()
             if modinfo.count() == 1:
                 retVal = modinfo[0].color_code
-                if retVal == None:
-                    retVal = -1 # store None as -1 because we read None as the absence of a cached value
-        if retVal == -1:
-            return None
 
         self._getColor = retVal
         return retVal
