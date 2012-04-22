@@ -36,3 +36,43 @@ div #filter_accordion {
 div .ui-accordion-content {
     font-size: 0.8em;
 }
+
+div .recipient_list_options li {
+    list-style-type: none;
+    margin-left: 0px;
+}
+
+div #combo_list_form ul {
+    margin-left: 20px;
+    padding-left: 0px;
+}
+
+div #combo_list_form li {
+    margin-bottom: 8px;
+}
+
+#combo_list_form label.ui-button {
+    margin: 0px;
+    margin-left: -5px;
+    padding: 2px;
+}
+
+.step_header {
+    margin-bottom: 8px;
+}
+
+.step_label {
+    font-weight: bold;
+}
+
+.step_instructions {
+    font-size: 0.9em;
+}
+
+.step_highlight {
+    background-color: #FFFF00;
+}
+
+div .combo_list_separator {
+    font-weight: bold;
+}

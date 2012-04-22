@@ -195,7 +195,6 @@ class CommModule(ProgramModuleObj):
 
         #getFilterFromID(id, model)
 
-
     @aux_call
     @needs_admin
     def commnew(self, request, tl, one, two, module, extra, prog):
@@ -207,6 +206,16 @@ class CommModule(ProgramModuleObj):
         preferred_lists = ['enrolled', 'studentfinaid', 'student_profile', 'class_approved', 'lotteried_students',  'teacher_profile', 'class_proposed', 'volunteer_all']
         global_categories = [('Student', 'students'), ('Teacher', 'teachers'), ('Guardian', 'parents'), ('Educator', 'parents'), ('Volunteer', 'volunteers')]
         
+        def map_category_bwd(cat):
+            for pair in global_categories:
+                if cat == pair[1]:
+                    return pair[0]
+        def get_recipient_type(list_name):
+            for user_type in user_types:
+                raw_lists = getattr(prog, user_type)(True)
+                if list_name in raw_lists:
+                    return user_type
+        
         #   If list information was submitted, continue to prepare a message
         if request.method == 'POST':
             #   Turn multi-valued QueryDict into standard dictionary
@@ -214,6 +223,7 @@ class CommModule(ProgramModuleObj):
             for key in request.POST:
                 data[key] = request.POST[key]
                 
+            ##  Handle "basic list" submissions
             if 'base_list' in data and 'recipient_type' in data:
         
                 usc = UserSearchController()
@@ -224,11 +234,8 @@ class CommModule(ProgramModuleObj):
                     q_program = Q()
                 else:
                     #   Map the recipient type to the appropriate form
-                    for pair in global_categories:
-                        if data['recipient_type'] == pair[1]:
-                            recipient_type = pair[0]
-                            break
-                            
+                    recipient_type = map_category_bwd(data['recipient_type'])
+                    
                     if data['base_list'].startswith('all'):
                         q_program = Q()
                     else:
@@ -237,6 +244,61 @@ class CommModule(ProgramModuleObj):
                     
                 #   Get the user-specific part of the query (e.g. ID, name, school)
                 q_extra = usc.query_from_criteria(recipient_type, data)
+                
+                #   Get a persistent filter object combining these query criteria
+                filterObj = PersistentQueryFilter.create_from_Q(ESPUser, q_extra & q_program)
+                
+                context['filterid'] = filterObj.id
+                context['listcount'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+                return render_to_response(self.baseDir()+'step2.html', request, (prog, tl), context)
+                
+            ##  Handle "combination list" submissions
+            elif 'combo_base_list' in data:
+                usc = UserSearchController()
+                
+                #   Get an initial query from the supplied base list
+                recipient_type, list_name = data['combo_base_list'].split(':')
+                print 'Getting users of type %s in list %s' % (recipient_type, list_name)
+                if list_name.startswith('all'):
+                    q_program = Q()
+                    print 'Initial query: all users'
+                else:
+                    q_program = getattr(prog, recipient_type)(QObjects=True)[list_name]
+                    print '- Initial query: %s that %s' % (recipient_type, list_name)
+                
+                #   Apply Boolean filters
+                #   Base list will be intersected with any lists marked 'AND', and then unioned
+                #   with any lists marked 'OR'.
+                checkbox_keys = map(lambda x: x[9:], filter(lambda x: x.startswith('checkbox_'), data.keys()))
+                and_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('and_'), checkbox_keys))
+                or_keys = map(lambda x: x[3:], filter(lambda x: x.startswith('or_'), checkbox_keys))
+                not_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('not_'), checkbox_keys))
+                
+                for and_list_name in and_keys:
+                    user_type = get_recipient_type(and_list_name)
+                    if user_type:
+                        if and_list_name not in not_keys:
+                            q_program = q_program & (getattr(prog, user_type)(QObjects=True)[and_list_name])
+                            print '  Query modified: WHO ARE %s that %s' % (user_type, and_list_name)
+                        else:
+                            q_program = q_program & (~getattr(prog, user_type)(QObjects=True)[and_list_name])
+                            print '  Query modified: WHO ARE NOT %s that %s' % (user_type, and_list_name)
+                    else:
+                        print '  -> AND: Nothing to do with %s' % and_list_name
+                for or_list_name in or_keys:
+                    user_type = get_recipient_type(or_list_name)
+                    if user_type:
+                        if or_list_name not in not_keys:
+                            q_program = q_program | (getattr(prog, user_type)(QObjects=True)[or_list_name])
+                            print '  Query modified: OR WHO ARE %s that %s' % (user_type, or_list_name)
+                        else:
+                            q_program = q_program | (~getattr(prog, user_type)(QObjects=True)[or_list_name])
+                            print '  Query modified: OR WHO ARE NOT %s that %s' % (user_type, or_list_name)
+                    else:
+                        print '  -> OR: Nothing to do with %s' % and_list_name
+                        
+                #   Get the user-specific part of the query (e.g. ID, name, school)
+                q_extra = usc.query_from_criteria(map_category_bwd(recipient_type), data)
                 
                 #   Get a persistent filter object combining these query criteria
                 filterObj = PersistentQueryFilter.create_from_Q(ESPUser, q_extra & q_program)
@@ -265,12 +327,16 @@ class CommModule(ProgramModuleObj):
             key = cat_pair[0].lower() + 's'
             if cat_pair[1] not in category_lists:
                 category_lists[cat_pair[1]] = []
-            category_lists[cat_pair[1]].insert(0, {'name': 'all_%s' % key, 'list': ESPUser.getAllOfType(cat_pair[0]), 'description': 'All %s in the database' % key, 'preferred': True})
+            category_lists[cat_pair[1]].insert(0, {'name': 'all_%s' % key, 'list': ESPUser.getAllOfType(cat_pair[0]), 'description': 'All %s in the database' % key, 'preferred': True, 'all_flag': True})
         
         #   Add in mailing list accounts
         category_lists['emaillist'] = [{'name': 'all_emaillist', 'list': Q(password = 'emailuser'), 'description': 'Everyone signed up for the mailing list', 'preferred': True}]
         
         context['lists'] = category_lists
+        context['all_list_names'] = []
+        for category in category_lists:
+            for item in category_lists[category]:
+                context['all_list_names'].append(item['name'])
         
         return render_to_response(self.baseDir()+'commpanel_new.html', request, (prog, tl), context)
 
