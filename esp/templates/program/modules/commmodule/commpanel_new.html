@@ -16,8 +16,10 @@
 
 {% block javascript %}
     {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
     <script type="text/javascript" src="/media/scripts/commpanel.js"></script>
     <script type="text/javascript">
+    var program_base_url = "/json/{{ program.getUrlBase }}/";
     //  Populate list names
     var list_names = [{% for name in all_list_names %}"{{ name }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
     </script>
@@ -246,11 +248,23 @@
 	</div>
     
     <div id="tab_previous">
-		This is the "Previous E-mails" tab
+
+        <form id="form_previous" method="POST" action="/manage/{{ program.getUrlBase }}/commnew">
         <div id="previous_step_container">
         
+        <div id="msgreq_selector_area" class="ui-widget">Begin typing an e-mail title to find a previous message:
+        <input type="text" size="60" name="msgreq_id" id="msgreq_selector"/> 
+        <div class="step_instructions">Once you have selected a message, you can view information about it below.  If you would like to use the same list of recipients and edit the message text and settings before sending, click "Continue to compose e-mail" below.</div>
+        </div>
+        
+        <div id="msgreq_info_area">
+
+        </div>
+        
+        <a name="#" class="recipient_step_button" id="prev_select_done">Continue to edit e-mail</a>
         
         </div>        
+        </form>
 	</div>
 </div>
 

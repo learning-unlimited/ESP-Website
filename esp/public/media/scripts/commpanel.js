@@ -44,6 +44,17 @@ function submit_combo_selection()
     return true;
 }
 
+function submit_prev_selection()
+{
+    if (!($j("input[name=msgreq_id]").val()))
+    {
+        alert("Please select a previous message to start with.");
+        return false;
+    }
+    $j("#form_previous").submit();
+    return true;
+}
+
 function prepare_accordion(accordion_id, rb_selected)
 {
     //  Show school/grade options for students, graduation year options for teachers
@@ -65,6 +76,31 @@ function prepare_accordion(accordion_id, rb_selected)
         $j("#" + accordion_id).children(".ui-accordion-header").eq(8).hide();
         $j("#" + accordion_id).children(".ui-accordion-header").eq(9).hide();
     }
+}
+
+var msgreq_data;
+
+function msgreq_select_item(event, ui)
+{
+    last_select_event = [event, ui];
+    var msgreq_id = ui.item.value;
+    $j("input[name=msgreq_id]").val(ui.item.label);
+    
+    var target_div = $j("#msgreq_info_area");
+    var msgreq = msgreq_data[msgreq_id];
+    target_div.html("");
+    var md = msgreq.processed_by;
+    var md_str;
+    if (md)
+        md_str = md[1] + "/" + md[2] + "/" + md[0];
+    else
+        md_str = "Not sent";
+    var inner_div1 = $j("<div/>").html("<b>Selected Message</b>");
+    var inner_div2 = $j("<ul><li><b>Subject</b>: " + msgreq.subject + "</li><li><b>Sender</b>: " + msgreq.creator__first_name + " " + msgreq.creator__last_name + " (" + msgreq.creator__username + ")</li><li><b>Send Date</b>: " + md_str + "</li><li><b>Recipients</b>: " + msgreq.recipients__useful_name + "</li></ul>");
+    var inner_div3 = $j("<div class=\"email_contents\">" + msgreq.msgtext.replace(/\n/g, "<br />") + "</div><br />");
+    target_div.append(inner_div1);
+    target_div.append(inner_div2);
+    target_div.append(inner_div3);
 }
 
 function initialize() 
@@ -194,6 +230,26 @@ function initialize()
     //  Prepare "done" buttons
     $j("#combo_options_done").click(submit_combo_selection);
     $j("#combo_filter_done").click(submit_combo_selection);
+    
+    /*  Previous e-mails tab    */
+    
+    //  Set up message request autocomplete
+    msgreq_data = json_fetch(["message_requests"], function (result_data) {
+        msgreq_data = result_data.message_requests;
+        var msgreq_strings = [];
+        for (var id in result_data.message_requests)
+        {
+            msgreq_strings.push({label: result_data.message_requests[id].subject, value: id});
+        }
+
+        $j("#msgreq_selector").autocomplete({
+            source: msgreq_strings,
+            select: msgreq_select_item
+        });
+    });
+    
+    //  Handle submit button
+    $j("#prev_select_done").click(submit_prev_selection);
 }
 
 $j(document).ready(initialize);

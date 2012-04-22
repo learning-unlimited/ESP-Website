@@ -36,6 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admi
 from esp.web.util        import render_to_response
 from esp.program.modules.forms.satprep import SATPrepInfoForm
 from esp.program.models import SATPrepRegInfo
+from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
 from django.db.models.query   import Q
@@ -247,6 +248,8 @@ class CommModule(ProgramModuleObj):
                 
                 #   Get a persistent filter object combining these query criteria
                 filterObj = PersistentQueryFilter.create_from_Q(ESPUser, q_extra & q_program)
+                filterObj.useful_name = 'Program list: %s' % data['base_list']
+                filterObj.save()
                 
                 context['filterid'] = filterObj.id
                 context['listcount'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
@@ -302,9 +305,22 @@ class CommModule(ProgramModuleObj):
                 
                 #   Get a persistent filter object combining these query criteria
                 filterObj = PersistentQueryFilter.create_from_Q(ESPUser, q_extra & q_program)
+                filterObj.useful_name = 'Custom user list'
+                filterObj.save()
                 
                 context['filterid'] = filterObj.id
                 context['listcount'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+                return render_to_response(self.baseDir()+'step2.html', request, (prog, tl), context)
+                
+            elif 'msgreq_id' in data:
+                ##  Prepare a message starting from an earlier request
+                msgreq = MessageRequest.objects.get(id=data['msgreq_id'])
+                context['filterid'] = msgreq.recipients.id
+                context['listcount'] = msgreq.recipients.getList(ESPUser).count()
+                context['from'] = msgreq.sender
+                context['subject'] = msgreq.subject
+                context['replyto'] = msgreq.special_headers_dict.get('Reply-To', '')
+                context['body'] = msgreq.msgtext
                 return render_to_response(self.baseDir()+'step2.html', request, (prog, tl), context)
                 
             else:

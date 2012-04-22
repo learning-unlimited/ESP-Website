@@ -76,3 +76,13 @@ div #combo_list_form li {
 div .combo_list_separator {
     font-weight: bold;
 }
+
+div #msgreq_info_area {
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+div .email_contents {
+    font-family: Courier New, monospace;
+    font-size: 0.9em;
+}
