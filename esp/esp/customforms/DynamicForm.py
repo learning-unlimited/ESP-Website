@@ -293,6 +293,7 @@ class CustomFormHandler():
         return page_form        
         
 
+<<<<<<< HEAD
 class FormStorage(FileSystemStorage):
     """
     The Storage sublass used to temporarily store submitted files.
@@ -328,8 +329,19 @@ class ComboForm(SessionWizardView):
             })
 
         return context
+=======
+class ComboForm(FormWizard):
+    
+    def __init__(self, form_list, form, form_handler, initial=None):
+        self.form = form
+        self.form_handler = form_handler
+        super(ComboForm, self).__init__(form_list, initial)
+    
+    def get_template(self, step):
+        return 'customforms/form.html'
+>>>>>>> 3792333... Update customforms with FormWizard from Django 1.4
         
-    def done(self, form_list, **kwargs):
+    def done(self, request, form_list):
         data = {}
         dyn = DMH(form=self.form)
         dynModel = dyn.createDynModel()
@@ -338,7 +350,7 @@ class ComboForm(SessionWizardView):
         
         # Plonking in user_id if the form is non-anonymous
         if not self.form.anonymous:
-            data['user'] = self.curr_request.user
+            data['user'] = request.user
         
         # Populating data with the values that need to be inserted
         for form in form_list:
@@ -360,7 +372,7 @@ class ComboForm(SessionWizardView):
                         if pre_instance is not None:
                             link_models_cache[model.__name__]['instance'] = pre_instance
                         else:    
-                            link_models_cache[model.__name__]['instance'] = getattr(model, 'cf_link_instance')(self.curr_request)
+                            link_models_cache[model.__name__]['instance'] = getattr(model, 'cf_link_instance')(request)
                     ftype_parts = ftype.split('_')
                     if len(ftype_parts) > 1 and cf_cache.isCompoundLinkField(model, '_'.join(ftype_parts[1:])):
                         #   Try to match a model field to the last part of the key we have.
@@ -405,9 +417,9 @@ class ComboForm(SessionWizardView):
         dynModel.objects.create(**data)    
         return HttpResponseRedirect('/customforms/success/%d/' % self.form.id)
         
-    def get_form_prefix(self, step, form):
+    def prefix_for_step(self, step):
         """
-        The WizardView implements a form prefix for each step. Setting the prefix to an empty string, 
+        The FormWizard implements a form prefix for each step. Setting the prefix to an empty string, 
         as the field name is already unique
         """
         return ''            
@@ -544,9 +556,18 @@ class FormHandler:
                         else:
                             # Compound field. Needs to be passed a list of values.
                             initial_data[handler.seq].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
+<<<<<<< HEAD
         return initial_data
 
     def get_initial_data(self, initial_data=None):
+=======
+        return initial_data                
+    
+    def getWizard(self, initial_data=None):
+        """
+        Returns the ComboForm instance for this form
+        """
+>>>>>>> 3792333... Update customforms with FormWizard from Django 1.4
         if initial_data is None:
             initial_data = {}
         linked_initial_data = self._getInitialData(self.form, self.user)
@@ -557,6 +578,7 @@ class FormHandler:
                 combined_initial_data[i].update(linked_initial_data[i])
             if i in initial_data:
                 combined_initial_data[i].update(initial_data[i])
+<<<<<<< HEAD
         return combined_initial_data
 
     def get_wizard(self, initial_data=None):
@@ -581,6 +603,10 @@ class FormHandler:
                                 curr_request = self.request,
                                 form_handler = self,
                                 form = self.form)(self.request)
+=======
+        self.wizard = ComboForm(self._getFormList(), self.form, self, combined_initial_data)    
+        return self.wizard
+>>>>>>> 3792333... Update customforms with FormWizard from Django 1.4
         
     def deleteForm(self):
         """

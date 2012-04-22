@@ -218,7 +218,6 @@ INSTALLED_APPS = (
     'reversion',
     'south',
     'sslauth',
-    'formwizard',
     'form_utils',
     'esp.seltests',
     'esp.dataviews',
