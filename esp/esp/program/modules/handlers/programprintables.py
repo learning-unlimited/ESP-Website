@@ -725,31 +725,41 @@ class ProgramPrintables(ProgramModuleObj):
             return result_str
             
         if key == 'schedule':
+            #   Generic schedule function kept for backwards compatibility
             return ProgramPrintables.getSchedule(self.program, user)
-        if key == 'transcript':
+        elif key == 'student_schedule':
+            return ProgramPrintables.getSchedule(self.program, user, 'Student')
+        elif key == 'teacher_schedule':
+            return ProgramPrintables.getSchedule(self.program, user, 'Teacher')
+        elif key == 'volunteer_schedule':
+            return ProgramPrintables.getSchedule(self.program, user, 'Volunteer')
+        elif key == 'transcript':
             return ProgramPrintables.getTranscript(self.program, user, 'text')
-        if key == 'transcript_html':
+        elif key == 'transcript_html':
             return ProgramPrintables.getTranscript(self.program, user, 'html')
-        if key == 'transcript_latex':
+        elif key == 'transcript_latex':
             return ProgramPrintables.getTranscript(self.program, user, 'latex')
 
         return ''
 
     @staticmethod
     def get_student_classlist(program, student):
-        
         # get list of valid classes
         classes = [ cls for cls in student.getEnrolledSections()]
-        
-        # add taugtht classes
-        classes += [ cls for cls in student.getTaughtClasses()  ]
-            
         classes = [ cls for cls in classes
                     if cls.parent_program == program
                     and cls.isAccepted()                       ]
-        # now we sort them by time/title
         classes.sort()
-        
+        return classes
+
+    @staticmethod
+    def get_teacher_classlist(program, teacher):
+        # get list of valid classes
+        classes = [ cls for cls in teacher.getTaughtSections()]
+        classes = [ cls for cls in classes
+                    if cls.parent_program == program
+                    and cls.isAccepted()                       ]
+        classes.sort()
         return classes
 
     @staticmethod
@@ -776,31 +786,46 @@ class ProgramPrintables(ProgramModuleObj):
         return t.render(Context(context))
 
     @staticmethod
-    def getSchedule(program, student):
+    def getSchedule(program, user, schedule_type=None):
         
-        #   This is terrible, but also hilarious enough to leave in.
-        #   (The user passed as the 'student' argument is improperly named, since it could also be a teacher.)
-        schedule_label = 'Student'
-        if student.isTeacher():
-            schedule_label = 'Teacher'
+        if schedule_type is None:
+            if user.isStudent():
+                schedule_type = 'Student'
+            elif user.isTeacher():
+                schedule_type = 'Teacher'
+            elif user.isVolunteer():
+                schedule_type = 'Volunteer'
             
-        schedule = """
+        schedule = ''
+        if schedule_type in ['Student', 'Teacher']:
+            schedule = """
 %s schedule for %s:
 
- Time                   | Class                                  | Room\n""" % (schedule_label, student.name())
-        schedule += '------------------------+----------------------------------------+-----------\n'
-        
-        classes = ProgramPrintables.get_student_classlist(program, student)
-        
-        for cls in classes:
-            rooms = cls.prettyrooms()
-            if len(rooms) == 0:
-                rooms = ' N/A'
-            else:
-                rooms = ' ' + ", ".join(rooms)
+ Time                   | Class                                  | Room\n""" % (schedule_type, user.name())
+            schedule += '------------------------+----------------------------------------+-----------\n'
+            if schedule_type == 'Student':
+                classes = ProgramPrintables.get_student_classlist(program, user)
+            elif schedule_type == 'Teacher':
+                classes = ProgramPrintables.get_teacher_classlist(program, user)
+            for cls in classes:
+                rooms = cls.prettyrooms()
+                if len(rooms) == 0:
+                    rooms = ' N/A'
+                else:
+                    rooms = ' ' + ", ".join(rooms)
+                    
+                schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
                 
-            schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
-               
+        elif schedule_type == 'Volunteer':
+            schedule = """
+Volunteer schedule for %s:
+
+ Time                   | Shift                                  \n""" % (user.name())
+            schedule += '------------------------+----------------------------------------\n'
+            shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
+            for shift in shifts:
+                schedule += ' %s| %s\n' % (shift.request.timeslot.pretty_time().ljust(23), shift.request.timeslot.description.ljust(39))
+
         return schedule
 
     @aux_call
