@@ -257,13 +257,10 @@ class CommModule(ProgramModuleObj):
                 
                 #   Get an initial query from the supplied base list
                 recipient_type, list_name = data['combo_base_list'].split(':')
-                print 'Getting users of type %s in list %s' % (recipient_type, list_name)
                 if list_name.startswith('all'):
                     q_program = Q()
-                    print 'Initial query: all users'
                 else:
                     q_program = getattr(prog, recipient_type)(QObjects=True)[list_name]
-                    print '- Initial query: %s that %s' % (recipient_type, list_name)
                 
                 #   Apply Boolean filters
                 #   Base list will be intersected with any lists marked 'AND', and then unioned
@@ -278,23 +275,15 @@ class CommModule(ProgramModuleObj):
                     if user_type:
                         if and_list_name not in not_keys:
                             q_program = q_program & (getattr(prog, user_type)(QObjects=True)[and_list_name])
-                            print '  Query modified: WHO ARE %s that %s' % (user_type, and_list_name)
                         else:
                             q_program = q_program & (~getattr(prog, user_type)(QObjects=True)[and_list_name])
-                            print '  Query modified: WHO ARE NOT %s that %s' % (user_type, and_list_name)
-                    else:
-                        print '  -> AND: Nothing to do with %s' % and_list_name
                 for or_list_name in or_keys:
                     user_type = get_recipient_type(or_list_name)
                     if user_type:
                         if or_list_name not in not_keys:
                             q_program = q_program | (getattr(prog, user_type)(QObjects=True)[or_list_name])
-                            print '  Query modified: OR WHO ARE %s that %s' % (user_type, or_list_name)
                         else:
                             q_program = q_program | (~getattr(prog, user_type)(QObjects=True)[or_list_name])
-                            print '  Query modified: OR WHO ARE NOT %s that %s' % (user_type, or_list_name)
-                    else:
-                        print '  -> OR: Nothing to do with %s' % and_list_name
                         
                 #   Get the user-specific part of the query (e.g. ID, name, school)
                 q_extra = usc.query_from_criteria(map_category_bwd(recipient_type), data)
