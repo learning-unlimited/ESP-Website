@@ -234,14 +234,12 @@ class CommModule(ProgramModuleObj):
                     recipient_type = 'any'
                     q_program = Q()
                 else:
-                    #   Map the recipient type to the appropriate form
-                    recipient_type = map_category_bwd(data['recipient_type'])
-                    
                     if data['base_list'].startswith('all'):
                         q_program = Q()
                     else:
-                        program_lists = getattr(prog, pair[1])(QObjects=True)
+                        program_lists = getattr(prog, data['recipient_type'])(QObjects=True)
                         q_program = program_lists[data['base_list']]
+                    recipient_type = map_category_bwd(data['recipient_type'])
                     
                 #   Get the user-specific part of the query (e.g. ID, name, school)
                 q_extra = usc.query_from_criteria(recipient_type, data)
