@@ -117,8 +117,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         Q_rejected_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status__lt=0)) & Q_isteacher
         Q_approved_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status__gt=0)) & Q_isteacher
         Q_proposed_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status=0)) & Q_isteacher
-        Q_all_teachers = Q_rejected_teacher | Q_approved_teacher | Q_proposed_teacher 
-
 
         ## is_nearly_full() means at least one section is more than float(ClassSubject.get_capacity_factor()) full
         ## isFull() means that all *scheduled* sections are full
@@ -143,7 +141,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_approved': self.getQForUser(Q_approved_teacher),
                 'class_proposed': self.getQForUser(Q_proposed_teacher),
                 'class_rejected': self.getQForUser(Q_rejected_teacher),
-                'all_teachers': self.getQForUser(Q_all_teachers),
                 'class_nearly_full': self.getQForUser(Q_nearly_full_teacher),
                 'class_full': self.getQForUser(Q_full_teacher),
                 'taught_before': self.getQForUser(Q_taught_before),
@@ -155,7 +152,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_approved': ESPUser.objects.filter(Q_approved_teacher).distinct(),
                 'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct(),
                 'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct(),
-                'all_teachers': ESPUser.objects.filter(Q_all_teachers).distinct(),
                 'class_nearly_full': ESPUser.objects.filter(Q_nearly_full_teacher).distinct(),
                 'class_full': ESPUser.objects.filter(Q_full_teacher).distinct(),
                 'taught_before': ESPUser.objects.filter(Q_taught_before).distinct(),
@@ -168,13 +164,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     def teacherDesc(self):
         capacity_factor = ClassSubject.get_capacity_factor()
         result = {
-            'class_approved': """Teachers teaching an approved class.""",
-            'class_proposed': """Teachers teaching a class which has yet to be reviewed.""",
-            'class_rejected': """Teachers teaching a rejected class.""",
-            'all_teachers': """All teachers (regardless of class status) for this program.""",
-            'class_full': """Teachers teaching a completely full class.""",
-            'class_nearly_full': """Teachers teaching a nearly-full class (>%d%% of capacity).""" % (100 * capacity_factor),
-            'taught_before': """Teachers who have taught for a previous program.""",
+            'class_approved': """Teachers teaching an approved class""",
+            'class_proposed': """Teachers teaching an unreviewed class""",
+            'class_rejected': """Teachers teaching a rejected class""",
+            'class_full': """Teachers teaching a completely full class""",
+            'class_nearly_full': """Teachers teaching a nearly-full class (>%d%% of capacity)""" % (100 * capacity_factor),
+            'taught_before': """Teachers who have taught for a previous program""",
         }
         for item in self.get_resource_pairs():
             result[item[0]] = item[1]

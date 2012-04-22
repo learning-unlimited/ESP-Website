@@ -176,8 +176,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         for item in role_choices:
             role_dict[item[0]] = item[1]
     
-        result = {'classreg': """Students who have have signed up for at least one class.""",
-                  'enrolled': """Students who are enrolled in at least one class."""}
+        result = {'classreg': """Students who signed up for at least one class""",
+                  'enrolled': """Students who are enrolled in at least one class"""}
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
             allowed_student_types = allowed_student_types.split(",")

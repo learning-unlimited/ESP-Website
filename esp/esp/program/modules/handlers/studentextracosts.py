@@ -90,7 +90,7 @@ class StudentExtraCosts(ProgramModuleObj):
         student_desc = {}
         treeq = QTree(anchor__below=self.program_anchor_cached(parent=True))
         for i in LineItemType.objects.filter(treeq):
-            student_desc[i.text] = """Students who have opted for '%s'""" % i.text
+            student_desc['extracosts_%d' % i.id] = """Students who have opted for '%s'""" % i.text
 
         return student_desc
 
@@ -103,9 +103,9 @@ class StudentExtraCosts(ProgramModuleObj):
         # Get all the line item types for this program.
         for i in LineItemType.objects.filter(treeq):
             if QObject:
-                student_lists[i.text] = self.getQForUser(Q(accounting_lineitem__li_type = i))
+                student_lists['extracosts_%d' % i.id] = self.getQForUser(Q(accounting_lineitem__li_type = i))
             else:
-                student_lists[i.text] = ESPUser.objects.filter(accounting_lineitem__li_type = i).distinct()
+                student_lists['extracosts_%d' % i.id] = ESPUser.objects.filter(accounting_lineitem__li_type = i).distinct()
 
         return student_lists
 

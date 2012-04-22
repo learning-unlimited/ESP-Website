@@ -75,9 +75,9 @@ class FinancialAidAppModule(ProgramModuleObj):
         
 
     def studentDesc(self):
-        return {'studentfinaid_complete': """Students who have completed the student financial aid applications.""",
-                'studentfinaid':          """Students who have started the student financial aid applications.""",
-                'studentfinaid_approved': """Students who have been granted financial aid."""}
+        return {'studentfinaid_complete': """Students who have completed a financial aid application""",
+                'studentfinaid':          """Students who have started a financial aid application""",
+                'studentfinaid_approved': """Students who have been granted financial aid"""}
     
     def isCompleted(self):
         return get_current_request().user.appliedFinancialAid(self.program)
