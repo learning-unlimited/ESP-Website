@@ -55,14 +55,18 @@ $j(document).ready(initialize);
     div .module_group_body {
         margin-bottom: 10px;
     }
+    
+    div .module_group_body ul {
+        margin-top: 0px;
+    }
 
     div .module_group_header {
         width: 90%;
         background-color: #f3ecc4;
-        font-size: 1.0em;
+        font-size: 0.95em;
         font-weight: bold;
         padding: 5px;
-        margin-bottom: 5px;
+        margin-bottom: 8px;
         box-shadow: 3px 3px 5px #CCCCCC;
     }
 
@@ -84,7 +88,7 @@ $j(document).ready(initialize);
     }
 
     div .module_link_main {
-        font-size: 1.2em;
+        font-size: 1.1em;
         font-weight: bold;
     }
 
@@ -168,7 +172,9 @@ Default instructions will be filled out here.
         <div class="module_link_separator"></div>
     </div>
 </div>
-
+<table width="95%">
+<tr>
+<td width="50%">
 <div class="module_group" id="module_group_4">
     <div class="module_group_header">
         Quick Links
@@ -183,7 +189,8 @@ Default instructions will be filled out here.
     </ul>
     </div>
 </div>
-
+</td>
+<td width="50%">
 <div class="module_group" id="module_group_5">
     <div class="module_group_header">
         Generate Printables
@@ -198,6 +205,9 @@ Default instructions will be filled out here.
     </ul>
     </div>
 </div>
+</td>
+</tr>
+</table>
 
 <div id="show_complete_list" class="module_group_header header_special">Show Complete Module List</div>
 <div id="hide_complete_list" class="module_group_header header_special manage_hidden">Hide Complete Module List</div>
