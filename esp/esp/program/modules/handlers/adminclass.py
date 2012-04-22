@@ -603,7 +603,6 @@ class AdminClass(ProgramModuleObj):
                 ccc = ClassCreationController(self.program)
                 for teacher in coteachers:
                     ccc.associate_teacher_with_class(cls, teacher)
-                cls.update_cache()
                 ccc.send_class_mail_to_directors(cls)
                 return self.goToCore(tl)
 

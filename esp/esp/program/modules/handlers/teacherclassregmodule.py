@@ -483,12 +483,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 ccc = ClassCreationController(self.program)
                 for teacher in to_be_added:
                     ccc.associate_teacher_with_class(cls, teacher)
-                cls.update_cache()
                 ccc.send_class_mail_to_directors(cls)
                 return self.goToCore(tl)
 
-
-        
         return render_to_response(self.baseDir()+'coteachers.html', request, (prog, tl),{'class':cls,
                                                                                          'ajax':ajax,
                                                                                          'txtTeachers': txtTeachers,

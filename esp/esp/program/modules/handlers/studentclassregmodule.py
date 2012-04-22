@@ -827,13 +827,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if error and not request.user.onsite_local:
             # Undo by re-registering the old class. Theoretically "overridefull" is okay, since they were already registered for oldclass anyway.
             oldclass.preregister_student(request.user, overridefull=True, automatic=automatic)
-            oldclass.update_cache_students()
             raise ESPError(False), error
         
         # Attempt to register for the new class
         # Carry over the "automatic" userbit if the new class has the same title.
         if newclass.preregister_student(request.user, request.user.onsite_local, automatic and (newclass.title() == oldclass.title()) ):
-            newclass.update_cache_students()
+            pass
         else:
             oldclass.preregister_student(request.user, overridefull=True, automatic=automatic)
             raise ESPError(False), 'According to our latest information, this class is full. Please go back and choose another class.'
