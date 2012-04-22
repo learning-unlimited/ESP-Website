@@ -209,7 +209,11 @@ class CommModule(ProgramModuleObj):
         
         #   If list information was submitted, continue to prepare a message
         if request.method == 'POST':
-            data = request.POST.copy()
+            #   Turn multi-valued QueryDict into standard dictionary
+            data = {}
+            for key in request.POST:
+                data[key] = request.POST[key]
+                
             if 'base_list' in data and 'recipient_type' in data:
         
                 usc = UserSearchController()

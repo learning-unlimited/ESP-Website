@@ -53,10 +53,31 @@ function initialize()
         $j("#recipient_list_select").children("div").addClass("commpanel_hidden");
         $j("#recipient_list_options_" + rb_selected).removeClass("commpanel_hidden");
         //  console.log("Selected " + rb_selected);
+        
+        //  Show school/grade options for students, graduation year options for teachers
+        if (rb_selected == "students")
+        {
+            $j("#filter_accordion").children(".ui-accordion-header").eq(7).show();
+            $j("#filter_accordion").children(".ui-accordion-header").eq(8).show();
+            $j("#filter_accordion").children(".ui-accordion-header").eq(9).hide();
+        }
+        else if (rb_selected == "teachers")
+        {
+            $j("#filter_accordion").children(".ui-accordion-header").eq(7).hide();
+            $j("#filter_accordion").children(".ui-accordion-header").eq(8).hide();
+            $j("#filter_accordion").children(".ui-accordion-header").eq(9).show();
+        }
+        else
+        {
+            $j("#filter_accordion").children(".ui-accordion-header").eq(7).hide();
+            $j("#filter_accordion").children(".ui-accordion-header").eq(8).hide();
+            $j("#filter_accordion").children(".ui-accordion-header").eq(9).hide();
+        }
+        
     });
     
     //  Handle changes in the recipient list radio buttons
-    $j("li.commpanel_list_entry").click(function () {
+    $j("input[name=base_list]").change(function () {
         set_step("recipient_filter_select");
         $j("#filter_current_list").html($j("#label_" + $j("input[name=base_list]:checked").val()).html());
     });
@@ -79,15 +100,12 @@ function initialize()
     $j("#tab_select_basic").click(function () {set_step("recipient_type_select");});
 
     //  Prepare "back" buttons
-    $j("#recipient_list_back").button();
+    $j("a.recipient_step_button").button();
     $j("#recipient_list_back").click(function () {set_step("recipient_type_select");});
-    $j("#recipient_filter_back").button();
     $j("#recipient_filter_back").click(function () {set_step("recipient_list_select");});
     
     //  Prepare "done" buttons
-    $j("#recipient_list_done").button();
     $j("#recipient_list_done").click(submit_list_selection);
-    $j("#recipient_filter_done").button();
     $j("#recipient_filter_done").click(submit_list_selection);
 }
 

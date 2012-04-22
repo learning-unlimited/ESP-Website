@@ -5,3 +5,34 @@ div .commpanel_hidden {
 label .commpanel_list_preferred {
     color: red;
 }
+
+#filter_accordion h4 {
+    font-weight: bold;
+    font-style: normal;
+}
+
+#tabs {
+    font-size: 1.0em;
+}
+
+.ui-button {
+    padding: 4px;
+    margin: 6px;
+}
+
+a .ui-button {
+    text-decoration: none;
+}
+
+div #recipient_type_options {
+    margin-top: 10px;
+    clear: both;
+}
+
+div #filter_accordion {
+    margin-bottom: 10px;
+}
+
+div .ui-accordion-content {
+    font-size: 0.8em;
+}

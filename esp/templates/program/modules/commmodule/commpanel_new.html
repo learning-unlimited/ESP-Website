@@ -73,24 +73,61 @@
                 </ul>
             </div>
             {% endfor %}
-            <a name="#" id="recipient_list_back">Go back</a> 
-            <a name="#" id="recipient_list_done">Continue to compose e-mail</a>
+            <a name="#" class="recipient_step_button" id="recipient_list_back">Go back</a> 
+            <a name="#" class="recipient_step_button" id="recipient_list_done">Continue to compose e-mail</a>
         </div>
         
         <div id="recipient_filter_select" class="commpanel_hidden">
-            Step 3: Do you need to filter this list down?
-            (For any criteria you don't need, just leave them blank.)
-            <br />
-            Currently selected: <span id="filter_current_list"></span>
+            <div class="step_header"><span class="step_label">Step 3:</span> <span class="step_text">Do you need to filter this list down?</span></div>
+            <div class="step_instructions">(For any criteria you don't need, just leave them blank.)</div>
+            <div class="step_highlight">Currently selected: <span id="filter_current_list"></span></div>
             <div id="filter_accordion">
+            
                 <h4><a href="#">User ID</a></h4>
                 <div>Enter an ID number: <input type="text" size="6" name="userid" id="userid" /></div>
+                
                 <h4><a href="#">User name</a></h4>
                 <div>Enter a username: <input type="text" size="30" name="username" id="username" /></div>
+                
+                <h4><a href="#">Last name</a></h4>
+                <div>Enter a portion of the last name: <input type="text" size="30" name="last_name" id="last_name" /></div>
+                
+                <h4><a href="#">First name</a></h4>
+                <div>Enter a portion of the first name: <input type="text" size="30" name="first_name" id="first_name" /></div>
+                
+                <h4><a href="#">E-mail address</a></h4>
+                <div>Enter a portion of the e-mail address: <input type="text" size="30" name="email" id="email" /></div>
+                
+                <h4><a href="#">Zip Code</a></h4>
+                <div>
+                    Center of region: <input type="text" size="5" name="zipcode" value="02139" /> <br />
+                    Minimum distance: <input type="text" size="4" name="zipdistance_exclude" value="" /> miles <br />
+                    Maximum distance: <input type="text" size="4" name="zipdistance" value="" /> miles
+                </div>
+                
+                <h4><a href="#">States</a></h4>
+                <div>Enter a list of states: <input type="text" size="18" name="states" value="" /> <br />
+                <small>Example: MA,CT,NY</small></div>
+                
+                <h4><a href="#">School</a></h4>
+                <div>Enter a portion of the school name: <input type="text" size="30" name="school" value="" /></div>
+                
+                <h4><a href="#">Grade</a></h4>
+                <div>
+                Min Grade: <input type="text" size="3" name="grade_min" value="" /><br />
+                Max Grade: <input type="text" size="3" name="grade_max" value="" />
+                </div>
+                
+                <h4><a href="#">Graduation Year</a></h4>
+                <div>
+                Min: <input type="text" size="3" name="gradyear_min" value="" /> <br />
+                Max: <input type="text" size="3" name="gradyear_max" value="" />
+                </div>
+                
             </div>
             
-            <a name="#" id="recipient_filter_back">Go back</a>
-            <a name="#" id="recipient_filter_done">Continue to compose e-mail</a>
+            <a name="#" class="recipient_step_button" id="recipient_filter_back">Go back</a>
+            <a name="#" class="recipient_step_button" id="recipient_filter_done">Continue to compose e-mail</a>
         </div>
         
         

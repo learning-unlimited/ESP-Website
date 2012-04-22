@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, ZipCode
 from esp.middleware import ESPError
 
 from django.db.models.query import Q
@@ -98,7 +98,7 @@ class UserSearchController(object):
                 try:
                     zipc = ZipCode.objects.get(zip_code = criteria['zipcode'])
                 except:
-                    raise ESPError(False), 'Please enter a valid US zipcode.'
+                    raise ESPError(False), 'Zip code not found.  This may be because you didn\'t enter a valid US zipcode.  Tried: "%s"' % criteria['zipcode']
                 zipcodes = zipc.close_zipcodes(criteria['zipdistance'])
                 # Excludes zipcodes within a certain radius, giving an annulus; can fail to exclude people who used to live outside the radius.
                 # This may have something to do with the Q_include line below taking more than just the most recent profile. -ageng, 2008-01-15
