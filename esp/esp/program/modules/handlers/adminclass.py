@@ -624,10 +624,11 @@ class AdminClass(ProgramModuleObj):
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
-
-        #   May have to change so that the user is redirected to the dashboard after saving.
-        #   It might do this already.
-        return TeacherClassRegModule(self).makeaclass(request, tl, one, two, module, extra, prog, cls)
+        
+        module_list = prog.getModules()
+        for mod in module_list:
+            if isinstance(mod, TeacherClassRegModule):
+                return mod.makeaclass_logic(request,  tl, one, two, module, extra, prog, cls, action='edit')
 
     @aux_call
     @needs_admin
