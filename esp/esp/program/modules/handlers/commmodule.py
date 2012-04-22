@@ -179,9 +179,9 @@ class CommModule(ProgramModuleObj):
         pass
 
     
-    @main_call
+    @aux_call
     @needs_admin
-    def maincomm(self, request, tl, one, two, module, extra, prog):
+    def commpanel_old(self, request, tl, one, two, module, extra, prog):
         from esp.users.views     import get_user_list
         filterObj, found = get_user_list(request, self.program.getLists(True))
 
@@ -194,11 +194,9 @@ class CommModule(ProgramModuleObj):
                                   (prog, tl), {'listcount': listcount,
                                                'filterid': filterObj.id })
 
-        #getFilterFromID(id, model)
-
-    @aux_call
+    @main_call
     @needs_admin
-    def commnew(self, request, tl, one, two, module, extra, prog):
+    def commpanel(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['program'] = prog
         
