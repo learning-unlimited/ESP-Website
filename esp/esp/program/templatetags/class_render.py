@@ -42,6 +42,7 @@ render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', l
 render_class_core.cached_function.depend_on_row(StudentAppQuestion, lambda ques: {'cls': ques.subject})
 render_class_core.cached_function.depend_on_model(lambda: StudentClassRegModuleInfo)
 render_class_core.cached_function.depend_on_model(lambda: ClassRegModuleInfo)
+render_class_core.cached_function.depend_on_model(lambda: Tag)
 
 def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, collapse_full_classes=None):
     if not prog:
