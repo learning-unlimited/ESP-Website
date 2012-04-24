@@ -622,33 +622,37 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         newcls = deepcopy(cls)
         newcls.id = None
         ccc.attach_class_to_program(newcls)
-        newcls.save()
+        #newcls.save()
         return newcls
 
     @aux_call
     @meets_deadline('/Classes/Create')
     @needs_teacher
     def copyaclass(self, request, tl, one, two, module, extra, prog):
+        if request.method == 'POST':
+            return self.makeaclass_logic(request, tl, one, two, module, extra, prog)
         if not request.GET.has_key('cls'):
             raise ESPError("False"), "No class specified!"
         
+        # Select the class
         cls_id = request.GET['cls']
         classes = ClassSubject.objects.filter(id=cls_id)
         if len(classes) == 0:
             raise ESPError("False"), "No class found matching this ID!"
         if len(classes) != 1:
             raise ESPError("False")
-
         cls = classes[0]
 
+        # Select the correct action
         if cls.category.category == open_class_category().category:
             action = 'editopenclass'
         else:
             action = 'edit'
 
-        cls_copy = TeacherClassRegModule.copy_class_subject(cls, prog)
+        # Create a copy of the class under the current program for modification
+        #cls_copy = TeacherClassRegModule.copy_class_subject(cls, prog)
         
-        return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls_copy, action)
+        return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls, action, populateonly = True)
 
     @aux_call
     @meets_deadline('/Classes/Create')
@@ -666,7 +670,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None, action = 'createopenclass')
 
 
-    def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None, action = 'create'):
+    def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None, action = 'create', populateonly = False):
         context = {'module': self}
         
         static_resource_requests = Tag.getProgramTag('static_resource_requests', self.program, )
@@ -758,7 +762,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     current_data['optimal_class_size_range'] = newclass.optimal_class_size_range.id
                 if newclass.allowable_class_size_ranges.all():
                     current_data['allowable_class_size_ranges'] = list(newclass.allowable_class_size_ranges.all().values_list('id', flat=True))
-                context['class'] = newclass
+                if not populateonly:
+                    context['class'] = newclass
+
                 if action=='edit':
                     reg_form = TeacherClassRegForm(self, current_data)
                 elif action=='editopenclass':
