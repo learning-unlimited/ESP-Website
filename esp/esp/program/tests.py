@@ -39,7 +39,6 @@ from esp.program.models import ClassSection, RegistrationProfile, ScheduleMap
 from esp.resources.models import ResourceType
 
 from django.contrib.auth.models import User, Group
-from esp.users.models import ESPUser
 import datetime, random, hashlib
 
 from django.test.client import Client
