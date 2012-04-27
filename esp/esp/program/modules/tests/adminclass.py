@@ -37,6 +37,9 @@ class CancelClassTest(ProgramFrameworkTest):
 
         # Check that the class was changed to cancelled
         self.failUnless(self.cls.status == -20)
+        # Check that the sections were cancelled
+        for sec in self.cls.sections.all():
+            self.failUnless(sec.status == -20)
 
         # Test that an email was sent
         directorEmail = None
