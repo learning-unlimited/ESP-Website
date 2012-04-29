@@ -40,7 +40,7 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         self.failUnless(Tag.objects.filter(key='display_registration_names')[0].value == '["Enrolled", "'+self.testRT+'"]')
 
     def testCorrectness(self):
-        # Get a student and give them relationship of Enrolled and another witha class
+        # Get a student and give them relationship of Enrolled and another with a class
         student = self.students[0]
         cls = self.teachers[0].getTaughtSectionsFromProgram(self.program)[0]
         StudentRegistration.objects.get_or_create(user=student, section=cls, relationship=RegistrationType.objects.get(name='Enrolled'))
