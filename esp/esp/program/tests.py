@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from esp.datatree.models import *
 from esp.users.models import UserBit, GetNode, ESPUser, StudentInfo
-from esp.program.models import ClassSection, RegistrationProfile, ScheduleMap
+from esp.program.models import ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, Event
 from esp.resources.models import ResourceType
 
 from django.contrib.auth.models import User, Group
@@ -44,6 +44,13 @@ import datetime, random, hashlib
 from django.test.client import Client
 from esp.tests.util import CacheFlushTestCase as TestCase
 
+# For the LSRAssignmentTest
+from django.conf import settings
+import sys
+sys.path.append(settings.PROJECT_ROOT + "/useful_scripts")
+from lsr_assignment import lib2
+
+import random
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
@@ -1051,4 +1058,84 @@ class MeetingTimesTest(ProgramFrameworkTest):
         self.assertSetEquals(section.get_meeting_times(), [ts2])
         section.meeting_times.remove(ts2)
         self.assertSetEquals(section.get_meeting_times(), [])
+
+class LSRAssignmentTest(ProgramFrameworkTest):
+    def setUp(self):
+        random.seed()
+
+        # Create a program, students, classes, teachers, etc.
+        super(LSRAssignmentTest, self).setUp(num_students=50, room_capacity=4)
+        # Force the modules and extensions to be created
+        self.program.getModules()
+        # Schedule classes
+        self.schedule_randomly()
+
+        # Get the module and set up the program
+        lib2.program = self.program
+        # Disable lunch for now
+        lib2.satlunch = ()
+
+        # Create the registration types
+        self.enrolled_rt, created = RegistrationType.objects.get_or_create(name='Enrolled')
+        self.priority_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
+
+        # Add some priorities and interesteds for the lottery
+        es = Event.objects.filter(anchor=self.program.anchor)
+        for student in self.students:
+            # Give the student a starting grade
+            startGrade = int(random.random() * 6) + 7
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(startGrade))
+            student_studentinfo.save()
+            student_regprofile = RegistrationProfile(user=student, student_info=student_studentinfo, most_recent_profile=True)
+            student_regprofile.save()
         
+            for e in es:
+                # 0.5 prob of adding a class in the timeblock as priority
+                if random.random() < 0.5:
+                    sections = [s for s in self.program.sections() if e in s.meeting_times.all()]
+                    pri = random.choice(sections)
+                    StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+            for sec in self.program.sections():
+                # 0.25 prob of adding a section as interested
+                if random.random() < 0.25:
+                    StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=self.interested_rt)
+
+    def testLottery(self):
+        # Assign students to priority clases (i.e. Phases 1 & 2 of the lottery)
+        lib2.assign_priorities()
+
+        # Now go through and check that the assignments make sense
+        for student in self.students:
+            # Figure out which classes they got
+            priority_regs = StudentRegistration.objects.filter(user=student, relationship=self.priority_rt)
+            enrolled_regs = StudentRegistration.objects.filter(user=student, relationship=self.enrolled_rt)
+            priority_classes = set([sr.section for sr in priority_regs])
+            enrolled_classes = set([sr.section for sr in enrolled_regs])
+            not_enrolled_classes = priority_classes - enrolled_classes
+
+            # Get their grade
+            grade = ESPUser.gradeFromYOG(student.studentinfo_set.all()[0].graduation_year)
+
+            # Check that they can't possibly add a class they didn't get into
+            for cls in not_enrolled_classes:
+                self.failUnless(cls.cannotAdd(student) or cls.isFull())
+
+        # Assign students to interested classes (i.e. Phases 4 & 5 of the lottery)
+        lib2.assign_interesteds()
+
+        # Now go through and check that the assignments make sense
+        for student in self.students:
+            # Figure out which classes they got
+            interested_regs = StudentRegistration.objects.filter(user=student, relationship=self.interested_rt)
+            enrolled_regs = StudentRegistration.objects.filter(user=student, relationship=self.enrolled_rt)
+            interested_classes = set([sr.section for sr in interested_regs])
+            enrolled_classes = set([sr.section for sr in enrolled_regs])
+            not_enrolled_classes = interested_classes - enrolled_classes
+
+            # Get their grade
+            grade = ESPUser.gradeFromYOG(student.studentinfo_set.all()[0].graduation_year)
+
+            # Check that they can't possibly add a class they didn't get into
+            for cls in not_enrolled_classes:
+                self.failUnless(cls.cannotAdd(student) or cls.isFull())
