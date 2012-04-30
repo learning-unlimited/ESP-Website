@@ -1,7 +1,5 @@
-
-
 from esp.users.models import User, UserBit, ESPUser_Profile, ESPUser
-from esp.users.forms.user_reg import UserRegForm, EmailUserForm
+from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm
 from esp.web.util.main import render_to_response
 from esp.datatree.models import GetNode
 from esp.mailman import add_list_member
@@ -13,11 +11,13 @@ from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.dbmail.models import send_mail
 from django.contrib.sites.models import Site
+from django.core.urlresolvers import reverse
 import hashlib
 import random
 from esp import settings
+from django.utils.datastructures import MultiValueDictKeyError
 
-__all__ = ['join_emaillist','user_registration']
+__all__ = ['join_emaillist','user_registration_phase1', 'user_registration_phase2']
 
 def join_emaillist(request):
     """
@@ -43,49 +43,31 @@ def join_emaillist(request):
 
             return HttpResponseRedirect('/')
     else:
-        form = EmailUserForm(request=request)    
+        form = EmailUserRegForm(request=request)    
 
     return render_to_response('registration/emailuser.html',
                               request, request.get_node('Q/Web/myesp'), {'form':form})
 
-            
 
-def user_registration(request):
-    """
-    Registration view -- takes care of users who want to create a
-    new account.
-    """
+def user_registration_validate(request):    
+    form = UserRegForm(request.POST)
 
-    if request.user.is_authenticated():
-        return render_to_response('registration/already_logged_in.html',
-                                  request, request.get_node('Q/Web/myesp'), {})
-
-    if request.method == 'POST':
-        form = UserRegForm(request.POST)
-
-        if form.is_valid():         
-            ## First, check to see if we have any users with the same e-mail
-            if not 'do_reg_no_really' in request.POST and Tag.getTag('ask_about_duplicate_accounts', default='False') == 'True':
-                existing_accounts = ESPUser.objects.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
-                if len(existing_accounts) != 0:
-                    return render_to_response('registration/newuser.html',
-                                              request, request.get_node('Q/Web/myesp'),
-                                              { 'accounts': existing_accounts, 'form': form, 'site': Site.objects.get_current() })                
-            
+    if form.is_valid():         
+        print "form valid"
+        #I'm not sure what all the try/catch is here, but it possibly has to do with dummy volunteer accounts
+        try:
+            user = ESPUser.objects.get(email=form.cleaned_data['email'],
+                                       password = 'emailuser')
+        except User.DoesNotExist:
             try:
-                user = ESPUser.objects.get(email=form.cleaned_data['email'],
-                                        password = 'emailuser')
+                user = ESPUser.objects.filter(username = form.cleaned_data['username'],
+                                              is_active = False).latest('date_joined')
             except User.DoesNotExist:
-                try:
-                    user = ESPUser.objects.filter(username = form.cleaned_data['username'],
-                                               is_active = False).latest('date_joined')
-                except User.DoesNotExist:
-                    user = ESPUser(email = form.cleaned_data['email'])
+                user = ESPUser(email = form.cleaned_data['email'])
 
             user.username   = form.cleaned_data['username']
             user.last_name  = form.cleaned_data['last_name']
             user.first_name = form.cleaned_data['first_name']
-
             user.set_password(form.cleaned_data['password'])
             
             #   Append key to password and disable until activation if desired
@@ -120,11 +102,67 @@ def user_registration(request):
                 return render_to_response('registration/account_created_activation_required.html',
                                           request, request.get_node('Q/Web/myesp'),
                                           {'user': user, 'site': Site.objects.get_current()})
-    else:
-        form = UserRegForm()
+        else:
+            print "form not valid"
+            return render_to_response('registration/newuser.html',
+                                      request, request.get_node('Q/Web/myesp'),{'form':form})
 
+def user_registration_checkemail(request):
+    """Method to handle the first phase of registration when submitted as a form.
+
+The method user_registration_phase1 calls this function when it's given a POST request.
+When the form isn't valid, re-render the same template but with the form errors.
+When there are already accounts with this email address (depending on some tags), give the user information about them before proceeding.
+"""
+    form = EmailUserRegForm(request.POST)
+
+    if form.is_valid():         
+            ## First, check to see if we have any users with the same e-mail
+        if not 'do_reg_no_really' in request.POST and  Tag.getTag('ask_about_duplicate_accounts', default='False') == 'True':
+            existing_accounts = ESPUser.objects.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
+            if len(existing_accounts) != 0:
+                    #they have accounts. go back to the same page, but ask them
+                    #if they want to try to log in
+                return render_to_response('registration/newuser_phase1.html',
+                                          request, request.get_node('Q/Web/myesp'),
+                                          { 'accounts': existing_accounts, 'email':form.cleaned_data['email'], 'site': Site.objects.get_current(), 'form': form })    
+            #form is valid, and not multiple accounts 
+            return HttpResponseRedirect(reverse('users.views.user_registration_phase2')+'?email='+form.cleaned_data['email'])#some nonclean for urls issue to be fixed later
+        else: #form is not valid
+            return render_to_response('registration/newuser_phase1.html',
+                                      request, request.get_node('Q/Web/myesp'),
+                                      {'form':form, 'site': Site.objects.get_current()})
+    
+
+def user_registration_phase1(request):
+    """Displays phase 1, and recieves and passes off phase 1 submissions."""
+    if request.user.is_authenticated():
+        return render_to_response('registration/already_logged_in.html',
+                                  request, request.get_node('Q/Web/myesp'), {})
+
+    if request.method == 'POST':
+        return user_registration_checkemail(request)
+    else: 
+        form=EmailUserRegForm()
+        return render_to_response('registration/newuser_phase1.html',
+                                  request, request.get_node('Q/Web/myesp'),
+                                  {'form':form, 'site': Site.objects.get_current()})
+
+def user_registration_phase2(request):
+    """
+    Registration view -- takes care of users who want to create a
+    new account.
+    """   
+    if request.method == 'POST':
+        return user_registration_validate(request)
+
+    try:
+        email = request.GET['email']
+    except MultiValueDictKeyError:
+        return HttpResponseRedirect(reverse("users.views.user_registration_phase1"))
+    form = UserRegForm(initial={'email':email})
     return render_to_response('registration/newuser.html',
-                              request, request.get_node('Q/Web/myesp'),{'form':form})
+                              request, request.get_node('Q/Web/myesp'),{'form':form, 'email':email})
 
 
 

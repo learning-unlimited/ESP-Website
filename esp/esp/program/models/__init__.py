@@ -1,3 +1,4 @@
+
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -1266,7 +1267,7 @@ class RegistrationProfile(models.Model):
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
         self.last_ts = datetime.now()
-        RegistrationProfile.objects.filter(user = self.user, most_recent_profile = True).update(most_recent_profile = False)
+        RegistratioProfile.objects.filter(user = self.user, most_recent_profile = True).update(most_recent_profile = False)
         self.most_recent_profile = True
         super(RegistrationProfile, self).save(*args, **kwargs)
         
@@ -1857,11 +1858,12 @@ class VolunteerOffer(models.Model):
 class RegistrationType(models.Model):
     #   The 'key' (not really the primary key since we may want duplicate names)
     name = models.CharField(max_length=32)
-    description = models.TextField(blank=True, null=True)
+    description = models.TextField(blank=True, null=False)
     #   Purely for bookkeeping on the part of administrators 
     #   without reading the whole description
     category = models.CharField(max_length=32)
-    
+    displayName = models.CharField(max_length=32, blank=True, null=False)
+
     class Meta:
         unique_together = (("name", "category"),)
     
@@ -1890,7 +1892,10 @@ class RegistrationType(models.Model):
     get_map = staticmethod(get_map)
 
     def __unicode__(self):
-        return self.name
+        if self.displayName != "":
+            return self.displayName
+        else:
+            return self.name
 
 class StudentRegistration(models.Model):
     section = AjaxForeignKey('ClassSection')
