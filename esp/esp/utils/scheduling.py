@@ -127,9 +127,9 @@ def main():
             return
         
     if save_enrollments and not auto:
-            iscorrect = raw_input("Are you sure you want to save the results in the database (y/[n])? ")
-            if not (iscorrect.lower() == 'y' or iscorrect.lower() == 'yes'):
-                return
+        iscorrect = raw_input("Are you sure you want to save the results in the database (y/[n])? ")
+        if not (iscorrect.lower() == 'y' or iscorrect.lower() == 'yes'):
+            return
     
     print "Setup..." , 
     
