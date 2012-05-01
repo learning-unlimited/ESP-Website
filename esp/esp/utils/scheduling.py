@@ -60,6 +60,9 @@ def main():
 
     if "--save-enrollments" in sys.argv or "-se" in sys.argv:
         save_enrollments = True
+
+    if "--auto" in sys.argv:
+        auto = True
     
     p = None
     
@@ -118,14 +121,15 @@ def main():
 
 #    p = Program.objects.order_by('-id')[1]  # HSSP Spring 2011, as of this writing
     
-    iscorrect = raw_input("Is this the correct program (y/[n])? ")
-    if not (iscorrect.lower() == 'y' or iscorrect.lower() == 'yes'):
-        return
-        
-    if save_enrollments:
-        iscorrect = raw_input("Are you sure you want to save the results in the database (y/[n])? ")
+    if not auto:
+        iscorrect = raw_input("Is this the correct program (y/[n])? ")
         if not (iscorrect.lower() == 'y' or iscorrect.lower() == 'yes'):
             return
+        
+    if save_enrollments and not auto:
+            iscorrect = raw_input("Are you sure you want to save the results in the database (y/[n])? ")
+            if not (iscorrect.lower() == 'y' or iscorrect.lower() == 'yes'):
+                return
     
     print "Setup..." , 
     
@@ -137,6 +141,9 @@ def main():
         students.add(ESPUser(student))
     students = list(students)
     sections = p.sections().filter(status=10)
+    sections = [section
+                for section in sections
+                if len(section.get_meeting_times()) != 0]
     timeslots = p.getTimeSlots()
     
     for section in sections:
