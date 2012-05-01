@@ -44,11 +44,7 @@ import datetime, random, hashlib
 from django.test.client import Client
 from esp.tests.util import CacheFlushTestCase as TestCase
 
-# For the LSRAssignmentTest
-from django.conf import settings
-import sys
-sys.path.append(settings.PROJECT_ROOT + "/useful_scripts")
-from lsr_assignment import lib2
+from esp.program.controllers.lottery import LotteryAssignmentController
 
 import random
 
@@ -1064,21 +1060,17 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         random.seed()
 
         # Create a program, students, classes, teachers, etc.
-        super(LSRAssignmentTest, self).setUp(num_students=50, room_capacity=4)
+        super(LSRAssignmentTest, self).setUp(num_students=20, room_capacity=3)
         # Force the modules and extensions to be created
         self.program.getModules()
         # Schedule classes
         self.schedule_randomly()
 
-        # Get the module and set up the program
-        lib2.program = self.program
-        # Disable lunch for now
-        lib2.satlunch = ()
-
         # Create the registration types
         self.enrolled_rt, created = RegistrationType.objects.get_or_create(name='Enrolled')
         self.priority_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
         self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
+        self.waitlist_rt, created = RegistrationType.objects.get_or_create(name='Waitlist/1')
 
         # Add some priorities and interesteds for the lottery
         es = Event.objects.filter(anchor=self.program.anchor)
@@ -1102,36 +1094,24 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                     StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=self.interested_rt)
 
     def testLottery(self):
-        # Assign students to priority clases (i.e. Phases 1 & 2 of the lottery)
-        lib2.assign_priorities()
-
-        # Now go through and check that the assignments make sense
-        for student in self.students:
-            # Figure out which classes they got
-            priority_regs = StudentRegistration.objects.filter(user=student, relationship=self.priority_rt)
-            enrolled_regs = StudentRegistration.objects.filter(user=student, relationship=self.enrolled_rt)
-            priority_classes = set([sr.section for sr in priority_regs])
-            enrolled_classes = set([sr.section for sr in enrolled_regs])
-            not_enrolled_classes = priority_classes - enrolled_classes
-
-            # Get their grade
-            grade = ESPUser.gradeFromYOG(student.studentinfo_set.all()[0].graduation_year)
-
-            # Check that they can't possibly add a class they didn't get into
-            for cls in not_enrolled_classes:
-                self.failUnless(cls.cannotAdd(student) or cls.isFull())
-
-        # Assign students to interested classes (i.e. Phases 4 & 5 of the lottery)
-        lib2.assign_interesteds()
+        # Run the lottery!
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+        
 
         # Now go through and check that the assignments make sense
         for student in self.students:
             # Figure out which classes they got
             interested_regs = StudentRegistration.objects.filter(user=student, relationship=self.interested_rt)
+            priority_regs = StudentRegistration.objects.filter(user=student, relationship=self.priority_rt)
             enrolled_regs = StudentRegistration.objects.filter(user=student, relationship=self.enrolled_rt)
+
             interested_classes = set([sr.section for sr in interested_regs])
+            priority_classes = set([sr.section for sr in priority_regs])
             enrolled_classes = set([sr.section for sr in enrolled_regs])
-            not_enrolled_classes = interested_classes - enrolled_classes
+            not_enrolled_classes = (priority_classes | interested_classes) - enrolled_classes
+
 
             # Get their grade
             grade = ESPUser.gradeFromYOG(student.studentinfo_set.all()[0].graduation_year)
