@@ -494,7 +494,7 @@ and <tt>M100-class@{{ EMAIL_HOST }}</tt> will email everyone in the class.
   <tr><td class="clsleft classname" colspan="6">
     Note: <span class="unapproved dashboard_blue">Blue</span> stands for unreviewed classes and <span class="dashboard_red">Red</span> for rejected classes
   </td></tr>
-{% load class_manage_row %}
+{% load class_render_row %}
   {% for cls in classes %}
   <tr id="{{cls.id}}-row">
    {% render_class_teacher_list_row cls %}
