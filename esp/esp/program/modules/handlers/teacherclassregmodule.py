@@ -671,6 +671,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
               came from and saving edits back to that. This is used for the class
               copying logic.
         """
+
         context = {'module': self}
         
         static_resource_requests = Tag.getProgramTag('static_resource_requests', self.program, )
