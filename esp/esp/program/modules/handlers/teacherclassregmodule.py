@@ -616,15 +616,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None)
 
-    @classmethod
-    def copy_class_subject(module_cls, cls, newprog):
-        ccc = ClassCreationController(newprog)
-        newcls = deepcopy(cls)
-        newcls.id = None
-        ccc.attach_class_to_program(newcls)
-        #newcls.save()
-        return newcls
-
     @aux_call
     @meets_deadline('/Classes/Create')
     @needs_teacher
@@ -649,9 +640,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         else:
             action = 'edit'
 
-        # Create a copy of the class under the current program for modification
-        #cls_copy = TeacherClassRegModule.copy_class_subject(cls, prog)
-        
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls, action, populateonly = True)
 
     @aux_call
@@ -671,6 +659,18 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
 
     def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None, action = 'create', populateonly = False):
+        """
+        The logic for the teacher class registration form.
+
+        A brief description of some of the key arguments:
+        - newclass -- The class object from which to fill in the data
+        - action -- What action is the form performing? Options are 'create',
+              'createopenclass', 'edit', 'editopenclass'
+        - populateonly -- If True and newclass is specified, the form will only
+              populate the fields, rather than keeping track of which class they
+              came from and saving edits back to that. This is used for the class
+              copying logic.
+        """
         context = {'module': self}
         
         static_resource_requests = Tag.getProgramTag('static_resource_requests', self.program, )
