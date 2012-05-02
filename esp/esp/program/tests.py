@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from esp.datatree.models import *
 from esp.users.models import UserBit, GetNode, ESPUser, StudentInfo
-from esp.program.models import ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, Event
+from esp.program.models import ClassSubject, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, Event, ClassCategories
 from esp.resources.models import ResourceType
 
 from django.contrib.auth.models import User, Group
@@ -45,6 +45,7 @@ from django.test.client import Client
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 from esp.program.controllers.lottery import LotteryAssignmentController
+from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 
 import random
 
@@ -1065,6 +1066,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.program.getModules()
         # Schedule classes
         self.schedule_randomly()
+        self.timeslots = Event.objects.filter(meeting_times__parent_class__parent_program = self.program)
 
         # Create the registration types
         self.enrolled_rt, created = RegistrationType.objects.get_or_create(name='Enrolled')
@@ -1086,6 +1088,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                 # 0.5 prob of adding a class in the timeblock as priority
                 if random.random() < 0.5:
                     sections = [s for s in self.program.sections() if e in s.meeting_times.all()]
+                    if len(sections) == 0: continue
                     pri = random.choice(sections)
                     StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
             for sec in self.program.sections():
@@ -1119,3 +1122,54 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
                 self.failUnless(cls.cannotAdd(student) or cls.isFull())
+
+    def testSingleLunchConstraint(self):
+        # First generate 1 lunch timeslot
+        lunch_timeslot = random.choice(self.timeslots)
+        lcg = LunchConstraintGenerator(self.program, [lunch_timeslot])
+        lcg.generate_all_constraints()
+
+        # Run the lottery!
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+
+        # Now go through and make sure that lunch assignments make sense
+        for student in self.students:
+            lunch_sec = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
+            self.failUnless(len(lunch_sec) == 1, "Lunch constraint for one timeblock generated multiple Lunch sections")
+            lunch_sec = lunch_sec[0]
+            timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times=lunch_sec)
+
+            self.failUnless(not lunch_sec.meeting_times.all()[0] in timeslots, "One of the student's registrations overlaps with the lunch block")
+
+    def testMultipleLunchConstraint(self):
+        # First generate 3 lunch timeslots
+        ts_copy = list(self.timeslots)[:]
+        lt1 = random.choice(ts_copy)
+        ts_copy.remove(lt1)
+        lt2 = random.choice(ts_copy)
+        ts_copy.remove(lt2)
+        lt3 = random.choice(ts_copy)
+        lcg = LunchConstraintGenerator(self.program, [lt1, lt2, lt3])
+        lcg.generate_all_constraints()
+
+        # Run the lottery!
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+
+        # Now go through and make sure that lunch assignments make sense
+        for student in self.students:
+            lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
+            self.failUnless(len(lunch_secs) == 3, "Incorrect number of lunch sections created")
+            timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times__in=lunch_secs)
+
+            lunch_free = False
+            for lunch_section in lunch_secs:
+                if not lunch_section.meeting_times.all()[0] in timeslots:
+                    lunch_free = True
+                    break
+            self.failUnless(lunch_free, "No lunch sections free for a student!")
