@@ -1,5 +1,6 @@
-{# expects program, class, and teacherclsmodule (ClassRegModuleInfo) #}
-<tr>
+{% extends "inclusion/program/class_teacher_list_row.html" %}
+
+{% block cls_title %}
   <td class="clsleft classname bordertop2" colspan="5">
     <span title="{{cls}}">
       {{ cls.parent_program.niceName }} -- 
@@ -7,6 +8,9 @@
       <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
     </span>
   </td>
+{% endblock %}
+
+{% block cls_row_1_buttons %}
   <td class="clsmiddle bordertop2" colspan="1">
     <a class="abutton" href="{{ prog.get_teach_url }}copyaclass?cls={{ cls.id }}"
        title="Duplicate {{ cls }}">Duplicate</a>
@@ -18,31 +22,13 @@
        title="{{ cls }}...">Visit web page</a>
     {% endif %}
   </td>
-</tr>
+{% endblock %}
 
-<tr>
-  <td class="clsleft" colspan="5">
-    <b>Directors' review status</b>: {% if cls.isReviewed %}{% if cls.isAccepted %}
-    <span style="font-weight: bold; color: #0C0;">Accepted</span>
-    {% else %}
-    <span style="font-weight: bold; color: #C00;">Rejected</span>
-    {% endif %}
-    {% else %}
-    <span style="font-weight: bold; color: #00C;">Unreviewed</span>
-    {% endif %}
-  </td>
-</tr>
+{% block cls_row_2_buttons %}{% endblock %}
 
-<tr>
-  <td class="clsleft" colspan="5">
-    <b>Document uploads</b>: There are {{ cls.anchor.media_set.count }} documents associated with this class.
-  </td>
-</tr>
+{% block cls_row_3_buttons %}{% endblock %}
 
-{% if teacherclsmodule.allow_coteach %}
-<tr>
-  <td class="clsleft"><b>(Co-)Teachers: </b></td>
-  <td class="clsmiddle" colspan="4">{% for t in cls.teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
+{% block cls_row_4_buttons %}
   {% if cls_manageable %}
   <td class="clsright">
     <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">
@@ -52,24 +38,6 @@
     </form>
   </td>
   {% endif %}
-</tr>
-{% endif %}
+{% endblock %}
 
-{% for sec in cls.sections.all %}
-<tr>
-  <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i> <br />
-    Status: {% if sec.isReviewed %}{% if sec.isAccepted %}
-    <span style="font-weight: bold; color: #0C0;">Accepted</span>
-    {% else %}
-    <span style="font-weight: bold; color: #C00;">Rejected</span>
-    {% endif %}
-    {% else %}
-    <span style="font-weight: bold; color: #00C;">Unreviewed</span>
-    {% endif %}
-  </td>
-  <td class="clsmiddle" valign="top" colspan="3">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}</td>
-  <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
-    <br />(<a href="/teach/{{ one }}/{{ two }}/section_students/{{ sec.id }}">view list</a>) 
-    <!-- (<a href="/teach/{{ one }}/{{ two }}/select_students/{{ sec.id }}">enroll/reject</a>) --> </td>
-</tr>
-{% endfor %}
+{% block cls_row_5_buttons %}{% endblock %}
