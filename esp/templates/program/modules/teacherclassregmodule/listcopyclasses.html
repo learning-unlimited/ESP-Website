@@ -16,17 +16,20 @@
 
 <br /><br />
 
+{% load render_qsd %}
+{% inline_qsd_block prog.anchor "teacher_class_import_description" request.user %}Write instructions here!{% end_inline_qsd_block %}
+
 {% if allow_class_import %}
 <div id="battlescreen">
 
 <table cellpadding="4" cellspacing="0" align="center">
   <tr>
     <th colspan="7">
-      Choose a class to duplicate
+      Choose a class to import
     </th>
   </tr>
   <tr>
-    <td colspan="6">Below is a summary of the classes you have registered to teach for all programs.  Choose a class below to create a duplicate of for {{ program.niceName }}. </td>
+    <td colspan="6">Below is a summary of the classes you have registered to teach for all programs.  Choose a class below to import for {{ program.niceName }}. This will allow you to create a modified copy of the class which will be registered under {{ program.niceName }}. </td>
   </tr>
   {% if noclasses %}
   <tr>
