@@ -7,7 +7,10 @@ from esp.datatree.models import GetNode
 from django.contrib.auth import logout, login, authenticate
 from esp.middleware import ESPError
 from esp.users.views import make_user_admin
-from esp.tests.utils import CacheFlushTestCase
+from esp.tests.util import CacheFlushTestCase
+from django.core import mail
+import esp.users.views as views
+from esp.tagdict.models import Tag
 
 class ESPUserTest(TestCase):
     def testInit(self):
@@ -279,3 +282,89 @@ class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
         user=self.students[0]
         self.assertTrue(self.client.login(username=user.username, password='password'))
         super(AjaxScheduleExistenceTest, self).runTest()
+
+class AccountCreationTest(TestCase):
+    
+    def test_phase_1(self):
+        #There's a tag that affects phase 1 so we put the tests into a function
+        #and call it twice here
+        Tag.setTag('ask_about_duplicate_accounts',value='True')
+        self.phase_1()
+        Tag.setTag('ask_about_duplicate_accounts',value='False')
+        self.phase_1()
+        
+
+    def phase_1(self):
+        """Testing the phase 1 of registration, the email address page"""
+        #first try an email that shouldn't have an account
+        #first without follow, to see that it redirects correctly
+        response1 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com"})
+        self.assertRedirects(response1, "/myesp/register/information?email=tsutton125%40gmail.com")
+        
+
+        if Tag.getTag('ask_about_duplicate_accounts', default='True') == 'False': return
+
+        #next, make a user with that email and try the same
+        u=ESPUser.objects.create(email="tsutton125@gmail.com")
+        response2 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com"},follow=True)
+        self.assertTemplateUsed(response2, 'registration/newuser_phase1.html')
+        self.assertContains(response2, "do_reg_no_really")
+
+        #check when there's a user awaiting activation
+        #(we check with a regex searching for _ in the password, since that
+        #can't happen normally)
+        u.password="blah_"
+        response3 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com"},follow=True)
+        self.assertTemplateUsed(response3, 'registration/newuser_phase1.html')
+        self.assertContains(response3, "do_reg_no_really")
+
+        #check when you send do_reg_no_really it procedes
+        response4 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com","do_reg_no_really":""},follow=False)
+        self.assertRedirects(response4, "/myesp/register/information?email=tsutton125%40gmail.com")
+        response4 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com","do_reg_no_really":""},follow=True)
+        self.assertContains(response4, "tsutton125@gmail.com")
+
+    def test_phase_2(self):
+        #similarly to phase_1, call helper function twice with tag settings
+        Tag.setTag('require_email_validation',value='True')
+        self.phase_2()
+        Tag.setTag('require_email_validation',value='False')
+        self.phase_2()
+
+    def phase_2(self):
+        """Testing phase 2, where user provides info, and we make the account"""
+
+        response = self.client.post("/myesp/register/information",
+                                   data={"username":"username",
+                                         "password":"passw",
+                                         "confirm_password":"passw",
+                                         "first_name":"first",
+                                         "last_name":"last",
+                                         "email":"tsutton125@gmail.com",
+                                         "initial_role":"Teacher"})
+        
+        #test that the user was created properly
+        try:
+            u=ESPUser.objects.get(username="username",
+                                  first_name="first",
+                                  last_name="last",
+                                  email="tsutton125@gmail.com")
+        except ESPUser.DoesNotExist, ESPUser.MultipleObjectsReturned:
+            self.fail("User not created correctly or created multiple times")
+
+        if Tag.getTag('require_email_validation', default='False') != 'True':
+            return
+
+        self.assertFalse(u.is_active)
+        self.assertTrue("_" in u.password)
+
+        self.assertEqual(len(mail.outbox),1)
+        self.assertEqual(len(mail.outbox[0].to),1)
+        self.assertEqual(mail.outbox[0].to[0],u.email)
+        #note: will break if the activation email is changed too much
+        import re
+        match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)",mail.outbox[0].body)
+        self.assertEqual(match.group("user"),u.username)
+        self.assertEqual(match.group("key"),u.password.rsplit("_")[-1])
+        
+

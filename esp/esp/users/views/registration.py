@@ -186,7 +186,6 @@ def send_activation_email(user,userkey):
     from django.template import Context as RawContext
     t = loader.get_template('registration/activation_email.txt')
     c = RawContext({'user': user, 'activation_key': userkey, 'site': Site.objects.get_current()})
-    print t.render(c)
     send_mail("Account Activation", t.render(c), settings.SERVER_EMAIL, [user.email], fail_silently = False)
 
 def resend_activation_view(request):
