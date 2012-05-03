@@ -41,6 +41,7 @@ from esp.program.models.class_ import open_class_category
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.datatree.models import *
 from esp.tagdict.models          import Tag
+from esp.tagdict.decorators      import require_tag
 from esp.web.util                import render_to_response
 from django.template.loader      import render_to_string
 from esp.middleware              import ESPError
@@ -89,6 +90,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['teacherclsmodule'] = self # ...
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = (Tag.getProgramTag(key='friendly_times_with_date',program=self.program,default=False) == "True")
+        context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='false').lower()
         return context
 
 
@@ -649,6 +651,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context = {}
         context['all_class_list'] = request.user.getTaughtClasses()
         context['noclasses'] = (len(context['all_class_list']) == 0)
+        context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='false').lower()
         return render_to_response(self.baseDir()+'listcopyclasses.html', request, (prog, tl), context)
 
     @aux_call

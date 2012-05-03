@@ -16,6 +16,7 @@
 
 <br /><br />
 
+{% if allow_class_import %}
 <div id="battlescreen">
 
 <table cellpadding="4" cellspacing="0" align="center">
@@ -43,4 +44,10 @@
   {% endfor %}
 
 </table>
+{% else %}
+Sorry! Class importing is disabled for {{ program.niceName }}.
+{% endif %}
+<br /><br/ >
+
+<a href="{{ prog.get_teach_url}}/teacherreg">Go back to the main teacher registration page</a>
 {% endblock %}
