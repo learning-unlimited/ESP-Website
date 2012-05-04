@@ -38,7 +38,7 @@ from django.template import Context
 from esp.middleware.threadlocalrequest import AutoRequestContext
 from esp.cache import cache_function
 from esp.cache.key_set import wildcard, is_wildcard
-from django.utils.functional import curry
+from functools import partial
 import random
 import warnings
 
@@ -98,9 +98,9 @@ class InclusionTagCacheDecorator(object):
 
             class InclusionNode(template.Node):
 
-                def __init__(in_self, vars_to_resolve):
+                def __init__(in_self, takes_context, vars_to_resolve, kwargs):
                     in_self.vars_to_resolve = vars_to_resolve
-
+                    
                 def __str__(in_self):
                     return '<IN>'
 
@@ -146,8 +146,9 @@ class InclusionTagCacheDecorator(object):
                     resolved_vars = []
                     for var in in_self.vars_to_resolve:
                         try:
-                            resolved_vars.append(template.resolve_variable(var, context))
+                            resolved_vars.append(var.resolve(context))
                         except:
+                            print 'Could not resolve %s' % var                            
                             resolved_vars.append(None)
 
                     if takes_context:
@@ -159,7 +160,10 @@ class InclusionTagCacheDecorator(object):
 
                     return in_self.render_given_args(args)
 
-            compile_func = curry(template.generic_tag_compiler, params, defaults, func.__name__, InclusionNode)
+            compile_func = partial(template.generic_tag_compiler,
+                params=params, varargs=[], varkw={},
+                defaults=defaults, name=func.__name__,
+                takes_context=takes_context, node_class=InclusionNode)
             compile_func.__doc__ = func.__doc__
             register.tag(func.__name__, compile_func)
             func.cached_function = cached_function
