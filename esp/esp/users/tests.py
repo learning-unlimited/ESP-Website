@@ -103,7 +103,7 @@ class ESPUserTest(TestCase):
         curYear = ESPUser.current_schoolyear()
         gradYear = curYear + (12 - testGrade)
         self.client.get("/manage/userview?username=student&graduation_year="+str(gradYear))
-        self.failUnless(studentUser.getGrade() == testGrade)
+        self.failUnless(studentUser.getGrade() == testGrade, "Grades don't match: %s %s" % (studentUser.getGrade(), testGrade))
 
         # Clean up
         if (c1):
