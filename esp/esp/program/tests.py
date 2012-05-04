@@ -1066,7 +1066,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.program.getModules()
         # Schedule classes
         self.schedule_randomly()
-        self.timeslots = Event.objects.filter(meeting_times__parent_class__parent_program = self.program)
+        self.timeslots = Event.objects.filter(meeting_times__parent_class__parent_program = self.program).distinct()
 
         # Create the registration types
         self.enrolled_rt, created = RegistrationType.objects.get_or_create(name='Enrolled')
@@ -1164,7 +1164,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         # Now go through and make sure that lunch assignments make sense
         for student in self.students:
             lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
-            self.failUnless(len(lunch_secs) == 3, "Incorrect number of lunch sections created")
+            self.failUnless(len(lunch_secs) == 3, "Incorrect number of lunch sections created: %s" % (len(lunch_secs)))
             timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times__in=lunch_secs)
 
             lunch_free = False
