@@ -288,9 +288,9 @@ class AccountCreationTest(TestCase):
     def test_phase_1(self):
         #There's a tag that affects phase 1 so we put the tests into a function
         #and call it twice here
-        Tag.setTag('ask_about_duplicate_accounts',value='True')
+        Tag.setTag('ask_about_duplicate_accounts',value='true')
         self.phase_1()
-        Tag.setTag('ask_about_duplicate_accounts',value='False')
+        Tag.setTag('ask_about_duplicate_accounts',value='false')
         self.phase_1()
         
 
@@ -299,11 +299,12 @@ class AccountCreationTest(TestCase):
         #first try an email that shouldn't have an account
         #first without follow, to see that it redirects correctly
         response1 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com"})
+        if Tag.getTag('ask_about_duplicate_accounts', default='false').lower() == 'false':
+            self.assertTemplateUsed(response1,"registration/newuser.html")
+            return
+
         self.assertRedirects(response1, "/myesp/register/information?email=tsutton125%40gmail.com")
         
-
-        if Tag.getTag('ask_about_duplicate_accounts', default='True') == 'False': return
-
         #next, make a user with that email and try the same
         u=ESPUser.objects.create(email="tsutton125@gmail.com")
         response2 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com"},follow=True)
@@ -334,7 +335,10 @@ class AccountCreationTest(TestCase):
     def phase_2(self):
         """Testing phase 2, where user provides info, and we make the account"""
 
-        response = self.client.post("/myesp/register/information",
+        url = "/myesp/register/"
+        if Tag.getTag("ask_about_duplicate_accounts", default="false").lower() != "false":
+            url+="information/"
+        response = self.client.post(url,
                                    data={"username":"username",
                                          "password":"passw",
                                          "confirm_password":"passw",

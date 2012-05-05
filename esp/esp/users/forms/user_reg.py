@@ -97,7 +97,10 @@ class UserRegForm(forms.Form):
         user_types = ESPUser.getAllUserTypes()
         role_choices = [(item[0], item[1]['label']) for item in user_types]
         self.fields['initial_role'].choices = [('', 'Pick one...')] + role_choices
-        
+
+class SinglePhaseUserRegForm(UserRegForm):
+    #email field not hidden
+    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75)
 
 class EmailUserForm(CaptchaForm):
     email = ValidHostEmailField(help_text = '(e.g. johndoe@domain.xyz)')

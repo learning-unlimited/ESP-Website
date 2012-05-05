@@ -1,5 +1,5 @@
 from esp.users.models import User, UserBit, ESPUser_Profile, ESPUser
-from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm
+from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm
 from esp.web.util.main import render_to_response
 from esp.datatree.models import GetNode
 from esp.mailman import add_list_member
@@ -52,9 +52,14 @@ def join_emaillist(request):
 
 
 def user_registration_validate(request):    
-    """Handle the account creation logic when the form is submitted"""
+    """Handle the account creation logic when the form is submitted
 
-    form = UserRegForm(request.POST)
+This function is overloaded to handle either one or two phase reg"""
+
+    if Tag.getTag("ask_about_duplicate_accounts",default="false")=="false":
+        form = SinglePhaseUserRegForm(request.POST)
+    else:
+        form = UserRegForm(request.POST)
 
     if form.is_valid():         
         try:
@@ -142,18 +147,33 @@ def user_registration_phase1(request):
         return render_to_response('registration/already_logged_in.html',
                                   request, request.get_node('Q/Web/myesp'), {})
 
-    if request.method == 'POST':
-        return user_registration_checkemail(request)
-    else: 
-        form=EmailUserRegForm()
-        return render_to_response('registration/newuser_phase1.html',
+    #depending on a tag, we'll either have registration all in one page,
+    #or in two separate ones
+    if Tag.getTag("ask_about_duplicate_accounts",default="false").lower() == "false":
+        if request.method == 'POST':
+            return user_registration_validate(request)
+
+        form=SinglePhaseUserRegForm()
+        return render_to_response('registration/newuser.html',
                                   request, request.get_node('Q/Web/myesp'),
                                   {'form':form, 'site': Site.objects.get_current()})
+
+    #we do want to ask about duplicate accounts
+    if request.method == 'POST':
+        return user_registration_checkemail(request)
+    
+    form=EmailUserRegForm()
+    return render_to_response('registration/newuser_phase1.html',
+                              request, request.get_node('Q/Web/myesp'),
+                              {'form':form, 'site': Site.objects.get_current()})
 
 def user_registration_phase2(request):
     """Displays the second part of account creation, and when that form is submitted, call a function to handle the actual validation and creation."""   
     if request.method == 'POST':
         return user_registration_validate(request)
+
+    if Tag.getTag("ask_about_duplicate_accounts",default="false").lower() == "false":
+        return HttpResponseRedirect(reverse("users.views.user_registration_phase1"))
 
     try:
         email = urllib.unquote_plus(request.GET['email'])
