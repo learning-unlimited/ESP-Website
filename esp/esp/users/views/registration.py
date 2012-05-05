@@ -77,7 +77,7 @@ def user_registration_validate(request):
         user.set_password(form.cleaned_data['password'])
             
         #   Append key to password and disable until activation if desired
-        if Tag.getTag('require_email_validation', default='False') == 'True':
+        if Tag.getTag('require_email_validation', default='false').lower() != 'false':
             userkey = random.randint(0,2**31 - 1)
             user.password += "_%d" % userkey
             user.is_active = False
@@ -91,7 +91,7 @@ def user_registration_validate(request):
                                                qsc  = request.get_node('Q'),
                                                recursive = False)
 
-        if Tag.getTag('require_email_validation', default='False') == 'False':
+        if Tag.getTag('require_email_validation', default='false').lower() == 'false':
             user = authenticate(username=form.cleaned_data['username'],
                                     password=form.cleaned_data['password'])
                 
@@ -117,7 +117,7 @@ When there are already accounts with this email address (depending on some tags)
 
     if form.is_valid():         
         ## First, check to see if we have any users with the same e-mail
-        if not 'do_reg_no_really' in request.POST and  Tag.getTag('ask_about_duplicate_accounts', default='False') == 'True':
+        if not 'do_reg_no_really' in request.POST and  Tag.getTag('ask_about_duplicate_accounts', default='false').lower() != 'false':
             existing_accounts = ESPUser.objects.filter(email=form.cleaned_data['email'], is_active=True).exclude(password='emailuser')
             awaiting_activation_accounts = ESPUser.objects.filter(email=form.cleaned_data['email']).filter(is_active=False, password__regex='\$(.*)_').exclude(password='emailuser')
             if len(existing_accounts)+len(awaiting_activation_accounts) != 0:
