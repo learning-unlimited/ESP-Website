@@ -268,7 +268,12 @@ and <tt>M100-class@{{ EMAIL_HOST }}</tt> will email everyone in the class.
 
 <div id="battlescreen">
 <h2 align="center">Manage the classes of {{program.niceName}}</h2>
-<p>Note: <span class="unapproved dashboard_blue">Blue</span> stands for unreviewed classes and <span class="dashboard_red">Red</span> for rejected classes </p>
+<p>Notes: 
+<ul>
+    <li><span class="unapproved dashboard_blue">Blue</span> stands for unreviewed classes and <span class="dashboard_red">Red</span> for rejected classes.</li>
+    <li>You may click on the column headers to sort the classes.</li>
+</ul></p>
+
 <table cellpadding="4px" cellspacing="0" align="center" class="sortable">
   {% if noclasses %}
   <tr>
@@ -280,9 +285,9 @@ and <tt>M100-class@{{ EMAIL_HOST }}</tt> will email everyone in the class.
 {% load class_manage_row %}
 <thead>
   <tr id="header-row">
-      <th class="dashboard_colheader">Class Code/Title</th>
+      <th class="dashboard_colheader"><div style="cursor: pointer;">Class Code/Title</div></th>
       <th class="dashboard_colheader sorttable_nosort">&nbsp;</th>
-      <th class="dashboard_colheader">Teachers</th>
+      <th class="dashboard_colheader"><div style="cursor: pointer;">Teachers</div></th>
       <th class="dashboard_colheader sorttable_nosort" colspan="4">Management Options</th>
   </tr>
 </thead>
