@@ -1,6 +1,6 @@
-from django.test import TestCase
+from esp.tests.util import CacheFlushTestCase as TestCase
 from django import forms
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserBit, UserForwarder
+from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserBit, UserForwarder, StudentInfo
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.program.tests import ProgramFrameworkTest
 from esp.datatree.models import GetNode
@@ -9,6 +9,8 @@ from esp.middleware import ESPError
 from esp.users.views import make_user_admin
 from esp.tests.util import CacheFlushTestCase
 from django.core import mail
+from esp.program.models import RegistrationProfile, Program
+import datetime
 import esp.users.views as views
 from esp.tagdict.models import Tag
 
@@ -80,6 +82,39 @@ class ESPUserTest(TestCase):
             blocked_illegal_morph = True
 
         self.assertTrue(blocked_illegal_morph, "User '%s' was allowed to morph into an admin!")
+
+    def testGradeChange(self):
+        # Create the admin user
+        adminUser, c1 = ESPUser.objects.get_or_create(username='admin')
+        adminUser.set_password('password')
+        make_user_admin(adminUser)
+        # Create the student user
+        studentUser, c2 = ESPUser.objects.get_or_create(username='student')
+        # Make it a student
+        role_bit, created = UserBit.objects.get_or_create(user=studentUser, qsc=GetNode('Q'), verb=GetNode('V/Flags/UserRole/Student'), recursive=False)
+        # Give it a starting grade
+        student_studentinfo = StudentInfo(user=studentUser, graduation_year=ESPUser.YOGFromGrade(9))
+        student_studentinfo.save()
+        student_regprofile = RegistrationProfile(user=studentUser, student_info=student_studentinfo, most_recent_profile=True)
+        student_regprofile.save()
+        # Check that the grade starts at 9
+        self.failUnless(studentUser.getGrade() == 9)
+
+        # Login the admin
+        self.failUnless(self.client.login(username="admin", password="password"))
+
+        testGrade = 11
+        curYear = ESPUser.current_schoolyear()
+        gradYear = curYear + (12 - testGrade)
+        self.client.get("/manage/userview?username=student&graduation_year="+str(gradYear))
+        self.failUnless(studentUser.getGrade() == testGrade, "Grades don't match: %s %s" % (studentUser.getGrade(), testGrade))
+
+        # Clean up
+        if (c1):
+            adminUser.delete()
+        if (c2):
+            studentUser.delete()
+
 
 
 class PasswordRecoveryTicketTest(TestCase):
@@ -229,9 +264,14 @@ class UserForwarderTest(TestCase):
         self.assertTrue(UserForwarder.follow(self.ub) == (self.ub, False), fwd_info(self.ub))
         self.assertTrue(UserForwarder.follow(self.uc) == (self.ub, True), fwd_info(self.uc))
 
-class MakeAdminTest(CacheFlushTestCase):
+class MakeAdminTest(TestCase):
     def setUp(self):
         self.user, created = ESPUser.objects.get_or_create(username='admin_test')
+        self.user.is_staff = False
+        self.user.is_superview = False
+        UserBit.objects.filter(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Administer')).delete()
+        UserBit.objects.filter(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Flags/UserRole/Administrator')).delete()
+
     def runTest(self):
         # Make sure user starts off with no administrator priviliges
         self.assertFalse(self.user.is_staff)        
