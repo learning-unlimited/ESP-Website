@@ -1,0 +1,88 @@
+div .commpanel_hidden {
+    display: none;
+}
+
+label .commpanel_list_preferred {
+    color: red;
+}
+
+#filter_accordion h4 {
+    font-weight: bold;
+    font-style: normal;
+}
+
+#tabs {
+    font-size: 1.0em;
+}
+
+.ui-button {
+    padding: 4px;
+    margin: 6px;
+}
+
+a .ui-button {
+    text-decoration: none;
+}
+
+div #recipient_type_options {
+    margin-top: 10px;
+    clear: both;
+}
+
+div #filter_accordion {
+    margin-bottom: 10px;
+}
+
+div .ui-accordion-content {
+    font-size: 0.8em;
+}
+
+div .recipient_list_options li {
+    list-style-type: none;
+    margin-left: 0px;
+}
+
+div #combo_list_form ul {
+    margin-left: 20px;
+    padding-left: 0px;
+}
+
+div #combo_list_form li {
+    margin-bottom: 8px;
+}
+
+#combo_list_form label.ui-button {
+    margin: 0px;
+    margin-left: -5px;
+    padding: 2px;
+}
+
+.step_header {
+    margin-bottom: 8px;
+}
+
+.step_label {
+    font-weight: bold;
+}
+
+.step_instructions {
+    font-size: 0.9em;
+}
+
+.step_highlight {
+    background-color: #FFFF00;
+}
+
+div .combo_list_separator {
+    font-weight: bold;
+}
+
+div #msgreq_info_area {
+    margin-top: 10px;
+    font-size: 0.9em;
+}
+
+div .email_contents {
+    font-family: Courier New, monospace;
+    font-size: 0.9em;
+}
