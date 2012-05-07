@@ -19,7 +19,7 @@ def test_js_compile(display=False):
     closure_output_file = tempfile.gettempdir() + 'closure.out'
     
     base_path = settings.MEDIA_ROOT + 'scripts/'
-    exclude_names = ['yui', 'dojo', 'extjs', 'jquery', 'showdown']
+    exclude_names = ['yui', 'extjs', 'jquery', 'showdown']
     
     #   Walk the directory tree and try compiling
     result_dict = {}

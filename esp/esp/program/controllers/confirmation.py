@@ -36,7 +36,6 @@ Learning Unlimited, Inc.
 from esp.program.models import Program, ClassSection, ClassSubject
 from esp.users.models import ESPUser, UserBit
 from esp.program.modules.module_ext import DBReceipt
-from esp.settings import DEFAULT_EMAIL_ADDRESSES
 from esp.datatree.models import GetNode
 
 from django.template import Template, Context

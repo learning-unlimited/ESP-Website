@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from django.db import models
 from traceback import format_stack
-from esp.settings import LOG_FILE
+from django.conf import settings
 from django.shortcuts import render_to_response # aseering 2-14-2007: This can't be Axiak's fancy esp.web.data version because otherwise we get an import loop.  Possibly we should fix that someday.
 
 # Create your models here.
@@ -56,8 +56,8 @@ class Log(models.Model):
                self.stack_trace
 
     def save(self, *args, **kwargs):
-        if LOG_FILE != None:
-            errfile = open(LOG_FILE, 'a')
+        if settings.LOG_FILE != None:
+            errfile = open(settings.LOG_FILE, 'a')
             errfile.write( str(self) )
             errfile.close()
 

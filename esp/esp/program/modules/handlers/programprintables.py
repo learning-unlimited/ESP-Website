@@ -234,8 +234,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def coursecatalog(self, request, tl, one, two, module, extra, prog):
         " This renders the course catalog in LaTeX. "
-        from esp.settings import INSTITUTION_NAME, ORGANIZATION_SHORT_NAME
-
+        from django.conf import settings
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
         if request.GET.has_key('mingrade'):
@@ -270,7 +269,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         group_name = Tag.getTag('full_group_name')
         if not group_name:
-            group_name = '%s %s' % (INSTITUTION_NAME, ORGANIZATION_SHORT_NAME)
+            group_name = '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['group_name'] = group_name
 
         #   Hack for timeblock sorting
@@ -699,8 +698,7 @@ class ProgramPrintables(ProgramModuleObj):
             from django.template import Template
             from esp.middleware.threadlocalrequest import AutoRequestContext as Context
             from django.template.loader import find_template_source
-            from esp.settings import TEMPLATE_DIRS
-                
+            from django.conf import settings   
             prof = user.getLastProfile()
             
             li_types = prof.program.getLineItemTypes(user)
@@ -720,7 +718,7 @@ class ProgramPrintables(ProgramModuleObj):
             context_dict['itemizedcosttotal'] = invoice.cost()
             context_dict['owe_money'] = ( context_dict['itemizedcosttotal'] != 0 )
             
-            t = Template(open(TEMPLATE_DIRS + '/program/receipts/' + str(prof.program.id) + '_custom_receipt.txt').read())
+            t = Template(open(settings.TEMPLATE_DIRS + '/program/receipts/' + str(prof.program.id) + '_custom_receipt.txt').read())
             c = Context(context_dict)
             result_str = t.render(c)
 
@@ -1592,6 +1590,30 @@ class ProgramPrintables(ProgramModuleObj):
                                [smart_str(((section.parent_class.requested_room + '. ') if section.parent_class.requested_room else '') + section.parent_class.message_for_directors)])
 
         response['Content-Disposition'] = 'attachment; filename=ok_times_concise.csv'
+        return response
+
+    @aux_call
+    @needs_admin
+    def csv_schedule(self, request, tl, one, two, module, extra, prog):
+        """ A CSV-formatted list of existing schedule assignments, intended to
+            be used as initial conditions for automatic scheduling.  The response
+            has 4 columns:
+                -   ID of the class section
+                -   Name of the classroom
+                -   ID of the timeslot
+                -   Lock level (usually 0 for unlocked, 1 or higher for locked)
+        """
+        import csv
+        from django.http import HttpResponse
+        from esp.resources.models import ResourceAssignment
+        response = HttpResponse(mimetype="text/csv")
+        write_csv = csv.writer(response)
+        
+        data = ResourceAssignment.objects.filter(target__parent_class__parent_program=prog).order_by('target__id', 'resource__event__id').values_list('target__id', 'resource__name', 'resource__event__id', 'lock_level')
+        for row in data:
+            write_csv.writerow(row)
+        
+        response['Content-Disposition'] = 'attachment; filename=csv_schedule.csv'
         return response
 
     class Meta:

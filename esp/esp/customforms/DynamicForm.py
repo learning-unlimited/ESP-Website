@@ -3,7 +3,9 @@ from django import forms
 from django.forms.models import fields_for_model
 from form_utils.forms import BetterForm
 from django.utils.datastructures import SortedDict
-from django.contrib.formtools.wizard import FormWizard
+# from django.contrib.formtools.wizard import FormWizard
+from formwizard.views import SessionWizardView
+from django.core.files.storage import FileSystemStorage
 from django.shortcuts import redirect, render_to_response, HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
@@ -17,6 +19,7 @@ from esp.program.models import Program
 from esp.customforms.linkfields import cf_cache, generic_fields, custom_fields
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
+from esp.middleware import ESPError
 
 class BaseCustomForm(BetterForm):
     """
@@ -290,17 +293,43 @@ class CustomFormHandler():
         return page_form        
         
 
-class ComboForm(FormWizard):
-    
-    def __init__(self, form_list, form, form_handler, initial=None):
-        self.form = form
-        self.form_handler = form_handler
-        super(ComboForm, self).__init__(form_list, initial)
-    
-    def get_template(self, step):
-        return 'customforms/form.html'
+class FormStorage(FileSystemStorage):
+    """
+    The Storage sublass used to temporarily store submitted files.
+    """
+    pass
+
+class ComboForm(SessionWizardView):
+    """
+    The WizardView subclass used to implement the FormWizard
+    """
+
+    # TODO ->   The WizardView doesn't delete old files if the 
+    #           form doesn't submit successfully. Need to figure
+    #           out how to perform this cleanup.
+    #           vdugar, 4/10/12
+
+    template_name = 'customforms/form.html'
+    curr_request = None
+    form_handler = None
+    form = None
+    file_storage = FormStorage()
+
+    def get_context_data(self, form, **kwargs):
+        """
+        Override the existing method to add in additional
+        context data such as the form's title and description
+        """
+
+        context = super(ComboForm, self).get_context_data(form=form, **kwargs)
+        context.update({
+                        'form_title': self.form.title, 
+                        'form_description': self.form.description,
+            })
+
+        return context
         
-    def done(self, request, form_list):
+    def done(self, form_list, **kwargs):
         data = {}
         dyn = DMH(form=self.form)
         dynModel = dyn.createDynModel()
@@ -309,7 +338,7 @@ class ComboForm(FormWizard):
         
         # Plonking in user_id if the form is non-anonymous
         if not self.form.anonymous:
-            data['user'] = request.user
+            data['user'] = self.curr_request.user
         
         # Populating data with the values that need to be inserted
         for form in form_list:
@@ -331,7 +360,7 @@ class ComboForm(FormWizard):
                         if pre_instance is not None:
                             link_models_cache[model.__name__]['instance'] = pre_instance
                         else:    
-                            link_models_cache[model.__name__]['instance'] = getattr(model, 'cf_link_instance')(request)
+                            link_models_cache[model.__name__]['instance'] = getattr(model, 'cf_link_instance')(self.curr_request)
                     ftype_parts = ftype.split('_')
                     if len(ftype_parts) > 1 and cf_cache.isCompoundLinkField(model, '_'.join(ftype_parts[1:])):
                         #   Try to match a model field to the last part of the key we have.
@@ -376,9 +405,9 @@ class ComboForm(FormWizard):
         dynModel.objects.create(**data)    
         return HttpResponseRedirect('/customforms/success/%d/' % self.form.id)
         
-    def prefix_for_step(self, step):
+    def get_form_prefix(self, step, form):
         """
-        The FormWizard implements a form prefix for each step. Setting the prefix to an empty string, 
+        The WizardView implements a form prefix for each step. Setting the prefix to an empty string, 
         as the field name is already unique
         """
         return ''            
@@ -386,7 +415,7 @@ class ComboForm(FormWizard):
 
 class FormHandler:
     """
-    Handles creation of a form (single page or multi-page). Uses Django's FormWizard.
+    Handles creation of a form (single page or multi-page). Uses Django's form wizard.
     """
     
     def __init__(self, form, request, user=None):
@@ -515,12 +544,9 @@ class FormHandler:
                         else:
                             # Compound field. Needs to be passed a list of values.
                             initial_data[handler.seq].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
-        return initial_data                
-    
-    def getWizard(self, initial_data=None):
-        """
-        Returns the ComboForm instance for this form
-        """
+        return initial_data
+
+    def get_initial_data(self, initial_data=None):
         if initial_data is None:
             initial_data = {}
         linked_initial_data = self._getInitialData(self.form, self.user)
@@ -531,8 +557,30 @@ class FormHandler:
                 combined_initial_data[i].update(linked_initial_data[i])
             if i in initial_data:
                 combined_initial_data[i].update(initial_data[i])
-        self.wizard = ComboForm(self._getFormList(), self.form, self, combined_initial_data)    
-        return self.wizard
+        return combined_initial_data
+
+    def get_wizard(self, initial_data=None):
+        combined_initial_data = self.get_initial_data(initial_data)
+        return ComboForm(   form_list = self._getFormList(),
+                            initial_dict = combined_initial_data,
+                            form_handler = self,
+                            form = self.form)
+
+    def get_wizard_view(self, initial_data=None):
+        """
+        Calls the as_view() method of ComboForm with the appropriate arguments and returns the response
+        """
+        
+        # First, let's get the initial data for all the steps
+        combined_initial_data = self.get_initial_data(initial_data)
+
+        # Now, return the appropriate response
+        return ComboForm.as_view(
+                                self._getFormList(),
+                                initial_dict = combined_initial_data,
+                                curr_request = self.request,
+                                form_handler = self,
+                                form = self.form)(self.request)
         
     def deleteForm(self):
         """
@@ -564,12 +612,12 @@ class FormHandler:
         
         # Add in the user column if form is not anonymous
         if not form.anonymous:
-            response_data['questions'].append(['user_id', 'User'])
+            response_data['questions'].append(['user_id', 'User', 'fk'])
             
         # Add in the column for link fields, if any
         if form.link_type != "-1":
             only_fkey_model = cf_cache.only_fkey_models[form.link_type]
-            response_data['questions'].append(["link_%s_id" % only_fkey_model.__name__, form.link_type])
+            response_data['questions'].append(["link_%s_id" % only_fkey_model.__name__, form.link_type, 'fk'])
         else:
             only_fkey_model = None      
         
@@ -583,10 +631,10 @@ class FormHandler:
                 
                 # Now let's see what fields need to be set
                 add_fields[qname] = [model, cf_cache.getLinkFieldData(ftype)['model_field']]
-                response_data['questions'].append([qname, field['label']])
+                response_data['questions'].append([qname, field['label'], ftype])
                 # Include this field only if it isn't a dummy field
             elif generic_fields[ftype]['typeMap'] is not DummyField:
-                response_data['questions'].append([qname, field['label']])
+                response_data['questions'].append([qname, field['label'], ftype])
             
         # Now let's set up the responses
         for response in responses:

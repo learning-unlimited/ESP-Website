@@ -5,16 +5,82 @@
 {% block subsection_name %}Teacher{% endblock %}
 
 {% block xtrajs %}
+<script type="text/javascript" src="/media/scripts/jquery-ui-sc/jquery.sexy-combo.js"></script>
 <script type="text/javascript">
-    dojo.require("dijit.form.FilteringSelect");
-    dojo.require("dojo.data.ItemFileReadStore");
-    dojo.require("dojox.data.JsonRestStore");
+  // Define a function to convert the string to a username if applicable
+  var cleanTeacherSubmit = function(form) {
+    var input = $j("#stateInput")
+    if (input.data("sc:autoFilled") == "yes") {
+      input.val(input.data("sc:autoFilledValue"));
+    }
+  };
+
+
+
+  $j(document).ready(function() {
+    // Make our input a "sexyCombo" input
+    $j("#stateInput").sexyCombo({
+      emptyText: "Enter a teacher's name",
+      initEventsCallback: function() {
+        this.input.val('');
+      },
+      listItemSelectedCallback: function(item) {
+        $j("#stateInput").data("sc:autoFilled", "yes");
+        $j("#stateInput").data("sc:autoFilledEvent", "yes");
+        $j("#stateInput").data("sc:autoFilledText", item.text());
+        $j("#stateInput").data("sc:autoFilledValue", item.attr("value"));
+      },
+      textChangeCallback: function() {
+        if($j("#stateInput").data("sc:autoFilled") == "yes") {
+          var text = $j("#stateInput").data("sc:autoFilledText");
+          if (text != this.input.val()) {
+            $j("#stateInput").data("sc:autoFilled", "no");
+          }
+        }
+        if($j("#stateInput").data("sc:autoFilledEvent") == "yes") {
+          $j("#stateInput").data("sc:autoFilledEvent", "no");
+          return;
+        }
+        $j.ajax({
+          url: "/manage/{{ program.getUrlBase }}/teacherlookup/",
+          data: {name: this.input.val()},
+          async: false,
+          dataType: "json",
+          success: function(data) {
+            $j("#stateInput option").remove();
+            $j.each(data, function(index, val) {
+              $j("#stateInput").append("<option value='"+val.id+"'>"+val.name+"</option>");
+            });
+            //$j.sexyCombo.changeOptions($j("#stateInput"));
+            //Do it by hand instead, because changeOptions doesn't quite do what we want
+            $select = $j("#stateInput");
+            $select.each(function() {
+                if ("SELECT" != this.tagName.toUpperCase()) {
+                    return;     
+                }
+                        
+                var $this = $j(this);
+                var $wrapper  = $this.parent();
+                var $listWrapper = $wrapper.find("ul").parent();
+
+                $wrapper.data("sc:optionsChanged", "yes");
+            });
+            this.filter();
+            this.highlightSelected();
+
+          }.bind(this)
+        });
+     }
+    });
+  });
 </script>
 {% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css">
+<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/sexy-combo.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/sexy/sexy.css" />
 {% endblock %}
 
 {% block content %}
@@ -68,7 +134,7 @@ There are currently no teachers associated with this class.
 </table>
 </form>
 {% endif %}
-<form action="{{request.path}}" method="post" name="addteacher">
+<form action="{{request.path}}" method="post" name="addteacher" onsubmit="cleanTeacherSubmit($j(this))">
 <table align="center" width="400">
     <tr>
         <th colspan="2">Add More Teachers</th>
@@ -81,9 +147,10 @@ There are currently no teachers associated with this class.
             <input type="hidden" name="clsid" value="{{ class.id }}" />
             <input type="hidden" name="op" value="add" />
             <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
-            <div dojoType="dojox.data.JsonRestStore" jsId="stateStore" target="/manage/{{ program.getUrlBase }}/teacherlookup/" idAttribute="id">
             </div>
-            <input dojoType="dijit.form.FilteringSelect" value="" store="stateStore" searchAttr="name" name="teacher_selected" id="stateInput">
+	    <select value="" name="teacher_selected" id="stateInput">
+	      <option value="hithere">Hi there!</option>
+	    </select>
         </td>
         <td>
             <input type="submit" class="button" value="Add Teacher" />

@@ -75,6 +75,7 @@ def prepare_program(program, data):
     #userbits += [('V/Deadline/Registration/Teacher/Classes', None, data['teacher_reg_start'], data['teacher_reg_end'])]
     userbits += [('V/Deadline/Registration/Teacher/Classes/View', None, data['teacher_reg_start'], None)]
     userbits += [('V/Deadline/Registration/Teacher/MainPage', None, data['teacher_reg_start'], None)]
+    userbits += [('V/Deadline/Registration/Teacher/Profile', None, data['teacher_reg_start'], None)]
     
     #   Grant onsite bit (for all times) if an onsite user is available.
     if ESPUser.onsite_user():

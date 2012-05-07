@@ -157,6 +157,44 @@ class AdminClass(ProgramModuleObj):
 
     @aux_call
     @needs_admin
+    def reviewClass(self, request, tl, one, two, module, extra, prog):
+        """ Set the review status of a class """
+        if request.method == 'POST':
+            if not (request.POST.has_key('class_id') and request.POST.has_key('review_status')):
+                raise ESPError(), "Error: missing data on request"
+
+            class_id = request.POST['class_id']
+            try:
+                class_subject = ClassSubject.objects.get(pk=class_id)
+            except MultipleObjectsReturned:
+                raise ESPError(), "Error: multiple classes selected"
+            except DoesNotExist:
+                raise ESPError(), "Error: no classes found with id "+str(class_id)
+
+            review_status = request.POST['review_status']
+
+            if review_status == 'ACCEPT':
+                # We can't just do class_subject.accept() since this only
+                # accepts sections that were previously unreviewed
+                for sec in class_subject.sections.all():
+                    sec.status = 10
+                    sec.save()
+                class_subject.accept()
+            elif review_status == 'UNREVIEW':
+                class_subject.status = 0
+                for sec in class_subject.sections.all():
+                    sec.status = 0
+                    sec.save()
+            elif review_status == 'REJECT':
+                class_subject.reject()
+            else:
+                raise ESPError(), "Error: invalid review status"
+            class_subject.save()
+
+        return HttpResponse('')
+
+    @aux_call
+    @needs_admin
     def attendees(self, request, tl, one, two, module, extra, prog):
         """ Mark students as having attended the program, or as having registered for the specified class """
         saved_record = False
@@ -562,10 +600,11 @@ class AdminClass(ProgramModuleObj):
                     cls.removeAdmin(teacher)
 
                 # add bits for all new (and old) coteachers
+                ccc = ClassCreationController(self.program)
                 for teacher in coteachers:
-                    cls.makeTeacher(teacher)
-                    cls.makeAdmin(teacher)                    
-                ClassCreationController(self.program).send_class_mail_to_directors(cls)
+                    ccc.associate_teacher_with_class(cls, teacher)
+                cls.update_cache()
+                ccc.send_class_mail_to_directors(cls)
                 return self.goToCore(tl)
 
 
@@ -594,6 +633,7 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
+        print "teacherlookup"
         # Search for teachers with names that start with search string
         if not request.GET.has_key('name') or request.POST.has_key('name'):
             return self.goToCore(tl)

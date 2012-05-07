@@ -8,51 +8,69 @@ This is a tree selector widget.  The Django template system merges in the field 
     background-color: #FFFF99;
     font-size: 12px;
 }
+#bit_tree_select {
+    border: solid 1px #999;
+}
+#bit_tree_select ul {
+    text-indent: 0px;
+}
 </style>
 
+
 <input type="hidden" id="{{ field_name }}" name="{{ field_name }}" value="{{ initial_node.id }}" />
-<table border="0">
-<tr>
-    <td>
-        <div style="width: 350px" id="{{ field_name }}_target_name">{{ initial_node.friendly_name }}</div>
-        <br /><div id="treeOne"></div>
-    </td>
-</tr>
-</table>
+<div id="bit_tree_select"></div>
 
 <script type="text/javascript">
-<!--
+  $j(document).ready(function()
+  {
+    var tree = $j("#bit_tree_select").jstree();
+    tree.jstree({
+      "plugins": ["json_data", "themes", "ui", "crrm"],
+      "json_data": {
+        ajax: {
+          "url": "/admin/ajax_children/?id={{ root.id }}",
+          "success": function(data)
+          {
+            // Create JSON structure
+            nodes = {}
+            for (var key in data.items)
+            {
+              node = data.items[key]
+              children = []
+              for (var i = 0; i < node.children.length; i++)
+              {
+                children.push(data.items[node.children[i]]);
+              }
+              nodes[key] = data.items[key]
+              nodes[key].children = children;
+              var id = nodes[key].id;
+              nodes[key].attr = {
+	        "id": "bits_tree_select_node_"+id,
+                "bit_id": id
+              };
+            }
 
-dojo.require("dojo.data.ItemFileReadStore");
-dojo.require("dojox.data.JsonRestStore");
-dojo.require("dijit.Tree");
-
-dojo.addOnLoad(function() {
-    var store = new dojo.data.ItemFileReadStore({
-        url: "/admin/ajax_children/?id={{ root.id }}"
-    });
-    
-var treeModel = new dijit.tree.ForestStoreModel({
-            store: store,
-            query: {
-                "parent_id": "{{ root.id }}"
-            },
-            rootId: "{{ root.id }}",
-            rootLabel: "{{ root.name }}",
-            childrenAttrs: ["children"]
-        });
-
-    new dijit.Tree({
-        model: treeModel,
-        // autoExpand: true,
-        openOnClick: true,
-        onClick: function (item) {
-            document.getElementById('{{ field_name }}').value = store.getValue(item, 'id');
-            document.getElementById('{{ field_name }}_target_name').innerHTML = store.getValue(item, 'friendly_name');
+            direct_children = [];
+	    for (var i = 0; i < data.direct_children.length; i++)
+            {
+                direct_children.push(nodes[data.direct_children[i]]);
+            }
+	    root_node = {
+	      "data": "{{ root.name }}",
+	      "children": direct_children,
+	      "attr": {
+                "id": "bits_tree_select_node_{{ root.id }}",
+                "bit_id": {{ root.id }}
+              }
+            };
+            return root_node;
+          }
         }
-    },
-    "treeOne");
-});
-
--->
+      }
+    })
+    .bind("select_node.jstree", function(event, data)
+    {
+      $j("#{{ field_name }}").val(data.rslt.obj.attr("bit_id"));
+    });
+  });
 </script>

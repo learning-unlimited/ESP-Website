@@ -41,58 +41,132 @@ ESP.Utilities = function(){
 
     // Takes a dictionary of key/value pairs, and returns a popup <a> DOM-object that displays them
     // JS dictionaries are apparently supposed to be ordered.  We'll see if that's actually true...
-    Utilities.genPopup = function(label, elts, asString) {
-        var root = document.createElement('a');
-        root.setAttribute('class', 'tooltip');
-        root.appendChild( document.createTextNode(label) );
+    Utilities.genPopup = function(id, label, elts, onhover, asString) {
+
+        var root = $j("<a></a>");
+        root.attr('class', 'tooltip tooltip-id-' + id);
+        root.append(label);
+	root.hover(function() {
+	    if (onhover) {
+		onhover($j(this));
+	    }
+	    $j(this).toggleClass('tooltip_hover');
+	    $j(this).children('.tooltip_popup').toggle();
+	});
     
-        var span = document.createElement('span');
-        span.setAttribute('class', 'tooltip_hover');
-        root.appendChild(span);
+        var span = $j("<span></span>");
+	span.attr('class', 'tooltip_popup');
+	span.hide();
+        root.append(span);
 
         for (key in elts) {
-              var val = elts[key];
+            var val = elts[key];
             if (val == null) {
                 break;
             }
-            var boldElt = document.createElement('b');
-            boldElt.appendChild( document.createTextNode(key) );
-            span.appendChild(boldElt);
+            var boldElt = $j("<b></b>");
+            boldElt.append(key);
+            span.append(boldElt);
 
             if (isString(val)) {
-                span.appendChild( document.createTextNode(' ') );
-                span.appendChild( document.createTextNode(val) );
-                span.appendChild( document.createElement('br') );
+                span.append(' ' + val);
+                span.append($j("<br/>"));
             } else {  // Assume we have a list; add it as a <ul>
-                var ul = document.createElement('ul');
+                var ul = $j("<ul></ul>");
                 var any_good_vals = false;
                 for (var item = 0; item < val.length; item++) {
                     if (val[item] == null) {
                         continue;
                     }
                     any_good_vals = true;
-                    var li = document.createElement('li');
-                    li.appendChild( document.createTextNode(val[item]) );
-                    ul.appendChild(li);
+                    var li = $j("<li></li>");
+                    li.append(val[item]);
+                    ul.append(li);
                 }
                 if (any_good_vals) {
-                  span.appendChild(ul);
+                  span.append(ul);
                 } else {
-                  span.appendChild( document.createTextNode("(none)") );
+                  span.append(" (none) <br/>");
                 }
                 //span.appendChild( document.createElement('br') );
             }
         }
 
         if (asString) {
-            var tmpNode = document.createElement('tmp');
-            tmpNode.appendChild(root);
-            return tmpNode.innerHTML;
+            var tmpNode = $j('<tmp></tmp>');
+            tmpNode.append(root);
+            return tmpNode.html();
         } else {
             return root;
         }
     }
-    
+
+
+    // Takes a dictionary of key/value pairs as well as the root node of a
+    // pre-existing popup and fills it in with the given values. Use this
+    // to fill in a popup with dynamically loaded data
+    Utilities.fillPopup = function(id, orig_node, elts, asString) {
+	root = orig_node;
+	nodes = $j(".tooltip-id-" + id);
+
+	span = root.children("span.tooltip_popup").html('');
+	if (span.length <= 0) {
+	    return 0;
+	}
+
+        for (key in elts) {
+            var val = elts[key];
+            if (val == null) {
+                break;
+            }
+            var boldElt = $j("<b></b>");
+            boldElt.append(key);
+            span.append(boldElt);
+
+            if (isString(val)) {
+                span.append(' ' + val);
+                span.append('<br/>');
+            } else {  // Assume we have a list; add it as a <ul>
+                var ul = $j('<ul></ul>');
+                var any_good_vals = false;
+                for (var item = 0; item < val.length; item++) {
+                    if (val[item] == null) {
+                        continue;
+                    }
+                    any_good_vals = true;
+                    var li = $j('<li></li>');
+                    li.append(val[item]);
+                    ul.append(li);
+                }
+                if (any_good_vals) {
+                  span.append(ul);
+                } else {
+                  span.append(" (none) <br\>");
+                }
+                //span.appendChild( document.createElement('br') );
+            }
+        }
+
+	for(var i = 0; i < nodes.length; i++) {
+	    if (typeof nodes[i] === 'function') { continue; }
+	    $j(nodes[i]).replaceWith(root.clone(true));
+	}
+
+        if (asString) {
+	    var tmpNode =$j("<tmp></tmp>");
+            tmpNode.append(root);
+            return tmpNode.html();
+        } else {
+            return root;
+        }
+    };
+
+    // Clear the contents of a tooltip popup specified by the id
+    Utilities.clearPopup = function(id) {
+	root = $j(".tooltip-id-"+id);
+	root.children(".tooltip-popup").html('');
+    };
+
     return Utilities;
 }();
 
