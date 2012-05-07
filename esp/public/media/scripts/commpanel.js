@@ -246,8 +246,12 @@ function initialize()
             source: msgreq_strings,
             select: msgreq_select_item
         });
+    }, null, function(jqXHR, status, errorThrown) {
+        if (errorThrown == "NOT FOUND") {
+            alert("Error: JSON view not found.  Please enable the JSON Data Module for this program.");
+        }
     });
-    
+
     //  Handle submit button
     $j("#prev_select_done").click(submit_prev_selection);
 }
