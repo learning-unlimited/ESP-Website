@@ -91,7 +91,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_sections_cached(self, prog):
         sections = prog.sections().select_related()
 
-        rrequests = ResouorceRequest.objects.filter(target__in = sections)
+        rrequests = ResourceRequest.objects.filter(target__in = sections)
 
         rrequest_dict = defaultdict(list)
         for r in rrequests:

@@ -108,6 +108,7 @@ class ClassCreationController(object):
         #   If someone is editing the class, we assume they don't want to be
         #   added as a teacher if they aren't already one.
         if anchor_modified:
+            cls.save()
             for teacher in cls.teachers():
                 self.associate_teacher_with_class(cls, teacher)
             if not editing:
