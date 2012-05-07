@@ -2,6 +2,13 @@
 
 function set_step(base_div, step_name)
 {
+    //  Special case for the basic list step, which needs to clear the buttons
+    if ((base_div == "basic_step_container") && (step_name == "recipient_type_select"))
+    {
+        $j("input[name=recipient_type]").removeAttr("checked");
+        $j("input[name=recipient_type]").button("refresh");
+    }
+
     //  console.log("Setting step in " + base_div + " to " + step_name);
     step_divs = $j("#" + base_div).children("div");
     for (var i = 0; i < step_divs.length; i++)
