@@ -349,7 +349,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
             classroom = classrooms[0]
 
-            cannot_schedule = cls.cannotSchedule(times)
+            cannot_schedule = cls.cannotSchedule(times, ignore_classes=False)
             if cannot_schedule:
                 return makeret(ret=False, msg=cannot_schedule)
             
