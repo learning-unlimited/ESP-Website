@@ -103,6 +103,29 @@ function msgreq_select_item(event, ui)
     target_div.append(inner_div3);
 }
 
+function clear_filters(form_name)
+{
+    //  Remove any existing data in the "user filtering options" part of a comm panel form
+    var form = $j("#"+form_name)[0];
+    field_names = ["userid", "username", "first_name", "last_name", "email", "zipcode", "zipdistance", "zipdistance_exclude", "states", "school", "grade_min", "grade_max", "gradyear_min", "gradyear_max"];
+    for (var i = 0; i < field_names.length; i++)
+    {
+        var form_field = $j(form).find(':input[name=' + field_names[i] + ']')[0];
+        switch (form_field.type) {
+            case 'password':
+            case 'select-multiple':
+            case 'select-one':
+            case 'text':
+            case 'textarea':
+                $j(form_field).val('');
+                break;
+            case 'checkbox':
+            case 'radio':
+                form_field.checked = false;
+        };
+    }
+}
+
 function initialize() 
 {
     //  Initialize the main tabs
@@ -137,6 +160,8 @@ function initialize()
     //  Handle changes in the recipient list radio buttons
     $j("input[name=base_list]").change(function () {
         set_step("basic_step_container", "recipient_filter_select");
+        clear_filters("form_basic_list");
+        $j("#filter_accordion").accordion("activate", false);
         $j("#filter_current_list").html($j("#label_" + $j("input[name=base_list]:checked").val()).html());
     });
     
@@ -206,9 +231,11 @@ function initialize()
     //  Handle step transitions
     $j("select[name=combo_base_list]").change(function () {
         set_step("combo_step_container", "combo_list_select");
+        clear_filters("form_combo_list");
+        $j("#combo_filter_accordion").accordion("activate", false);
         var list_selected = $j("select[name=combo_base_list]").val();
         $j("#combo_starting_list").html($j("#list_description_" + list_selected.substr(list_selected.indexOf(":") + 1)).html());
-        //  TODO: Prepare filtering options based on starting list (students/teachers/other)
+        //  TODO: Prepare filtering options based on choice of starting list (students/teachers/other)
         //  prepare_accordion("combo_filter_accordion", rb_selected);
     });
     
