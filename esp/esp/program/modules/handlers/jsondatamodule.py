@@ -39,6 +39,7 @@ from esp.cal.models import Event
 from esp.program.models import ClassSection, ClassSubject, StudentRegistration
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
 from esp.datatree.models import *
+from esp.dbmail.models import MessageRequest
 
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
@@ -46,6 +47,8 @@ from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.views.decorators.cache import cache_control
 
 from collections import defaultdict
+from datetime import datetime
+
 class JSONDataModule(ProgramModuleObj, CoreModule):
     """ A program module dedicated to returning program-specific data in JSON form. """
 
@@ -369,5 +372,18 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
 
         return {return_key: [return_dict]}
         
+    @aux_call
+    @json_response()
+    @cached_module_view
+    def message_requests():
+        earlier_requests = MessageRequest.objects.exclude(subject__icontains='password recovery')
+        data = earlier_requests.values('id', 'creator__first_name', 'creator__last_name', 'creator__username', 'subject', 'sender', 'processed_by', 'msgtext', 'recipients__useful_name').order_by('-id').distinct()
+        for item in data:
+            if isinstance(item['processed_by'], datetime):
+                item['processed_by'] = item['processed_by'].timetuple()[:6]
+        
+        return {'message_requests': data}
+    message_requests.cached_function.depend_on_model(lambda: MessageRequest)
+
     class Meta:
         abstract = True
