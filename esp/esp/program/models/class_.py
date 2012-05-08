@@ -1218,9 +1218,9 @@ class ClassSection(models.Model):
     def getRegVerbs(self, user, allowed_verbs=False):
         """ Get the list of verbs that a student has within this class's anchor. """
         if not allowed_verbs:
-            return self.getRegistrations(user).values_list('relationship__name', flat=True).distinct()
+            return [v.relationship for v in self.getRegistrations(user).distinct()]
         else:
-            return self.getRegistrations(user).filter(relationship__name__in=allowed_verbs).values_list('relationship__name', flat=True).distinct()
+            return [v.relationship for v in self.getRegistrations(user).filter(relationship__name__in=allowed_verbs).distinct()]
 
     def unpreregister_student(self, user, prereg_verb = None):
         #   New behavior: prereg_verb should be a string matching the name of

@@ -652,7 +652,7 @@ class ESPUser(User, AnonymousUser):
             for t in smt:
                 if t.id in priority_dict:
                     for v in cv:
-                        if v.startswith('Priority'):
+                        if v.name.startswith('Priority'):
                             try:
                                 priority_dict[t.id].append(int(v[9:]))
                             except Exception: # fails if 'Priority' is set, rather than 'Priority/1'

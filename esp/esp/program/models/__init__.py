@@ -1859,7 +1859,13 @@ class VolunteerOffer(models.Model):
 class RegistrationType(models.Model):
     #   The 'key' (not really the primary key since we may want duplicate names)
     name = models.CharField(max_length=32)
+    
+    #   A more understandable name that is displayed by default, but has no effect on behavior
+    displayName = models.CharField(max_length=32, blank=True, null=True)
+    
+    #   A more detailed description
     description = models.TextField(blank=True, null=True)
+    
     #   Purely for bookkeeping on the part of administrators 
     #   without reading the whole description
     category = models.CharField(max_length=32)
@@ -1892,7 +1898,10 @@ class RegistrationType(models.Model):
     get_map = staticmethod(get_map)
 
     def __unicode__(self):
-        return self.name
+        if self.displayName != "":
+            return self.displayName
+        else:
+            return self.name
 
 class StudentRegistration(models.Model):
     section = AjaxForeignKey('ClassSection')

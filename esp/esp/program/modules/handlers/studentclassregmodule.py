@@ -234,7 +234,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             #   - Michael P, 6/23/2009
             #   if scrmi.use_priority:
             sec.verbs = sec.getRegVerbs(user, allowed_verbs=verbs)
-
+            
             for mt in sec.get_meeting_times():
                 section_dict = {'section': sec, 'changeable': show_changeslot}
                 if mt.id in timeslot_dict:
