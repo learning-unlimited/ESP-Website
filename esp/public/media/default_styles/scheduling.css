@@ -132,6 +132,11 @@ font-size: 0.9em;
 position: absolute; top:0; bottom:0; left:0; right:0;*/
 }
 
+/* Override jquery's transparency on disabled ui objects */
+.ui-state-disabled {
+opacity: 1 !important;
+}
+
 /* DD_proxy */
 .class-dd-proxy {
 width: 50px; text-align: center;
