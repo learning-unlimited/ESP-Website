@@ -5,6 +5,7 @@ from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion, StudentRegistration
 from esp.program.models.class_ import open_class_category
+from esp.program.modules.module_ext import StudentClassRegModuleInfo, ClassRegModuleInfo
 from esp.cache.key_set import wildcard
 from esp.tagdict.models import Tag
     
@@ -39,6 +40,9 @@ render_class_core.cached_function.depend_on_cache(ClassSubject.title, lambda sel
 render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lambda self=wildcard, **kwargs: {'cls': self.parent_class})
 render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_row(StudentAppQuestion, lambda ques: {'cls': ques.subject})
+render_class_core.cached_function.depend_on_model(lambda: StudentClassRegModuleInfo)
+render_class_core.cached_function.depend_on_model(lambda: ClassRegModuleInfo)
+render_class_core.cached_function.depend_on_model(lambda: Tag)
 
 def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, collapse_full_classes=None):
     if not prog:

@@ -1,0 +1,48 @@
+div .manage_hidden {
+    display: none;
+    height: 0px;
+}
+
+div .module_group_body {
+    margin-bottom: 10px;
+}
+
+div .module_group_body ul {
+    margin-top: 0px;
+}
+
+div .module_group_header {
+    width: 90%;
+    background-color: #f3ecc4;
+    font-size: 0.95em;
+    font-weight: bold;
+    padding: 5px;
+    margin-bottom: 8px;
+    box-shadow: 3px 3px 5px #CCCCCC;
+}
+
+div .header_special {
+    background-color: #acf5ff;
+    margin-bottom: 20px;
+}
+
+div .module_link_large {
+    width: 200px;
+    margin: 8px;
+    padding: 6px;
+    text-align: center;
+    float: left;
+}
+
+div .module_link_separator {
+    clear: both;
+}
+
+div .module_link_main {
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+div .module_link_caption {
+    font-size: 0.7em;
+}

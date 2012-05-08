@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
 from esp.program.modules         import module_ext
 from esp.program.models          import Program
+from esp.program.controllers.classreg import ClassCreationController
 from esp.middleware              import ESPError
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
@@ -159,16 +160,9 @@ class AvailabilityModule(ProgramModuleObj):
                 for timeslot in timeslots:
                     teacher.addAvailableTime(self.program, timeslot)
                 
-                #   Send an e-mail showing availability to directors and teachers
-                email_title = 'Availability for %s: %s' % (self.program.niceName(), teacher.name())
-                email_from = '%s Registration System <server@%s>' % (self.program.anchor.parent.name, settings.EMAIL_HOST_SENDER)
-                email_context = {'teacher': teacher,
-                                 'timeslots': timeslots,
-                                 'program': self.program,
-                                 'curtime': datetime.now()}
-                email_contents = render_to_string(self.baseDir()+'update_email.txt', email_context)
-                email_to = ['%s <%s>' % (request.user.name(), request.user.email)]
-                send_mail(email_title, email_contents, email_from, email_to, False)
+                #   Send an e-mail showing availability to the teacher (and the archive)
+                ccc = ClassCreationController(self.program)
+                ccc.send_availability_email(teacher)
                 
                 #   Return to the main registration page
                 return self.goToCore(tl)

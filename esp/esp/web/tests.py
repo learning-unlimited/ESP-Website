@@ -35,10 +35,13 @@ Learning Unlimited, Inc.
 from esp.web.models import NavBarEntry, NavBarCategory
 from esp.program.tests import ProgramFrameworkTest  ## Really should find somewhere else to put this...
 from django.test.client import Client
+from django.conf import settings
 from esp.tests.util import CacheFlushTestCase as TestCase
 
 import difflib
 import re
+import os
+import tempfile
 
 # We don't want to do "from esp.twilltests.tests import AllFilesTest
 # because then UnitTest sees AllFilesTest twice and tries to run it
@@ -188,4 +191,72 @@ class NoVaryOnCookieTest(ProgramFrameworkTest):
         qsd_rec_new.description = ""
         qsd_rec_new.keywords = ""
         qsd_rec_new.save()
+        
+class JavascriptSyntaxTest(TestCase):
+
+    def runTest(self, display=False):
+    
+        #   Determine if the Closure compiler is installed and give up if it isn't
+        if hasattr(settings, 'CLOSURE_COMPILER_PATH'):
+            closure_path = settings.CLOSURE_COMPILER_PATH.rstrip('/') + '/'
+        else:
+            closure_path = ''
+        if not os.path.exists('%scompiler.jar' % closure_path):
+            if display: print 'Closure compiler not found.  Checked CLOSURE_COMPILER_PATH ="%s"' % closure_path
+            return
+            
+        closure_output_code = tempfile.gettempdir() + '/closure_output.js'
+        closure_output_file = tempfile.gettempdir() + 'closure.out'
+        
+        base_path = settings.MEDIA_ROOT + 'scripts/'
+        exclude_names = ['yui', 'extjs', 'jquery', 'showdown']
+        
+        #   Walk the directory tree and try compiling
+        path_gen = os.walk(base_path)
+        num_files = 0
+        file_list = []
+        
+        for path_tup in path_gen:
+            dirpath = path_tup[0]
+            dirnames = path_tup[1]
+            filenames = path_tup[2]
+            exclude = False
+            for name in exclude_names:
+                if name in dirpath:
+                    exclude = True
+                    break
+            if not exclude:
+                if display:
+                    print 'Entering directory %s' % dirpath
+                for file in filenames:
+                    if not file.endswith('.js'):
+                        continue
+                    exclude = False
+                    for name in exclude_names:
+                        if name in file:
+                            exclude = True
+                            break
+                    if exclude:
+                        continue
+                    
+                    file_list.append('%s/%s' % (dirpath, file))
+                    num_files += 1
+                    
+        file_args = ' '.join([('--js %s' % file) for file in file_list])
+        os.system('java -jar %s/compiler.jar %s --js_output_file %s 2> %s' % (closure_path, file_args, closure_output_code, closure_output_file))
+        checkfile = open(closure_output_file)
+        
+        results = [line.rstrip('\n') for line in checkfile.readlines() if len(line.strip()) > 0]
+        
+        if len(results) > 0:
+            closure_result = results[-1].split(',')
+            num_errors = int(closure_result[0].split()[0])
+            num_warnings = int(closure_result[1].split()[0])
+        
+            print '-- Displaying Closure results: %d Javascript syntax errors, %d warnings' % (num_errors, num_warnings)
+            for line in results:
+                print line
+
+            self.assertEqual(num_errors, 0, 'Closure compiler detected Javascript syntax errors')
+        
         
