@@ -17,17 +17,19 @@
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/prototype.js'></script>
 <script type='text/javascript' src='/media/scripts/jquery.js'></script>
 <script type='text/javascript' src='/media/scripts/jquery-ui.js'></script>
-<script type='text/javascript' src='/media/scripts/jquery.splitter.js'></script>
-<script language="JavaScript" src="/media/scripts/jquery.cookie.js"></script>
+<script type='text/javascript' src='/media/scripts/jquery.cookie.js'></script>
 <script type='text/javascript'>
 var $j = jQuery.noConflict(); // grr... stupid prototype fail
 </script>
-<!--<script type='text/javascript' src='/media/scripts/class.min.js'></script>-->
-<script language="JavaScript" src="/media/scripts/csrf_init.js"></script>
-<script type="text/javascript">    var base_url = "{{ program.getUrlBase }}";  </script>
-<script type="text/javascript">    var program_base_url = "/json/"+base_url+"/";  </script>
+<script type='test/javascript' src='/media/scripts/csrf_init.js'></script>
+<script type='text/javascript'>    var base_url = "{{ program.getUrlBase }}";  </script>
+<script type='text/javascript'>    var program_base_url = "/json/"+base_url+"/";  </script>
 <script type='text/javascript' src='/media/scripts/json_fetch.js'></script>
-<!-- app -->
+
+<!-- OVERALL -->
+<script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/layout.js'></script>
+
+<!-- APP -->
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/ESP.js'></script>
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Util.js'></script>
 
@@ -37,34 +39,30 @@ var $j = jQuery.noConflict(); // grr... stupid prototype fail
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Widgets.js'></script>
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Directory.js'></script>
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Matrix.js'></script>
+<!-- ENDAPP -->
 <!-- ENDLIBS -->
 
 <!-- STYLE -->
 <link id='sch_css' href='/media/styles/scheduling.css' type='text/css' rel='stylesheet' />
 <link id='tooltip_css' href='/media/styles/tooltips.css' type='text/css' rel='stylesheet' />
 <link id='sch_matrix_css' href='/media/styles/scheduling-matrix.css' type='text/css' rel='stylesheet' />
+<link id='jqueryui_css' href='/media/styles/jquery-ui/jquery-ui.css' type='text/css' rel='stylesheet' />
 <!-- ENDSTYLE -->
 
-<!-- APP -->
-<!-- ENDAPP -->
 
 </head>
 
 <body>
 <div id='statusbar-wrapper'>
-  <div id='progressbar' onload="$j(this).progressbar({ value: 50 })"></div>
+  <!--<div id='progressbar' onload="$j(this).progressbar({ value: 50 })"></div>-->
   <span id='statusbar'>Loading...</span>
 </div>
 <div id='body'>
   <div id='matrix-target'></div>
   <div id='directory-target'></div>
-  <div id='drag-container'>
-    <div id='drag-handle-wrapper'>
-      <div id='drag-handle'>
-	<table class='drag-dash'><tr><td>-<br/>-<br/>-</td></tr></table>
-      </div>
-    </div>
-  </div>
+</div>
+<div id='slider-container'>
+  <div id='slider'></div>
 </div>
 </body>
 </html>
