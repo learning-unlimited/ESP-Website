@@ -38,25 +38,6 @@ ESP.Scheduling = function(){
         $j('#directory-target').append(this.garbage.el);
         $j('#directory-target').append(this.searchbox.el);
     
-	var origDirWidth = -1;
-	var origMatWidth = -1;
-	$j('#drag-handle-wrapper').draggable({
-	    axis: 'x',
-	    cursor: 'ew-resize',
-	    containment: $j("#drag-container"),
-	    start: function(event, ui) {
-		origDirWidth = $j("body").width() - $j('#drag-handle-wrapper').position().left - (0.02 * $j("body").width()) - 5;
-		origMatWidth = $j("#drag-handle-wrapper").position().left - (0.02 * $j("body").width()) + 5;
-	    },
-	    drag: function(event, ui) {
-		var positionDiff = ui.originalPosition.left - ui.position.left;
-		var rightPercentage = 100.0 * (1 - ((ui.position.left + 10) / $j(document).width()));
-		$j('#drag-handle-wrapper').css("right", rightPercentage + "%");
-		$j('#directory-target').css("width", 100.0 * (origDirWidth + positionDiff)/$j("body").width() + "%");
-		$j('#matrix-target').css("width", 100.0 * (origMatWidth - positionDiff)/$j("body").width() + "%");
-	    }
-	});
-
         ESP.Utilities.evm.bind('drag_dropped', function(event, data){
             var extra = {
                 blocks:data.blocks, section:data.section
