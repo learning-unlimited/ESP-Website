@@ -918,14 +918,14 @@ class ClassSection(models.Model):
 
         return None
 
-    def cannotSchedule(self, meeting_times):
+    def cannotSchedule(self, meeting_times, ignore_classes=True):
         """
         Returns False if the given times work; otherwise, an error message.
 
         Assumes meeting_times is a sorted QuerySet of correct length.
 
         """
-        if meeting_times[0] not in self.viable_times(ignore_classes=True):
+        if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
             # This set of error messages deserves a better home
             for t in self.teachers:
                 available = t.getAvailableTimes(self.parent_program, ignore_classes=False)
@@ -1141,9 +1141,9 @@ class ClassSection(models.Model):
     def getRegVerbs(self, user, allowed_verbs=False):
         """ Get the list of verbs that a student has within this class's anchor. """
         if not allowed_verbs:
-            return self.getRegistrations(user).values_list('relationship__name', flat=True).distinct()
+            return [v.relationship for v in self.getRegistrations(user).distinct()]
         else:
-            return self.getRegistrations(user).filter(relationship__name__in=allowed_verbs).values_list('relationship__name', flat=True).distinct()
+            return [v.relationship for v in self.getRegistrations(user).filter(relationship__name__in=allowed_verbs).distinct()]
 
     def unpreregister_student(self, user, prereg_verb = None):
         #   New behavior: prereg_verb should be a string matching the name of

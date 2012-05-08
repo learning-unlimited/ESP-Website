@@ -91,7 +91,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_sections_cached(self, prog):
         sections = prog.sections().select_related()
 
-        rrequests = ResouorceRequest.objects.filter(target__in = sections)
+        rrequests = ResourceRequest.objects.filter(target__in = sections)
 
         rrequest_dict = defaultdict(list)
         for r in rrequests:
@@ -349,7 +349,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
             classroom = classrooms[0]
 
-            cannot_schedule = cls.cannotSchedule(times)
+            cannot_schedule = cls.cannotSchedule(times, ignore_classes=False)
             if cannot_schedule:
                 return makeret(ret=False, msg=cannot_schedule)
             

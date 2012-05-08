@@ -78,7 +78,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
             'finalsent': 'Test List',
             'submitform': 'I have my list, go on!',
         }
-        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'maincomm'), post_data)
+        response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), 'commpanel_old'), post_data)
         self.assertEqual(response.status_code, 200)
         
         #   Extract filter ID from response

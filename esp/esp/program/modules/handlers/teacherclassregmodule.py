@@ -41,6 +41,7 @@ from esp.program.models.class_ import open_class_category
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.datatree.models import *
 from esp.tagdict.models          import Tag
+from esp.tagdict.decorators      import require_tag
 from esp.web.util                import render_to_response
 from django.template.loader      import render_to_string
 from esp.middleware              import ESPError
@@ -59,6 +60,7 @@ from esp.mailman                 import add_list_member
 from django.http                 import HttpResponseRedirect
 from esp.middleware.threadlocalrequest import get_current_request
 import simplejson as json
+from copy import deepcopy
 
 class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
@@ -88,6 +90,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['teacherclsmodule'] = self # ...
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = (Tag.getProgramTag(key='friendly_times_with_date',program=self.program,default=False) == "True")
+        context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='false').lower()
         return context
 
 
@@ -117,8 +120,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         Q_rejected_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status__lt=0)) & Q_isteacher
         Q_approved_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status__gt=0)) & Q_isteacher
         Q_proposed_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status=0)) & Q_isteacher
-        Q_all_teachers = Q_rejected_teacher | Q_approved_teacher | Q_proposed_teacher 
-
 
         ## is_nearly_full() means at least one section is more than float(ClassSubject.get_capacity_factor()) full
         ## isFull() means that all *scheduled* sections are full
@@ -143,7 +144,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_approved': self.getQForUser(Q_approved_teacher),
                 'class_proposed': self.getQForUser(Q_proposed_teacher),
                 'class_rejected': self.getQForUser(Q_rejected_teacher),
-                'all_teachers': self.getQForUser(Q_all_teachers),
                 'class_nearly_full': self.getQForUser(Q_nearly_full_teacher),
                 'class_full': self.getQForUser(Q_full_teacher),
                 'taught_before': self.getQForUser(Q_taught_before),
@@ -155,7 +155,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_approved': ESPUser.objects.filter(Q_approved_teacher).distinct(),
                 'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct(),
                 'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct(),
-                'all_teachers': ESPUser.objects.filter(Q_all_teachers).distinct(),
                 'class_nearly_full': ESPUser.objects.filter(Q_nearly_full_teacher).distinct(),
                 'class_full': ESPUser.objects.filter(Q_full_teacher).distinct(),
                 'taught_before': ESPUser.objects.filter(Q_taught_before).distinct(),
@@ -168,13 +167,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     def teacherDesc(self):
         capacity_factor = ClassSubject.get_capacity_factor()
         result = {
-            'class_approved': """Teachers teaching an approved class.""",
-            'class_proposed': """Teachers teaching a class which has yet to be reviewed.""",
-            'class_rejected': """Teachers teaching a rejected class.""",
-            'all_teachers': """All teachers (regardless of class status) for this program.""",
-            'class_full': """Teachers teaching a completely full class.""",
-            'class_nearly_full': """Teachers teaching a nearly-full class (>%d%% of capacity).""" % (100 * capacity_factor),
-            'taught_before': """Teachers who have taught for a previous program.""",
+            'class_approved': """Teachers teaching an approved class""",
+            'class_proposed': """Teachers teaching an unreviewed class""",
+            'class_rejected': """Teachers teaching a rejected class""",
+            'class_full': """Teachers teaching a completely full class""",
+            'class_nearly_full': """Teachers teaching a nearly-full class (>%d%% of capacity)""" % (100 * capacity_factor),
+            'taught_before': """Teachers who have taught for a previous program""",
         }
         for item in self.get_resource_pairs():
             result[item[0]] = item[1]
@@ -615,11 +613,60 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     @aux_call
     @meets_deadline('/Classes/Create')
     @needs_teacher
+    def copyaclass(self, request, tl, one, two, module, extra, prog):
+        if request.method == 'POST':
+            return self.makeaclass_logic(request, tl, one, two, module, extra, prog)
+        if not request.GET.has_key('cls'):
+            raise ESPError("False"), "No class specified!"
+        
+        # Select the class
+        cls_id = request.GET['cls']
+        classes = ClassSubject.objects.filter(id=cls_id)
+        if len(classes) == 0:
+            raise ESPError("False"), "No class found matching this ID!"
+        if len(classes) != 1:
+            raise ESPError("False")
+        cls = classes[0]
+
+        # Select the correct action
+        if cls.category.category == open_class_category().category:
+            action = 'editopenclass'
+        else:
+            action = 'edit'
+
+        return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls, action, populateonly = True)
+
+    @aux_call
+    @meets_deadline('/Classes/Create')
+    @needs_teacher
+    def copyclasses(self, request, tl, one, two, module, extra, prog):
+        context = {}
+        context['all_class_list'] = request.user.getTaughtClasses()
+        context['noclasses'] = (len(context['all_class_list']) == 0)
+        context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='false').lower()
+        return render_to_response(self.baseDir()+'listcopyclasses.html', request, (prog, tl), context)
+
+    @aux_call
+    @meets_deadline('/Classes/Create')
+    @needs_teacher
     def makeopenclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None, action = 'createopenclass')
 
 
-    def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None, action = 'create'):
+    def makeaclass_logic(self, request, tl, one, two, module, extra, prog, newclass = None, action = 'create', populateonly = False):
+        """
+        The logic for the teacher class registration form.
+
+        A brief description of some of the key arguments:
+        - newclass -- The class object from which to fill in the data
+        - action -- What action is the form performing? Options are 'create',
+              'createopenclass', 'edit', 'editopenclass'
+        - populateonly -- If True and newclass is specified, the form will only
+              populate the fields, rather than keeping track of which class they
+              came from and saving edits back to that. This is used for the class
+              copying logic.
+        """
+
         context = {'module': self}
         
         static_resource_requests = Tag.getProgramTag('static_resource_requests', self.program, )
@@ -711,7 +758,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     current_data['optimal_class_size_range'] = newclass.optimal_class_size_range.id
                 if newclass.allowable_class_size_ranges.all():
                     current_data['allowable_class_size_ranges'] = list(newclass.allowable_class_size_ranges.all().values_list('id', flat=True))
-                context['class'] = newclass
+                if not populateonly:
+                    context['class'] = newclass
+
                 if action=='edit':
                     reg_form = TeacherClassRegForm(self, current_data)
                 elif action=='editopenclass':

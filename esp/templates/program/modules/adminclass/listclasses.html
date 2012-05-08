@@ -282,7 +282,7 @@ and <tt>M100-class@{{ EMAIL_HOST }}</tt> will email everyone in the class.
     </td>
    </tr>
   {% endif %}
-{% load class_manage_row %}
+{% load class_render_row %}
 <thead>
   <tr id="header-row">
       <th class="dashboard_colheader"><div style="cursor: pointer;">Class Code/Title</div></th>
@@ -294,7 +294,7 @@ and <tt>M100-class@{{ EMAIL_HOST }}</tt> will email everyone in the class.
 <tbody>
   {% for cls in classes %}
   <tr id="{{cls.id}}-row">
-   {% render_class_row cls %}
+   {% render_class_teacher_list_row cls %}
    </tr>
    {% endfor %}
 </tbody>
