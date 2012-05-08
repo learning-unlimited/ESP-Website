@@ -2,6 +2,8 @@ To all it may concern,
 
 On {{ curtime|date:"l M d Y" }} at {{ curtime|date:"h:i A" }}, teacher {{ teacher.name }} updated their availability for {{ program.niceName }}.  {% if timeslots|length_is:0 %}They have specified that they are not available for any of the time slots, and will need to add some available times before they can register to teach.{% else %}They are now available at:{% for slot in timeslots %}
 * {{ slot.start|date:"l M d" }}, {{ slot.short_time }}{% endfor %}{% endif %}
+{% if note %}
+Additional comments: {{ note }}{% endif %}
 
 - {{ program.anchor.parent.name }} Registration System
   Contact the directors: {{ program.director_email }}

@@ -33,7 +33,10 @@ Learning Unlimited, Inc.
 """
 
 from django import template
+from esp.program.models import ClassSection
+from esp.resources.models import Resource
 from esp.resources.templatetags.resources import matrix_td, color_needs
+from esp.cache.key_set import wildcard
 from esp.web.util.template import cache_inclusion_tag
     
 register = template.Library()
@@ -41,12 +44,12 @@ register = template.Library()
 @cache_inclusion_tag(register, 'inclusion/program/matrix_row.html')
 def scheduling_matrix_row(room, program):
     #   Returns context needed for template.
-    room.clear_schedule_cache(program)
     return  {   'room_name': room.name,
                 'room_num_students': room.num_students,
                 'room_associated_resources': [ar.res_type.name for ar in room.associated_resources()],
                 'room_sequence': [matrix_td(elt) for elt in room.schedule_sequence(program)]
             }
+scheduling_matrix_row.cached_function.depend_on_row(lambda: Resource, lambda r: {'room': r})
             
 @cache_inclusion_tag(register, 'inclusion/program/class_options.html')
 def class_options_row(cls):
@@ -94,4 +97,4 @@ def class_options_row(cls):
     context['cls_sections'] = [prepare_section_dict(s) for s in cls.sections.all()]
 
     return context
-    
+class_options_row.cached_function.depend_on_cache(lambda: ClassSection.scheduling_status, lambda cs=wildcard, **kwargs: {'cls': cs.parent_class})

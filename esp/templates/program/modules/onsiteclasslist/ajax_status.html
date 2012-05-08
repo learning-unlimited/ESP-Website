@@ -14,6 +14,9 @@
 <script type="text/javascript" src="/media/scripts/onsite/ajax_status.js"></script>
 <script type="text/javascript">
     var program_base_url = "/onsite/{{ program.getUrlBase }}/";
+    {% if initial_student %}
+    set_current_student({{ initial_student }});
+    {% endif %}
 </script>
 <link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/themes/base/jquery-ui.css" rel="stylesheet" type="text/css"/>
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />

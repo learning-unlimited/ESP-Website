@@ -123,8 +123,14 @@ AND	"users_studentinfo"."user_id" = "auth_user"."id"
 ORDER BY program_registrationprofile.id DESC
 LIMIT 1
         """ % ESPUser.current_schoolyear()
-        #   To ensure we don't miss anyone, fetch students who have a profile for the program
-        data = ESPUser.objects.filter(registrationprofile__program=prog, userbit__verb__uri='V/Flags/UserRole/Student').extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
+        #   Try to ensure we don't miss anyone
+        students_dict = self.program.students(QObjects=True)
+        student_types = ['student_profile']     #   You could add more list names here, but it would get very slow.
+        students_Q = Q()
+        for student_type in student_types:
+            students_Q = students_Q | students_dict[student_type]
+        students = ESPUser.objects.filter(students_Q).distinct()
+        data = students.extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
         simplejson.dump(list(data), resp)
         return resp
     
@@ -279,6 +285,7 @@ LIMIT 1
         context['timeslots'] = prog.getTimeSlots()
         context['printers'] = GetNode('V/Publish/Print').children().values_list('name', flat=True)
         context['program'] = prog
+        context['initial_student'] = request.GET.get('student_id', '')
         return render_to_response(self.baseDir()+'ajax_status.html', request, (prog, tl), context)
 
     @aux_call

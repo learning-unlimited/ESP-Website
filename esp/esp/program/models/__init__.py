@@ -48,6 +48,7 @@ from django.contrib.localflavor.us.models import PhoneNumberField
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError, AjaxError
 from esp.cache import cache_function
+from esp.cache.key_set import wildcard
 from esp.tagdict.models import Tag
 from django.conf import settings
 from collections import defaultdict
@@ -544,15 +545,9 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             return User.objects.filter(union).distinct()    
 
-    def isFull(self, use_cache=True):
+    @cache_function
+    def isFull(self):
         """ Can this program accept any more students? """
-        CACHE_KEY = "PROGRAM__ISFULL_%s" % self.id
-        CACHE_DURATION = 10
-
-        if use_cache:
-            isfull = cache.get(CACHE_KEY)
-            if isfull != None:
-                return isfull
 
         # Some programs don't have caps; this is represented with program_size_max in [ 0, None ]
         if self.program_size_max is None or self.program_size_max == 0:
@@ -565,17 +560,15 @@ class Program(models.Model, CustomFormsLinkModel):
             students_count = ESPUser.objects.filter(students_dict['satprepinfo']).distinct().count()
         else:
             students_count = ESPUser.objects.filter(userbit__qsc=self.anchor['Confirmation']).distinct().count()
-#            students_count = 0
-#            for c in self.classes():
-#                students_count += c.num_students(use_cache=True)
 
         isfull = ( students_count >= self.program_size_max )
 
-        if use_cache:
-            cache.set(CACHE_KEY, isfull, CACHE_DURATION)
-
         return isfull
-    
+    isFull.depend_on_cache(lambda: ClassSection.num_students, lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
+    isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
+    isFull.depend_on_row(lambda: SATPrepRegInfo, lambda reginfo: {'self': reginfo.program})
+    isFull.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.qsc.name == 'Confirmation')
+        
     def classes_node(self):
         return DataTree.objects.get(parent = self.anchor, name = 'Classes')
 
@@ -676,12 +669,9 @@ class Program(models.Model, CustomFormsLinkModel):
     def classes(self):
         return ClassSubject.objects.filter(parent_program = self).order_by('id')        
 
-    def class_ids_implied(self, use_cache=True):
+    @cache_function
+    def class_ids_implied(self):
         """ Returns the class ids implied by classes in this program. Returns [-1] for none so the cache doesn't keep getting hit. """
-        cache_key = 'PROGRAM__CLASS_IDS_IMPLIED__%s' % self.id
-        retVal = cache.get(cache_key)
-        if retVal and use_cache:
-            return retVal
         retVal = set([])
         for c in self.classes():
             for imp in c.classimplication_set.all():
@@ -689,10 +679,10 @@ class Program(models.Model, CustomFormsLinkModel):
         if len(retVal) < 1:
             retVal = [-1]
         retVal = list(retVal)
-        cache.set(cache_key, retVal, 9999)
         return retVal
+    class_ids_implied.depend_on_row(lambda: ClassImplication, lambda ci: {'self': ci.cls.parent_program})
 
-    def sections(self, use_cache=True):
+    def sections(self):
         return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
 
     def getTimeSlots(self, exclude_types=['Compulsory','Volunteer']):
@@ -968,27 +958,21 @@ class Program(models.Model, CustomFormsLinkModel):
                 
         return extension
 
+    @cache_function
     def getColor(self):
         if hasattr(self, "_getColor"):
             return self._getColor
-        
-        cache_key = 'PROGRAM__COLOR_%s' % self.id
-        retVal = cache.get(cache_key)
-        
-        if not retVal:
-            mod = self.programmoduleobj_set.filter(module__admin_title='Teacher Signup Classes')
-            if mod.count() == 1:
-                modinfo = mod[0].classregmoduleinfo_set.all()
-                if modinfo.count() == 1:
-                    retVal = modinfo[0].color_code
-                    if retVal == None:
-                        retVal = -1 # store None as -1 because we read None as the absence of a cached value
-                    cache.set(cache_key, retVal, 9999)
-        if retVal == -1:
-            return None
+
+        mod = self.programmoduleobj_set.filter(module__admin_title='Teacher Signup Classes')
+        retVal = None
+        if mod.count() == 1:
+            modinfo = mod[0].classregmoduleinfo_set.all()
+            if modinfo.count() == 1:
+                retVal = modinfo[0].color_code
 
         self._getColor = retVal
         return retVal
+    getColor.depend_on_row(lambda: ClassRegModuleInfo, lambda crmi: {'self': crmi.module.program})
     
     def visibleEnrollments(self):
         """
@@ -1055,17 +1039,17 @@ class Program(models.Model, CustomFormsLinkModel):
         """ Fetch a list of relevant programs for a given user and verb """
         return UserBit.find_by_anchor_perms(Program,user,verb)
 
-    @classmethod
+    @cache_function
     def by_prog_inst(cls, program, instance):
-        CACHE_KEY = "PROGRAM__BY_PROG_INST__%s__%s" % (program, instance)
-        prog_inst = cache.get(CACHE_KEY)
-        if prog_inst:
-            return prog_inst
-        else:
-            prog_inst = Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
-            cache.add(CACHE_KEY, prog_inst, timeout=86400)
-            return prog_inst
-
+        prog_inst = Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
+        return prog_inst
+    by_prog_inst.depend_on_row(lambda: Program, lambda prog: {'program': prog})
+    def program_selector(node):
+        if node.program_set.all().count() == 1:
+            return {'program': node.program_set.all()[0]}
+        return {}
+    by_prog_inst.depend_on_row(lambda: DataTree, program_selector)
+    by_prog_inst = classmethod(by_prog_inst)
     
 class BusSchedule(models.Model):
     """ A scheduled bus journey associated with a program """
@@ -1673,7 +1657,8 @@ class ScheduleMap:
             
     def remove_section(self, sec):
         for t in sec.timeslot_ids():
-            self.map[t].remove(sec)
+            if sec in self.map[t]:
+                self.map[t].remove(sec)
 
     def __marinade__(self):
         import hashlib

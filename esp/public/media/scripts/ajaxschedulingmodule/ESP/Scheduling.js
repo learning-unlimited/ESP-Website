@@ -90,7 +90,7 @@ ESP.Scheduling = function(){
             block_index: {},
             teachers: [],
             schedule_assignments: [],
-	    resource_types: [],
+            resource_types: []
         };
 
         processed_data.schedule_assignments = data.schedule_assignments;
@@ -145,9 +145,9 @@ ESP.Scheduling = function(){
                 uid: r.uid,
                 text: r.text,
                 block_contents: ESP.Utilities.genPopup("r-" + r.uid, r.text, {
-		    'Size:': r.num_students.toString(),
-		    'Resources:': assd_resources,
-		}, null, false),
+                    'Size:': r.num_students.toString(),
+                    'Resources:': assd_resources
+                }, null, false),
                 resources: assd_resources,
                 size: r.num_students
             });
@@ -298,24 +298,24 @@ ESP.Scheduling = function(){
 
 		// Finally, create our Resource with what we have now
 		processed_data.sections.push(s = Resources.create('Section',{
-                    uid: c.id,
-                    class_id: c.parent_class,
-                    code: c.emailcode,
-		    class_info: false,
-		    class_size_info: false,
-		    class_admin_info: false,
-                    block_contents: ESP.Utilities.genPopup("s-" + c.id, c.emailcode, {}, onHoverHandler, null, false),
-                    category: c.category,
-                    length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
-                    length_hr: Math.round(c.length * 2) / 2,
-                    id: c.id,
-		    teachers: c.teachers.map(function(x) {
-			return Resources.get('Teacher', x);
-		    }),
-		    text: c.title,
-		    status: c.status,
-                    grade_min: c.grade_min,
-                    grade_max: c.grade_max,
+            uid: c.id,
+            class_id: c.parent_class,
+            code: c.emailcode,
+            class_info: false,
+            class_size_info: false,
+            class_admin_info: false,
+            block_contents: ESP.Utilities.genPopup("s-" + c.id, c.emailcode, {}, onHoverHandler, null, false),
+            category: c.category,
+            length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
+            length_hr: Math.round(c.length * 2) / 2,
+            id: c.id,
+            teachers: c.teachers.map(function(x) {
+                return Resources.get('Teacher', x);
+            }),
+            text: c.title,
+            status: c.status,
+            grade_min: c.grade_min,
+            grade_max: c.grade_max
 		}));
 
 					     

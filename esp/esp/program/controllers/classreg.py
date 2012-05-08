@@ -13,7 +13,7 @@ from django.template.loader import render_to_string
 from django.utils.datastructures import SortedDict
 from django.db import transaction
 
-from datetime import timedelta
+from datetime import timedelta, datetime
 from decimal import Decimal
 import simplejson as json
 from django.conf import settings
@@ -118,8 +118,6 @@ class ClassCreationController(object):
         #   If someone is editing the class who isn't teaching it, don't unapprove it.
         if user in cls.teachers():
             cls.propose()
-
-        cls.update_cache()
         
     def set_class_data(self, cls, reg_form):
         custom_fields = get_custom_fields()
@@ -193,6 +191,21 @@ class ClassCreationController(object):
         if len(user.getAvailableTimes(self.program)) == 0:
             for ts in self.program.getTimeSlots():
                 user.addAvailableTime(self.program, ts)
+            note = 'Availability was set automatically by the server in order to clear space for a newly registered class.'
+            self.send_availability_email(user, note)
+
+    def send_availability_email(self, teacher, note=None):
+        timeslots = teacher.getAvailableTimes(self.program, ignore_classes=True)
+        email_title = 'Availability for %s: %s' % (self.program.niceName(), teacher.name())
+        email_from = '%s Registration System <server@%s>' % (self.program.anchor.parent.name, settings.EMAIL_HOST_SENDER)
+        email_context = {'teacher': teacher,
+                         'timeslots': timeslots,
+                         'program': self.program,
+                         'curtime': datetime.now(),
+                         'note': note}
+        email_contents = render_to_string('program/modules/availabilitymodule/update_email.txt', email_context)
+        email_to = ['%s <%s>' % (teacher.name(), teacher.email)]
+        send_mail(email_title, email_contents, email_from, email_to, False)
 
     def teacher_has_time(self, user, hours):
         return (user.getTaughtTime(self.program, include_scheduled=True) + timedelta(hours=hours) \

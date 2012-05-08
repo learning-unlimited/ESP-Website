@@ -90,7 +90,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['teacherclsmodule'] = self # ...
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = (Tag.getProgramTag(key='friendly_times_with_date',program=self.program,default=False) == "True")
-        context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='false').lower()
+        context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='true').lower()
         return context
 
 
@@ -481,12 +481,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 ccc = ClassCreationController(self.program)
                 for teacher in to_be_added:
                     ccc.associate_teacher_with_class(cls, teacher)
-                cls.update_cache()
                 ccc.send_class_mail_to_directors(cls)
                 return self.goToCore(tl)
 
-
-        
         return render_to_response(self.baseDir()+'coteachers.html', request, (prog, tl),{'class':cls,
                                                                                          'ajax':ajax,
                                                                                          'txtTeachers': txtTeachers,
@@ -646,7 +643,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context = {}
         context['all_class_list'] = request.user.getTaughtClasses()
         context['noclasses'] = (len(context['all_class_list']) == 0)
-        context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='false').lower()
+        context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='true').lower()
         return render_to_response(self.baseDir()+'listcopyclasses.html', request, (prog, tl), context)
 
     @aux_call
