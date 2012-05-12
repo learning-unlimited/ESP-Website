@@ -117,7 +117,7 @@ function approve_class(clsid) {
 
   // Make the AJAX request to actually set the class status
   $j.ajax({
-    url: "/manage/{{ program.url }}/reviewClass",
+    url: "/manage/"+base_url+"/reviewClass",
     type: "post",
     data: {
       class_id: clsid,
@@ -141,7 +141,7 @@ function unreview_class(clsid) {
 
   // Make the AJAX request to actually set the class status
   $j.ajax({
-    url: "/manage/{{ program.url }}/reviewClass",
+    url: "/manage/"+base_url+"/reviewClass",
     type: "post",
     data: {
       class_id: clsid,
@@ -165,7 +165,7 @@ function reject_class(clsid) {
 
   // Make the AJAX request to actually set the class status
   $j.ajax({
-    url: "/manage/{{ program.url }}/reviewClass",
+    url: "/manage/"+base_url+"/reviewClass",
     type: "post",
     data: {
       class_id: clsid,
@@ -185,24 +185,9 @@ function reject_class(clsid) {
 
 function fillClasses(data)
 {
-    // First assemble the classes associative array
+    // First pull out the data
     sections = data.sections;
-    classes = {};
-    for (var i in sections)
-    {
-	var section = sections[i];
-	if (section.parent_class in classes)
-	{
-	    classes[section.parent_class].sections.push(section);
-	}
-	else
-	{
-	    classes[section.parent_class] = {
-		id: section.parent_class,
-		sections: [section],
-	    };
-	}
-    }
+    classes = data.classes;
 
     // Clear the current classes list (most likely just "Loading...")
     $j("#classes_anchor").html('');
@@ -222,7 +207,7 @@ function createClassRow(clsObj)
     <td class='clsleft classname'> \
       <span title='{{ cls.title }}'> \
         <strong>{{ cls.emailcode }}.</strong> \
-        <span {{ title_class }}>{{ cls.title }}</span> \
+        <span class='{{ title_css_class }}'>{{ cls.title }}</span> \
       </span> \
     </td> \
     <td class='clsmiddle' style='font-size: 12px' width='40px'> \
@@ -243,7 +228,7 @@ function createClassRow(clsObj)
        </form> \
     </td> \
     <td class='clsmiddle'> \
-       <form method='post' action='/teach/{{ program.url }}/editclass/{{ cls.id }}'> \
+       <form method='post' action='/teach/{{ program.getUrlBase }}/editclass/{{ cls.id }}'> \
          <input type='hidden' name='command' value='edit_class_{{ cls.id }}'> \
          <input type='hidden' name='manage' value='manage'> \
          <input class='button' type='submit' value='Edit'> \
@@ -264,21 +249,51 @@ function createClassRow(clsObj)
 ";
 
     // Now fill in the values in the template
-    console.log("Filling with clsObj:");
-    console.log(clsObj);
-    teacher_list = clsObj.sections[0].teachers;
-    console.log("Teacher_list:");
-    console.log(teacher_list);
+    var teacher_list = clsObj.teachers;
     teacher_list = $j.map(teacher_list, function(val, index) {
-	console.log("Looking for teacher: " + val);
 	return json_data.teachers[val].first_name + " " + json_data.teachers[val].last_name;
     });
-    teacher_list_string = "( " + teacher_list.join(", ") + " )";
+    var teacher_list_string = "( " + teacher_list.join(", ") + " )";
+
+    var section_link_list = "";
+    for (var i = 0; i < clsObj.sections.length; i++)
+    {
+	var section = sections[clsObj.sections[i]];
+	section_link_list = section_link_list.concat("<a href='/teach/"+base_url+"/select_students/"+section.id+"'>Sec. "+section.index+"</a><br />");
+    }
+    
+    var class_title_trimmed = clsObj.title;
+    if (class_title_trimmed.length > 40)
+    {
+	class_title_trimmed = class_title_trimmed.substring(0, 40);
+	class_title_trimmed = class_title_trimmed.concat("...");
+    }
+
+
+    var title_css_class = "";
+    if (clsObj.status == 0)
+    {
+	title_css_class = "approved dashboard_blue";
+    }
+    else if (clsObj.status == -10)
+    {
+	title_css_class = "unapproved dashboard_red";
+    }
 
     template = template.replace(new RegExp("{{ cls.id }}", "g"), clsObj.id)
-	.replace(new RegExp("{{ cls.title }}", "g"), clsObj.sections[0].title)
-	.replace(new RegExp("{{ cls.emailcode }}", "g"), clsObj.sections[0].emailcode)
-	.replace(new RegExp("{{ teacher_names }}", "g"), teacher_list_string);
-    // Return a jQuery node of the template
-    return $j(template);
+	.replace(new RegExp("{{ cls.title }}", "g"), class_title_trimmed)
+	.replace(new RegExp("{{ cls.emailcode }}", "g"), clsObj.emailcode)
+	.replace(new RegExp("{{ teacher_names }}", "g"), teacher_list_string)
+	.replace(new RegExp("{{ section_links }}", "g"), section_link_list)
+	.replace(new RegExp("{{ program.getUrlBase }}", "g"), base_url)
+	.replace(new RegExp("{{ title_css_class }}", "g"), title_css_class);
+
+    // Turn the template into a jQuery node
+    $node = $j(template);
+
+    // Add in the CSRF onsubmit checker
+    $node.find("form[method=post]").submit(function() { return check_csrf_cookie(this); });
+
+    // Return the jQuery node
+    return $node;
 }

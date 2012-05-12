@@ -28,7 +28,7 @@ $j(document).ready(function() {
 
   // Start the AJAX request to get the class data and display it
   json_data = {};
-  json_fetch(["sections"], fillClasses, json_data, function() { alert("Error loading class data"); });
+  json_fetch(["sections", "class_subjects"], fillClasses, json_data, function() { alert("Error loading class data"); });
 });
 
 /* ]]> */
