@@ -36,7 +36,8 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, main_call, aux_call
 from esp.users.models import UserAvailability
 from esp.cal.models import Event
-from esp.program.models import ClassSection, ClassSubject, StudentRegistration
+from esp.program.models import ClassSection, ClassSubject, StudentRegistration, ClassCategories
+from esp.program.models.class_ import open_class_category
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
 from esp.datatree.models import *
 from esp.dbmail.models import MessageRequest
@@ -45,9 +46,12 @@ from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 
 from django.views.decorators.cache import cache_control
+from django.db.models import Count, Sum
+from django.db.models.query import Q
 
 from collections import defaultdict
 from datetime import datetime
+import operator
 
 class JSONDataModule(ProgramModuleObj, CoreModule):
     """ A program module dedicated to returning program-specific data in JSON form. """
@@ -432,6 +436,130 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         
         return {'message_requests': data}
     message_requests.cached_function.depend_on_model(lambda: MessageRequest)
+
+    @aux_call
+    @json_response()
+    @cached_module_view
+    def stats(self, request, tl, one, two, module, extra, prog):
+        # Create a dictionary to assemble the output
+        dictOut = { "stats": [] }
+
+        classes = prog.classes().select_related()
+        vitals = {'id': 'vitals'}
+
+        vitals['classtotal'] = len(classes)
+        vitals['classsections'] = len(prog.sections().select_related())
+        vitals['classapproved'] = len(classes.filter(status=10))
+        vitals['classunreviewed'] = len(classes.filter(status=0))
+        vitals['classrejected'] = len(classes.filter(status=-10))
+        vitals['classcancelled'] = len(classes.filter(status=-20))
+
+        proganchor = prog.anchor
+        
+        #   Display pretty labels for teacher and student numbers
+        teacher_labels_dict = {}
+        for module in prog.getModules():
+            teacher_labels_dict.update(module.teacherDesc())
+        vitals['teachernum'] = []
+
+        ## Ew, queries in a for loop...
+        ## Not much to be done about it, though;
+        ## the loop is iterating over a list of independent queries and running each.
+        teachers = self.program.teachers()
+        for key in teachers.keys():
+            if key in teacher_labels_dict:
+                vitals['teachernum'].append((teacher_labels_dict[key],         ## Unfortunately, 
+len(teachers[key])))
+            else:
+                vitals['teachernum'].append((key, len(teachers[key])))
+                
+        student_labels_dict = {}
+        for module in prog.getModules():
+            student_labels_dict.update(module.studentDesc())      
+        vitals['studentnum'] = []
+
+        ## Ew, another set of queries in a for loop...
+        ## Same justification, though.
+        students = prog.students()
+        for key in students.keys():
+            if key in student_labels_dict:
+                vitals['studentnum'].append((student_labels_dict[key], len(students[key])))
+            else:
+                vitals['studentnum'].append((key, len(students[key])))
+
+        timeslots = prog.getTimeSlots()
+        vitals['timeslots'] = []
+        
+        ## Prefetch enough data that get_meeting_times() and num_students() don't have to hit the db
+        curclasses = ClassSection.prefetch_catalog_data(
+            ClassSection.objects.filter(parent_class__parent_program = self.program))
+
+        ## Is it really faster to do this logic in Python?
+        ## It'd be even faster to just write a raw SQL query to do it.
+        ## But this is probably good enough.
+        timeslot_dict = defaultdict(list)
+        timeslot_set = set(timeslots)
+        for section in curclasses:
+            for timeslot in set.intersection(timeslot_set, section.get_meeting_times()):
+                timeslot_dict[timeslot].append(section)
+
+        for timeslot in timeslots:
+            curTimeslot = {'slotname': timeslot.short_description}
+            
+            curTimeslot['classcount'] = len(timeslot_dict[timeslot])
+
+            def student_count(clslist):
+                lst = [0] + [x.num_students() for x in clslist if x.category.category != 'Lunch']
+                return reduce(operator.add, lst)
+
+            def student_max_count(clslist):
+                lst = [0] + [x.capacity for x in clslist if x.category.category != 'Lunch']
+                return reduce(operator.add, lst)
+
+            curTimeslot['studentcount'] = {
+                'count': student_count(timeslot_dict[timeslot]),
+                'max_count': student_max_count(timeslot_dict[timeslot])
+                }
+            
+            vitals['timeslots'].append(curTimeslot)
+
+        dictOut["stats"].append(vitals)
+
+        adminvitals_shirt = prog.getShirtInfo()
+        dictOut["stats"].append({"id": "shirt_sizes", "data": adminvitals_shirt['shirt_sizes']})
+        dictOut["stats"].append({"id": "shirt_types", "data": adminvitals_shirt['shirt_types']})
+        dictOut["stats"].append({"id": "shirts", "data": adminvitals_shirt['shirts']})
+
+        shours = 0.0
+        chours = 0.0
+        crhours = 0.0
+        ## Write this as a 'for' loop because PostgreSQL can't do it in
+        ## one go without a subquery or duplicated logic, and Django
+        ## doesn't have enough power to expose either approach directly.
+        ## At least there aren't any queries in the for loop...
+        ## (In MySQL, this could I believe be done with a minimally-painful extra() clause.)
+        ## Also, since we're iterating over a big data set, use .values()
+        ## minimize the number of objects that we're creating.
+        ## One dict and two Decimals per row, as opposed to
+        ## an Object per field and all kinds of stuff...
+        for cls in prog.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max'):
+            if cls['subject_duration']:
+                chours += float(cls['subject_duration'])
+                shours += float(cls['subject_duration']) * (float(cls['class_size_max']) if cls['class_size_max'] else 0)
+                crhours += float(cls['subject_duration']) * float(cls['subject_students']) / float(cls['num_sections'])
+        dictOut["stats"].append({"id": "classhours", "data": chours})
+        dictOut["stats"].append({"id": "classpersonhours", "data": shours})
+        dictOut["stats"].append({"id": "classreghours", "data": crhours})
+        Q_categories = Q(program=prog)
+        crmi = prog.getModuleExtension('ClassRegModuleInfo')
+        if crmi.open_class_registration:
+            Q_categories |= Q(pk=open_class_category().pk)
+        #   Introduce a separate query to get valid categories, since the single query seemed to introduce duplicates
+        program_categories = ClassCategories.objects.filter(Q_categories).distinct().values_list('id', flat=True)
+        annotated_categories = ClassCategories.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'category').distinct()
+        dictOut["stats"].append({"id": "categories", "data": filter(lambda x: x['id'] in program_categories, annotated_categories)})
+
+        return dictOut
 
     class Meta:
         abstract = True

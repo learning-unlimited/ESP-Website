@@ -1,3 +1,15 @@
+{% block xtrajs %}
+  <script type="text/javascript" src="/media/scripts/program/modules/adminvitals.js"></script>
+
+  <script type="text/javascript">
+    $j(document).ready(function() {
+      // Do we actually want to do this on start?
+      // Start the AJAX request to get the statistics data
+      json_fetch(["stats"], fillStats, json_data, function() { alert("Error loading statistics data"); });
+    });
+  </script>
+{% endblock %}
+
 <div class="module_group" id="program_form">
   <div class="module_group_header">
     Program Vitals
@@ -7,7 +19,7 @@
       Statistics about the program in different categories are shown below.
     </p>
     <div id="program_vitals_wrapper" style="font-size: 0.8em">
-      <div class="module_group">
+      <div class="module_group" id="stats_students">
 	<div class="module_group_header module_group_expandable">Students <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body">
 	  {% for value in vitals.studentnum %}
@@ -16,7 +28,7 @@
 	  {% endfor %}
 	</div>
       </div>
-      <div class="module_group">
+      <div class="module_group" id="stats_teachers">
 	<div class="module_group_header module_group_expandable">Teachers <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body">
 	  {% for value in vitals.teachernum %}
@@ -25,12 +37,12 @@
 	  {% endfor %}
 	</div>
       </div>
-      <div class="module_group">
+      <div class="module_group" id="stats_classes">
 	<div class="module_group_header module_group_expandable">Classes <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body">
 	  <strong>Total # of Classes</strong> &ndash; {{ vitals.classtotal.count }} <br />
 	  <strong>Total # of Class Sections</strong> &ndash; {{ vitals.classsections.count }} <br />
-	  {% for cat in categories %}
+          {% for cat in categories %}
 	  {% if cat.category == "Lunch" %}
 	  <strong>Total # of Lunch Classes</strong> &ndash; {{ cat.num_subjects }} <br />
 	  {% endif %}
@@ -41,7 +53,7 @@
 	  <strong>Total # of Classes <span style="color: #990;">Cancelled</span></strong> &ndash; {{ vitals.classcancelled.count }} <br />
 	</div>
       </div>
-      <div class="module_group">
+      <div class="module_group" id="stats_categories">
 	<div class="module_group_header module_group_expandable">Categories <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body">
 	  (Note: Totals include unreviewed classes)
@@ -61,7 +73,7 @@
 	  </table>
 	</div>
       </div>
-      <div class="module_group">
+      <div class="module_group" id="stats_hours">
 	<div class="module_group_header module_group_expandable">Hours <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body">
 	  <strong>Total # of Class Hours:</strong> &ndash; {{ classhours }} <br />
