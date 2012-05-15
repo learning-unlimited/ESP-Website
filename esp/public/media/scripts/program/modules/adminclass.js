@@ -240,7 +240,7 @@ function createClassRow(clsObj)
         Manage \
       </a> \
     </td> \
-    <td class='clsmiddle rapid_approval_button' style='display:none'> \
+    <td class='clsmiddle rapid_approval_button' {{ rapid_approval_style }}> \
       <a href='#' title='Set the status of {{ cls.title }}' class='abutton' style='white-space: nowrap;' onclick='show_approve_class_popup({{ cls.id }}); return false;'> \
 	Status \
       </a> \
@@ -280,13 +280,20 @@ function createClassRow(clsObj)
 	title_css_class = "unapproved dashboard_red";
     }
 
+    var rapid_approval_style = "style='display:none;'";
+    if (use_rapid_approval)
+    {
+	rapid_approval_style = "";
+    }
+
     template = template.replace(new RegExp("{{ cls.id }}", "g"), clsObj.id)
 	.replace(new RegExp("{{ cls.title }}", "g"), class_title_trimmed)
 	.replace(new RegExp("{{ cls.emailcode }}", "g"), clsObj.emailcode)
 	.replace(new RegExp("{{ teacher_names }}", "g"), teacher_list_string)
 	.replace(new RegExp("{{ section_links }}", "g"), section_link_list)
 	.replace(new RegExp("{{ program.getUrlBase }}", "g"), base_url)
-	.replace(new RegExp("{{ title_css_class }}", "g"), title_css_class);
+	.replace(new RegExp("{{ title_css_class }}", "g"), title_css_class)
+	.replace(new RegExp("{{ rapid_approval_style }}", "g"), rapid_approval_style);
 
     // Turn the template into a jQuery node
     $node = $j(template);

@@ -5,12 +5,11 @@
 <script type="text/javascript">
 /* <![CDATA[ */
 
-$j(document).ready(function() {
   // Check if rapid approval is enabled
   {% load tagdict %}
-  if ("{% getProgramTag 'use_rapid_approval' program%}" == "True")
+  use_rapid_approval = ("{% getProgramTag 'use_rapid_approval' program%}" == "True");
+  if (use_rapid_approval)
   {
-    $j(".rapid_approval_button").show();
     // Create the class description popup for the Status button
     class_desc_popup = $j('<div></div>').attr('id', "class_status_popup")
       .dialog({
@@ -23,7 +22,6 @@ $j(document).ready(function() {
 
   // Start the AJAX request to get the class data and display it
   json_fetch(["sections", "class_subjects"], fillClasses, json_data, function() { alert("Error loading class data"); });
-});
 
 /* ]]> */
 </script>
