@@ -440,7 +440,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     @aux_call
     @json_response()
     @cached_module_view
-    def stats(self, request, tl, one, two, module, extra, prog):
+    def stats(prog):
         # Create a dictionary to assemble the output
         dictOut = { "stats": [] }
 
@@ -468,7 +468,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         ## Ew, queries in a for loop...
         ## Not much to be done about it, though;
         ## the loop is iterating over a list of independent queries and running each.
-        teachers = self.program.teachers()
+        teachers = prog.teachers()
         for key in teachers.keys():
             if key in teacher_labels_dict:
                 vitals['teachernum'].append((teacher_labels_dict[key],         ## Unfortunately, 
@@ -519,7 +519,7 @@ len(teachers[key])))
 
         ## Prefetch enough data that get_meeting_times() and num_students() don't have to hit the db
         curclasses = ClassSection.prefetch_catalog_data(
-            ClassSection.objects.filter(parent_class__parent_program = self.program))
+            ClassSection.objects.filter(parent_class__parent_program = prog))
 
         ## Is it really faster to do this logic in Python?
         ## It'd be even faster to just write a raw SQL query to do it.
