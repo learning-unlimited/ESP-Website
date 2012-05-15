@@ -7,7 +7,7 @@
 
   // Check if rapid approval is enabled
   {% load tagdict %}
-  use_rapid_approval = ("{% getProgramTag 'use_rapid_approval' program%}" == "True");
+  use_rapid_approval = ("{% getProgramTag 'use_rapid_approval' program%}".toLowerCase() != "false");
   if (use_rapid_approval)
   {
     // Create the class description popup for the Status button
