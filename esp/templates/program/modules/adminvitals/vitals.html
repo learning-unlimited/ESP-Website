@@ -3,9 +3,15 @@
 
   <script type="text/javascript">
     $j(document).ready(function() {
-      // Do we actually want to do this on start?
-      // Start the AJAX request to get the statistics data
-      json_fetch(["stats"], fillStats, json_data, function() { alert("Error loading statistics data"); });
+      $module_groups = $j("#stats_students")
+        .add("#stats_teachers")
+        .add("#stats_classes")
+        .add("#stats_categories")
+        .add("#stats_hours")
+        .add("#stats_timeslots")
+        .add("#stats_tshirts");
+      $module_group_headers = $module_groups.children(".module_group_header");
+      $module_group_headers.click(getStats);
     });
   </script>
 {% endblock %}
@@ -22,97 +28,43 @@
       <div class="module_group" id="stats_students">
 	<div class="module_group_header module_group_expandable">Students <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body">
-	  {% for value in vitals.studentnum %}
-	  <strong>{{ value.0 }}</strong> &ndash; {{value.1.count}}
-	  {% if not forloop.last %}<br />{% endif %}
-	  {% endfor %}
+	  Loading data...
 	</div>
       </div>
       <div class="module_group" id="stats_teachers">
 	<div class="module_group_header module_group_expandable">Teachers <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body">
-	  {% for value in vitals.teachernum %}
-	  <strong>{{ value.0 }}</strong> &ndash; {{value.1.count}}
-	  {% if not forloop.last %}<br />{% endif %}
-	  {% endfor %}
+	  Loading data...
 	</div>
       </div>
       <div class="module_group" id="stats_classes">
 	<div class="module_group_header module_group_expandable">Classes <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body">
-	  <strong>Total # of Classes</strong> &ndash; {{ vitals.classtotal.count }} <br />
-	  <strong>Total # of Class Sections</strong> &ndash; {{ vitals.classsections.count }} <br />
-          {% for cat in categories %}
-	  {% if cat.category == "Lunch" %}
-	  <strong>Total # of Lunch Classes</strong> &ndash; {{ cat.num_subjects }} <br />
-	  {% endif %}
-	  {% endfor %}
-	  <strong>Total # of Classes <span style="color: #00C;">Unreviewed</span></strong> &ndash; {{ vitals.classunreviewed.count }} <br />
-	  <strong>Total # of Classes <span style="color: #0C0;">Approved</span></strong> &ndash; {{ vitals.classapproved.count }} <br />
-	  <strong>Total # of Classes <span style="color: #C00;">Rejected</span></strong> &ndash; {{ vitals.classrejected.count }} <br />
-	  <strong>Total # of Classes <span style="color: #990;">Cancelled</span></strong> &ndash; {{ vitals.classcancelled.count }} <br />
+	  Loading data...
 	</div>
       </div>
       <div class="module_group" id="stats_categories">
 	<div class="module_group_header module_group_expandable">Categories <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body">
-	  (Note: Totals include unreviewed classes)
-	  <table>
-	    <tr>
-	      <th><b>Category</b></th>
-	      <th class="smaller"># of subjects</th>
-	      <th class="smaller"># of sections</th>
-	    </tr>
-	    {% for cat in categories|dictsortreversed:"num_subjects" %}
-	    <tr>
-	      <th class="smaller">{{ cat.category }}</th>
-	      <td>{{ cat.num_subjects }}</td>
-	      <td>{{ cat.num_sections }}</td>
-	    </tr>
-	    {% endfor %}
-	  </table>
+	  Loading data...
 	</div>
       </div>
       <div class="module_group" id="stats_hours">
 	<div class="module_group_header module_group_expandable">Hours <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body">
-	  <strong>Total # of Class Hours:</strong> &ndash; {{ classhours }} <br />
-	  <strong>Total # of Class-Student-Hours (capacity):</strong> &ndash; {{ classpersonhours }} <br />
-	  <strong>Total # of Class-Student-Hours (registered):</strong> &ndash; {{ classreghours }} <br />
+	  Loading data...
 	</div>
       </div>
-      <div class="module_group">
+      <div class="module_group" id="stats_timeslots">
 	<div class="module_group_header module_group_expandable">Timeslots <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body">
-	  {% for timeslot in vitals.timeslots %}
-	  <strong>{{ timeslot.slotname }}</strong> &ndash; <br />
-	  <p>
-	    Students: {{ timeslot.studentcount.count }} / {{ timeslot.studentcount.max_count }}<br />
-	    Classes: {{ timeslot.classcount }}
-	  </p>
-	  {% endfor %}
+	  Loading data...
 	</div>
       </div>
-      <div class="module_group">
+      <div class="module_group" id="stats_tshirts">
 	<div class="module_group_header module_group_expandable">T-Shirts <span class="expand_collapse_text">(click to expand)</span></div>
 	<div class="module_group_body">
-	  <table>
-	    <tr><th colspan="{{ shirt_sizes|length|add:1 }}">Teacher T-Shirts</th></tr>
-	    <tr>
-	      <td></td>
-	      {% for shirt_size in shirt_sizes %}
-              <th class="smaller">{{ shirt_size.1 }}</th>
-	      {% endfor %}
-	    </tr>
-	    {% for type in shirts.teachers %}
-	    <tr>
-	      <th class="smaller">{{ type.type }}</th>
-	      {% for count in type.distribution %}
-              <td>{{ count }}</td>
-	      {% endfor %}
-	    </tr>
-	    {% endfor %}
-	  </table>
+	  Loading data...
 	</div>
       </div>
     </div>

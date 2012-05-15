@@ -447,12 +447,15 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         classes = prog.classes().select_related()
         vitals = {'id': 'vitals'}
 
-        vitals['classtotal'] = len(classes)
-        vitals['classsections'] = len(prog.sections().select_related())
-        vitals['classapproved'] = len(classes.filter(status=10))
-        vitals['classunreviewed'] = len(classes.filter(status=0))
-        vitals['classrejected'] = len(classes.filter(status=-10))
-        vitals['classcancelled'] = len(classes.filter(status=-20))
+        class_num_list = []
+        class_num_list.append(("Total # of Classes", len(classes)))
+        class_num_list.append(("Total # of Class Sections", len(prog.sections().select_related())))
+        class_num_list.append(("Total # of Lunch Classes", len(classes.filter(status=10))))
+        class_num_list.append(("Total # of Classes <span style='color: #00C;'>Unreviewed</span>", len(classes.filter(status=0))))
+        class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", len(classes.filter(status=10))))
+        class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", len(classes.filter(status=-10))))
+        class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", len(classes.filter(status=-20))))
+        vitals['classnum'] = class_num_list
 
         proganchor = prog.anchor
         
@@ -490,6 +493,30 @@ len(teachers[key])))
         timeslots = prog.getTimeSlots()
         vitals['timeslots'] = []
         
+
+        shours = 0.0
+        chours = 0.0
+        crhours = 0.0
+        ## Write this as a 'for' loop because PostgreSQL can't do it in
+        ## one go without a subquery or duplicated logic, and Django
+        ## doesn't have enough power to expose either approach directly.
+        ## At least there aren't any queries in the for loop...
+        ## (In MySQL, this could I believe be done with a minimally-painful extra() clause.)
+        ## Also, since we're iterating over a big data set, use .values()
+        ## minimize the number of objects that we're creating.
+        ## One dict and two Decimals per row, as opposed to
+        ## an Object per field and all kinds of stuff...
+        for cls in prog.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max'):
+            if cls['subject_duration']:
+                chours += float(cls['subject_duration'])
+                shours += float(cls['subject_duration']) * (float(cls['class_size_max']) if cls['class_size_max'] else 0)
+                crhours += float(cls['subject_duration']) * float(cls['subject_students']) / float(cls['num_sections'])
+        vitals["hournum"] = []
+        vitals["hournum"].append(("Total # of Class-Hours", chours))
+        vitals["hournum"].append(("Total # of Class-Student-Hours (capacity)", shours))
+        vitals["hournum"].append(("Total # of Class-Student-Hours (registered)", crhours))
+
+
         ## Prefetch enough data that get_meeting_times() and num_students() don't have to hit the db
         curclasses = ClassSection.prefetch_catalog_data(
             ClassSection.objects.filter(parent_class__parent_program = self.program))
@@ -525,31 +552,13 @@ len(teachers[key])))
 
         dictOut["stats"].append(vitals)
 
+        shirt_data = {"id": "shirtnum"};
         adminvitals_shirt = prog.getShirtInfo()
-        dictOut["stats"].append({"id": "shirt_sizes", "data": adminvitals_shirt['shirt_sizes']})
-        dictOut["stats"].append({"id": "shirt_types", "data": adminvitals_shirt['shirt_types']})
-        dictOut["stats"].append({"id": "shirts", "data": adminvitals_shirt['shirts']})
+        shirt_data["sizes"] = adminvitals_shirt['shirt_sizes'];
+        shirt_data["types"] = adminvitals_shirt['shirt_types'];
+        shirt_data["data"] = adminvitals_shirt['shirts'];
+        dictOut["stats"].append(shirt_data);
 
-        shours = 0.0
-        chours = 0.0
-        crhours = 0.0
-        ## Write this as a 'for' loop because PostgreSQL can't do it in
-        ## one go without a subquery or duplicated logic, and Django
-        ## doesn't have enough power to expose either approach directly.
-        ## At least there aren't any queries in the for loop...
-        ## (In MySQL, this could I believe be done with a minimally-painful extra() clause.)
-        ## Also, since we're iterating over a big data set, use .values()
-        ## minimize the number of objects that we're creating.
-        ## One dict and two Decimals per row, as opposed to
-        ## an Object per field and all kinds of stuff...
-        for cls in prog.classes().exclude(category__category='Lunch').annotate(num_sections=Count('sections'), subject_duration=Sum('sections__duration'), subject_students=Sum('sections__enrolled_students')).values('num_sections', 'subject_duration', 'subject_students', 'class_size_max'):
-            if cls['subject_duration']:
-                chours += float(cls['subject_duration'])
-                shours += float(cls['subject_duration']) * (float(cls['class_size_max']) if cls['class_size_max'] else 0)
-                crhours += float(cls['subject_duration']) * float(cls['subject_students']) / float(cls['num_sections'])
-        dictOut["stats"].append({"id": "classhours", "data": chours})
-        dictOut["stats"].append({"id": "classpersonhours", "data": shours})
-        dictOut["stats"].append({"id": "classreghours", "data": crhours})
         Q_categories = Q(program=prog)
         crmi = prog.getModuleExtension('ClassRegModuleInfo')
         if crmi.open_class_registration:
@@ -560,6 +569,8 @@ len(teachers[key])))
         dictOut["stats"].append({"id": "categories", "data": filter(lambda x: x['id'] in program_categories, annotated_categories)})
 
         return dictOut
+    stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
+
 
     class Meta:
         abstract = True
