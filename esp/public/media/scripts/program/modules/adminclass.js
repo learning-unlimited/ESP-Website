@@ -130,9 +130,9 @@ function approve_class(clsid) {
   });
 
   // Set the appropriate styling
-  $j("#"+clsid+"-row").find(".unapproved")
-      .removeClass("unapproved")
-      .addClass("approved");
+  $j("#clsid-"+clsid+"-row").find("td > span > span")
+	.removeClass("unapproved").removeClass("dashboard_blue").removeClass("dashboard_red")
+	.addClass("approved");
 }
 
 function unreview_class(clsid) {
@@ -154,9 +154,9 @@ function unreview_class(clsid) {
   });
 
   // Set the appropriate styling
-  $j("#"+clsid+"-row").find(".approved")
-      .removeClass("approved")
-      .addClass("unapproved");
+  $j("#clsid-"+clsid+"-row").find("td > span > span")
+	.removeClass("approved").removeClass("dashboard_red")
+	.addClass("unapproved").addClass("dashboard_blue");
 }
 
 function reject_class(clsid) {
@@ -178,9 +178,9 @@ function reject_class(clsid) {
   });  
 
   // Set the appropriate styling
-  $j("#"+clsid+"-row").find(".approved")
-      .removeClass("approved")
-      .addClass("unapproved");
+  $j("#clsid-"+clsid+"-row").find("td > span > span")
+	.removeClass("approved").removeClass("dashboard_blue")
+	.addClass("unapproved").addClass("dashboard_red");
 }
 
 function fillClasses(data)
@@ -203,7 +203,7 @@ function fillClasses(data)
 function createClassRow(clsObj)
 {
     var template = " \
-    <tr> \
+    <tr id='clsid-{{ cls.id }}-row'> \
     <td class='clsleft classname'> \
       <span title='{{ cls.title }}'> \
         <strong>{{ cls.emailcode }}.</strong> \
@@ -273,11 +273,19 @@ function createClassRow(clsObj)
     var title_css_class = "";
     if (clsObj.status == 0)
     {
-	title_css_class = "approved dashboard_blue";
+	title_css_class = "unapproved dashboard_blue";
     }
     else if (clsObj.status == -10)
     {
 	title_css_class = "unapproved dashboard_red";
+    }
+    else if (clsObj.status > 0)
+    {
+	title_css_class = "approved";
+    }
+    else if (clsObj.status <= 0)
+    {
+	title_css_class = "unapproved";
     }
 
     var rapid_approval_style = "style='display:none;'";
