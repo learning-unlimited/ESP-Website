@@ -61,6 +61,8 @@ from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import LineItemType, CompletedTransactionException
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
+from esp.resources.models import ResourceType
+from esp.tagdict.models import Tag
 from django.conf import settings
 import pickle
 import operator
@@ -540,6 +542,12 @@ def newprogram(request):
             pcf.save_m2m()
             
             commit_program(new_prog, context['datatrees'], context['userbits'], context['modules'], context['costs'])
+
+            # Create the default resource types now
+            default_restypes = Tag.getProgramTag('default_restypes', program=new_prog)
+            if default_restypes:
+                resource_type_labels = json.loads(default_restypes)
+                resource_types = [ResourceType.get_or_create(x, new_prog) for x in resource_type_labels]
             
             #   Force all ProgramModuleObjs and their extensions to be created now
             new_prog.getModules()
