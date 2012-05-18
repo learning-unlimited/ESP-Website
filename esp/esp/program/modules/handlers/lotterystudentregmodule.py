@@ -108,7 +108,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
         print ProgInfo.priority_limit
         #HSSP-style lottery
         if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:
-            return render_to_response('program/modules/lotterystudentregmodule/student_reg_old.html', request, (prog, tl), context)
+            return render_to_response('program/modules/lotterystudentregmodule/student_reg_priority.html', request, (prog, tl), context)
         #Splark/Spash style lottery
         return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, (prog, tl), context)
 
