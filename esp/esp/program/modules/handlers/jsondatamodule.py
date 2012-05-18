@@ -284,6 +284,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     @aux_call
     @cache_control(public=True, max_age=300)
     @json_response()
+    @cached_module_view
     def class_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
         if 'return_key' in request.GET:
@@ -325,6 +326,8 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         }
 
         return {return_key: [return_dict]}
+    class_info.cached_function.depend_on_model(ClassSubject)
+    class_info.cached_function.depend_on_model(ClassSection)
 
     @aux_call
     @cache_control(public=True, max_age=300)

@@ -46,10 +46,10 @@ function fill_class_popup(clsid, classes_data) {
       status_string = "Unreviewed";
       break;
     case 5:
-      status_string = "Accepted but hidden";
+      status_string = "Approved but hidden";
       break;
     case 10:
-      status_string = "Accepted";
+      status_string = "Approved";
       break;
   }
 
@@ -129,6 +129,9 @@ function approve_class(clsid) {
     }
   });
 
+  // Update our local data
+  classes[clsid].status = 10;
+
   // Set the appropriate styling
   $j("#clsid-"+clsid+"-row").find("td > span > span")
 	.removeClass("unapproved").removeClass("dashboard_blue").removeClass("dashboard_red")
@@ -153,6 +156,9 @@ function unreview_class(clsid) {
     }
   });
 
+  // Update our local data
+  classes[clsid].status = 0;
+
   // Set the appropriate styling
   $j("#clsid-"+clsid+"-row").find("td > span > span")
 	.removeClass("approved").removeClass("dashboard_red")
@@ -176,6 +182,9 @@ function reject_class(clsid) {
       class_desc_popup.dialog("close");
     }
   });  
+
+  // Update our local data
+  classes[clsid].status = -10;
 
   // Set the appropriate styling
   $j("#clsid-"+clsid+"-row").find("td > span > span")
