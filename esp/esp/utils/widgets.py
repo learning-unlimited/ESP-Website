@@ -47,7 +47,6 @@ class DateTimeWidget(forms.widgets.TextInput):
         if value != '': 
             try:
                 final_attrs['value'] = value.strftime(self.pythondformat)
-                print "Using current time"
             except:
                 final_attrs['value'] = value
                 
