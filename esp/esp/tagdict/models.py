@@ -65,6 +65,20 @@ class Tag(models.Model):
         return res
     
     @classmethod
+    def getBooleanTag(cls, key, program=None, default=None):
+        """ A variant of getProgramTag that returns boolean values.
+            The default argument should also be boolean. """
+            
+        tag_val = Tag.getProgramTag(cls, key, program)
+        if tag_val is None:
+            return default
+        else:
+            if tag_val.lower() == 'true':
+                return True
+            else:
+                return False
+    
+    @classmethod
     def setTag(cls, key, target=None, value=EMPTY_TAG):
         """
         Set a tag to a particular value.
