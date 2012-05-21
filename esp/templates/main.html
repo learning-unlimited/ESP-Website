@@ -9,7 +9,7 @@
 {% block stylesheets %}
     {{ block.super }}
     {# Customize your stylesheets here #}
-    <link rel="stylesheet" href="/media/styles/main.css" type="text/css" />
+<link rel="stylesheet" href="/media/styles/main.css" type="text/css" />
 {% endblock %}
 
 {% block javascript %}
@@ -49,13 +49,6 @@ body {
 
 <div id="title_bar">
     Title image or text here
-</div>
-
-<div id="nav_buttons">
-    <a class="navbutton" href="/learn/index.html">For Students</a>
-    <a class="navbutton" href="/teach/index.html">For Teachers</a>
-    <a class="navbutton" href="/volunteer/index.html">For Volunteers</a>
-    <a class="navbutton" href="/more_info/index.html">More Information</a>
 </div>
 
 {% block nav_header %}
@@ -121,6 +114,8 @@ body {
 <div id="main">
     <div id="main_content">
     {% block content %}
+    
+
     {% endblock %}
     </div>
 </div>

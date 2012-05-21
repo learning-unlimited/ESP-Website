@@ -62,7 +62,7 @@
 {% block stylesheets %}
 <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
 <style type="text/css">
-        @import "https://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css";
+       /*lswh @import "https://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css";*/
 </style>
 {% endblock %}
 

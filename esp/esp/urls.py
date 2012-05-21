@@ -46,34 +46,8 @@ autodiscover(admin_site)
 handler404 = 'esp.web.util.main.error404'
 handler500 = 'esp.web.util.main.error500'
 
-# Static media
-urlpatterns = patterns('django.views.static',
-                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': MEDIA_ROOT}),
-                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': os.path.join(PROJECT_ROOT, 'admin/media/')}),
-                       )
-
-# Admin stuff
-urlpatterns += patterns('',
-                     (r'^admin/doc/', include('django.contrib.admindocs.urls')),
-                     (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
-                     (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
-                     (r'^admin/ajax_children/?', 'esp.datatree.views.ajax_children'),
-                     (r'^admin/', include(admin_site.urls)),
-                     (r'^accounts/login/$', 'esp.users.views.login_checked',),
-                     #(r'^learn/Junction/2007_Spring/catalog/?$',RedirectView.as_view(url='/learn/Junction/2007_Summer/catalog/')),
-                     (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$',RedirectView.as_view(url='/%(subsection)s/index.html')),
-                        )
-urlpatterns += patterns('',
-(r'^admin', RedirectView.as_view(url='/admin/')),)
-
-#   Short term views
-urlpatterns += patterns('',
-                        (r'^', include('esp.shortterm.urls'),),
-                        )
-
-
 # generic stuff
-urlpatterns += patterns('esp.web.views.main',
+urlpatterns = patterns('esp.web.views.main',
                         (r'^$', 'home'), # index
                         (r'^error_reporter', 'error_reporter'),
                         (r'^web$', 'home'), # index
@@ -82,9 +56,35 @@ urlpatterns += patterns('esp.web.views.main',
                         (r'^set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
                         )
 
+# Use Django's built-in static views to serve static media
+urlpatterns += patterns('django.views.static',
+                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': MEDIA_ROOT}),
+                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': os.path.join(PROJECT_ROOT, 'admin/media/')}),
+                       )
+
+# Admin stuff
+urlpatterns += patterns('',
+                        (r'^admin/doc/', include('django.contrib.admindocs.urls')),
+                        (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
+                        (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
+                        (r'^admin/ajax_children/?', 'esp.datatree.views.ajax_children'),
+                        (r'^admin/', include(admin_site.urls)),
+                        (r'^accounts/login/$', 'esp.users.views.login_checked',),
+                        #(r'^learn/Junction/2007_Spring/catalog/?$',RedirectView.as_view(url='/learn/Junction/2007_Summer/catalog/')),
+                        (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$',RedirectView.as_view(url='/%(subsection)s/index.html')),
+                        )
+urlpatterns += patterns('',
+                        (r'^admin', RedirectView.as_view(url='/admin/')),
+                        )
+
+#   Short term views
+urlpatterns += patterns('',
+                        (r'^', include('esp.shortterm.urls')),
+                        )
+
 # program stuff
 urlpatterns += patterns('',
-                        (r'^',  include('esp.program.urls')),
+                        (r'^',  include('esp.program.urls')), 
                         )
 
 urlpatterns += patterns('esp.web.views.bio',
@@ -125,43 +125,43 @@ urlpatterns += patterns('',
 urlpatterns += patterns('esp.web.views.json',
 
      # JSON
-    (r'json/teachers/$', 'teacher_lookup'))
+                        (r'json/teachers/$', 'teacher_lookup'))
 
 # QSD Media
 # aseering 8/14/2007: This ought to be able to be written in a simpler way...
 urlpatterns += patterns('esp.web.views.main',
 
     # Possibly overspecific, possibly too general.
-    (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*)/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
-        { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia', 'section_prefix_keys': section_prefix_keys }),
-    (r'^(?P<subsection>(learn|teach|program|help))/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
-        { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia', 'section_prefix_keys': section_prefix_keys, 'url': ''}),
-    (r'^(?P<url>.*)/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
-        { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia' }),
-    (r'^qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
-        { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia', 'url': '' }),
+                        (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*)/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
+                         { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia', 'section_prefix_keys': section_prefix_keys }),
+                        (r'^(?P<subsection>(learn|teach|program|help))/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
+                         { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia', 'section_prefix_keys': section_prefix_keys, 'url': ''}),
+                        (r'^(?P<url>.*)/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
+                         { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia' }),
+                        (r'^qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
+                         { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia', 'url': '' }),
 
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
     # Contact Us! pages
-    (r'^contact/contact/?$', 'contact'),
-    (r'^contact/contact/(?P<section>[^/]+)/?$', 'contact'),
+                        (r'^contact/contact/?$', 'contact'),
+                        (r'^contact/contact/(?P<section>[^/]+)/?$', 'contact'),
 #    (r'^contact/submit\.html$', 'contact_submit'),
 
 
     # Program stuff
-    (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/classchangerequest/?$', 'classchangerequest'),
-    (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
-    (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
+                        (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/classchangerequest/?$', 'classchangerequest'),
+                        (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
+                        (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
 
     #??? (axiak)
     #(r'^program/Template/$', 'esp.program.views.programTemplateEditor'),
     #(r'^program/(?P<program>[-A-Za-z0-9_ ]+)/(?P<session>[-A-Za-z0-9_ ]+)/Classes/Template/$', 'esp.program.views.classTemplateEditor'),
 
     # all the archives
-    (r'^archives/([-A-Za-z0-9_ ]+)/?$', 'archives'),
-    (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
-    (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
-    (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'myesp'),
+                        (r'^archives/([-A-Za-z0-9_ ]+)/?$', 'archives'),
+                        (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
+                        (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
+                        (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'myesp'),
 
     # DB-generated QSD pages: HTML or plaintext
     #                        (r'^(?P<url>.*)\.html$', 'redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': qsd} ),
@@ -174,27 +174,29 @@ urlpatterns += patterns('esp.web.views.main',
     #(r'^events/edit/(?P<id>\d+)/$', 'esp.cal.views.updateevent'),
 
 urlpatterns += patterns('',
-(r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html')),)
+                        (r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html')),)
 
 urlpatterns += patterns('esp.web.views.navBar',
     # Update navbar
-    (r'^navbar/edit.scm', 'updateNavBar') )
+                        (r'^navbar/edit.scm', 'updateNavBar') 
+                        )
     
 urlpatterns += patterns('', 
-    (r'^dataviews/', include('esp.dataviews.urls')) )
+                        (r'^dataviews/', include('esp.dataviews.urls')) 
+                        )
 
 urlpatterns +=patterns('esp.customforms.views',
-	(r'^customforms/$','landing'),
-	(r'^customforms/create/$','formBuilder'),
-	(r'^customforms/submit/$','onSubmit'),
-	(r'^customforms/modify/$','onModify'),
-	(r'^customforms/view/(?P<form_id>\d{1,6})/$','viewForm'),
-	(r'^customforms/success/(?P<form_id>\d{1,6})/$', 'success'),
-	(r'^customforms/responses/(?P<form_id>\d{1,6})/$', 'viewResponse'),
-	(r'^customforms/getData/$', 'getData'),
-	(r'^customforms/metadata/$', 'getRebuildData'),
-	(r'^customforms/getperms/$', 'getPerms'),
-	(r'^customforms/getlinks/$', 'get_links'),
-	(r'^customforms/builddata/$', 'formBuilderData'),
-	(r'^customforms/exceldata/(?P<form_id>\d{1,6})/$', 'getExcelData'),
-	)	
+                       (r'^customforms/$','landing'),
+                       (r'^customforms/create/$','formBuilder'),
+                       (r'^customforms/submit/$','onSubmit'),
+                       (r'^customforms/modify/$','onModify'),
+                       (r'^customforms/view/(?P<form_id>\d{1,6})/$','viewForm'),
+                       (r'^customforms/success/(?P<form_id>\d{1,6})/$', 'success'),
+                       (r'^customforms/responses/(?P<form_id>\d{1,6})/$', 'viewResponse'),
+                       (r'^customforms/getData/$', 'getData'),
+                       (r'^customforms/metadata/$', 'getRebuildData'),
+                       (r'^customforms/getperms/$', 'getPerms'),
+                       (r'^customforms/getlinks/$', 'get_links'),
+                       (r'^customforms/builddata/$', 'formBuilderData'),
+                       (r'^customforms/exceldata/(?P<form_id>\d{1,6})/$', 'getExcelData'),
+                       )	
