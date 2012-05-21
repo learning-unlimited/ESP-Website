@@ -1,14 +1,13 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<title>{% block fulltitle %}{% endblock %}</title>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="description" content="{% block description %}{% endblock %}" />
-<meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
-<meta http-equiv="X-UA-Compatible" content="chrome=1">
-
-{% block javascript %}
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>{% block fulltitle %}{% endblock %}</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="description" content="{% block description %}{% endblock %}" />
+    <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
+    
+    {% block javascript %}
     <script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
 
     <script type="text/javascript" src="/media/scripts/yui/yahoo/yahoo-min.js"></script>
@@ -29,7 +28,7 @@
     <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
 
     <script language="JavaScript">
-    $j = $.noConflict();
+      $j = $.noConflict();
     </script>
     
     <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
@@ -37,43 +36,54 @@
     <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
 
     <!-- Internet Explorer refuses to load media content over HTTP by default
-        when the page has been loaded over HTTPS.  This is a security policy.
-        However, Dojo has HTTP references hard-coded in a few places.  This
-        script below provides a workaround until we stop using Dojo.   -->
+	 when the page has been loaded over HTTPS.  This is a security policy.
+	 However, Dojo has HTTP references hard-coded in a few places.  This
+	 script below provides a workaround until we stop using Dojo.   -->
     <script type="text/javascript">
-    djConfig = {
-        modulePaths: {
-            "dojo": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo",
-            "dijit": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dijit",
-            "dojox": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojox"
-        },
-        parseOnLoad: true
-    };
+      djConfig = {
+      modulePaths: {
+      "dojo": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo",
+      "dijit": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dijit",
+      "dojox": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojox"
+      },
+      parseOnLoad: true
+      };
     </script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo/dojo.xd.js"></script>
 
     <script language="JavaScript">
-    $j(document).ready(function() {
-        update_user_classes();
-    });
+      $j(document).ready(function() {
+      update_user_classes();
+      });
     </script>
-{% endblock %}
+    {% endblock %}
 
-{% block stylesheets %}
-<link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
-<style type="text/css">
-       /*lswh @import "https://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css";*/
-</style>
-{% endblock %}
+    {% block stylesheets %}
 
-{% block xtrajs %}{% endblock %}
+    {% comment %}
+    <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" /> 
+    <style type="text/css">
+      /*lswh @import "https://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css";*/
+    </style>
+    {% endcomment %}
 
-</head>
-<body class="tundra" onload="MM_preloadImages( {% for img in preload_images %}'{{ img }}'{% if not forloop.last %}, {% endif %}{% endfor %})">
+    <link href="/media/bootstrap/docs/assets/css/bootstrap.css" rel="stylesheet"/>
+    <link href="/media/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet"/>
+    <link href="/media/bootstrap/docs/assets/css/docs.css" rel="stylesheet"/>
+    <link href="/media/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet">
 
-{% block body %}{% endblock %}
+    
 
-{% block counter %}
-{% endblock %}
-</body>
+    {% endblock %}
+    
+    {% block xtrajs %}{% endblock %}
+
+  </head>
+  <body class="tundra" onload="MM_preloadImages( {% for img in preload_images %}'{{ img }}'{% if not forloop.last %}, {% endif %}{% endfor %})">
+
+    {% block body %}{% endblock %}
+
+    {% block counter %}
+    {% endblock %}
+  </body>
 </html>

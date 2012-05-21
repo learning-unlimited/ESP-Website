@@ -9,7 +9,7 @@
 {% block stylesheets %}
     {{ block.super }}
     {# Customize your stylesheets here #}
-<link rel="stylesheet" href="/media/styles/main.css" type="text/css" />
+{# <link rel="stylesheet" href="/media/styles/main.css" type="text/css" /> #}
 {% endblock %}
 
 {% block javascript %}
@@ -19,7 +19,7 @@
         These script fragments ensure that the backgrounds of the nav bar and 
         content area line up at the bottom of the page.  If you don't need them,
         feel free to remove them.
-    {% endcomment %}
+
     <script type="text/javascript" src="/media/scripts/match_heights.js"></script>
     <script type="text/javascript">
     <!--
@@ -29,22 +29,25 @@
     $j(document).ready(match_content);
     -->
     </script>
-
+    {% endcomment %}
     {# Customize your scripts here #}
 {% endblock %}
 
 {% block body %}
 
+{% comment %}
 <style type="text/css">
 body {
   background: {% block content_color %}#FFFFFF{% endblock %};
 }
 </style>
+{% endcomment %}
 
-<div id="content">
-<div id="topleft">
-<br /><br /><br /><br />
-<center><a href="/">ESP</a></center>
+<div class="container">
+<div id="topleft" class="row">
+  <div class="span12">
+    <h1><a href="/">ESP</a></h1>
+  </div>
 </div>
 
 <div id="title_bar">
