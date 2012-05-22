@@ -43,20 +43,45 @@ body {
 </style>
 {% endcomment %}
 
-<div class="container">
-<div id="topleft" class="row">
-  <div class="span12">
-    <h1><a href="/">ESP</a></h1>
+{% block navbar %}
+<div class="navbar navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+	<span class="icon-bar"></span>
+	<span class="icon-bar"></span>
+	<span class="icon-bar"></span>
+      </a>
+      
+      <div class="nav-collapse">
+	<ul class="nav">
+	  <li>
+	    <a class="brand" href="/">ESP</a>
+	  </li>
+	  <li class="active">
+	    <a href="/myesp/">Dashboard</a>
+	  </li>
+	</ul>
+	<ul class="nav pull-right">
+	  <li>
+	    {% include "users/loginbox_content.html" %} 
+	  </li>
+	</ul>
+      </div>
+    </div>
   </div>
 </div>
+{% endblock %}
 
-<div id="title_bar">
-    Title image or text here
-</div>
+{% block main %}
 
+<div class="container">
+
+{% comment %}
 {% block nav_header %}
 <div id="navbar_header">News and Links</div>
 {% endblock %}
+
 
 <div id="main_header">
 {% block welcome_message %}
@@ -70,7 +95,7 @@ body {
     <div id="navbar_content">
     <span class="announcementlink_title">Relevant Links</span>
     {% load navbar %}
-    {% navbar_gen request.path None navbar_list %}
+    {% navbar_gen r-equest.path None navbar_list %} 
     </div>
 
     <div id="navbar_content">
@@ -113,8 +138,8 @@ body {
     </div>
 </div>
 {% endblock %}
-
-<div id="main">
+{% endcomment %}
+<div id="main" class="container">
     <div id="main_content">
     {% block content %}
     
@@ -123,10 +148,14 @@ body {
     </div>
 </div>
 
+
+
+<footer>
+  <br /><hr><br />
+  <p>Your footer here</p>
+</footer>
 </div>
 
-<div id="footer">
-Your footer here
-</div>
 
+{% endblock %}
 {% endblock %}

@@ -2,48 +2,36 @@
 
 {% block title %}ESP{% endblock %}
 
-{% block welcome_message %}<img src="/media/images/homewelc.gif" alt="Welcome to ESP" />{% endblock %}
-
-{% block content_color %}#FFFFFF{% endblock %}
-
-{% block nav_header %}{% endblock %}
-
+{% block main %}
 {% block content %}
+<div class="container">
+  
+  <div class="hero-unit">
+    {% block welcome_message %}
+    <h1>Welcome to ESP</h1>
+    <!-- <img src="/media/images/homewelc.gif" alt="Welcome to ESP" /> -->
+    {% endblock %}
+  </div>
 
-<!-- override stylesheets somewhat -->
-{% comment %}
-<style type="text/css">
-#main {
-    background: #BCCAF5;
-}
-#navbar {
-    background: #BCCAF5;
-    color: #000000;
-}
-#navbar a {
-    color: #006666 !important;
-}
-div.qsd_header
-{
-    font-family: Arial, Helvetica, sans-serif;
-    font-size: 12px;
-    color: #666699 ! important;
-    padding: 0px;
-    border: 1px dashed #666699 !important;
-    margin: 0px;
-    height: 16px;
-    overflow: hidden;
-    text-align: center;
-}
-</style>
-{% endcomment %}
+  <div class="row">
+    <div class="span4">
+      <a href="/learn/index.html"><h2>Learn</h2></a>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam rutrum venenatis porta. Ut nisl sapien, pulvinar in suscipit ut, tempor blandit enim. Curabitur arcu ante, facilisis vitae dictum id, interdum non risus. Vestibulum at turpis lacus.</p>
+    </div>
+    <div class="span4">
+      <a href="/teach/index.html"><h2>Teach</h2></a>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam rutrum venenatis porta. Ut nisl sapien, pulvinar in suscipit ut, tempor blandit enim. Curabitur arcu ante, facilisis vitae dictum id, interdum non risus. Vestibulum at turpis lacus.</p>
+    </div>
+    <div class="span4">
+      <a href="/volunteer/index.html"><h2>Volunteer</h2></a>
+      <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam rutrum venenatis porta. Ut nisl sapien, pulvinar in suscipit ut, tempor blandit enim. Curabitur arcu ante, facilisis vitae dictum id, interdum non risus. Vestibulum at turpis lacus. 
+    </div>
+  </div>
 
-<div id="nav_buttons">
-    <a class="navbutton" href="/learn/index.html">Students</a>
-    <a class="navbutton" href="/teach/index.html">Teachers</a>
-    <a class="navbutton" href="/volunteer/index.html">Volunteers</a>
-    <a class="navbutton" href="/more_info/index.html">More Information</a>
+
+
 </div>
+
 
 {% load render_qsd %}
 {% render_inline_qsd "Q/Web" "homepage_qsdpart" %}
@@ -54,4 +42,5 @@ div.qsd_header
 </div>
 </div>
 
+{% endblock %}
 {% endblock %}
