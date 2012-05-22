@@ -69,7 +69,7 @@ class Tag(models.Model):
         """ A variant of getProgramTag that returns boolean values.
             The default argument should also be boolean. """
             
-        tag_val = Tag.getProgramTag(cls, key, program)
+        tag_val = Tag.getProgramTag(key, program)
         if tag_val is None:
             return default
         else:
