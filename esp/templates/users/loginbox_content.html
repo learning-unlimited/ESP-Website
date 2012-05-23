@@ -4,22 +4,22 @@
   <div class="navbar">{{ login_result }}</div>
   {% endif %}
 
-{% comment %}
-<div class="logged_in logged_in_hidden">
+ {% comment %} 
+<div class="nav logged_in logged_in_hidden">
   <div id="divnav">
     <div id="loginbox_user_name"></div>
     <div class="admin admin_hidden">
       <a href="/admin/">Administration pages</a> 
       <a href="/manage/programs/">Manage Programs</a> <br />
     </div>
-    <div class="unmorph unmorph_hidden">
+    <!-- div class="unmorph unmorph_hidden">
         <br /><a href="/myesp/switchback/">Unmorph to <script language="JavaScript">document.write(esp_user.cur_retTitle);</script></a><br /><div id="unmorph_text"></div>
-    </div>
-    <a href="/myesp/signout/">Logout</a>
+    </div-->
+    <a href="/myesp/signout/">Logout!</a>
   </p>
 </div>
 </div>
-{% endcomment %}
+ {% endcomment %} 
 
 <div class="not_logged_in not_logged_in_hidden">
   <form name="loginform" id="loginform" method="post" action="/myesp/login/" class="navbar-form form-inline">

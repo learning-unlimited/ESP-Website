@@ -1,0 +1,160 @@
+{% extends "elements/html" %}
+
+{% comment %}
+    Customize your title formatting here.  For example:
+    {% block fulltitle %}Splash at UFoo - {% block title %}{% endblock %}{% endblock %} 
+{% endcomment %}
+{% block fulltitle %}{% block title %}{% endblock %}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    {# Customize your stylesheets here #}
+{# <link rel="stylesheet" href="/media/styles/main.css" type="text/css" /> #}
+{% endblock %}
+
+
+{% block body %}
+
+{% comment %}
+<style type="text/css">
+body {
+  background: {% block content_color %}#FFFFFF{% endblock %};
+}
+</style>
+{% endcomment %}
+
+{% block navbar %}
+<div class="navbar navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+	<span class="icon-bar"></span>
+	<span class="icon-bar"></span>
+	<span class="icon-bar"></span>
+      </a>
+      
+      <div class="nav-collapse">
+	<ul class="nav">
+	  <li>
+	    <a class="brand" href="/">ESP</a>
+	  </li>
+	  <li class="active">
+	    <a href="/myesp/">Dashboard</a>
+	  </li>
+	</ul>
+	<ul class="nav pull-right">
+	  <li>
+	    {% include "users/loginbox_content.html" %} 
+	  </li>
+	</ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block main %}
+
+<div class="container-fluid">
+  <div class="row-fluid">
+    <div class="span3">
+      <ul class="nav nav-list well">
+	<li class="nav-header">My ESP</li>
+	<li class="active"><a href='#'><i class="icon-home"></i>Home</a></li>
+	<li><a href='#'><i class="icon-th"></i>Dashboard</a></li>
+	<li><a href='#'><i class="icon-cog"></i>Settings</a></li>
+	<li><a href='#'><i class="icon-envelope"></i>Contact Us</a>
+	  <li class="nav-header">Link Header</li>
+	  <li><a href="#">Link</a></li>
+	  <li><a href="#">Link</a></li>
+	  <li><a href="#">Link</a></li>
+	  <li><a href="#">Link</a></li>
+	  <li><a href="#">Link</a></li>
+	</li>
+      </ul>
+    
+    </div>
+    <div class="span9">
+
+{% comment %}
+{% block nav_header %}
+<div id="navbar_header">News and Links</div>
+{% endblock %}
+
+
+<div id="main_header">
+{% block welcome_message %}
+    <!-- CSS2 doesn't allow vertical alignment without a table.  So, give it a table. -->
+    <table width="600px" height="30px"><tr><td valign="middle">Welcome to ESP</td></tr></table>
+{% endblock %}
+</div>
+
+{% block navbar %}
+<div id="navbar">
+    <div id="navbar_content">
+    <span class="announcementlink_title">Relevant Links</span>
+    {% load navbar %}
+    {% navbar_gen r-equest.path None navbar_list %} 
+    </div>
+
+    <div id="navbar_content">
+
+    {% load smartypants %}
+    {% load markdown %}
+    {% for announce in announcements.announcementList %}
+        <p>
+        <span class="announcementlink_title{% if announce.section %}{{ announce.section }}{% endif %}">
+        {% if announce.makeUrl %}
+            <a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a>
+        {% else %}
+            {{ announce.makeTitle }}
+        {% endif %}
+        </span><br />
+        <span class="announcementlink">{% autoescape off %}{{ announce.content|markdown|smartypants }}{% endautoescape %}</span>
+        </p>
+    {% endfor %}
+
+    <!-- more announcements -->
+    {% if announcements.overflowed %}
+    <div id="divannouncemore">
+        <a href="/myesp/home/">More Notices...</a>
+    </div>
+    {% endif %}
+    </div>
+    
+    <div id="navbar_content">
+    <br />
+    {% include "users/loginbox.html" %}
+    <br />
+
+    <div class="admin admin_hidden">
+        <a href="/admin/miniblog/entry/">Edit News</a> <br />
+        <a href="/admin/miniblog/announcementlink/">Edit Announcement/Links</a> <br />
+        <a href="/admin/web/navbarentry/">Edit Navigation Links</a> <br />
+        <a href="/admin/web/navbarcategory/">Edit Navigation Categories</a>
+    </div>
+
+    </div>
+</div>
+{% endblock %}
+{% endcomment %}
+
+<div id="main_content">
+    {% block content %}
+    
+
+    {% endblock %}
+    </div>
+    </div>
+  </div>
+</div>
+
+
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+
+{% endblock %}
+
+{% endblock %}
