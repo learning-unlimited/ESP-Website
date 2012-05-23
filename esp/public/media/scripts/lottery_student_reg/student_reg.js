@@ -56,16 +56,16 @@ compare_timeslot_starts = function(a, b){
 
 
 function Timeslot(data){
-    this.timeslot_data = data;
-    this.id = data[id];
+    var timeslot_data = data;
+    var timeslot_id = data['id'];
 
     //some div ids
-    this.ts_div = "TS_"+data["id"];
-    this.ts_table_div = "TS_TABLE_" + data["id"];
-    this.ts_carryover_div = "TS_C_" + data["id"];
-    this.ts_walkin_div = "TS_W_" + data["id"];
-    this.ts_radio_name = data["label"] + "_priority";
-    this.ts_no_preference_id = data["label"] + "_no_preference";
+    var ts_div = "TS_"+data["id"];
+    var ts_table_div = "TS_TABLE_" + data["id"];
+    var ts_carryover_div = "TS_C_" + data["id"];
+    var ts_walkin_div = "TS_W_" + data["id"];
+    var ts_radio_name = data["label"] + "_priority";
+    var ts_no_preference_id = data["label"] + "_no_preference";
 
     this.get_walkin_header_html = function()
     {
@@ -76,7 +76,7 @@ function Timeslot(data){
 	return "";
     }
 
-    this.walkin_header_html = this.get_walkin_header_html();
+    walkin_header_html = this.get_walkin_header_html();
 
     this.get_timeslot_html = function()
     {
@@ -85,7 +85,7 @@ function Timeslot(data){
 	template = "\
     <h3 class='header'><a href='#'><b>%TIMESLOT_LABEL% </b></a></h3>	\
     <div id='%TIMESLOT_DIV%'>						\
-    " + this.walkin_header_html + "						\
+    " + walkin_header_html + "						\
 \
         <h3>Classes that start in another timeblock</h3>		\
         <div id='%TIMESLOT_CARRYOVER_DIV%' style='margin:1em 1em 1em 1em'></div> \
@@ -99,18 +99,18 @@ function Timeslot(data){
             </tr>\
         </table>\
     </div><br>";
-	template = template.replace(/%TIMESLOT_ID%/g, this.timeslot_data['id']);
-	template = template.replace(/%TIMESLOT_DIV%/g, this.ts_div);
-	template = template.replace(/%TIMESLOT_TABLE%/g, this.ts_table_div);
-	template = template.replace(/%TIMESLOT_WALKIN_DIV%/g, this.ts_walkin_div);
-	template = template.replace(/%TIMESLOT_CARRYOVER_DIV%/g, this.ts_carryover_div);
-	template = template.replace(/%TIMESLOT_LABEL%/g, this.timeslot_data['label']);
+	template = template.replace(/%TIMESLOT_ID%/g, timeslot_data['id']);
+	template = template.replace(/%TIMESLOT_DIV%/g, ts_div);
+	template = template.replace(/%TIMESLOT_TABLE%/g, ts_table_div);
+	template = template.replace(/%TIMESLOT_WALKIN_DIV%/g, ts_walkin_div);
+	template = template.replace(/%TIMESLOT_CARRYOVER_DIV%/g, ts_carryover_div);
+	template = template.replace(/%TIMESLOT_LABEL%/g, timeslot_data['label']);
 	return template;
     };
 
     this.add_classes_to_timeslot = function(sections){
-	carryover_id_list = this.timeslot_data['sections'];
-	class_id_list = this.timeslot_data['starting_sections'];
+	carryover_id_list = timeslot_data['sections'];
+	class_id_list = timeslot_data['starting_sections'];
 	user_grade = esp_user['cur_grade'];
 
 	//adds the "no priority" radio button and defaults it to checked (this will change if we load a different, previously specified preference)
@@ -123,10 +123,10 @@ function Timeslot(data){
         <td></td>\
         <td><p>I would not like to specify a priority class for this timeblock.</p></td>\
     </tr>";
-	no_priority_template = no_priority_template.replace(/%TS_RADIO_NAME%/g, this.ts_radio_name)
-	.replace(/%TIMESLOT_ID%/g, this.id)
-        .replace(/%TS_NO_PREFERENCE_ID%/g, this.ts_no_preference_id);
-	$j("#"+this.ts_table_div).append(no_priority_template);
+	no_priority_template = no_priority_template.replace(/%TS_RADIO_NAME%/g, ts_radio_name)
+	.replace(/%TIMESLOT_ID%/g, timeslot_id)
+        .replace(/%TS_NO_PREFERENCE_ID%/g, ts_no_preference_id);
+	$j("#"+ts_table_div).append(no_priority_template);
 	//$j("#"+ts_no_preference_id(timeslot['label'])).prop("checked", true);
 
 	//add checkboxes and radio buttons for each class
@@ -138,10 +138,10 @@ function Timeslot(data){
 	var classes_list = [];
 	var carryovers_list = [];
 	for(i in class_id_list){
-	    id = class_id_list[i];
-	    section = sections[id];
+	    class_id = class_id_list[i];
+	    section = sections[class_id];
 
-	// check grade in range or admin
+	    // check grade in range or admin
 	    if((user_grade >= section['grade_min'] && user_grade <= section['grade_max']) || esp_user['cur_admin'] == 1){
 		if(!open_class_registration || section['category'] != open_class_category){
 		    if (section['status'] > 0)
@@ -154,8 +154,8 @@ function Timeslot(data){
 	}
 
 	for(i in carryover_id_list){
-	    id = carryover_id_list[i];
-	    section = sections[id];
+	    section_id = carryover_id_list[i];
+	    section = sections[section_id];
 
 	    //check grade in range or admin
 	    if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] || esp_user['cur_admin'] == 1){
@@ -174,67 +174,36 @@ function Timeslot(data){
 	// Add walkins section
 	if(open_class_registration && !has_walkins){
 	    //hopefully nobody will ever see this :)
-	    $j("#"+this.ts_walkin_div).append("<i><font color='red'>(No walk-ins)</font></i>");
+	    $j("#"+ts_walkin_div).append("<i><font color='red'>(No walk-ins)</font></i>");
 	}
 	else if (open_class_registration){
 	    // Add all the walkins classes
 	    for(i in walkins_list){
-		$j("#"+this.ts_walkin_div).append(this.get_walkin_html(walkins_list[i], this.id));
+		$j("#"+ts_walkin_div).append(this.get_walkin_html(walkins_list[i], timeslot_id));
 	    }
 	}
 	// Add classes (starting in this timeblock) section
 	if(!has_classes){
 	    //hopefully nobody will ever see this either :)
-	    $j("#"+this.ts_div).append("<i><font color='red'>(No classes)</font></i>");
+	    $j("#"+ ts_div).append("<i><font color='red'>(No classes)</font></i>");
 	}
 	else{
-    // Adds all classes that start in this timeblock
+	    // Adds all classes that start in this timeblock
 	    for(i in classes_list){
-		$j("#"+this.ts_table_div).append(this.get_class_checkbox_html(classes_list[i], this.id));
-		load_old_preferences(classes_list[i]);
+		class_checkbox = new this.ClassCheckbox(classes_list[i]);
+		class_checkbox.add_self_to_timeslot();
 	    }
 	}
 	// Add carried over classes section
 	if(!has_carryovers){
-	    $j("#"+this.ts_carryover_div).append("<i><font color='red'>(No carry-overs)</font></i>");
+	    $j("#"+ts_carryover_div).append("<i><font color='red'>(No carry-overs)</font></i>");
 	}
 	else{
 	    // Adds all classes that are carried over from the previous timeblock
 	    for(i in carryovers_list){
-		$j("#"+this.ts_carryover_div).append(this.get_carryover_html(carryovers_list[i], this.id));
+		$j("#"+ts_carryover_div).append(this.get_carryover_html(carryovers_list[i], timeslot_id));
 	    }
 	}
-    };
-
-    this.get_class_checkbox_html = function(class_data, timeslot_id){
-	// Create the class div using a template that has keywords replaced with values below
-	template = "\
-    <tr>\
-        <td><p>\
-            <input type='radio'\
-                   onChange='priority_changed(%CLASS_ID%, %TIMESLOT_ID%)'\
-                   id=\"%CLASS_RADIO_ID%\"\
-                   name=\"%TS_RADIO_NAME%\">\
-            </input>\
-        </p></td>\
-        <td><p>\
-            <input type='checkbox'\
-                   onChange='interested_changed(%CLASS_ID%)'\
-                   name=%CLASS_CHECKBOX_ID%\
-                   id=%CLASS_CHECKBOX_ID%>\
-            </input>\
-        </p></td>\
-        <td><p>%CLASS_EMAILCODE%: %CLASS_TITLE% <i>(%CLASS_LENGTH% hours)</i> [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p></td>\
-    </tr>"
-	.replace(/%TIMESLOT_ID%/g, timeslot_id)
-        .replace(/%TS_RADIO_NAME%/g, this.ts_radio_name)
-        .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
-        .replace('%CLASS_TITLE%', class_data['title'])
-	.replace(/%CLASS_LENGTH%/g, Math.round(class_data['length']))
-        .replace(/%CLASS_ID%/g, class_data['id'])
-        .replace(/%CLASS_CHECKBOX_ID%/g, class_checkbox_id(class_data['id']))
-        .replace(/%CLASS_RADIO_ID%/g, class_radio_id(class_data['id']));
-	return template;
     };
 
     this.get_walkin_html = function(class_data, timeslot_id){
@@ -258,8 +227,76 @@ function Timeslot(data){
     };
 
     //class checkboxes
-    this.ClassCheckbox = function(class_data){
+    this.ClassCheckbox = function(data){
+	var this_class_data = data;
+	var class_id = data['id'];
+	var class_radio_id = "class_radio_" + class_id;
+	var class_checkbox_id = "interested_" + class_id;
+
+	// Callback for when a priority radio is changed
+	priority_changed = function(){
+	    // Unprioritize all selections in the timeblock
+	    for (i in timeslot_data['starting_sections']){
+		sections[timeslot_data['starting_sections'][i]]['lottery_priority'] = false;
+	    }
+
+	    if(class_id){
+		// Prioritize this selection
+		sections[class_id]['lottery_priority'] = true;
+	    }
+	};
+
+	// Callback for when an interested checkbox is changed
+	interested_changed = function(){
+	    sections[class_id]['lottery_interested'] = !sections[class_id]['lottery_interested'];
+	};
 	
+	// Function to populate a class div with existing preference data
+	this.load_old_preferences = function(){
+	    if( this_class_data['lottery_priority'] )
+		{
+		    $j("#"+class_radio_id).prop("checked", true);
+		}
+	    if( this_class_data['lottery_interested'] )
+		{
+		    $j("#"+class_checkbox_id).prop("checked", true);
+		}
+	};
+
+	this.add_self_to_timeslot = function(){
+	    $j("#"+ts_table_div).append(this.get_class_checkbox_html());
+	    $j("#"+class_checkbox_id).on("click", interested_changed);
+	    $j("#"+class_radio_id).on("click", priority_changed);
+	    this.load_old_preferences()
+	};
+
+        this.get_class_checkbox_html = function(){
+	    // Create the class div using a template that has keywords replaced with values below
+	    template = "\
+    <tr>\
+        <td><p>\
+            <input type='radio'\
+                   id=\"%CLASS_RADIO_ID%\"\
+                   name=\"%TS_RADIO_NAME%\">\
+            </input>\
+        </p></td>\
+        <td><p>\
+            <input type='checkbox'\
+                   name=%CLASS_CHECKBOX_ID%\
+                   id=%CLASS_CHECKBOX_ID%>\
+            </input>\
+        </p></td>\
+        <td><p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p></td>\
+    </tr>"
+	    .replace(/%TIMESLOT_ID%/g, timeslot_id)
+	    .replace(/%TS_RADIO_NAME%/g, ts_radio_name)
+	    .replace(/%CLASS_EMAILCODE%/g, this_class_data['emailcode'])
+	    .replace('%CLASS_TITLE%', this_class_data['title'])
+	    .replace(/%CLASS_ID%/g, this_class_data['id'])
+	    .replace(/%CLASS_CHECKBOX_ID%/g, class_checkbox_id)
+	    .replace(/%CLASS_RADIO_ID%/g, class_radio_id);
+	    return template;
+	};
     }
 }
  
@@ -281,7 +318,6 @@ create_class_info_dialog = function(){
 	    title: ''
 	});
 };
-
 
 // adds timeslots to content and adds classes to timeslots
 // called once class data arrives from the server
@@ -311,7 +347,6 @@ show_app = function(data){
     $j("#lsr_content").accordion('destroy').accordion(accordion_settings);
 };
 
-
 // Dictionary to keep track of classes' extra info as and when we load them
 var class_info = {};
 // Initial popup that tells the user we're loading the class data
@@ -323,6 +358,7 @@ loading_class_desc = function(){
     class_desc_popup.html('Loading class info...');
     class_desc_popup.dialog('open');
 };
+
 
 // Function to fill the class description popup
 fill_class_desc = function(class_id){
@@ -339,7 +375,7 @@ fill_class_desc = function(class_id){
 };
 
 
-    // Called to open a class description
+// Called to open a class description
 open_class_desc = function(class_id){
     // Display a loading popup while we wait
     loading_class_desc();
@@ -358,45 +394,4 @@ open_class_desc = function(class_id){
 	// If we already have the data, go fill the popup
 	fill_class_desc(class_id);
     }
-};
-
-// Function to populate a class div with existing preference data
-load_old_preferences = function(class_data){
-    id = class_data['id'];
-    if( class_data['lottery_priority'] )
-    {
-	$j("#"+class_radio_id(id)).prop("checked", true);
-    }
-    if( class_data['lottery_interested'] )
-    {
-	$j("#"+class_checkbox_id(id)).prop("checked", true);
-    }
-};
-
-// Callback for when a priority radio is changed
-priority_changed = function(id, timeslot){
-    // Unprioritize all selections in the timeblock
-    for (i in timeslots.timeslot_data.starting_sections){
-	    sections[timeslots[timeslot_id].starting_sections[i]]['lottery_priority'] = false;
-    }
-
-    if(id){
-	// Prioritize this selection
-	sections[id]['lottery_priority'] = true;
-    }
-};
-
-// Callback for when an interested checkbox is changed
-interested_changed = function(id){
-    sections[id]['lottery_interested'] = !sections[id]['lottery_interested'];
-};
-
-// Various functions to create id strings to be used in HTML
-//most of these should disapear into object-orientedness hopefully
-
-class_radio_id = function(id){
-    return "class_radio_" + id;
-};
-class_checkbox_id = function(id){
-    return "interested_"+ id;
 };
