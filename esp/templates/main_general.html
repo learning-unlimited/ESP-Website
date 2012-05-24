@@ -1,0 +1,139 @@
+{% extends "elements/html" %}
+
+{% comment %}
+    Customize your title formatting here.  For example:
+    {% block fulltitle %}Splash at UFoo - {% block title %}{% endblock %}{% endblock %} 
+{% endcomment %}
+{% block fulltitle %}{% block title %}{% endblock %}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    {# Customize your stylesheets here #}
+{# <link rel="stylesheet" href="/media/styles/main.css" type="text/css" /> #}
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+
+    {% comment %}
+        These script fragments ensure that the backgrounds of the nav bar and 
+        content area line up at the bottom of the page.  If you don't need them,
+        feel free to remove them.
+
+    <script type="text/javascript" src="/media/scripts/match_heights.js"></script>
+    <script type="text/javascript">
+    <!--
+    match_content = function () {
+        match_heights(['main', 'navbar']);
+    };
+    $j(document).ready(match_content);
+    -->
+    </script>
+    {% endcomment %}
+    {# Customize your scripts here #}
+{% endblock %}
+
+{% block body %}
+
+{% comment %}
+<style type="text/css">
+body {
+  background: {% block content_color %}#FFFFFF{% endblock %};
+}
+</style>
+{% endcomment %}
+
+{% block navbar %}
+<div class="navbar navbar-fixed-top">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+	<span class="icon-bar"></span>
+	<span class="icon-bar"></span>
+	<span class="icon-bar"></span>
+      </a>
+      
+      <div class="nav-collapse">
+	<ul class="nav">
+	  <li class="active">
+	    <a class="brand" href="/">ESP</a>
+	  </li>
+	  <li>
+	    <a href="/myesp/">Dashboard</a>
+	  </li>
+	  <li>
+	    <a href="/myesp/profile/">Profile</a>
+	  </li>
+	</ul>
+	<ul class="nav pull-right">
+	  <li>
+	    {% include "users/loginbox_content.html" %} 
+	  </li>
+	</ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block main %}
+
+<div class="container">
+
+
+{% comment %}
+<div id="navbar">
+    <div id="navbar_content">
+    <span class="announcementlink_title">Relevant Links</span>
+    {% load navbar %}
+    {% navbar_gen request.path None navbar_list %} 
+    </div>
+
+    <div id="navbar_content">
+
+    {% load smartypants %}
+    {% load markdown %}
+    {% for announce in announcements.announcementList %}
+        <p>
+        <span class="announcementlink_title{% if announce.section %}{{ announce.section }}{% endif %}">
+        {% if announce.makeUrl %}
+            <a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a>
+        {% else %}
+            {{ announce.makeTitle }}
+        {% endif %}
+        </span><br />
+        <span class="announcementlink">{% autoescape off %}{{ announce.content|markdown|smartypants }} {% endautoescape %}</span>
+        </p>
+    {% endfor %}
+
+    <!-- more announcements -->
+    {% if announcements.overflowed %}
+    <div id="divannouncemore">
+        <a href="/myesp/home/">More Notices...</a>
+    </div>
+    {% endif %}
+    </div>
+    
+</div>
+{% endcomment %}
+
+<div id="main" class="container">
+    <div id="main_content">
+    {% block content %}
+    
+
+    {% endblock %}
+    </div>
+</div>
+
+{% endblock %}
+
+<div class="container">
+<footer>
+<hr />
+<a href="/myesp/onsite/">On-Site Registration</a>
+</footer>
+</div>
+
+
+{% endblock %}
