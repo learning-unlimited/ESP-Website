@@ -11,7 +11,7 @@ function prefs_ts_div_by_priority(id, priority)
 // Appends an individual class section to the containerDiv
 function render_class_section(data, container_div, class_section)
 {
-    container_div.append(data.sections[class_section].emailcode + ": " + data.sections[class_section].title + "<br/>");
+    container_div.append(sections[class_section].emailcode + "s" + sections[class_section].index + ": " + sections[class_section].title + "<br/>");
 }
 
 
@@ -27,9 +27,10 @@ function update_preferences(data)
 {
     var preferences_div = $j("#preferences");
 
-    for (timeslot in data.timeslots)
-    {
-	update_timeslot_prefs(data, preferences_div, data.timeslots[timeslot].id);
+    var ts;
+    for (ts in timeslot_objects)
+    {		   
+      	timeslot_objects[ts].update_timeslot_prefs(preferences_div);
     }
 
     if ($j("#submit_button").length == 0)

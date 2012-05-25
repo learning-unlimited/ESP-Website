@@ -1,18 +1,21 @@
 var Timeslot = function(data){
     var timeslot_data = data;
     var timeslot_id = data['id'];
-
     var priority_limit = 3;
 
     //some div ids
     var ts_div = "TS_"+data["id"];
     var ts_table_div = "TS_TABLE_" + data["id"];
+    var prefs_ts_div = "prefs_" + data["id"];
+    var prefs_ts_div_by_priority = function(p){
+	return prefs_ts_div + "_" + p;
+    };
 
     this.get_timeslot_html = function()
     {
 	// Create some html for the timeslot, making use of keywords which are
 	// replaced by values below
-	template = "\
+	var template = "\
     <h3 class='header'><a href='#'><b>%TIMESLOT_LABEL% </b></a></h3>	\
     <div id='%TIMESLOT_DIV%'>						\
         <h3>Regular Classes</h3>\
@@ -27,11 +30,14 @@ var Timeslot = function(data){
     };
 
     this.add_classes_to_timeslot = function(sections){
-	class_id_list = timeslot_data['starting_sections'];
-	user_grade = esp_user['cur_grade'];
+	var class_id_list = timeslot_data['starting_sections'];
+	var user_grade = esp_user['cur_grade'];
 
 	//construct list of classes
 	var classes_list = [];
+	var class_id;
+	var section;
+	var has_classes;
 	for(i in class_id_list){
 	    class_id = class_id_list[i];
 	    section = sections[class_id];
@@ -65,15 +71,17 @@ var Timeslot = function(data){
 	var combobox_id = "combobox_" + timeslot_id + "_" + priority;
 
 	// Callback for when a priority radio is changed
-	priority_changed = function(){
+	this.priority_changed = function(data){
+	    console.log(data);
 	    // Unprioritize all selections in the timeblock
 	    for (i in timeslot_data['starting_sections']){
 		sections[timeslot_data['starting_sections'][i]]['Priority/' + priority] = false;
 	    }
-
-	    if(class_id){
-		// Prioritize this selection
-		sections[class_id]['Priority/'+ priority] = true;
+	    var new_id = $j("#"+combobox_id).attr("selected"); //WHAT DO I ACTUALLY WANT HERE????
+	    console.log(new_id);
+	    // Prioritize this selection
+	    if(new_id){
+		sections[new_id]['Priority/'+ priority] = true;
 	    }
 	};
 	
@@ -87,7 +95,7 @@ var Timeslot = function(data){
 	    for(j in class_data){
 		$j("#"+combobox_id).append(this.get_class_html(class_data[j]));
 	    }
-	    $j("#"+combobox_id).on("click", priority_changed);
+	    $j("#"+combobox_id).on("change", this.priority_changed);//might want a different event here
 	    this.load_old_preferences()
 	};
 
@@ -114,52 +122,53 @@ var Timeslot = function(data){
 	    .replace(/%PRIORITY%/g, priority);
 	    return template;
 	};
-    }
-};
+    };
 
-// Appends the slot of priority preferences followed by the interested
-// preferences for a given timeslot
-function update_timeslot_prefs(data, container_div, timeslot_index)
-{
-    var timeslot_id = data.timeslots[timeslot_index].id;
-
-    // Check to see if the timeslot div doesn't exist,
-    // and set timeslot_div at the same time
-    if ((timeslot_div = $j("#"+prefs_ts_div_from_id(timeslot_id))).length == 0)
+    // Appends the slot of priority preferences followed by the interested
+    // preferences for a given timeslot
+    this.update_timeslot_prefs = function(container_div)
     {
-	// Create the div
-	timeslot_div = $j("<div id='" + prefs_ts_div_from_id(timeslot_id) + "'></div>");
-	container_div.append(timeslot_div);
-	// Create the title
-	timeslot_div.append("<h3>" + data.timeslots[timeslot_index].label + "</h3><br/>");
-    }
-
-    data_starting_sections = data.timeslots[timeslot_index].starting_sections;
-    //create divs for priority 1, 2, and 3
-    for (p = 1; p <= 3; p++){
-	// Check if the interested div doesn't exist yet, and set interested_div at
-	// the same time
-	if ($j("#"+prefs_ts_div_by_priority(timeslot_id, p)).length == 0)
+	// Check to see if the timeslot div doesn't exist,
+	// and set timeslot_div at the same time
+	var timeslot_div;
+	if ((timeslot_div = $j("#"+prefs_ts_div)).length == 0)
 	    {
 		// Create the div
-		interested_div = $j("<p id='" + prefs_ts_div_by_priority(timeslot_id, p) + "'></p>");
-		// find the class with this priority
-		var has_priority_class = false;
-		for(i in data_starting_sections){
-		   
-		}
-		timeslot_div.append("<p><u>Choice "+ p +"</u></p>");	       
-		timeslot_div.append(interested_div);
-		if (has_priority_class == true){
-		    render_class_section(data, interested_div, priority_class);
-		}
-		else{
-		    //nasty message about not having a class with this priority  
-		}
+		timeslot_div = $j("<div id='" + prefs_ts_div + "'></div>");
+		container_div.append(timeslot_div);
+		// Create the title
+		timeslot_div.append("<h3>" + timeslot_data['label'] + "</h3><br/>");
 	    }
-    }    
-}
+
+	data_starting_sections = timeslot_data['starting_sections'];
+	//create divs for priority 1, 2, and 3
+	for (p = 1; p <= 3; p++){
+	    // Check if the interested div doesn't exist yet, and set interested_div at
+	    // the same time
+	    //console.log(prefs_ts_div_by_priority);
+	    if ($j("#"+prefs_ts_div_by_priority(p)).length == 0)
+		{
+		    // Create the div
+		    var interested_div = $j("<p id='" + prefs_ts_div_by_priority(p) + "'></p>");
+		    // find the class with this priority
+		    timeslot_div.append("<p><u>Choice "+ p +"</u></p>");	       
+		    var has_priority_class = false;
+		    for(i in data_starting_sections){
+			if(data_starting_sections[i]["Priority/" + p] == true){
+			    render_class_section(data, interested_div, priority_class);
+			    has_priority_class = true;
+			}
+		    }
+		    timeslot_div.append(interested_div);
+		    if (has_priority_class == false){
+			interested_div.append("<font color='red'>Nothing selected.</font><br/>");
+		    }
+		}
+	}    
+    }
 	
+
+};
 
 //needs to be written
 function submit_preferences(){

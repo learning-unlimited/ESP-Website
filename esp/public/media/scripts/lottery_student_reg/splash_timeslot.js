@@ -9,6 +9,16 @@ var Timeslot = function(data){
     var ts_walkin_div = "TS_W_" + data["id"];
     var ts_radio_name = data["label"] + "_priority";
     var ts_no_preference_id = data["label"] + "_no_preference";
+    var prefs_ts_div = "pref_" + data["id"];
+    var prefs_ts_div_by_priority = function(p){
+	if(p == true){
+ 	    return prefs_ts_div + "_flag";
+	}
+	else{
+	    return prefs_ts_div + "_interested";
+	}
+    };
+
 
     this.get_walkin_header_html = function()
     {
@@ -242,10 +252,98 @@ var Timeslot = function(data){
 	    .replace(/%CLASS_RADIO_ID%/g, class_radio_id);
 	    return template;
 	};
+    };
+
+    // Appends the slot of priority preferences followed by the interested
+    // preferences for a given timeslot
+    this.update_timeslot_prefs = function(container_div)
+    {
+	// Check to see if the timeslot div doesn't exist,
+	// and set timeslot_div at the same time
+	var timeslot_div;
+	if ((timeslot_div = $j("#"+prefs_ts_div)).length == 0)
+	    {
+		// Create the div
+		timeslot_div = $j("<div id='" + prefs_ts_div + "'></div>");
+		container_div.append(timeslot_div);
+		// Create the title
+		timeslot_div.append("<h3>" + timeslot_data.label + "</h3><br/>");
+	    }
+
+	// Check if the interested div doesn't exist yet, and set interested_div at
+	// the same time
+	var interested_div;
+	if ((interested_div = $j("#"+prefs_ts_div_by_priority(false))).length == 0)
+	    {
+		// Create the div
+		interested_div = $j("<p id='" + prefs_ts_div_by_priority(false) + "'></p>");
+		// Give it a title
+		timeslot_div.append("<p><u>Interested classes:</u></p>");
+		timeslot_div.append(interested_div);
+	    }
+	
+	// Check if the priority div doesn't exist yet, and set priority_div at the
+	// same time
+	var priority_div;
+	if ((priority_div = $j("#"+prefs_ts_div_by_priority(true))).length == 0)
+	    {
+		// Create the div
+		priority_div = $j("<p id='" + prefs_ts_div_by_priority(true) + "'></p>");
+		// Give it a title
+		timeslot_div.append("<p><u>Priority flagged classes:</u></p>");
+		timeslot_div.append(priority_div);
+	    }
+
+	// Make a local reference to the sections for readability
+	data_starting_sections = timeslot_data['starting_sections'];
+	priority_sections = [];
+	interested_sections = [];
+	for(i in data_starting_sections)
+	    {
+		if(sections[data_starting_sections[i]].lottery_priority)
+		    {
+			priority_sections.push(data_starting_sections[i]);
+		    }
+		if(sections[data_starting_sections[i]].lottery_interested)
+		    {
+			interested_sections.push(data_starting_sections[i]);
+		    }
+	    }
+
+	// Render all the priority classes
+	if (priority_sections.length > 0)
+	    {
+		priority_div.html('');
+		for (i in priority_sections)
+		    {
+			render_class_section(timeslot_data, priority_div, priority_sections[i]);
+		    }
+	    }
+	else
+	    {
+		// Write "(None)" if there are no classes
+		priority_div.html("<i><font color='red'>(None)<br/></font></i>");
+	    }
+	priority_div.append("<br/><br/>");
+
+	// Render all the interested classes
+	if (interested_sections.length > 0)
+	    {
+		interested_div.html('');
+		for (j in interested_sections)
+		    {
+			render_class_section(timeslot_data, interested_div, interested_sections[j]);
+		    }
+	    }
+	else
+	    {
+		// Write "(None)" if there are no classes
+		interested_div.html("<i><font color='red'>(None)<br/></font></i>");
+	    }
+	interested_div.append("<br/>");
+    
     }
 };
-
-
 
  
 // The class description popup is a global variable, because we only want
@@ -266,99 +364,6 @@ create_class_info_dialog = function(){
 	    title: ''
 	});
 };
-
-// Appends the slot of priority preferences followed by the interested
-// preferences for a given timeslot
-function update_timeslot_prefs(data, container_div, timeslot_index)
-{
-    var timeslot_id = data.timeslots[timeslot_index].id;
-
-    // Check to see if the timeslot div doesn't exist,
-    // and set timeslot_div at the same time
-    if ((timeslot_div = $j("#"+prefs_ts_div_from_id(timeslot_id))).length == 0)
-    {
-	// Create the div
-	timeslot_div = $j("<div id='" + prefs_ts_div_from_id(timeslot_id) + "'></div>");
-	container_div.append(timeslot_div);
-	// Create the title
-	timeslot_div.append("<h3>" + data.timeslots[timeslot_index].label + "</h3><br/>");
-    }
-
-    // Check if the interested div doesn't exist yet, and set interested_div at
-    // the same time
-    if ((interested_div = $j("#"+prefs_ts_div_by_priority(timeslot_id, false))).length == 0)
-    {
-	// Create the div
-	interested_div = $j("<p id='" + prefs_ts_div_by_priority(timeslot_id, false) + "'></p>");
-	// Give it a title
-	timeslot_div.append("<p><u>Interested classes:</u></p>");
-	timeslot_div.append(interested_div);
-    }
-	
-
-    // Check if the priority div doesn't exist yet, and set priority_div at the
-    // same time
-    if ((priority_div = $j("#"+prefs_ts_div_by_priority(timeslot_id, true))).length == 0)
-    {
-	// Create the div
-	priority_div = $j("<p id='" + prefs_ts_div_by_priority(timeslot_id, true) + "'></p>");
-	// Give it a title
-	timeslot_div.append("<p><u>Priority flagged classes:</u></p>");
-	timeslot_div.append(priority_div);
-    }
-
-
-
-    // Make a local reference to the sections for readability
-    data_starting_sections = data.timeslots[timeslot_index].starting_sections;
-    priority_sections = [];
-    interested_sections = [];
-    for(i in data_starting_sections)
-    {
-	if(data.sections[data_starting_sections[i]].lottery_priority)
-	{
-	    priority_sections.push(data_starting_sections[i]);
-	}
-	if(data.sections[data_starting_sections[i]].lottery_interested)
-	{
-	    interested_sections.push(data_starting_sections[i]);
-	}
-    }
-
-    // Render all the priority classes
-    if (priority_sections.length > 0)
-    {
-	priority_div.html('');
-	for (i in priority_sections)
-	{
-	    render_class_section(data, priority_div, priority_sections[i]);
-	}
-    }
-    else
-    {
-	// Write "(None)" if there are no classes
-	priority_div.html("<i><font color='red'>(None)<br/></font></i>");
-    }
-    priority_div.append("<br/><br/>");
-
-    // Render all the interested classes
-    if (interested_sections.length > 0)
-    {
-	interested_div.html('');
-	for (j in interested_sections)
-	{
-	    render_class_section(data, interested_div, interested_sections[j]);
-	}
-    }
-    else
-    {
-	// Write "(None)" if there are no classes
-	interested_div.html("<i><font color='red'>(None)<br/></font></i>");
-    }
-    interested_div.append("<br/>");
-    
-}
-	
 
 function submit_preferences(){
     $j("#submit_button").text("Submitting...");

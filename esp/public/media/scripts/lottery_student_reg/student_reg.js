@@ -57,6 +57,7 @@ compare_timeslot_starts = function(a, b){
 show_app = function(data){
     timeslots = data['timeslots'];
     sections = data['sections'];
+    timeslot_objects = [];
 
     //initialize array which will hold the class id of the last clicked class priority radio
     last_priority = {};
@@ -71,7 +72,8 @@ show_app = function(data){
     //adds timeslot links to page
     $j("#timeslots_anchor").css("display", "none");
     for(index in sorted_timeslots){
-	ts = new Timeslot(sorted_timeslots[index])
+	ts = new Timeslot(sorted_timeslots[index]);
+	timeslot_objects.push(ts);
 	$j("#timeslots_anchor").before(ts.get_timeslot_html());
 	ts.add_classes_to_timeslot(sections);//needs to be updated w/ object-orientedness
     }
