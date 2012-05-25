@@ -78,10 +78,36 @@ body {
 
 {% block main %}
 
-<div class="container">
+<div class="container-fluid">
+  <div class="row-fluid">
+    <div class="span3 hidden" id="sidebar">
+      <ul class="nav nav-list well">
+	<li class="nav-header">My ESP</li>
+	<li class="active"><a href='#'><i class="icon-home"></i> Home</a></li>
+	<li><a href='#'><i class="icon-th"></i> Dashboard</a></li>
+	<li><a href='#'><i class="icon-cog"></i> Settings</a></li>
+	<li><a href='#'><i class="icon-envelope"></i> Contact Us</a></li>
+	
+	<div class="admin hidden">
+	  <li class="nav-header admin hidden"> Admin</li>	
+	  <li><a href="/admin/miniblog/entry/"><i class="icon-flag"></i> News</a></li>
+	  <li><a href="/admin/miniblog/announcementlink/"><i class="icon-bullhorn"></i> Announcement Links</a></li>
+	  <li><a href="/admin/web/navbarentry/"><i class="icon-list"></i> Navigation Links</a></li>
+	  <li><a href="/admin/web/navbarcategory/"><i class="icon-book"></i> Navigation Categories</a></li>
+	</div>
+	<div class="admin hidden">
+	  <li class="nav-header admin hidden"> More admin</li>
+	  <li><a href="/admin/">Administration pages</a></li>
+	  <li><a href="/manage/programs/">Manage Programs</a></li>
+	<!-- div class="unmorph hidden">
+	     <br /><a href="/myesp/switchback/">Unmorph to <script language="JavaScript">document.write(esp_user.cur_retTitle);</script></a><br /><div id="unmorph_text"></div></ul -->
+	</div>
+	
+      </ul>
+    </div>
 
 
-{% comment %}
+    {% comment %}
 <div id="navbar">
     <div id="navbar_content">
     <span class="announcementlink_title">Relevant Links</span>
@@ -115,17 +141,16 @@ body {
     </div>
     
 </div>
-{% endcomment %}
+    {% endcomment %}
 
-<div id="main" class="container">
-    <div id="main_content">
-    {% block content %}
+    <div id="main" class="span12">
+      {% block content %}
     
 
-    {% endblock %}
+      {% endblock %}
     </div>
+  </div>
 </div>
-
 {% endblock %}
 
 <div class="container">

@@ -1,4 +1,4 @@
-{% extends "main.html" %}
+{% extends "main_general.html" %}
 
 
 {% block main %}
@@ -11,39 +11,37 @@
 	<li class="active"><a href='#'><i class="icon-home"></i> Home</a></li>
 	<li><a href='#'><i class="icon-th"></i> Dashboard</a></li>
 	<li><a href='#'><i class="icon-cog"></i> Settings</a></li>
-	<li><a href='#'><i class="icon-envelope"></i> Contact Us</a>
-	<li class="nav-header"> Admin</li>
-	<div class="admin hidden nav nav-list">
+	<li><a href='#'><i class="icon-envelope"></i> Contact Us</a></li>
+	
+	<div class="admin hidden">
+	  <li class="nav-header admin hidden"> Admin</li>	
 	  <li><a href="/admin/miniblog/entry/"><i class="icon-flag"></i> News</a></li>
 	  <li><a href="/admin/miniblog/announcementlink/"><i class="icon-bullhorn"></i> Announcement Links</a></li>
 	  <li><a href="/admin/web/navbarentry/"><i class="icon-list"></i> Navigation Links</a></li>
 	  <li><a href="/admin/web/navbarcategory/"><i class="icon-book"></i> Navigation Categories</a></li>
 	</div>
+	<div class="admin hidden">
+	  <li class="nav-header admin hidden"> More admin</li>
+	  <li><a href="/admin/">Administration pages</a></li>
+	  <li><a href="/manage/programs/">Manage Programs</a></li>
+	<!-- div class="unmorph hidden">
+	     <br /><a href="/myesp/switchback/">Unmorph to <script language="JavaScript">document.write(esp_user.cur_retTitle);</script></a><br /><div id="unmorph_text"></div></ul -->
+	</div>
 	
       </ul>
-    
     </div>
+    
     <div class="span9">
 
 {% comment %}
-{% block nav_header %}
-<div id="navbar_header">News and Links</div>
-{% endblock %}
-
-
-<div id="main_header">
-{% block welcome_message %}
-    <!-- CSS2 doesn't allow vertical alignment without a table.  So, give it a table. -->
-    <table width="600px" height="30px"><tr><td valign="middle">Welcome to ESP</td></tr></table>
-{% endblock %}
-</div>
-
 {% block navbar %}
+{{ block.super }} 
+
 <div id="navbar">
     <div id="navbar_content">
     <span class="announcementlink_title">Relevant Links</span>
     {% load navbar %}
-    {% navbar_gen r-equest.path None navbar_list %} 
+    {% navbar_gen request.path None navbar_list %} 
     </div>
 
     <div id="navbar_content">
@@ -84,7 +82,9 @@
     </div>
 
     </div>
+
 </div>
+
 {% endblock %}
 {% endcomment %}
 
