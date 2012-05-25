@@ -248,13 +248,13 @@ main_text = """
 <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
 
 <style type="text/css">
-.admin_hidden {
+.hidden {
   display: none;
 }
-.logged_in_hidden {
+.hidden {
   display: none;
 }
-.not_logged_in_hidden {
+.hidden {
   display: none;
 }
 </style>
@@ -262,12 +262,12 @@ main_text = """
 <script language="JavaScript">
 \$(document).ready(function() {
   if (esp_user.cur_admin == "1") {
-    \$(".admin").removeClass("admin_hidden");
+    \$(".admin").removeClass("hidden");
   }
 
   if (esp_user.cur_username != null) {
-    \$(".not_logged_in").addClass("not_logged_in_hidden");
-    \$(".logged_in").removeClass("logged_in_hidden");
+    \$(".not_logged_in").addClass("hidden");
+    \$(".logged_in").removeClass("hidden");
   }
 });
 </script>
@@ -314,7 +314,7 @@ wrap(document.getElementById('search_field'),'Enter search term');
 
 {% block body %}
 
-<div class="admin admin_hidden">
+<div class="admin hidden">
 <div id="adminbar">
   <div class="title" onclick="ESP.toggleDisplay('adminbar_content');">Admin Toolbar</div>
   <div id="adminbar_content"></div>
@@ -407,7 +407,7 @@ name: 'User Search'
 {% with request.path|split:"/"|index:1 as split_url %}{% ifequal split_url "teach" %}
 	<li id="tab_logistics" class="grey"><a href="/teach/logistics/index.html">LOGISTICS</a></li>
 {% endifequal %}{% endwith %}
-<div class="admin admin_hidden">
+<div class="admin hidden">
 	<li id="tab_admin" class="black" ><a href="/manage/programs/">ADMIN</a></li>
 </div>
 
@@ -469,7 +469,7 @@ name: 'User Search'
   <a href="/myesp/loginhelp.html" id="login_help">need help?</a>
 </form>
 </div>
-<div class="logged_in logged_in_hidden">
+<div class="logged_in hidden">
   Hello, <script language="JavaScript">document.write(esp_user.cur_first_name + " " + esp_user.cur_last_name);</script>!<br />
   <span class="accentcolor"><a href="/myesp/signout/">Logout</a> | <a href="/myesp/accountmanage.html">My Profile</a></span>
 </div>

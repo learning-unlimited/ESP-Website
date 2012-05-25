@@ -31,15 +31,8 @@
 }
 
 /* Some legacy stuff */
-.admin_hidden {
+/*.hidden {
   display: none;
 }
-.logged_in_hidden {
-  display: none;
-}
-.not_logged_in_hidden {
-  display: none;
-}
-.unmorph_hidden {
-  display: none;
-}
+No longer needed, since Boostrap takes care of this.
+*/
