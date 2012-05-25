@@ -25,7 +25,44 @@
     
 
     {% endblock %}
+    {% comment %}
+      The following javascript controls visibility of elements based on login 
+status, admin status et c. It is in the header to prevent nasty rearrangements
+while the page is loading. Javascript should usually go in the javascript block
+at the end of the page.
+    {% endcomment %}
+    <script type="text/javascript" src="/media/scripts/jquery.js"> </script>
+    <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
+
+    <script language="JavaScript">
+      $j = $.noConflict();
+    </script>
     
+    <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
+    <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
+    <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
+
+    <!-- Internet Explorer refuses to load media content over HTTP by default
+	 when the page has been loaded over HTTPS.  This is a security policy.
+	 However, Dojo has HTTP references hard-coded in a few places.  This
+	 script below provides a workaround until we stop using Dojo.   -->
+    <script type="text/javascript">
+      djConfig = {
+      modulePaths: {
+      "dojo": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo",
+      "dijit": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dijit",
+      "dojox": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojox"
+      },
+      parseOnLoad: true
+      };
+    </script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo/dojo.xd.js"></script>
+
+    <script language="JavaScript">
+      $j(document).ready(function() {
+      update_user_classes();
+      });
+    </script>
 
 
   </head>
@@ -40,6 +77,8 @@
     {% block javascript %}
 
      <!-- Placed at the end of the document so the pages load faster -->
+
+
     <script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
     <script src="/media/bootstrap/docs/assets/js/jquery.js"></script>
     <script src="/media/bootstrap/docs/assets/js/google-code-prettify/prettify.js"></script>
@@ -73,38 +112,6 @@
 
     <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
 
-    <script type="text/javascript" src="/media/scripts/jquery.js"> </script>
-    <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
-
-    <script language="JavaScript">
-      $j = $.noConflict();
-    </script>
-    
-    <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
-    <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
-    <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
-
-    <!-- Internet Explorer refuses to load media content over HTTP by default
-	 when the page has been loaded over HTTPS.  This is a security policy.
-	 However, Dojo has HTTP references hard-coded in a few places.  This
-	 script below provides a workaround until we stop using Dojo.   -->
-    <script type="text/javascript">
-      djConfig = {
-      modulePaths: {
-      "dojo": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo",
-      "dijit": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dijit",
-      "dojox": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojox"
-      },
-      parseOnLoad: true
-      };
-    </script>
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo/dojo.xd.js"></script>
-
-    <script language="JavaScript">
-      $j(document).ready(function() {
-      update_user_classes();
-      });
-    </script>
     {% endblock %}
 
     {% block xtrajs %}{% endblock %}

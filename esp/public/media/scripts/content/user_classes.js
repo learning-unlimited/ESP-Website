@@ -15,6 +15,7 @@ function update_user_classes() {
 	$j("#main").removeClass("span12");
 	$j("#main").addClass("span9");
 	$j("#sidebar").removeClass("hidden");
+	$j("#sidebar").addClass("span3");
     }
     else {
 	$j(".not_logged_in").removeClass("hidden");
