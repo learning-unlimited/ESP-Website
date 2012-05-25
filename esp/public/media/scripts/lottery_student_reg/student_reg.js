@@ -20,8 +20,6 @@ var accordion_settings;
 
 // Initializes various jQuery UI things
 jquery_ui_init = function(){
-    // Create the dialog used to show class info
-    create_class_info_dialog();
 
     // Create the accordion settings
     accordion_settings = {
