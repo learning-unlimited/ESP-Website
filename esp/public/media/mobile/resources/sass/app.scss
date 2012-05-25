@@ -1,0 +1,68 @@
+$login-field-radius: 8px;
+$login-field-border: 1px solid rgba(0,0,0,.185);
+
+@import 'sencha-touch/default/all';
+
+// You may remove any of the following modules that you
+// do not use in order to create a smaller css file.
+@include sencha-panel;
+@include sencha-buttons;
+//@include sencha-sheet;
+//@include sencha-picker;
+//@include sencha-tabs;
+//@include sencha-toolbar;
+//@include sencha-toolbar-forms;
+//@include sencha-indexbar;
+//@include sencha-list;
+@include sencha-layout;
+//@include sencha-carousel;
+@include sencha-form;
+//@include sencha-msgbox;
+
+.loggedOut {
+    //background: transparent;
+}
+
+.loginScreen {
+    top: 20%;
+    background: transparent;
+    
+    .field {
+        width: 230px;
+    }
+}
+
+#logo {
+    background-color: rgba(0,0,0,0.2);   // TODO: replace with image
+    text-align: center;
+    display: table-cell;
+    vertical-align: middle;
+    width: 230px;
+    height: 230px;
+}
+
+.field {
+    border-left: $login-field-border;
+    border-right: $login-field-border;
+    border-top: $login-field-border;
+    padding-left: 5px;
+    padding-top: 5px;
+    padding-bottom: 4px;
+    font-size: 14px;
+}
+
+.field.first {
+    border-top-left-radius: $login-field-radius;
+    border-top-right-radius: $login-field-radius;
+}
+
+.field.last {
+    border-bottom-left-radius: $login-field-radius;
+    border-bottom-right-radius: $login-field-radius;
+    border-bottom: $login-field-border !important;
+}
+
+.separator {
+    margin: 15px 0 15px;
+}
+
