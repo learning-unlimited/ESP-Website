@@ -13,7 +13,13 @@ Ext.application({
 
     controllers: ['Login'],
 
-    views: ['Main'],
+    views: [
+        'Main',
+        
+        'student.Main',
+        
+        'volunteer.Main'
+    ],
 
     /* TODO: add icon and splash screen
     icon: {

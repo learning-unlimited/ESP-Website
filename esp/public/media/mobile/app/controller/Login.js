@@ -18,10 +18,24 @@ Ext.define('LU.controller.Login', {
             method: 'POST',
             success: function(form, result) {
                 console.log('login successful!');
+                var main;
+                if (result.isStudent === 'true') {
+                    main = Ext.widget('mainStudent');
+                } else if (result.isVolunteer == 'true') {
+                    main = Ext.widget('mainVolunteer');
+                } else {
+                    // display error message for unknown role
+                    console.log('unknown role');
+                    return;
+                }
+                Ext.Viewport.setActiveItem(main);
             },
             failure: function(form, result) {
-                console.log(result);
                 console.log('failed :(');
+            },
+            params: {
+                // tells the server that we are logging in using mobile site
+                'isMobile': true
             }
         });
     }

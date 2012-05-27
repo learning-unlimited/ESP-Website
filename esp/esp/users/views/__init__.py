@@ -15,6 +15,8 @@ from django.contrib.auth.decorators import login_required
 from esp.tagdict.models import Tag
 from esp.users.models.forwarder import UserForwarder
 
+import pdb
+
 def filter_username(username, password):
     #   Allow login by e-mail address if so specified
     if username and '@' in username and Tag.getTag('login_by_email'):
@@ -100,16 +102,20 @@ def ajax_login(request, *args, **kwargs):
 
     username = None
     password = None
+    isMobile = None
     if request.method == 'POST':
         username = request.POST['username']
         password = request.POST['password']
+        isMobile = request.POST['isMobile'] == 'true'
 
     username = filter_username(username, password)
 
+    isSuccessful = False
     user = authenticate(username=username, password=password)
     if user is not None:
         if user.is_active:
             result_str = 'Login successful'
+            isSuccessful = True
             user, forwarded = UserForwarder.follow(ESPUser(user))
             if forwarded:
                 result_str = 'Logged in as "%s" ("%s" is marked as a duplicate account)' % (user.username, username)
@@ -121,7 +127,16 @@ def ajax_login(request, *args, **kwargs):
         
     request.user = ESPUser(user)
     content = render_to_string('users/loginbox_content.html', RequestContext(request, {'request': request, 'login_result': result_str}))
-    result_dict = {'loginbox_html': content}
+
+    if isMobile:
+        result_dict = {
+            'success': 'true' if isSuccessful else 'false',
+            'message': result_str,
+            'isStudent': 'true' if request.user.isStudent() else 'false',
+            'isVolunteer': 'true' if request.user.isVolunteer() else 'false'
+        }
+    else:
+        result_dict = {'loginbox_html': content}
     
     if request.user.isAdministrator():
         admin_home_url = Tag.getTag('admin_home_page')
