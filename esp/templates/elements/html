@@ -111,7 +111,7 @@ at the end of the page.
     <script type="text/javascript" src="/media/scripts/crashkit-javascript.js"> </script>
 
     <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
-
+    <script type="text/javascript" src="/media/scripts/nav.js"></script>
     {% endblock %}
 
     {% block xtrajs %}{% endblock %}
