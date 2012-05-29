@@ -365,25 +365,6 @@ class CommModule(ProgramModuleObj):
                                                'subject': subject,
                                                'body': body})
 
-    @needs_student
-    def satprepinfo(self, request, tl, one, two, module, extra, prog):
-        if request.method == 'POST':
-            form = SATPrepInfoForm(request.POST)
-
-            if form.is_valid():
-                reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
-                form.instance = reginfo
-                form.save()
-
-                return self.goToCore(tl)
-        else:
-            satPrep = SATPrepRegInfo.getLastForProgram(request.user, prog)
-            form = SATPrepInfoForm(instance = satPrep)
-
-        return render_to_response('program/modules/satprep_stureg.html', request, (prog, tl), {'form':form})
-
-
-
     class Meta:
         abstract = True
 
