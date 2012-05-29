@@ -234,10 +234,14 @@ class CommModule(ProgramModuleObj):
                 else:
                     if data['base_list'].startswith('all'):
                         q_program = Q()
+                        recipient_type = map_category_bwd(data['recipient_type'])
                     else:
                         program_lists = getattr(prog, data['recipient_type'])(QObjects=True)
                         q_program = program_lists[data['base_list']]
-                    recipient_type = map_category_bwd(data['recipient_type'])
+                        """ Some program queries rely on UserBits, and since user types are also stored in
+                            UserBits we cannot store both of these in a single Q object.  To compensate, we
+                            ignore the user type when performing a program-specific query.  """
+                        recipient_type = 'any'
                     
                 #   Get the user-specific part of the query (e.g. ID, name, school)
                 q_extra = usc.query_from_criteria(recipient_type, data)
