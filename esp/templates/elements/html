@@ -9,6 +9,11 @@
     
     {% block stylesheets %}
 
+    <link href="/media/bootstrap/docs/assets/css/bootstrap.css" rel="stylesheet"/>
+    <link href="/media/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet"/>
+    <link href="/media/bootstrap/docs/assets/css/docs.css" rel="stylesheet"/>
+    <link href="/media/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet">
+
 
     <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
     {% comment %}
@@ -17,10 +22,6 @@
     </style>
     {% endcomment %}
 
-    <link href="/media/bootstrap/docs/assets/css/bootstrap.css" rel="stylesheet"/>
-    <link href="/media/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet"/>
-    <link href="/media/bootstrap/docs/assets/css/docs.css" rel="stylesheet"/>
-    <link href="/media/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet">
 
     
 
