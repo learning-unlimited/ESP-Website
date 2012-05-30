@@ -276,8 +276,6 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField()
-    class_size_min = models.IntegerField(default=5)
-    class_size_max = models.IntegerField(default=200)
     program_size_max = models.IntegerField(null=True)
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule)
