@@ -194,7 +194,7 @@ def activate_account(request):
         raise ESPError(), "Invalid account username.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
 
     if not u.password.endswith("_%s" % request.GET['key']):
-        raise ESPError(), "Incorrect key.  Please try again to click the link in your email, or copy the url into your browse.  If this error persists, please contact us using the contact information on the top or bottom of this page."
+        raise ESPError(False), "Incorrect key.  Please try again to click the link in your email, or copy the url into your browser.  If this error persists, please contact us using the contact information on the top or bottom of this page."
 
     u.password = u.password[:-(len("_%s" % request.GET['key']))]
     u.is_active = True
