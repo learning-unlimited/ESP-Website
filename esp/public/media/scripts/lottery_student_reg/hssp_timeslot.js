@@ -99,6 +99,10 @@ var Timeslot = function(data){
 	
 	// Function to populate a class div with existing preference data
 	this.load_old_preferences = function(){
+	    for(s in sections){
+		console.log(sections[s]["lottery_priority"]);
+		console.log(sections[s]);
+	    }
 	};
 
 	this.add_self_to_timeslot = function(){
