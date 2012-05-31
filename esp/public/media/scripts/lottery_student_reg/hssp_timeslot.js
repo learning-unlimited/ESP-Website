@@ -168,7 +168,7 @@ var Timeslot = function(data){
 		    timeslot_div.append(interested_div);
 		}
 	    else{ // otherwise, clear the div
-		//SOME JQUERY LOOK IT UP
+		interested_div.children().remove();
 	    }
 	    var has_priority_class = false;
 	    for(i in data_starting_sections){
