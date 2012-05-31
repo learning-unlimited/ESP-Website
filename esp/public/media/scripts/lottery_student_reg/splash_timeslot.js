@@ -1,3 +1,5 @@
+var open_class_category = 'W';
+
 var Timeslot = function(data){
     var timeslot_data = data;
     var timeslot_id = data['id'];
@@ -68,7 +70,6 @@ var Timeslot = function(data){
 
 	carryover_id_list = timeslot_data['sections'];
 	class_id_list = timeslot_data['starting_sections'];
-	user_grade = esp_user['cur_grade'];
 
 	//adds the "no priority" radio button and defaults it to checked (this will change if we load a different, previously specified preference)
 	var no_priority_template = "\
