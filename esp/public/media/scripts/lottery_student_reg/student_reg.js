@@ -13,7 +13,9 @@ $j(document).ready(function() {
         'lottery_preferences'
     ];
 
-    json_fetch(data_components, show_app, null, fail_gracefully);
+    user_grade = esp_user['cur_grade'];
+
+    json_fetch(data_components, show_app);
 });
 
 
