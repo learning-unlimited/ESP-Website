@@ -82,3 +82,32 @@ show_app = function(data){
     //recreate the accordion now to update for the timeslots
     $j("#lsr_content").accordion('destroy').accordion(accordion_settings);
 };
+
+
+
+function submit_preferences(){
+    $j("#submit_button").text("Submitting...");
+    $j("#submit_button").attr("disabled", "disabled");
+
+    var submit_data = get_submit_data();
+
+    submit_data_string = JSON.stringify(submit_data);
+
+    var submit_url = '/learn/'+base_url+'/lsr_submit';
+
+    //actually submit and redirect to student reg
+    jQuery.ajax({
+	     type: 'POST',
+             url: submit_url,
+	     error: function(a, b, c) {
+                alert("There has been an error on the website. Please contact " + support + " to report this problem.");
+             },
+	     success: function(a, b, c){
+		alert("Your preferences have been successfully saved.");
+		window.location = "studentreg";
+	     },
+	     data: {'json_data': submit_data_string },
+	     headers: {'X-CSRFToken': $j.cookie("csrftoken")}
+     });
+};
+
