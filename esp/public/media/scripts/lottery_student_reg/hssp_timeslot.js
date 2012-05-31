@@ -105,7 +105,10 @@ var Timeslot = function(data){
 	    $j("#"+ts_table_div).append(this.get_combobox_html());
 	    $j("#"+combobox_id).append("<option> No Class");
 	    for(j in class_data){
-		$j("#"+combobox_id).append(this.get_class_html(class_data[j]));
+		//check grade restriction
+		if( class_data[j]["grade_min"]<=user_grade && class_data[j]["grade_max"] >= user_grade){
+		    $j("#"+combobox_id).append(this.get_class_html(class_data[j]));
+		}
 	    }
 	    $j("#"+combobox_id).on("change", this.priority_changed);//might want a different event here
 	    this.load_old_preferences()

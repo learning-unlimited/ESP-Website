@@ -84,10 +84,8 @@ var Timeslot = function(data){
 	.replace(/%TIMESLOT_ID%/g, timeslot_id)
         .replace(/%TS_NO_PREFERENCE_ID%/g, ts_no_preference_id);
 	$j("#"+ts_table_div).append(no_priority_template);
-	//$j("#"+ts_no_preference_id(timeslot['label'])).prop("checked", true);
 
 	//add checkboxes and radio buttons for each class
-
 	var has_walkins = false;
 	var has_classes = false;
 	var has_carryovers = false;
