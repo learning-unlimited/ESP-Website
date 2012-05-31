@@ -11,6 +11,20 @@ var Timeslot = function(data){
 	return prefs_ts_div + "_" + p;
     };
 
+    this.get_submit_data = function(){
+	var submit_data = {};
+	var sec_id;
+	for(id in timeslot_data["starting_sections"]){
+	    sec_id = timeslot_data["starting_sections"][id];
+	    for(p = 1; p <= 3; p++){
+		if (sections[sec_id]["Priority/"+p]){
+		    submit_data[sec_id] = [p, timeslot_id];
+		}
+	    }
+	}
+	return submit_data;
+    };
+
     this.get_timeslot_html = function()
     {
 	// Create some html for the timeslot, making use of keywords which are
@@ -72,13 +86,11 @@ var Timeslot = function(data){
 
 	// Callback for when a priority radio is changed
 	this.priority_changed = function(data){
-	    console.log(data);
 	    // Unprioritize all selections in the timeblock
 	    for (i in timeslot_data['starting_sections']){
 		sections[timeslot_data['starting_sections'][i]]['Priority/' + priority] = false;
 	    }
-	    var new_id = $j("#"+combobox_id).attr("selected"); //WHAT DO I ACTUALLY WANT HERE????
-	    console.log(new_id);
+	    var new_id = $j("#"+combobox_id).val();
 	    // Prioritize this selection
 	    if(new_id){
 		sections[new_id]['Priority/'+ priority] = true;
@@ -146,31 +158,67 @@ var Timeslot = function(data){
 	    // Check if the interested div doesn't exist yet, and set interested_div at
 	    // the same time
 	    //console.log(prefs_ts_div_by_priority);
-	    if ($j("#"+prefs_ts_div_by_priority(p)).length == 0)
+	    var interested_div = $j("#"+prefs_ts_div_by_priority(p));
+	    if (interested_div.length == 0)
 		{
+		    interested_div = $j("<p id='" + prefs_ts_div_by_priority(p) + "'></p>");
 		    // Create the div
-		    var interested_div = $j("<p id='" + prefs_ts_div_by_priority(p) + "'></p>");
 		    // find the class with this priority
 		    timeslot_div.append("<p><u>Choice "+ p +"</u></p>");	       
-		    var has_priority_class = false;
-		    for(i in data_starting_sections){
-			if(data_starting_sections[i]["Priority/" + p] == true){
-			    render_class_section(data, interested_div, priority_class);
-			    has_priority_class = true;
-			}
-		    }
 		    timeslot_div.append(interested_div);
-		    if (has_priority_class == false){
-			interested_div.append("<font color='red'>Nothing selected.</font><br/>");
-		    }
 		}
+	    else{ // otherwise, clear the div
+		//SOME JQUERY LOOK IT UP
+	    }
+	    var has_priority_class = false;
+	    for(i in data_starting_sections){
+		var index = data_starting_sections[i];
+		if(sections[index]["Priority/" + p] == true){
+		    render_class_section(data, interested_div, index);
+		    has_priority_class = true;
+		}
+	    }
+	    if (has_priority_class == false){
+		interested_div.append("<font color='red'>Nothing selected.</font><br/>");
+	    }
 	}    
     }
-	
-
 };
 
 //needs to be written
 function submit_preferences(){
+    $j("#submit_button").text("Submitting...");
+    $j("#submit_button").attr("disabled", "disabled");
+
+    var submit_data = {};
+    var timeslot_submit_data;
+    for(id in sections){
+	for(ts in timeslot_objects){
+	    timeslot_submit_data = timeslot_objects[ts].get_submit_data();
+	    for(tsd in timeslot_submit_data){
+		submit_data[tsd] = timeslot_submit_data[tsd];
+	    }
+	}
+    }
+    console.log(submit_data);
+
+    submit_data_string = JSON.stringify(submit_data);
+
+    var submit_url = '/learn/'+base_url+'/lsr_submit';
+
+    //actually submit and redirect to student reg
+    jQuery.ajax({
+	     type: 'POST',
+             url: submit_url,
+	     error: function(a, b, c) {
+                alert("There has been an error on the website. Please contact " + support + " to report this problem.");
+             },
+	     success: function(a, b, c){
+		alert("Your preferences have been successfully saved.");
+		window.location = "studentreg";
+	     },
+	     data: {'json_data': submit_data_string },
+	     headers: {'X-CSRFToken': $j.cookie("csrftoken")}
+     });
 };
 

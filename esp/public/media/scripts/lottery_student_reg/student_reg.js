@@ -1,3 +1,4 @@
+
 /**    timeslots: map (id) -> JS object with attributes id, label, start, end, sections (list of IDs)
        sections: map (id) -> JS object with attributes id, emailcode, title, timeslots (sorted list of IDs), grade_min, grade_max, capacity, num_students, lottery_priority, lottery_interested **/
 	
