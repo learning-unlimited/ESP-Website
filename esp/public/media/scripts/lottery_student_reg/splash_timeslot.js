@@ -365,16 +365,21 @@ create_class_info_dialog = function(){
 	});
 };
 
+function get_submit_data(){
+    var building_submit_data = {};
+    for(id in sections){
+	s = sections[id];
+	building_submit_data[id] = s['lottery_interested'];
+	building_submit_data['flag_'+id] = s['lottery_priority']; 
+    }
+    return building_submit_data;
+};
+
 function submit_preferences(){
     $j("#submit_button").text("Submitting...");
     $j("#submit_button").attr("disabled", "disabled");
 
-    submit_data = {};
-    for(id in sections){
-	s = sections[id];
-	submit_data[id] = s['lottery_interested'];
-	submit_data['flag_'+id] = s['lottery_priority']; 
-    }
+    var submit_data = get_submit_data();
     
     submit_data_string = JSON.stringify(submit_data);
 

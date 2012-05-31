@@ -11,7 +11,7 @@ var Timeslot = function(data){
 	return prefs_ts_div + "_" + p;
     };
 
-    this.get_submit_data = function(){
+    this.get_timeslot_submit_data = function(){
 	var submit_data = {};
 	var sec_id;
 	for(id in timeslot_data["starting_sections"]){
@@ -185,40 +185,17 @@ var Timeslot = function(data){
     }
 };
 
-//needs to be written
-function submit_preferences(){
-    $j("#submit_button").text("Submitting...");
-    $j("#submit_button").attr("disabled", "disabled");
 
-    var submit_data = {};
+function get_submit_data(){
+    var building_submit_data = {};
     var timeslot_submit_data;
     for(id in sections){
 	for(ts in timeslot_objects){
-	    timeslot_submit_data = timeslot_objects[ts].get_submit_data();
+	    timeslot_submit_data = timeslot_objects[ts].get_timeslot_submit_data();
 	    for(tsd in timeslot_submit_data){
-		submit_data[tsd] = timeslot_submit_data[tsd];
+		building_submit_data[tsd] = timeslot_submit_data[tsd];
 	    }
 	}
     }
-    console.log(submit_data);
-
-    submit_data_string = JSON.stringify(submit_data);
-
-    var submit_url = '/learn/'+base_url+'/lsr_submit';
-
-    //actually submit and redirect to student reg
-    jQuery.ajax({
-	     type: 'POST',
-             url: submit_url,
-	     error: function(a, b, c) {
-                alert("There has been an error on the website. Please contact " + support + " to report this problem.");
-             },
-	     success: function(a, b, c){
-		alert("Your preferences have been successfully saved.");
-		window.location = "studentreg";
-	     },
-	     data: {'json_data': submit_data_string },
-	     headers: {'X-CSRFToken': $j.cookie("csrftoken")}
-     });
+    return building_submit_data;
 };
-
