@@ -16,6 +16,7 @@
 
 
     <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
+
     {% comment %}
     <style type="text/css">
       /*lswh @import "https://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css";*/
@@ -64,7 +65,7 @@ at the end of the page.
       update_user_classes();
       });
     </script>
-
+    {% block xtrajs %}{% endblock %}
 
   </head>
   <body class="tundra" onload="MM_preloadImages( {% for img in preload_images %}'{{ img }}'{% if not forloop.last %}, {% endif %}{% endfor %})">
@@ -115,7 +116,7 @@ at the end of the page.
     <script type="text/javascript" src="/media/scripts/nav.js"></script>
     {% endblock %}
 
-    {% block xtrajs %}{% endblock %}
+
   </body>
 
 </html>
