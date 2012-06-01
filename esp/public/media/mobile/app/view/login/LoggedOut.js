@@ -3,6 +3,8 @@ Ext.define('LU.view.login.LoggedOut', {
     xtype: 'loggedOut',
     
     requires: [
+        'Ext.Spacer',
+        'Ext.field.Text',
         'Ext.field.Password'
     ],
     

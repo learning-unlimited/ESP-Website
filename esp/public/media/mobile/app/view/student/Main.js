@@ -6,9 +6,7 @@ Ext.define('LU.view.student.Main', {
         tabBarPosition: 'bottom',
         items: [
             {
-                title: 'Classes',
-                iconCls: 'time',
-                html: 'Classes Screen'
+                xclass: 'LU.view.class.Card'
             },
             {
                 title: 'Favorites',

@@ -15,9 +15,15 @@ Ext.application({
 
     views: [
         'Main',
-        
+        'Panel',
+
+        'login.LoggedOut',
+
+        'class.Card',
+        'class.List',
+
         'student.Main',
-        
+
         'volunteer.Main'
     ],
 
