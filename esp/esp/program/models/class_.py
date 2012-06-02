@@ -1464,17 +1464,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return self.checklist_progress.all()
     checklist_progress_all_cached.depend_on_m2m(lambda: ClassSubject, 'checklist_progress', lambda cs, cp: {'self': cs})
 
-    def time_created(self):
-        #   Return the datetime for when the class was first created.
-        #   Oh wait, this is definitely not meh.
-        v = GetNode('V/Flags/Registration/Teacher')
-        q = self.anchor
-        ubl = UserBit.objects.filter(verb=v, qsc=q).order_by('startdate')
-        if ubl.count() > 0:
-            return ubl[0].startdate
-        else:
-            return None
-        
     def friendly_times(self):
         collapsed_times = []
         for s in self.get_sections():
