@@ -78,7 +78,7 @@ class OnSiteClassList(ProgramModuleObj):
         sect['rooms'] = (' ,'.join(sec.prettyrooms()))[:12]
         return sect
     section_data.depend_on_model(lambda: ResourceAssignment)
-    section_data.depend_on_cache(lambda: ClassSubject.teachers, lambda **kwargs: {})
+    section_data.depend_on_m2m(lambda: ClassSubject, 'teachers',lambda sec,ev: {'self':sec}) #depend_on_cache(lambda: ClassSubject.teachers, lambda **kwargs: {})
     section_data = staticmethod(section_data)
 
 

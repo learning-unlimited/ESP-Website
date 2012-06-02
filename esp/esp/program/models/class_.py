@@ -381,7 +381,7 @@ class ClassSection(models.Model):
     parent_program = property(_get_parent_program)
         
     def _get_teachers(self):
-        return self.parent_class.teachers()
+        return self.parent_class.teachers
     teachers = property(_get_teachers)
     
     def _get_category(self):
@@ -728,7 +728,7 @@ class ClassSection(models.Model):
                         base_list.remove(elt)
             return base_list
 
-        teachers = self.parent_class.teachers()
+        teachers = self.parent_class.teachers
         try:
             num_teachers = teachers.count()
         except:
@@ -1293,6 +1293,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     parent_program = models.ForeignKey(Program)
     category = models.ForeignKey('ClassCategories',related_name = 'cls')
     class_info = models.TextField(blank=True)
+    teachers = models.ManyToManyField(ESPUser)
     allow_lateness = models.BooleanField(default=False)
     message_for_directors = models.TextField(blank=True)
     class_size_optimal = models.IntegerField(blank=True, null=True)
@@ -1568,9 +1569,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if self.num_students() > 0 and not adminoverride:
             return False
         
-        teachers = self.teachers()
-        for teacher in self.teachers():
-            self.removeTeacher(teacher)
+        for teacher in self.teachers:
             self.removeAdmin(teacher)
 
         for sec in self.sections.all():
@@ -1609,34 +1608,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     title.depend_on_row(lambda: DataTree, title_selector)
     title.admin_order_field = 'anchor__friendly_name'	# Admin Panel Display Configuration
 
-    @cache_function
-    def teachers(self):
-        """ Return a queryset of all teachers of this class. """
-        # We might have teachers pulled in by Awesome Query Magic(tm), as in .catalog()
-        if hasattr(self, "_teachers"):
-            return self._teachers
-
-        v = GetNode('V/Flags/Registration/Teacher')
-
-        # NOTE: This ignores the recursive nature of UserBits, since it's very slow and kind of pointless here.
-        # Remove the following line and replace with
-        #     retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
-        # to reenable.
-        retVal = ESPUser.objects.all().filter(Q(userbit__qsc=self.anchor, userbit__verb=v), UserBit.not_expired('userbit')).distinct()
-
-        list(retVal)
-
-        return retVal
-    @staticmethod
-    def key_set_from_userbit(bit):
-        subjects = ClassSubject.objects.filter(anchor=bit.qsc)
-        return [{'self': cls} for cls in subjects]
-    teachers.depend_on_row(lambda:ClassSubject, lambda cls: {'self': cls})
-    teachers.depend_on_row(lambda:UserBit, lambda bit: ClassSubject.key_set_from_userbit(bit), lambda bit: bit.verb == GetNode('V/Flags/Registration/Teacher'))
-
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
-        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.teachers() ])
+        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.teachers ])
         
     def isFull(self, ignore_changes=False, timeslot=None):
         """ A class subject is full if all of its sections are full. """
@@ -1667,7 +1641,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def getTeacherNames(self):
         teachers = []
-        for teacher in self.teachers():
+        for teacher in self.teachers:
             name = '%s %s' % (teacher.first_name,
                               teacher.last_name)
             if name.strip() == '':
@@ -1677,7 +1651,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def getTeacherNamesLast(self):
         teachers = []
-        for teacher in self.teachers():
+        for teacher in self.teachers:
             name = '%s, %s' % (teacher.last_name,
                               teacher.first_name)
             if name.strip() == '':
@@ -1737,20 +1711,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return 'This class conflicts with your schedule!'
 
     def makeTeacher(self, user):
-        v = GetNode('V/Flags/Registration/Teacher')
-        
-        ub, created = UserBit.objects.get_or_create(user = user,
-                                qsc = self.anchor,
-                                verb = v)
-        ub.renew()
+        self.teachers.add(user)
         return True
 
     def removeTeacher(self, user):
-        v = GetNode('V/Flags/Registration/Teacher')
-
-        for bit in UserBit.objects.filter(user = user, qsc = self.anchor, verb = v):
-            bit.expire()
-            
+        self.teachers.remove(user)
         return True
 
     def subscribe(self, user):
@@ -1969,14 +1934,14 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         result.year = date_dir[0][:4]
         if len(date_dir) > 1:
             result.date = date_dir[1]
-        teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.teachers()]
+        teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.teachers]
         result.teacher = ' and '.join(teacher_strs)
         result.category = self.category.category[:32]
         result.title = self.title()
         result.description = self.class_info
         if self.prereqs and len(self.prereqs) > 0:
             result.description += '\n\nThe prerequisites for this class were: %s' % self.prereqs
-        result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.teachers()]) + '|'
+        result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.teachers]) + '|'
         all_students = self.students()
         result.student_ids = '|' + '|'.join([str(s.id) for s in all_students]) + '|'
         result.original_id = self.id
@@ -2067,7 +2032,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         super(ClassSubject, self).save(*args, **kwargs)
         if self.status < 0:
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
-            teachers = self.teachers()
+            teachers = self.teachers
             for t in teachers:
                 if ESPUser(t).getTaughtClasses(self.parent_program).filter(status__gte=10).count() == 0:
                     from esp.mailman import remove_list_member

@@ -331,11 +331,9 @@ class ESPUser(User, AnonymousUser):
             return "?code=%s" % otheruser.password
         return ''
 
-    def getTaughtPrograms(self,):
+    def getTaughtPrograms(self):
         taught_programs = Program.objects.filter(
-            anchor__child_set__child_set__userbit_qsc__user=self,
-            anchor__child_set__child_set__userbit_qsc__verb=GetNode('V/Flags/Registration/Teacher'),
-            anchor__child_set__child_set__userbit_qsc__qsc__classsubject__status=10)
+            classsubject_set__teachers=self)
         taught_programs = taught_programs.distinct()
         return taught_programs
 
@@ -352,14 +350,7 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models import ClassSubject, Program # Need the Class object.
         
         #   Why is it that we had a find_by_anchor_perms function again?
-        tr_node = GetNode('V/Flags/Registration/Teacher')
-        when = datetime.now()
-        all_classes = ClassSubject.objects.filter(
-            anchor__userbit_qsc__verb__id=tr_node.id,
-            anchor__userbit_qsc__user=self,
-            anchor__userbit_qsc__startdate__lte=when,
-            anchor__userbit_qsc__enddate__gte=when,
-        ).distinct()
+        all_classes = ClassSubject.objects.filter(teachers=self).distinct()
 
         if type(program) != Program: # if we did not receive a program
             error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
@@ -378,21 +369,7 @@ class ESPUser(User, AnonymousUser):
     def getTaughtClassesAll(self, include_rejected = False):
         from esp.program.models import ClassSubject # Need the Class object.
         
-        #   Why is it that we had a find_by_anchor_perms function again?
-        tr_node = GetNode('V/Flags/Registration/Teacher')
-        when = datetime.now()
-        if include_rejected: return ClassSubject.objects.filter(
-            anchor__userbit_qsc__verb__id=tr_node.id,
-            anchor__userbit_qsc__user=self,
-            anchor__userbit_qsc__startdate__lte=when,
-            anchor__userbit_qsc__enddate__gte=when,
-        ).distinct()
-        else: return ClassSubject.objects.filter(
-            anchor__userbit_qsc__verb__id=tr_node.id,
-            anchor__userbit_qsc__user=self,
-            anchor__userbit_qsc__startdate__lte=when,
-            anchor__userbit_qsc__enddate__gte=when,
-        ).distinct().exclude(status=-10)
+        return ClassSubject.filter(teachers=self).distinct()
     getTaughtClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
                                                       lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
                                                                   bit.qsc.parent.name == 'Classes' and
