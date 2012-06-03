@@ -927,7 +927,7 @@ class ClassSection(models.Model):
         """
         if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
             # This set of error messages deserves a better home
-            for t in self.teachers:
+            for t in self.teachers.all():
                 available = t.getAvailableTimes(self.parent_program, ignore_classes=False)
                 for e in meeting_times:
                     if e not in available:
@@ -1521,7 +1521,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if self.num_students() > 0 and not adminoverride:
             return False
         
-        for teacher in self.teachers:
+        for teacher in self.teachers.all():
             self.removeAdmin(teacher)
 
         for sec in self.sections.all():
@@ -1561,7 +1561,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
-        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.teachers ])
+        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.teachers.all() ])
         
     def isFull(self, ignore_changes=False, timeslot=None):
         """ A class subject is full if all of its sections are full. """
@@ -1592,7 +1592,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def getTeacherNames(self):
         teachers = []
-        for teacher in self.teachers:
+        for teacher in self.teachers.all():
             name = '%s %s' % (teacher.first_name,
                               teacher.last_name)
             if name.strip() == '':
@@ -1602,7 +1602,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def getTeacherNamesLast(self):
         teachers = []
-        for teacher in self.teachers:
+        for teacher in self.teachers.all():
             name = '%s, %s' % (teacher.last_name,
                               teacher.first_name)
             if name.strip() == '':
@@ -1879,14 +1879,14 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         result.year = date_dir[0][:4]
         if len(date_dir) > 1:
             result.date = date_dir[1]
-        teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.teachers]
+        teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.teachers.all()]
         result.teacher = ' and '.join(teacher_strs)
         result.category = self.category.category[:32]
         result.title = self.title()
         result.description = self.class_info
         if self.prereqs and len(self.prereqs) > 0:
             result.description += '\n\nThe prerequisites for this class were: %s' % self.prereqs
-        result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.teachers]) + '|'
+        result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.teachers.all()]) + '|'
         all_students = self.students()
         result.student_ids = '|' + '|'.join([str(s.id) for s in all_students]) + '|'
         result.original_id = self.id

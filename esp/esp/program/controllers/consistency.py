@@ -44,7 +44,7 @@ class ConsistencyChecker(object):
         self.classes = ClassSubject.objects.filter(parent_program=self.program)
         teachers = set()
         for c in self.classes:
-            teachers = teachers.union(c.teachers())
+            teachers = teachers.union(c.teachers.all())
         self.teachers = list(teachers)
         self.sections = ClassSection.objects.filter(parent_class__parent_program=self.program)
 
