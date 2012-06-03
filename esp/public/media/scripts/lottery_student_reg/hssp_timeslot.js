@@ -96,12 +96,17 @@ var Timeslot = function(data){
 		sections[new_id]['Priority/'+ priority] = true;
 	    }
 	};
-	
-	// Function to populate a class div with existing preference data
-	this.load_old_preferences = function(){
-	    for(s in sections){
-		console.log(sections[s]["lottery_priority"]);
-		console.log(sections[s]);
+
+	//loads the value for this combobox based on the saved preferences for this user
+	this.load_old_preference = function(){
+	    var j, id, c;
+	    for (id in class_data){
+		c = class_data[id];
+		for (j = 1; j < 4; j++){
+		    if(c["Priority/"+i] == true){
+			$j("#"+combobox_id).val(c["id"]);
+		    }
+		}	      
 	    }
 	};
 
@@ -115,7 +120,7 @@ var Timeslot = function(data){
 		}
 	    }
 	    $j("#"+combobox_id).on("change", this.priority_changed);//might want a different event here
-	    this.load_old_preferences()
+	    this.load_old_preference()
 	};
 
 	this.get_class_html = function(class_data){
@@ -164,7 +169,6 @@ var Timeslot = function(data){
 	for (p = 1; p <= 3; p++){
 	    // Check if the interested div doesn't exist yet, and set interested_div at
 	    // the same time
-	    //console.log(prefs_ts_div_by_priority);
 	    var interested_div = $j("#"+prefs_ts_div_by_priority(p));
 	    if (interested_div.length == 0)
 		{
