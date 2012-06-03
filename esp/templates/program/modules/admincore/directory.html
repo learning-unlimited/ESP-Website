@@ -55,7 +55,7 @@ $j(document).ready(initialize);
 <h1>Admin Portal for {{ program.niceName }} </h1>
 
 {% inline_qsd_block program.anchor "manage:main_top" request.user %}
-Default instructions will be filled out here.
+Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="http://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
 {% end_inline_qsd_block %}
 
 <div class="module_group" id="module_group_1">
@@ -149,7 +149,7 @@ Default instructions will be filled out here.
     <ul>
         <li><a href="/manage/{{ program.getUrlBase }}/catalog">PDF Catalog</a></li>
         <li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a></li>
-        <li><a href="/manage/{{ program.getUrlBase }}/generatetags">Nametags</a></li>
+        <li><a href="/manage/{{ program.getUrlBase }}/selectidoptions">Nametags</a></li>
         <li><a href="/manage/{{ program.getUrlBase }}/selectList">Arbitrary User List</a></li>
         <li><a href="/manage/{{ program.getUrlBase }}/printoptions">All Printables</a></li>
     </ul>

@@ -13,18 +13,17 @@
 {% endblock %}
 
 {% block content %}
+<h1>Create a new account</h1>
+
 {% if accounts or awaitings%}
-<div class="note">
 <p>
-<b>Warning: You may already have an account!</b>  It looks like other accounts already exist for this
-e-mail address.  Do you really want to create another {{ site }} account with this email address?  If not,
-try logging in with one of the following username(s).  (If so, just
-click "Create account" again below.)
+<b>You may already have an account:</b> Listed below are other accounts that already exist for this
+e-mail address.  If you are sure you want a new account, please click "Proceed to Account Creation" again below.
 </p>
 
 <ul>
   {% for u in accounts %}
-  <li>Username: "{{ u.username }}" (
+  <li>{{ u.first_name }} {{ u.last_name }} ({{ u.username }}) <br />
   <form method="post" action="/myesp/login">
     <input type="hidden" name="username" value="{{ u.username }}" />
     <input type="hidden" name="password" value="" />
@@ -36,22 +35,19 @@ click "Create account" again below.)
     <input type="hidden" name="username" value="{{ u.username }}" />
     <input type="submit" value="I forgot my password!" />
   </form>
-  )
   </li>
+  <br />
   {% endfor %}
   {% for u in awaitings %}
-  <li>Username: "{{ u.username }}" (
+  <li>{{ u.first_name }} {{ u.last_name }} ({{ u.username }}) -- Awaiting activation <br />
   <form action="/myesp/resend/" method="post">
     <input type="hidden" name="username" value="{{ u.username }}" />
     <input type="submit" value="Resend Activation Email!" />
   </form>
-  )
   </li>
   {% endfor %}
 </ul>
-</div>
-{% endif %}
-<h1>Create a new account</h1>
+{% else %}
 {% load render_qsd %}
 {% inline_qsd_block Q/Web/myesp create_new_account_phase1_headertext request.user %}
 <p>
@@ -63,7 +59,7 @@ for programs, sign up for classes, among other things.
   If you just want to receive e-mail announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> announcements list. If you create an account, you will be automatically subscribed to our main Announcements list.
 </p>
 {% end_inline_qsd_block %}
-
+{% endif %}
 
 <div id="program_form">
 <form action="{{ request.path }}" method="post" name="newuser_form">

@@ -64,8 +64,6 @@ def genProgramModuleTestCase(moduleClass):
             self.prog.grade_min = 8
             self.prog.grade_max = 11
             self.prog.director_email = "root@localhost"
-            self.prog.class_size_min = 5
-            self.prog.class_size_max = 30
             self.prog.program_size_max = 1000
 
             self.prog.program_modules.add(self.programmodule)

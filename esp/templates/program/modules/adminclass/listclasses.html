@@ -12,7 +12,7 @@
 $j(document).ready(function() {
   // Check if rapid approval is enabled
   {% load tagdict %}
-  if ("{% getProgramTag 'use_rapid_approval' program%}" == "True")
+  if ({% getBooleanTag 'use_rapid_approval' program %})
   {
     $j(".rapid_approval_button").show();
     // Create the class description popup for the Status button

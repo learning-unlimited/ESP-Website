@@ -8,13 +8,14 @@ register = template.Library()
 class GetProgramTagNode(Node):
     """ Gives access to the getProgramTag function """
 
-    def __init__(self, key, program, default):
+    def __init__(self, key, program, default, boolean=False):
         self.key = key
         self.program = program
         self.default = default
+        self.boolean = boolean
 
     @classmethod
-    def handle_token(cls, parser, token):
+    def handle_token(cls, parser, token, boolean=False):
         """ Class method to handle the tokens received """
         tokens = token.contents.split()
         if len(tokens) < 2:
@@ -27,7 +28,7 @@ class GetProgramTagNode(Node):
         if len(tokens) > 3:
             default = parser.compile_filter(tokens[3])
 
-        return cls(key, program, default)
+        return cls(key, program, default, boolean=boolean)
       
 
     def render(self, context):
@@ -40,10 +41,17 @@ class GetProgramTagNode(Node):
             default = self.default.resolve(context)
         else:
             default = None
-        return str(Tag.getProgramTag(key, program, default))
+        if self.boolean:
+            return str(Tag.getBooleanTag(key, program, default)).lower()
+        else:
+            return str(Tag.getProgramTag(key, program, default))
 
 
 def doGetProgramTag(parser, token):
     return GetProgramTagNode.handle_token(parser, token)
 
+def doGetBooleanTag(parser, token):
+    return GetProgramTagNode.handle_token(parser, token, boolean=True)
+
 register.tag('getProgramTag', doGetProgramTag)
+register.tag('getBooleanTag', doGetBooleanTag)

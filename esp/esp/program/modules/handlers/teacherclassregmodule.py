@@ -58,6 +58,7 @@ from esp.resources.forms         import ResourceRequestFormSet, ResourceTypeForm
 from datetime                    import timedelta
 from esp.mailman                 import add_list_member
 from django.http                 import HttpResponseRedirect
+from django.db                   import models
 from esp.middleware.threadlocalrequest import get_current_request
 import simplejson as json
 from copy import deepcopy
@@ -117,9 +118,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         #   New approach: Pile the class datatree anchor IDs into the appropriate lists.
 
         Q_isteacher = Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
-        Q_rejected_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status__lt=0)) & Q_isteacher
-        Q_approved_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status__gt=0)) & Q_isteacher
-        Q_proposed_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status=0)) & Q_isteacher
+        fields_to_defer = [x.name for x in ClassSubject._meta.fields if isinstance(x, models.TextField)]
+        Q_rejected_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().defer(*fields_to_defer).filter(status__lt=0)) & Q_isteacher
+        Q_approved_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().defer(*fields_to_defer).filter(status__gt=0)) & Q_isteacher
+        Q_proposed_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().defer(*fields_to_defer).filter(status=0)) & Q_isteacher
 
         ## is_nearly_full() means at least one section is more than float(ClassSubject.get_capacity_factor()) full
         ## isFull() means that all *scheduled* sections are full
