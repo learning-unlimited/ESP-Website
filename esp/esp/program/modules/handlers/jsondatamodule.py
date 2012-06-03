@@ -219,7 +219,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     # Put this import here rather than at the toplevel, because wildcard messes things up
     from esp.cache.key_set import wildcard
     sections.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
-    sections.cached_function.depend_on_m2m(lambda: ClassSubject, 'teachers',lambda sec,ev: {'self':sec}) #depend_on_cache(ClassSubject.teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
+    #sections.cached_function.depend_on_m2m(lambda: ClassSubject, 'teachers',lambda sec,ev: {'self':sec}) #depend_on_cache(ClassSubject.teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
         
     @aux_call
     @json_response()

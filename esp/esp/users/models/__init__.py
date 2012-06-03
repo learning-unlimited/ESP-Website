@@ -333,7 +333,7 @@ class ESPUser(User, AnonymousUser):
 
     def getTaughtPrograms(self):
         taught_programs = Program.objects.filter(
-            classsubject_set__teachers=self)
+            classsubject__teachers=self)
         taught_programs = taught_programs.distinct()
         return taught_programs
 
@@ -369,7 +369,7 @@ class ESPUser(User, AnonymousUser):
     def getTaughtClassesAll(self, include_rejected = False):
         from esp.program.models import ClassSubject # Need the Class object.
         
-        return ClassSubject.filter(teachers=self).distinct()
+        return ClassSubject.objects.filter(teachers=self).distinct()
     getTaughtClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
                                                       lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
                                                                   bit.qsc.parent.name == 'Classes' and
