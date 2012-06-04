@@ -27,6 +27,10 @@ Ext.application({
         'volunteer.Main'
     ],
 
+    viewport: {
+        autoMaximize: true
+    },
+
     /* TODO: add icon and splash screen
     icon: {
         57: 'resources/icons/Icon.png',
