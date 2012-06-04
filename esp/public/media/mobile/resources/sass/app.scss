@@ -24,7 +24,7 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
 }
 
 .loginScreen {
-    top: 20%;
+    top: 10%;
     background: transparent;
     
     .field {
@@ -35,10 +35,12 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
 #logo {
     background-color: rgba(0,0,0,0.2);   // TODO: replace with image
     text-align: center;
-    display: table-cell;
+    display: block;
     vertical-align: middle;
-    width: 230px;
-    height: 230px;
+    width: 180px;
+    height: 180px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .field {
