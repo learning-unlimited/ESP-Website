@@ -45,6 +45,7 @@ var Timeslot = function(data){
 
     this.add_classes_to_timeslot = function(sections){
 	var class_id_list = timeslot_data['starting_sections'];
+	var carryover_id_list = timeslot_data['sections'];
 	var user_grade = esp_user['cur_grade'];
 
 	//construct list of classes
@@ -52,6 +53,25 @@ var Timeslot = function(data){
 	var class_id;
 	var section;
 	var has_classes;
+	var i;
+	
+	if (carryover_id_list.length - class_id_list.length > 0){
+	    //make carryover div
+	    var carryover_div_id = ts_div + "carryovers";
+	    $j("#"+ts_div).add("<div></div>").attr("id", carryover_div_id);
+	    $j("#"+ carryover_div_id).append("<h3>Carryovers</h3>");
+	    //add carryovers to carryover div
+	    for(i in carryover_id_list){
+		// if the class doesn't start in this section
+		if($j.inArray(carryover_id_list[i], class_id_list) == -1){
+		    var section = sections[carryover_id_list[i]];
+		    if((user_grade >= section['grade_min'] && user_grade <= section['grade_max']) || esp_user['cur_admin'] == 1){
+			$j("#"+ carryover_div_id).append(get_carryover_html(section));
+		    }
+		}
+	    }
+	}
+
 	for(i in class_id_list){
 	    class_id = class_id_list[i];
 	    section = sections[class_id];
@@ -112,11 +132,12 @@ var Timeslot = function(data){
 
 	this.add_self_to_timeslot = function(){
 	    $j("#"+ts_table_div).append(this.get_combobox_html());
-	    $j("#"+combobox_id).append("<option> No Class");
+	    $j("#"+combobox_id).css('width','350px');
+     	    $j("#"+combobox_id).append("<option> No Class");
 	    for(j in class_data){
 		//check grade restriction
 		if( class_data[j]["grade_min"]<=user_grade && class_data[j]["grade_max"] >= user_grade){
-		    $j("#"+combobox_id).append(this.get_class_html(class_data[j]));
+		    $j("#"+combobox_id).append(this.get_class_html(class_data[j]), false);
 		}
 	    }
 	    $j("#"+combobox_id).on("change", this.priority_changed);//might want a different event here

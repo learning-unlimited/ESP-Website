@@ -85,6 +85,18 @@ show_app = function(data){
     $j("#lsr_content").accordion('destroy').accordion(accordion_settings);
 };
 
+function get_carryover_html(class_data, add_link){
+    // Create a carried-over class div using a template with keywords replaced below
+    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% ";
+    if (add_link){
+	template = template + "[<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]";
+    }
+    template = template + "</p>";
+    template = template.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
+    .replace(/%CLASS_TITLE%/g, class_data['title'])
+    .replace(/%CLASS_ID%/g, class_data['id']);
+    return template;
+};
 
 
 function submit_preferences(){
