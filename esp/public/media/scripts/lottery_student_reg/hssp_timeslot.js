@@ -46,7 +46,6 @@ var Timeslot = function(data){
     this.add_classes_to_timeslot = function(sections){
 	var class_id_list = timeslot_data['starting_sections'];
 	var carryover_id_list = timeslot_data['sections'];
-	var user_grade = esp_user['cur_grade'];
 
 	//construct list of classes
 	var classes_list = [];
