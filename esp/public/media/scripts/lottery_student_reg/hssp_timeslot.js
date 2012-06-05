@@ -120,10 +120,8 @@ var Timeslot = function(data){
 	    var j, id, c;
 	    for (id in class_data){
 		c = class_data[id];
-		for (j = 1; j < 4; j++){
-		    if(c["Priority/"+i] == true){
-			$j("#"+combobox_id).val(c["id"]);
-		    }
+		if(c["Priority/"+priority] == true){
+		    $j("#"+combobox_id).val(c["id"]);
 		}	      
 	    }
 	};
@@ -139,7 +137,7 @@ var Timeslot = function(data){
 		}
 	    }
 	    $j("#"+combobox_id).on("change", this.priority_changed);//might want a different event here
-	    this.load_old_preference()
+	    this.load_old_preference();
 	};
 
 	this.get_class_html = function(class_data){
