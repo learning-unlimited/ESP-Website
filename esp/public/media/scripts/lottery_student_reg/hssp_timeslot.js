@@ -1,7 +1,6 @@
 var Timeslot = function(data){
     var timeslot_data = data;
     var timeslot_id = data['id'];
-    var priority_limit = 3;
 
     //some div ids
     var ts_div = "TS_"+data["id"];
@@ -16,7 +15,7 @@ var Timeslot = function(data){
 	var sec_id;
 	for(id in timeslot_data["starting_sections"]){
 	    sec_id = timeslot_data["starting_sections"][id];
-	    for(p = 3; p >= 1; p--){
+	    for(p = priority_limit; p >= 1; p--){
 		if (sections[sec_id]["Priority/"+p]){
 		    submit_data[sec_id] = [p, timeslot_id];
 		}
@@ -186,7 +185,7 @@ var Timeslot = function(data){
 
 	data_starting_sections = timeslot_data['starting_sections'];
 	//create divs for priority 1, 2, and 3
-	for (p = 1; p <= 3; p++){
+	for (p = 1; p <= priority_limit; p++){
 	    // Check if the interested div doesn't exist yet, and set interested_div at
 	    // the same time
 	    var interested_div = $j("#"+prefs_ts_div_by_priority(p));

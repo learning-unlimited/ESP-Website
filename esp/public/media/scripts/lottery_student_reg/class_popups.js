@@ -18,8 +18,6 @@ create_class_info_dialog = function(){
 	});
 };
 
-
-
 // Dictionary to keep track of classes' extra info as and when we load them
 var class_info = {};
 // Initial popup that tells the user we're loading the class data
