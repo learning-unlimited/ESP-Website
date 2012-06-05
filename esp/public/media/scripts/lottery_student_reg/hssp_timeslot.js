@@ -65,7 +65,7 @@ var Timeslot = function(data){
 		// if the class doesn't start in this section
 		if($j.inArray(carryover_id_list[i], class_id_list) == -1){
 		    var section = sections[carryover_id_list[i]];
-		    if((user_grade >= section['grade_min'] && user_grade <= section['grade_max']) || esp_user['cur_admin'] == 1){
+		    if((user_grade >= section['grade_min'] && user_grade <= section['grade_max'])){
 			$j("#"+ carryover_div_id).append(get_carryover_html(section));
 		    }
 		}
