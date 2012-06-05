@@ -16,7 +16,7 @@ var Timeslot = function(data){
 	var sec_id;
 	for(id in timeslot_data["starting_sections"]){
 	    sec_id = timeslot_data["starting_sections"][id];
-	    for(p = 1; p <= 3; p++){
+	    for(p = 3; p >= 1; p--){
 		if (sections[sec_id]["Priority/"+p]){
 		    submit_data[sec_id] = [p, timeslot_id];
 		}
