@@ -126,7 +126,6 @@ var Timeslot = function(data){
 	    }
 	}
 
-
 	// Add walkins section
 	if(open_class_registration && !has_walkins){
 	    //hopefully nobody will ever see this :)
@@ -157,7 +156,7 @@ var Timeslot = function(data){
 	else{
 	    // Adds all classes that are carried over from the previous timeblock
 	    for(i in carryovers_list){
-		$j("#"+ts_carryover_div).append(this.get_carryover_html(carryovers_list[i], timeslot_id));
+		$j("#"+ts_carryover_div).append(get_carryover_html(carryovers_list[i], true));
 	    }
 	}
     };
@@ -167,15 +166,6 @@ var Timeslot = function(data){
 	template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
         .replace('%CLASS_TITLE%', class_data['title'])
-        .replace(/%CLASS_ID%/g, class_data['id']);
-	return template;
-    };
-
-    this.get_carryover_html = function(class_data, timeslot_id){
-	// Create a carried-over class div using a template with keywords replaced below
-	template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
-	.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
-	.replace(/%CLASS_TITLE%/g, class_data['title'])
         .replace(/%CLASS_ID%/g, class_data['id']);
 	return template;
     };
