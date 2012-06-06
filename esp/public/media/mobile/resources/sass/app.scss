@@ -17,7 +17,7 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
 @include sencha-layout;
 //@include sencha-carousel;
 @include sencha-form;
-//@include sencha-msgbox;
+@include sencha-msgbox;
 
 .loggedOut {
     //background: transparent;

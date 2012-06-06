@@ -47,6 +47,23 @@ Ext.application({
 
         // Initialize the main view
         Ext.Viewport.add(Ext.create('LU.view.Main'));
+
+        // Obtain CSRF token
+        Ext.Ajax.request({
+            url: '/set_csrf_token',
+            success: function(response) {
+                // do nothing
+            },
+            failure: function(response) {
+                if (response.timedout) {
+                    Ext.Msg.alert('Timeout', "The server timed out :( Try refreshing the page.");
+                } else if (response.aborted) {
+                    Ext.Msg.alert('Aborted', "Looks like you aborted the request");
+                } else {
+                    Ext.Msg.alert('Bad', "Something went wrong with your request");
+        }
+            }
+        });
     },
 
     onUpdated: function() {
