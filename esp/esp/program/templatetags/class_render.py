@@ -37,7 +37,7 @@ def render_class_core(cls):
     return render_class_core_helper(cls)
 render_class_core.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
 render_class_core.cached_function.depend_on_row(ClassSection, lambda sec: {'cls': sec.parent_class})
-render_class_core.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'cls': self})
+#render_class_core.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'cls': self})
 render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lambda self=wildcard, **kwargs: {'cls': self.parent_class})
 render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_row(StudentAppQuestion, lambda ques: {'cls': ques.subject})

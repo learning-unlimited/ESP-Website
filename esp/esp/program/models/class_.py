@@ -189,7 +189,8 @@ class ClassManager(ProcedureManager):
             classes = classes.filter(sections__meeting_times=ts)
         
         select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration", "program_classsection" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND "program_classsection"."parent_class_id" = "program_class"."id" AND "program_studentregistration"."start_date" <= %s AND "program_studentregistration"."end_date" >= %s)'),
-                             ('teacher_ids', 'SELECT list(DISTINCT "users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
+                             #('teacher_ids', 'SELECT list(DISTINCT "users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
+                             ('teacher_ids', 'SELECT list(DISTINCT espuser_id) FROM program_class_teachers Where program_class_teachers.classsubject_id=program_class.id'),
                              ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'),
                              ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')'),
                              ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
@@ -256,9 +257,11 @@ class ClassManager(ProcedureManager):
         
         # We got classes.  Now get teachers...
         if program != None:
-            teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+            teachers = ESPUser.objects.filter(classsubject__parent_program=program).distinct()
+            #teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
         else:
-            teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+            teachers = ESPUser.objects.filter(classsubject__isnull=False)
+            #teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
 
         teachers_by_id = {}
         for t in teachers:            
@@ -449,7 +452,7 @@ class ClassSection(models.Model):
     capacity = property(_get_capacity)
 
     def title(self):
-        return self.parent_class.title()
+        return self.parent_class.title
 
     def __unicode__(self):
         return '%s: %s' % (self.emailcode(), self.title())
@@ -933,7 +936,7 @@ class ClassSection(models.Model):
         """
         if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
             # This set of error messages deserves a better home
-            for t in self.teachers.all():
+            for t in self.get_teachers():
                 available = t.getAvailableTimes(self.parent_program, ignore_classes=False)
                 for e in meeting_times:
                     if e not in available:
@@ -1290,6 +1293,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     from esp.program.models import Program
     
     anchor = AjaxForeignKey(DataTree)
+    title = models.TextField()
     parent_program = models.ForeignKey(Program)
     category = models.ForeignKey('ClassCategories',related_name = 'cls')
     class_info = models.TextField(blank=True)
@@ -1336,14 +1340,14 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         
     @classmethod
     def ajax_autocomplete(cls, data):
-        values = cls.objects.filter(anchor__friendly_name__istartswith=data).values(
-                    'id', 'anchor__friendly_name').order_by('anchor__friendly_name')
+        values = cls.objects.filter(title__istartswith=data).values(
+                    'id', 'title').order_by('title')
         for v in values:
-            v['ajax_str'] = v['anchor__friendly_name']
+            v['ajax_str'] = v['title']
         return values
     
     def ajax_str(self):
-        return self.title()
+        return self.title
     
     def prettyDuration(self):
         if len(self.get_sections()) <= 0:
@@ -1476,8 +1480,18 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         for s in self.get_sections():
             rooms = ", ".join(s.prettyrooms())
             blocks += [(x + " in " + rooms) for x in s.friendly_times()]
-        
+
         return blocks
+
+    @cache_function
+    def get_teachers(self):
+        """ Return a queryset of all teachers of this class. """
+        # We might have teachers pulled in by Awesome Query Magic(tm), as in .catalog()
+        if hasattr(self, "_teachers"):
+            return self._teachers
+        
+        return self.teachers.all()
+    get_teachers.depend_on_m2m(lambda: ClassSubject, 'teachers', lambda subj, event: {'self': subj})
     
     def students_dict(self):
         result = PropertyDict({})
@@ -1541,8 +1555,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return False
         
     def __unicode__(self):
-        if self.title() is not None:
-            return "%s: %s" % (self.id, self.title())
+        if self.title != "":
+            return "%s: %s" % (self.id, self.title)
         else:
             return "%s: (none)" % self.id
 
@@ -1558,7 +1572,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if self.num_students() > 0 and not adminoverride:
             return False
         
-        for teacher in self.teachers.all():
+        for teacher in self.get_teachers():
             self.removeAdmin(teacher)
 
         for sec in self.sections.all():
@@ -1586,20 +1600,20 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def cache_time(self):
         return 99999
     
-    @cache_function
-    def title(self):
-        return self.anchor.friendly_name
+    #@cache_function
+    #def title(self):
+    #    return self.anchor.friendly_name
         
-    def title_selector(node):
-        if node.classsubject_set.all().count() == 1:
-            return {'self': node.classsubject_set.all()[0]}
-        return {}
-    title.depend_on_row(lambda: DataTree, title_selector)
-    title.admin_order_field = 'anchor__friendly_name'	# Admin Panel Display Configuration
+    #def title_selector(node):
+    #    if node.classsubject_set.all().count() == 1:
+    #        return {'self': node.classsubject_set.all()[0]}
+    #    return {}
+    #title.depend_on_row(lambda: DataTree, title_selector)
+    #title.admin_order_field = 'anchor__friendly_name'	# Admin Panel Display Configuration
 
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
-        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.teachers.all() ])
+        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
         
     def isFull(self, ignore_changes=False, timeslot=None):
         """ A class subject is full if all of its sections are full. """
@@ -1630,7 +1644,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def getTeacherNames(self):
         teachers = []
-        for teacher in self.teachers.all():
+        for teacher in self.get_teachers():
             name = '%s %s' % (teacher.first_name,
                               teacher.last_name)
             if name.strip() == '':
@@ -1640,7 +1654,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def getTeacherNamesLast(self):
         teachers = []
-        for teacher in self.teachers.all():
+        for teacher in self.get_teachers():
             name = '%s, %s' % (teacher.last_name,
                               teacher.first_name)
             if name.strip() == '':
@@ -1825,7 +1839,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view your class' status.
 
 -esp.mit.edu Autogenerated Message""" % \
-                  (self.title(), self.parent_program.getUrlBase(), self.id)
+                  (self.title, self.parent_program.getUrlBase(), self.id)
         if user is None:
             user = AnonymousUser()
         Entry.post(user, self.anchor.tree_create(['TeacherEmail']), subject, content, True)       
@@ -1923,14 +1937,14 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         result.year = date_dir[0][:4]
         if len(date_dir) > 1:
             result.date = date_dir[1]
-        teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.teachers.all()]
+        teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.get_teachers()]
         result.teacher = ' and '.join(teacher_strs)
         result.category = self.category.category[:32]
-        result.title = self.title()
+        result.title = self.title
         result.description = self.class_info
         if self.prereqs and len(self.prereqs) > 0:
             result.description += '\n\nThe prerequisites for this class were: %s' % self.prereqs
-        result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.teachers.all()]) + '|'
+        result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.get_teachers()]) + '|'
         all_students = self.students()
         result.student_ids = '|' + '|'.join([str(s.id) for s in all_students]) + '|'
         result.original_id = self.id
@@ -1988,7 +2002,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     
     @staticmethod
     def class_sort_by_title(one, other):
-        return cmp(one.title(), other.title())
+        return cmp(one.title, other.title)
 
     @staticmethod
     def class_sort_by_timeblock(one, other):
@@ -2021,7 +2035,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         super(ClassSubject, self).save(*args, **kwargs)
         if self.status < 0:
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
-            teachers = self.teachers
+            teachers = self.get_teachers()
             for t in teachers:
                 if ESPUser(t).getTaughtClasses(self.parent_program).filter(status__gte=10).count() == 0:
                     from esp.mailman import remove_list_member

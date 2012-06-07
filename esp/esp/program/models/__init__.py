@@ -271,6 +271,8 @@ class Program(models.Model, CustomFormsLinkModel):
     form_link_name='Program'
     
     anchor = AjaxForeignKey(DataTree,unique=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
+    url = models.CharField(max_length=80)
+    name = models.CharField(max_length=80)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField()
@@ -325,9 +327,9 @@ class Program(models.Model, CustomFormsLinkModel):
         
         return retVal
 
-    def url(self):
-        str_array = self.anchor.tree_encode()
-        return '/'.join(str_array[-2:])
+    #def url(self):
+    #    str_array = self.anchor.tree_encode()
+    #    return '/'.join(str_array[-2:])
     
     def __unicode__(self):
         return self.niceName()
@@ -336,32 +338,14 @@ class Program(models.Model, CustomFormsLinkModel):
         return self.anchor.parent
 
     def niceName(self):
-        if not hasattr(self, "_nice_name"):
-            # Separate this so that in-memory and memcache are used in the right order
-            self._nice_name = self._niceName_memcache()
-        return self._nice_name
-
-    @cache_function
-    def _niceName_memcache(self):
-        if Tag.getProgramTag(key='ignore_parent_name', program=self):
-            return str(self.anchor.friendly_name)
-        else:
-            return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
-    # this stuff never really changes
+        return self.name
 
     def niceSubName(self):
-        return self.anchor.name.replace('_', ' ')
+        return self.name#anchor.name.replace('_', ' ')
 
     def getUrlBase(self):
         """ gets the base url of this class """
-        return self.url() # This makes looking up subprograms by name work; I've left it so that it can be undone without too much effort
-        tmpnode = self.anchor
-        urllist = []
-        while tmpnode.name != 'Programs':
-            urllist.insert(0,tmpnode.name)
-            tmpnode = tmpnode.parent
-        return "/".join(urllist)
-                      
+        return self.url
 
     def teacherSubscribe(self, user):
         v = GetNode('V/Subscribe')

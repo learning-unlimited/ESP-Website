@@ -234,7 +234,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.schedule_randomly()
         # Find an empty class
         cls = random.choice([cls for cls in self.program.classes() if not cls.isFull() and not cls.is_nearly_full(ClassSubject.get_capacity_factor())])
-        teacher = cls.teachers()[0]
+        teacher = cls.get_teachers()[0]
         classes = list(teacher.getTaughtClasses())
         classes.remove(cls)
         for c in classes:

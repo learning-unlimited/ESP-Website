@@ -1318,7 +1318,7 @@ Volunteer schedule for %s:
             classes.sort(ClassSubject.idcmp)
 
             for cls in classes:
-                for teacher in cls.teachers():
+                for teacher in cls.get_teachers():
                     teacher = ESPUser(teacher)
                     scheditems.append({'teacher': teacher,
                                       'class'  : cls})
@@ -1333,7 +1333,7 @@ Volunteer schedule for %s:
             classes.sort()
             
             for cls in classes:
-                for teacher in cls.teachers():
+                for teacher in cls.get_teachers():
                     teacher = ESPUser(teacher)
                     scheditems.append({'teacher': teacher,
                                       'cls'  : cls})
@@ -1375,7 +1375,7 @@ Volunteer schedule for %s:
         for cls in ClassSubject.objects.filter(parent_program=prog):
             write_cvs.writerow(
                 (cls.id,
-                 ", ".join([smart_str(t.name()) for t in cls.teachers()]),
+                 ", ".join([smart_str(t.name()) for t in cls.get_teachers()]),
                  smart_str(cls.title()),
                  cls.prettyDuration(),
                  cls.grade_min,
@@ -1533,7 +1533,7 @@ Volunteer schedule for %s:
             time_values = [time_possible(time, timeslist) for time in times]
 
             # get conflicts
-            teachers = section.parent_class.teachers()
+            teachers = section.parent_class.get_teachers()
             conflicts = []
             for teacher in teachers:
                 conflicts.extend(filter(lambda x: x not in conflicts and x != section.parent_class, teacher.getTaughtClassesFromProgram(prog)))

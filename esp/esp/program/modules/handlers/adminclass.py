@@ -392,7 +392,7 @@ class AdminClass(ProgramModuleObj):
             
         consistency_checker = ConsistencyChecker(self.program)
         context['errors'] = []
-        for teacher in cls.teachers.all():
+        for teacher in cls.get_teachers():
             context['errors'] += consistency_checker.check_teacher_conflict(teacher)
         for section in sections:
             context['errors'] += consistency_checker.check_expected_duration(section)
@@ -532,7 +532,7 @@ class AdminClass(ProgramModuleObj):
 
         # set txtTeachers and coteachers....
         if not request.POST.has_key('coteachers'):
-            coteachers = cls.teachers.all()
+            coteachers = cls.get_teachers()
             coteachers = [ ESPUser(user) for user in coteachers
                            if user.id != request.user.id           ]
             
@@ -593,7 +593,7 @@ class AdminClass(ProgramModuleObj):
                 if cls.conflicts(teacher):
                     conflictingusers.append(teacher.first_name+' '+teacher.last_name)
             if len(conflictingusers) == 0:
-                for teacher in cls.teachers.all():
+                for teacher in cls.get_teachers():
                     cls.removeTeacher(teacher)
                     cls.removeAdmin(teacher)
 

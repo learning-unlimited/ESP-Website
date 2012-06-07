@@ -200,13 +200,13 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             section['index'] = s.index()
             section['parent_class__anchor__name'] += "s" + str(section['index'])
             section['length'] = float(s.duration)
-            section['teachers'] = [t.id for t in s.parent_class.teachers()]
-            for t in s.parent_class.teachers():
+            section['teachers'] = [t.id for t in s.parent_class.get_teachers()]
+            for t in s.parent_class.get_teachers():
                 if teacher_dict.has_key(t.id):
                     continue
                 teacher_dict[t.id] = True
                 # Build up teacher availability
-                availabilities = UserAvailability.objects.filter(user__in=s.parent_class.teachers()).filter(QTree(event__anchor__below = prog.anchor)).values('user_id', 'event_id')
+                availabilities = UserAvailability.objects.filter(user__in=s.parent_class.get_teachers()).filter(QTree(event__anchor__below = prog.anchor)).values('user_id', 'event_id')
                 avail_for_user = defaultdict(list)
                 for avail in availabilities:
                     avail_for_user[avail['user_id']].append(avail['event_id'])
@@ -218,8 +218,8 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     sections.cached_function.depend_on_model(UserAvailability)
     # Put this import here rather than at the toplevel, because wildcard messes things up
     from esp.cache.key_set import wildcard
-    sections.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
-    #sections.cached_function.depend_on_m2m(lambda: ClassSubject, 'teachers',lambda sec,ev: {'self':sec}) #depend_on_cache(ClassSubject.teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
+    #sections.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
+    sections.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
         
     @aux_call
     @json_response()
