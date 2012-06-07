@@ -30,7 +30,7 @@ class ClassList(BaseHandler):
             self.recipients += ['%s %s <%s>' % (user.first_name,
                                                 user.last_name,
                                                 user.email)
-                                for user in cls.teachers()     ]
+                                for user in cls.get_teachers()     ]
 
         if user_type in ('students','class'):
             for section in sections:
@@ -74,7 +74,7 @@ class ClassList(BaseHandler):
             apply_list_settings(list_name, {'acceptable_aliases': "%s.*-students-.*@esp.mit.edu" % (cls.emailcode(), )})
 
         add_list_member(list_name, [cls.parent_program.director_email])
-        add_list_member(list_name, [x.email for x in cls.teachers()])
+        add_list_member(list_name, [x.email for x in cls.get_teachers()])
 
         self.recipients = ["%s@esp.mit.edu" % list_name]
 

@@ -109,14 +109,14 @@ class ClassCreationController(object):
         #   added as a teacher if they aren't already one.
         if anchor_modified:
             cls.save()
-            for teacher in cls.teachers.all():
+            for teacher in cls.get_teachers():
                 self.associate_teacher_with_class(cls, teacher)
             if not editing:
                 self.associate_teacher_with_class(cls, user)
         self.add_rsrc_requests_to_class(cls, resource_formset, restype_formset)
 
         #   If someone is editing the class who isn't teaching it, don't unapprove it.
-        if user in cls.teachers.all():
+        if user in cls.get_teachers():
             cls.propose()
         
     def set_class_data(self, cls, reg_form):
@@ -286,7 +286,7 @@ class ClassCreationController(object):
             pass
         
         mail_ctxt['teachers'] = []
-        for teacher in cls.teachers.all():
+        for teacher in cls.get_teachers():
             teacher_ctxt = {'teacher': teacher}
             # Provide information about whether or not teacher's from MIT.
             last_profile = teacher.getLastProfile()
@@ -306,7 +306,7 @@ class ClassCreationController(object):
     def send_class_mail_to_directors(self, cls):
         mail_ctxt = self.generate_director_mail_context(cls)
         
-        recipients = [teacher.email for teacher in cls.teachers.all()]
+        recipients = [teacher.email for teacher in cls.get_teachers()]
         if recipients:
             send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \

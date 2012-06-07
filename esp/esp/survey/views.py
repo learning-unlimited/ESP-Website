@@ -327,7 +327,7 @@ def top_classes(request, tl, program, instance):
             c['avg'] = sum(c['ratings']) * 1.0 / c['numratings']
             if c['avg'] < rating_cut:
                 continue
-            teachers = list(c['class'].teachers())
+            teachers = list(c['class'].get_teachers())
             c['teacher'] = teachers[0]
             c['numteachers'] = len(teachers)
             if c['numteachers'] > 1:

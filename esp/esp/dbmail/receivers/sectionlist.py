@@ -32,7 +32,7 @@ class SectionList(BaseHandler):
             self.recipients += ['%s %s <%s>' % (user.first_name,
                                                 user.last_name,
                                                 user.email)
-                                for user in section.parent_class.teachers()     ]
+                                for user in section.parent_class.get_teachers()     ]
 
         if user_type in ('students','class'):
             self.recipients += ['%s %s <%s>' % (user.first_name,
@@ -75,7 +75,7 @@ class SectionList(BaseHandler):
 
         if DEBUG: print "Settings applied still..."
         add_list_member(list_name, [cls.parent_program.director_email])
-        add_list_member(list_name, [x.email for x in cls.teachers()])
+        add_list_member(list_name, [x.email for x in cls.get_teachers()])
         if 'archive' in settings.DEFAULT_EMAIL_ADDRESSES:
             add_list_member(list_name, settings.DEFAULT_EMAIL_ADDRESSES['archive'])
         if DEBUG: print "Members added"

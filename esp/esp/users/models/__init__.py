@@ -328,8 +328,7 @@ class ESPUser(User, AnonymousUser):
         return ''
 
     def getTaughtPrograms(self):
-        taught_programs = Program.objects.filter(
-            classsubject__teachers=self)
+        taught_programs = Program.objects.filter(classsubject__teachers=self)
         taught_programs = taught_programs.distinct()
         return taught_programs
 

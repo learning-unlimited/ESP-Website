@@ -398,7 +398,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         # set txtTeachers and coteachers....
         if not request.POST.has_key('coteachers'):
-            coteachers = cls.teachers()
+            coteachers = cls.get_teachers()
             coteachers = [ ESPUser(user) for user in coteachers
                            if user.id != request.user.id           ]
             
@@ -459,7 +459,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                          
 
         elif op == 'save':
-            old_coteachers_set = set(cls.teachers())
+            old_coteachers_set = set(cls.get_teachers())
             new_coteachers_set = set(coteachers)
 
             to_be_added = new_coteachers_set - old_coteachers_set
