@@ -13,7 +13,7 @@ $j(document).ready(function() {
         'lottery_preferences'
     ];
 
-    user_grade = esp_user['cur_grade'];
+    user_grade = esp_user['cur_grade'] + (typeof increment_grade == 'undefined' ? 0 : increment_grade);
 
     json_fetch(data_components, show_app);
 });
