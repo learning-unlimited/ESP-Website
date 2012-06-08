@@ -983,10 +983,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def incrementGrade(self): 
-        incrementTag = Tag.getProgramTag('increment_default_grade_levels', self)
-        if incrementTag: 
-            return 1
-        return 0
+        return int(Tag.getBooleanTag('increment_default_grade_levels', self, False))
     incrementGrade.depend_on_row(lambda: Tag, lambda tag: {'self' :  tag.target})
     
     def priorityLimit(self):
