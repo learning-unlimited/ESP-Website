@@ -120,7 +120,7 @@ var Timeslot = function(data){
 	    var j, id, c;
 	    for (id in class_data){
 		c = class_data[id];
-		for (j = 1; j < 4; j++){
+		for (j = 1; j <= priority_limit; j++){
 		    if(c["Priority/"+i] == true){
 			$j("#"+combobox_id).val(c["id"]);
 		    }
