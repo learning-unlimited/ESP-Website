@@ -271,8 +271,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     @json_response()
     @needs_student
     def lottery_preferences(self, request, tl, one, two, module, extra, prog):        
-        ProgInfo = prog.getModuleExtension('StudentClassRegModuleInfo')
-        if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:
+        if prog.priorityLimit() > 1:
             return self.lottery_preferences_usepriority(request, prog)
  
         sections = list(prog.sections().values('id'))
@@ -291,7 +290,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
 
     def lottery_preferences_usepriority(self, request, prog): 
         sections = list(prog.sections().values('id'))
-        for i in range(1, 4, 1):
+        for i in range(1, prog.priorityLimit()+1, 1):
             priority_name = 'Priority/' + str(i)
             sections_priority = StudentRegistration.valid_objects().filter(relationship__name=priority_name, user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
             for item in sections:
