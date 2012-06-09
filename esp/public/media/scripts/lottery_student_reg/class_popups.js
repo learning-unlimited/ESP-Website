@@ -18,45 +18,6 @@ create_class_info_dialog = function(){
 	});
 };
 
-function get_submit_data(){
-    var building_submit_data = {};
-    for(id in sections){
-	s = sections[id];
-	building_submit_data[id] = s['lottery_interested'];
-	building_submit_data['flag_'+id] = s['lottery_priority']; 
-    }
-    return building_submit_data;
-};
-
-function submit_preferences(){
-    $j("#submit_button").text("Submitting...");
-    $j("#submit_button").attr("disabled", "disabled");
-
-    var submit_data = get_submit_data();
-    
-    submit_data_string = JSON.stringify(submit_data);
-
-    var submit_url = '/learn/'+base_url+'/lsr_submit';
-
-    //actually submit and redirect to student reg
-    jQuery.ajax({
-	     type: 'POST',
-             url: submit_url,
-	     error: function(a, b, c) {
-                alert("There has been an error on the website. Please contact " + support + " to report this problem.");
-             },
-	     success: function(a, b, c){
-		alert("Your preferences have been successfully saved.");
-		window.location = "studentreg";
-	     },
-	     data: {'json_data': submit_data_string },
-	     headers: {'X-CSRFToken': $j.cookie("csrftoken")}
-     });
-};
-
-
-
-
 // Dictionary to keep track of classes' extra info as and when we load them
 var class_info = {};
 // Initial popup that tells the user we're loading the class data
