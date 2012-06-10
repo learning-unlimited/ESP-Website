@@ -398,7 +398,7 @@ def registration_redirect(request):
         userrole['name'] = 'Student'
         userrole['base'] = 'learn'
         userrole['reg'] = 'studentreg'
-        regverb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
+        regverb = GetNode('V/Deadline/Registration/Student')
     elif user.isTeacher():
         userrole['name'] = 'Teacher'
         userrole['base'] = 'teach'
