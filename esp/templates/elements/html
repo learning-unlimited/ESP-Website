@@ -76,7 +76,7 @@ at the end of the page.
     {% endblock %}
 
 
-    {% block javascript %}
+
 
      <!-- Placed at the end of the document so the pages load faster -->
 
@@ -114,8 +114,6 @@ at the end of the page.
 
     <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
     <script type="text/javascript" src="/media/scripts/nav.js"></script>
-    {% endblock %}
-
 
   </body>
 
