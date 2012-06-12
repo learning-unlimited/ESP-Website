@@ -39,6 +39,7 @@ from esp.program.models import SATPrepRegInfo
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
+from esp.users.views.usersearch import get_user_checklist
 from django.db.models.query   import Q
 from esp.dbmail.models import ActionHandler
 from django.template import Template
@@ -251,6 +252,10 @@ class CommModule(ProgramModuleObj):
                 filterObj.useful_name = 'Program list: %s' % data['base_list']
                 filterObj.save()
                 
+                if data['use_checklist'] == '1':
+                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(q_extra & q_program).distinct(), filterObj.id)
+                    return response
+                    
                 context['filterid'] = filterObj.id
                 context['listcount'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
                 return render_to_response(self.baseDir()+'step2.html', request, (prog, tl), context)
@@ -296,6 +301,10 @@ class CommModule(ProgramModuleObj):
                 filterObj = PersistentQueryFilter.create_from_Q(ESPUser, q_extra & q_program)
                 filterObj.useful_name = 'Custom user list'
                 filterObj.save()
+                
+                if data['use_checklist'] == '1':
+                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(q_extra & q_program).distinct(), filterObj.id)
+                    return response
                 
                 context['filterid'] = filterObj.id
                 context['listcount'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
