@@ -15,8 +15,6 @@ from django.contrib.auth.decorators import login_required
 from esp.tagdict.models import Tag
 from esp.users.models.forwarder import UserForwarder
 
-import pdb
-
 def filter_username(username, password):
     #   Allow login by e-mail address if so specified
     if username and '@' in username and Tag.getTag('login_by_email'):
