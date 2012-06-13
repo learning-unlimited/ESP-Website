@@ -44,8 +44,8 @@ from esp.tagdict.models import Tag
 class VolunteerRequestForm(forms.Form):
     
     vr_id = forms.IntegerField(required=False, widget=forms.HiddenInput)
-    start_time = forms.DateTimeField(widget=DateTimeWidget)
-    end_time = forms.DateTimeField(widget=DateTimeWidget)
+    start_time = forms.DateTimeField(help_text="Enter a time in the form DD/MM/YYYY hh:mm.", widget=DateTimeWidget)
+    end_time = forms.DateTimeField(help_text="Enter a time in the form DD/MM/YYYY hh:mm.", widget=DateTimeWidget)
     num_volunteers = forms.IntegerField(label='Number of volunteers needed')
     description = forms.CharField(max_length=128, help_text='What would volunteers do during this timeslot?  (Examples: Registration, Security)')
     
@@ -114,7 +114,8 @@ class VolunteerOfferForm(forms.Form):
     
         super(VolunteerOfferForm, self).__init__(*args, **kwargs)
         vrs = self.program.getVolunteerRequests()
-        self.fields['requests'].choices = [(v.id, '%s: %s (%d more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, v.num_volunteers - v.num_offers())) for v in vrs if v.num_offers() < v.num_volunteers]
+        self.fields['requests'].choices = [(v.id, '%s: %s (%d more needed)' % (v.timeslot.pretty_time(), v.timeslot.description, v.num_volunteers - v.num_offers())) for v in vrs if v.num_offers() < v.num_volunteers] + [(v.id, '%s: %s (no more needed)' % (v.timeslot.pretty_time(), v.timeslot.description)) for v in vrs if v.num_offers() >= v.num_volunteers]
+
     
         #   Show t-shirt fields if specified by Tag (disabled by default)
         if not Tag.getTag('volunteer_tshirt_options'):
