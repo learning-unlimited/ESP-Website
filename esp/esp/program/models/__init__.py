@@ -229,14 +229,12 @@ class ArchiveClass(models.Model):
             self.teacher_ids = '|%s|' % '|'.join([str(u.id) for u in users])
         
     def students(self):
-        from esp.users.models import ESPUser
         useridlist = [int(x) for x in self.student_ids.strip('|').split('|')]
         return ESPUser.objects.filter(id__in = useridlist)
     
     def teachers(self):
-        from esp.users.models import ESPUser
         useridlist = [int(x) for x in self.teacher_ids.strip('|').split('|')]
-        return User.objects.filter(id__in = useridlist)
+        return ESPUser.objects.filter(id__in = useridlist)
     
     @staticmethod
     def getForUser(user):
@@ -541,7 +539,7 @@ class Program(models.Model, CustomFormsLinkModel):
         if QObject:
             return union
         else:
-            return User.objects.filter(union).distinct()    
+            return ESPUser.objects.filter(union).distinct()    
 
     @cache_function
     def isFull(self):

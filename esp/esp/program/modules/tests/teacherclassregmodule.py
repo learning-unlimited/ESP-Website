@@ -204,11 +204,9 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         # Get the instance of StudentClassRegModule
         pm = ProgramModule.objects.get(handler='StudentClassRegModule')
         ProgramModuleObj.getFromProgModule(self.program, pm)
-
-        # Check all teachers
+        
         d = self.moduleobj.teachers()
-        self.failUnless(self.check_all_teachers(d['all_teachers']))
-
+        
         # Reject a class from self.teacher, approve a class from self.other_teacher1, make a class from self.other_teacher2 proposed
         cls1 = random.choice(self.teacher.getTaughtClasses())
         cls1.status = -1
