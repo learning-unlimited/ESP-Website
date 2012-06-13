@@ -100,9 +100,14 @@ def onSubmit(request):
                 
                 # inserting fields
                 for field in section['fields']:
+                    if 'required' in field['data'] and field['data']['required'] == 'checked':
+                        is_required = True
+                    else:
+                        is_required = False
+                        
                     new_field = Field.objects.create(form=form, section=new_section, field_type=field['data']['field_type'], 
                         seq=int(field['data']['seq']), label=field['data']['question_text'], help_text=field['data']['help_text'], 
-                        required=field['data']['required']
+                        required=is_required
                         )
                     
                     fields.append( (new_field.id, new_field.field_type) ) 

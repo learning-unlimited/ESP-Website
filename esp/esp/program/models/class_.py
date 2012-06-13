@@ -49,7 +49,6 @@ from django.template import Template, Context
 # ESP Util
 from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
-from esp.db.cache import GenericCacheHelper
 from esp.utils.property import PropertyDict
 from esp.utils.fields import JSONField
 from esp.tagdict.models import Tag
@@ -70,10 +69,8 @@ from esp.program.models          import Program, StudentRegistration, Registrati
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 from esp.resources.models        import ResourceType, Resource, ResourceRequest, ResourceAssignment
 from esp.cache                   import cache_function
+from esp.cache.key_set           import wildcard
 from esp.utils.derivedfield      import DerivedField
-
-from django.core.cache import cache  ## Yep, we do have to do some raw cache-management for performance.  Try to minimize it, though.
-#from pylibmc import NotFound as CacheNotFound
 
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -135,17 +132,6 @@ class ProgramCheckItem(models.Model):
         ordering = ('seq',)
         app_label = 'program'
         db_table = 'program_programcheckitem'
-
-
-class ClassCacheHelper(GenericCacheHelper):
-    @staticmethod
-    def get_key(cls):
-        return 'ClassCache__%s' % cls._get_pk_val()
-    
-class SectionCacheHelper(GenericCacheHelper):
-    @staticmethod
-    def get_key(cls):
-        return 'SectionCache__%s' % cls._get_pk_val()
 
 class ClassManager(ProcedureManager):
     def __repr__(self):
@@ -304,25 +290,7 @@ class ClassManager(ProcedureManager):
     #                             lambda bit: bit.applies_to_verb('V/Flags/Registration/Enrolled')) # This will expire a *lot*, and the value that it saves can be gotten from cache (with effort) instead of from SQL.  Should go do that.
     catalog_cached.depend_on_row(lambda: QuasiStaticData, lambda page: {},
                                  lambda page: ("learn:index" == page.name) and ("Q/Programs/" in page.path.get_uri()) and ("/Classes/" in page.path.get_uri())) # Slightly dirty hack; has assumptions about the tree structure of where index.html pages for QSD will be stored
-    
 
-    cache = ClassCacheHelper
-
-
-def checklist_progress_base(class_name):
-    """ The main Manage page requests checklist_progress.all() O(n) times
-    per checkbox in the program.  Minimize the number of these calls that
-    actually hit the db. """
-    def _progress(self):
-        CACHE_KEY = class_name.upper() + "__CHECKLIST_PROGRESS__CACHE__%d" % self.id
-        val = cache.get(CACHE_KEY)
-        if val == None:
-            val = self.checklist_progress.all()
-            len(val) # force the query to be executed before caching it
-            cache.set(CACHE_KEY, val, 1)
-    
-        return val
-    return _progress
 
 class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
@@ -335,9 +303,7 @@ class ClassSection(models.Model):
     meeting_times = models.ManyToManyField(Event, related_name='meeting_times', blank=True)
     checklist_progress = models.ManyToManyField(ProgramCheckItem, blank=True)
     max_class_capacity = models.IntegerField(blank=True, null=True)
-    
-    cache = SectionCacheHelper
-    checklist_progress_all_cached = checklist_progress_base('ClassSection')
+
     parent_class = AjaxForeignKey('ClassSubject', related_name='sections')
 
     registrations = models.ManyToManyField(ESPUser, through='StudentRegistration')
@@ -484,15 +450,9 @@ class ClassSection(models.Model):
 
     def title(self):
         return self.parent_class.title()
-    
-    def __init__(self, *args, **kwargs):
-        super(ClassSection, self).__init__(*args, **kwargs)
-        self.cache = SectionCacheHelper(self)
 
     def __unicode__(self):
         return '%s: %s' % (self.emailcode(), self.title())
-
-    cache = ClassCacheHelper
 
     def index(self):
         """ Get index of this section among those belonging to the parent class. """
@@ -512,6 +472,11 @@ class ClassSection(models.Model):
             self.anchor.delete(True)
         
         super(ClassSection, self).delete()
+
+    @cache_function
+    def checklist_progress_all_cached(self):
+        return self.checklist_progress.all()
+    checklist_progress_all_cached.depend_on_m2m(lambda: ClassSection, 'checklist_progress', lambda cs, cp: {'self': cs})
 
     def getResourceAssignments(self):
         from esp.resources.models import ResourceAssignment
@@ -648,12 +613,8 @@ class ClassSection(models.Model):
         else:
             return event_list
     
+    @cache_function
     def scheduling_status(self):
-        cache_key = "CLASSSECTION__SCHEDULING_STATUS__%s" % self.id
-        retVal = cache.get(cache_key)
-        if retVal:
-            return retVal
-        
         #   Return a little string that tells you what's up with the resource assignments.
         if not self.sufficient_length():
             retVal = 'Needs time'
@@ -663,38 +624,21 @@ class ClassSection(models.Model):
             retVal = 'Needs resources'
         else:
             retVal = 'Happy'
-
-        cache.set(cache_key, retVal, timeout=60)
         return retVal
-            
-    def clear_resource_cache(self):
-        from django.core.cache import cache
-        from esp.resources.models import increment_global_resource_rev
-        cache_key1 = 'class__viable_times:%d' % self.id
-        cache_key2 = 'class__viable_rooms:%d' % self.id
-        cache_key3 = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
-        cache.delete(cache_key1)
-        cache.delete(cache_key2)
-        cache.delete(cache_key3)
-        increment_global_resource_rev()
+    scheduling_status.depend_on_row(lambda: ClassSection, lambda cs: {'self': cs})
+    scheduling_status.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda cs, ev: {'self': cs})
+    scheduling_status.depend_on_row(lambda: ResourceRequest, lambda rr: {'self': rr.target})
+    scheduling_status.depend_on_row(lambda: ResourceAssignment, lambda ra: {'self': ra.target})
     
+    @cache_function
     def unsatisfied_requests(self):
-        from esp.resources.models import global_resource_rev
-        cache_key = "CLASSSECTION__UNSATISFIED_REQUESTS__%s__%s" % (self.id, global_resource_rev())
-
-        retVal = cache.get(cache_key)
-        if retVal:
-            return retVal
-        
         if self.classrooms().count() > 0:
             primary_room = self.classrooms()[0]
             result = primary_room.satisfies_requests(self)[1]
-            cache.set(cache_key, result, timeout=86400)
-            return result
         else:
             result = self.getResourceRequests()
-            cache.set(cache_key, result, timeout=86400)
-            return result
+        return result
+    unsatisfied_requests.depend_on_cache(lambda: ClassSection.scheduling_status, lambda cs=wildcard, **kwargs: {'self': cs})
     
     def assign_meeting_times(self, event_list):
         self.meeting_times.clear()
@@ -729,9 +673,6 @@ class ClassSection(models.Model):
         if availability:
             for room in current_rooms:
                 self.assign_room(room)
-
-        cache_key = "CLASSSECTION__SUFFICIENT_LENGTH__%s" % self.id
-        cache.delete(cache_key)
     
     def assign_room(self, base_room, compromise=True, clear_others=False, allow_partial=False, lock=0):
         """ Assign the classroom given, at the times needed by this class. """
@@ -755,7 +696,6 @@ class ClassSection(models.Model):
             errors.append( u'Room %s does not exist at the times requested by %s.' % (base_room.name, self.emailcode()) )
         
         for i, r in enumerate(rooms_to_assign):
-            r.clear_schedule_cache(self.parent_program)
             result = self.assignClassRoom(r, lock)
             if not result:
                 status = False
@@ -830,6 +770,7 @@ class ClassSection(models.Model):
         return [{'self': sec} for sec in sections]
     viable_times.depend_on_row(lambda:UserBit, lambda bit: ClassSection.key_set_from_userbit(bit), lambda bit: bit.verb == GetNode('V/Flags/Registration/Teacher'))
 
+    @cache_function
     def viable_rooms(self):
         """ Returns a list of Resources (classroom type) that satisfy all of this class's resource requests. 
         Resources matching the first time block of the class will be returned. """
@@ -845,12 +786,6 @@ class ClassSection(models.Model):
                     satisfaction = False
             return satisfaction
         
-        #   This will need to be cached.
-        cache_key = 'class__viable_rooms:%d' % self.id
-        result = cache.get(cache_key)
-        if result is not None:
-            return result
-        
         #   This function is only meaningful if the times have already been set.  So, back out if they haven't.
         if not self.sufficient_length():
             return []
@@ -863,13 +798,14 @@ class ClassSection(models.Model):
         possible_rooms = self.parent_program.getAvailableClassrooms(first_time)
         
         viable_list = filter(lambda x: room_satisfies_times(x, ordered_times), possible_rooms)
-            
-        cache.set(cache_key, viable_list)
+
         return viable_list
+        
+    viable_rooms.depend_on_row(lambda: ClassSection, lambda cs: {'self': cs})
+    viable_rooms.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda cs, ev: {'self': cs})
+    viable_rooms.depend_on_model(lambda: Resource)
     
     def clearRooms(self):
-        for room in [ra.resource for ra in self.classroomassignments()]:
-            room.clear_schedule_cache(self.parent_program)
         self.classroomassignments().delete()
             
     def clearFloatingResources(self):
@@ -982,14 +918,14 @@ class ClassSection(models.Model):
 
         return None
 
-    def cannotSchedule(self, meeting_times):
+    def cannotSchedule(self, meeting_times, ignore_classes=True):
         """
         Returns False if the given times work; otherwise, an error message.
 
         Assumes meeting_times is a sorted QuerySet of correct length.
 
         """
-        if meeting_times[0] not in self.viable_times(ignore_classes=True):
+        if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
             # This set of error messages deserves a better home
             for t in self.teachers:
                 available = t.getAvailableTimes(self.parent_program, ignore_classes=False)
@@ -1148,7 +1084,8 @@ class ClassSection(models.Model):
     def time_blocks(self):
         return self.friendly_times(raw=True)
 
-    def friendly_times(self, use_cache=False, raw=False, include_date=False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun"
+    @cache_function
+    def friendly_times(self, raw=False, include_date=False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun"
         """ Return a friendlier, prettier format for the times.
 
         If the events of this class are next to each other (within 10-minute overlap,
@@ -1161,11 +1098,6 @@ class ClassSection(models.Model):
         """
         from esp.cal.models import Event
         from esp.resources.models import ResourceAssignment, ResourceType, Resource
-
-        retVal = self.cache['friendly_times_%s' % raw]
-
-        if retVal is not None and use_cache:
-            return retVal
             
         txtTimes = []
         eventList = []
@@ -1187,12 +1119,11 @@ class ClassSection(models.Model):
             txtTimes = [ event.pretty_time(include_date=include_date) for event
                      in Event.collapse(events, tol=datetime.timedelta(minutes=15)) ]
 
-        self.cache['friendly_times_%s' % raw] = txtTimes
-
         return txtTimes
+    friendly_times.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda cs, ev: {'self': cs})
     
-    def friendly_times_with_date(self, use_cache=False, raw=False): 
-        return self.friendly_times(use_cache=use_cache, raw=raw, include_date=True)
+    def friendly_times_with_date(self, raw=False): 
+        return self.friendly_times(raw=raw, include_date=True)
     
     def isAccepted(self): return self.status == 10
     def isReviewed(self): return self.status != 0
@@ -1202,14 +1133,6 @@ class ClassSection(models.Model):
     def isRegOpen(self): return self.registration_status == 0
     def isRegClosed(self): return self.registration_status == 10
 
-    def update_cache(self):
-        self.cache.update()
-    update_cache_students = update_cache
-
-    def save(self, *args, **kwargs):
-        super(ClassSection, self).save(*args, **kwargs)
-        self.update_cache()
-
     def getRegistrations(self, user):
         from esp.program.models import StudentRegistration
         now = datetime.datetime.now()
@@ -1218,9 +1141,9 @@ class ClassSection(models.Model):
     def getRegVerbs(self, user, allowed_verbs=False):
         """ Get the list of verbs that a student has within this class's anchor. """
         if not allowed_verbs:
-            return self.getRegistrations(user).values_list('relationship__name', flat=True).distinct()
+            return [v.relationship for v in self.getRegistrations(user).distinct()]
         else:
-            return self.getRegistrations(user).filter(relationship__name__in=allowed_verbs).values_list('relationship__name', flat=True).distinct()
+            return [v.relationship for v in self.getRegistrations(user).filter(relationship__name__in=allowed_verbs).distinct()]
 
     def unpreregister_student(self, user, prereg_verb = None):
         #   New behavior: prereg_verb should be a string matching the name of
@@ -1369,7 +1292,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     custom_form_data = JSONField(blank=True, null=True)
     
     objects = ClassManager()
-    checklist_progress_all_cached = checklist_progress_base('ClassSubject')
 
     #   Backwards compatibility with Class database format.
     #   Please don't use. :)
@@ -1428,10 +1350,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return c
     capacity = property(_get_capacity)
 
-    def __init__(self, *args, **kwargs):
-        super(ClassSubject, self).__init__(*args, **kwargs)
-        self.cache = ClassSubject.objects.cache(self)
-
+    @cache_function
     def get_section(self, timeslot=None):
         """ Cache sections for a class.  Always use this function to get a class's sections. """
         # If we happen to know our own sections from a subquery:
@@ -1449,22 +1368,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                 return None
             #If we didn't successfully search all sections, go and do it the old-fashioned way:
             
-        from django.core.cache import cache
-
-        if timeslot:
-            key = 'Sections_SubjectID%d_TimeslotID%d' % (self.id, timeslot.id)
-        else:
-            key = 'Sections_SubjectID%d_Default' % self.id
-
-        # Encode None as a string... silly, I know.   -Michael P
-        val = cache.get(key) 
-        if val:
-            if val is not None:
-                if val == 'None':
-                    return None
-                else:
-                    return val
-        
         if timeslot:
             qs = self.sections.filter(meeting_times=timeslot)
             if qs.count() > 0:
@@ -1473,13 +1376,10 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
                 result = None
         else:
             result = self.default_section()
-            
-        if result is not None:
-            cache.set(key, result)
-        else:
-            cache.set(key, 'None')
 
         return result
+    get_section.depend_on_row(lambda: ClassSection, lambda cs: {'self': cs.parent_class})
+    get_section.depend_on_m2m(lambda: ClassSection, 'meeting_times', lambda cs, ev: {'self': cs})
 
     def default_section(self, create=True):
         """ Return the first section that was created for this class. """
@@ -1529,6 +1429,11 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return self.add_section(duration, status)
         else:
             return None
+
+    @cache_function
+    def checklist_progress_all_cached(self):
+        return self.checklist_progress.all()
+    checklist_progress_all_cached.depend_on_m2m(lambda: ClassSubject, 'checklist_progress', lambda cs, cp: {'self': cs})
 
     def time_created(self):
         #   Return the datetime for when the class was first created.
@@ -1691,9 +1596,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     teachers.depend_on_row(lambda:ClassSubject, lambda cls: {'self': cls})
     teachers.depend_on_row(lambda:UserBit, lambda bit: ClassSubject.key_set_from_userbit(bit), lambda bit: bit.verb == GetNode('V/Flags/Registration/Teacher'))
 
-    def pretty_teachers(self, use_cache = True):
+    def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
-
         return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.teachers() ])
         
     def isFull(self, ignore_changes=False, timeslot=None):
@@ -1756,7 +1660,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return 'This class is not accepted.'
 
 #        if checkFull and self.parent_program.isFull(use_cache=use_cache) and not ESPUser(user).canRegToFullProgram(self.parent_program):
-        if checkFull and self.parent_program.isFull(use_cache=True) and not ESPUser(user).canRegToFullProgram(self.parent_program):
+        if checkFull and self.parent_program.isFull() and not ESPUser(user).canRegToFullProgram(self.parent_program):
             return 'This program cannot accept any more students!  Please try again in its next session.'
 
         if checkFull and self.isFull():
@@ -1954,22 +1858,13 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         for sec in self.sections.all():
             sec.clearStudents()
             
+    @cache_function
     def docs_summary(self):
         """ Return the first three documents associated
         with a class, for previewing. """
+        return self.anchor.media_set.all()[:3]
+    docs_summary.depend_on_model(lambda: QSDMedia)
 
-        retVal = self.cache['docs_summary']
-
-        if retVal is not None:
-            return retVal
-
-        retVal = self.anchor.media_set.all()[:3]
-        list(retVal)
-
-        self.cache['docs_summary'] = retVal
-
-        return retVal
-            
     def getUrlBase(self):
         """ gets the base url of this class """
         return self.url() # This makes looking up subprograms by name work; I've left it so that it can be undone without too much effort
@@ -2067,9 +1962,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         #   This function leaves the actual ClassSubject object, its ClassSections,
         #   and the QSD pages alone.
         return archived_class
-        
-    def update_cache(self):
-        self.teachers(use_cache = False)
 
     @staticmethod
     def catalog_sort(one, other):
@@ -2129,7 +2021,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     def save(self, *args, **kwargs):
         super(ClassSubject, self).save(*args, **kwargs)
-        self.update_cache()
         if self.status < 0:
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
             teachers = self.teachers()

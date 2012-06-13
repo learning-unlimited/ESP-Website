@@ -169,13 +169,6 @@ class ProgramModuleObj(models.Model):
     def getQForUser(self, QRestriction):
         # Let's not do anything and say we did...
         return QRestriction
-    
-        from esp.users.models import User
-        ids = [ x['id'] for x in User.objects.filter(QRestriction).values('id')]
-        if len(ids) == 0:
-            return Q(id = -1)
-        else:
-            return Q(id__in = ids)
 
     @cache_function
     def findModuleObject(tl, call_txt, prog):

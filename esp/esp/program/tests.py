@@ -35,16 +35,19 @@ Learning Unlimited, Inc.
 
 from esp.datatree.models import *
 from esp.users.models import UserBit, GetNode, ESPUser, StudentInfo
-from esp.program.models import ClassSection, RegistrationProfile, ScheduleMap
+from esp.program.models import ClassSubject, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, Event, ClassCategories
 from esp.resources.models import ResourceType
 
 from django.contrib.auth.models import User, Group
-from esp.users.models import ESPUser
 import datetime, random, hashlib
 
 from django.test.client import Client
 from esp.tests.util import CacheFlushTestCase as TestCase
 
+from esp.program.controllers.lottery import LotteryAssignmentController
+from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
+
+import random
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
@@ -267,8 +270,6 @@ class ProgramHappenTest(TestCase):
                 'term_friendly': 'Winter 3001',
                 'grade_min': '7',
                 'grade_max': '12',
-                'class_size_min': '0',
-                'class_size_max': '500',
                 'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234567@mit.edu',
                 'program_size_max': '3000',
                 'anchor': self.program_type_anchor.id,
@@ -297,11 +298,9 @@ class ProgramHappenTest(TestCase):
         self.assertEqual(
             [unicode(x) for x in
                 [self.prog.grade_min,         self.prog.grade_max,
-                 self.prog.class_size_min,    self.prog.class_size_max,
                  self.prog.director_email,    self.prog.program_size_max] ],
             [unicode(x) for x in
                 [prog_dict['grade_min'],      prog_dict['grade_max'],
-                 prog_dict['class_size_min'], prog_dict['class_size_max'],
                  prog_dict['director_email'], prog_dict['program_size_max']] ],
             u'Program options not properly set.' )
         # Anchor
@@ -531,6 +530,7 @@ class ProgramFrameworkTest(TestCase):
                     'sections_per_class': 1,
                     'num_students': 10,
                     'num_admins': 1,
+                    'modules': [x.id for x in ProgramModule.objects.all()],
                     'program_type': 'TestProgram',
                     'program_instance_name': '2222_Summer',
                     'program_instance_label': 'Summer 2222',
@@ -582,12 +582,10 @@ class ProgramFrameworkTest(TestCase):
                 'term_friendly': settings['program_instance_label'],
                 'grade_min': '7',
                 'grade_max': '12',
-                'class_size_min': '0',
-                'class_size_max': '500',
                 'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234567@mit.edu',
                 'program_size_max': '3000',
                 'anchor': self.program_type_anchor.id,
-                'program_modules': [x.id for x in ProgramModule.objects.all()],
+                'program_modules': settings['modules'],
                 'class_categories': [x.id for x in self.categories],
                 'admins': [x.id for x in self.admins],
                 'teacher_reg_start': '2000-01-01 00:00:00',
@@ -715,8 +713,6 @@ class ProgramFrameworkTest(TestCase):
                 'term_friendly': 'Spring 1111',
                 'grade_min': '7',
                 'grade_max': '12',
-                'class_size_min': '0',
-                'class_size_max': '500',
                 'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234568@mit.edu',
                 'program_size_max': '3000',
                 'anchor': self.program_type_anchor.id,
@@ -1051,4 +1047,121 @@ class MeetingTimesTest(ProgramFrameworkTest):
         self.assertSetEquals(section.get_meeting_times(), [ts2])
         section.meeting_times.remove(ts2)
         self.assertSetEquals(section.get_meeting_times(), [])
+
+class LSRAssignmentTest(ProgramFrameworkTest):
+    def setUp(self):
+        random.seed()
+
+        # Create a program, students, classes, teachers, etc.
+        super(LSRAssignmentTest, self).setUp(num_students=20, room_capacity=3)
+        # Force the modules and extensions to be created
+        self.program.getModules()
+        # Schedule classes
+        self.schedule_randomly()
+        self.timeslots = Event.objects.filter(meeting_times__parent_class__parent_program = self.program).distinct()
+
+        # Create the registration types
+        self.enrolled_rt, created = RegistrationType.objects.get_or_create(name='Enrolled')
+        self.priority_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
+        self.waitlist_rt, created = RegistrationType.objects.get_or_create(name='Waitlist/1')
+
+        # Add some priorities and interesteds for the lottery
+        es = Event.objects.filter(anchor=self.program.anchor)
+        for student in self.students:
+            # Give the student a starting grade
+            startGrade = int(random.random() * 6) + 7
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(startGrade))
+            student_studentinfo.save()
+            student_regprofile = RegistrationProfile(user=student, student_info=student_studentinfo, most_recent_profile=True)
+            student_regprofile.save()
         
+            for e in es:
+                # 0.5 prob of adding a class in the timeblock as priority
+                if random.random() < 0.5:
+                    sections = [s for s in self.program.sections() if e in s.meeting_times.all()]
+                    if len(sections) == 0: continue
+                    pri = random.choice(sections)
+                    StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+            for sec in self.program.sections():
+                # 0.25 prob of adding a section as interested
+                if random.random() < 0.25:
+                    StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=self.interested_rt)
+
+    def testLottery(self):
+        # Run the lottery!
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+        
+
+        # Now go through and check that the assignments make sense
+        for student in self.students:
+            # Figure out which classes they got
+            interested_regs = StudentRegistration.objects.filter(user=student, relationship=self.interested_rt)
+            priority_regs = StudentRegistration.objects.filter(user=student, relationship=self.priority_rt)
+            enrolled_regs = StudentRegistration.objects.filter(user=student, relationship=self.enrolled_rt)
+
+            interested_classes = set([sr.section for sr in interested_regs])
+            priority_classes = set([sr.section for sr in priority_regs])
+            enrolled_classes = set([sr.section for sr in enrolled_regs])
+            not_enrolled_classes = (priority_classes | interested_classes) - enrolled_classes
+
+
+            # Get their grade
+            grade = ESPUser.gradeFromYOG(student.studentinfo_set.all()[0].graduation_year)
+
+            # Check that they can't possibly add a class they didn't get into
+            for cls in not_enrolled_classes:
+                self.failUnless(cls.cannotAdd(student) or cls.isFull())
+
+    def testSingleLunchConstraint(self):
+        # First generate 1 lunch timeslot
+        lunch_timeslot = random.choice(self.timeslots)
+        lcg = LunchConstraintGenerator(self.program, [lunch_timeslot])
+        lcg.generate_all_constraints()
+
+        # Run the lottery!
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+
+        # Now go through and make sure that lunch assignments make sense
+        for student in self.students:
+            lunch_sec = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
+            self.failUnless(len(lunch_sec) == 1, "Lunch constraint for one timeblock generated multiple Lunch sections")
+            lunch_sec = lunch_sec[0]
+            timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times=lunch_sec)
+
+            self.failUnless(not lunch_sec.meeting_times.all()[0] in timeslots, "One of the student's registrations overlaps with the lunch block")
+
+    def testMultipleLunchConstraint(self):
+        # First generate 3 lunch timeslots
+        ts_copy = list(self.timeslots)[:]
+        lt1 = random.choice(ts_copy)
+        ts_copy.remove(lt1)
+        lt2 = random.choice(ts_copy)
+        ts_copy.remove(lt2)
+        lt3 = random.choice(ts_copy)
+        lcg = LunchConstraintGenerator(self.program, [lt1, lt2, lt3])
+        lcg.generate_all_constraints()
+
+        # Run the lottery!
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+
+        # Now go through and make sure that lunch assignments make sense
+        for student in self.students:
+            lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
+            self.failUnless(len(lunch_secs) == 3, "Incorrect number of lunch sections created: %s" % (len(lunch_secs)))
+            timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times__in=lunch_secs)
+
+            lunch_free = False
+            for lunch_section in lunch_secs:
+                if not lunch_section.meeting_times.all()[0] in timeslots:
+                    lunch_free = True
+                    break
+            self.failUnless(lunch_free, "No lunch sections free for a student!")

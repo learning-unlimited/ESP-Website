@@ -92,7 +92,7 @@ class DashboardTest(ProgramFrameworkTest):
     def testClasses(self):
         ## Make sure all classes are listed
         classes = ClassSubject.objects.filter(parent_program=self.program)
-        self.assertContains(self.response, '-row">', count=classes.count())
+        self.assertContains(self.response, '-row">', count=classes.count()+1)
         
         for cls in classes:
             self.assertContains(self.response, '<tr id="%d-row">' % cls.id)

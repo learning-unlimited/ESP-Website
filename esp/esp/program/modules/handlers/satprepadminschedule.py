@@ -633,8 +633,6 @@ class SATPrepAdminSchedule(ProgramModuleObj, module_ext.SATPrepAdminModuleInfo):
                 
                 newclass.makeTeacher(user)
                 newclass.accept()
-    
-                newclass.update_cache()
                     
                 #   Create a section of the class for each timeslot.
                 #   The sections are all held in the same room by default.  This can be changed

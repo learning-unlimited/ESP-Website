@@ -1,0 +1,21 @@
+{% extends "program/modules/commmodule/commpanel_support.html" %}
+
+{% block title %}Select Users{% endblock %}
+
+{% block content %}
+
+<h2>Select a list of users</h2>
+<p>This page requires that you select set of users in your database, with filtering options specific to {{ program.niceName }}.  Choose from three different approaches to select your users:
+    <ul>
+        <li><b>Basic list</b>: A set of users that all have something in common.</li>
+        <li><b>Combination list</b>: A Boolean combination of basic lists.</li>
+        {% if include_prev_list %}
+        <li><b>Previous e-mails</b>: Start from the settings that were used for a previous e-mail message.</li>
+        {% endif %}
+    </ul>
+</p>
+
+{% include "program/modules/commmodule/commpanel_contents.html" %}
+
+{% endblock %}
+

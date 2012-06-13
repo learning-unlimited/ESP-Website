@@ -63,7 +63,7 @@ function handle_json_response(data, component, data_fetch_status, new_data, text
     }
 }
 
-function json_fetch(components, on_complete, result_data)
+function json_fetch(components, on_complete, result_data, on_error)
 {
     var data_fetch_status = Object();
     if (!result_data)
@@ -82,7 +82,8 @@ function json_fetch(components, on_complete, result_data)
         {
             $j.ajax({
                 url: program_base_url + components[i],
-                success: function(new_data, text_status, jqxhr) {handle_json_response(result_data, component, data_fetch_status, new_data, text_status, jqxhr);}
+                success: function(new_data, text_status, jqxhr) {handle_json_response(result_data, component, data_fetch_status, new_data, text_status, jqxhr);},
+                error: on_error
             });
         }
     }

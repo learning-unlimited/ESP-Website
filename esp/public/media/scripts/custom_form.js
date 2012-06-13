@@ -943,7 +943,7 @@ var renderNormalField=function(item, field_options, data){
 	}
 	else if(item=='file'){
 		$new_elem=$j('<input/>', {
-			type:"file",
+			type:"file"
 		});
 	}
 	else if(item=='phone' || item=='email'){

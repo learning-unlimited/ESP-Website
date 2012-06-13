@@ -6,19 +6,18 @@
 import sys, os, operator, email, re, smtplib, socket, sha, random
 new_path = '/'.join(sys.path[0].split('/')[:-1])
 sys.path += [new_path]
-sys.path.insert(0, "/home/adam/esp-project/esp/")
-sys.path.insert(0, "/home/adam/esp-project/esp/esp/")
 sys.path.insert(0, "/usr/sbin/")
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
 from esp import cache_loader # Needed to block an annoying circular-dependency issue
 from esp.dbmail.models import EmailList
+from django.conf import settings
 
 host = socket.gethostname()
 import_location = 'esp.dbmail.receivers.'
 MAIL_PATH = '/usr/sbin/sendmail'
 server = smtplib.SMTP('localhost')
-ARCHIVE = 'esparchive@gmail.com'
+ARCHIVE = settings.DEFAULT_EMAIL_ADDRESSES['archive']
 
 DEBUG=True
 DEBUG=False

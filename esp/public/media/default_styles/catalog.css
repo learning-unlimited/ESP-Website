@@ -130,6 +130,11 @@ input.button:hover {
     color: #c6def7;
 }
 
+input.addbutton_hidden {
+    visibility: hidden;
+    height: 0px;
+}
+
 input.addbutton_added {
     color: #ffffff;
     background-color: #990000;

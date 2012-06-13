@@ -213,7 +213,7 @@ class LotteryAssignmentController(object):
         #   Check that this section does not cover all lunch timeslots on any given day
         lunch_overlap = self.lunch_schedule * self.section_schedules[si, :]
         for i in range(self.lunch_timeslots.shape[0]):
-            if numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i, :]]]) >= self.lunch_timeslots.shape[1]:
+            if self.lunch_timeslots[i].shape[0] != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i, :]]]) >= (self.lunch_timeslots.shape[1]):
                 if self.options['stats_display']: print '   Section covered all lunch timeslots %s on day %d, aborting' % (self.lunch_timeslots[i, :], i)
                 return False
         
@@ -307,8 +307,9 @@ class LotteryAssignmentController(object):
         
         #   Check that no student's schedule violates the lunch constraints: 1 or more open lunch periods per day
         for i in range(self.lunch_timeslots.shape[0]):
-            timeslots = self.timeslot_indices[self.lunch_timeslots[i, :]]
-            assert(numpy.sum(numpy.sum(self.student_schedules[:, timeslots], 1) > (self.lunch_timeslots.shape[1] - 1)) == 0)
+            timeslots = numpy.array([]) if (self.lunch_timeslots[i].shape[0] == 0) else self.timeslot_indices[self.lunch_timeslots[i, :]]
+            if (timeslots.shape[0] == 0): continue
+            assert(numpy.sum(numpy.sum(self.student_schedules[:, timeslots] > self.lunch_timeslots.shape[1] - 1)) == 0)
         
         #   Check that each student's schedule is consistent with their assigned sections
         for i in range(self.num_students):

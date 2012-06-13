@@ -36,7 +36,10 @@ from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admi
 from esp.web.util        import render_to_response
 from esp.program.modules.forms.satprep import SATPrepInfoForm
 from esp.program.models import SATPrepRegInfo
-from esp.users.models   import ESPUser, User
+from esp.dbmail.models import MessageRequest
+from esp.users.models   import ESPUser, PersistentQueryFilter
+from esp.users.controllers.usersearch import UserSearchController
+from esp.users.views.usersearch import get_user_checklist
 from django.db.models.query   import Q
 from esp.dbmail.models import ActionHandler
 from django.template import Template
@@ -177,9 +180,9 @@ class CommModule(ProgramModuleObj):
         pass
 
     
-    @main_call
+    @aux_call
     @needs_admin
-    def maincomm(self, request, tl, one, two, module, extra, prog):
+    def commpanel_old(self, request, tl, one, two, module, extra, prog):
         from esp.users.views     import get_user_list
         filterObj, found = get_user_list(request, self.program.getLists(True))
 
@@ -192,7 +195,54 @@ class CommModule(ProgramModuleObj):
                                   (prog, tl), {'listcount': listcount,
                                                'filterid': filterObj.id })
 
-        #getFilterFromID(id, model)
+    @main_call
+    @needs_admin
+    def commpanel(self, request, tl, one, two, module, extra, prog):
+    
+        usc = UserSearchController()
+    
+        context = {}
+        context['program'] = prog
+
+        #   If list information was submitted, continue to prepare a message
+        if request.method == 'POST':
+            #   Turn multi-valued QueryDict into standard dictionary
+            data = {}
+            for key in request.POST:
+                data[key] = request.POST[key]
+                
+            ##  Handle normal list selecting submissions
+            if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
+        
+                
+                filterObj = usc.filter_from_postdata(prog, data)
+
+                if data['use_checklist'] == '1':
+                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase())
+                    return response
+                    
+                context['filterid'] = filterObj.id
+                context['listcount'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+                return render_to_response(self.baseDir()+'step2.html', request, (prog, tl), context)
+                
+            ##  Prepare a message starting from an earlier request
+            elif 'msgreq_id' in data:
+                msgreq = MessageRequest.objects.get(id=data['msgreq_id'])
+                context['filterid'] = msgreq.recipients.id
+                context['listcount'] = msgreq.recipients.getList(ESPUser).count()
+                context['from'] = msgreq.sender
+                context['subject'] = msgreq.subject
+                context['replyto'] = msgreq.special_headers_dict.get('Reply-To', '')
+                context['body'] = msgreq.msgtext
+                return render_to_response(self.baseDir()+'step2.html', request, (prog, tl), context)
+                
+            else:
+                raise ESPError(True), 'What do I do without knowing what kind of users to look for?'
+        
+        #   Otherwise, render a page that shows the list selection options
+        context.update(usc.prepare_context(prog))
+        
+        return render_to_response(self.baseDir()+'commpanel_new.html', request, (prog, tl), context)
 
     @aux_call
     @needs_admin
@@ -213,25 +263,6 @@ class CommModule(ProgramModuleObj):
                                                'replyto': replytoemail,
                                                'subject': subject,
                                                'body': body})
-
-    @needs_student
-    def satprepinfo(self, request, tl, one, two, module, extra, prog):
-        if request.method == 'POST':
-            form = SATPrepInfoForm(request.POST)
-
-            if form.is_valid():
-                reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
-                form.instance = reginfo
-                form.save()
-
-                return self.goToCore(tl)
-        else:
-            satPrep = SATPrepRegInfo.getLastForProgram(request.user, prog)
-            form = SATPrepInfoForm(instance = satPrep)
-
-        return render_to_response('program/modules/satprep_stureg.html', request, (prog, tl), {'form':form})
-
-
 
     class Meta:
         abstract = True
