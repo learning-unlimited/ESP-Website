@@ -240,7 +240,7 @@ class CommModule(ProgramModuleObj):
                 raise ESPError(True), 'What do I do without knowing what kind of users to look for?'
         
         #   Otherwise, render a page that shows the list selection options
-        context.update(usc.prepare_context())
+        context.update(usc.prepare_context(prog))
         
         return render_to_response(self.baseDir()+'commpanel_new.html', request, (prog, tl), context)
 
