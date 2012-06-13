@@ -253,7 +253,7 @@ class CommModule(ProgramModuleObj):
                 filterObj.save()
                 
                 if data['use_checklist'] == '1':
-                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(q_extra & q_program).distinct(), filterObj.id)
+                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(q_extra & q_program).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase())
                     return response
                     
                 context['filterid'] = filterObj.id
@@ -303,7 +303,7 @@ class CommModule(ProgramModuleObj):
                 filterObj.save()
                 
                 if data['use_checklist'] == '1':
-                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(q_extra & q_program).distinct(), filterObj.id)
+                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(q_extra & q_program).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase())
                     return response
                 
                 context['filterid'] = filterObj.id
