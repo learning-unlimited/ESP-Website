@@ -155,7 +155,7 @@ class MailingLabels(ProgramModuleObj):
             if not found:
                 return filterObj
 
-            infos = [ESPUser(user).getLastProfile().contact_user for user in User.objects.filter(filterObj.get_Q()).distinct()]
+            infos = [user.getLastProfile().contact_user for user in ESPUser.objects.filter(filterObj.get_Q()).distinct()]
 
             infos_filtered = [ info for info in infos if (info != None and info.undeliverable != True) ]
 

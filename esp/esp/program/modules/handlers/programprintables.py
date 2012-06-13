@@ -1038,7 +1038,7 @@ Volunteer schedule for %s:
             return filterObj
 
         context = {'module': self }
-        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct() ]
+        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
         students.sort()
         
@@ -1239,7 +1239,7 @@ Volunteer schedule for %s:
 
 
         context = {'module': self     }
-        teachers = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
+        teachers = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         teachers.sort()
 
         scheditems = []
@@ -1277,7 +1277,7 @@ Volunteer schedule for %s:
             return filterObj
 
 
-        students= [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct() ]
+        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         students.sort()
 
         studentList = []
