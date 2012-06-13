@@ -28,16 +28,6 @@
 
 {% block cls_row_3_buttons %}{% endblock %}
 
-{% block cls_row_4_buttons %}
-  {% if cls_manageable %}
-  <td class="clsright">
-    <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">
-      <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
-      <input type="hidden" name="clsid"   value="{{cls.id }}" />
-      <input class="button" type="submit" value="Modify Coteachers">
-    </form>
-  </td>
-  {% endif %}
-{% endblock %}
+{% block cls_row_4_buttons %}{% endblock %}
 
 {% block cls_row_5_buttons %}{% endblock %}
