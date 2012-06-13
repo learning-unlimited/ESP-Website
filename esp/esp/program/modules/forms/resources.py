@@ -92,7 +92,7 @@ class EquipmentForm(forms.Form):
     def save_equipment(self, program):
         initial_resources = list(Resource.objects.filter(name=self.cleaned_data['name'], event__anchor=program.anchor))
         new_timeslots = [Event.objects.get(id=int(id_str)) for id_str in self.cleaned_data['times_available']]
-        new_restype = ResourceType.objects.get(id=int(self.cleaned_data['resource_type'][0]))
+        new_restype = ResourceType.objects.get(id=int(self.cleaned_data['resource_type']))
         
         for t in new_timeslots:
             new_res = Resource()

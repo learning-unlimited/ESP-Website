@@ -24,7 +24,7 @@ def autocomplete_wrapper(function, data, is_staff):
 @login_required
 def ajax_autocomplete(request):
     """
-    This function will recieve a bunch fo GET requests for the
+    This function will recieve a bunch of GET requests for the
     AjaxForeignKey, and return the data for the autocompletion.
     """
     try:

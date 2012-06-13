@@ -12,7 +12,7 @@ $j(document).ready(function() {
         'lottery_preferences'
     ];
 
-    json_fetch(data_components, show_app);
+    json_fetch(data_components, show_app, null, fail_gracefully);
 });
 
 
@@ -40,6 +40,11 @@ jquery_ui_init = function(){
 
     // Initialize the lsr_content div to an accordion
     $j("#lsr_content").accordion(accordion_settings);
+};
+
+fail_gracefully = function(){
+    // Set the HTML to indicate that loading failed
+    $j("#timeslots_anchor").html("<p>Data failed to load! It's possible the website JSON Data Module is not enabled. Please contact <a href='mailto:"+support+"'>"+support+"</a> explaining how you got this message and we'll try to fix it.</p>");
 };
 
 // adds timeslots to content and adds classes to timeslots
@@ -172,7 +177,7 @@ add_classes_to_timeslot = function(timeslot, sections){
         section = sections[id];
 
 	//check grade in range or admin
-	if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] || esp_user['cur_admin'] == 1){
+	if(section['status'] > 0 && user_grade >= section['grade_min'] && user_grade <= section['grade_max'] || esp_user['cur_admin'] == 1){
             if(open_class_registration && section['category'] == open_class_category){
                 has_walkins = true;
                 walkins_list.push(section);
