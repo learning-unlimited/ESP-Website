@@ -33,8 +33,8 @@
 
 // Scaffolding
 // -------------------------
-@bodyBackground:        @white;
-@textColor:             @grayDark;
+@bodyBackground: {% if bodyBackground %}{{ bodyBackground }}{% else %}@white{% endif %};
+@textColor: {% if textColor %}{{ textColor }}{% else %}@grayDark{% endif %};
 
 
 // Links
@@ -45,12 +45,12 @@
 
 // Typography
 // -------------------------
-@sansFontFamily:        "Helvetica Neue", Helvetica, Arial, sans-serif;
+@sansFontFamily: {% if sansFontFamily %}{{ sansFontFamily }}{% else %}        "Helvetica Neue", Helvetica, Arial, sans-serif{% endif %};
 @serifFontFamily:       Georgia, "Times New Roman", Times, serif;
 @monoFontFamily:        Menlo, Monaco, Consolas, "Courier New", monospace;
 
-@baseFontSize:          13px;
-@baseFontFamily:        @sansFontFamily;
+@baseFontSize: {% if baseFontSize %}{{ baseFontSize }}{% else %}          13px{% endif %};
+@baseFontFamily: {% if baseFontFamily %}{{ baseFontFamily }}{% else %}        @sansFontFamily{% endif %};
 @baseLineHeight:        18px;
 @altFontFamily:         @serifFontFamily;
 
