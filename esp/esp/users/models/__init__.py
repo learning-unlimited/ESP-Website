@@ -343,14 +343,10 @@ class ESPUser(User, AnonymousUser):
     @cache_function
     def getTaughtClassesFromProgram(self, program):
         from esp.program.models import ClassSubject, Program # Need the Class object.
-        
-        #   Why is it that we had a find_by_anchor_perms function again?
-        all_classes = ClassSubject.objects.filter(teachers=self).distinct()
-
         if type(program) != Program: # if we did not receive a program
             error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
         else:
-            return all_classes.filter(parent_program = program)
+            return self.classsubject_set.filter(parent_program = program)
     getTaughtClassesFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
                                                               lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
                                                                           bit.qsc.parent.name == 'Classes' and
@@ -361,21 +357,13 @@ class ESPUser(User, AnonymousUser):
     def getTaughtClassesAll(self):
         from esp.program.models import ClassSubject # Need the Class object.
         
-        return ClassSubject.objects.filter(teachers=self).distinct()
-    getTaughtClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
-                                                      lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
-                                                                  bit.qsc.parent.name == 'Classes' and
-                                                                  bit.qsc.parent.parent.program_set.count() > 0 )
-    getTaughtClassesAll.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
+        return self.classsubject_set.all()
+    getTaughtClassesAll.depend_on_model(lambda:ClassSubject) # should change to m2m on teachers
 
     @cache_function
     def getFullClasses_pretty(self, program):
         full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
         return "\n".join([cls.emailcode()+": "+cls.title() for cls in full_classes])
-    getFullClasses_pretty.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
-                                                      lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
-                                                                  bit.qsc.parent.name == 'Classes' and
-                                                                  bit.qsc.parent.parent.program_set.count() > 0 )
     getFullClasses_pretty.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
 
 
