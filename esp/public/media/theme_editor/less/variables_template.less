@@ -1,3 +1,4 @@
+{% autoescape off %}
 // Variables.less
 // Variables to customize the look and feel of Bootstrap
 // -----------------------------------------------------
@@ -45,7 +46,7 @@
 
 // Typography
 // -------------------------
-@sansFontFamily: {% if sansFontFamily %}"{{ sansFontFamily }}", {% endif %}"Copperplate Gothic Light", "Helvetica Neue", Helvetica, Arial, sans-serif;
+@sansFontFamily: {% if sansFontFamily %}{{ sansFontFamily }}, {% endif %}"Copperplate Gothic Light", "Helvetica Neue", Helvetica, Arial, sans-serif;
 @serifFontFamily:       Georgia, "Times New Roman", Times, serif;
 @monoFontFamily:        Menlo, Monaco, Consolas, "Courier New", monospace;
 
@@ -203,3 +204,5 @@
 // -------------------------
 @fluidGridColumnWidth:    6.382978723%;
 @fluidGridGutterWidth:    2.127659574%;
+
+{% endautoescape %}

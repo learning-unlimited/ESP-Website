@@ -19,33 +19,33 @@
 
 <div class="row-fluid">
   <div class="span6 offset3">
-    <form class="well form-horizontal" method="get" action=""> {# Change this to post eventually #}
-    {#      {% csrf_token %} #}
-    <div class="control-group">
-      <label class="control-label" for="bodybg">Background Color:  </label>
-      <div class="controls">
-	<input type="color" id="bodybg" name="bodyBackground" value="{{ bodyBackground }}"></input>
+    <form class="well form-horizontal" method="get" action="/theme/apply/"> {# Change this to post eventually #}
+      {#      {% csrf_token %} #}
+      <div class="control-group">
+	<label class="control-label" for="bodybg">Background Color:  </label>
+	<div class="controls">
+	  <input type="color" id="bodybg" name="bodyBackground" value="{{ bodyBackground }}"/>
+	</div>
       </div>
-    </div>
-    <div class="control-group">
-      <label class="control-label" for="textColor">Text Color:  </label>
-      <div class="controls">
-	<input type="color" id="textColor" name="textColor" value="{{ textColor }}"></input>
+      <div class="control-group">
+	<label class="control-label" for="textColor">Text Color:  </label>
+	<div class="controls">
+	  <input type="color" id="textColor" name="textColor" value="{{ textColor }}"/>
+	</div>
       </div>
-    </div>
 
-    <div class="control-group">
-      <label class="control-label" for="sansFontFamily">Sans-serif Font:  </label>
-      <div class="controls">
-	<input id="sansFontFamily" name="sansFontFamily" type="text" value="{{ sansFontFamily }}"></input>
+      <div class="control-group">
+	<label class="control-label" for="sansFontFamily">Sans-serif Font:  </label>
+	<div class="controls">
+	  <input id="sansFontFamily" name="sansFontFamily" type="text" value="{{ sansFontFamily }}"/>
+	</div>
       </div>
-    </div>
 
 
-    <div class="form-actions">
-      <button type="submit" class="btn btn-primary"> Submit </button>
-      <button type="reset" class="btn"> Reset </button>
-    </div>
+      <div class="form-actions">
+	<button type="submit" class="btn btn-primary"> Submit </button>
+	<button type="reset" class="btn"> Reset </button>
+      </div>
     </form>
   </div>
 </div>
