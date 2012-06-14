@@ -12,7 +12,7 @@
 </div>
 
 <div class="row-fluid">
-  <div class="span8 offset4" style="font-size:20px; font-family:'Inconsolata';">
+  <div class="span8 offset4" style="font-size:20px;">
     abcdefghijklmnopqrstuvwxyz 1234567890
   </div>
 </div>
@@ -24,20 +24,20 @@
     <div class="control-group">
       <label class="control-label" for="bodybg">Background Color:  </label>
       <div class="controls">
-	<input type="color" id="bodybg" name="bodyBackground"></input>
+	<input type="color" id="bodybg" name="bodyBackground" value="{{ bodyBackground }}"></input>
       </div>
     </div>
     <div class="control-group">
       <label class="control-label" for="textColor">Text Color:  </label>
       <div class="controls">
-	<input type="color" id="textColor" name="textColor"></input>
+	<input type="color" id="textColor" name="textColor" value="{{ textColor }}"></input>
       </div>
     </div>
 
     <div class="control-group">
       <label class="control-label" for="sansFontFamily">Sans-serif Font:  </label>
       <div class="controls">
-	<input id="sansFontFamily" name="sansFontFamily" type="text"></input>
+	<input id="sansFontFamily" name="sansFontFamily" type="text" value="{{ sansFontFamily }}"></input>
       </div>
     </div>
 
