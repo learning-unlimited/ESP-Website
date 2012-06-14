@@ -75,18 +75,15 @@ body {
 
 <div class="container-fluid">
   <div class="row-fluid">
-    <div class="span12">
-      <div class="row-fluid">
-
-      {% block sidebar %}
-      <div class="hidden fixed" id="sidebar">
-	<ul class="nav nav-list well">
-	  {% include "sidebar/me.html" %}
-	  {% include "sidebar/admin.html" %}
-	  {% include "sidebar/programs.html" %}
-	</ul>
-      </div>
-      {% endblock %}
+    {% block sidebar %}
+    <div class="hidden" id="sidebar" style="margin-right:15px;">
+      <ul class="nav nav-list well">
+	{% include "sidebar/me.html" %}
+	{% include "sidebar/admin.html" %}
+	{% include "sidebar/programs.html" %}
+      </ul>
+    </div>
+    {% endblock %}
 
 
 
@@ -129,7 +126,7 @@ To be cleaned up:
 </div>
     {% endcomment %}
 
-    <div id="main" class="span11"> {# Figure out why span12 won't work #}
+    <div id="main" class="span12" style="margin-left:0px;">
       {% block content %}
       {% endblock %}
     </div>
