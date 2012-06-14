@@ -1534,8 +1534,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return self.category.symbol+str(self.id)
 
     def url(self):
-        str_array = self.anchor.tree_encode()
-        return '/'.join(str_array[-4:])
+        return "%s/Classes/%s" % (self.parent_program.url, self.emailcode())
 
     def got_qsd(self):
         """ Returns if this class has any associated QSD. """
