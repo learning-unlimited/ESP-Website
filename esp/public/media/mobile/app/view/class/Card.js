@@ -5,8 +5,8 @@ Ext.define('LU.view.class.Card', {
 
     config: {
 
-        title: 'Classes',
-        iconCls: 'time',
+        title: 'Browse',
+        iconCls: 'search',
 
         autoDestroy: false,
 

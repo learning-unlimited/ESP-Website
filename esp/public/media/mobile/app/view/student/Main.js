@@ -9,9 +9,9 @@ Ext.define('LU.view.student.Main', {
                 xclass: 'LU.view.class.Card'
             },
             {
-                title: 'Favorites',
-                iconCls: 'star',
-                html: 'Favorites Screen'
+                title: 'Schedule',
+                iconCls: 'time',
+                html: 'Schedule Screen'
             }
         ]
     }
