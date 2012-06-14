@@ -23,10 +23,10 @@ Ext.define('LU.controller.Login', {
 
             success: function(form, result) {
                 var main;
-                if (result.isStudent === 'true') {
-                    main = Ext.widget('mainStudent');
-                } else if (result.isVolunteer == 'true') {
+                if (result.isVolunteer === 'true') {
                     main = Ext.widget('mainVolunteer');
+                } else if (result.isStudent == 'true') {
+                    main = Ext.widget('mainStudent');
                 } else {
                     // display error message for unknown role
                     Ext.Msg.alert('Unauthorized Role', 'You have to be either a student or volunteer to access the app.');
