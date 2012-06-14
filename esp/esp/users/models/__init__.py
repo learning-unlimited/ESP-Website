@@ -1965,6 +1965,32 @@ class EmailPref(models.Model):
     class Meta:
         app_label = 'users'
 
+class Record(models.Model):
+    #To make these better to work with in the admin panel, and to have a 
+    #well defined set of possibilities, we'll use a set of choices
+    #if you want to use this model for an additional thing, 
+    #add it as a choice
+    EVENT_CHOICES=(
+        ("student_survey", "Completed student survey"),
+        ("teacher_survey", "Completed teacher survey"),
+        ("reg_confirmed", "Confirmed registration"),
+        ("attended", "Attended program"),
+        ("conf_email","Sent confirmation email"),
+        ("teacher_quiz_done","Completed teacher quiz"),
+    )
+        
+    event = models.CharField(max_length=80,choices=EVENT_CHOICES)
+    program = models.ForeignKey("program.Program",blank=True,null=True)
+    user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True)
+    time = models.DateTimeField(blank=True, default = datetime.now)
+
+    @classmethod
+    def user_completed(cls, user, event, program=None):
+        if program is None:
+            return cls.objects.filter(user=user, event=event).count()>0
+        else:
+            return cls.objects.filter(user=user, event=event, program=program).count()>0
+
 def install():
     """
     Installs some initial useful UserBits.

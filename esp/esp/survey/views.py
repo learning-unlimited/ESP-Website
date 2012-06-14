@@ -38,7 +38,7 @@ Learning Unlimited, Inc.
 import datetime
 from django.db import models
 from esp.datatree.models import *
-from esp.users.models import UserBit, ESPUser
+from esp.users.models import UserBit, ESPUser, Record
 from esp.program.models import Program, ClassCategories
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
 from esp.web.util import render_to_response
@@ -65,12 +65,13 @@ def survey_view(request, tl, program, instance):
         return render_to_response('survey/completed_survey.html', request, prog.anchor, {'prog': prog})
     
     if tl == 'learn':
-        sv = GetNode('V/Flags/Survey/Filed')
+        event = "student_survey"
     else:
-        sv = GetNode('V/Flags/TeacherSurvey/Filed')
+        event = "teacher_survey"
 
-    if UserBit.UserHasPerms(request.user, prog.anchor, sv):
+    if Record.user_completed(user, event ,prog):
         raise ESPError(False), "You've already filled out the survey.  Thanks for responding!"
+
 
     surveys = prog.getSurveys().filter(category = tl).select_related()
 
@@ -94,8 +95,8 @@ def survey_view(request, tl, program, instance):
         response.survey = survey
         response.save()
         
-        ub = UserBit(user=request.user, verb=sv, qsc=prog.anchor)
-        ub.save()
+        r = Record(user=user, event=event, program=prog, time=datetime.datetime.now())
+        r.save()
         
         response.set_answers(request.POST, save=True)
 
