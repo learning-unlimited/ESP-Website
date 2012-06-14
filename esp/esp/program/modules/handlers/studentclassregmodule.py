@@ -81,7 +81,8 @@ def json_encode(obj):
                  'num_students': obj.num_students(),
                  'teachers': obj._teachers,
                  'get_sections': obj._sections,                         
-                 'num_questions': obj.numStudentAppQuestions()
+                 'num_questions': obj.numStudentAppQuestions(),
+                 'hardness_rating': obj.hardness_rating
                  }
     elif isinstance(obj, ClassSection):
         return { 'id': obj.id,

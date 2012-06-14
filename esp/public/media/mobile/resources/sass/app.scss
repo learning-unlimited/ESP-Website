@@ -16,6 +16,7 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
 @include sencha-list;
 @include sencha-layout;
 //@include sencha-carousel;
+@include sencha-loading-spinner;
 @include sencha-form;
 @include sencha-msgbox;
 

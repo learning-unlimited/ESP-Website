@@ -12,10 +12,14 @@ Ext.define('LU.view.class.List', {
 
     config: {
 
+        store: 'Classes',
+        grouped: true,
+
         items: [
             { xtype: 'classSortBar' },
             { xtype: 'classSearchBar' }
-        ]
-    }
+        ],
+        itemTpl: '{title}'
+    },
 });
 

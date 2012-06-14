@@ -11,7 +11,18 @@ Ext.application({
         'Ext.MessageBox'
     ],
 
-    controllers: ['Login'],
+    models: [
+        'Class'
+    ],
+
+    stores: [
+        'Classes'
+    ],
+
+    controllers: [
+        'Login',
+        'Classes'
+    ],
 
     views: [
         'Main',
