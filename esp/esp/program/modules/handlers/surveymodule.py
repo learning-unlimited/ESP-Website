@@ -62,20 +62,20 @@ class SurveyModule(ProgramModuleObj):
         } ]
 
     def students(self, QObject = False):
-        verb = GetNode('V/Flags/Survey/Filed')
-        qsc  = GetNode("/".join(self.program_anchor_cached().tree_encode()))
+        event="student_survey"
+        program=self.program
 
         if QObject:
-            return {'student_survey': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb))}
-        return {'student_survey': ESPUser.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct()}
+            return {'student_survey': self.getQForUser(Q(record__program = program) & Q(record__event = event))}
+        return {'student_survey': ESPUser.objects.filter(record__program=program, record__event=event).distinct()}
 
     def teachers(self, QObject = False):
-        verb = GetNode('V/Flags/TeacherSurvey/Filed')
-        qsc  = GetNode("/".join(self.program_anchor_cached().tree_encode()))
+        event="teacher_survey"
+        program=self.program
 
         if QObject:
-            return {'teacher_survey': self.getQForUser(Q(userbit__qsc = qsc) & Q(userbit__verb = verb))}
-        return {'teacher_survey': ESPUser.objects.filter(userbit__qsc = qsc, userbit__verb = verb).distinct()}
+            return {'teacher_survey': self.getQForUser(Q(record__program = program) & Q(record__event = event))}
+        return {'teacher_survey': ESPUser.objects.filter(record__program=program, record__event=event).distinct()}
 
     def studentDesc(self):
         return {'student_survey': """Students who filled out the survey"""}

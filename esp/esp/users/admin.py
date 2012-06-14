@@ -4,7 +4,7 @@ from django import forms
 from django.db import models
 from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
-from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser
+from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record
 from django.contrib.auth.admin import UserAdmin
 import datetime
 
@@ -46,6 +46,7 @@ admin_site.register(ZipCode)
 admin_site.register(ZipCodeSearches)
 admin_site.register(UserAvailability)
 admin_site.register(ESPUser, UserAdmin)
+admin_site.register(Record)
 
 class ContactInfoAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'e_mail', 'phone_day', 'address_postal']

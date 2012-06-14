@@ -43,13 +43,13 @@ from django.db.models.query import Q
 #from esp.miniblog.models import Entry
 from esp.datatree.models import GetNode, DataTree
 #from esp.cal.models import Event
-from esp.users.models import ESPUser, UserBit, User
+from esp.users.models import ESPUser, UserBit, User, Record
 from esp.customforms.models import Form
 from esp.customforms.DynamicForm import FormHandler
 from esp.tagdict.models import Tag
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
-#from datetime import datetime
+from datetime import datetime
 import re
 
 class TeacherQuizController(object):
@@ -67,6 +67,7 @@ class TeacherQuizController(object):
             raise TypeError("Argument to constructor should be Program or DataTree node.")
         # Some setup
         self.reg_verb = GetNode('V/Flags/Registration/Teacher/QuizDone')
+        self.event = "teacher_quiz_done"
 
     def _bitsByUser(self, user):
         """Get relevant UserBits (the "completed quiz" ones) for a user."""
@@ -74,19 +75,18 @@ class TeacherQuizController(object):
 
     def markCompleted(self, user):
         """Mark a user as having completed the quiz."""
-        ub, created = UserBit.objects.get_or_create(user=user, qsc=self.program_anchor, verb=self.reg_verb)
+        r,created = Record.objects.get_or_create(user=user, event=self.event)
         if not created:
-            ub.renew()
+            r.time=datetime.now()
+            r.save()
 
     def unmarkCompleted(self, user):
         """Mark a user as not having completed the quiz."""
-        ubs = self._bitsByUser(user)
-        for ub in ubs:
-            ub.expire()
+        Records.objects.filter(user=user, event=self.event, program__anchor=self.program_anchor).delete()
 
     def isCompleted(self, user):
         """Has a user completed the quiz?"""
-        if self._bitsByUser(user):
+        if Records.objects.filter(user=user, event=self.event, program__anchor=self.program_anchor).count()>0:
             return True
         return False
 
@@ -95,6 +95,7 @@ class TeacherQuizModule(ProgramModuleObj):
     def __init__(self, *args, **kwargs):
         super(TeacherQuizModule, self).__init__(*args, **kwargs)
         self.reg_verb = GetNode('V/Flags/Registration/Teacher/QuizDone')
+        self.event="teacher_quiz_done"
 
     @property
     def controller(self):
@@ -116,10 +117,8 @@ class TeacherQuizModule(ProgramModuleObj):
     def teachers(self, QObject = False):
         """Returns lists of teachers who've completed the teacher quiz."""
 
-        qo = Q(
-            userbit__verb = self.controller.reg_verb,
-            userbit__qsc = self.program_anchor_cached(),
-            ) & UserBit.not_expired(prefix='userbit__')
+        qo = Q(record__event=self.event, 
+               record__program__anchor=self.program_anchor_cached())
         if QObject is True:
             return {
                 'quiz_done': self.getQForUser(qo),
