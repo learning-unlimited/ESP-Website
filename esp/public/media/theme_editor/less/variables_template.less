@@ -45,12 +45,12 @@
 
 // Typography
 // -------------------------
-@sansFontFamily: {% if sansFontFamily %}{{ sansFontFamily }}{% else %}        "Helvetica Neue", Helvetica, Arial, sans-serif{% endif %};
+@sansFontFamily: {% if sansFontFamily %}"{{ sansFontFamily }}", {% endif %}"Copperplate Gothic Light", "Helvetica Neue", Helvetica, Arial, sans-serif;
 @serifFontFamily:       Georgia, "Times New Roman", Times, serif;
 @monoFontFamily:        Menlo, Monaco, Consolas, "Courier New", monospace;
 
-@baseFontSize: {% if baseFontSize %}{{ baseFontSize }}{% else %}          13px{% endif %};
-@baseFontFamily: {% if baseFontFamily %}{{ baseFontFamily }}{% else %}        @sansFontFamily{% endif %};
+@baseFontSize: {% if baseFontSize %}{{ baseFontSize }}{% else %}13px{% endif %};
+@baseFontFamily: @sansFontFamily;
 @baseLineHeight:        18px;
 @altFontFamily:         @serifFontFamily;
 

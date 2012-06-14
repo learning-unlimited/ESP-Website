@@ -12,8 +12,9 @@ def editor(request):
     f = open(variables_template_less)
     variables_template = Template(f.read())
     f.close()
-    variables_context = {} # retrieve context from form input
-    w = variables_template.render(Context(variables_context))
+    context = request.GET # retrieve context from form input, change to POST eventually
+    
+    w = variables_template.render(Context(context))
     f = open(variables_less, 'w')
     f.write(w)
     f.close()
