@@ -75,9 +75,9 @@ body {
 
 <div class="container-fluid">
   <div class="row-fluid">
-    
+
     {% block sidebar %}
-    <div class="hidden fixed" id="sidebar">
+    <div class="hidden" id="sidebar" style="margin-right:15px;">
       <ul class="nav nav-list well">
 	{% include "sidebar/me.html" %}
 	{% include "sidebar/admin.html" %}
@@ -126,7 +126,7 @@ To be cleaned up:
 </div>
     {% endcomment %}
 
-    <div id="main" class="span12">
+    <div id="main" class="span12" style="margin-left:0px;">
       {% block content %}
       {% endblock %}
     </div>
