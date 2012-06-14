@@ -40,8 +40,8 @@
 
 // Links
 // -------------------------
-@linkColor:             #08c;
-@linkColorHover:        darken(@linkColor, 15%);
+@linkColor: {% if linkColor %}{{ linkColor }}{% else %}#08c{% endif %};
+@linkColorHover: {% if linkColorHover %}{{ linkColorHover }}{% else %}darken{% endif %}(@linkColor, 15%);
 
 
 // Typography

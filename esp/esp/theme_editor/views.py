@@ -13,7 +13,7 @@ variables_less = path.join(less_dir, 'variables.less')
 
 def parse_less(less_file):
     f = open(less_file).read()
-    matches = re.findall("@(\w+):\s*([^,;]*)[,;]", f)
+    matches = re.findall("@(\w+):\s*([^,;\(]*)[,;\(]", f)
     d = {}
     for match in matches:
         d[match[0]] = match[1]
