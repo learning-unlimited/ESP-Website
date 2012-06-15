@@ -1,19 +1,20 @@
-Ext.define('LU.view.login.LoggedOut', {
+Ext.define('LU.view.login.Form', {
     extend: 'LU.view.Panel',
-    xtype: 'loggedOut',
-    
+    xtype: 'loginForm',
+
     requires: [
         'Ext.Spacer',
         'Ext.field.Text',
         'Ext.field.Password'
     ],
-    
+
     config: {
         scrollable: false,
+        cls: 'login',
         items: [
             {
                 xtype: 'component',
-                id: 'logo',
+                cls: 'logo',
                 html: '<div>ESP</div>',        // TODO: replace with image
             },
             {
@@ -26,7 +27,6 @@ Ext.define('LU.view.login.LoggedOut', {
                 labelWidth: 0,
                 placeHolder: 'Username',
                 cls: ['field', 'first'],
-                id: 'username',
                 name: 'username',
                 autoComplete: false,
                 autoCorrect: false
@@ -37,7 +37,6 @@ Ext.define('LU.view.login.LoggedOut', {
                 labelWidth: 0,
                 placeHolder: 'Password',
                 cls: ['field', 'last'],
-                id: 'password',
                 name: 'password',
                 autoComplete: false,
                 autoCorrect: false

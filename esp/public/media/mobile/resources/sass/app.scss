@@ -20,11 +20,11 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
 @include sencha-form;
 @include sencha-msgbox;
 
-.loggedOut {
-    //background: transparent;
+.loginForm {
+//    background: transparent;           // TODO: replace with background-image
 }
 
-.loginScreen {
+.loginContainer {
     top: 10%;
     background: transparent;
     
@@ -33,7 +33,7 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
     }
 }
 
-#logo {
+.login .logo {
     background-color: rgba(0,0,0,0.2);   // TODO: replace with image
     text-align: center;
     display: block;

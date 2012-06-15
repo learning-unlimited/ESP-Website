@@ -1,6 +1,6 @@
 Ext.define('LU.view.student.Main', {
     extend: 'Ext.tab.Panel',
-    xtype: 'mainStudent',
+    xtype: 'student',
     
     config: {
         tabBarPosition: 'bottom',

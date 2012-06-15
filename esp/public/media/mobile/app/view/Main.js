@@ -1,13 +1,14 @@
 Ext.define("LU.view.Main", {
     extend: 'Ext.Container',
+    xtype: 'main',
     
     requires: [
-        'LU.view.login.LoggedOut'
+        'LU.view.login.Form'
     ],
     
     config: {
         layout: 'fit',
-        cls: 'loggedOut',
+        cls: 'loginForm',
         
         items: [
             {
@@ -16,10 +17,10 @@ Ext.define("LU.view.Main", {
                     type: 'vbox',
                     align: 'center'
                 },
-                cls: 'loginScreen',
+                cls: 'loginContainer',
                 items: [
                     {
-                        xtype: 'loggedOut'
+                        xtype: 'loginForm'
                     }
                 ]
             }

@@ -10,7 +10,6 @@ Ext.define('LU.view.class.SearchBar', {
 
     	scrollable: false, // Override the form panel
         cls: 'search',
-        id: 'searchContainer',
 
         items: [
         	{
@@ -18,8 +17,7 @@ Ext.define('LU.view.class.SearchBar', {
         		clearIcon: true,
         		labelWidth: 0,
 		        inputCls: 'searchField',
-        		placeHolder: 'Search for class',
-        		id: 'searchField'
+                placeHolder: 'Search for class'
         	}
         ]
 	}

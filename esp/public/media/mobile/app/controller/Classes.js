@@ -3,18 +3,20 @@ Ext.define('LU.controller.Classes', {
 
     config: {
         refs: {
-            classList: 'classList'
+            classList: 'classList',
+            sortBy: 'classSortBar segmentedbutton',
+            searchField: 'classSearchBar textfield',
         },
         control: {
-            '#sortBy': {
+            sortBy: {
                 toggle: 'onSortToggle'
             },
-            '#searchField': {
+            searchField: {
                 action: 'onSearch',
                 keyup: 'onSearch',
                 clearicontap: 'onSearchClear'
             },
-            'classList': {
+            classList: {
                 show: 'onListShow'
             }
         }

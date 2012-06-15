@@ -28,7 +28,7 @@ Ext.application({
         'Main',
         'Panel',
 
-        'login.LoggedOut',
+        'login.Form',
 
         'class.Card',
         'class.List',

@@ -9,13 +9,11 @@ Ext.define('LU.view.class.SortBar', {
 	config: {
 
 		cls: 'sort',
-		id: 'sortContainer',
 		ui: 'gray',
 
 		items: [
 			{
 				xtype: 'segmentedbutton',
-				id: 'sortBy',
 				flex: 1,
 
 				layout: {

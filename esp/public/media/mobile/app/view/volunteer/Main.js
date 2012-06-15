@@ -1,6 +1,6 @@
 Ext.define('LU.view.volunteer.Main', {
     extend: 'Ext.tab.Panel',
-    xtype: 'mainVolunteer',
+    xtype: 'volunteer',
     
     config: {
         tabBarPosition: 'bottom',
