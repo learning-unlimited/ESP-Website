@@ -3,6 +3,7 @@ from django.conf.urls.defaults import *
 
 urlpatterns = patterns('esp.users.views',
                        (r'^ajax_login/?', 'ajax_login'),
+                       (r'^ajax_signout/?', 'ajax_signout'),
                        (r'^register/?$', 'user_registration_phase1',),
                        (r'^register/information/?$', 'user_registration_phase2'),
                        (r'^activate/?$', 'registration.activate_account',),

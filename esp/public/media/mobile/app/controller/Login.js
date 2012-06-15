@@ -3,7 +3,8 @@ Ext.define('LU.controller.Login', {
 
     config: {
         refs: {
-            loginForm: 'loginForm'
+            loginForm: 'loginForm',
+            main: 'main'
         },
         control: {
             'loginForm passwordfield': {
@@ -22,17 +23,18 @@ Ext.define('LU.controller.Login', {
             },
 
             success: function(form, result) {
-                var main;
+                var next;
                 if (result.isVolunteer === 'true') {
-                    main = Ext.widget('volunteer');
+                    next = Ext.widget('volunteer');
                 } else if (result.isStudent == 'true') {
-                    main = Ext.widget('student');
+                    next = Ext.widget('student');
                 } else {
                     // display error message for unknown role
                     Ext.Msg.alert('Unauthorized Role', 'You have to be either a student or volunteer to access the app.');
                     return;
                 }
-                Ext.Viewport.setActiveItem(main);
+                Ext.Viewport.getActiveItem().destroy();
+                Ext.Viewport.setActiveItem(next);
             },
 
             failure: function(form, result) {
@@ -42,7 +44,7 @@ Ext.define('LU.controller.Login', {
                 } else if (result.statusText) {
                     Ext.Msg.alert('Login Error', 'An error has occurred. (' + result.statusText + ')')
                 } else {
-                    Ext.Msg.alert('Login Error', 'An unknown error has occurred. You may wish to try logging again later');
+                    Ext.Msg.alert('Login Error', 'An unknown error has occurred. You may wish to try logging again later.');
                 }
             }
         });

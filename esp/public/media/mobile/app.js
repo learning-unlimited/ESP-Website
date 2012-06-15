@@ -27,6 +27,7 @@ Ext.application({
     views: [
         'Main',
         'Panel',
+        'TitleBar',
 
         'login.Form',
 

@@ -144,16 +144,26 @@ def ajax_login(request, *args, **kwargs):
 
     return HttpResponse(json.dumps(result_dict))
 
-def signout(request):
-    """ This view merges Django's logout view with our own "Goodbye" message. """
+def signout_and_delete_cookies(request):
     auth_logout(request)
     
     #   Tag the (now anonymous) user object so our middleware knows to delete cookies
     request._cached_user = request.user
+
+def signout(request):
+    """ This view merges Django's logout view with our own "Goodbye" message. """
+    signout_and_delete_cookies(request)
     
     return render_to_response('registration/logged_out.html',
                               request, request.get_node('Q/Web/myesp'),
                               {})
+
+def ajax_signout(request):
+    import simplejson as json
+
+    signout_and_delete_cookies(request)
+
+    return HttpResponse(json.dumps({ 'success': 'true' }))
 
 def signed_out_message(request):
     """ If the user is indeed logged out, show them a "Goodbye" message. """
