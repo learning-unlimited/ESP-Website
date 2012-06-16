@@ -1,5 +1,4 @@
 /* add this class to a bootstrap form to (hopefully) center it */
-
 form.centered-form div.control-group {
     margin-left:25%;
 }

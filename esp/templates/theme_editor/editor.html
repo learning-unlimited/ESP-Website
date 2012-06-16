@@ -2,9 +2,12 @@
 {% block xtrajs %}
 <script src="/media/theme_editor/spectrum.js" type="text/javascript"></script>
 <link href="/media/theme_editor/spectrum.css" rel="stylesheet" />
-{% endblock %}
-{% block stylesheets %}
-<link href="/media/styles/centeredform.css" rel="stylesheet" />
+<link href="/media/theme_editor/centeredform.css" rel="stylesheet" />
+<style>
+  form.centered-form div.control-group {
+      margin-left:25%;
+  }
+</style>
 {% endblock %}
 {% block title %}Theme Editor{% endblock %}
 {% block content %} 
@@ -27,6 +30,9 @@
   <div class="span6">
     <form class="well form-horizontal centered-form" method="get" action="/theme/apply/"> {# Change this to post eventually #}
       {#      {% csrf_token %} #}
+
+      <h3>Scaffolding</h3>
+
       <div class="control-group">
 	<label class="control-label" for="bodybg">Background Color:  </label>
 	<div class="controls">
@@ -40,6 +46,9 @@
 	  <input type="color" id="textColor" name="textColor" value="{{ textColor }}"/>
 	</div>
       </div>
+      <br />
+
+      <h3>Links</h3>
 
       <div class="control-group">
 	<label class="control-label" for="linkColor">Link Color:  </label>
@@ -52,12 +61,50 @@
 	<label class="control-label" for="linkColorHover">Link Hover Effect:  </label>
 	<div class="controls">
 	  <select id="linkColorHover" name="linkColorHover">
-	    <option>Current: {{ linkColorHover }}</option>
+	    <option value="">Current: {{ linkColorHover }}</option>
 	    <option value="darken">Darken</option>
 	    <option value="lighten">Lighten</option>
 	  </select>
 	</div>
       </div>
+      <br />
+      <h3>Typography</h3>
+      <div class="control-group">
+	<label class="control-label" for="baseFontSize">Base Font Size:  </label>
+	<div class="controls">
+	  <select id="baseFontSize" name="baseFontSize">
+	    <option value="">Current: {{ baseFontSize }}</option>
+	    <option value="10px">10</option>
+	    <option value="11px">11</option>
+	    <option value="12px">12</option>
+	    <option value="13px">13</option>
+	    <option value="14px">14</option>
+	    <option value="15px">15</option>
+	    <option value="16px">16</option>
+	    <option value="17px">17</option>
+	    <option value="18px">18</option>
+	  </select>
+	</div>
+      </div>
+
+      <div class="control-group">
+	<label class="control-label" for="baseLineHeight">Base Line Height:  </label>
+	<div class="controls">
+	  <select id="baseLineHeight" name="baseLineHeight">
+	    <option value="">Current: {{ baseLineHeight }}</option>
+	    <option value="10px">10</option>
+	    <option value="12px">12</option>
+	    <option value="14px">14</option>
+	    <option value="16px">16</option>
+	    <option value="18px">18</option>
+	    <option value="20px">20</option>
+	    <option value="22px">22</option>
+	    <option value="24px">24</option>
+	    <option value="26px">26</option>
+	  </select>
+	</div>
+      </div>
+
 
       <div class="control-group">
 	<label class="control-label" for="sansFontFamily">Sans-serif Font:  </label>

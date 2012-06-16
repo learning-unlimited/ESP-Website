@@ -61,9 +61,9 @@ at the end of the page.
       parseOnLoad: true
       };
     </script>
-{% endcomment %} 
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo/dojo.xd.js"></script>
 
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo/dojo.xd.js"></script>
+{% endcomment %} 
     <script type="text/javascript">
       /* <![CDATA[ */
       $j(document).ready(function() {
@@ -89,7 +89,7 @@ at the end of the page.
      <!-- Placed at the end of the document so the pages load faster -->
 
 
-    <script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script>
+{# Don't need this right now    <script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script> #}
     <script src="/media/bootstrap/docs/assets/js/jquery.js"></script>
     <script src="/media/bootstrap/docs/assets/js/google-code-prettify/prettify.js"></script>
     <script src="/media/bootstrap/docs/assets/js/bootstrap-transition.js"></script>
@@ -106,7 +106,7 @@ at the end of the page.
     <script src="/media/bootstrap/docs/assets/js/bootstrap-typeahead.js"></script>
     <script src="/media/bootstrap/docs/assets/js/application.js"></script>
 
-    <script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
+{% comment %}    <script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
 
     <script type="text/javascript" src="/media/scripts/yui/yahoo/yahoo-min.js"></script>
     <script type="text/javascript" src="/media/scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script>
@@ -121,6 +121,8 @@ at the end of the page.
     <script type="text/javascript" src="/media/scripts/crashkit-javascript.js"> </script>
 
     <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
+
+{% endcomment %}
     <script type="text/javascript" src="/media/scripts/nav.js"></script>
 
   </body>

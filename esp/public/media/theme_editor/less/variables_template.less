@@ -1,4 +1,4 @@
-{% autoescape off %}
+{% autoescape off %} 
 // Variables.less
 // Variables to customize the look and feel of Bootstrap
 // -----------------------------------------------------
@@ -52,7 +52,7 @@
 
 @baseFontSize: {% if baseFontSize %}{{ baseFontSize }}{% else %}13px{% endif %};
 @baseFontFamily: @sansFontFamily;
-@baseLineHeight:        18px;
+@baseLineHeight: {% if baseLineHeight %}{{ baseLineHeight }}{% else %}18px{% endif %};
 @altFontFamily:         @serifFontFamily;
 
 @headingsFontFamily:    inherit; // empty to use BS default, @baseFontFamily
