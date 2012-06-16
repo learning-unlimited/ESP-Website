@@ -146,12 +146,12 @@
 // Navbar
 // -------------------------
 @navbarHeight:                    40px;
-@navbarBackground:                @grayDarker;
-@navbarBackgroundHighlight:       @grayDark;
+@navbarBackground: {% if navbarBackground %}{{ navbarBackground }}{% else %}@grayDarker{% endif %};
+@navbarBackgroundHighlight: {% if navbarBackgroundHighlight %}{{ navbarBackgroundHighlight }}{% else %}@grayDark{% endif %};
 
-@navbarText:                      @grayLight;
-@navbarLinkColor:                 @grayLight;
-@navbarLinkColorHover:            @white;
+@navbarText: {% if navbarText %}{{ navbarText }}{% else %}@grayLight{% endif %};
+@navbarLinkColor: {% if navbarLinkColor %}{{ navbarLinkColor }}{% else %}@grayLight{% endif %};
+@navbarLinkColorHover: {% if navbarLinkColorHover %}{{ navbarLinkColorHover }}{% else %}@white{% endif %};
 @navbarLinkColorActive:           @navbarLinkColorHover;
 @navbarLinkBackgroundHover:       transparent;
 @navbarLinkBackgroundActive:      @navbarBackground;

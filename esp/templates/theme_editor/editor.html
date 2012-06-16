@@ -14,7 +14,7 @@
 <div class="row-fluid" style="text-align:center;"> {# figure out why this isn't aligning properly #}
   <div class="span3"></div> {# just to center the element #}
   <div class="span6">
-    <h2>Theme Editor <small style="color:purple;">alpha</small></h2><br />
+    <h2>Theme Editor <small style="color:black;">alpha</small></h2><br />
   </div>
 </div>
 
@@ -34,14 +34,14 @@
       <h3>Scaffolding</h3>
 
       <div class="control-group">
-	<label class="control-label" for="bodybg">Background Color:  </label>
+	<label class="control-label" for="bodybg">Background :  </label>
 	<div class="controls">
 	  <input type="color" id="bodybg" name="bodyBackground" value="{{ bodyBackground }}"/>
 	</div>
       </div>
 
       <div class="control-group">
-	<label class="control-label" for="textColor">Text Color:  </label>
+	<label class="control-label" for="textColor">Text :  </label>
 	<div class="controls">
 	  <input type="color" id="textColor" name="textColor" value="{{ textColor }}"/>
 	</div>
@@ -51,7 +51,7 @@
       <h3>Links</h3>
 
       <div class="control-group">
-	<label class="control-label" for="linkColor">Link Color:  </label>
+	<label class="control-label" for="linkColor">Links :  </label>
 	<div class="controls">
 	  <input type="color" id="linkColor" name="linkColor" value="{{ linkColor }}"/>
 	</div>
@@ -110,6 +110,44 @@
 	<label class="control-label" for="sansFontFamily">Sans-serif Font:  </label>
 	<div class="controls">
 	  <input id="sansFontFamily" name="sansFontFamily" type="text" value="{{ sansFontFamily }}"/>
+	</div>
+      </div>
+      <br />
+
+      <h3>Navbar</h3>
+
+      <div class="control-group">
+	<label class="control-label" for="navbarBackground">Background :  </label>
+	<div class="controls">
+	  <input type="color" id="navbarBackground" name="navbarBackground" value="{{ navbarBackground }}"/>
+	</div>
+      </div>
+
+      <div class="control-group">
+	<label class="control-label" for="navbarBackgroundHighlight">Highlight :  </label>
+	<div class="controls">
+	  <input type="color" id="navbarBackgroundHighlight" name="navbarBackgroundHighlight" value="{{ navbarBackgroundHighlight }}"/>
+	</div>
+      </div>
+
+      <div class="control-group">
+	<label class="control-label" for="navbarText">Text :  </label>
+	<div class="controls">
+	  <input type="color" id="navbarText" name="navbarText" value="{{ navbarText }}"/>
+	</div>
+      </div>
+
+      <div class="control-group">
+	<label class="control-label" for="navbarLinkColor">Links :  </label>
+	<div class="controls">
+	  <input type="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
+	</div>
+      </div>
+
+      <div class="control-group">
+	<label class="control-label" for="navbarLinkColorHover">Link Hover:  </label>
+	<div class="controls">
+	  <input type="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
 	</div>
       </div>
 
