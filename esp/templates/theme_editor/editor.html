@@ -3,23 +3,29 @@
 <script src="/media/theme_editor/spectrum.js" type="text/javascript"></script>
 <link href="/media/theme_editor/spectrum.css" rel="stylesheet" />
 {% endblock %}
+{% block stylesheets %}
+<link href="/media/styles/centeredform.css" rel="stylesheet" />
+{% endblock %}
 {% block title %}Theme Editor{% endblock %}
 {% block content %} 
-<div class="row-fluid"> {# figure out why this isn't aligning properly #}
-  <div class="span4 offset2">
+<div class="row-fluid" style="text-align:center;"> {# figure out why this isn't aligning properly #}
+  <div class="span3"></div> {# just to center the element #}
+  <div class="span6">
     <h2>Theme Editor <small style="color:purple;">alpha</small></h2><br />
   </div>
 </div>
 
 <div class="row-fluid">
-  <div class="span8 offset4" style="font-size:20px;">
+  <div class="span3"></div> {# just to center the element #}
+  <div class="span6" style="font-size:20px; text-align:center;">
     abcdefghijklmnopqrstuvwxyz 1234567890
   </div>
 </div>
 
 <div class="row-fluid">
-  <div class="span8">
-    <form class="well form-horizontal" method="get" action="/theme/apply/"> {# Change this to post eventually #}
+  <div class="span3"></div> {# just to center the element #}
+  <div class="span6">
+    <form class="well form-horizontal centered-form" method="get" action="/theme/apply/"> {# Change this to post eventually #}
       {#      {% csrf_token %} #}
       <div class="control-group">
 	<label class="control-label" for="bodybg">Background Color:  </label>
@@ -60,7 +66,7 @@
 	</div>
       </div>
 
-      <div class="form-actions">
+      <div class="form-actions" style="text-align:center;">
 	<button type="submit" class="btn btn-primary"> Submit </button>
 	<button type="reset" class="btn"> Reset </button>
       </div>
