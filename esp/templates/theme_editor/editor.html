@@ -28,8 +28,8 @@
 <div class="row-fluid">
   <div class="span3"></div> {# just to center the element #}
   <div class="span6">
-    <form class="well form-horizontal centered-form" method="get" action="/theme/apply/"> {# Change this to post eventually #}
-      {#      {% csrf_token %} #}
+    <form class="well form-horizontal centered-form" method="post" action="/theme/apply/"> {# Change this to post eventually #}
+      {% csrf_token %} 
 
       <h3>Scaffolding</h3>
 

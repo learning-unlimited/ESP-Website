@@ -38,7 +38,7 @@ def apply(request):
     f = open(variables_template_less)
     variables_template = Template(f.read())
     f.close()
-    form_settings = dict(request.GET) # retrieve context from form input, change to POST eventually
+    form_settings = dict(request.POST) # retrieve context from form input, change to POST eventually
 
     for k,v in form_settings.items():
         form_settings[k] = form_settings[k][0] # because QueryResponse objects store values as lists
