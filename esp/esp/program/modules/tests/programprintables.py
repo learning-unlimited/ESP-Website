@@ -56,7 +56,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
 
         self.factory = RequestFactory()
 
-    def get_response(self, view_name, list_name):
+    def get_response(self, view_name, user_type, list_name):
         #   Log in an administrator
         self.failUnless(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
        
@@ -64,11 +64,9 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         response = self.client.get('/manage/%s/%s' % (self.program.getUrlBase(), view_name))
         self.assertEquals(response.status_code, 200)
         post_data = {
-            'submit_user_list': 'true',
+            'recipient_type': user_type,
             'base_list': list_name,
-            'keys': '',
-            'finalsent': 'Test List',
-            'submitform': 'I have my list, go on!',
+            'use_checklist': 0,
         }
         response = self.client.post('/manage/%s/%s' % (self.program.getUrlBase(), view_name), post_data)
         self.assertTrue(response.status_code, 200)
@@ -81,9 +79,9 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         student_views = ['satpreplabels', 'satpreplabels_bysection', 'studentsbyname', 'emergencycontacts', 'flatstudentschedules', 'studentchecklist', 'student_tickets']
         result = []
         for v in teacher_views:
-            result.append((v, 'class_approved'))
+            result.append((v, 'teachers', 'class_approved'))
         for v in student_views:
-            result.append((v, 'enrolled'))
+            result.append((v, 'students', 'enrolled'))
         return result
 
     def testAllViewsWithUserList(self):
@@ -92,17 +90,17 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         
         #   Test each view in sequence with the appropriate list of users.
         #   Doesn't check correctness; please add separate test functions for that.
-        for (view_name, list_name) in view_pairs:
-            self.get_response(view_name, list_name)
+        for (view_name, user_type, list_name) in view_pairs:
+            self.get_response(view_name, user_type, list_name)
 
     def testClassRosters(self):
         #   Check that all classes show up on the rosters.
-        response = self.get_response('classrosters', 'class_approved')
+        response = self.get_response('classrosters', 'teachers', 'class_approved')
         self.assertContains(response, '<div class="classtitle">', count=len(self.program.classes()))
 
     def testSchedules(self):
         #   Check that our Latex->PDF schedule generation code runs without error
-        response = self.get_response('studentschedules', 'enrolled')
+        response = self.get_response('studentschedules', 'students', 'enrolled')
         
         #   Check that the output is an actual PDF file
         self.assertTrue(response['Content-Type'].startswith('application/pdf'))
