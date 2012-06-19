@@ -1879,7 +1879,7 @@ class RegistrationType(models.Model):
     get_map = staticmethod(get_map)
 
     def __unicode__(self):
-        if self.displayName != "":
+        if self.displayName is not None and self.displayName != "":
             return self.displayName
         else:
             return self.name
