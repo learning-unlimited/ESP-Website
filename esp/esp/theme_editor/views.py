@@ -3,6 +3,7 @@ from django.template import RequestContext
 from django.template import Context, Template
 from esp.settings import PROJECT_ROOT
 from django.http import HttpResponse, HttpResponseRedirect
+from esp.users.models import admin_required
 from os import path, remove
 import re
 import shutil
@@ -30,7 +31,7 @@ def parse_less(less_file):
     #this regex is supposed to match @(property) = (value);
     #or @(property) = (function)(args) in match[0] and 
     #match[1] respectively
-        matches = re.findall(r"@(\w+):\s*([^,;\(]*)[,;\(]", f)
+        matches = re.findall(r"@(\w+):\s*([^,;\(]*)[;\(]", f)
         d = {}
         for match in matches:
             d[match[0]] = match[1]
@@ -45,7 +46,8 @@ def parse_less(less_file):
         return d
     except IOError:
         return {}
-    
+
+@admin_required    
 def editor(request):
     context = parse_less(variables_less)
     # load a list of available themes
@@ -104,6 +106,7 @@ def apply_theme(less_file):
     except shutil.Error:
         pass
 
+@admin_required
 def theme_submit(request):
     if 'save' in request.POST:
         save(request, request.POST['saveThemeName']+'.less')
