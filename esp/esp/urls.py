@@ -204,6 +204,6 @@ urlpatterns +=patterns('esp.customforms.views',
 #Theme editor
 urlpatterns += patterns('esp.theme_editor.views',
                         (r'^theme/?$', 'editor'),
-                        (r'^theme/apply/?$', 'apply')
+                        (r'^theme/submit/?$', 'theme_submit')
                         )
 
