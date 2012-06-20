@@ -20,10 +20,10 @@
 
 <div class="row">
 
-  <div class="span6 offset1" style="font-size:20px; text-align:center;">
-    abcdefghijklmnopqrstuvwxyz 1234567890
+  <div class="span6 offset1" >
+    <p style="font-size:20px; text-align:center;">abcdefghijklmnopqrstuvwxyz 1234567890</p>
 
-    <p>Note: Sometimes, after loading, saving, or applying a theme, the changes may not take effect. Try refreshing the page.</p>
+    <p>Sometimes, after loading, saving, or applying a theme, the changes may not take effect. Try refreshing the page.</p>
   </div>
 </div>
 <br />
@@ -157,7 +157,8 @@
       <h3>Theme Actions</h3>
       <br />
       <div class="control-group">
-	<input id="save" type="text" value="{{theme_name}}" name="saveThemeName" />
+	<label>Currently loaded: <strong>{{theme_name}}</strong></label>
+	<input id="save" type="text" value="" name="saveThemeName" />
 
 	<button type="submit" class="btn" name="save" value="save"> Save As </button> 
 
@@ -176,7 +177,7 @@
 	  </optgroup>
 	</select>
 	<button type="submit" class="btn" name="load" value="load"> Load Theme </button> 
-	<p class="help-block">The theme name must begin with 'theme_' to show up in the list of saved themes.</p>  
+	<p class="help-block">Currently, the theme name must begin with 'theme_' to show up in the list of saved themes.</p>  
       </div>
 
 

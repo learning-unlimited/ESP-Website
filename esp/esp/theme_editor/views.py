@@ -3,7 +3,7 @@ from django.template import RequestContext
 from django.template import Context, Template
 from esp.settings import PROJECT_ROOT
 from django.http import HttpResponse, HttpResponseRedirect
-from os import path
+from os import path, remove
 import re
 import shutil
 import glob
@@ -64,6 +64,8 @@ def save(request, less_file):
     variables_settings = parse_less(less_file)
     if not variables_settings or variables_settings['theme_name'] == 'None':
         variables_settings['theme_name'] = less_file[:-5]
+    if 'apply' in request.POST:
+        del variables_settings['theme_name']
     less_file = path.join(less_dir, less_file)
     f = open(variables_template_less)
     variables_template = Template(f.read())
@@ -82,8 +84,21 @@ def save(request, less_file):
     f.close()
 
 def apply_theme(less_file):
+    # in case you are trying to restore the last used settings
+    if less_file == 'variables_backup.less': 
+        temp_file = path.join(less_dir, 'variables_backup_temp.less')
+        try:
+            shutil.copy(path.join(less_dir,less_file),temp_file)
+            shutil.copy(variables_less, path.join(less_dir, less_file))
+            shutil.copy(temp_file, variables_less)
+            remove(temp_file)
+        except shutil.Error:
+            pass
+        return
+
     less_file = path.join(less_dir, less_file)
     try:
+        shutil.copy(path.join(less_dir,'variables_backup.less'),path.join(less_dir,'variables_backup_temp.less'))
         shutil.copy(variables_less, path.join(less_dir, 'variables_backup.less'))
         shutil.copy(less_file, variables_less)
     except shutil.Error:
@@ -99,7 +114,7 @@ def theme_submit(request):
         shutil.copy(variables_less, path.join(less_dir,'variables_backup.less'))
         save(request, 'variables.less')
     elif 'reset' in request.POST:
-        apply_theme('variables.less')
+        pass
     else: 
         return HttpResponseRedirect('/')
     return HttpResponseRedirect('/theme/')
