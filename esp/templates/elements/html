@@ -76,7 +76,7 @@ at the end of the page.
     {% block xtrajs %}{% endblock %}
 
   </head>
-  <body onload="MM_preloadImages( {% for img in preload_images %}'{{ img }}'{% if not forloop.last %}, {% endif %}{% endfor %})">
+  <body>
 
     {% block body %}{% endblock %}
 

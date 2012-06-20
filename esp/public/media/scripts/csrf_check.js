@@ -1,5 +1,3 @@
-dojo.require('dijit.form.Button');
-dojo.require('dijit.Dialog');
 
 if($j("#csrfAlert").length == 0)
 {
