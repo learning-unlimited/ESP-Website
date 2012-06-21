@@ -31,7 +31,7 @@ def parse_less(less_file):
     #this regex is supposed to match @(property) = (value);
     #or @(property) = (function)(args) in match[0] and 
     #match[1] respectively
-        matches = re.findall(r"@(\w+):\s*([^,;\(]*)[;\(]", f)
+        matches = re.findall(r"@(\w+):\s*([^;\(]*)[;\(]", f)
         d = {}
         for match in matches:
             d[match[0]] = match[1]
