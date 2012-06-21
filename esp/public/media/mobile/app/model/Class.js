@@ -45,15 +45,6 @@ Ext.define('LU.model.Class', {
                     }
                 }
             }
-        ],
-
-        proxy: {
-            type: 'ajax',
-            url: '/learn/Splash/2012_Summer/catalog_json',
-
-            reader: {
-                type: 'json'
-            }
-        }
+        ]
     }
 })
