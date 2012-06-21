@@ -64,8 +64,16 @@ def editor(request):
 def save(request, less_file):
 
     variables_settings = parse_less(less_file)
-    if not variables_settings or variables_settings['theme_name'] == 'None':
+
+    # when the theme is saved for the first time, less_file doesn't exist, so parse_less will return an empty dict
+    if not variables_settings or 'theme_name' not in variables_settings:
         variables_settings['theme_name'] = less_file[:-5]
+
+        # if theme is saved without a name, just set it as default with the name 'None'
+        if variables_settings['theme_name'] == '': 
+            del variables_settings['theme_name']
+    
+    # if theme is only applied, just set theme as default and name as 'None'
     if 'apply' in request.POST:
         del variables_settings['theme_name']
     less_file = path.join(less_dir, less_file)

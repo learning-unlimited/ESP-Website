@@ -1,6 +1,7 @@
 {% extends 'main.html' %}
 {% block xtrajs %}
 <script src="/media/theme_editor/spectrum.js" type="text/javascript"></script>
+<script src="/media/theme_editor/theme_editor.js" type="text/javascript"></script>
 <link href="/media/theme_editor/spectrum.css" rel="stylesheet" />
 <link href="/media/theme_editor/centeredform.css" rel="stylesheet" />
 <style>
@@ -37,14 +38,15 @@
       <div class="control-group">
 	<label class="control-label" for="bodybg">Background :  </label>
 	<div class="controls">
-	  <input type="color" id="bodybg" name="bodyBackground" value="{{ bodyBackground }}"/>
+	  <input type="text" id="bodybg" name="bodyBackground" class="color" value="{{bodyBackground}}" />
 	</div>
       </div>
+
 
       <div class="control-group">
 	<label class="control-label" for="textColor">Text :  </label>
 	<div class="controls">
-	  <input type="color" id="textColor" name="textColor" value="{{ textColor }}"/>
+	  <input type="text" class="color" id="textColor" name="textColor" value="{{ textColor }}"/>
 	</div>
       </div>
       <br />
@@ -54,14 +56,14 @@
       <div class="control-group">
 	<label class="control-label" for="linkColor">Links :  </label>
 	<div class="controls">
-	  <input type="color" id="linkColor" name="linkColor" value="{{ linkColor }}"/>
+	  <input type="text" class="color" id="linkColor" name="linkColor" value="{{ linkColor }}"/>
 	</div>
       </div>
 
       <div class="control-group">
 	<label class="control-label" for="linkColorHover">Link Hover Effect:  </label>
 	<div class="controls">
-	  <input type="color" id="linkColorHover" name="linkColorHover" value="{{ linkColorHover }}"/>
+	  <input type="text" class="color" id="linkColorHover" name="linkColorHover" value="{{ linkColorHover }}"/>
 	</div>
       </div>
       <br />
@@ -116,35 +118,35 @@
       <div class="control-group">
 	<label class="control-label" for="navbarBackground">Background :  </label>
 	<div class="controls">
-	  <input type="color" id="navbarBackground" name="navbarBackground" value="{{ navbarBackground }}"/>
+	  <input type="text" class="color" id="navbarBackground" name="navbarBackground" value="{{ navbarBackground }}"/>
 	</div>
       </div>
 
       <div class="control-group">
 	<label class="control-label" for="navbarBackgroundHighlight">Highlight :  </label>
 	<div class="controls">
-	  <input type="color" id="navbarBackgroundHighlight" name="navbarBackgroundHighlight" value="{{ navbarBackgroundHighlight }}"/>
+	  <input type="text" class="color" id="navbarBackgroundHighlight" name="navbarBackgroundHighlight" value="{{ navbarBackgroundHighlight }}"/>
 	</div>
       </div>
 
       <div class="control-group">
 	<label class="control-label" for="navbarText">Text :  </label>
 	<div class="controls">
-	  <input type="color" id="navbarText" name="navbarText" value="{{ navbarText }}"/>
+	  <input type="text" class="color" id="navbarText" name="navbarText" value="{{ navbarText }}"/>
 	</div>
       </div>
 
       <div class="control-group">
 	<label class="control-label" for="navbarLinkColor">Links :  </label>
 	<div class="controls">
-	  <input type="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
+	  <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
 	</div>
       </div>
 
       <div class="control-group">
 	<label class="control-label" for="navbarLinkColorHover">Link Hover:  </label>
 	<div class="controls">
-	  <input type="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
+	  <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
 	</div>
       </div>
 
@@ -153,21 +155,21 @@
       <div class="control-group">
 	<label class="control-label" for="btnBackground">Buttons:  </label>
 	<div class="controls">
-	  <input type="color" id="btnBackground" name="btnBackground" value="{{ btnBackground }}"/>
+	  <input type="text" class="color" id="btnBackground" name="btnBackground" value="{{ btnBackground }}"/>
 	</div>
       </div>
 
       <div class="control-group">
 	<label class="control-label" for="btnPrimaryBackground">Primary Buttons:  </label>
 	<div class="controls">
-	  <input type="color" id="btnPrimaryBackground" name="btnPrimaryBackground" value="{{ btnPrimaryBackground }}"/>
+	  <input type="text" class="color" id="btnPrimaryBackground" name="btnPrimaryBackground" value="{{ btnPrimaryBackground }}"/>
 	</div>
       </div>
 
       <div class="control-group">
 	<label class="control-label" for="btnInverseBackground">Inverse Buttons:  </label>
 	<div class="controls">
-	  <input type="color" id="btnInverseBackground" name="btnInverseBackground" value="{{ btnInverseBackground }}"/>
+	  <input type="text" class="color" id="btnInverseBackground" name="btnInverseBackground" value="{{ btnInverseBackground }}"/>
 	</div>
       </div>
 
@@ -205,9 +207,11 @@
       <div class="form-actions" style="text-align:center;">
 	<button type="submit" class="btn btn-primary" name="apply" value="apply"> Apply </button>
 
-	<button type="submit" class="btn" name="reset" value="reset"> Reset </button>
+	<button type="submit" class="btn" name="reset" value="reset"> Reset Without Saving </button>
       </div>
     </form>
   </div>
 </div>
+
+
 {% endblock %}  
