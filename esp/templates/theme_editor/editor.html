@@ -118,9 +118,14 @@
 
 
 	    <div class="control-group">
-	      <label class="control-label" for="sansFontFamily">Sans-serif Font:  </label>
+	      <label class="control-label" for="sansFontFamily">Font Family:  </label>
 	      <div class="controls">
-		<input id="sansFontFamily" name="sansFontFamily" type="text" value="{{ sansFontFamily }}"/>
+		<select id="sansFontFamily" name="sansFontFamily" type="text">
+		  <option value="{{ sansFontFamily }}">Current: {{sansFontFamily}}</option>
+		  {% for family_name, family in sans_fonts %}
+		  <option value="{{family}}">{{family_name}}</option>
+		  {% endfor %}
+		</select>
 	      </div>
 	    </div>
 	  </div>

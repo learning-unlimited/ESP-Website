@@ -14,6 +14,23 @@ less_dir = path.join(PROJECT_ROOT, 'public/media/theme_editor/less/') #directory
 variables_template_less = path.join(less_dir, 'variables_template.less')
 variables_less = path.join(less_dir, 'variables.less')
 
+sans_serif_fonts = {"Impact":"Impact, Charcoal, sans-serif",
+                    "Palatino Linotype":"'Palatino Linotype', 'Book Antiqua', Palatino, serif",
+                    "Tahoma":"Tahoma, Geneva, sans-serif",
+                    "Century Gothic":"'Century Gothic', sans-serif",
+                    "Lucida Sans Unicode":"'Lucida Sans Unicode', 'Lucida Grande', sans-serif",
+                    "Arial Black":"'Arial Black', Gadget, sans-serif",
+                    "Times New Roman":"'Times New Roman', Times, serif",
+                    "Arial Narrow":"'Arial Narrow', sans-serif",
+                    "Verdana":"Verdana, Geneva, sans-serif",
+                    "Copperplate Gothic Light":"'Copperplate Gothic Light', Copperplate, sans-serif",
+                    "Lucida Console":"'Lucida Console', Monaco, monospace",
+                    "Gill Sans":"'Gill Sans', 'Gill Sans MT', sans-serif",
+                    "Trebuchet MS":"'Trebuchet MS', Helvetica', sans-serif",
+                    "Courier New":"'Courier New', Courier, monospace",
+                    "Arial":"Arial, Helvetica, sans-serif",
+                    "Georgia":"Georgia, serif"}
+
 def get_theme_name(less_file):
     less_file = path.join(less_dir, less_file)
     f = open(less_file).read()
@@ -30,7 +47,7 @@ def parse_less(less_file):
     #this regex is supposed to match @(property) = (value);
     #or @(property) = (function)(args) in match[0] and 
     #match[1] respectively
-        matches = re.findall(r"@(\w+):\s*([^;\(]*)[;\(]", f)
+        matches = re.findall(r"@(\w+):\s*([^,;\(]*)[,;\(]", f)
         d = {}
         for match in matches:
             d[match[0]] = match[1]
@@ -55,10 +72,11 @@ def editor(request):
     for theme_path in available_themes_paths:
         available_themes.append(re.search(r'theme_editor/less/(theme_.+)\.less',theme_path).group(1))
     context.update({'available_themes':available_themes})
+    context.update({'last_used_settings':'variables_backup'})
+    context.update({'sans_fonts':sorted(sans_serif_fonts.iteritems())})
 #    for debugging, see context by uncommenting the next line
 #    return HttpResponse(str(context))
-    context.update({'last_used_settings':'variables_backup'})
-    
+
     return render_to_response('theme_editor/editor.html', context, context_instance=RequestContext(request))
 
 def save(request, less_file):
