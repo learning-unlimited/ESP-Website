@@ -14,7 +14,6 @@ less_dir = path.join(PROJECT_ROOT, 'public/media/theme_editor/less/') #directory
 variables_template_less = path.join(less_dir, 'variables_template.less')
 variables_less = path.join(less_dir, 'variables.less')
 
-color_list = ['black', 'grayDarker', 'grayDark', 'gray', 'grayLight', 'grayLighter', 'whiteblue', 'blueDark', 'green', 'red', 'yellow', 'orange', 'pink', 'purple']                
 def get_theme_name(less_file):
     less_file = path.join(less_dir, less_file)
     f = open(less_file).read()
@@ -37,7 +36,7 @@ def parse_less(less_file):
             d[match[0]] = match[1]
         #in case color values like @white, @black are encountered, substitute
         #that with the hex value
-            if match[1] and match[1][1:] in color_list:
+            if match[1] and match[1][1:] in d and d[match[1][1:]][0] == '#':
                 d[match[0]] = d[match[1][1:]]
     #if theme_name is set, retrieve that
         match = re.search(r"// Theme Name: (.+?)\n", f)
@@ -56,6 +55,7 @@ def editor(request):
     for theme_path in available_themes_paths:
         available_themes.append(re.search(r'theme_editor/less/(theme_.+)\.less',theme_path).group(1))
     context.update({'available_themes':available_themes})
+#    for debugging, see context by uncommenting the next line
 #    return HttpResponse(str(context))
     context.update({'last_used_settings':'variables_backup'})
     

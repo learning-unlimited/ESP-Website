@@ -61,11 +61,7 @@
       <div class="control-group">
 	<label class="control-label" for="linkColorHover">Link Hover Effect:  </label>
 	<div class="controls">
-	  <select id="linkColorHover" name="linkColorHover">
-	    <option value="">Current: {{ linkColorHover }}</option>
-	    <option value="darken">Darken</option>
-	    <option value="lighten">Lighten</option>
-	  </select>
+	  <input type="color" id="linkColorHover" name="linkColorHover" value="{{ linkColorHover }}"/>
 	</div>
       </div>
       <br />
@@ -151,6 +147,30 @@
 	  <input type="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
 	</div>
       </div>
+
+      <h3>Buttons</h3>
+
+      <div class="control-group">
+	<label class="control-label" for="btnBackground">Buttons:  </label>
+	<div class="controls">
+	  <input type="color" id="btnBackground" name="btnBackground" value="{{ btnBackground }}"/>
+	</div>
+      </div>
+
+      <div class="control-group">
+	<label class="control-label" for="btnPrimaryBackground">Primary Buttons:  </label>
+	<div class="controls">
+	  <input type="color" id="btnPrimaryBackground" name="btnPrimaryBackground" value="{{ btnPrimaryBackground }}"/>
+	</div>
+      </div>
+
+      <div class="control-group">
+	<label class="control-label" for="btnInverseBackground">Inverse Buttons:  </label>
+	<div class="controls">
+	  <input type="color" id="btnInverseBackground" name="btnInverseBackground" value="{{ btnInverseBackground }}"/>
+	</div>
+      </div>
+
 
       <hr />
 

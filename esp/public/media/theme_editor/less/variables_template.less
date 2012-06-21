@@ -47,7 +47,7 @@
 // Links
 // -------------------------
 @linkColor: {% if linkColor %}{{ linkColor }}{% else %}#08c{% endif %};
-@linkColorHover: {% if linkColorHover %}{{ linkColorHover }}{% else %}darken{% endif %}(@linkColor, 15%);
+@linkColorHover: {% if linkColorHover %}{{ linkColorHover }}{% else %}#06a{% endif %};
 
 
 // Typography
@@ -76,12 +76,12 @@
 
 // Buttons
 // -------------------------
-@btnBackground:                     @white;
-@btnBackgroundHighlight:            darken(@white, 10%);
-@btnBorder:                         #ccc;
+@btnBackground: {% if btnBackground %}{{ btnBackground }}{% else %}@white{% endif %};
+@btnBackgroundHighlight:            spin(@btnBackground, 15%);
+@btnBorder:                         darken(@btnBackground, 20%);
 
-@btnPrimaryBackground:              @linkColor;
-@btnPrimaryBackgroundHighlight:     spin(@btnPrimaryBackground, 15%);
+@btnPrimaryBackground: {% if btnPrimaryBackground %}{{ btnPrimaryBackground }}{% else %}@linkColor{% endif %};
+@btnPrimaryBackgroundHighlight:     darken(@btnPrimaryBackground, 15%);
 
 @btnInfoBackground:                 #5bc0de;
 @btnInfoBackgroundHighlight:        #2f96b4;
@@ -95,8 +95,8 @@
 @btnDangerBackground:               #ee5f5b;
 @btnDangerBackgroundHighlight:      #bd362f;
 
-@btnInverseBackground:              @gray;
-@btnInverseBackgroundHighlight:     @grayDarker;
+@btnInverseBackground: {% if btnInverseBackground %}{{ btnInverseBackground }}{% else %}@gray{% endif %};
+@btnInverseBackgroundHighlight: darken(@btnInverseBackground, 15%);
 
 
 // Forms
