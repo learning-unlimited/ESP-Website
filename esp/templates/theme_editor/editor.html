@@ -32,176 +32,202 @@
   <div class="span6 offset1">
     <form class="well form-horizontal centered-form" method="post" action="/theme/submit/">
       {% csrf_token %} 
+      <div class="accordion">
+	<div class="accordion-group">
+	  <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#scaffolding">Scaffolding</h3></div>
 
-      <h3>Scaffolding</h3>
+	  <div class="collapse" id="scaffolding">
 
-      <div class="control-group">
-	<label class="control-label" for="bodybg">Background :  </label>
-	<div class="controls">
-	  <input type="text" id="bodybg" name="bodyBackground" class="color" value="{{bodyBackground}}" />
+	    <div class="control-group">
+	      <label class="control-label" for="bodybg">Background :  </label>
+	      <div class="controls">
+		<input type="text" id="bodybg" name="bodyBackground" class="color" value="{{bodyBackground}}" />
+	      </div>
+	    </div>
+
+
+	    <div class="control-group">
+	      <label class="control-label" for="textColor">Text :  </label>
+	      <div class="controls">
+		<input type="text" class="color" id="textColor" name="textColor" value="{{ textColor }}"/>
+	      </div>
+	    </div>
+
+	  </div>
 	</div>
-      </div>
+      
+	
+	<div class="accordion-group">
+	  <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#links">Links</h3></div>
+	  <div class="collapse" id="links">
+	    <div class="control-group">
+	      <label class="control-label" for="linkColor">Links :  </label>
+	      <div class="controls">
+		<input type="text" class="color" id="linkColor" name="linkColor" value="{{ linkColor }}"/>
+	      </div>
+	    </div>
 
-
-      <div class="control-group">
-	<label class="control-label" for="textColor">Text :  </label>
-	<div class="controls">
-	  <input type="text" class="color" id="textColor" name="textColor" value="{{ textColor }}"/>
+	    <div class="control-group">
+	      <label class="control-label" for="linkColorHover">Link Hover Effect:  </label>
+	      <div class="controls">
+		<input type="text" class="color" id="linkColorHover" name="linkColorHover" value="{{ linkColorHover }}"/>
+	      </div>
+	    </div>
+	  </div>
 	</div>
-      </div>
-      <br />
+	
 
-      <h3>Links</h3>
+	<div class="accordion-group">
+	  <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#typography">Typography</h3></div>
+	  <div class="collapse" id="typography">
+	    <div class="control-group">
+	      <label class="control-label" for="baseFontSize">Base Font Size:  </label>
+	      <div class="controls">
+		<select id="baseFontSize" name="baseFontSize">
+		  <option value="">Current: {{ baseFontSize }}</option>
+		  <option value="10px">10</option>
+		  <option value="11px">11</option>
+		  <option value="12px">12</option>
+		  <option value="13px">13</option>
+		  <option value="14px">14</option>
+		  <option value="15px">15</option>
+		  <option value="16px">16</option>
+		  <option value="17px">17</option>
+		  <option value="18px">18</option>
+		</select>
+	      </div>
+	    </div>
 
-      <div class="control-group">
-	<label class="control-label" for="linkColor">Links :  </label>
-	<div class="controls">
-	  <input type="text" class="color" id="linkColor" name="linkColor" value="{{ linkColor }}"/>
-	</div>
-      </div>
-
-      <div class="control-group">
-	<label class="control-label" for="linkColorHover">Link Hover Effect:  </label>
-	<div class="controls">
-	  <input type="text" class="color" id="linkColorHover" name="linkColorHover" value="{{ linkColorHover }}"/>
-	</div>
-      </div>
-      <br />
-      <h3>Typography</h3>
-      <div class="control-group">
-	<label class="control-label" for="baseFontSize">Base Font Size:  </label>
-	<div class="controls">
-	  <select id="baseFontSize" name="baseFontSize">
-	    <option value="">Current: {{ baseFontSize }}</option>
-	    <option value="10px">10</option>
-	    <option value="11px">11</option>
-	    <option value="12px">12</option>
-	    <option value="13px">13</option>
-	    <option value="14px">14</option>
-	    <option value="15px">15</option>
-	    <option value="16px">16</option>
-	    <option value="17px">17</option>
-	    <option value="18px">18</option>
-	  </select>
-	</div>
-      </div>
-
-      <div class="control-group">
-	<label class="control-label" for="baseLineHeight">Base Line Height:  </label>
-	<div class="controls">
-	  <select id="baseLineHeight" name="baseLineHeight">
-	    <option value="">Current: {{ baseLineHeight }}</option>
-	    <option value="10px">10</option>
-	    <option value="12px">12</option>
-	    <option value="14px">14</option>
-	    <option value="16px">16</option>
-	    <option value="18px">18</option>
-	    <option value="20px">20</option>
-	    <option value="22px">22</option>
-	    <option value="24px">24</option>
-	    <option value="26px">26</option>
-	  </select>
-	</div>
-      </div>
+	    <div class="control-group">
+	      <label class="control-label" for="baseLineHeight">Base Line Height:  </label>
+	      <div class="controls">
+		<select id="baseLineHeight" name="baseLineHeight">
+		  <option value="">Current: {{ baseLineHeight }}</option>
+		  <option value="10px">10</option>
+		  <option value="12px">12</option>
+		  <option value="14px">14</option>
+		  <option value="16px">16</option>
+		  <option value="18px">18</option>
+		  <option value="20px">20</option>
+		  <option value="22px">22</option>
+		  <option value="24px">24</option>
+		  <option value="26px">26</option>
+		</select>
+	      </div>
+	    </div>
 
 
-      <div class="control-group">
-	<label class="control-label" for="sansFontFamily">Sans-serif Font:  </label>
-	<div class="controls">
-	  <input id="sansFontFamily" name="sansFontFamily" type="text" value="{{ sansFontFamily }}"/>
-	</div>
-      </div>
-      <br />
+	    <div class="control-group">
+	      <label class="control-label" for="sansFontFamily">Sans-serif Font:  </label>
+	      <div class="controls">
+		<input id="sansFontFamily" name="sansFontFamily" type="text" value="{{ sansFontFamily }}"/>
+	      </div>
+	    </div>
+	  </div>
+	  </div>
 
-      <h3>Navbar</h3>
-
-      <div class="control-group">
-	<label class="control-label" for="navbarBackground">Background :  </label>
-	<div class="controls">
-	  <input type="text" class="color" id="navbarBackground" name="navbarBackground" value="{{ navbarBackground }}"/>
-	</div>
-      </div>
-
-      <div class="control-group">
-	<label class="control-label" for="navbarBackgroundHighlight">Highlight :  </label>
-	<div class="controls">
-	  <input type="text" class="color" id="navbarBackgroundHighlight" name="navbarBackgroundHighlight" value="{{ navbarBackgroundHighlight }}"/>
-	</div>
-      </div>
-
-      <div class="control-group">
-	<label class="control-label" for="navbarText">Text :  </label>
-	<div class="controls">
-	  <input type="text" class="color" id="navbarText" name="navbarText" value="{{ navbarText }}"/>
-	</div>
-      </div>
-
-      <div class="control-group">
-	<label class="control-label" for="navbarLinkColor">Links :  </label>
-	<div class="controls">
-	  <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
-	</div>
-      </div>
-
-      <div class="control-group">
-	<label class="control-label" for="navbarLinkColorHover">Link Hover:  </label>
-	<div class="controls">
-	  <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
-	</div>
-      </div>
-
-      <h3>Buttons</h3>
-
-      <div class="control-group">
-	<label class="control-label" for="btnBackground">Buttons:  </label>
-	<div class="controls">
-	  <input type="text" class="color" id="btnBackground" name="btnBackground" value="{{ btnBackground }}"/>
-	</div>
-      </div>
-
-      <div class="control-group">
-	<label class="control-label" for="btnPrimaryBackground">Primary Buttons:  </label>
-	<div class="controls">
-	  <input type="text" class="color" id="btnPrimaryBackground" name="btnPrimaryBackground" value="{{ btnPrimaryBackground }}"/>
-	</div>
-      </div>
-
-      <div class="control-group">
-	<label class="control-label" for="btnInverseBackground">Inverse Buttons:  </label>
-	<div class="controls">
-	  <input type="text" class="color" id="btnInverseBackground" name="btnInverseBackground" value="{{ btnInverseBackground }}"/>
-	</div>
-      </div>
+	  <div class="accordion-group">
+	    <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#navbar">Navbar</h3></div>
+	    <div class="collapse" id="navbar">
 
 
-      <hr />
 
-      <h3>Theme Actions</h3>
-      <br />
-      <div class="control-group">
-	<label>Currently loaded: <strong>{{theme_name}}</strong></label>
-	<input id="save" type="text" value="" name="saveThemeName" placeholder="Enter a name..." />
+	      <div class="control-group">
+		<label class="control-label" for="navbarBackground">Background :  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarBackground" name="navbarBackground" value="{{ navbarBackground }}"/>
+		</div>
+	      </div>
 
-	<button type="submit" class="btn" name="save" value="save"> Save As </button> 
+	      <div class="control-group">
+		<label class="control-label" for="navbarBackgroundHighlight">Highlight :  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarBackgroundHighlight" name="navbarBackgroundHighlight" value="{{ navbarBackgroundHighlight }}"/>
+		</div>
+	      </div>
 
-	<br />
-	<br />
+	      <div class="control-group">
+		<label class="control-label" for="navbarText">Text :  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarText" name="navbarText" value="{{ navbarText }}"/>
+		</div>
+	      </div>
 
-	<select name="loadThemeName" >
-	  <option value="">Select a theme...</option> 
-	  <optgroup label="---------">
-	    {% for theme in available_themes %}
-	    <option value="{{theme}}"> {{theme}} </option>
-	    {% endfor %}
-	  </optgroup>
-	  <optgroup>
-	    <option value="{{last_used_settings}}"> Last used settings... </option>
-	  </optgroup>
-	</select>
-	<button type="submit" class="btn" name="load" value="load"> Load Theme </button> 
-	<p class="help-block">Currently, the theme name must begin with 'theme_' to show up in the list of saved themes.</p>  
-      </div>
+	      <div class="control-group">
+		<label class="control-label" for="navbarLinkColor">Links :  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
+		</div>
+	      </div>
 
+	      <div class="control-group">
+		<label class="control-label" for="navbarLinkColorHover">Link Hover:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
+		</div>
+	      </div>
+	    </div>
+	  </div>
+
+	    <div class="accordion-group">
+	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#buttons">Buttons</h3></div>
+	      <div class="collapse" id="buttons">
+
+
+		<div class="control-group">
+		  <label class="control-label" for="btnBackground">Buttons:  </label>
+		  <div class="controls">
+		    <input type="text" class="color" id="btnBackground" name="btnBackground" value="{{ btnBackground }}"/>
+		  </div>
+		</div>
+
+		<div class="control-group">
+		  <label class="control-label" for="btnPrimaryBackground">Primary Buttons:  </label>
+		  <div class="controls">
+		    <input type="text" class="color" id="btnPrimaryBackground" name="btnPrimaryBackground" value="{{ btnPrimaryBackground }}"/>
+		  </div>
+		</div>
+
+		<div class="control-group">
+		  <label class="control-label" for="btnInverseBackground">Inverse Buttons:  </label>
+		  <div class="controls">
+		    <input type="text" class="color" id="btnInverseBackground" name="btnInverseBackground" value="{{ btnInverseBackground }}"/>
+		  </div>
+		</div>
+	      </div>
+	    </div>
+
+
+	    <div class="accordion-group">
+	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#theme-properties">Theme Properties</h3></div>
+	      <div class="in collapse" id="theme-properties">
+
+		<br />
+		<div class="control-group">
+		  <label>Currently loaded: <strong>{{theme_name}}</strong></label>
+		  <input id="save" type="text" value="" name="saveThemeName" placeholder="Enter a name..." />
+
+		  <button type="submit" class="btn" name="save" value="save"> Save As </button> 
+
+		  <br />
+		  <br />
+
+		  <select name="loadThemeName" >
+		    <option value="">Select a theme...</option> 
+		    <optgroup label="---------">
+		      {% for theme in available_themes %}
+		      <option value="{{theme}}"> {{theme}} </option>
+		      {% endfor %}
+		    </optgroup>
+		    <optgroup>
+		      <option value="{{last_used_settings}}"> Last used settings... </option>
+		    </optgroup>
+		  </select>
+		  <button type="submit" class="btn" name="load" value="load"> Load Theme </button> 
+		  <p class="help-block">Currently, the theme name must begin with 'theme_' to show up in the list of saved themes.</p>  
+		</div>
+	      </div>
+	    </div>
 
 
       <div class="form-actions" style="text-align:center;">
