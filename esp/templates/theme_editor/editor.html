@@ -11,6 +11,9 @@
   div.form-actions {
       border-top:None;
   }
+  h5 {
+  margin-left:3%;
+  }
 </style>
 {% endblock %}
 {% block title %}Theme Editor{% endblock %}
@@ -183,7 +186,89 @@
 	    </div>
 	  </div>
 
-	    <div class="accordion-group">
+	  <div class="accordion-group">
+	    <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#sidebar_theme">Sidebar</h3></div>
+	    <div class="collapse" id="sidebar_theme">
+
+
+
+
+	      <div class="control-group">
+		<label class="control-label" for="sidebarLink">Links:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarLink" name="sidebarLink" value="{{ sidebarLink }}"/>
+		</div>
+	      </div>
+
+	      <div class="control-group">
+		<label class="control-label" for="sidebarHeader">Headers:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarHeader" name="sidebarHeader" value="{{ sidebarHeader }}"/>
+		</div>
+	      </div>
+
+	      <div class="control-group">
+		<label class="control-label" for="sidebarBackground">Background :  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarBackground" name="sidebarBackground" value="{{ sidebarBackground }}"/>
+		</div>
+	      </div>
+
+	      <h5>Hover</h5>
+
+	      <div class="control-group">
+		<label class="control-label" for="sidebarLinkHover">Links:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarLinkHover" name="sidebarLinkHover" value="{{ sidebarLinkHover }}"/>
+		</div>
+	      </div>
+	      
+	      <div class="control-group">
+		<label class="control-label" for="sidebarHover">Background:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarHover" name="sidebarHover" value="{{ sidebarHover }}"/>
+		</div>
+	      </div>
+
+
+
+	      <h5>Active</h5>
+	      
+	      <div class="control-group">
+		<label class="control-label" for="sidebarActive">Links:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarActive" name="sidebarActive" value="{{ sidebarActive }}"/>
+		</div>
+	      </div>
+
+	      <div class="control-group">
+		<label class="control-label" for="sidebarActiveBackground">Background:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarActiveBackground" name="sidebarActiveBackground" value="{{ sidebarActiveBackground }}"/>
+		</div>
+	      </div>
+
+
+
+{% comment %}
+	      <div class="control-group">
+		<label class="control-label" for="navbarLinkColor">Links :  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
+		</div>
+	      </div>
+
+	      <div class="control-group">
+		<label class="control-label" for="navbarLinkColorHover">Link Hover:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
+		</div>
+	      </div>
+{% endcomment %}
+	    </div>
+	  </div>
+
+	  <div class="accordion-group">
 	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#buttons">Buttons</h3></div>
 	      <div class="collapse" id="buttons">
 

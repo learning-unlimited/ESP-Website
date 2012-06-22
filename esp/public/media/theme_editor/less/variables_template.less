@@ -215,3 +215,13 @@
 // --------------------------
 @wellBackground: {% if wellBackground %}{{ wellBackground }}{% else %} #f5f5f5{% endif %};
 {% endautoescape %}
+
+//Sidebar
+// --------------------------
+@sidebarBackground: {% if sidebarBackground %}{{ sidebarBackground }}{% else %} @grayLighter{% endif %};
+@sidebarActive: {% if sidebarActive %}{{ sidebarActive }}{% else %} @white{% endif %};
+@sidebarActiveBackground: {% if sidebarActiveBackground %}{{ sidebarActiveBackground }}{% else %}@linkColorHover{% endif %};
+@sidebarHeader: {% if sidebarHeader %}{{ sidebarHeader }}{% else %} @grayLight{% endif %};
+@sidebarHover: {% if sidebarHover %}{{ sidebarHover }}{% else %} @grayLighter{% endif %};
+@sidebarLink: {% if sidebarLink %}{{ sidebarLink }}{% else %} @linkColor{% endif %};
+@sidebarLinkHover: {% if sidebarLinkHover %}{{ sidebarLinkHover }}{% else %} @linkColorHover{% endif %};
