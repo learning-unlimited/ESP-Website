@@ -171,7 +171,7 @@
 
 // Hero unit
 // -------------------------
-@heroUnitBackground:              @grayLighter;
+@heroUnitBackground: {% if heroUnitBackground %}{{ heroUnitBackground }}{% else %}@grayLighter{% endif %};
 @heroUnitHeadingColor:            inherit;
 @heroUnitLeadColor:               inherit;
 
@@ -210,6 +210,8 @@
 // -------------------------
 @fluidGridColumnWidth:    6.382978723%;
 @fluidGridGutterWidth:    2.127659574%;
+
+//Some custom variables not included with Bootstrap 
 
 // Well 
 // --------------------------
