@@ -126,14 +126,15 @@ def ajax_login(request, *args, **kwargs):
     request.user = ESPUser(user)
     content = render_to_string('users/loginbox_content.html', RequestContext(request, {'request': request, 'login_result': result_str}))
 
+    result_dict = {}
     if isMobile:
-        result_dict = {
-            'message': result_str,
-            'isStudent': 'true' if request.user.isStudent() else 'false',
-            'isVolunteer': 'true' if request.user.isVolunteer() else 'false'
-        }
+        result_dict['message'] = result_str
 	if isSuccessful:
-	    result_dict['success'] = 'true'
+	    result_dict = {
+	        'success': 'true',
+	        'isStudent': 'true' if request.user.isStudent() else 'false',
+            'isVolunteer': 'true' if request.user.isVolunteer() else 'false'
+	    }
     else:
         result_dict = {'loginbox_html': content}
     
