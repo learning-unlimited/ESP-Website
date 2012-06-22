@@ -8,6 +8,9 @@
   form.centered-form div.control-group {
       margin-left:20%;
   }
+  div.form-actions {
+      border-top:None;
+  }
 </style>
 {% endblock %}
 {% block title %}Theme Editor{% endblock %}
@@ -45,6 +48,12 @@
 	      </div>
 	    </div>
 
+	    <div class="control-group">
+	      <label class="control-label" for="wellbg">Well Background:  </label>
+	      <div class="controls">
+		<input type="text" id="wellbg" name="wellBackground" class="color" value="{{wellBackground}}" />
+	      </div>
+	    </div>
 
 	    <div class="control-group">
 	      <label class="control-label" for="textColor">Text :  </label>
