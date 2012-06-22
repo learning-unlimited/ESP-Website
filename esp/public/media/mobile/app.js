@@ -8,26 +8,34 @@ Ext.application({
     name: 'LU',
 
     requires: [
-        'Ext.MessageBox'
+        'Ext.MessageBox',
+        'LU.Util'
     ],
 
     models: [
-        'Class'
+        'Class',
+        'Program',
+        'User'
     ],
 
     stores: [
-        'Classes'
+        'Classes',
+        'Programs',
+        'User'
     ],
 
     controllers: [
         'Login',
-        'Classes'
+        'Classes',
+        'Programs'
     ],
 
     views: [
         'Main',
         'Panel',
         'TitleBar',
+
+        'program.List',
 
         'login.Form',
 

@@ -2,13 +2,12 @@ Ext.define('LU.store.Classes', {
     extend: 'Ext.data.Store',
 
     config: {
+        autoLoad: false,
         model: 'LU.model.Class',
         sorters: 'title',
 
         proxy: {
             type: 'ajax',
-            url: '/learn/Splash/2012_Summer/catalog_json',
-
             reader: {
                 type: 'json'
             }
@@ -17,6 +16,12 @@ Ext.define('LU.store.Classes', {
         grouper: {
             groupFn: function(record) {
                 return record.get('title')[0];
+            }
+        },
+
+        listeners: {
+            beforeload: function(store, operation, opts) {
+                store.getProxy().setUrl(LU.Util.getCatalogUrl());
             }
         }
     }

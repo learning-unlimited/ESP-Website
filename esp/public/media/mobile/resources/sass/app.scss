@@ -20,6 +20,10 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
 @include sencha-form;
 @include sencha-msgbox;
 
+/*
+ * Login
+ */
+
 .loginForm {
 //    background: transparent;           // TODO: replace with background-image
 }
@@ -69,3 +73,16 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
     margin: 15px 0 15px;
 }
 
+/*
+ * Program
+ */
+
+.description {
+    text-align: center;
+//    padding: 1.2em 1.2em 0 1.2em;
+}
+
+// add top border for the first list cell
+.program-list .x-list-item:first-child .x-list-item-label {
+    border-top: 1px solid #dedede !important;
+}

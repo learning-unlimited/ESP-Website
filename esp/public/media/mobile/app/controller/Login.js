@@ -23,18 +23,28 @@ Ext.define('LU.controller.Login', {
             },
 
             success: function(form, result) {
-                var next;
+                var program = Ext.widget('programList');
+                var role = '';
+
                 if (result.isVolunteer === 'true') {
-                    next = Ext.widget('volunteer');
+                    role = 'volunteer';
                 } else if (result.isStudent == 'true') {
-                    next = Ext.widget('student');
+                    role = 'student';
                 } else {
                     // display error message for unknown role
                     Ext.Msg.alert('Unauthorized Role', 'You have to be either a student or volunteer to access the app.');
                     return;
                 }
+
+                // stores the user's role in localstorage
+                // (we need this to determine which interface to show later)
+                var user = Ext.getStore('User');
+                user.removeAll();
+                user.add({role: role});
+                user.sync();
+
                 Ext.Viewport.getActiveItem().destroy();
-                Ext.Viewport.setActiveItem(next);
+                Ext.Viewport.setActiveItem(program);
             },
 
             failure: function(form, result) {

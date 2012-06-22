@@ -27,6 +27,7 @@ urlpatterns = patterns('esp.users.views',
                        (r'^emailpref/?$', 'emailpref'),
                        (r'^emailpref/(success)?/?$', 'emailpref'),
                        (r'^makeadmin/?$', 'make_admin'),
+                       (r'^program/?', 'userprogram.get_program'),
                        )
 
 urlpatterns += patterns('esp.web.views.main',
