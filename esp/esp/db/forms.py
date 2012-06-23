@@ -60,6 +60,7 @@ class AjaxForeignKeyFieldBase:
 <!--
 
 $j("#id_%s").val("%s");
+$j("#id_%s_data").val(%d);
 $j("#id_%s").autocomplete({
     source: function(request, response) {
         $j.ajax({
@@ -92,7 +93,7 @@ $j("#id_%s").autocomplete({
 
 //-->
 </script>""" % \
-         (fn, addslashes(init_val), fn,
+         (fn, addslashes(init_val), fn, data, fn,
           model_module, model_name, self.ajax_func or 'ajax_autocomplete',
           fn, shadow_field_javascript)
 
