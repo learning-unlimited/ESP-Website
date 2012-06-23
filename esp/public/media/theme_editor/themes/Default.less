@@ -1,10 +1,10 @@
 // Warning: Do not edit this section by hand, it contains metadata used 
 // by the theme_editor.
 //
-// Theme Name: {% if theme_name %}{{ theme_name }}{% else %}None{% endif %}
+// Theme Name: Default
 // --------------------------------------------------------------------------
 
-{% autoescape off %} 
+ 
 // Variables.less
 // Variables to customize the look and feel of Bootstrap
 // -----------------------------------------------------
@@ -40,25 +40,25 @@
 
 // Scaffolding
 // -------------------------
-@bodyBackground: {% if bodyBackground %}{{ bodyBackground }}{% else %}@white{% endif %};
-@textColor: {% if textColor %}{{ textColor }}{% else %}@grayDark{% endif %};
+@bodyBackground: @white;
+@textColor: @grayDark;
 
 
 // Links
 // -------------------------
-@linkColor: {% if linkColor %}{{ linkColor }}{% else %}#08c{% endif %};
-@linkColorHover: {% if linkColorHover %}{{ linkColorHover }}{% else %}#06a{% endif %};
+@linkColor: #08c;
+@linkColorHover: #06a;
 
 
 // Typography
 // -------------------------
-@sansFontFamily: {% if sansFontFamily %}{{ sansFontFamily }}, {% endif %}"Copperplate Gothic Light", "Helvetica Neue", Helvetica, Arial, sans-serif;
+@sansFontFamily: "Copperplate Gothic Light", "Helvetica Neue", Helvetica, Arial, sans-serif;
 @serifFontFamily:       Georgia, "Times New Roman", Times, serif;
 @monoFontFamily:        Menlo, Monaco, Consolas, "Courier New", monospace;
 
-@baseFontSize: {% if baseFontSize %}{{ baseFontSize }}{% else %}13px{% endif %};
+@baseFontSize: 13px;
 @baseFontFamily: @sansFontFamily;
-@baseLineHeight: {% if baseLineHeight %}{{ baseLineHeight }}{% else %}18px{% endif %};
+@baseLineHeight: 18px;
 @altFontFamily:         @serifFontFamily;
 
 @headingsFontFamily:    inherit; // empty to use BS default, @baseFontFamily
@@ -76,11 +76,11 @@
 
 // Buttons
 // -------------------------
-@btnBackground: {% if btnBackground %}{{ btnBackground }}{% else %}@white{% endif %};
+@btnBackground: @white;
 @btnBackgroundHighlight:            spin(@btnBackground, 15%);
 @btnBorder:                         darken(@btnBackground, 20%);
 
-@btnPrimaryBackground: {% if btnPrimaryBackground %}{{ btnPrimaryBackground }}{% else %}@linkColor{% endif %};
+@btnPrimaryBackground: @linkColor;
 @btnPrimaryBackgroundHighlight:     darken(@btnPrimaryBackground, 15%);
 
 @btnInfoBackground:                 #5bc0de;
@@ -95,7 +95,7 @@
 @btnDangerBackground:               #ee5f5b;
 @btnDangerBackgroundHighlight:      #bd362f;
 
-@btnInverseBackground: {% if btnInverseBackground %}{{ btnInverseBackground }}{% else %}@gray{% endif %};
+@btnInverseBackground: @gray;
 @btnInverseBackgroundHighlight: darken(@btnInverseBackground, 15%);
 
 
@@ -152,12 +152,12 @@
 // Navbar
 // -------------------------
 @navbarHeight:                    40px;
-@navbarBackground: {% if navbarBackground %}{{ navbarBackground }}{% else %}@grayDarker{% endif %};
-@navbarBackgroundHighlight: {% if navbarBackgroundHighlight %}{{ navbarBackgroundHighlight }}{% else %}@grayDark{% endif %};
+@navbarBackground: @grayDarker;
+@navbarBackgroundHighlight: @grayDark;
 
-@navbarText: {% if navbarText %}{{ navbarText }}{% else %}@grayLight{% endif %};
-@navbarLinkColor: {% if navbarLinkColor %}{{ navbarLinkColor }}{% else %}@grayLight{% endif %};
-@navbarLinkColorHover: {% if navbarLinkColorHover %}{{ navbarLinkColorHover }}{% else %}@white{% endif %};
+@navbarText: @grayLight;
+@navbarLinkColor: @grayLight;
+@navbarLinkColorHover: @white;
 @navbarLinkColorActive:           @navbarLinkColorHover;
 @navbarLinkBackgroundHover:       transparent;
 @navbarLinkBackgroundActive:      @navbarBackground;
@@ -171,7 +171,7 @@
 
 // Hero unit
 // -------------------------
-@heroUnitBackground: {% if heroUnitBackground %}{{ heroUnitBackground }}{% else %}@grayLighter{% endif %};
+@heroUnitBackground: @grayLighter;
 @heroUnitHeadingColor:            inherit;
 @heroUnitLeadColor:               inherit;
 
@@ -215,15 +215,15 @@
 
 // Well 
 // --------------------------
-@wellBackground: {% if wellBackground %}{{ wellBackground }}{% else %} #f5f5f5{% endif %};
-{% endautoescape %}
+@wellBackground:  #f5f5f5;
+
 
 //Sidebar
 // --------------------------
-@sidebarBackground: {% if sidebarBackground %}{{ sidebarBackground }}{% else %} @grayLighter{% endif %};
-@sidebarActive: {% if sidebarActive %}{{ sidebarActive }}{% else %} @white{% endif %};
-@sidebarActiveBackground: {% if sidebarActiveBackground %}{{ sidebarActiveBackground }}{% else %}@linkColorHover{% endif %};
-@sidebarHeader: {% if sidebarHeader %}{{ sidebarHeader }}{% else %} @grayLight{% endif %};
-@sidebarHover: {% if sidebarHover %}{{ sidebarHover }}{% else %} @white{% endif %};
-@sidebarLink: {% if sidebarLink %}{{ sidebarLink }}{% else %} @linkColor{% endif %};
-@sidebarLinkHover: {% if sidebarLinkHover %}{{ sidebarLinkHover }}{% else %} @linkColorHover{% endif %};
+@sidebarBackground:  @grayLighter;
+@sidebarActive:  @white;
+@sidebarActiveBackground: @linkColorHover;
+@sidebarHeader:  @grayLight;
+@sidebarHover:  @white;
+@sidebarLink:  @linkColor;
+@sidebarLinkHover:  @linkColorHover;

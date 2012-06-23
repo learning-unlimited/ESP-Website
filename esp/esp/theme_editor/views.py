@@ -33,14 +33,10 @@ sans_serif_fonts = {"Impact":"Impact, Charcoal, sans-serif",
                     "Arial":"Arial, Helvetica, sans-serif",
                     "Georgia":"Georgia, serif"}
 
-def get_theme_name(less_file):
-    less_file = path.join(less_dir, less_file)
+def get_theme_name(theme_file_path):
     f = open(less_file).read()
-    d = {}
-    theme_name = re.search(r"// Theme Name: (.+?)\n", f)
-    if match:
-        d.update({'theme_name':match.group(1)})
-    return d
+    return re.search(r"// Theme Name: (.+?)\n", f).group(1)
+
 
 def parse_less(less_file_path):
     try:
@@ -136,6 +132,20 @@ def apply_theme(less_file):
     except shutil.Error:
         pass
 
+def delete_theme(theme_name):
+    remove(path.join(themes_dir, theme_name))
+    if get_theme_name(variables_less) == theme_name:
+        apply_theme('Default.less')
+
+def generate_default():
+    f = open(variables_template_less)
+    variables_template = Template(f.read())
+    f.close()
+    w = variables_template.render(Context({'theme_name':'Default'}))
+    f = open(path.join(themes_dir, 'Default.less'), 'w')
+    f.write(w)
+    f.close()
+        
 @admin_required
 def theme_submit(request):
     if 'save' in request.POST:
@@ -143,7 +153,13 @@ def theme_submit(request):
         save(request, save_file_name)
         apply_theme(save_file_name)
     elif 'load' in request.POST:
-        apply_theme(request.POST['loadThemeName']+'.less')
+        if request.POST['loadThemeName'] == 'Default':
+            generate_default()
+            apply_theme('Default.less')
+        else:
+            apply_theme(request.POST['loadThemeName']+'.less')
+    elif 'delete' in request.POST:
+        remove(path.join(themes_dir, request.POST['loadThemeName']+'.less'))
     elif 'apply' in request.POST:
         shutil.copy(variables_less, path.join(less_dir,'variables_backup.less'))
         save(request, 'variables.less')
