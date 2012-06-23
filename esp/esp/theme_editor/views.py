@@ -157,6 +157,8 @@ def theme_submit(request):
             theme_name = get_theme_name(variables_less)
             if theme_name == 'None':
                 return HttpResponseRedirect('/theme/')
+        else:
+            theme_name = request.POST['saveThemeName']
         save_file_name = theme_name + '.less'
         save(request, save_file_name)
         apply_theme(save_file_name)
