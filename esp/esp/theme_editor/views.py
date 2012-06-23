@@ -34,7 +34,7 @@ sans_serif_fonts = {"Impact":"Impact, Charcoal, sans-serif",
                     "Georgia":"Georgia, serif"}
 
 def get_theme_name(theme_file_path):
-    f = open(less_file).read()
+    f = open(theme_file_path).read()
     return re.search(r"// Theme Name: (.+?)\n", f).group(1)
 
 
@@ -78,21 +78,22 @@ def editor(request):
 
 def save(request, less_file):
     
-    theme_file_path = path.join(themes_dir, less_file)
+    # when only applying, you want to write the changes to variables.less, and otherwise to the relevant theme file
+    if 'apply' in request.POST:
+        theme_file_path = path.join(less_dir, less_file) #less_file should always be 'variables.less' in this case?
+    else:
+        theme_file_path = path.join(themes_dir, less_file)
+
     variables_settings = parse_less(theme_file_path)
 
     # when the theme is saved for the first time, less_file doesn't exist, so parse_less will return an empty dict
-    if not variables_settings or 'theme_name' not in variables_settings:
+    if not variables_settings or 'theme_name' not in variables_settings or variables_settings['theme_name'] == 'None':
         variables_settings['theme_name'] = less_file[:-5]
 
         # if theme is saved without a name, just set it as default with the name 'None'
         if variables_settings['theme_name'] == '': 
             del variables_settings['theme_name']
     
-    # if theme is only applied, just set theme as default and name as 'None'
-    if 'apply' in request.POST:
-        del variables_settings['theme_name']
-
     f = open(variables_template_less)
     variables_template = Template(f.read())
     f.close()
@@ -104,11 +105,14 @@ def save(request, less_file):
             del form_settings[k];
 
     variables_settings.update(form_settings)
-    w = variables_template.render(Context(variables_settings))
+
+    # if theme is only applied, but has some changes, just apply theme and set name as 'None'
     if 'apply' in request.POST:
-        f = open(path.join(less_dir, less_file), 'w')
-    else:
-        f = open(theme_file_path, 'w')
+        del variables_settings['theme_name']
+
+
+    w = variables_template.render(Context(variables_settings))
+    f = open(theme_file_path, 'w')
     f.write(w)
     f.close()
 
@@ -149,7 +153,11 @@ def generate_default():
 @admin_required
 def theme_submit(request):
     if 'save' in request.POST:
-        save_file_name = request.POST['saveThemeName'] + '.less'
+        if request.POST['saveThemeName'] == '':
+            theme_name = get_theme_name(variables_less)
+            if theme_name == 'None':
+                return HttpResponseRedirect('/theme/')
+        save_file_name = theme_name + '.less'
         save(request, save_file_name)
         apply_theme(save_file_name)
     elif 'load' in request.POST:

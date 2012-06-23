@@ -310,10 +310,8 @@
 
 		<br />
 		<div class="control-group">
-		  <label>Currently loaded: <strong>{{theme_name}}</strong></label>
-		  <input id="save" type="text" value="" name="saveThemeName" placeholder="Enter a name..." />
-
-		  <button type="submit" class="btn" name="save" value="save"> Save As </button> 
+		  <input id="save" type="text" value="" name="saveThemeName" placeholder="Current: {{theme_name}}" />
+		  <button type="submit" class="btn" name="save" value="save"> Save and Apply </button> 
 
 		  <br />
 		  <br />
@@ -338,7 +336,7 @@
 
 
       <div class="form-actions" style="text-align:center;">
-	<button type="submit" class="btn btn-primary" name="apply" value="apply"> Apply </button>
+	<button type="submit" class="btn btn-primary" name="apply" value="apply"> Test </button>
 
 	<button type="submit" class="btn" name="reset" value="reset"> Reset Without Saving </button>
       </div>
