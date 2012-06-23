@@ -31,7 +31,7 @@ def join_emaillist(request):
 
 
     if request.method == 'POST':
-        form = EmailUserForm(request.POST, request=request)
+        form = EmailUserForm(request.POST)
 
 
         if form.is_valid():
@@ -45,7 +45,7 @@ def join_emaillist(request):
 
             return HttpResponseRedirect('/')
     else:
-        form = EmailUserRegForm(request=request)    
+        form = EmailUserRegForm()    
 
     return render_to_response('registration/emailuser.html',
                               request, request.get_node('Q/Web/myesp'), {'form':form})
