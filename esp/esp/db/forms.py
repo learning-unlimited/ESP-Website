@@ -60,7 +60,7 @@ class AjaxForeignKeyFieldBase:
 <!--
 
 $j("#id_%s").val("%s");
-$j("#id_%s_data").val(%d);
+$j("#id_%s_data").val(%s);
 $j("#id_%s").autocomplete({
     source: function(request, response) {
         $j.ajax({
