@@ -29,4 +29,7 @@ def make_user_admin(target_user):
     target_user.userbit_set.add(UserBit(verb = GetNode('V/Administer'), qsc = GetNode('Q')))
     target_user.userbit_set.add(UserBit(verb = GetNode('V/Flags/UserRole/Administrator'), qsc = GetNode('Q')))
 
+    #   Clear the UserBit cache for this user
+    UserBit.objects.cache(target_user).update()
+
     target_user.save()
