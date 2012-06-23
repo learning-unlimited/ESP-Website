@@ -10,10 +10,12 @@ import shutil
 import glob
 
 # can we avoid hardcoding this?
-less_dir = path.join(PROJECT_ROOT, 'public/media/theme_editor/less/') #directory containing modified less files
+less_dir = path.join(PROJECT_ROOT, 'public/media/theme_editor/less/') #directory containing less files used by theme editor
+themes_dir = path.join(PROJECT_ROOT, 'public/media/theme_editor/themes/') #directory containing the themes
 variables_template_less = path.join(less_dir, 'variables_template.less')
 variables_less = path.join(less_dir, 'variables.less')
 
+# and this...
 sans_serif_fonts = {"Impact":"Impact, Charcoal, sans-serif",
                     "Palatino Linotype":"'Palatino Linotype', 'Book Antiqua', Palatino, serif",
                     "Tahoma":"Tahoma, Geneva, sans-serif",
@@ -40,10 +42,9 @@ def get_theme_name(less_file):
         d.update({'theme_name':match.group(1)})
     return d
 
-def parse_less(less_file):
-    less_file = path.join(less_dir, less_file)
+def parse_less(less_file_path):
     try:
-        f = open(less_file).read()
+        f = open(less_file_path).read()
     #this regex is supposed to match @(property) = (value);
     #or @(property) = (function)(args) in match[0] and 
     #match[1] respectively
@@ -65,12 +66,12 @@ def parse_less(less_file):
 
 @admin_required    
 def editor(request):
-    context = parse_less(variables_less)
+    context = parse_less(path.join(less_dir, variables_less))
     # load a list of available themes
-    available_themes_paths = glob.glob(path.join(less_dir,'theme_*.less'))
+    available_themes_paths = glob.glob(path.join(themes_dir,'*.less'))
     available_themes = []
     for theme_path in available_themes_paths:
-        available_themes.append(re.search(r'theme_editor/less/(theme_.+)\.less',theme_path).group(1))
+        available_themes.append(re.search(r'theme_editor/themes/(.+)\.less',theme_path).group(1))
     context.update({'available_themes':available_themes})
     context.update({'last_used_settings':'variables_backup'})
     context.update({'sans_fonts':sorted(sans_serif_fonts.iteritems())})
@@ -80,8 +81,9 @@ def editor(request):
     return render_to_response('theme_editor/editor.html', context, context_instance=RequestContext(request))
 
 def save(request, less_file):
-
-    variables_settings = parse_less(less_file)
+    
+    theme_file_path = path.join(themes_dir, less_file)
+    variables_settings = parse_less(theme_file_path)
 
     # when the theme is saved for the first time, less_file doesn't exist, so parse_less will return an empty dict
     if not variables_settings or 'theme_name' not in variables_settings:
@@ -94,7 +96,7 @@ def save(request, less_file):
     # if theme is only applied, just set theme as default and name as 'None'
     if 'apply' in request.POST:
         del variables_settings['theme_name']
-    less_file = path.join(less_dir, less_file)
+
     f = open(variables_template_less)
     variables_template = Template(f.read())
     f.close()
@@ -107,7 +109,10 @@ def save(request, less_file):
 
     variables_settings.update(form_settings)
     w = variables_template.render(Context(variables_settings))
-    f = open(less_file, 'w')
+    if 'apply' in request.POST:
+        f = open(path.join(less_dir, less_file), 'w')
+    else:
+        f = open(theme_file_path, 'w')
     f.write(w)
     f.close()
 
@@ -124,9 +129,8 @@ def apply_theme(less_file):
             pass
         return
 
-    less_file = path.join(less_dir, less_file)
+    less_file = path.join(themes_dir, less_file)
     try:
-        shutil.copy(path.join(less_dir,'variables_backup.less'),path.join(less_dir,'variables_backup_temp.less'))
         shutil.copy(variables_less, path.join(less_dir, 'variables_backup.less'))
         shutil.copy(less_file, variables_less)
     except shutil.Error:
@@ -135,8 +139,9 @@ def apply_theme(less_file):
 @admin_required
 def theme_submit(request):
     if 'save' in request.POST:
-        save(request, request.POST['saveThemeName']+'.less')
-        apply_theme(request.POST['saveThemeName']+'.less')
+        save_file_name = request.POST['saveThemeName'] + '.less'
+        save(request, save_file_name)
+        apply_theme(save_file_name)
     elif 'load' in request.POST:
         apply_theme(request.POST['loadThemeName']+'.less')
     elif 'apply' in request.POST:
