@@ -10,7 +10,6 @@ import simplejson as json
 def get_program(request):
     """ Get the user's profile
     """
-    import ipdb
     if request.method == 'GET':
         profiles = RegistrationProfile.objects.filter(user__exact=request.user).select_related()
 
