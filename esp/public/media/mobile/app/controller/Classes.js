@@ -19,7 +19,7 @@ Ext.define('LU.controller.Classes', {
                 clearicontap: 'onSearchClear'
             },
             classList: {
-                show: 'onListShow'
+                initialize: 'onListInit',
             },
             logout: {
                 tap: 'onLogout'
@@ -56,7 +56,7 @@ Ext.define('LU.controller.Classes', {
         this.getClassList().deselectAll();
     },
 
-    onListShow: function(list, opts) {
+    onListInit: function(list, opts) {
         list.getStore().load().clearFilter();
         list.getStore().setGrouper(this.getTitleGrouper());
     },
