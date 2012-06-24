@@ -31,7 +31,7 @@ def join_emaillist(request):
 
 
     if request.method == 'POST':
-        form = EmailUserForm(request.POST, request=request)
+        form = EmailUserForm(request.POST)
 
 
         if form.is_valid():
@@ -45,7 +45,7 @@ def join_emaillist(request):
 
             return HttpResponseRedirect('/')
     else:
-        form = EmailUserRegForm(request=request)    
+        form = EmailUserRegForm()    
 
     return render_to_response('registration/emailuser.html',
                               request, request.get_node('Q/Web/myesp'), {'form':form})
@@ -186,12 +186,12 @@ def user_registration_phase2(request):
 
 def activate_account(request):
     if not 'username' in request.GET or not 'key' in request.GET:
-        raise ESPError(), "Invalid account activation information.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
+        raise ESPError(False), "Invalid account activation information.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
 
     try:
         u = ESPUser.objects.get(username = request.GET['username'])
     except:
-        raise ESPError(), "Invalid account username.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
+        raise ESPError(False), "Invalid account username.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
 
     if not u.password.endswith("_%s" % request.GET['key']):
         raise ESPError(False), "Incorrect key.  Please try again to click the link in your email, or copy the url into your browser.  If this error persists, please contact us using the contact information on the top or bottom of this page."
