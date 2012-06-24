@@ -2,7 +2,6 @@ Ext.define('LU.model.Class', {
     extend: 'Ext.data.Model',
 
     config: {
-        idProperty: 'id',
 
         fields: [
             'category',
@@ -11,7 +10,6 @@ Ext.define('LU.model.Class', {
             'prereqs',
             'schedule',
             'class_info',
-            'anchor',
             'class_size_max',
             'num_questions',
             'class_size_min',
@@ -19,8 +17,14 @@ Ext.define('LU.model.Class', {
             'session_count',
             'num_students',
             'parent_program',
-            'id',
             'teachers',
+            'get_sections',
+            'section_short_description',
+            'section_num_students',
+            'section_duration',
+            'section_id',
+            'section_capacity',
+            'section_index',
 
             {
                 name: 'hardness_rating',
@@ -44,7 +48,42 @@ Ext.define('LU.model.Class', {
                             return 'Very Difficult';
                     }
                 }
-            }
+            },
+            {
+                name: 'code',
+                type: 'string',
+                convert: function(value, record) {
+                    var code = record.data.category.symbol + record.data.id
+                    if (record.data.section_index > 0) {
+                        code += 's' + (record.data.section_index+1);
+                    }
+                    return code;
+                }
+            },
+            {
+                name: 'section_start_time',
+                type: 'date',
+                convert: function(value, record) {
+                    if (value) {
+                        var date = value.split(/[\-T:]/);
+                        return new Date(date[0], date[1]-1, date[2], date[3]);
+                    } else {
+                        return new Date();
+                    }
+                }
+            },
+            {
+                name: 'section_end_time',
+                type: 'date',
+                convert: function(value, record) {
+                    if (value) {
+                        var date = value.split(/[\-T:]/);
+                        return new Date(date[0], date[1]-1, date[2], date[3]);
+                    } else {
+                        return new Date();
+                    }
+                }
+            },
         ]
     }
 })

@@ -12,6 +12,7 @@ Ext.define('LU.view.class.List', {
 
     config: {
 
+        cls: 'classList',
         store: 'Classes',
         grouped: true,
 
@@ -19,7 +20,6 @@ Ext.define('LU.view.class.List', {
             { xtype: 'classSortBar' },
             { xtype: 'classSearchBar' }
         ],
-        itemTpl: '{title}'
+        itemTpl: '<div class="classes"><div class="title">{title}</div> <div class="code">{code}</div></div>'
     },
 });
-

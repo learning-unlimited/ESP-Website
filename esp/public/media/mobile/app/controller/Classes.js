@@ -38,6 +38,14 @@ Ext.define('LU.controller.Classes', {
                 return record.get('hardness_desc');
             },
             sortProperty: 'hardness_rating'
+        },
+
+        timeGrouper: {
+            groupFn: function(record) {
+                // formatting syntax: http://docs.sencha.com/ext-js/4-0/#!/api/Ext.Date
+                return Ext.Date.format(record.get('section_start_time'), 'g:i A');
+            },
+            sortProperty: 'section_start_time'
         }
     },
 
@@ -49,7 +57,7 @@ Ext.define('LU.controller.Classes', {
         } else if (btn.getText() === 'Difficulty') {
             store.setGrouper(this.getDifficultyGrouper());
         } else if (btn.getText() === 'Time') {
-            // not implemented yet
+            store.setGrouper(this.getTimeGrouper());
         }
         store.sort('title');                    // sorts items within the group
         this.getClassList().setStore(store);
@@ -57,7 +65,7 @@ Ext.define('LU.controller.Classes', {
     },
 
     onListInit: function(list, opts) {
-        list.getStore().load().clearFilter();
+        list.getStore().clearFilter();
         list.getStore().setGrouper(this.getTitleGrouper());
     },
 

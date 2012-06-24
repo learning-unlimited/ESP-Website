@@ -37,7 +37,16 @@ Ext.define('LU.controller.Programs', {
         if (user.get('role') === 'volunteer') {
             Ext.Viewport.setActiveItem(Ext.widget('volunteer'));
         } else if (user.get('role') === 'student') {
-            Ext.Viewport.setActiveItem(Ext.widget('student'));
+            Ext.Viewport.setMasked({ xtype: 'loadmask' });
+
+            LU.Util.getClasses(function(result) {
+                if (!result) {
+                    Ext.Viewport.setActiveItem(Ext.widget('student'));
+                    Ext.Viewport.setMasked(false);
+                } else {
+                    Ext.Msg.alert('Network Error', 'We are experiencing problems fetching the data from server. You may wish to try reloading again.');
+                }
+            });
         }
     }
 });
