@@ -22,8 +22,9 @@ Ext.define('LU.Util', {
     getClasses: function(callback) {
 
         var url = this.getCatalogUrl(),
-            classStore = Ext.getStore('Classes'),
-            sectionStore = Ext.getStore('Sections');
+            classStore = Ext.getStore('Classes');
+
+        classStore.removeAll();
 
         Ext.Ajax.request({
             url: url,

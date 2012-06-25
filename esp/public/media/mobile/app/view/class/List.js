@@ -14,6 +14,7 @@ Ext.define('LU.view.class.List', {
 
         cls: 'classList',
         store: 'Classes',
+        title: 'Welcome!',
         grouped: true,
 
         items: [

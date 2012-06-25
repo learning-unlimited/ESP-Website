@@ -33,7 +33,6 @@ Ext.application({
     views: [
         'Main',
         'Panel',
-        'TitleBar',
 
         'program.List',
 
