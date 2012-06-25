@@ -77,19 +77,22 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
  * Program
  */
 
-.description {
-    text-align: center;
-//    padding: 1.2em 1.2em 0 1.2em;
-}
+.program-list {
+    .description {
+        text-align: center;
+    }
 
-// add top border for the first list cell
-.program-list .x-list-item:first-child .x-list-item-label {
-    border-top: 1px solid #dedede !important;
+    // add top border for the first list cell
+    .x-list-item:first-child .x-list-item-label {
+        border-top: 1px solid #dedede !important;
+    }
 }
 
 /*
  * Classes
  */
+
+$class-code-color: #7d7d7d;
 
 .classList .classes {
     @include display-box;
@@ -102,7 +105,32 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
 
     .code {
         font-style: italic;
-        color: #7d7d7d;
+        color: $class-code-color;
         font-size: 80%;
+    }
+}
+
+.classInfo {
+    .title {
+        font-weight: bold;
+        font-size: 1.4em;
+        line-height: 1.26em;
+        margin-bottom: 0.51em;
+        padding: 6.9px 11px 0 11px;
+    }
+
+    .code {
+        display: inline;
+        font-size: 0.84em;
+        font-weight: normal;
+        font-style: italic;
+        color: $class-code-color;
+    }
+
+    .description {
+        font-size: 0.9em;
+        line-height: 1.26em;
+        margin-bottom: 0.51em;
+        padding: 4.9px 11px 11px 11px;
     }
 }

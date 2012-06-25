@@ -84,6 +84,8 @@ Ext.define('LU.model.Class', {
                     }
                 }
             },
-        ]
+        ],
+
+        hasMany: 'LU.model.Timing'
     }
 })

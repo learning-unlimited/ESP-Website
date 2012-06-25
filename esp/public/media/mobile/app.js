@@ -14,12 +14,14 @@ Ext.application({
 
     models: [
         'Class',
+        'Timing',
         'Program',
         'User'
     ],
 
     stores: [
         'Classes',
+        'Timings',
         'Programs',
         'User'
     ],
@@ -40,6 +42,10 @@ Ext.application({
 
         'class.Card',
         'class.List',
+        'class.Detail',
+        'class.Info',
+        'class.Timing',
+        'class.Prereq',
 
         'student.Main',
 

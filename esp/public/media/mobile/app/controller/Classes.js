@@ -3,7 +3,10 @@ Ext.define('LU.controller.Classes', {
 
     config: {
         refs: {
+            classContainer: 'classContainer',
             classList: 'classList',
+            timingList: 'timingList',
+            classInfo: 'classInfo',
             sortBy: 'classSortBar segmentedbutton',
             searchField: 'classSearchBar textfield',
             logout: 'classContainer button[text="Logout"]'
@@ -20,6 +23,8 @@ Ext.define('LU.controller.Classes', {
             },
             classList: {
                 initialize: 'onListInit',
+                show: 'onListShow',
+                itemtap: 'onClassTap'
             },
             logout: {
                 tap: 'onLogout'
@@ -49,6 +54,15 @@ Ext.define('LU.controller.Classes', {
         }
     },
 
+    search: function(input, store) {
+        if (input != '') {
+            store.clearFilter(true);
+            store.filter('title', input, true);
+        } else {
+            store.clearFilter();
+        }
+    },
+
     onSortToggle: function(segBtn, btn) {
         var store = Ext.getStore('Classes');
 
@@ -69,18 +83,37 @@ Ext.define('LU.controller.Classes', {
         list.getStore().setGrouper(this.getTitleGrouper());
     },
 
+    onListShow: function(list, opts) {
+        // saves the search result when going between views
+        this.search(this.getSearchField().getValue(), list.getStore());
+
+        // show Logout button
+        this.getLogout().show();
+    },
+
+    onClassTap: function(list, index, target, record, event, opts) {
+        if (!this.classDetail) {
+            this.classDetail = Ext.widget('classDetail');
+        }
+        this.classDetail.config.title = record.get('title');
+        this.getClassContainer().push(this.classDetail);
+        this.getClassInfo().setRecord(record);
+
+        // hide Logout button
+        this.getLogout().hide();
+
+        // apply filter for Prereq list
+        Ext.getStore('Classes').filter('id', record.get('id'));
+
+        // apply filter for Timing list
+        var store = Ext.getStore('Timings');
+        store.clearFilter();
+        store.filter('class_id', record.get('id'));
+    },
+
     onSearch: function(searchField) {
         this.getClassList().deselectAll();
-
-        var store = Ext.getStore('Classes'),
-            input = searchField.getValue();
-
-        if (input != '') {
-            store.clearFilter(true);
-            store.filter('title', input, true);
-        } else {
-            store.clearFilter();
-        }
+        this.search(searchField.getValue(), Ext.getStore('Classes'));
     },
 
     onSearchClear: function() {
