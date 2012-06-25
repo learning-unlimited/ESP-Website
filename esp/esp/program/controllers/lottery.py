@@ -66,6 +66,7 @@ class LotteryAssignmentController(object):
         self.num_timeslots = len(self.program.getTimeSlots())
         self.num_students = self.program.students()['lotteried_students'].count()
         self.num_sections = len(self.program.sections().filter(status__gt=0, registration_status=0))
+        self.priority_limit = self.program.priorityLimit()
         
         self.options = LotteryAssignmentController.default_options.copy()
         self.options.update(kwargs)
@@ -119,7 +120,7 @@ class LotteryAssignmentController(object):
         """
         
         self.interest = numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool)
-        self.priority = numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool)
+        self.priority = [numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool) for i in range(self.priority_limit+1)]
         self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool)
         self.section_capacities = numpy.zeros((self.num_sections,), dtype=numpy.uint32)
         self.section_overlap = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool)
@@ -163,12 +164,19 @@ class LotteryAssignmentController(object):
         #   Populate interest matrix
         interest_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Interested', end_date__gte=now).values_list('user__id', 'section__id').distinct()
         ira = numpy.array(interest_regs, dtype=numpy.uint32)
-        self.interest[self.student_indices[ira[:, 0]], self.section_indices[ira[:, 1]]] = True
+        try:
+            self.interest[self.student_indices[ira[:, 0]], self.section_indices[ira[:, 1]]] = True
+        except IndexError:
+            pass
         
         #   Populate priority matrix
-        priority_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Priority/1', end_date__gte=now).values_list('user__id', 'section__id').distinct()
-        pra = numpy.array(priority_regs, dtype=numpy.uint32)
-        self.priority[self.student_indices[pra[:, 0]], self.section_indices[pra[:, 1]]] = True
+        priority_regs = [StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Priority/%s'%i, end_date__gte=now).values_list('user__id', 'section__id').distinct() for i in range(self.priority_limit+1)]
+        pra = [numpy.array(priority_regs[i], dtype=numpy.uint32) for i in range(self.priority_limit+1)]
+        for i in range(1,self.priority_limit+1):
+            try:
+                self.priority[i][self.student_indices[pra[i][:, 0]], self.section_indices[pra[i][:, 1]]] = True
+            except IndexError:
+                pass
         
         #   Set student utility weights. Counts number of classes that students selected. Used only for computing the overall_utility stat
         #   NOTE: Uses fixed (interest + priority) formula, needs attention when multiple priority levels are merged.
@@ -225,7 +233,7 @@ class LotteryAssignmentController(object):
         
         #   Assign the matrix of sign-up preferences depending on whether we are considering priority bits or not
         if priority:
-            signup = self.priority
+            signup = self.priority[priority]
             weight_factor = self.options['Kp']
         else:
             signup = self.interest
@@ -319,8 +327,9 @@ class LotteryAssignmentController(object):
         random_section_indices = numpy.random.choice(self.num_sections, self.num_sections, replace=False)
         random_section_indices = sorted(random_section_indices, key=lambda i : -self.section_lengths[i])
         if self.options['stats_display']: print '\n== Assigning priority students'
-        for section_index in random_section_indices:
-            self.fill_section(section_index, priority=True)
+        for i in range(1,self.priority_limit+1):
+            for section_index in random_section_indices:
+                self.fill_section(section_index, priority=i)
         
         #   Sort sections in increasing order of number of interesting students
         #   TODO: Check with Alex that this is the desired algorithm
@@ -354,19 +363,25 @@ class LotteryAssignmentController(object):
             lottery assignment worked.  """
 
         stats = {}
-
-        priority_matches = self.student_sections * self.priority
-        priority_assigned = numpy.sum(priority_matches, 1)
-        priority_requested = numpy.sum(self.priority, 1)
-        priority_fractions = numpy.nan_to_num(priority_assigned.astype(numpy.float) / priority_requested)
-
+        
+        priority_matches = [self.student_sections * self.priority[i] for i in range(self.priority_limit+1)]
+        priority_assigned = [numpy.sum(priority_matches[i], 1) for i in range(self.priority_limit+1)]
+        priority_requested = [numpy.sum(self.priority[i], 1) for i in range(self.priority_limit+1)]
+        priority_fractions = [0 for i in range(self.priority_limit+1)]
+        for i in range(1,self.priority_limit+1):
+            priority_fractions[i] = numpy.nan_to_num(priority_assigned[i].astype(numpy.float) / priority_requested[i])
+        
         interest_matches = self.student_sections * self.interest
         interest_assigned = numpy.sum(interest_matches, 1)
         interest_requested = numpy.sum(self.interest, 1)
         interest_fractions = numpy.nan_to_num(interest_assigned.astype(numpy.float) / interest_requested)
-
-        stats['priority_requested'] = priority_requested
-        stats['priority_assigned'] = priority_assigned
+        
+        for i in range(1,self.priority_limit+1):
+            stats['priority_%s_requested'%i] = priority_requested[i]
+            stats['priority_%s_assigned'%i] = priority_assigned[i]
+            stats['overall_priority_%s_ratio'%i] = float(numpy.sum(priority_assigned[i])) / numpy.sum(priority_requested[i])
+        stats['priority_requested'] = priority_requested[1]
+        stats['priority_assigned'] = priority_assigned[1]
         stats['interest_requested'] = interest_requested
         stats['interest_assigned'] = interest_assigned
         stats['student_ids'] = self.student_ids
@@ -374,21 +389,23 @@ class LotteryAssignmentController(object):
         stats['num_sections'] = self.num_sections
         stats['num_enrolled_students'] = numpy.sum((numpy.sum(self.student_schedules, 1) > 0))
         stats['num_lottery_students'] = self.num_students
-        stats['overall_priority_ratio'] = float(numpy.sum(priority_assigned)) / numpy.sum(priority_requested)
+        stats['overall_priority_ratio'] = float(numpy.sum(priority_assigned[1])) / numpy.sum(priority_requested[1])
         stats['overall_interest_ratio'] = float(numpy.sum(interest_assigned)) / numpy.sum(interest_requested)
         stats['num_registrations'] = numpy.sum(self.student_sections)
         stats['num_full_classes'] = numpy.sum(self.section_capacities == numpy.sum(self.student_sections, 0))
         stats['total_spaces'] = numpy.sum(self.section_capacities)
 
         #   Compute histograms of assigned vs. requested classes
-        hist_priority = {}
-        for i in range(self.num_students):
-            key = (priority_assigned[i], priority_requested[i])
-            if key not in hist_priority:
-                hist_priority[key] = 0
-            hist_priority[key] += 1
-        stats['hist_priority'] = hist_priority
-
+        hist_priority = [{} for i in range(self.priority_limit+1)]
+        for j in range(1,self.priority_limit+1):
+            for i in range(self.num_students):
+                key = (priority_assigned[j][i], priority_requested[j][i])
+                if key not in hist_priority[j]:
+                    hist_priority[j][key] = 0
+                hist_priority[j][key] += 1
+            stats['hist_priority_%s'%j] = hist_priority[j]
+        stats['hist_priority'] = hist_priority[1]
+        
         hist_interest = {}
         for i in range(self.num_students):
             key = (interest_assigned[i], interest_requested[i])
@@ -467,7 +484,12 @@ class LotteryAssignmentController(object):
         elif mode == 'interested':
             assignments = numpy.nonzero(self.interest[self.student_indices[student_id], :])[0]
         elif mode == 'priority':
-            assignments = numpy.nonzero(self.priority[self.student_indices[student_id], :])[0]
+            assignments = numpy.nonzero(self.priority[1][self.student_indices[student_id], :])[0]
+        else:
+            import re
+            p = re.search('(?<=priority_)\d*', mode).group(0)
+            if p:
+                assignments = numpy.nonzero(self.priority[p][self.student_indices[student_id], :])[0]
         result = []
         for i in range(assignments.shape[0]):
             result.append(ClassSection.objects.get(id=self.section_ids[assignments[i]]))
