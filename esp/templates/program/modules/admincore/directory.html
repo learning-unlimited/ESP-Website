@@ -7,75 +7,70 @@
 {% block xtrajs %}
 {{block.super }}
 <script type="text/javascript">
-<!--
+  <!--
 
-function updateDocs(docs) {
-   document.getElementById('adminhelp').innerHTML = docs;
-}
-//-->
+      function updateDocs(docs) {
+      document.getElementById('adminhelp').innerHTML = docs;
+      }
+      //-->
 </script>
 {% endblock %}
 {% block content %}
 {% load render_qsd %}
 <style type="text/css">
-.nocheckmark { border: 1px solid black; }
+  .nocheckmark { border: 1px solid black; }
 </style>
 
-<h1>Admin Portal for {{program.niceName}} </h1>
+<div class="row">
 
-<p style="text-align: center">
-Welcome to the Administrative Portal for {{program.niceName }}.<br />
-If you need any assistance, please email <tt>{{ DEFAULT_EMAIL_ADDRESSES.support }}</tt>.
-</p>
+  <div class="span6 offset1">
+    <h1>Admin Portal for {{program.niceName}} </h1>
 
-<center>
+    <p style="text-align: center">
+      Welcome to the Administrative Portal for {{program.niceName }}.<br />
+      If you need any assistance, please email <tt>{{ DEFAULT_EMAIL_ADDRESSES.support }}</tt>.
+    </p>
+  </div>
+</div>
+
+{% render_inline_qsd program.anchor "manage:main_top" %}
 <strong>Your options:</strong>
 <br />
-<table border="0" width="100%">
-<tr>
- <td colspan="2">
-{% render_inline_qsd program.anchor "manage:main_top" %}
- </td>
-</tr>
-<tr>
- <td width="40%">
-<ul>
+<div class="row">
+  <div class="span3 offset1">
+    <ul>
+      <li><a href="/onsite/{{program.getUrlBase}}/main">Go To On-Site Page</a></li>
+      
+      {% for module in modules %}
+      {% if module.isStep %}
+      {% if not module.useTemplate %}
+      <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
+      {% else %}
+      <li><span onmouseover="updateDocs('{{module.docs|linebreaks|addslashes}}');"><em>{{ module.module.link_title }} (part of Dashboard)</em></span></li>
+      {% endif %}
+      {% endif %}
+      {% endfor %}
+      <li><a href="/manage/{{ one }}/{{ two }}/deadline_management/" title="Deadline Management" onmouseover="updateDocs('<p>Edit Program Deadlines</p>');">Edit Program Deadlines</a></li>
+      <li><a href="/manage/{{ one }}/{{ two }}/registrationtype_management/" title="Registration Type Management" onmouseover="updateDocs('<p>Registration Type Management</p>');">Registration Type Management</a></li>
+      <li><a href="/learn/{{ one }}/{{ two }}/studentreg/" title="Student Registration" onmouseover="updateDocs('<p>Student Reg</p>');">Student Reg</a></li>
+      <li><a href="/learn/{{ one }}/{{ two }}/catalog/" title="Catalog" onmouseover="updateDocs('<p>Catalog</p>');">Catalog</a></li>
+      <li><a href="/manage/{{ one }}/{{ two }}/attendees/" title="Class Attendance" onmouseover="updateDocs('<p>Update Class Attendees</p>');">Update Class Attendees</a></li>
+    </ul>
+  </div>
 
-
-<li><a href="/onsite/{{program.getUrlBase}}/main">
-     Go To On-Site Page
-    </a>
-</li>
-
-{% for module in modules %}
-{% if module.isStep %}
-  {% if not module.useTemplate %}
-    <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
-  {% else %}
-    <li><span onmouseover="updateDocs('{{module.docs|linebreaks|addslashes}}');"><em>{{ module.module.link_title }} (part of Dashboard)</em></span></li>
-  {% endif %}
-{% endif %}
-{% endfor %}
-<li><a href="/manage/{{ one }}/{{ two }}/deadline_management/" title="Deadline Management" onmouseover="updateDocs('<p>Edit Program Deadlines</p>');">Edit Program Deadlines</a></li>
-<li><a href="/manage/{{ one }}/{{ two }}/registrationtype_management/" title="Registration Type Management" onmouseover="updateDocs('<p>Registration Type Management</p>');">Registration Type Management</a></li>
-<li><a href="/learn/{{ one }}/{{ two }}/studentreg/" title="Student Registration" onmouseover="updateDocs('<p>Student Reg</p>');">Student Reg</a></li>
-<li><a href="/learn/{{ one }}/{{ two }}/catalog/" title="Catalog" onmouseover="updateDocs('<p>Catalog</p>');">Catalog</a></li>
-<li><a href="/manage/{{ one }}/{{ two }}/attendees/" title="Class Attendance" onmouseover="updateDocs('<p>Update Class Attendees</p>');">Update Class Attendees</a></li>
-</ul>
-</td>
-<td style="vertical-align: top;">
-<div class="helpbox">
-<h4><span>Help</span></h4>
-<div id="adminhelp">
-Please select an option to the left to continue, or look down below to select further options.
+  <div class="span3">
+    <div class="helpbox">
+      <h4><span>Help</span></h4>
+      <div id="adminhelp">
+	Please select an option to the left to continue, or look down below to select further options.
+      </div>
+      {% render_inline_qsd program.anchor "manage:main_bottom" %}
+    </div>
+  </div>
 </div>
-</td>
-</tr>
-<tr>
-<td colspan="2">
-{% render_inline_qsd program.anchor "manage:main_bottom" %}
-</td>
-</tr>
-</table>
+
 
 {% endblock %}
+
+
+
