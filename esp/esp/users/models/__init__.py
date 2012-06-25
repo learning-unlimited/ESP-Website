@@ -993,6 +993,27 @@ class ESPUser(User, AnonymousUser):
 
         return schoolyear + 12 - grade
 
+    def getRankInClass(self, subject, default=10):
+        from esp.program.models.app_ import StudentAppQuestion, StudentAppResponse, StudentAppReview
+        from esp.program.models import StudentRegistration
+        if isinstance(subject, int):
+            subject = ClassSubject.objects.get(id=subject)
+        if not StudentAppQuestion.objects.filter(subject=subject).count():
+            return 10
+        elif StudentRegistration.objects.filter(section__parent_class=subject, relationship__name="Rejected",end_date__gte=datetime.now(),user=self).count() or not self.studentapplication_set.filter(program = subject.parent_program).count() or not StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=self).count():
+            return 1
+        for sar in StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=self):
+            if not len(sar.response.strip()):
+                return 1
+        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=self, studentapplication__program=subject.parent_program, reviewer__in=subject.teachers()).values_list('score', flat=True)) + [-1])
+        if rank == -1:
+            rank = default
+        return rank
+
+    def getRankInSection(self, section, default=10):
+        if isinstance(section, int):
+            section = ClassSection.objects.get(id=section)
+        return self.getRankInClass(section.parent_class, default)
 
 ESPUser.create_membership_methods()
 
