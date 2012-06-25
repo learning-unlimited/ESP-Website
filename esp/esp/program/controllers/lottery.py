@@ -376,7 +376,7 @@ class LotteryAssignmentController(object):
         if self.options['use_student_apps']:
             stats['ranks'] = self.ranks
             for rank in (10,5,1):
-                stats['rank_%s_assigned'] = numpy.logical_and(self.ranks == rank, self.student_sections == True)
+                stats['rank_%s_assigned'%rank] = numpy.logical_and(self.ranks == rank, self.student_sections == True)
         stats['interest_requested'] = interest_requested
         stats['interest_assigned'] = interest_assigned
         stats['enrollments'] = self.student_sections
