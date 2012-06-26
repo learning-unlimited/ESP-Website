@@ -29,28 +29,6 @@ Ext.define('LU.controller.Classes', {
             logout: {
                 tap: 'onLogout'
             }
-        },
-
-        titleGrouper: {
-            groupFn: function(record) {
-                return record.get('title')[0];
-            },
-            sortProperty: 'title'               // sorts the grouped headers
-        },
-
-        difficultyGrouper: {
-            groupFn: function(record) {
-                return record.get('hardness_desc');
-            },
-            sortProperty: 'hardness_rating'
-        },
-
-        timeGrouper: {
-            groupFn: function(record) {
-                // formatting syntax: http://docs.sencha.com/ext-js/4-0/#!/api/Ext.Date
-                return Ext.Date.format(record.get('section_start_time'), 'g:i A');
-            },
-            sortProperty: 'section_start_time'
         }
     },
 
@@ -65,11 +43,11 @@ Ext.define('LU.controller.Classes', {
         var store = Ext.getStore('Classes');
 
         if (btn.getText() === 'Title') {
-            store.setGrouper(this.getTitleGrouper());
+            store.setGrouper(LU.Util.getTitleGrouper());
         } else if (btn.getText() === 'Difficulty') {
-            store.setGrouper(this.getDifficultyGrouper());
+            store.setGrouper(LU.Util.getDifficultyGrouper());
         } else if (btn.getText() === 'Time') {
-            store.setGrouper(this.getTimeGrouper());
+            store.setGrouper(LU.Util.getTimeGrouper());
         }
         store.sort('title');                    // sorts items within the group
         this.getClassList().setStore(store);
@@ -78,7 +56,7 @@ Ext.define('LU.controller.Classes', {
 
     onListInit: function(list, opts) {
         list.getStore().clearFilter();
-        list.getStore().setGrouper(this.getTitleGrouper());
+        list.getStore().setGrouper(LU.Util.getTitleGrouper());
     },
 
     onListShow: function(list, opts) {
