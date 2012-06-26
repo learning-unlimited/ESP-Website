@@ -1,0 +1,20 @@
+<script type="text/javascript"> 
+	  $j(document).ready(function(){
+	      $j('label').each(function(index) {
+		  if ($(this).attr('for') != undefined) {
+		      $(this).addClass('control-label');
+		  }
+	      });
+	  });
+</script>
+		      
+{% for field in form.visible_fields %}
+
+<div class="control-group">
+  {{ field.label_tag }}
+  <div class="controls">
+    {{ field }}
+  </div>
+</div>
+
+{% endfor %}

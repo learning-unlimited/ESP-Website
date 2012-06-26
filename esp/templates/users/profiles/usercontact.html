@@ -1,123 +1,147 @@
 <!-- User ContactInfo -->
-<tr>
- <th colspan="2">Your Contact Information</th>
-</tr>
 
-<tr>
- <td><label for="id_first_name">First Name:</label></td>
- <td>{{ form.address_postal }}
+ Your Contact Information
+
+
+ <div class="control-group">
+ <label class="control-label" for="id_first_name">First Name:</label>
+ <div class="controls">
+ {{ form.address_postal }}
  {{ form.first_name }} {% if form.first_name.errors %}
    <br /><span class="form_error">{{ form.first_name.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
+ 
 
-<tr>
- <td><label for="id_last_name">Last Name:</label></td>
- <td>{{ form.last_name }} {% if form.last_name.errors %}
+
+<div class="control-group">
+ <label class="control-label" for="id_last_name">Last Name:</label>
+ <div class="controls">
+ {{ form.last_name }} {% if form.last_name.errors %}
    <br /><span class="form_error">{{ form.last_name.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
+ 
 
-<tr>
-<td colspan="2"> 
+
+
+ 
 <div class="info">
 <b>Please enter your primary e-mail address.</b>  It is important that you check your e-mail at this address regularly, since it is our only means of contacting you with important information for each program you participate in.  <br /><br />
 <b>Students</b>: this should be your e-mail address, not your parents'.  Please enter your parents' e-mail address in the parent/guardian section below.
 </div>
-</td>
-</tr>
 
-<tr>
- <td><label for="id_e_mail">Email:</label></td>
- <td>{{ form.e_mail }} {% if form.e_mail.errors %}
+
+
+<div class="control-group">
+ <label class="control-label" for="id_e_mail">Email:</label>
+ <div class="controls">
+ {{ form.e_mail }} {% if form.e_mail.errors %}
    <br /><span class="form_error">{{ form.e_mail.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
+ 
+
 
 {% if form.address_street %}
-<tr>
-  <td colspan="2"><label>Address:</label></td>
-</tr>
 
-<tr>
- <td align='right'><label for="id_address_street">
+  <label>Address:</label>
+
+
+  <div class="control-group">
+ <label class="control-label" for="id_address_street">
                        <small><i>street</i></small>
 		   </label>
- </td>
- <td>{{ form.address_street }} {% if form.address_street.errors %}
+		   <div class="controls">
+ 
+ {{ form.address_street }} {% if form.address_street.errors %}
    <br /><span class="form_error">{{ form.address_street.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
-
-<tr>
- <td align="right"><label for="id_address_city">
-                        <small><i>city</i></small>
-                   </label></td>
- <td>
- <table class="plain" border="0" cellspacing="0" cellpadding="0" width="100%">
- <tr>
+</div>
+</div>
  
- <td>
+
+
+<div class="control-group">
+ <label class="control-label" for="id_address_city">
+                        <small><i>city</i></small>
+                   </label>
+		   <div class="controls">
+ 
+ 
+ 
+ 
   {{ form.address_city }} {% if form.address_city.errors %}
    <br /><span class="form_error">{{ form.address_city.errors|join:", " }}</span>
    {% endif %}
- </td>
- <td style="padding-left: 6px;">{{ form.address_state }} {% if form.address_state.errors %}
+</div>
+</div>
+ 
+ {{ form.address_state }} {% if form.address_state.errors %}
    <br /><span class="form_error">{{ form.address_state.errors|join:", " }}</span>
    {% endif %}
- </td>
-
- <td align="right"><label for="id_address_zip">
+ 
+   <div class="control-group">
+ <label class="control-label" for="id_address_zip">
                        <small><i>&nbsp;&nbsp;zip</i></small>
                    </label>
+		   <div class="controls">
  
- </td>
-   <td>
+ 
+   
   {{ form.address_zip }} {% if form.address_zip.errors %}
    <br /><span class="form_error">{{ form.address_zip.errors|join:", " }}</span>
    {% endif %}
-   </td> 
- </tr>
- </table>
- </td>
-</tr>
+</div>
+</div>
+    
+ 
+
+ 
+
 {% endif %}
 
-<tr>
- <td><label>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:</label></td>
- <td>&nbsp;</td>
-</tr>
+
+ <label>Phone number{% if form.phone_day and form.phone_cell %}s{% endif %}:</label>
+ &nbsp;
+
 
 {% if form.phone_day %}
-<tr>
- <td align='right'><small><i><label for="id_phone_day">home</label></i></small></td>
- <td>{{ form.phone_day }} {% if form.phone_day.errors %}
+<div class="control-group">
+ <small><i><label class="control-label" for="id_phone_day">home</label>
+ <div class="controls"></i></small>
+ {{ form.phone_day }} {% if form.phone_day.errors %}
    <br /><span class="form_error">{{ form.phone_day.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
+ 
+
 {% endif %}
 
 {% if form.phone_cell %}
-<tr>
- <td align='right'><small><i><label for="id_phone_cell">cell</label></i></small></td>
- <td>{{ form.phone_cell }} {% if form.phone_cell.errors %}
+<div class="control-group">
+ <small><i><label class="control-label" for="id_phone_cell">cell</label>
+ <div class="controls"></i></small>
+ {{ form.phone_cell }} {% if form.phone_cell.errors %}
    <br /><span class="form_error">{{ form.phone_cell.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
+ 
+
 {% endif %}
 
-{% if form.receive_txt_message %}<tr>
- <td align='right'><small><i><label = "id_receive_txt_message">I would like to receive text-message reminders about the program:</label></i></small></td>
- <td>{{ form.receive_txt_message }} {% if form.receive_txt_message.errors %}
+{% if form.receive_txt_message %}
+
+ <small><i><label = "id_receive_txt_message">I would like to receive text-message reminders about the program:</label></i></small>
+ {{ form.receive_txt_message }} {% if form.receive_txt_message.errors %}
    <br /><span class="form_error">{{ form.receive_txt_message.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>{% endif %}
+ 
+{% endif %}
 
 <!-- End User ContactInfo -->
