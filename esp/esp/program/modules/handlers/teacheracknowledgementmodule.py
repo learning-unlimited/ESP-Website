@@ -36,7 +36,9 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         return GetNode('V/Deadline/Registration/Teacher/Acknowledgement')
     
     def isCompleted(self):
-        return bool(UserBit.objects.filter(Q(user=get_current_request().user, qsc=self.program.anchor, verb=self.flags_verb) & UserBit.not_expired()))
+        return Record.objects.filter(user=get_current_request().user,
+                                     program=self.program,
+                                     event="teacheracknowledgement").exists()
     
     @main_call
     @needs_teacher
@@ -45,12 +47,13 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         context = {'prog': prog}
         if request.method == 'POST':
             context['form'] = teacheracknowledgementform_factory(prog)(request.POST)
-            ub, created = UserBit.objects.get_or_create(user=request.user, qsc=self.program.anchor, verb=self.flags_verb)
+            rec, created = Record.objects.get_or_create(user=request.user,
+                                                        program=self.program,
+                                                        event="teacheracknowledgement")
             if context['form'].is_valid():
-                ub.renew()
                 return self.goToCore(tl)
             else:
-                ub.expire()
+                rec.delete()
         elif self.isCompleted():
             context['form'] = teacheracknowledgementform_factory(prog)({'acknowledgement': True})
         else:
@@ -60,7 +63,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
     def teachers(self, QObject = False):
         """ Returns a list of teachers who have submitted the acknowledgement. """
         from datetime import datetime
-        qf = Q(userbit__qsc=self.program_anchor_cached(), userbit__verb=GetNode('V/Flags/Registration/Teacher/Acknowledgement'), userbit__startdate__lte=datetime.now(), userbit__enddate__gte=datetime.now())
+        qo = Q(record__program=self.program, record__event="teacheracknowledgement")
         if QObject is True:
             return {'acknowledgement': self.getQForUser(qf)}
         

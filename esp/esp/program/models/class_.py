@@ -384,7 +384,7 @@ class ClassSection(models.Model):
     parent_program = property(_get_parent_program)
         
     def _get_teachers(self):
-        return self.parent_class.teachers
+        return self.parent_class.get_teachers()
     teachers = property(_get_teachers)
     
     def _get_category(self):
@@ -731,7 +731,7 @@ class ClassSection(models.Model):
                         base_list.remove(elt)
             return base_list
 
-        teachers = self.parent_class.teachers
+        teachers = self.parent_class.get_teachers()
         try:
             num_teachers = teachers.count()
         except:

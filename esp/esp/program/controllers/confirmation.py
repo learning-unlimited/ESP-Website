@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.models import Program, ClassSection, ClassSubject
-from esp.users.models import ESPUser, UserBit
+from esp.users.models import ESPUser, UserBit, Record
 from esp.program.modules.module_ext import DBReceipt
 from esp.datatree.models import GetNode
 
@@ -47,7 +47,7 @@ class ConfirmationEmailController(object):
         options = program.getModuleExtension('StudentClassRegModuleInfo')
         ## Get or create a userbit indicating whether or not email's been sent.
         try:
-            confbit, created = UserBit.objects.get_or_create(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(program.anchor.tree_encode())+"/ConfEmail"))
+            record, created = Record.objects.get_or_create(user=user, event="conf_email", program=program)
         except Exception:
             created = False
         if (created or repeat) and (options.send_confirmation or override):

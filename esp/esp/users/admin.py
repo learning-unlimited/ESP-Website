@@ -25,7 +25,11 @@ admin_site.register(ZipCode)
 admin_site.register(ZipCodeSearches)
 admin_site.register(UserAvailability)
 admin_site.register(ESPUser, UserAdmin)
-admin_site.register(Record)
+
+class RecordAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'event', 'program']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name']
+admin_site.register(Record, RecordAdmin)
 
 class ContactInfoAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'e_mail', 'phone_day', 'address_postal']
