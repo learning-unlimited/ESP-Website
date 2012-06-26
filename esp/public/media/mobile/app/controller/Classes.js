@@ -55,11 +55,9 @@ Ext.define('LU.controller.Classes', {
     },
 
     search: function(input, store) {
+        store.clearFilter();
         if (input != '') {
-            store.clearFilter(true);
             store.filter('title', input, true);
-        } else {
-            store.clearFilter();
         }
     },
 
