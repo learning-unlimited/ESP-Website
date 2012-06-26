@@ -5,6 +5,7 @@
 		      $(this).addClass('control-label');
 		  }
 	      });
+	      $j('div.control-group span.help-inline').each(function(index){$(this).parent().parent().addClass('error');});
 	  });
 </script>
 		      
@@ -14,6 +15,13 @@
   {{ field.label_tag }}
   <div class="controls">
     {{ field }}
+  {% if field.errors %}
+  <span class="help-inline">
+    {% for error in field.errors %}
+    {{error}}
+    {% endfor %}
+  </span>
+  {% endif %}
   </div>
 </div>
 
