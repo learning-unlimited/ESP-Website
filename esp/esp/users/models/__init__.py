@@ -1990,13 +1990,18 @@ class Record(models.Model):
     #well defined set of possibilities, we'll use a set of choices
     #if you want to use this model for an additional thing, 
     #add it as a choice
+    #how to organize ie program modules and stuff?
     EVENT_CHOICES=(
         ("student_survey", "Completed student survey"),
         ("teacher_survey", "Completed teacher survey"),
         ("reg_confirmed", "Confirmed registration"),
         ("attended", "Attended program"),
-        ("conf_email","Sent confirmation email"),
+        ("conf_email","Was sent confirmation email"),
         ("teacher_quiz_done","Completed teacher quiz"),
+        ("paid","Paid for program"),
+        ("med","Submitted medical form"),
+        ("liab","Submitted liability form"),
+        ("teacheracknowledgement","Did teacher acknowledgement")
     )
         
     event = models.CharField(max_length=80,choices=EVENT_CHOICES)

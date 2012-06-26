@@ -3,22 +3,34 @@ import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
-from esp.program.models import ClassSubject
+from esp.program.models import ClassSubject, Program
+from esp.tagdict.models import Tag
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        classes=ClassSubject.objects.all()
-        for cls in classes:
+        for cls in ClassSubject.objects.all():
             cls.title = cls.anchor.friendly_name
             cls.save()
 
+        for prog in Program.objects.all():
+            if not Tag.getProgramTag(key='ignore_parent_name', program=prog):
+                prog.name=str(prog.anchor.parent.friendly_name) + ' ' + str(prog.anchor.friendly_name)
+            else:
+                prog.name=str(prog.anchor.friendly_name)
+ 
+            prog.url = '/'.join(prog.anchor.tree_encode()[-2:])
+            prog.save()
 
     def backwards(self, orm):
-        classes=ClassSubject.objects.all()
-        for cls in classes:
+        for cls in ClassSubject.objects.all():
             cls.title = ""
             cls.save()
+
+        for prog in Program.objects.all():
+            prog.name = ""
+            prog.url = ""
+            prog.save()
 
 
     models = {

@@ -66,12 +66,7 @@ class TeacherQuizController(object):
         if not isinstance(self.program_anchor, DataTree):
             raise TypeError("Argument to constructor should be Program or DataTree node.")
         # Some setup
-        self.reg_verb = GetNode('V/Flags/Registration/Teacher/QuizDone')
         self.event = "teacher_quiz_done"
-
-    def _bitsByUser(self, user):
-        """Get relevant UserBits (the "completed quiz" ones) for a user."""
-        return UserBit.objects.filter(Q(user=user, qsc=self.program_anchor, verb=self.reg_verb) & UserBit.not_expired())
 
     def markCompleted(self, user):
         """Mark a user as having completed the quiz."""
@@ -94,7 +89,6 @@ class TeacherQuizModule(ProgramModuleObj):
     # Initialization
     def __init__(self, *args, **kwargs):
         super(TeacherQuizModule, self).__init__(*args, **kwargs)
-        self.reg_verb = GetNode('V/Flags/Registration/Teacher/QuizDone')
         self.event="teacher_quiz_done"
 
     @property
