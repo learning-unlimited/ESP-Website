@@ -1,7 +1,7 @@
 {% if show_class %}
   {% load class_render %}
 
-    {% if not hide_full or (not class.isFull and class.isRegOpen) %}
+    {% if not hide_full or not class.isFullOrClosed %}
         <div class="show_class">
         <table cellpadding="0" cellspacing="0" {% if errormsg %}style="background: #ccc;" class="class_error"{% endif %}>
         {% render_class_core class %}
