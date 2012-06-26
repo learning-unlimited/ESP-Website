@@ -54,6 +54,7 @@
       {% endif %}
 
       <form action="{{request.path}}" method="post" class="form-horizontal">
+	<fieldset>
 	<input type="hidden" name="profile_page" value="true" />
 	<input type="hidden" name="current_role" value="{{ profiletype }}" />
 
@@ -92,6 +93,7 @@
 	<center><input type="submit" class="button" value="Update your Information!" /></center>
 
 	<br />
+	</fieldset>
       </form>
     </div>
   </div>

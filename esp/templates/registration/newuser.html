@@ -7,88 +7,82 @@
 {% autoescape off %}{{ "Create an account"|subsection }}{% endautoescape %}
 {% endblock %}
 
-{% block stylesheets %}
-{{ block.super }}
-    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
-{% endblock %}
-
 {% block content %}
 {% if accounts %}
 <div class="note">
-<p>
-<b>Warning: Account not created!</b>  It looks like other accounts already exist for this
-e-mail address.  Do you already have an {{ site }} account?  If so,
-try logging in with one of the following username(s).  (If not, just
-click "Create account" again below.)
-</p>
+  <p>
+    <b>Warning: Account not created!</b>  It looks like other accounts already exist for this
+    e-mail address.  Do you already have an {{ site }} account?  If so,
+    try logging in with one of the following username(s).  (If not, just
+    click "Create account" again below.)
+  </p>
 
-<ul>
-  {% for u in accounts %}
-  <li>Username: "{{ u.username }}" (
-  <form method="post" action="/myesp/login">
-    <input type="hidden" name="username" value="{{ u.username }}" />
-    <input type="hidden" name="password" value="" />
-    <input type="hidden" name="next" value="/myesp/profile/" />
-    <input type="submit" value="Try logging in" />
-  </form>
-  <form action="/myesp/passwdrecover/" method="post">
-    <input type="hidden" name="email" value="{{ u.email }}" />
-    <input type="hidden" name="username" value="{{ u.username }}" />
-    <input type="submit" value="I forgot my password!" />
-  </form>
-  )
-  </li>
-  {% endfor %}
-</ul>
+  <ul>
+    {% for u in accounts %}
+    <li>Username: "{{ u.username }}" (
+    <form method="post" action="/myesp/login">
+      <input type="hidden" name="username" value="{{ u.username }}" />
+      <input type="hidden" name="password" value="" />
+      <input type="hidden" name="next" value="/myesp/profile/" />
+      <input type="submit" value="Try logging in" />
+    </form>
+    <form action="/myesp/passwdrecover/" method="post">
+      <input type="hidden" name="email" value="{{ u.email }}" />
+      <input type="hidden" name="username" value="{{ u.username }}" />
+      <input type="submit" value="I forgot my password!" />
+    </form>
+    )
+    </li>
+    {% endfor %}
+  </ul>
 </div>
 {% endif %}
-<h1>Create a new account</h1>
+<div class="row">
+  <div class="span6">
+<h1>Create a new account</h1><br />
 {% load render_qsd %}
 {% inline_qsd_block Q/Web/myesp create_new_account_headertext request.user %}
 <p>
   Welcome to ESP! To do almost anything with ESP, you first need to register
-an account with us. After you register account, you will be allowed to register
-for programs, sign up for classes, among other things.
+  an account with us. After you register account, you will be allowed to register
+  for programs, sign up for classes, among other things.
 </p>
 <p>
   If you just want to receive e-mail announcements about our programs, you can register for our <a href="/cgi-bin/mailman/listinfo/announcements">main</a> or <a href="/cgi-bin/mailman/listinfo/announcements-local">local-only</a> announcements lists. (The latter gets emails about longer term ESP programs, targeted at people in the Boston area, while the former gets emails about programs that might be worth travelling for.) If you create an account, you will be automatically subscribed to our main Announcements list.
 </p>
 {% end_inline_qsd_block %}
-
-
-<div id="program_form">
-<form action="{{ request.path }}" method="post" name="newuser_form">
-<table>
-<thead>
-<tr>
-  <th colspan="2">
-    User Account Creation Form
-  </th>
-</tr>
-</thead>
-<tbody>
-{% if form.errors %}
-<tr>
-<td colspan="2">
-<div class="errors">
-There 
-{% if form.errors|length_is:1 %}is an error{% else %}
-are errors{% endif %} in the below form. Please fix and resubmit.
 </div>
-</td>
-</tr>
-{% endif %}
+<div class="span5 offset1">
 
-{{ form }}
-{% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
-<tr>
-  <th colspan="2" class="submit">
-    <input type="submit" value="{% if accounts %}Confirm: Create another account for this e-mail{% else %}Create account, proceed to profile creation{% endif %}" name="submit" />
-  </th>
-</tr>
-</tbody>
-</table>
+
+<form action="{{ request.path }}" method="post" name="newuser_form" class="form-horizontal well">
+  <fieldset>
+    <h3>User Account Creation Form</h3>
+    
+    {% if form.errors %}
+
+
+    <div class="errors">
+      <p>There 
+      {% if form.errors|length_is:1 %}is an error{% else %}
+      are errors{% endif %} in the below form. Please fix and resubmit.<p>
+    </div>
+
+
+    {% endif %}
+
+    {% include "../templates/theme_editor/bs_form.html" %}
+    {% if accounts %}<input type="hidden" name="do_reg_no_really" value="true" />{% endif %}
+
+    <div class="form-actions">
+    <input type="submit" value="{% if accounts %}Confirm: Create another account for this e-mail{% else %}Create account{% endif %}" name="submit" />
+    </div>
+    
+
+
+  </fieldset>
 </form>
+</div>
 </div>
 
 <script type="text/javascript">
