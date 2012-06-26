@@ -995,7 +995,7 @@ class ESPUser(User, AnonymousUser):
 
     @staticmethod
     def getRankInClass(student, subject, default=10):
-        from esp.program.models.app_ import StudentAppQuestion, StudentAppResponse, StudentAppReview
+        from esp.program.models.app_ import StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication
         from esp.program.models import StudentRegistration
         if isinstance(subject, int):
             subject = ClassSubject.objects.get(id=subject)
