@@ -131,6 +131,7 @@ class LotteryAssignmentController(object):
         (self.student_ids, self.student_indices) = self.get_ids_and_indices(self.lotteried_students)
         (self.section_ids, self.section_indices) = self.get_ids_and_indices(self.sections)
         (self.timeslot_ids, self.timeslot_indices) = self.get_ids_and_indices(self.timeslots)
+        self.parent_classes = numpy.array(self.sections.values_list('parent_class__id', flat=True))
         
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
@@ -167,20 +168,19 @@ class LotteryAssignmentController(object):
                 pass
         
         if self.options['use_student_apps']:
-            for student in self.lotteried_students:
-                student_index = self.student_indices[student.id]
-                for section in self.sections:
-                    section_index = self.section_indices[section.id]
-                    self.ranks[student_index,section_index] = student.getRankInSection(section)
+            for i in range(1,self.priority_limit+1):
+                for (student_id,section_id) in priority_regs[i]:
+                    self.ranks[self.student_indices[student_id],self.section_indices[section_id]] = ESPUser.getRankInClass(student_id,self.parent_classes[self.section_indices[section_id]])
+            for (student_id,section_id) in interest_regs:
+                self.ranks[self.student_indices[student_id],self.section_indices[section_id]] = ESPUser.getRankInClass(student_id,self.parent_classes[self.section_indices[section_id]])
 
         #   Populate section schedule
         section_times = numpy.array(self.sections.values_list('id', 'meeting_times__id'))
         self.section_schedules[self.section_indices[section_times[:, 0]], self.timeslot_indices[section_times[:, 1]]] = True
         
         #   Populate section overlap matrix
-        parent_classes = numpy.array(self.sections.values_list('parent_class__id', flat=True))
         for i in range(self.num_sections):
-            group_ids = numpy.nonzero(parent_classes == parent_classes[i])[0]
+            group_ids = numpy.nonzero(self.parent_classes == self.parent_classes[i])[0]
             self.section_overlap[numpy.meshgrid(group_ids, group_ids)] = True
 
         #   Populate section grade limits
