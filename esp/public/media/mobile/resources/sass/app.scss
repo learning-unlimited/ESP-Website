@@ -94,7 +94,7 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
 
 $class-code-color: #7d7d7d;
 
-.classList .classes {
+.classList .classes, .scheduleList .classes {
     @include display-box;
     .title {
         @include box-flex(1);
@@ -110,7 +110,7 @@ $class-code-color: #7d7d7d;
     }
 }
 
-.classInfo {
+.classInfo, .scheduleInfo {
     .title {
         font-weight: bold;
         font-size: 1.4em;

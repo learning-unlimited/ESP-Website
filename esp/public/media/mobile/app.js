@@ -14,6 +14,7 @@ Ext.application({
 
     models: [
         'Class',
+        'RegisteredSection',
         'Timing',
         'Program',
         'User'
@@ -21,7 +22,10 @@ Ext.application({
 
     stores: [
         'Classes',
+        'RegisteredClasses',
+        'RegisteredSections',
         'Timings',
+        'RegisteredTimings',
         'Programs',
         'User'
     ],
@@ -29,6 +33,7 @@ Ext.application({
     controllers: [
         'Login',
         'Classes',
+        'Schedule',
         'Programs'
     ],
 
@@ -46,6 +51,12 @@ Ext.application({
         'class.Info',
         'class.Timing',
         'class.Prereq',
+
+        'schedule.Card',
+        'schedule.Detail',
+        'schedule.Info',
+        'schedule.Timing',
+        'schedule.Prereq',
 
         'student.Main',
 

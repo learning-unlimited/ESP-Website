@@ -39,22 +39,57 @@ Ext.define('LU.Util', {
         return '/learn/' + this.getProgram().get('baseUrl') + '/catalog_json';
     },
 
+    getRegisteredClassesUrl: function() {
+        return '/learn/' + this.getProgram().get('baseUrl') + '/catalog_registered_classes_json';
+    },
+
     getProgramTitle: function() {
         return this.getProgram().get('title');
     },
 
+    getRegisteredSectionIds: function(store) {
+
+        var temp = [];
+        store.clearFilter();
+        Ext.Array.each(store.getData().items, function(item, index, list) {
+            temp.push(item.get('section_id'));
+        });
+        return temp;
+    },
+
     getClasses: function(callback) {
 
-        var url = this.getCatalogUrl(),
+        var catalogUrl = this.getCatalogUrl(),
+            registeredSectionUrl = this.getRegisteredClassesUrl(),
             classStore = Ext.getStore('Classes'),
-            timeStore = Ext.getStore('Timings');
+            timeStore = Ext.getStore('Timings'),
+            registeredSectionStore = Ext.getStore('RegisteredSections'),
+            registeredClassStore = Ext.getStore('RegisteredClasses'),
+            registeredTimeStore = Ext.getStore('RegisteredTimings');
 
         // clears any previous existing models
         classStore.removeAll();
         timeStore.removeAll();
+        registeredSectionStore.removeAll();
+        registeredClassStore.removeAll();
+        registeredTimeStore.removeAll();
+
+        // retrieves the registered classes
+        registeredSectionStore.setProxy({
+            type: 'ajax',
+            url: registeredSectionUrl
+        });
+
+        var sectionIds;
+        registeredSectionStore.load({
+            callback: function(records, operation, success) {
+                sectionIds = this.getRegisteredSectionIds(registeredSectionStore);
+            },
+            scope: this
+        });
 
         Ext.Ajax.request({
-            url: url,
+            url: catalogUrl,
             success: function(result) {
 
                 var data = Ext.JSON.decode(result.responseText);
@@ -90,14 +125,20 @@ Ext.define('LU.Util', {
                             timeModel.set('id', parseInt('' + classModel.get('id') + timeItem.id));
                             timeModel.setClass(classModel.get('id'));
                             timeStore.add(timeModel);
+
+                            if (Ext.Array.contains(sectionIds, classModel.get('section_id'))) {
+                                registeredClassStore.add(classModel);
+                                registeredTimeStore.add(timeModel);
+                            }
                         });
                     });
                 });
+
                 callback();
             },
             failure: function(result) {
                 callback(result);
             }
         });
-    }
+    },
 });
