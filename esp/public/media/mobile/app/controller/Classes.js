@@ -57,6 +57,7 @@ Ext.define('LU.controller.Classes', {
     onListInit: function(list, opts) {
         list.getStore().clearFilter();
         list.getStore().setGrouper(LU.Util.getTitleGrouper());
+        list.getStore().sort('title');
     },
 
     onListShow: function(list, opts) {
