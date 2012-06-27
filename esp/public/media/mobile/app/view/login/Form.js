@@ -1,5 +1,5 @@
 Ext.define('LU.view.login.Form', {
-    extend: 'LU.view.Panel',
+    extend: 'LU.view.base.Panel',
     xtype: 'loginForm',
 
     requires: [

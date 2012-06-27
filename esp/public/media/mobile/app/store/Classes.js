@@ -6,10 +6,6 @@ Ext.define('LU.store.Classes', {
         model: 'LU.model.Class',
         sorters: 'title',
 
-        grouper: {
-            groupFn: function(record) {
-                return record.get('title')[0];
-            }
-        }
+        grouper: LU.Util.getTitleGrouper()
     }
 });

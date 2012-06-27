@@ -4,7 +4,16 @@ Ext.define('LU.view.class.Timing', {
 
     config: {
         disableSelection: true,
+        scrollable: false,
         store: 'Timings',
+
+        items: [
+            {
+                xtype: 'listitemheader',
+                html: 'Time'
+            }
+        ],
+
         itemTpl: Ext.create('Ext.XTemplate',
             '{[this.formatStartTime(values.start)]} - {[this.formatEndTime(values.end)]}',
             {

@@ -34,7 +34,7 @@ Ext.application({
 
     views: [
         'Main',
-        'Panel',
+        'base.Panel',
 
         'program.List',
 

@@ -10,26 +10,10 @@ Ext.define('LU.view.class.Detail', {
                 xtype: 'classInfo'
             },
             {
-                xtype: 'prereqList',
-                scrollable: false,
-
-                items: [
-                    {
-                        xtype: 'listitemheader',
-                        html: 'Prerequisites'
-                    }
-                ]
+                xtype: 'classPrereqList'
             },
             {
-                xtype: 'timingList',
-                scrollable: false,
-
-                items: [
-                    {
-                        xtype: 'listitemheader',
-                        html: 'Time'
-                    }
-                ]
+                xtype: 'timingList'
             }
         ]
     }

@@ -1,7 +1,7 @@
 /**
  * This custom panel adds in the CSRF token with every form submit.
  */
-Ext.define('LU.view.Panel', {
+Ext.define('LU.view.base.Panel', {
     extend: 'Ext.form.Panel',
 
     submit: function(options) {
