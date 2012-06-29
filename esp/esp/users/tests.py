@@ -472,3 +472,14 @@ class MobileAppTest(ProgramFrameworkTest):
                             error_keys,
                             error_values,
                             success_keys)
+
+    def testGetProgramList(self):
+        self.login(self.students[0].username, "password")
+        self.add_student_profiles()
+
+        programs = self.get("/myesp/program/")
+        self.assertTrue(len(programs) > 0,
+                        "Oh no! {0} has not registered for any program.".format(self.students[0].username))
+        self.check_response(programs[0],
+                            ["id", "title", "baseUrl"],
+                            [self.program.id, self.program.niceName(), self.program.getUrlBase()])
