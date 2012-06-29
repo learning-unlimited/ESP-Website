@@ -6,7 +6,6 @@
 <script src="/media/theme_editor/css_auto-reload.js" rel="text/javascript"></script>
 <script type="text/javascript">
   document.styleSheets.reload()
-  less.watch()
 </script>
 <style>
   form.centered-form div.control-group {
@@ -24,7 +23,7 @@
 {% block content %} 
 <div class="row" style="text-align:center;"> {# figure out why this isn't aligning properly #}
 
-  <div class="span8 offset1">
+  <div class="span7 offset1">
     <h2>Theme Editor <small style="color:black;">alpha</small></h2><br />
     <p style="font-size:20px; text-align:center;">abcdefghijklmnopqrstuvwxyz 1234567890</p>
 
@@ -34,7 +33,7 @@
 
 <br />
 <div class="row">
-  <div class="span8 offset1">
+  <div class="span7 offset1">
     <form class="well form-horizontal centered-form" method="post" action="/theme/submit/">
       {% csrf_token %} 
       <div class="accordion">

@@ -4,6 +4,7 @@ from django.template import Context, Template
 from esp.settings import PROJECT_ROOT
 from django.http import HttpResponse, HttpResponseRedirect
 from esp.users.models import admin_required
+import subprocess
 from os import path, remove
 import re
 import shutil
@@ -136,6 +137,7 @@ def apply_theme(less_file):
     except shutil.Error:
         pass
 
+
 def delete_theme(theme_name):
     remove(path.join(themes_dir, theme_name))
     if get_theme_name(variables_less) == theme_name:
@@ -177,4 +179,8 @@ def theme_submit(request):
         pass
     else: 
         return HttpResponseRedirect('/')
+    f = open(path.join(themes_dir, 'bootstrap.css'), 'w')
+    # finally compile less to css
+    subprocess.call(["lessc", "--compress", path.join(less_dir, 'bootstrap.less')], stdout=f)
+    f.close()
     return HttpResponseRedirect('/theme/')
