@@ -534,6 +534,7 @@ class ProgramFrameworkTest(TestCase):
                     'sections_per_class': 1,
                     'num_students': 10,
                     'num_admins': 1,
+                    'num_volunteers': 5,
                     'modules': [x.id for x in ProgramModule.objects.all()],
                     'program_type': 'TestProgram',
                     'program_instance_name': '2222_Summer',
@@ -561,6 +562,8 @@ class ProgramFrameworkTest(TestCase):
         self.teachers = []
         self.students = []
         self.admins = []
+        self.volunteers = []
+
         for i in range(settings['num_students']):
             new_student, created = ESPUser.objects.get_or_create(username='student%04d' % i)
             new_student.set_password('password')
@@ -579,7 +582,13 @@ class ProgramFrameworkTest(TestCase):
             new_admin.save()
             role_bit, created = UserBit.objects.get_or_create(user=new_admin, verb=GetNode('V/Flags/UserRole/Administrator'), qsc=GetNode('Q'), recursive=False)
             self.admins.append(ESPUser(new_admin))
-            
+        for i in range(settings['num_volunteers']):
+            new_volunteer, created = ESPUser.objects.get_or_create(username='volunteer%04d' % i)
+            new_volunteer.set_password('password')
+            new_volunteer.save()
+            role_bit, created = UserBit.objects.get_or_create(user=new_volunteer, verb=GetNode('V/Flags/UserRole/Volunteer'), qsc=GetNode('Q'), recursive=False)
+            self.volunteers.append(ESPUser(new_volunteer))
+
         #   Establish attributes for program
         prog_form_values = {
                 'term': settings['program_instance_name'],

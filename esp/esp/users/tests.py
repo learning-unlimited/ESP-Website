@@ -14,6 +14,8 @@ import datetime
 import esp.users.views as views
 from esp.tagdict.models import Tag
 
+import simplejson as json
+
 class ESPUserTest(TestCase):
     def testInit(self):
         one = ESPUser()
@@ -302,7 +304,6 @@ class AjaxExistenceChecker(TestCase):
         if (not hasattr(self, 'path')) or (not hasattr(self, 'keys')):
             return
         
-        import simplejson as json
         response = self.client.get(self.path)
         self.assertEqual(response.status_code, 200)
         content = json.loads(response.content)
@@ -410,5 +411,55 @@ class AccountCreationTest(TestCase):
         match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)",mail.outbox[0].body)
         self.assertEqual(match.group("user"),u.username)
         self.assertEqual(match.group("key"),u.password.rsplit("_")[-1])
-        
 
+error_values = ["Invalid username or password"]
+error_keys = ["message"]
+success_keys = ["isStudent", "isVolunteer", "success"]
+
+class MobileAppLoginTest(ProgramFrameworkTest):
+
+    def get_response(self, username="", password=""):
+        response = self.client.post("/myesp/ajax_login/",
+                                    data={"username": username,
+                                          "password": password,
+                                          "isMobile": "true"},
+                                          **{'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'})
+        self.assertEqual(response.status_code, 200)
+        return json.loads(response.content)
+
+    def check_response(self, response, keys, values, other_keys):
+        result = zip(keys, values)
+        for (key, value) in result:
+            self.assertTrue(key in response)
+            self.assertEqual(response[key], value)
+
+        for key in other_keys:
+            self.assertFalse(key in response)
+
+    def testStudentLogin(self):
+        self.check_response(self.get_response(self.students[0].username, "password"),
+                            success_keys,
+                            ["true", "false", "true"],
+                            error_keys)
+
+    def testStudentLoginError(self):
+        self.check_response(self.get_response(self.students[0].username, "wrongpassword"),
+                            error_keys,
+                            error_values,
+                            success_keys)
+        self.check_response(self.get_response("wrongusername"),
+                            error_keys,
+                            error_values,
+                            success_keys)
+
+    def testVolunteerLogin(self):
+        self.check_response(self.get_response(self.volunteers[0].username, "password"),
+                            success_keys,
+                            ["false", "true", "true"],
+                            error_keys)
+
+    def testVolunteerLoginError(self):
+        self.check_response(self.get_response(),
+                            error_keys,
+                            error_values,
+                            success_keys)
