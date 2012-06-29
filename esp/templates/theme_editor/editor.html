@@ -3,7 +3,11 @@
 <script src="/media/theme_editor/spectrum.js" type="text/javascript"></script>
 <script src="/media/theme_editor/theme_editor.js" type="text/javascript"></script>
 <link href="/media/theme_editor/spectrum.css" rel="stylesheet" />
-<link href="/media/theme_editor/centeredform.css" rel="stylesheet" />
+<script src="/media/theme_editor/css_auto-reload.js" rel="text/javascript"></script>
+<script type="text/javascript">
+  document.styleSheets.reload()
+  less.watch()
+</script>
 <style>
   form.centered-form div.control-group {
       margin-left:20%;
@@ -20,22 +24,17 @@
 {% block content %} 
 <div class="row" style="text-align:center;"> {# figure out why this isn't aligning properly #}
 
-  <div class="span6 offset1">
+  <div class="span8 offset1">
     <h2>Theme Editor <small style="color:black;">alpha</small></h2><br />
-  </div>
-</div>
-
-<div class="row">
-
-  <div class="span6 offset1" >
     <p style="font-size:20px; text-align:center;">abcdefghijklmnopqrstuvwxyz 1234567890</p>
 
     <p>Sometimes, after loading, saving, or applying a theme, the changes may not take effect. Try refreshing the page.</p>
   </div>
 </div>
+
 <br />
 <div class="row">
-  <div class="span6 offset1">
+  <div class="span8 offset1">
     <form class="well form-horizontal centered-form" method="post" action="/theme/submit/">
       {% csrf_token %} 
       <div class="accordion">
@@ -329,7 +328,6 @@
 		  </select>
 		  <button type="submit" class="btn" name="load" value="load"> Load Theme </button> 
 		  <button type="submit" class="btn" name="delete" value="delete"> Delete Theme </button> 
-		  <p class="help-block">Currently, the theme name must begin with 'theme_' to show up in the list of saved themes.</p>  
 		</div>
 	      </div>
 	    </div>
