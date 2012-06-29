@@ -416,18 +416,27 @@ error_values = ["Invalid username or password"]
 error_keys = ["message"]
 success_keys = ["isStudent", "isVolunteer", "success"]
 
-class MobileAppLoginTest(ProgramFrameworkTest):
+class MobileAppTest(ProgramFrameworkTest):
 
-    def get_response(self, username="", password=""):
-        response = self.client.post("/myesp/ajax_login/",
-                                    data={"username": username,
-                                          "password": password,
-                                          "isMobile": "true"},
-                                          **{'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'})
+    def get(self, url):
+        response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
         return json.loads(response.content)
 
-    def check_response(self, response, keys, values, other_keys):
+    def post(self, url, parameters):
+        response = self.client.post(url,
+                                    data=parameters,
+                                    **{'HTTP_X_REQUESTED_WITH': 'XMLHttpRequest'})
+        self.assertEqual(response.status_code, 200)
+        return json.loads(response.content)
+
+    def login(self, username="", password=""):
+        return self.post("/myesp/ajax_login/",
+                         {"username": username,
+                          "password": password,
+                          "isMobile": "true"})
+
+    def check_response(self, response, keys, values, other_keys=[]):
         result = zip(keys, values)
         for (key, value) in result:
             self.assertTrue(key in response)
@@ -437,29 +446,29 @@ class MobileAppLoginTest(ProgramFrameworkTest):
             self.assertFalse(key in response)
 
     def testStudentLogin(self):
-        self.check_response(self.get_response(self.students[0].username, "password"),
+        self.check_response(self.login(self.students[0].username, "password"),
                             success_keys,
                             ["true", "false", "true"],
                             error_keys)
 
     def testStudentLoginError(self):
-        self.check_response(self.get_response(self.students[0].username, "wrongpassword"),
+        self.check_response(self.login(self.students[0].username, "wrongpassword"),
                             error_keys,
                             error_values,
                             success_keys)
-        self.check_response(self.get_response("wrongusername"),
+        self.check_response(self.login("wrongusername"),
                             error_keys,
                             error_values,
                             success_keys)
 
     def testVolunteerLogin(self):
-        self.check_response(self.get_response(self.volunteers[0].username, "password"),
+        self.check_response(self.login(self.volunteers[0].username, "password"),
                             success_keys,
                             ["false", "true", "true"],
                             error_keys)
 
     def testVolunteerLoginError(self):
-        self.check_response(self.get_response(),
+        self.check_response(self.login(),
                             error_keys,
                             error_values,
                             success_keys)
