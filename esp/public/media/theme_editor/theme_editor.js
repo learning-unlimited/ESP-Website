@@ -45,7 +45,8 @@ $j(document).ready(function(){
 	$j('#palette_div div.sp-replacer.sp-light:last').remove();
 	$j('#palette_div input:last').remove()
     });    
-
+    
+//    $j('#help-modal').modal();
 });
 
 

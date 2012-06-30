@@ -22,14 +22,35 @@
 {% endblock %}
 {% block title %}Theme Editor{% endblock %}
 {% block content %} 
-<div class="row" style="text-align:center;"> {# figure out why this isn't aligning properly #}
+<div class="row"> {# figure out why this isn't aligning properly #}
 
-  <div class="span7 offset1">
-    <h2>Theme Editor <small style="color:black;">alpha</small></h2><br />
-    <p style="font-size:20px; text-align:center;">abcdefghijklmnopqrstuvwxyz 1234567890</p>
+<div class="span7 offset1">
+  <h2 style="text-align:center;">Theme Editor <small style="color:black;">alpha</small></h2><br />
+  <p style="font-size:20px; text-align:center;">abcdefghijklmnopqrstuvwxyz 1234567890</p>
 
+
+  
+  <div class="alert">
     <p>Sometimes, after loading, saving, or applying a theme, the changes may not take effect. Try refreshing the page.</p>
+    <p>New to the theme editor? <a href="#help-modal" data-toggle="modal">Click here</a>.</p>
   </div>
+  <div id="help-modal" class="modal hide fade">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal">x</button>
+      <h3>Welcome to the theme editor! It's easy to get started</h3>
+    </div>
+    <div class="modal-body">
+      <ol>
+	<li>Add colors to your Palette.</li>
+	<li>Dive into the sections and customize at will. Press Test often to see your changes in action.</li>
+	<li>When you're happy with your changes, just enter a name under Theme Properties and press Save and Apply!</li>
+      </ol>
+      <em><strong>Hint:</strong> Hover over the ? in each section to see what it controls</em></li>
+    </div>
+    
+    <div class="modal-footer"></div>
+  </div>
+</div>
 </div>
 
 <br />
@@ -54,7 +75,7 @@
 	    <div class="controls">
 	      <button type="button" class="btn" id="addToPalette">Add Another Color</button>
 	      <button type="button" class="btn" id="removeFromPalette">Remove Last Color</button>
-	      <button type="submit" class="btn btn-primary" name="save" value="save">Save Theme</button> 
+	      <button type="submit" class="btn btn-primary" name="save" value="save">Save and Apply</button> 
 	    </div>
 	  </div>
 	</div>
