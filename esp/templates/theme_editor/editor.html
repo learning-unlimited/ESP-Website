@@ -1,6 +1,7 @@
 {% extends 'main.html' %}
 {% block xtrajs %}
 <script src="/media/theme_editor/spectrum.js" type="text/javascript"></script>
+<script src="/media/theme_editor/palette.js" type="text/javascript"></script>
 <script src="/media/theme_editor/theme_editor.js" type="text/javascript"></script>
 <link href="/media/theme_editor/spectrum.css" rel="stylesheet" />
 <script src="/media/theme_editor/css_auto-reload.js" rel="text/javascript"></script>
@@ -37,6 +38,27 @@
     <form class="well form-horizontal centered-form" method="post" action="/theme/submit/">
       {% csrf_token %} 
       <div class="accordion">
+
+	<div class="accordion-group">
+	  <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#theme_palette">Theme Palette</h3></div>
+
+	  <div class="collapse" id="theme_palette">
+
+	    <div class="control-group">
+	      <div id="palette_div">
+		{% for color in palette %}
+		<input type="text" name="palette" class="palette" value="{{color}}" />
+		{% endfor %}
+	      </div>
+	    </div>
+	    <div class="controls">
+	      <button type="button" class="btn" id="addToPalette">Add Another Color</button>
+	      <button type="button" class="btn" id="removeFromPalette">Remove Last Color</button>
+	      <button type="submit" class="btn btn-primary" name="save" value="save">Save Theme</button> 
+	    </div>
+	  </div>
+	</div>
+
 	<div class="accordion-group">
 	  <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#scaffolding">Scaffolding</h3></div>
 
@@ -309,7 +331,7 @@
 		<br />
 		<div class="control-group">
 		  <input id="save" type="text" value="" name="saveThemeName" placeholder="Current: {{theme_name}}" />
-		  <button type="submit" class="btn" name="save" value="save"> Save and Apply </button> 
+		  <button type="submit" class="btn btn-primary" name="save" value="save"> Save and Apply </button> 
 
 		  <br />
 		  <br />
