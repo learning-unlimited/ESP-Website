@@ -35,7 +35,7 @@ $j(document).ready(function(){
 	newColor.attr({
 	    name: 'palette',
 	    type: 'text',
-	    value: ''
+	    value: 'black'
 	});
 	$j('#palette_div').append(newColor);
 	showPalette()
@@ -45,8 +45,9 @@ $j(document).ready(function(){
 	$j('#palette_div div.sp-replacer.sp-light:last').remove();
 	$j('#palette_div input:last').remove()
     });    
-    
-//    $j('#help-modal').modal();
+    $('[rel=popover]').each(function(){
+	$(this).popover({placement:'left', animation:false}); //interesting bug: $ calls jquery 1.7.1 but $j calls the older version
+    });
 });
 
 

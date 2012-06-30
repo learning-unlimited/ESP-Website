@@ -36,7 +36,7 @@ status, admin status et c. It is in the header to prevent nasty rearrangements
 while the page is loading. Javascript should usually go in the javascript block
 at the end of the page.
     {% endcomment %}
-    <script type="text/javascript" src="/media/scripts/jquery.js"> </script>
+    <script type="text/javascript" src="/media/bootstrap/docs/assets/js/jquery.js"> </script>
     <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
 
     <script language="JavaScript">
@@ -90,7 +90,6 @@ at the end of the page.
 
 
 {# Don't need this right now    <script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script> #}
-    <script src="/media/bootstrap/docs/assets/js/jquery.js"></script>
     <script src="/media/bootstrap/docs/assets/js/google-code-prettify/prettify.js"></script>
     <script src="/media/bootstrap/docs/assets/js/bootstrap-transition.js"></script>
     <script src="/media/bootstrap/docs/assets/js/bootstrap-alert.js"></script>
@@ -105,6 +104,7 @@ at the end of the page.
     <script src="/media/bootstrap/docs/assets/js/bootstrap-carousel.js"></script>
     <script src="/media/bootstrap/docs/assets/js/bootstrap-typeahead.js"></script>
     <script src="/media/bootstrap/docs/assets/js/application.js"></script>
+    <script src="/media/theme_editor/theme_editor.js" type="text/javascript"></script>
 
 {% comment %}    <script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
 
