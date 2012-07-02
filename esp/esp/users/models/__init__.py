@@ -821,13 +821,26 @@ class ESPUser(User, AnonymousUser):
 
 
     def isAdministrator(self, anchor_object = None):
-        if anchor_object is None:
-            return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
-        else:
-            if hasattr(anchor_object, 'anchor'):
-                anchor = anchor_object.anchor
+        if Tag.getBooleanTag("admin_role_is_super",default=False):
+            is_admin_role = self.groups.filter(name="Administrator").exists()
+            if is_admin_role: return True
+            if anchor_object is None:
+                return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
             else:
-                anchor = anchor_object
+                if hasattr(anchor_object, 'anchor'):
+                    anchor = anchor_object.anchor
+                else:
+                    anchor = anchor_object
+
+            return UserBit.UserHasPerms(self, anchor, GetNode('V/Administer'))
+        else: 
+            if anchor_object is None:
+                return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
+            else:
+                if hasattr(anchor_object, 'anchor'):
+                    anchor = anchor_object.anchor
+                else:
+                    anchor = anchor_object
 
             return UserBit.UserHasPerms(self, anchor, GetNode('V/Administer'))
 
@@ -852,35 +865,32 @@ class ESPUser(User, AnonymousUser):
 
     def getUserTypes(self):
         """ Return the set of types for this user """
-        retVal = UserBit.valid_objects().filter(user=self, verb__parent=GetNode("V/Flags/UserRole")).values_list('verb__name', flat=True).distinct()
-        if len(retVal) == 0:
-            UserBit.objects.create(user=self, verb=GetNode("V/Flags/UserRole/Student"), qsc=GetNode("Q"))
-            retVal = UserBit.valid_objects().filter(user=self, verb__parent=GetNode("V/Flags/UserRole")).values_list('verb__name', flat=True).distinct()
-            
-        return retVal
+        return self.groups.all().values_list("name",flat=True)
         
     @staticmethod
     def create_membership_method(user_class):
         """
-        Creates the methods such as isTeacher that determins whether
+        Creates the methods such as isTeacher that determines whether
         or not the user is a member of that user class.
         """
-        def _new_method(user):
-            return user.is_user_type(user_class)
-        _new_method.__name__    = 'is%s' % str(user_class)
-        _new_method.__doc__     = "Returns ``True`` if the user is a %s and False otherwise." % user_class
-        return _new_method
+        user_classes = ('Teacher','Guardian','Educator','Officer','Student','Volunteer')
+        overrides = {'Officer': 'Administrator'}
+        for user_class in user_classes:
+            method_name = 'is%s' % user_class
+            role_name=overrides.get(user_class, user_class)
+            property_name = '_userclass_%s' % user_class
+            def method_gen(role_name, property_name):
+                def _new_method(user):
+                    if not hasattr(user, property_name):
+                        setattr(user,property_name, user.groups.filter(name=role_name).exists())
+                    return getattr(user, property_name)
 
-    def is_user_type(self, user_class):
-        """
-        Determines whether the user is a member of user_class.
-        """
-        property_name = '_userclass_%s' % user_class
-        if not hasattr(self, property_name):
-            bit_name = 'V/Flags/UserRole/%s' % {'Officer': 'Administrator'}.get(user_class, user_class)
-            setattr(self, property_name, bool(UserBit.UserHasPerms(self,
-                GetNode('Q'), GetNode(bit_name))))
-        return getattr(self, property_name)
+                _new_method.__name__ = method_name
+                _new_method.__doc__ = "Returns ``True`` if the user is a %s and False otherwise." % user_class
+
+                return _new_method
+
+            setattr(cls, method_name, method_gen(role_name, property_name))
 
     @classmethod
     def get_unused_username(cls, first_name, last_name):
