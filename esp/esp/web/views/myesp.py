@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import Group
 from esp.users.models import ContactInfo, UserBit, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo
 from esp.datatree.models import *
 from esp.miniblog.models import AnnouncementLink, Entry
@@ -99,7 +100,7 @@ def edit_profile(request, module):
         return profile_editor(request, None, True, 'educator')	
 
     else:
-        user_types = UserBit.valid_objects().filter(verb__parent=GetNode("V/Flags/UserRole")).select_related().order_by('-id')
+        user_types = Group.objects.all().order_by('-id')
         return profile_editor(request, None, True, user_types[0].verb.name if user_types else '')
 
 @login_required

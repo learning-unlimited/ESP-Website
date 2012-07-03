@@ -36,6 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import Group
 from esp.users.models    import ESPUser, UserBit, User, ContactInfo, StudentInfo
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect
@@ -132,13 +133,8 @@ class OnSiteRegister(ProgramModuleObj):
 
                 self.createBit('OnSite')
 
-                v = GetNode( 'V/Flags/UserRole/Student')
-                ub = UserBit()
-                ub.user = new_user
-                ub.recursive = False
-                ub.qsc = GetNode('Q')
-                ub.verb = v
-                ub.save()
+                
+                new_user.groups.add(Group.objects.get(name="Student"))
 
                 new_user.recoverPassword()
                 

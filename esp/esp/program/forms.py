@@ -69,8 +69,8 @@ class ProgramCreationForm(BetterModelForm):
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current admins and modules. """
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
-        ub_list = UserBit.objects.bits_get_users(GetNode('Q'), GetNode('V/Flags/UserRole/Administrator'))
-        self.fields['admins'].choices = make_id_tuple(ESPUser.objects.filter(id__in=[u.user_id for u in ub_list]).distinct().order_by('username'))
+        admin_list=ESPUser.objects.filter(group__name="Administrator")
+        self.fields['admins'].choices = make_id_tuple(admin_list.distinct().order_by('username'))
         self.fields['anchor'].queryset = DataTree.objects.filter(Q(child_set__program__isnull=False) | Q(parent=GetNode("Q/Programs"))).exclude(parent__name="Subprograms").distinct()
         self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
 

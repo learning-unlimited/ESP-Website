@@ -1,3 +1,4 @@
+from django.contrib.auth.models import Group
 from django.db import transaction
 from django.db.utils import IntegrityError
 
@@ -27,6 +28,6 @@ def make_user_admin(target_user):
 
     # Set the userbits
     target_user.userbit_set.add(UserBit(verb = GetNode('V/Administer'), qsc = GetNode('Q')))
-    target_user.userbit_set.add(UserBit(verb = GetNode('V/Flags/UserRole/Administrator'), qsc = GetNode('Q')))
+    target_user.groups.add(Group.objects.get(name="Administrator"))
 
     target_user.save()
