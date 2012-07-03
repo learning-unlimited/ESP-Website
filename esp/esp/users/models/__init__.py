@@ -36,7 +36,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 
 from django.contrib.auth import logout, login, authenticate
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import User, AnonymousUser, Group
 from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
 from django.contrib.localflavor.us.forms import USStateSelect
 from django.core.cache import cache
@@ -904,10 +904,7 @@ class ESPUser(User, AnonymousUser):
         return username
         
     def makeVolunteer(self):
-        ub, created = UserBit.objects.get_or_create(user=self,
-                                qsc=GetNode('Q'),
-                                verb=GetNode('V/Flags/UserRole/Volunteer'))
-        ub.renew()
+        self.groups.add(Group.objects.get(name="Volunteer"))
         
     def canEdit(self, nodeObj):
         """Returns True or False if the user can edit the node object"""
@@ -2025,6 +2022,18 @@ class Record(models.Model):
             return cls.objects.filter(user=user, event=event).count()>0
         else:
             return cls.objects.filter(user=user, event=event, program=program).count()>0
+
+class Permission(models.Model):
+    
+    PERMISSION_CHOICES=(
+        ("Administer", "Full administrative permissions"),
+        ("QSD", "QSD reading and editing"),
+        ("QSD/Edit", "QSD editting only"),
+        ("QSD/View", "QSD viewing only"),
+        ("View", "View something"),
+    )
+    user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True)
+    permission_type = models.CharField(max_length=80, choices=PERMISSION_CHOICES)
 
 def install():
     """

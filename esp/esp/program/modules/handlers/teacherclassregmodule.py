@@ -869,7 +869,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         from esp.web.views.json import JsonResponse
         from esp.users.models import UserBit
 
-        Q_teacher = Q(userbit__verb = GetNode('V/Flags/UserRole/Teacher'))
+        Q_teacher = Q(groups__name="Teacher")
 
         queryset = ESPUser.objects.filter(Q_teacher)
         

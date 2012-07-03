@@ -51,12 +51,8 @@ class JsonResponse(HttpResponse):
 def teacher_lookup(request, limit=10):
      # FIXME: REQUIRE PERMISSIONS!
     
-    # Initialize anchors for identifying teachers
-    q = GetNode( 'Q' )
-    v = GetNode( 'V/Flags/UserRole/Teacher' )
-    
-    # Select teachers
-    queryset = UserBit.bits_get_users(q, v)
+    queryset = ESPUser.objects.filter(group__name="Teacher")
+
 
     # Search for teachers with names that start with search string
     startswith = request.GET['q']

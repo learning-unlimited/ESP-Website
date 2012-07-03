@@ -160,12 +160,11 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if allowed_student_types:
             allowed_student_types = allowed_student_types.split(",")
             for stutype in allowed_student_types:
-                VerbParent = Q(userbit__verb__parent=GetNode("V/Flags/UserRole"))
-                VerbName = Q(userbit__verb__name=stutype)
+                GroupName = Q(groups__name=stutype)
                 if QObject:
                     retVal[stutype] = self.getQForUser(Par & Unexpired & Reg & VerbName & VerbParent)
                 else:
-                    retVal[stutype] = ESPUser.objects.filter(Par & Unexpired & Reg & VerbName & VerbParent).distinct()
+                    retVal[stutype] = ESPUser.objects.filter(Par & Unexpired & Reg & GroupName).distinct()
 
         return retVal
 

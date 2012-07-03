@@ -90,11 +90,7 @@ This function is overloaded to handle either one or two phase reg"""
         user.save()
         ESPUser_Profile.objects.get_or_create(user = user)
 
-        role_verb = GetNode('V/Flags/UserRole/%s' % form.cleaned_data['initial_role'])
-        role_bit  = UserBit.objects.create(user = user,
-                                               verb = role_verb,
-                                               qsc  = request.get_node('Q'),
-                                               recursive = False)
+        user.groups.add(Group.objects.get(name=form.cleaned_data['initial_role']))
 
         if not Tag.getBooleanTag('require_email_validation', default=False):
             user = authenticate(username=form.cleaned_data['username'],

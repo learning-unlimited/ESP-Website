@@ -611,7 +611,7 @@ def needs_student(method):
 
         if not request.user.isStudent() and not request.user.isAdmin(moduleObj.program):
             allowed_student_types = Tag.getTag("allowed_student_types", moduleObj.program, default='')
-            matching_user_types = UserBit.valid_objects().filter(user=request.user, verb__parent=GetNode("V/Flags/UserRole"), verb__name__in=allowed_student_types.split(","))
+            matching_user_types = any(x in request.user.groups.all().values_list("name",flat=True) for x in allowed_student_types.split(","))
             if not matching_user_types:
                 return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
         return method(moduleObj, request, *args, **kwargs)
