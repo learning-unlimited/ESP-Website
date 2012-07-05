@@ -480,6 +480,19 @@ class MobileAppTest(ProgramFrameworkTest):
         programs = self.get("/myesp/program/")
         self.assertTrue(len(programs) > 0,
                         "Oh no! {0} has not registered for any program.".format(self.students[0].username))
+        self.assertTrue(len(programs) == 1,
+                        "{0} has registered for more than one program.".format(self.students[0].username))
+        self.check_response(programs[0],
+                            ["id", "title", "baseUrl"],
+                            [self.program.id, self.program.niceName(), self.program.getUrlBase()])
+
+    def testGetProgramListForOnsite(self):
+        self.login(self.onsites[0].username, "password")
+        programs = self.get("/myesp/program/")
+        self.assertTrue(len(programs) > 0,
+                        "Oh no! {0} has not registered for any program.".format(self.onsites[0].username))
+        self.assertTrue(len(programs) == 1,
+                        "{0} has registered for more than one program.".format(self.onsites[0].username))
         self.check_response(programs[0],
                             ["id", "title", "baseUrl"],
                             [self.program.id, self.program.niceName(), self.program.getUrlBase()])
