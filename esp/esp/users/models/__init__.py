@@ -821,29 +821,17 @@ class ESPUser(User, AnonymousUser):
 
 
     def isAdministrator(self, anchor_object = None):
-        if Tag.getBooleanTag("admin_role_is_super",default=False):
-            is_admin_role = self.groups.filter(name="Administrator").exists()
-            if is_admin_role: return True
-            if anchor_object is None:
-                return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
+        is_admin_role = self.groups.filter(name="Administrator").exists()
+        if is_admin_role: return True
+        if anchor_object is None:
+            return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
+        else:
+            if hasattr(anchor_object, 'anchor'):
+                anchor = anchor_object.anchor
             else:
-                if hasattr(anchor_object, 'anchor'):
-                    anchor = anchor_object.anchor
-                else:
-                    anchor = anchor_object
+                anchor = anchor_object
 
-            return UserBit.UserHasPerms(self, anchor, GetNode('V/Administer'))
-        else: 
-            if anchor_object is None:
-                return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
-            else:
-                if hasattr(anchor_object, 'anchor'):
-                    anchor = anchor_object.anchor
-                else:
-                    anchor = anchor_object
-
-            return UserBit.UserHasPerms(self, anchor, GetNode('V/Administer'))
-
+        return UserBit.UserHasPerms(self, anchor, GetNode('V/Administer'))
     isAdmin = isAdministrator
 
     @cache_function
@@ -2022,18 +2010,6 @@ class Record(models.Model):
             return cls.objects.filter(user=user, event=event).count()>0
         else:
             return cls.objects.filter(user=user, event=event, program=program).count()>0
-
-class Permission(models.Model):
-    
-    PERMISSION_CHOICES=(
-        ("Administer", "Full administrative permissions"),
-        ("QSD", "QSD reading and editing"),
-        ("QSD/Edit", "QSD editting only"),
-        ("QSD/View", "QSD viewing only"),
-        ("View", "View something"),
-    )
-    user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True)
-    permission_type = models.CharField(max_length=80, choices=PERMISSION_CHOICES)
 
 def install():
     """
