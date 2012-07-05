@@ -414,7 +414,7 @@ class AccountCreationTest(TestCase):
 
 error_values = ["Invalid username or password"]
 error_keys = ["message"]
-success_keys = ["isStudent", "isVolunteer", "success"]
+success_keys = ["isStudent", "isOnsite", "success"]
 
 class MobileAppTest(ProgramFrameworkTest):
 

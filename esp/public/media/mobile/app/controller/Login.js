@@ -26,7 +26,7 @@ Ext.define('LU.controller.Login', {
                 var program = Ext.widget('programList');
                 var role = '';
 
-                if (result.isVolunteer === 'true') {
+                if (result.isOnsite === 'true') {
                     role = 'volunteer';
                 } else if (result.isStudent == 'true') {
                     role = 'student';
