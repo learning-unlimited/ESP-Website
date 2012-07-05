@@ -461,19 +461,19 @@ class MobileAppTest(ProgramFrameworkTest):
                             error_values,
                             success_keys)
 
-    def testVolunteerLogin(self):
-        self.check_response(self.login(self.volunteers[0].username, "password"),
+    def testOnsiteLogin(self):
+        self.check_response(self.login(self.onsites[0].username, "password"),
                             success_keys,
                             ["false", "true", "true"],
                             error_keys)
 
-    def testVolunteerLoginError(self):
+    def testOnsiteLoginError(self):
         self.check_response(self.login(),
                             error_keys,
                             error_values,
                             success_keys)
 
-    def testGetProgramList(self):
+    def testGetProgramListForStudent(self):
         self.login(self.students[0].username, "password")
         self.add_student_profiles()
 

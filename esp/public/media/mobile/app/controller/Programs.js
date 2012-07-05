@@ -34,8 +34,8 @@ Ext.define('LU.controller.Programs', {
         user.setProgram(this.id);
         store.sync();
 
-        if (user.get('role') === 'volunteer') {
-            Ext.Viewport.setActiveItem(Ext.widget('volunteer'));
+        if (user.get('role') === 'onsite') {
+            Ext.Viewport.setActiveItem(Ext.widget('onsite'));
         } else if (user.get('role') === 'student') {
             Ext.Viewport.setMasked({ xtype: 'loadmask' });
 

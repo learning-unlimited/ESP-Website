@@ -58,9 +58,9 @@ Ext.application({
         'schedule.Timing',
         'schedule.Prereq',
 
-        'student.Main',
+        'student_interface.Main',
 
-        'volunteer.Main'
+        'onsite_interface.Main'
     ],
 
     viewport: {

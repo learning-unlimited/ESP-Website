@@ -1,7 +1,7 @@
-Ext.define('LU.view.volunteer.Main', {
+Ext.define('LU.view.onsite_interface.Main', {
     extend: 'Ext.tab.Panel',
-    xtype: 'volunteer',
-    
+    xtype: 'onsite',
+
     config: {
         tabBarPosition: 'bottom',
         items: [

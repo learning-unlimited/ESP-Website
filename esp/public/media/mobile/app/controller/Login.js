@@ -27,12 +27,12 @@ Ext.define('LU.controller.Login', {
                 var role = '';
 
                 if (result.isOnsite === 'true') {
-                    role = 'volunteer';
+                    role = 'onsite';
                 } else if (result.isStudent == 'true') {
                     role = 'student';
                 } else {
                     // display error message for unknown role
-                    Ext.Msg.alert('Unauthorized Role', 'You have to be either a student or volunteer to access the app.');
+                    Ext.Msg.alert('Unauthorized Role', 'You have to be either a student or onsite user to access the app.');
                     return;
                 }
 
