@@ -1,13 +1,13 @@
-from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from django import forms
 from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserBit, UserForwarder, StudentInfo
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.program.tests import ProgramFrameworkTest
 from esp.datatree.models import GetNode
 from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth.models import Group
 from esp.middleware import ESPError
 from esp.users.views import make_user_admin
-from esp.tests.util import CacheFlushTestCase
 from django.core import mail
 from esp.program.models import RegistrationProfile, Program
 import datetime
@@ -15,6 +15,9 @@ import esp.users.views as views
 from esp.tagdict.models import Tag
 
 class ESPUserTest(TestCase):
+    def setUp(self):
+        user_role_setup()
+
     def testInit(self):
         one = ESPUser()
         two = User()
@@ -91,7 +94,7 @@ class ESPUserTest(TestCase):
         # Create the student user
         studentUser, c2 = ESPUser.objects.get_or_create(username='student')
         # Make it a student
-        role_bit, created = UserBit.objects.get_or_create(user=studentUser, qsc=GetNode('Q'), verb=GetNode('V/Flags/UserRole/Student'), recursive=False)
+        studentUser.makeRole("Student")
         # Give it a starting grade
         student_studentinfo = StudentInfo(user=studentUser, graduation_year=ESPUser.YOGFromGrade(9))
         student_studentinfo.save()
@@ -271,6 +274,7 @@ class MakeAdminTest(TestCase):
         self.user.is_superview = False
         UserBit.objects.filter(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Administer')).delete()
         UserBit.objects.filter(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Flags/UserRole/Administrator')).delete()
+        user_role_setup()
 
     def runTest(self):
         # Make sure user starts off with no administrator priviliges
@@ -286,7 +290,7 @@ class MakeAdminTest(TestCase):
         self.assertTrue(self.user.is_staff)
         self.assertTrue(self.user.is_superuser)
         self.assertTrue(UserBit.objects.UserHasPerms(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Administer')))
-        self.assertTrue(UserBit.objects.UserHasPerms(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Flags/UserRole/Administrator')))
+        self.assertTrue(self.user.groups.filter(name="Administrator").exists())
 
         # Make sure that an unprivileged access to /myesp/makeadmin/ returns 403 Forbidden
         response = self.client.get('/myesp/makeadmin/')
@@ -325,6 +329,9 @@ class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
 
 class AccountCreationTest(TestCase):
     
+    def setUp(self):
+        user_role_setup()
+
     def test_phase_1(self):
         #There's a tag that affects phase 1 so we put the tests into a function
         #and call it twice here

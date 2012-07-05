@@ -544,7 +544,7 @@ def newprogram(request):
             #   Force all ProgramModuleObjs and their extensions to be created now
             new_prog.getModules()
             
-            manage_url = '/manage/' + new_prog.url() + '/resources'
+            manage_url = '/manage/' + new_prog.url + '/resources'
 
             # While we're at it, create the program's mailing list
             mailing_list_name = "%s_%s" % (new_prog.anchor.parent.name, new_prog.anchor.name)

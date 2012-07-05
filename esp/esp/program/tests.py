@@ -42,7 +42,7 @@ from django.contrib.auth.models import User, Group
 import datetime, random, hashlib
 
 from django.test.client import Client
-from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
 from esp.program.controllers.lottery import LotteryAssignmentController
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
@@ -224,6 +224,9 @@ class ProgramHappenTest(TestCase):
         self.program_type_anchor.friendly_name = u'Prubbogrubbam!'
         self.program_type_anchor.save()
         
+        #create Groups for userroles
+        user_role_setup()
+
         def makeuser(f, l, un, email, p):
             u = ESPUser(first_name=f, last_name=l, username=un, email=email)
             u.set_password(p)
@@ -235,10 +238,10 @@ class ProgramHappenTest(TestCase):
         self.student = makeuser('Stubbu', 'Dubbent', 'stubbudubbent', 'stubbudubbent@esp.mit.edu', 'pubbasswubbord')
         self.teacher = makeuser('Tubbea', 'Chubber', 'tubbeachubber', 'tubbeachubber@esp.mit.edu', 'pubbasswubbord')
         
-        UserBit.objects.create(user=self.admin, verb=GetNode('V/Flags/UserRole/Administrator'), qsc=GetNode('Q'), recursive=False)
+        self.admin.makeRole("Administrator")
+        self.student.makeRole("Student")
+        self.teacher.makeRole("Teacher")
         UserBit.objects.create(user=self.admin, verb=GetNode('V/Administer'), qsc=GetNode('Q/Programs/Prubbogrubbam'))
-        UserBit.objects.create(user=self.student, verb=GetNode('V/Flags/UserRole/Student'), qsc=GetNode('Q'), recursive=False)
-        UserBit.objects.create(user=self.teacher, verb=GetNode('V/Flags/UserRole/Teacher'), qsc=GetNode('Q'), recursive=False)
     
     def makeprogram(self):
         """ Test program creation through the web form. """
@@ -518,6 +521,8 @@ class ProgramFrameworkTest(TestCase):
         import esp.datatree.sql.set_isolation_level
         esp.datatree.sql.set_isolation_level.DISABLE_TRANSACTIONS = True
         
+        user_role_setup()
+
         #   Default parameters
         settings = {'num_timeslots': 3,
                     'timeslot_length': 50,
@@ -561,19 +566,19 @@ class ProgramFrameworkTest(TestCase):
             new_student, created = ESPUser.objects.get_or_create(username='student%04d' % i)
             new_student.set_password('password')
             new_student.save()
-            role_bit, created = UserBit.objects.get_or_create(user=new_student, verb=GetNode('V/Flags/UserRole/Student'), qsc=GetNode('Q'), recursive=False)
+            new_student.makeRole("Student")
             self.students.append(ESPUser(new_student)) 
         for i in range(settings['num_teachers']):
             new_teacher, created = ESPUser.objects.get_or_create(username='teacher%04d' % i)
             new_teacher.set_password('password')
             new_teacher.save()
-            role_bit, created = UserBit.objects.get_or_create(user=new_teacher, verb=GetNode('V/Flags/UserRole/Teacher'), qsc=GetNode('Q'), recursive=False)
+            new_teacher.makeRole("Teacher")
             self.teachers.append(ESPUser(new_teacher))
         for i in range(settings['num_admins']):
             new_admin, created = ESPUser.objects.get_or_create(username='admin%04d' % i)
             new_admin.set_password('password')
             new_admin.save()
-            role_bit, created = UserBit.objects.get_or_create(user=new_admin, verb=GetNode('V/Flags/UserRole/Administrator'), qsc=GetNode('Q'), recursive=False)
+            new_admin.makeRole("Administrator")
             self.admins.append(ESPUser(new_admin))
             
         #   Establish attributes for program
