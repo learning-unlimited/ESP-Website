@@ -893,6 +893,9 @@ class ESPUser(User, AnonymousUser):
         
     def makeVolunteer(self):
         self.groups.add(Group.objects.get(name="Volunteer"))
+
+    def makeRole(self, role_name):
+        self.groups.add(Group.objects.get(name=role_name))
         
     def canEdit(self, nodeObj):
         """Returns True or False if the user can edit the node object"""

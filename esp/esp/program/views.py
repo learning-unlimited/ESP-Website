@@ -553,7 +553,7 @@ def newprogram(request):
             #   Force all ProgramModuleObjs and their extensions to be created now
             new_prog.getModules()
             
-            manage_url = '/manage/' + new_prog.url() + '/resources'
+            manage_url = '/manage/' + new_prog.url + '/resources'
 
             if settings.USE_MAILMAN and 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
                 # While we're at it, create the program's mailing list

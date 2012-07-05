@@ -6,6 +6,7 @@ from esp.mailman import add_list_member
 from esp.middleware.esperrormiddleware import ESPError
 from esp.tagdict.models import Tag
 from django.contrib.auth import login, authenticate
+from django.contrib.auth.models import Group
 from django.http import HttpResponseRedirect
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context

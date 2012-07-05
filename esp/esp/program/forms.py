@@ -46,7 +46,6 @@ from form_utils.forms import BetterModelForm
 
 
 def make_id_tuple(object_list):
-    
     return tuple([(o.id, str(o)) for o in object_list])
 
 class ProgramCreationForm(BetterModelForm):
@@ -70,7 +69,7 @@ class ProgramCreationForm(BetterModelForm):
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current admins and modules. """
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
-        admin_list=ESPUser.objects.filter(group__name="Administrator")
+        admin_list=ESPUser.objects.filter(groups__name="Administrator")
         self.fields['admins'].choices = make_id_tuple(admin_list.distinct().order_by('username'))
         self.fields['anchor'].queryset = DataTree.objects.filter(Q(child_set__program__isnull=False) | Q(parent=GetNode("Q/Programs"))).exclude(parent__name="Subprograms").distinct()
         self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())

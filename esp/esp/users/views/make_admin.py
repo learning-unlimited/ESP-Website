@@ -28,7 +28,7 @@ def make_user_admin(target_user):
 
     # Set the userbits
     target_user.userbit_set.add(UserBit(verb = GetNode('V/Administer'), qsc = GetNode('Q')))
-    target_user.groups.add(Group.objects.get(name="Administrator"))
+    target_user.makeRole("Administrator")
 
     #   Clear the UserBit cache for this user
     UserBit.objects.cache(target_user).update()
