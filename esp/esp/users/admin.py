@@ -24,7 +24,22 @@ admin_site.register(UserForwarder)
 admin_site.register(ZipCode)
 admin_site.register(ZipCodeSearches)
 admin_site.register(UserAvailability)
-admin_site.register(ESPUser, UserAdmin)
+
+class ESPUserAdmin(UserAdmin):
+    #remove the user_permissions and is_superuser from adminpage
+    #(since we don't use either of those)
+    #See https://github.com/django/django/blob/stable/1.3.x/django/contrib/auth/admin.py
+
+    from django.utils.translation import ugettext, ugettext_lazy as _
+    fieldsets = (
+        (None, {'fields': ('username', 'password')}),
+        (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
+        (_('Permissions'), {'fields': ('is_active', 'is_staff',)}),
+        (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
+        (_('User Roles'), {'fields': ('groups',)}),
+        )
+
+admin_site.register(ESPUser, ESPUserAdmin)
 
 class RecordAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'event', 'program']
