@@ -536,6 +536,8 @@ def newprogram(request):
 
             new_prog = pcf.save(commit = False) # don't save, we need to fix it up:
             new_prog.anchor = anchor
+            new_prog.url = pcf.cleaned_data['anchor'].name+"/"+pcf.cleaned_data['term']
+            new_prog.name = pcf.cleaned_data['anchor'].friendly_name+" "+pcf.cleaned_data['term_friendly']
             new_prog.save()
             pcf.save_m2m()
             
