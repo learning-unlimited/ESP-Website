@@ -35,6 +35,17 @@ Ext.define('LU.controller.Programs', {
         store.sync();
 
         if (user.get('role') === 'onsite') {
+
+            // retrieves the list of users
+            var studentStore = Ext.getStore('Students'),
+                studentListUrl = LU.Util.getStudentListUrl();
+
+            studentStore.setProxy({
+                type: 'ajax',
+                url: studentListUrl
+            });
+            studentStore.load();
+
             Ext.Viewport.setActiveItem(Ext.widget('onsite'));
         } else if (user.get('role') === 'student') {
             Ext.Viewport.setMasked({ xtype: 'loadmask' });

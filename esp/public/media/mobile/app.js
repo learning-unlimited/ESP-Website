@@ -16,6 +16,7 @@ Ext.application({
         'Class',
         'RegisteredSection',
         'Timing',
+        'Student',
         'Program',
         'User'
     ],
@@ -26,6 +27,7 @@ Ext.application({
         'RegisteredSections',
         'Timings',
         'RegisteredTimings',
+        'Students',
         'Programs',
         'User'
     ],
@@ -34,6 +36,7 @@ Ext.application({
         'Login',
         'Classes',
         'Schedule',
+        'Students',
         'Programs'
     ],
 
@@ -59,6 +62,9 @@ Ext.application({
         'schedule.Prereq',
 
         'student_interface.Main',
+
+        'student.Card',
+        'student.List',
 
         'onsite_interface.Main'
     ],

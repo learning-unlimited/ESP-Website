@@ -6,9 +6,7 @@ Ext.define('LU.view.onsite_interface.Main', {
         tabBarPosition: 'bottom',
         items: [
             {
-                title: 'Search',
-                iconCls: 'search',
-                html: 'Search Screen'
+                xclass: 'LU.view.student.Card'
             },
             {
                 title: 'Register',

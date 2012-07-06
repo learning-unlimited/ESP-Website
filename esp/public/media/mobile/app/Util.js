@@ -46,6 +46,10 @@ Ext.define('LU.Util', {
         return '/learn/' + this.getProgram().get('baseUrl') + '/catalog_registered_classes_json';
     },
 
+    getStudentListUrl: function() {
+        return '/onsite/' + this.getProgram().get('baseUrl') + '/get_student_list_json';
+    },
+
     getProgramTitle: function() {
         return this.getProgram().get('title');
     },

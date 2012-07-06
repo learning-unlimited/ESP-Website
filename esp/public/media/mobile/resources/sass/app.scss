@@ -20,6 +20,10 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
 @include sencha-form;
 @include sencha-msgbox;
 
+.bold {
+    font-weight: bold;
+}
+
 /*
  * Login
  */
@@ -92,7 +96,7 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
  * Classes
  */
 
-$class-code-color: #7d7d7d;
+$gray-color: #7d7d7d;
 
 .classList .classes, .scheduleList .classes {
     @include display-box;
@@ -105,8 +109,31 @@ $class-code-color: #7d7d7d;
 
     .code {
         font-style: italic;
-        color: $class-code-color;
+        color: $gray-color;
         font-size: 80%;
+    }
+}
+
+.studentList {
+    .x-clear-icon {
+        margin-right: 1.6em;
+    }
+
+    .students {
+        @include display-box;
+        ol {
+            @include box-flex(1);
+            .email {
+                color: $gray-color;
+                font-size: 80%;
+            }
+        }
+
+        .username {
+            font-style: italic;
+            font-size: 75%;
+            padding-right: 1.2em;
+        }
     }
 }
 
@@ -124,7 +151,7 @@ $class-code-color: #7d7d7d;
         font-size: 0.84em;
         font-weight: normal;
         font-style: italic;
-        color: $class-code-color;
+        color: $gray-color;
     }
 
     .description {

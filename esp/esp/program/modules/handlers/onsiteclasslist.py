@@ -109,6 +109,15 @@ class OnSiteClassList(ProgramModuleObj):
         simplejson.dump(list(data), resp)
         return resp
     
+    def get_students(self):
+        #   Try to ensure we don't miss anyone
+        students_dict = self.program.students(QObjects=True)
+        student_types = ['student_profile']     #   You could add more list names here, but it would get very slow.
+        students_Q = Q()
+        for student_type in student_types:
+            students_Q = students_Q | students_dict[student_type]
+        return ESPUser.objects.filter(students_Q).distinct()
+
     @aux_call
     @needs_onsite
     def students_status(self, request, tl, one, two, module, extra, prog):
@@ -123,14 +132,7 @@ AND	"users_studentinfo"."user_id" = "auth_user"."id"
 ORDER BY program_registrationprofile.id DESC
 LIMIT 1
         """ % ESPUser.current_schoolyear()
-        #   Try to ensure we don't miss anyone
-        students_dict = self.program.students(QObjects=True)
-        student_types = ['student_profile']     #   You could add more list names here, but it would get very slow.
-        students_Q = Q()
-        for student_type in student_types:
-            students_Q = students_Q | students_dict[student_type]
-        students = ESPUser.objects.filter(students_Q).distinct()
-        data = students.extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
+        data = self.get_students().extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
         simplejson.dump(list(data), resp)
         return resp
     
@@ -157,7 +159,15 @@ LIMIT 1
         data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name').values_list('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students')
         simplejson.dump(list(data), resp)
         return resp
-    
+
+    @aux_call
+    @needs_onsite
+    def get_student_list_json(self, request, tl, one, two, module, extra, prog):
+        resp = HttpResponse(mimetype='application/json')
+        data = self.get_students().values('id', 'last_name', 'first_name', 'username', 'email')
+        simplejson.dump(list(data), resp)
+        return resp
+
     @aux_call
     @needs_onsite
     def get_schedule_json(self, request, tl, one, two, module, extra, prog):
