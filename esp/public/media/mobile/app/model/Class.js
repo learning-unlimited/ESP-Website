@@ -27,6 +27,13 @@ Ext.define('LU.model.Class', {
             'section_index',
 
             {
+                name: 'title_upper',
+                type: 'string',
+                convert: function(value, record) {
+                    return record.data.title.toUpperCase();
+                }
+            },
+            {
                 name: 'hardness_rating',
                 type: 'int',
                 convert: function(value, record) {

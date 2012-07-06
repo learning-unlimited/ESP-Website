@@ -3,18 +3,12 @@ Ext.define('LU.Util', {
     singleton: true,
 
     config: {
-        titleGrouper: {
-            groupFn: function(record) {
-                return record.get('title')[0];
-            },
-            sortProperty: 'title'               // sorts the grouped headers
-        },
 
         difficultyGrouper: {
             groupFn: function(record) {
                 return record.get('hardness_desc');
             },
-            sortProperty: 'hardness_rating'
+            sortProperty: 'hardness_rating'         // sorts the grouped headers
         },
 
         timeGrouper: {
@@ -29,6 +23,15 @@ Ext.define('LU.Util', {
     constructor: function(config) {
         this.initConfig(config);
         this.callParent([config]);
+    },
+
+    getStringGrouper: function(property) {
+        return {
+            groupFn: function(record) {
+                return record.get(property)[0];
+            },
+            sortProperty: property
+        };
     },
 
     getProgram: function() {

@@ -4,8 +4,8 @@ Ext.define('LU.store.Classes', {
     config: {
         autoLoad: false,
         model: 'LU.model.Class',
-        sorters: 'title',
+        sorters: 'title_upper',
 
-        grouper: LU.Util.getTitleGrouper()
+        grouper: LU.Util.getStringGrouper('title_upper')
     }
 });

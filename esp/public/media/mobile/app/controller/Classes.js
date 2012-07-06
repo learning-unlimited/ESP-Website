@@ -43,21 +43,21 @@ Ext.define('LU.controller.Classes', {
         var store = Ext.getStore('Classes');
 
         if (btn.getText() === 'Title') {
-            store.setGrouper(LU.Util.getTitleGrouper());
+            store.setGrouper(LU.Util.getStringGrouper('title_upper'));
         } else if (btn.getText() === 'Difficulty') {
             store.setGrouper(LU.Util.getDifficultyGrouper());
         } else if (btn.getText() === 'Time') {
             store.setGrouper(LU.Util.getTimeGrouper());
         }
-        store.sort('title');                    // sorts items within the group
+        store.sort('title_upper');                    // sorts items within the group
         this.getClassList().setStore(store);
         this.getClassList().deselectAll();
     },
 
     onListInit: function(list, opts) {
         list.getStore().clearFilter();
-        list.getStore().setGrouper(LU.Util.getTitleGrouper());
-        list.getStore().sort('title');
+        list.getStore().setGrouper(LU.Util.getStringGrouper('title_upper'));
+        list.getStore().sort('title_upper');
     },
 
     onListShow: function(list, opts) {
