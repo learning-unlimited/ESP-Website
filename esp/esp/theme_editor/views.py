@@ -60,7 +60,7 @@ def parse_less(less_file_path):
         if match:
             d.update({'theme_name':match.group(1)})
         # retrieve the palette
-        match = re.findall(r"palette:([\#]?\w+);", f) 
+        match = re.findall(r"palette:(#?\w+?);", f) 
         palette = []
         for m in match:
             palette.append(m)
@@ -98,12 +98,16 @@ def save(request, less_file):
         if not form_settings[k]: # if a form element returns no value, don't keep it in the context
             del form_settings[k];
 
+    # if only one palette colour is defined, make sure it is one element in a list, so for example
+    # Django doesn't split up 'black' into 'b','l',...,'k'.
+    if 'palette' in form_settings and form_settings['palette'].__class__ != list:
+        form_settings['palette'] = [form_settings['palette']]
+
     variables_settings.update(form_settings)
 
     # if theme is only applied, but has some changes, just apply theme and set name as 'None'
     if 'apply' in request.POST:
         del variables_settings['theme_name']
-
     w = variables_template.render(Context(variables_settings))
     f = open(theme_file_path, 'w')
     f.write(w)
@@ -185,8 +189,6 @@ def theme_submit(request):
     f.close()
     # for debugging, uncomment the next line
     #return HttpResponse(str(dict(request.POST)))
-
-
     return HttpResponseRedirect('/theme/')
 
 @admin_required    
