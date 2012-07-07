@@ -799,6 +799,7 @@ class ESPUser(User, AnonymousUser):
 
 
     def isAdministrator(self, anchor_object = None):
+        if self.is_anonymous(): return False
         is_admin_role = self.groups.filter(name="Administrator").exists()
         if is_admin_role: return True
         if anchor_object is None:
