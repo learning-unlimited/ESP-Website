@@ -50,6 +50,10 @@ Ext.define('LU.Util', {
         return '/onsite/' + this.getProgram().get('baseUrl') + '/get_student_list_json';
     },
 
+    getStudentProfileUrl: function(id) {
+        return '/onsite/' + this.getProgram().get('baseUrl') + '/get_student_json?id=' + id;
+    },
+
     getProgramTitle: function() {
         return this.getProgram().get('title');
     },

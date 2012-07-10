@@ -162,6 +162,41 @@ LIMIT 1
 
     @aux_call
     @needs_onsite
+    def get_student_json(self, request, tl, one, two, module, extra, prog):
+        resp = HttpResponse(mimetype='application/json')
+        result_dict = {}
+
+        if 'id' in request.GET:
+            try:
+                user = ESPUser.objects.get(id=int(request.GET['id']))
+
+                profile = user.getLastProfile()
+                edu = profile.student_info
+                contact = profile.contact_user
+
+                result_dict = {
+                    'id': user.id,
+                    'school': edu.school,
+                    'graduation_year': edu.graduation_year,
+                    'grade': user.getGrade(),
+                    'dob': '' if edu.dob is None else edu.dob.isoformat(),
+                    'name': contact.first_name + ' ' + contact.last_name,
+                    'email': contact.e_mail,
+                    'phone_day': contact.phone_day,
+                    'phone_cell': contact.phone_cell,
+                    'address': '%s\n%s, %s %s' % (contact.address_street, contact.address_city, contact.address_state, contact.address_zip),
+                }
+            except ValueError:
+                result_dict['message'] = 'You did not provide an integer'
+            except ESPUser.DoesNotExist:
+                result_dict['message'] = 'You did not provide a valid user id'
+        else:
+            result_dict['message'] = 'Did you forget to specify the parameters?'
+        simplejson.dump(result_dict, resp)
+        return resp
+
+    @aux_call
+    @needs_onsite
     def get_student_list_json(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         data = self.get_students().values('id', 'last_name', 'first_name', 'username', 'email')

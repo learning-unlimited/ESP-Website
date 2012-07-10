@@ -20,6 +20,9 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
 @include sencha-form;
 @include sencha-msgbox;
 
+@include pictos-iconmask('note2');
+@include pictos-iconmask('user3');
+
 .bold {
     font-weight: bold;
 }
@@ -77,6 +80,11 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
     margin: 15px 0 15px;
 }
 
+.line {
+    height: 1px;
+    background-color: #a7a7a7;
+}
+
 /*
  * Program
  */
@@ -114,6 +122,35 @@ $gray-color: #7d7d7d;
     }
 }
 
+.classInfo, .scheduleInfo {
+    .title {
+        font-weight: bold;
+        font-size: 1.4em;
+        line-height: 1.26em;
+        margin-bottom: 0.51em;
+        padding: 6.9px 11px 0 11px;
+    }
+
+    .code {
+        display: inline;
+        font-size: 0.84em;
+        font-weight: normal;
+        font-style: italic;
+        color: $gray-color;
+    }
+
+    .description {
+        font-size: 0.9em;
+        line-height: 1.26em;
+        margin-bottom: 0.51em;
+        padding: 4.9px 11px 11px 11px;
+    }
+}
+
+/*
+ * Students
+ */
+
 .studentList {
     .x-clear-icon {
         margin-right: 1.6em;
@@ -137,27 +174,48 @@ $gray-color: #7d7d7d;
     }
 }
 
-.classInfo, .scheduleInfo {
-    .title {
-        font-weight: bold;
-        font-size: 1.4em;
-        line-height: 1.26em;
-        margin-bottom: 0.51em;
-        padding: 6.9px 11px 0 11px;
+.studentProfile {
+    .user-panel {
+        .namecard {
+            .name {
+                font-size: 1.4em;
+                font-weight: bold;
+                line-height: 1.26em;
+            }
+
+            .account {
+                font-size: 0.84em;
+            }
+        }
+
+        .check-in-btn {
+            margin-left: 0.9em;
+        }
     }
 
-    .code {
-        display: inline;
-        font-size: 0.84em;
-        font-weight: normal;
-        font-style: italic;
-        color: $gray-color;
+    .x-form-fieldset-title {
+        margin: 0em 0.7em 0.5em;
     }
 
-    .description {
-        font-size: 0.9em;
-        line-height: 1.26em;
-        margin-bottom: 0.51em;
-        padding: 4.9px 11px 11px 11px;
+    .contact, .student {
+        margin-bottom: 0.7em;
+    }
+
+    .label {
+        font-size: .9em;
+        color: #4E6E91;
+        text-align: right;
+        background-color: #fff;
+        text-overflow: clip;
+        white-space: normal;
+        word-break: hyphenate;
+    }
+
+    input, textarea {
+        font-size: .8em;
+    }
+
+    input {
+        padding-top: .5em;
     }
 }
