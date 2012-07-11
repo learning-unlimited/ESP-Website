@@ -174,17 +174,33 @@ LIMIT 1
                 edu = profile.student_info
                 contact = profile.contact_user
 
-                result_dict = {
+                user_info = {
                     'id': user.id,
-                    'school': edu.school,
-                    'graduation_year': edu.graduation_year,
+                    'name': user.first_name + ' ' + user.last_name,
                     'grade': user.getGrade(),
-                    'dob': '' if edu.dob is None else edu.dob.isoformat(),
-                    'name': contact.first_name + ' ' + contact.last_name,
-                    'email': contact.e_mail,
-                    'phone_day': contact.phone_day,
-                    'phone_cell': contact.phone_cell,
-                    'address': '%s\n%s, %s %s' % (contact.address_street, contact.address_city, contact.address_state, contact.address_zip),
+                }
+
+                student_info = {}
+                if edu:
+                    student_info = {
+                        'school': edu.school,
+                        'graduation_year': edu.graduation_year,
+                        'dob': '' if edu.dob is None else edu.dob.isoformat()
+                    }
+
+                contact_info = {}
+                if contact:
+                    contact_info = {
+                        'email': contact.e_mail,
+                        'phone_day': contact.phone_day,
+                        'phone_cell': contact.phone_cell,
+                        'address': '%s\n%s, %s %s' % (contact.address_street, contact.address_city, contact.address_state, contact.address_zip),
+                    }
+
+                result_dict = {
+                    'user': user_info,
+                    'student': student_info,
+                    'contact': contact_info
                 }
             except ValueError:
                 result_dict['message'] = 'You did not provide an integer'

@@ -3,15 +3,51 @@ Ext.define('LU.model.StudentProfile', {
 
     config: {
         fields: [
-            'name',
-            'email',
-            'phone_day',
-            'phone_cell',
-            'address',
-            'school',
-            'graduation_year',
-            'grade',
-            'dob',
+            // user info
+            {
+                name: 'id',
+                mapping: 'user.id'
+            },
+            {
+                name: 'name',
+                mapping: 'user.name'
+            },
+            {
+                name: 'grade',
+                mapping: 'user.grade'
+            },
+
+            // contact info
+            {
+                name: 'email',
+                mapping: 'contact.email'
+            },
+            {
+                name: 'phone_day',
+                mapping: 'contact.phone_day'
+            },
+            {
+                name: 'phone_cell',
+                mapping: 'contact.phone_cell'
+            },
+            {
+                name: 'address',
+                mapping: 'contact.address'
+            },
+
+            // student info
+            {
+                name: 'school',
+                mapping: 'student.school'
+            },
+            {
+                name: 'graduation_year',
+                mapping: 'student.graduation_year'
+            },
+            {
+                name: 'dob',
+                mapping: 'student.dob'
+            },
 
             {
                 name: 'phone',
