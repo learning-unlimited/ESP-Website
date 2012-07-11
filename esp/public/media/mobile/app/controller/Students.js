@@ -11,6 +11,7 @@ Ext.define('LU.controller.Students', {
             searchField: 'studentSearchBar textfield',
             phoneField: 'studentProfile textareafield[name="phone"]',
             segmentedButton: 'studentContainer segmentedbutton',
+            checkInButton: 'studentProfile #checkin_button',
             logout: 'studentContainer button[text="Logout"]'
         },
 
@@ -26,6 +27,9 @@ Ext.define('LU.controller.Students', {
             },
             segmentedButton: {
                 toggle: 'onToggle'
+            },
+            checkInButton: {
+                tap: 'onCheckIn'
             },
             logout: {
                 tap: 'onLogout'
@@ -50,6 +54,24 @@ Ext.define('LU.controller.Students', {
         }
     },
 
+    checkIn: function(button, isCheckedIn) {
+        button.setDisabled(isCheckedIn);
+
+        if (isCheckedIn) {
+            button.setText('Checked-in');
+            button.setStyle({
+                'background-image': '-webkit-linear-gradient(#3E5702,#507003 10%,#628904 65%,#648C04)',
+                'color': '#eee'
+            });
+        } else {
+            button.setText('Check-in');
+            button.setStyle({
+                'background-image': '-webkit-linear-gradient(#C2FA3B,#85BB05 2%,#547503)',
+                'color': '#fff'
+            });
+        }
+    },
+
     clearFieldValues: function() {
         Ext.Array.each(this.getStudentProfile().query('textfield,textareafield,numberfield'), function(field) {
             field.setValue('');
@@ -57,7 +79,15 @@ Ext.define('LU.controller.Students', {
     },
 
     setFieldValue: function(itemId, property) {
-        this.getStudentProfile().down('#'+itemId).setValue(this.profile.get(property));
+
+        var object = this.getStudentProfile().down('#'+itemId);
+
+        if (itemId == 'checkin_button') {
+            this.checkIn(object, this.profile.get(property));
+            return;
+        } else {
+            object.setValue(this.profile.get(property));
+        }
 
         if (itemId == 'phone_field') {
             if (this.profile.get(property).indexOf('\n') > -1) {
@@ -122,6 +152,7 @@ Ext.define('LU.controller.Students', {
                 this.setFieldValue('grad_yr_field', 'graduation_year');
                 this.setFieldValue('grade_field', 'grade');
                 this.setFieldValue('dob_field', 'dob');
+                this.setFieldValue('checkin_button', 'checkin_status');
                 Ext.Viewport.setMasked(false);
                 this.proceedTo(this.studentDetail);
             },
@@ -168,6 +199,35 @@ Ext.define('LU.controller.Students', {
         } else if (button.getItemId() == 'schedule-tab') {
             this.studentDetail.setActiveItem(1);
         }
+    },
+
+    onCheckIn: function(button, event, opts) {
+
+        // show checked in button first
+        this.checkIn(button, true);
+
+        var options = {
+            url: LU.Util.getRapidCheckInUrl(),
+            method: 'POST',
+            params: {
+                'user': this.profile.get('id')
+            },
+            success: function(result) {
+                // do nothing
+            },
+            failure: function(result) {
+                this.checkIn(button, false);
+                Ext.Msg.alert('Network Error', 'Try checking-in again later.');
+            },
+            scope: this
+        };
+
+        // append CSRF token to the header
+        Ext.Ajax.request(Ext.apply({
+            headers: {
+                'X-CSRFToken': LU.Util.getCsrfToken(document, options)
+            }
+        }, options));
     },
 
     onLogout: function() {

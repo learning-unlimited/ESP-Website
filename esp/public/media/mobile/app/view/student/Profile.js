@@ -35,7 +35,9 @@ Ext.define('LU.view.student.Profile', {
                     },
                     {
                         xtype: 'button',
+                        itemId: 'checkin_button',
                         cls: 'check-in-btn',
+                        disabledCls: null,
                         ui: 'confirm-small',
                         text: 'Check-in'
                     }

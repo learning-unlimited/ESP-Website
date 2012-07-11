@@ -95,6 +95,10 @@ Ext.define('LU.Util', {
         return '/onsite/' + this.getProgram().get('baseUrl') + '/get_student_json?id=' + id;
     },
 
+    getRapidCheckInUrl: function() {
+        return '/onsite/' + this.getProgram().get('baseUrl') + '/rapidcheckin';
+    },
+
     getProgramTitle: function() {
         return this.getProgram().get('title');
     },

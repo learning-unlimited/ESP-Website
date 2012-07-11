@@ -16,6 +16,11 @@ Ext.define('LU.model.StudentProfile', {
                 name: 'grade',
                 mapping: 'user.grade'
             },
+            {
+                name: 'checkin_status',
+                mapping: 'user.checkin_status',
+                type: 'boolean'
+            },
 
             // contact info
             {

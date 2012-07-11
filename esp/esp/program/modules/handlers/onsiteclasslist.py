@@ -173,11 +173,13 @@ LIMIT 1
                 profile = user.getLastProfile()
                 edu = profile.student_info
                 contact = profile.contact_user
+                checkin_status = UserBit.valid_objects().filter(user=user, qsc=prog.anchor, verb=GetNode('V/Flags/Registration/Attended'))
 
                 user_info = {
                     'id': user.id,
                     'name': user.first_name + ' ' + user.last_name,
                     'grade': user.getGrade(),
+                    'checkin_status': 'true' if checkin_status else 'false'
                 }
 
                 student_info = {}
