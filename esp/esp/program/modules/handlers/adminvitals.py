@@ -180,7 +180,7 @@ teachers[key]))
         context['classreghours'] = crhours
         Q_categories = Q(program=self.program)
         crmi = self.program.getModuleExtension('ClassRegModuleInfo')
-        if crmi.open_class_registration:
+        if crmi is not None and crmi.open_class_registration:
             Q_categories |= Q(pk=open_class_category().pk)
         #   Introduce a separate query to get valid categories, since the single query seemed to introduce duplicates
         program_categories = ClassCategories.objects.filter(Q_categories).distinct().values_list('id', flat=True)

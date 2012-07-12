@@ -218,7 +218,7 @@ class ProgramModuleObj(models.Model):
         #   If a "core" module has been found:
         #   Put the user through a sequence of all required modules in the same category.
         #   Only do so if we've not blocked this behavior, though
-        if scrmi.force_show_required_modules:
+        if scrmi is not None and scrmi.force_show_required_modules:
             if tl != "manage" and isinstance(moduleobj, CoreModule):
                 if not_logged_in(request):
                     return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
