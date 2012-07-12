@@ -122,6 +122,12 @@ Ext.define('LU.view.student.Profile', {
                         readOnly: true
                     }
                 ]
+            },
+            {
+                xtype: 'button',
+                itemId: 'change_grade_button',
+                ui: 'confirm',
+                text: 'Change grade'
             }
         ]
     }

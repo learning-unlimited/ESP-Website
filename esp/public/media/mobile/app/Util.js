@@ -99,6 +99,10 @@ Ext.define('LU.Util', {
         return '/onsite/' + this.getProgram().get('baseUrl') + '/rapidcheckin';
     },
 
+    getChangeGradeUrl: function() {
+        return '/onsite/' + this.getProgram().get('baseUrl') + '/ajax_change_grade';
+    },
+
     getProgramTitle: function() {
         return this.getProgram().get('title');
     },

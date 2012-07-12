@@ -173,6 +173,19 @@ class OnSiteCheckinModule(ProgramModuleObj):
         json_data = {'checkin_status_html': render_to_string(self.baseDir()+'checkinstatus.html', context)}
         return HttpResponse(json.dumps(json_data))
 
+    @aux_call
+    @needs_onsite
+    def ajax_change_grade(self, request, tl, one, two, module, extra, prog):
+        result_dict = {}
+        if request.method == 'POST':
+            user = ESPUser.objects.get(id=int(request.POST['user']))
+            student_info = user.getLastProfile().student_info
+            student_info.graduation_year = ESPUser.YOGFromGrade(int(request.POST['grade']))
+            student_info.save()
+            result_dict['success'] = 'true'
+        else:
+            result_dict['message'] = 'Are you sure you sent a HTTP POST request?'
+        return HttpResponse(json.dumps(result_dict))
 
     @main_call
     @needs_onsite

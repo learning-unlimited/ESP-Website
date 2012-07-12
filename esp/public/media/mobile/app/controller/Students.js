@@ -10,8 +10,10 @@ Ext.define('LU.controller.Students', {
             studentInfo: 'studentProfile #namecard',
             searchField: 'studentSearchBar textfield',
             phoneField: 'studentProfile textareafield[name="phone"]',
+            gradeField: 'studentProfile #grade_field',
             segmentedButton: 'studentContainer segmentedbutton',
             checkInButton: 'studentProfile #checkin_button',
+            changeGradeButton: 'studentProfile #change_grade_button',
             logout: 'studentContainer button[text="Logout"]'
         },
 
@@ -30,6 +32,9 @@ Ext.define('LU.controller.Students', {
             },
             checkInButton: {
                 tap: 'onCheckIn'
+            },
+            changeGradeButton: {
+                tap: 'onChangeGrade'
             },
             logout: {
                 tap: 'onLogout'
@@ -217,6 +222,39 @@ Ext.define('LU.controller.Students', {
             failure: function(result) {
                 this.checkIn(button, false);
                 Ext.Msg.alert('Network Error', 'Try checking-in again later.');
+            },
+            scope: this
+        });
+    },
+
+    onChangeGrade: function() {
+        Ext.Viewport.setMasked({ xtype: 'loadmask' });
+
+        var new_grade = parseInt(this.getGradeField().getValue());
+        LU.Util.ajaxPost({
+            url: LU.Util.getChangeGradeUrl(),
+            params: {
+                'user': this.profile.get('id'),
+                'grade': new_grade
+            },
+            success: function(result) {
+                var grad_yr_field = this.getStudentProfile().down('#grad_yr_field'),
+                    old_grade = parseInt(this.profile.get('grade')),
+                    old_grad_yr = parseInt(grad_yr_field.getValue()),
+                    new_grad_yr = old_grad_yr + old_grade - new_grade;
+
+                // update the graduation year based on new grade
+                grad_yr_field.setValue(new_grad_yr.toString().replace(',', ''));
+
+                // update local storage
+                this.profile.set('grade', new_grade);
+
+                Ext.Viewport.setMasked(false);
+            },
+            failure: function(result) {
+                // restores the old value
+                this.setFieldValue('grade_field', 'grade');
+                Ext.Viewport.setMasked(false);
             },
             scope: this
         });
