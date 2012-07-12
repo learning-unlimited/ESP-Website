@@ -206,9 +206,8 @@ Ext.define('LU.controller.Students', {
         // show checked in button first
         this.checkIn(button, true);
 
-        var options = {
+        LU.Util.ajaxPost({
             url: LU.Util.getRapidCheckInUrl(),
-            method: 'POST',
             params: {
                 'user': this.profile.get('id')
             },
@@ -220,14 +219,7 @@ Ext.define('LU.controller.Students', {
                 Ext.Msg.alert('Network Error', 'Try checking-in again later.');
             },
             scope: this
-        };
-
-        // append CSRF token to the header
-        Ext.Ajax.request(Ext.apply({
-            headers: {
-                'X-CSRFToken': LU.Util.getCsrfToken(document, options)
-            }
-        }, options));
+        });
     },
 
     onLogout: function() {

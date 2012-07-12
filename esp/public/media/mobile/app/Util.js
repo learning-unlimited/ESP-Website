@@ -25,7 +25,7 @@ Ext.define('LU.Util', {
         this.callParent([config]);
     },
 
-    getCsrfToken: function(document, options) {
+    getCsrfToken: function(options) {
         function getCookie(name) {
            var cookieValue = null;
            if (document.cookie && document.cookie != '') {
@@ -197,4 +197,13 @@ Ext.define('LU.Util', {
             }
         });
     },
+
+    ajaxPost: function(options) {
+        options.method = 'POST';
+        Ext.Ajax.request(Ext.apply({
+            headers: {
+                'X-CSRFToken': LU.Util.getCsrfToken(options)
+            }
+        }, options));
+    }
 });

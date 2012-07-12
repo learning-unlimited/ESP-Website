@@ -7,7 +7,7 @@ Ext.define('LU.view.base.Panel', {
     submit: function(options) {
         options = Ext.apply({
             headers: Ext.apply(
-                {'X-CSRFToken':  LU.Util.getCsrfToken(document, options)},
+                {'X-CSRFToken':  LU.Util.getCsrfToken(options)},
                 options.headers || {}
             )
         }, options || {});
