@@ -8,7 +8,7 @@ Ext.define('LU.controller.Students', {
             studentList: 'studentList',
             studentProfile: 'studentProfile',
             studentInfo: 'studentProfile #namecard',
-            searchField: 'studentSearchBar textfield',
+            searchField: 'studentSearchBar searchfield',
             phoneField: 'studentProfile textareafield[name="phone"]',
             gradeField: 'studentProfile #grade_field',
             segmentedButton: 'studentContainer segmentedbutton',

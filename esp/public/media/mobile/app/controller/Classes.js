@@ -8,7 +8,7 @@ Ext.define('LU.controller.Classes', {
             timingList: 'timingList',
             classInfo: 'classInfo',
             sortBy: 'classSortBar segmentedbutton',
-            searchField: 'classSearchBar textfield',
+            searchField: 'classSearchBar searchfield',
             logout: 'classContainer button[text="Logout"]'
         },
 
