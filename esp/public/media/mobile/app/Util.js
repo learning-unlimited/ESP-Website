@@ -188,7 +188,10 @@ Ext.define('LU.Util', {
                 callback();
             },
             failure: function(result) {
-                callback({ 'message': 'Failed to fetch catalog' });
+                callback({
+                    'message': 'Failed to fetch catalog',
+                    'result': result
+                });
             },
             scope: this
         });
