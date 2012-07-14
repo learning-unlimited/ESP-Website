@@ -107,52 +107,40 @@ Ext.define('LU.Util', {
         return this.getProgram().get('title');
     },
 
-    getRegisteredSectionIds: function(store) {
+    getRegisteredSectionIds: function(object, property) {
 
-        var temp = [];
-        store.clearFilter();
-        Ext.Array.each(store.getData().items, function(item, index, list) {
-            temp.push(item.get('section_id'));
+        var items, temp = [];
+        if (object instanceof Ext.data.Store) {
+            object.clearFilter();
+            items = object.getData().items;
+        } else if (object instanceof Array) {
+            items = object;
+        } else {
+            return null;
+        }
+
+        Ext.Array.each(items, function(item, index, list) {
+            if (object instanceof Ext.data.Store) {
+                temp.push(item.get(property));
+            } else {
+                temp.push(item[property]);
+            }
         });
         return temp;
     },
 
-    getClasses: function(callback) {
-
-        var catalogUrl = this.getCatalogUrl(),
-            registeredSectionUrl = this.getRegisteredClassesUrl(),
-            classStore = Ext.getStore('Classes'),
-            timeStore = Ext.getStore('Timings'),
-            registeredSectionStore = Ext.getStore('RegisteredSections'),
-            registeredClassStore = Ext.getStore('RegisteredClasses'),
-            registeredTimeStore = Ext.getStore('RegisteredTimings');
-
-        // clears any previous existing models
-        classStore.removeAll();
-        timeStore.removeAll();
-        registeredSectionStore.removeAll();
-        registeredClassStore.removeAll();
-        registeredTimeStore.removeAll();
-
-        // retrieves the registered classes
-        registeredSectionStore.setProxy({
-            type: 'ajax',
-            url: registeredSectionUrl
-        });
-
-        var sectionIds;
-        registeredSectionStore.load({
-            callback: function(records, operation, success) {
-                sectionIds = this.getRegisteredSectionIds(registeredSectionStore);
-            },
-            scope: this
-        });
-
+    fetchCatalog: function(callback) {
         Ext.Ajax.request({
-            url: catalogUrl,
+            url: this.getCatalogUrl(),
             success: function(result) {
 
-                var data = Ext.JSON.decode(result.responseText);
+                var data = Ext.JSON.decode(result.responseText),
+                    timeStore = this.timeStore,
+                    classStore = this.classStore,
+                    registeredClassStore = this.registeredClassStore,
+                    registeredTimeStore = this.registeredTimeStore,
+                    role = this.role,
+                    sectionIds = this.sectionIds;
 
                 // flattens the data received from server
                 // i.e. each section will have its individual record
@@ -169,7 +157,6 @@ Ext.define('LU.Util', {
                         classModel.set('section_capacity', sectionItem.capacity);
                         classModel.set('section_num_students', sectionItem.num_students);
                         classModel.set('section_duration', sectionItem.duration);
-                        classStore.add(classModel);
 
                         // maps the meeting times to each record
                         var timings = sectionItem.get_meeting_times;
@@ -187,19 +174,65 @@ Ext.define('LU.Util', {
                             timeStore.add(timeModel);
 
                             if (Ext.Array.contains(sectionIds, classModel.get('section_id'))) {
-                                registeredClassStore.add(classModel);
-                                registeredTimeStore.add(timeModel);
+                                if (role == 'student') {
+                                    registeredClassStore.add(classModel);
+                                    registeredTimeStore.add(timeModel);
+                                } else if (role == 'onsite') {
+                                }
                             }
                         });
+                        classStore.add(classModel);
                     });
                 });
 
                 callback();
             },
             failure: function(result) {
-                callback(result);
-            }
+                callback({ 'message': 'Failed to fetch catalog' });
+            },
+            scope: this
         });
+    },
+
+    getClasses: function(callback, studentId) {
+        // note: user has to be logged in before this function is called
+
+        this.classStore = Ext.getStore('Classes'),
+        this.timeStore = Ext.getStore('Timings'),
+        this.role = Ext.getStore('User').first().get('role');
+
+        // clears any previous existing models
+        this.classStore.removeAll();
+        this.timeStore.removeAll();
+
+        if (this.role == 'student') {
+            this.registeredSectionStore = Ext.getStore('RegisteredSections');
+            this.registeredClassStore = Ext.getStore('RegisteredClasses');
+            this.registeredTimeStore = Ext.getStore('RegisteredTimings');
+
+            this.registeredSectionStore.removeAll();
+            this.registeredClassStore.removeAll();
+            this.registeredTimeStore.removeAll();
+
+            // retrieves the registered classes
+            this.registeredSectionStore.setProxy({
+                type: 'ajax',
+                url: this.getRegisteredClassesUrl()
+            });
+
+            this.registeredSectionStore.load({
+                callback: function(records, operation, success) {
+                    if (success) {
+                        this.sectionIds = this.getRegisteredSectionIds(this.registeredSectionStore, 'section_id');
+                        this.fetchCatalog(callback);
+                    } else {
+                        callback({ 'message': 'Failed to fetch registered classes' });
+                    }
+                },
+                scope: this
+            });
+        } else if (this.role == 'onsite') {
+        }
     },
 
     ajaxPost: function(options) {
