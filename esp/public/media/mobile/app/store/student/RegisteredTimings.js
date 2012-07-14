@@ -1,4 +1,4 @@
-Ext.define('LU.store.RegisteredTimings', {
+Ext.define('LU.store.student.RegisteredTimings', {
     extend: 'Ext.data.Store',
 
     config: {

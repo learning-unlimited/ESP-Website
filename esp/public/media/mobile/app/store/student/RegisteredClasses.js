@@ -1,4 +1,4 @@
-Ext.define('LU.store.RegisteredClasses', {
+Ext.define('LU.store.student.RegisteredClasses', {
     extend: 'Ext.data.Store',
 
     config: {

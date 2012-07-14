@@ -14,22 +14,28 @@ Ext.application({
 
     models: [
         'Class',
-        'RegisteredSection',
         'Timing',
-        'Student',
-        'StudentProfile',
+
+        'student.RegisteredSection',
+
+        'onsite.Student',
+        'onsite.StudentProfile',
+
         'Program',
         'User'
     ],
 
     stores: [
         'Classes',
-        'RegisteredClasses',
-        'RegisteredSections',
         'Timings',
-        'RegisteredTimings',
-        'Students',
-        'StudentProfiles',
+
+        'student.RegisteredClasses',
+        'student.RegisteredSections',
+        'student.RegisteredTimings',
+
+        'onsite.Students',
+        'onsite.StudentProfiles',
+
         'Programs',
         'User'
     ],

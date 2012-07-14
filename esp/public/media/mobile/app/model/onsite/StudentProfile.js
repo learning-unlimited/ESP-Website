@@ -1,4 +1,4 @@
-Ext.define('LU.model.StudentProfile', {
+Ext.define('LU.model.onsite.StudentProfile', {
     extend: 'Ext.data.Model',
 
     config: {

@@ -1,4 +1,4 @@
-Ext.define('LU.model.RegisteredSection', {
+Ext.define('LU.model.student.RegisteredSection', {
     extend: 'Ext.data.Model',
 
     config: {
