@@ -5,20 +5,20 @@ Ext.define('LU.model.Class', {
 
         fields: [
             'category',
-            'grade_max',
+            'parent_program',
             'title',
             'prereqs',
             'schedule',
+            'grade_max',
+            'grade_min',
             'class_info',
             'class_size_max',
-            'num_questions',
             'class_size_min',
-            'grade_min',
-            'session_count',
+            'num_questions',
             'num_students',
-            'parent_program',
             'teachers',
             'get_sections',
+            'session_count',
             'section_short_description',
             'section_num_students',
             'section_duration',
@@ -60,11 +60,7 @@ Ext.define('LU.model.Class', {
                 name: 'code',
                 type: 'string',
                 convert: function(value, record) {
-                    var code = record.data.category.symbol + record.data.id
-                    if (record.data.section_index > 0) {
-                        code += 's' + (record.data.section_index+1);
-                    }
-                    return code;
+                    return record.data.category.symbol + record.data.id + 's' + (record.data.section_index+1);
                 }
             },
             {
