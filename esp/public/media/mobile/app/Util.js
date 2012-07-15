@@ -75,8 +75,12 @@ Ext.define('LU.Util', {
         };
     },
 
+    getUser: function() {
+        return Ext.getStore('User').first();
+    },
+
     getProgram: function() {
-        return Ext.getStore('User').first().getProgram();
+        return this.getUser().getProgram();
     },
 
     getCatalogUrl: function() {
@@ -202,7 +206,7 @@ Ext.define('LU.Util', {
 
         this.classStore = Ext.getStore('Classes'),
         this.timeStore = Ext.getStore('Timings'),
-        this.role = Ext.getStore('User').first().get('role');
+        this.role = this.getUser().get('role');
 
         // clears any previous existing models
         this.classStore.removeAll();
