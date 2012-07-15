@@ -107,6 +107,10 @@ Ext.define('LU.Util', {
         return '/onsite/' + this.getProgram().get('baseUrl') + '/ajax_change_grade';
     },
 
+    getStudentEnrollmentUrl: function(id) {
+        return '/onsite/' + this.getProgram().get('baseUrl') + '/get_student_enrollment_json?id=' + id;
+    },
+
     getProgramTitle: function() {
         return this.getProgram().get('title');
     },
@@ -161,6 +165,7 @@ Ext.define('LU.Util', {
                         classModel.set('section_capacity', sectionItem.capacity);
                         classModel.set('section_num_students', sectionItem.num_students);
                         classModel.set('section_duration', sectionItem.duration);
+                        classModel.set('section_room', sectionItem.room.join('; '));
 
                         // maps the meeting times to each record
                         var timings = sectionItem.get_meeting_times;
@@ -182,6 +187,7 @@ Ext.define('LU.Util', {
                                     registeredClassStore.add(classModel);
                                     registeredTimeStore.add(timeModel);
                                 } else if (role == 'onsite') {
+                                    classModel.set('isEnrolled', true);
                                 }
                             }
                         });
@@ -239,6 +245,21 @@ Ext.define('LU.Util', {
                 scope: this
             });
         } else if (this.role == 'onsite') {
+            Ext.Ajax.request({
+                url: this.getStudentEnrollmentUrl(studentId),
+                success: function(result) {
+                    var response = Ext.JSON.decode(result.responseText);
+                    this.sectionIds = this.getRegisteredSectionIds(response.sections, 'section__id');
+                    this.fetchCatalog(callback);
+                },
+                failure: function(result) {
+                    callback({
+                        'message': 'Failed to fetch student enrollment',
+                        'result': result
+                    });
+                },
+                scope: this
+            });
         }
     },
 

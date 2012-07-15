@@ -219,3 +219,37 @@ $gray-color: #7d7d7d;
         padding-top: .5em;
     }
 }
+
+.studentSchedule .classes {
+    @include display-box;
+    ol {
+        @include box-flex(4);
+        .header {
+            .code {
+                float: left;
+                font-size: 0.9em;
+                font-weight: bold;
+            }
+            .status {
+                float: left;
+                margin-left: 0.9em;
+                margin-top: 0.1em;
+                background-color: #7ed17e;
+                font-size: 0.6em;
+                padding: 0.25em 0.8em 0.25em;
+                border-radius: 0.4em;
+            }
+        }
+
+        .room {
+            font-size: 0.8em;
+            clear: both;
+        }
+    }
+
+    .stats {
+        @include box-flex(1);
+        text-align: right;
+        font-size: 0.8em;
+    }
+}

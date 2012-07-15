@@ -2,11 +2,16 @@ Ext.define('LU.controller.Students', {
     extend: 'Ext.app.Controller',
 
     config: {
+        // variables to remember who last accessed the views
+        accessedDetail: 0,
+        accessedSchedule: 0,
+
         refs: {
             studentContainer: 'studentContainer',
             navigationBarTitle: 'studentContainer title',
             studentList: 'studentList',
             studentProfile: 'studentProfile',
+            studentSchedule: 'studentSchedule',
             studentInfo: 'studentProfile #namecard',
             searchField: 'studentSearchBar searchfield',
             phoneField: 'studentProfile textareafield[name="phone"]',
@@ -104,6 +109,12 @@ Ext.define('LU.controller.Students', {
         }
     },
 
+    reset: function(view) {
+        this.segmentedButton.setPressedButtons(this.segmentedButton.getItems().first());
+        view.setActiveItem(0);
+        view.getActiveItem().getScrollable().getScroller().scrollTo(0,0);
+    },
+
     proceedTo: function(view) {
         this.getStudentContainer().push(view);
 
@@ -160,9 +171,28 @@ Ext.define('LU.controller.Students', {
                 this.setFieldValue('checkin_button', 'checkin_status');
                 Ext.Viewport.setMasked(false);
                 this.proceedTo(this.studentDetail);
+                this.reset(this.studentDetail);
             },
             scope: this
         });
+    },
+
+    showScheduleList: function() {
+        var studentId = this.profile.get('id'),
+            container = this.studentDetail;
+
+        Ext.Viewport.setMasked({ xtype: 'loadmask' });
+        LU.Util.getClasses(function(result) {
+            if (!result) {
+                var classStore = Ext.getStore('Classes');
+                classStore.setGrouper(LU.Util.getTimeGrouper());
+                classStore.sort('code');
+                container.setActiveItem(1);
+            } else {
+                Ext.Msg.alert('Network Error', 'We are experiencing problems fetching the data from server. You may wish to try reloading again.');
+            }
+            Ext.Viewport.setMasked(false);
+        }, studentId);
     },
 
     onListShow: function(list, opts) {
@@ -180,14 +210,24 @@ Ext.define('LU.controller.Students', {
     },
 
     onStudentTap: function(list, index, target, record, event, opts) {
+        var studentId = record.get('id');
         if (!this.studentDetail) {
             this.studentDetail = Ext.widget('studentDetail');
         }
         this.getStudentInfo().setData(record.data);
-        this.loadProfile(record.get('id'));
+
+        // retrieves the previously accessed view from memory
+        // if (this.previousStudentId === studentId) {
+        if (this.getAccessedDetail() == studentId) {
+            this.proceedTo(this.studentDetail);
+        } else {
+            this.loadProfile(studentId);
+        }
 
         // hide Logout button
         this.getLogout().hide();
+
+        this.setAccessedDetail(studentId);
     },
 
     onSearch: function(searchField) {
@@ -202,7 +242,13 @@ Ext.define('LU.controller.Students', {
         if (button.getItemId() == 'profile-tab') {
             this.studentDetail.setActiveItem(0);
         } else if (button.getItemId() == 'schedule-tab') {
-            this.studentDetail.setActiveItem(1);
+            var studentId = this.profile.get('id');
+            if (this.getAccessedSchedule() == studentId) {
+                this.studentDetail.setActiveItem(1);
+            } else {
+                this.showScheduleList();
+                this.setAccessedSchedule(studentId);
+            }
         }
     },
 

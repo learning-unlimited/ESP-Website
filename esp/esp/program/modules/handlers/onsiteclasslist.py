@@ -108,7 +108,7 @@ class OnSiteClassList(ProgramModuleObj):
         data = StudentRegistration.objects.filter(section__status__gt=0, section__parent_class__status__gt=0, end_date__gte=datetime.now(), start_date__lte=datetime.now(), section__parent_class__parent_program=prog, relationship__name='Enrolled').values_list('user__id', 'section__id')
         simplejson.dump(list(data), resp)
         return resp
-    
+ 
     def get_students(self):
         #   Try to ensure we don't miss anyone
         students_dict = self.program.students(QObjects=True)
@@ -158,6 +158,25 @@ LIMIT 1
         resp = HttpResponse(mimetype='application/json')
         data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name').values_list('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students')
         simplejson.dump(list(data), resp)
+        return resp
+
+    @aux_call
+    @needs_onsite
+    def get_student_enrollment_json(self, request, tl, one, two, module, extra, prog):
+        resp = HttpResponse(mimetype='application/json')
+        result_dict = {}
+
+        if 'id' in request.GET:
+            try:
+                user = ESPUser.objects.get(id=int(request.GET['id']))
+                result_dict['sections'] = list(StudentRegistration.objects.filter(user=user, section__status__gt=0, section__parent_class__status__gt=0, end_date__gte=datetime.now(), start_date__lte=datetime.now(), section__parent_class__parent_program=prog, relationship__name='Enrolled').values('section__id'))
+            except ValueError:
+                result_dict['message'] = 'You did not provide an integer'
+            except ESPUser.DoesNotExist:
+                result_dict['message'] = 'You did not provide a valid user id'
+        else:
+            result_dict['message'] = 'Did you forget to specify the parameters?'
+        simplejson.dump(result_dict, resp)
         return resp
 
     @aux_call

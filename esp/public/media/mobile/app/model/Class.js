@@ -25,6 +25,8 @@ Ext.define('LU.model.Class', {
             'section_id',
             'section_capacity',
             'section_index',
+            'section_room',
+            'isEnrolled',
 
             {
                 name: 'title_upper',

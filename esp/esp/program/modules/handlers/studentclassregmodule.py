@@ -91,7 +91,8 @@ def json_encode(obj):
                  'duration': obj.duration,
                  'get_meeting_times': obj._events,
                  'num_students': obj.num_students(),
-                 'capacity': obj.capacity
+                 'capacity': obj.capacity,
+                 'room': obj.prettyrooms()
                  }
     elif isinstance(obj, ClassCategories):
         return { 'id': obj.id,
