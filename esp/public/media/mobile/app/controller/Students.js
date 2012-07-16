@@ -217,7 +217,6 @@ Ext.define('LU.controller.Students', {
         this.getStudentInfo().setData(record.data);
 
         // retrieves the previously accessed view from memory
-        // if (this.previousStudentId === studentId) {
         if (this.getAccessedDetail() == studentId) {
             this.proceedTo(this.studentDetail);
         } else {
