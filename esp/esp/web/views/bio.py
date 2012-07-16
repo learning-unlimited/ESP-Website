@@ -177,5 +177,6 @@ def bio_user(request, founduser):
                               {'biouser': founduser,
                                'bio': teacherbio,
                                'classes': classes,
-                               'recent_classes': recent_classes})
+                               'recent_classes': recent_classes,
+                               'institution': settings.INSTITUTION_NAME})
 
