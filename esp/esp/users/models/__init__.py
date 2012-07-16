@@ -242,9 +242,6 @@ class ESPUser(User, AnonymousUser):
     def getEditable(self, objType, qsc=None):
         return objType.objects.filter(id__in=self.getEditable_ids(objType, qsc))
 
-    def canEdit(self, object):
-        return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())
-
     def updateOnsite(self, request):
         if 'user_morph' in request.session:
             if request.session['user_morph']['onsite'] == True:
@@ -799,18 +796,29 @@ class ESPUser(User, AnonymousUser):
 
 
     def isAdministrator(self, anchor_object = None):
+        #this method is in an intermediate state
+        #the underlying permission system changed, but not that actual calls
+        #to this
         if self.is_anonymous(): return False
         is_admin_role = self.groups.filter(name="Administrator").exists()
         if is_admin_role: return True
         if anchor_object is None:
-            return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
+            #return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
+            return Permission.user_has_perm(self, "Administer")
         else:
             if hasattr(anchor_object, 'anchor'):
                 anchor = anchor_object.anchor
             else:
                 anchor = anchor_object
-
-        return UserBit.UserHasPerms(self, anchor, GetNode('V/Administer'))
+                
+        #for now, hopefully anchor is a program
+        try:
+            p=Program.objects.get(anchor=anchor)
+        except Program.DoesNotExist:
+            print anchor_object
+            raise
+        #return UserBit.UserHasPerms(self, anchor, GetNode('V/Administer'))
+        return Permission.user_has_perm(self, "Administer",program=p)
     isAdmin = isAdministrator
 
     @staticmethod
@@ -873,10 +881,13 @@ class ESPUser(User, AnonymousUser):
     def makeRole(self, role_name):
         self.groups.add(Group.objects.get(name=role_name))
         
-    def canEdit(self, nodeObj):
-        """Returns True or False if the user can edit the node object"""
-        # Axiak
-        return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer/Edit'))
+    def canEdit(self, cls):
+        """Returns if the user can edit the class
+
+A user can edit a class if they can administrate the program or if they
+are a teacher of the class"""
+        if self in cls.get_teachers(): return True
+        return self.isAdmin(cls.parent_program)
 
     def getMiniBlogEntries(self):
         """Return all miniblog posts this person has V/Subscribe bits for"""
@@ -1991,6 +2002,63 @@ class Record(models.Model):
             return cls.objects.filter(user=user, event=event).count()>0
         else:
             return cls.objects.filter(user=user, event=event, program=program).count()>0
+
+class Permission(models.Model):
+
+    #a permission can be assigned to a user, or a role
+    user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True,
+                          help_text="Blank does NOT mean apply to everyone, use role-based permissions for that.")
+    role = models.ForeignKey("auth.Group", blank=True, null=True, 
+                             help_text="Apply this permission to an entire user role (can be blank).")
+
+    #For now, we'll use plain text for a description of what permission it is
+    PERMISSION_CHOICES=(
+        ("Administer", "Full administrative permissions"),
+        ("View", "Able to view a program"),
+        ("Deadlines", (
+                ("MainPage","Registration mainpage"),
+                )
+         )
+    )
+    permission_type = models.CharField(max_length=80, choices=PERMISSION_CHOICES)
+    #the only implication is that administer implies everything else
+    implications = {"Administer":[x[0] for x in PERMISSION_CHOICES 
+                                  if x[0]!="Administer"]}
+    #i'm not really sure if implications is a good idea
+    #use sparingly
+
+    #optionally, a permission may be tied to a program
+    program = models.ForeignKey("program.Program", blank=True, null=True)
+    #note that the ability to do things will not always be determined by 
+    #a permission object, such as teachers automatically having access to 
+    #their classes
+    #it may, however, be the case that this model is not general enough,
+    #in which case program may need to be replaced by a generic foreignkey
+
+    #permissions may optionally have start and end dates
+    #a permission is active if it has NOT ended and is NOT before its start
+    #so leaving out start = on until end, leaving out end - never ends
+    #perhaps start should be defaulted to now and not optional, idk
+
+    startdate = models.DateTimeField(blank=True, null=True, default = None,
+                                     help_text="If blank, has always started.")
+    enddate = models.DateTimeField(blank=True, null=True, default = None,
+                                   help_text="If blank, never ends.")
+
+    @classmethod
+    def user_has_perm(self, user, name, program=None, when=None):
+        perms=[name]
+        for k,v in self.implications.items():
+            if name in v: perms.append(k)
+
+        quser = Q(user=user) | Q(role__in=user.groups.all())
+        initial_qset = self.objects.filter(quser).filter(permission_type__in=perms, program=program)
+        if when is None:
+            when = datetime.now()
+        qstart = Q(startdate=None) | Q(startdate__lte=when)
+        qend = Q(enddate=None) | Q(enddate__gte=when)
+        return initial_qset.filter(qstart & qend).exists()
+
 
 def install():
     """

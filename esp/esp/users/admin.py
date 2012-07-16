@@ -4,7 +4,7 @@ from django import forms
 from django.db import models
 from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
-from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record
+from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record, Permission
 from django.contrib.auth.admin import UserAdmin
 
 class UserBitAdmin(admin.ModelAdmin):
@@ -45,6 +45,10 @@ class RecordAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'event', 'program']
     search_fields = ['user__username', 'user__first_name', 'user__last_name']
 admin_site.register(Record, RecordAdmin)
+
+class PermissionAdmin(admin.ModelAdmin):
+    list_display = ['id', 'user', 'role', 'permission_type','program','startdate','enddate']
+admin_site.register(Permission, PermissionAdmin)
 
 class ContactInfoAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'e_mail', 'phone_day', 'address_postal']
