@@ -109,14 +109,14 @@ Ext.define('LU.controller.Students', {
         }
     },
 
-    reset: function(view) {
+    resetStudentDetail: function() {
         this.segmentedButton.setPressedButtons(this.segmentedButton.getItems().first());
-        view.setActiveItem(0);
-        view.getActiveItem().getScrollable().getScroller().scrollTo(0,0);
+        this.studentDetail.setActiveItem(0);
+        this.studentDetail.getActiveItem().getScrollable().getScroller().scrollTo(0,0);
     },
 
-    proceedTo: function(view) {
-        this.getStudentContainer().push(view);
+    goToStudentDetail: function() {
+        this.getStudentContainer().push(this.studentDetail);
 
         // setup the navigation bar with segmented buttons
         var navbar = this.getStudentContainer().getNavigationBar();
@@ -170,8 +170,8 @@ Ext.define('LU.controller.Students', {
                 this.setFieldValue('dob_field', 'dob');
                 this.setFieldValue('checkin_button', 'checkin_status');
                 Ext.Viewport.setMasked(false);
-                this.proceedTo(this.studentDetail);
-                this.reset(this.studentDetail);
+                this.goToStudentDetail();
+                this.resetStudentDetail();
             },
             scope: this
         });
@@ -218,7 +218,7 @@ Ext.define('LU.controller.Students', {
 
         // retrieves the previously accessed view from memory
         if (this.getAccessedDetail() == studentId) {
-            this.proceedTo(this.studentDetail);
+            this.goToStudentDetail();
         } else {
             this.loadProfile(studentId);
         }
