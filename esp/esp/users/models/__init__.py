@@ -2003,6 +2003,14 @@ class Record(models.Model):
         else:
             return cls.objects.filter(user=user, event=event, program=program).count()>0
 
+#helper method for designing implications
+def flatten(choices):
+    l=[]
+    for x in choices:
+        if type(x[1])!=type(()): l.append(x[0])
+        else: l=l+flatten(x[1])
+    return l
+
 class Permission(models.Model):
 
     #a permission can be assigned to a user, or a role
@@ -2015,15 +2023,28 @@ class Permission(models.Model):
     PERMISSION_CHOICES=(
         ("Administer", "Full administrative permissions"),
         ("View", "Able to view a program"),
-        ("Deadlines", (
-                ("MainPage","Registration mainpage"),
+        ("Student Deadlines", (
+                ("Student", "All student deadlines"),
+                ("Student/MainPage","Registration mainpage"),
                 )
-         )
+         ),
+        ("Teacher Deadlines", (
+                ("Teacher", "All teacher deadlines"),
+                ("Teacher/MainPage","Registration mainpage"),
+                ("Teacher/Survey","Teacher Survey"),
+                )
+         ),
     )
     permission_type = models.CharField(max_length=80, choices=PERMISSION_CHOICES)
-    #the only implication is that administer implies everything else
-    implications = {"Administer":[x[0] for x in PERMISSION_CHOICES 
-                                  if x[0]!="Administer"]}
+     
+
+    implications = {"Administer":[x for x in flatten(PERMISSION_CHOICES)
+                                  if x!="Administer"],
+                    "Student": [x for x in flatten(PERMISSION_CHOICES)
+                                if x.startswith("Student/")],
+                    "Teacher": [x for x in flatten(PERMISSION_CHOICES)
+                                if x.startswith("Teacher/")],
+                    }
     #i'm not really sure if implications is a good idea
     #use sparingly
 
@@ -2051,7 +2072,7 @@ class Permission(models.Model):
         for k,v in self.implications.items():
             if name in v: perms.append(k)
 
-        quser = Q(user=user) | Q(role__in=user.groups.all())
+        quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
         initial_qset = self.objects.filter(quser).filter(permission_type__in=perms, program=program)
         if when is None:
             when = datetime.now()

@@ -40,7 +40,7 @@ from django.db import models
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
-from esp.users.models import ESPUser, UserBit
+from esp.users.models import ESPUser, UserBit, Permission
 from esp.datatree.models import GetNode
 from esp.web.util import render_to_response
 from esp.cache import cache_function
@@ -673,10 +673,9 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
     else:
         canView = request.user.updateOnsite(request)
         if not canView:
-            canView = UserBit.UserHasPerms(request.user,
-                                           request.program.anchor_id,
-                                           GetNode('V/Deadline/Registration/'+{'learn':'Student',
-                                                                           'teach':'Teacher'}[tl]+extension))
+            canView = Permission.user_has_perm(request.user, 
+                                               {'learn':'Student','teach':'Teacher'}[tl]+extension,
+                                               program=request.program)
 
     return (canView, response)
 
