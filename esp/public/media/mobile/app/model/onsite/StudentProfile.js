@@ -59,10 +59,10 @@ Ext.define('LU.model.onsite.StudentProfile', {
                 type: 'string',
                 convert: function(value, record) {
                     var day, cell;
-                    if (record.data.phone_day.length > 0) {
+                    if (record.data.phone_day && record.data.phone_day.length > 0) {
                         day = record.data.phone_day + ' (Day)';
                     }
-                    if (record.data.phone_cell.length > 0) {
+                    if (record.data.phone_cell && record.data.phone_cell.length > 0) {
                         cell = record.data.phone_cell + ' (Cell)';
                     }
 
