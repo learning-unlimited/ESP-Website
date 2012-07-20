@@ -795,7 +795,7 @@ class ESPUser(User, AnonymousUser):
         send_mail(subject, msgtext, from_email, to_email)
 
 
-    def isAdministrator(self, anchor_object = None):
+    def isAdministrator(self, program = None):
         #this method is in an intermediate state
         #the underlying permission system changed, but not that actual calls
         #to this
@@ -805,20 +805,8 @@ class ESPUser(User, AnonymousUser):
         if anchor_object is None:
             #return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
             return Permission.user_has_perm(self, "Administer")
-        else:
-            if hasattr(anchor_object, 'anchor'):
-                anchor = anchor_object.anchor
-            else:
-                anchor = anchor_object
-                
-        #for now, hopefully anchor is a program
-        try:
-            p=Program.objects.get(anchor=anchor)
-        except Program.DoesNotExist:
-            print anchor_object
-            raise
-        #return UserBit.UserHasPerms(self, anchor, GetNode('V/Administer'))
-        return Permission.user_has_perm(self, "Administer",program=p)
+
+        return Permission.user_has_perm(self, "Administer",program=program)
     isAdmin = isAdministrator
 
     @staticmethod
@@ -2007,7 +1995,7 @@ class Record(models.Model):
 def flatten(choices):
     l=[]
     for x in choices:
-        if type(x[1])!=type(()): l.append(x[0])
+        if type(x[1])!=type(tuple): l.append(x[0])
         else: l=l+flatten(x[1])
     return l
 

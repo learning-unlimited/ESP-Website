@@ -141,7 +141,7 @@ def get_survey_info(request, tl, program, instance):
     
     if (tl == 'teach' and user.isTeacher()):
         surveys = prog.getSurveys().filter(category = 'learn').select_related()
-    elif (tl == 'manage' and user.isAdmin(prog.anchor)):
+    elif (tl == 'manage' and user.isAdmin(prog)):
         #   Meerp, no problem... I took care of it.   -Michael
         surveys = prog.getSurveys().select_related()
         if request.REQUEST.has_key('teacher_id'):
@@ -247,7 +247,7 @@ def survey_review_single(request, tl, program, instance):
     if survey_response is None:
         raise ESPError(False), 'Ideally this page should give you some way to pick an individual response. For now I guess you should go back to <a href="review">reviewing the whole survey</a>.'
     
-    if tl == 'manage' and user.isAdmin(prog.anchor):
+    if tl == 'manage' and user.isAdmin(prog):
         answers = survey_response.answers.order_by('anchor', 'question')
         classes_only = False
     elif tl == 'teach':
@@ -271,7 +271,7 @@ def top_classes(request, tl, program, instance):
     
     user = ESPUser(request.user)
     
-    if (tl == 'manage' and user.isAdmin(prog.anchor)):
+    if (tl == 'manage' and user.isAdmin(prog)):
         surveys = prog.getSurveys().filter(category = 'learn').select_related()
     else:
         raise ESPError(False), 'You need to be a teacher or administrator of this program to review survey responses.'
