@@ -3,6 +3,7 @@ Ext.define('LU.model.Timing', {
 
     config: {
         fields: [
+            'classes',
             'short_description',
             {
                 name: 'start',
@@ -19,7 +20,5 @@ Ext.define('LU.model.Timing', {
                 }
             }
         ],
-
-        belongsTo: 'LU.model.Class'
     }
 });

@@ -5,7 +5,7 @@ Ext.define('LU.controller.Schedule', {
         refs: {
             scheduleContainer: 'scheduleContainer',
             scheduleList: 'scheduleContainer list',
-            timingList: 'timingList',
+            timingList: 'scheduleTimingList',
             scheduleInfo: 'scheduleInfo'
         },
 
@@ -30,11 +30,11 @@ Ext.define('LU.controller.Schedule', {
         this.getScheduleInfo().setRecord(record);
 
         // apply filter for Prereq list
-        Ext.getStore('RegisteredClasses').filter('id', record.get('id'));
+        var registeredClassStore = Ext.getStore('RegisteredClasses'),
+            registeredClassId = record.get('id');
+        registeredClassStore.filter('id', registeredClassId);
 
-        // apply filter for Timing list
-        store = Ext.getStore('RegisteredTimings');
-        store.clearFilter();
-        store.filter('class_id', record.get('id'));
+        // use foreign key to get timings
+        this.getTimingList().setStore(registeredClassStore.first().timings());
     }
 });

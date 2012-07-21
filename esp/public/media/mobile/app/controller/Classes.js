@@ -79,13 +79,14 @@ Ext.define('LU.controller.Classes', {
         // hide Logout button
         this.getLogout().hide();
 
-        // apply filter for Prereq list
-        Ext.getStore('Classes').filter('id', record.get('id'));
+        var classStore = Ext.getStore('Classes'),
+            classId = record.get('id');
 
-        // apply filter for Timing list
-        var store = Ext.getStore('Timings');
-        store.clearFilter();
-        store.filter('class_id', record.get('id'));
+        // apply filter for Prereq list
+        classStore.filter('id', classId);
+
+        // use foreign key to get timings
+        this.getTimingList().setStore(classStore.first().timings());
     },
 
     onSearch: function(searchField) {

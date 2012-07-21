@@ -169,7 +169,8 @@ Ext.define('LU.Util', {
                         // section_index is used to derive the class code
                         var classModel = Ext.create('LU.model.Class', Ext.apply(classItem, {section_index: sectionIndex}));
 
-                        classModel.set('id', parseInt('' + classItem.id + sectionItem.id));
+                        classModel.set('id', parseInt('' + classItem.id + sectionItem.id));     // ensures we will have unique id for classes with more than one section
+                        classModel.set('class_id', classItem.id);
                         classModel.set('section_id', sectionItem.id);
                         classModel.set('section_capacity', sectionItem.capacity);
                         classModel.set('section_num_students', sectionItem.num_students);
@@ -177,8 +178,8 @@ Ext.define('LU.Util', {
                         classModel.set('section_room', sectionItem.room.join('; '));
 
                         // maps the meeting times to each record
-                        var timings = sectionItem.get_meeting_times;
-                        Ext.Array.each(timings, function(timeItem, timeIndex, timeList) {
+                        var meetingTimes = sectionItem.get_meeting_times;
+                        Ext.Array.each(meetingTimes, function(timeItem, timeIndex, timeList) {
 
                             // note: currently we only use the first meeting time to perform sorting
                             if (timeIndex == 0) {
@@ -186,21 +187,39 @@ Ext.define('LU.Util', {
                                 classModel.set('section_start_time', timeItem.start);
                                 classModel.set('section_end_time', timeItem.end);
                             }
-                            var timeModel = Ext.create('LU.model.Timing', timeItem);
-                            timeModel.set('id', parseInt('' + classModel.get('id') + timeItem.id));
-                            timeModel.setClass(classModel.get('id'));
-                            timeStore.add(timeModel);
 
+                            // keeps track of the classes in a particular timeslot
+                            var timeModel = timeStore.findRecord('id', timeItem.id);
+                            if (!timeModel) {
+                                timeModel = Ext.create('LU.model.Timing', timeItem);
+                                timeModel.set('classes', [classModel.get('id')]);
+                                timeStore.add(timeModel);
+                            } else {
+                                var timingIds = timeModel.get('classes');
+                                timingIds.push(classModel.get('id'));
+                                timeModel.set('classes', timingIds);
+                                timeStore.sync();
+                            }
+
+                            // foreign key for class model
+                            var timings = classModel.timings();
+                            timings.add(timeModel);
+                            timings.sync();
+
+                            // tracks the user's enrolled classes
                             if (Ext.Array.contains(sectionIds, classModel.get('section_id'))) {
                                 if (role == 'student') {
                                     registeredClassStore.add(classModel);
                                     registeredTimeStore.add(timeModel);
+                                    registeredClassStore.sync();
+                                    registeredTimeStore.sync();
                                 } else if (role == 'onsite') {
                                     classModel.set('isEnrolled', true);
                                 }
                             }
                         });
                         classStore.add(classModel);
+                        classStore.sync();
                     });
                 });
 
