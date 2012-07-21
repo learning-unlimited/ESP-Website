@@ -64,6 +64,7 @@ Ext.application({
         'class.Prereq',
 
         'schedule.Card',
+        'schedule.List',
         'schedule.Detail',
         'schedule.Info',
         'schedule.Timing',

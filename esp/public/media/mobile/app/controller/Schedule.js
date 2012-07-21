@@ -4,7 +4,7 @@ Ext.define('LU.controller.Schedule', {
     config: {
         refs: {
             scheduleContainer: 'scheduleContainer',
-            scheduleList: 'scheduleContainer list',
+            scheduleList: 'scheduleList',
             timingList: 'scheduleTimingList',
             scheduleInfo: 'scheduleInfo'
         },

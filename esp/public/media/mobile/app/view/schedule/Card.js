@@ -14,12 +14,7 @@ Ext.define('LU.view.schedule.Card', {
 
         items: [
             {
-                xtype: 'list',
-                cls: 'scheduleList',
-                store: 'RegisteredClasses',
-                title: 'Registered Classes',
-                grouped: true,
-                itemTpl: '<div class="classes"><div class="title">{title}</div> <div class="code">{code}</div></div>'
+                xtype: 'scheduleList'
             }
         ]
     }
