@@ -16,9 +16,12 @@ Ext.define('LU.controller.Students', {
             searchField: 'studentSearchBar searchfield',
             phoneField: 'studentProfile textareafield[name="phone"]',
             gradeField: 'studentProfile #grade_field',
+            actionSheet: 'studentSchedule actionsheet',
             segmentedButton: 'studentContainer segmentedbutton',
             checkInButton: 'studentProfile #checkin_button',
             changeGradeButton: 'studentProfile #change_grade_button',
+            actionButton: 'studentSchedule actionsheet #action_button',
+            cancelButton: 'studentSchedule actionsheet #cancel_button',
             logout: 'studentContainer button[text="Logout"]'
         },
 
@@ -26,6 +29,10 @@ Ext.define('LU.controller.Students', {
             studentList: {
                 show: 'onListShow',
                 itemtap: 'onStudentTap'
+            },
+            studentSchedule: {
+                select: function() { return false; },
+                itemtap: 'onScheduleTap'
             },
             searchField: {
                 action: 'onSearch',
@@ -40,6 +47,12 @@ Ext.define('LU.controller.Students', {
             },
             changeGradeButton: {
                 tap: 'onChangeGrade'
+            },
+            actionButton: {
+                tap: 'onAction'
+            },
+            cancelButton: {
+                tap: 'onCancel'
             },
             logout: {
                 tap: 'onLogout'
@@ -229,6 +242,85 @@ Ext.define('LU.controller.Students', {
         this.setAccessedDetail(studentId);
     },
 
+    toggleActionSheetButton: function(state) {
+        if (state === 'E') {
+            this.getActionButton().setText('Enroll');
+            this.getActionButton().setUi('confirm');
+        } else  if (state === 'W') {
+            this.getActionButton().setText('Withdraw');
+            this.getActionButton().setUi('decline');
+        }
+    },
+
+    checkConflict: function(section) {
+        var timeStore = section.timings(),
+            classStore = Ext.getStore('Classes'),
+            enrolledClasses = [], conflictClasses = [];
+
+        // gets currently enrolled classes
+        classStore.each(function(record) {
+            if (record.get('isEnrolled')) {
+                enrolledClasses.push(record.get('id'));
+            }
+        });
+
+        // compares the list of enrolled classes and obtains the classes that conflict
+        timeStore.each(function(record) {
+            conflictClasses = Ext.Array.merge(Ext.Array.intersect(enrolledClasses, record.get('classes')), conflictClasses);
+        })
+
+        if (conflictClasses.length > 0) {
+            return conflictClasses;
+        }
+        return false;
+    },
+
+    getSectionCodes: function(list) {
+        var codes = [],
+            classStore = Ext.getStore('Classes');
+        Ext.Array.each(list, function(item, index, listItself) {
+            codes.push(classStore.findRecord('id', item).get('code'));
+        });
+        return codes;
+    },
+
+    updateClassRecord: function() {
+        var c = this.classRecord;
+        c.set('isEnrolled', !c.get('isEnrolled'));
+
+        var num = parseInt(c.get('section_num_students'));
+        if (c.get('isEnrolled')) {
+            num++;
+        } else {
+            num--;
+        }
+        c.set('section_num_students', num);
+
+        Ext.getStore('Classes').sync();
+    },
+
+    onScheduleTap: function(list, index, target, record, event, opts) {
+        if (!record.get('isEnrolled')) {
+            if (record.get('section_num_students') >= record.get('section_capacity')) {
+                Ext.Msg.alert('Full Capacity', 'This section is currently full or oversubscribed.');
+                return;
+            } else if (this.profile.get('grade') < record.get('grade_min') || this.profile.get('grade') > record.get('grade_max')) {
+                Ext.Msg.alert('Grade Prerequisite', 'This class is for grades ' + record.get('grade_min') + '-' + record.get('grade_max'));
+                return;
+            } else {
+                var conflictClasses = this.checkConflict(record);
+                if (conflictClasses) {
+                    Ext.Msg.alert('Class Conflict', 'This class conflicts with ' + this.getSectionCodes(conflictClasses).join(', ') + '.');
+                    return;
+                }
+            }
+        }
+        this.classRecord = record;
+        this.target = target;
+        this.toggleActionSheetButton(record.get('isEnrolled') ? 'W' : 'E');
+        this.getActionSheet().show();
+    },
+
     onSearch: function(searchField) {
         this.search(searchField.getValue(), Ext.getStore('Students'));
     },
@@ -303,6 +395,42 @@ Ext.define('LU.controller.Students', {
             },
             scope: this
         });
+    },
+
+    onAction: function(button, event, opts) {
+
+        // update status and stats
+        this.updateClassRecord();
+
+        var classStore = Ext.getStore('Classes');
+        classStore.sync();
+
+        // find the enrolled sections
+        var enrolledSections = [];
+        classStore.each(function(record) {
+            if (record.get('isEnrolled')) {
+                enrolledSections.push(record.get('section_id'));
+            }
+        }, this);
+
+        Ext.Ajax.request({
+            url: LU.Util.getUpdateScheduleUrl(this.profile.get('id'), enrolledSections.toString(), false),
+            success: function(result) {
+                // do nothing
+            },
+            failure: function(result) {
+                Ext.Msg.alert('Network Error', 'We are experiencing problems fetching the data from server. You may wish to try reloading again.');
+
+                // revert back the changes made previously
+                this.updateClassRecord();
+            },
+            scope: this
+        });
+        this.getActionSheet().hide();
+    },
+
+    onCancel: function() {
+        this.getActionSheet().hide();
     },
 
     onLogout: function() {

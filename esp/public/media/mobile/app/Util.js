@@ -120,6 +120,10 @@ Ext.define('LU.Util', {
         return '/onsite/' + this.getProgram().get('baseUrl') + '/get_student_enrollment_json?id=' + id;
     },
 
+    getUpdateScheduleUrl: function(id, sections, override) {
+        return '/onsite/' + this.getProgram().get('baseUrl') + '/update_schedule_json?user=' + id + '&sections=[' + sections + ']&override=' + override;
+    },
+
     getProgramTitle: function() {
         return this.getProgram().get('title');
     },
