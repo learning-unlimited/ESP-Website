@@ -5,6 +5,7 @@ Ext.define('LU.view.student.Schedule', {
     config: {
         title: 'Schedule',
         cls: 'studentSchedule',
+        disableSelection: true,
         grouped: true,
         store: 'Classes',
         itemTpl: Ext.create('Ext.XTemplate',

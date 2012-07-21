@@ -13,6 +13,7 @@ Ext.define('LU.view.class.List', {
     config: {
 
         cls: 'classList',
+        disableSelection: true,
         store: 'Classes',
         title: 'Welcome!',
         grouped: true,
