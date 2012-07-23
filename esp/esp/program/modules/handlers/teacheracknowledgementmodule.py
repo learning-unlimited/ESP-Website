@@ -1,7 +1,7 @@
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline
 from esp.web.util        import render_to_response
-from esp.users.models   import ESPUser, UserBit
+from esp.users.models   import ESPUser, UserBit, Record
 from esp.datatree.models import GetNode
 from django import forms
 from django.db.models.query import Q

@@ -797,7 +797,7 @@ class ESPUser(User, AnonymousUser):
         if self.is_anonymous(): return False
         is_admin_role = self.groups.filter(name="Administrator").exists()
         if is_admin_role: return True
-        if anchor_object is None:
+        if program is None:
             #return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
             return Permission.user_has_perm(self, "Administer")
 
