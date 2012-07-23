@@ -33,11 +33,12 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 from esp.datatree.models import *
-from esp.users.models import ESPUser, User, UserBit
+from esp.users.models import ESPUser, User, UserBit, Permission
 from esp.users.models.userbits import UserBitImplication
 from esp.program.Lists_ClassCategories import populate as populate_LCC
 from esp.program.models import Program, ProgramModule
 from esp.accounting_core.models import LineItemType
+from django.contrib.auth.models import Group
 
 #   Changed this function to accept a dictionary so that it can be called directly
 #   from code in addition to being used in the program creation form.  -Michael P 8/18/2009
@@ -49,6 +50,8 @@ def prepare_program(program, data):
     datatrees = []
     #   Userbits format: each item is a tuple of (QSC URI, user ID, startdate, enddate)
     userbits = []
+    #   Permissions format:
+    perms = []
     modules = []
 
     # Fetch/create the program node
@@ -59,10 +62,14 @@ def prepare_program(program, data):
         datatrees += [(program_node_name + sub_node, '')]
 
     userbits += [('V/Flags/Public', None, data['publish_start'], data['publish_end'])]
+    perms += [('View', None, data['publish_start'], data['publish_end'])]
     
     userbits += [('V/Deadline/Registration/Student', None, data['student_reg_start'], data['student_reg_end'])]
+    perms += [('Student/All', None, data['student_reg_start'], data['student_reg_end'])] #it is recursive
+
     #userbits += [('V/Deadline/Registration/Student/Applications', None, data['student_reg_start'], data['student_reg_end'])]
     userbits += [('V/Deadline/Registration/Student/Catalog', None, data['student_reg_start'], None)]
+    perms += [('Student/Catalog', None, data['student_reg_start'], None)]
     #userbits += [('V/Deadline/Registration/Student/Classes', None, data['student_reg_start'], data['student_reg_end'])]
     #userbits += [('V/Deadline/Registration/Student/Classes/OneClass', None, data['student_reg_start'], data['student_reg_end'])]
     #userbits += [('V/Deadline/Registration/Student/Confirm', None, data['student_reg_start'], data['publish_end'])]
@@ -71,24 +78,30 @@ def prepare_program(program, data):
     #userbits += [('V/Deadline/Registration/Student/Payment', None, data['student_reg_start'], data['publish_end'])]
     
     userbits += [('V/Deadline/Registration/Teacher', None, data['teacher_reg_start'], data['teacher_reg_end'])]
+    perms += [('Teacher/All', None, data['teacher_reg_start'], data['teacher_reg_end'])]
     #userbits += [('V/Deadline/Registration/Teacher/Catalog', None, data['teacher_reg_start'], None)]
     #userbits += [('V/Deadline/Registration/Teacher/Classes', None, data['teacher_reg_start'], data['teacher_reg_end'])]
     userbits += [('V/Deadline/Registration/Teacher/Classes/View', None, data['teacher_reg_start'], None)]
+    perms += [('Teacher/Classes/View', None, data['teacher_reg_start'], None)]
     userbits += [('V/Deadline/Registration/Teacher/MainPage', None, data['teacher_reg_start'], None)]
+    perms += [('Teacher/MainPage', None, data['teacher_reg_start'], None)]
     userbits += [('V/Deadline/Registration/Teacher/Profile', None, data['teacher_reg_start'], None)]
+    perms += [('Teacher/Profile', None, data['teacher_reg_start'], None)]
     
     #   Grant onsite bit (for all times) if an onsite user is available.
     if ESPUser.onsite_user():
         userbits += [('V/Registration/Onsite', ESPUser.onsite_user(), None, None)]
+        perms += [('Onsite', ESPUser.onsite_user(), None, None)]
     
     for director in data['admins']:
         userbits += [('V/Administer', ESPUser.objects.get(id=int(director)), None, None)]
+        perms += [('Administer', ESPUser.objects.get(id=int(director)), None, None)]
         
     modules += [(str(ProgramModule.objects.get(id=i)), i) for i in data['program_modules']]
        
-    return datatrees, userbits, modules
+    return datatrees, userbits, perms, modules
 
-def commit_program(prog, datatrees, userbits, modules, costs = (0, 0)):
+def commit_program(prog, datatrees, userbits, perms, modules, costs = (0, 0)):
     #   This function implements the changes suggested by prepare_program, by actually
     #   creating the necessary datatrees and userbits.
     def gen_tree_node(tup):
@@ -114,12 +127,41 @@ def commit_program(prog, datatrees, userbits, modules, costs = (0, 0)):
             new_ub.user = ESPUser.objects.get(id=tup[1])        
         new_ub.save()
         return new_ub
+
+    def gen_perm(tup):
+        new_perm=Permission(permission_type=tup[0])
+
+        if tup[2]:
+            new_perm.startdate = tup[2]
+        if tup[3]:
+            new_perm.enddate = tup[3]
+
+        if tup[1] is not None:
+            new_perm.user=tup[1]
+            new_perm.save()
+            return
+        elif tup[1] is None and tup[0].startswith("Student"):
+            new_perm.role=Group.objects.get(name="Student")
+            new_perm.save()
+            return
+        elif tup[1] is None and tup[0].startswith("Teacher"):
+            new_perm.role=Group.objects.get(name="Student")
+            new_perm.save()
+            return
+
+        #It's not for a specific user and not a teacher or student deadline
+        for x in ESPUser.getTypes():
+            newnew_perm=Permission(permission_type=new_perm.permission_type, role=Group.objects.get(name=x), startdate=new_perm.startdate, enddate=new_perm.enddate)
+            newnew_perm.save()
         
     for dt_tup in datatrees:
         gen_tree_node(dt_tup)
     
     for ub_tup in userbits:
         gen_userbit(ub_tup)
+
+    for perm_tup in perms:
+        gen_perm(perm_tup)
 
     l = LineItemType()
     l.text = prog.niceName() + " Admission"

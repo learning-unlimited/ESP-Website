@@ -754,13 +754,8 @@ class ESPUser(User, AnonymousUser):
     line_items = lambda x, y: x.paymentStatus(y)[3]
 
     def isOnsite(self, program = None):
-        verb = GetNode('V/Registration/OnSite')
-        if program is None:
-            return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
-                   UserBit.objects.user_has_verb(self, verb)
-        else:
-            return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
-                    UserBit.UserHasPerms(self, program.anchor, verb)
+        return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
+            Permission.user_has_perm(self, "Onsite", program=program)
 
     def recoverPassword(self):
         # generate the ticket, send the email.
@@ -2011,15 +2006,38 @@ class Permission(models.Model):
     PERMISSION_CHOICES=(
         ("Administer", "Full administrative permissions"),
         ("View", "Able to view a program"),
+        ("Onsite", "Access to onsite interfaces"),
         ("Student Deadlines", (
-                ("Student", "All student deadlines"),
+                ("Student", "Basic student access"),
+                ("Student/All", "All student deadlines"),
+                ("Student/Applications","Apply for classes"),
+                ("Student/Catalog","View the catalog"),
+                ("Student/Classes",""),
+                ("Student/Classes/Lottery","Enter the lottery"),
+                ("Student/Classes/Lottery/View","View lottery results"),
+                ("Student/ExtraCosts","Extra costs page"),
                 ("Student/MainPage","Registration mainpage"),
+                ("Student/Confirm","Confirm registration"),
+                ("Student/Payment","Pay for a program"),
+                ("Student/Profile","Set profile info"),
+                ("Student/Survey", "Access to survey"),
                 )
          ),
         ("Teacher Deadlines", (
-                ("Teacher", "All teacher deadlines"),
+                ("Teacher", "Basic teacher access"),
+                ("Teacher/All", "All teacher deadlines"),
+                ("Teacher/Acknowledgement", "Teacher acknowledgement"),
+                ("Teacher/Availability", "Set availability"),
+                ("Teacher/Classes", ""),
+                ("Teacher/Classes/View", ""),
+                ("Teacher/Classes/Edit", ""),
+                ("Teacher/Classes/Create",""),
+                ("Teacher/Quiz", "Teacher quiz"),
                 ("Teacher/MainPage","Registration mainpage"),
                 ("Teacher/Survey","Teacher Survey"),
+                ("Teacher/Profile","Set profile info"),
+                ("Teacher/Survey", "Access to survey"),
+                ("Teacher/AppReview","Review applications"),
                 )
          ),
     )
@@ -2028,9 +2046,9 @@ class Permission(models.Model):
 
     implications = {"Administer":[x for x in flatten(PERMISSION_CHOICES)
                                   if x!="Administer"],
-                    "Student": [x for x in flatten(PERMISSION_CHOICES)
+                    "Student/All": [x for x in flatten(PERMISSION_CHOICES)
                                 if x.startswith("Student/")],
-                    "Teacher": [x for x in flatten(PERMISSION_CHOICES)
+                    "Teacher/All": [x for x in flatten(PERMISSION_CHOICES)
                                 if x.startswith("Teacher/")],
                     }
     #i'm not really sure if implications is a good idea
