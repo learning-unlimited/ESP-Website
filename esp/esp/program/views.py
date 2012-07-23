@@ -490,8 +490,7 @@ def newprogram(request):
         '''
         template_prog["anchor"] = tprogram.anchor.parent.id
         
-        # aseering 5/18/2008 -- List everyone who was granted V/Administer on the specified program
-        template_prog["admins"] = ESPUser.objects.filter(userbit__verb=GetNode("V/Administer"), userbit__qsc=tprogram.anchor).values_list("id", flat=True)
+        template_prog["admins"] = ESPUser.objects.filter(permission__permission_type="Administer",permission__program=tprogram).values_list("id", flat=True)
 
         # aseering 5/18/2008 -- More aggressively list everyone who was an Admin
         #template_prog["admins"] = [ x.id for x in UserBit.objects.bits_get_users(verb=GetNode("V/Administer"), qsc=tprogram.anchor, user_objs=True) ]
@@ -544,7 +543,7 @@ def newprogram(request):
             new_prog.save()
             pcf.save_m2m()
             
-            commit_program(new_prog, context['datatrees'], context['userbits'], context['modules'], context['costs'])
+            commit_program(new_prog, context['datatrees'], context['userbits'], context['perms'], context['modules'], context['costs'])
 
             # Create the default resource types now
             default_restypes = Tag.getProgramTag('default_restypes', program=new_prog)
@@ -588,14 +587,14 @@ def newprogram(request):
 
         if form.is_valid():
             temp_prog = form.save(commit=False)
-            datatrees, userbits, modules = prepare_program(temp_prog, form.cleaned_data)
+            datatrees, userbits, perms, modules = prepare_program(temp_prog, form.cleaned_data)
             #   Save the form's raw data instead of the form itself, or its clean data.
             #   Unpacking of the data happens at the next step.
 
-            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'datatrees': datatrees, 'userbits': userbits, 'modules': modules, 'costs': ( form.cleaned_data['base_cost'], form.cleaned_data['finaid_cost'] )})
+            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'datatrees': datatrees, 'userbits': userbits, "perms": perms, 'modules': modules, 'costs': ( form.cleaned_data['base_cost'], form.cleaned_data['finaid_cost'] )})
             request.session['context_str'] = context_pickled
             
-            return render_to_response('program/newprogram_review.html', request, GetNode('Q/Programs/'), {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'modules': modules})
+            return render_to_response('program/newprogram_review.html', request, GetNode('Q/Programs/'), {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'perms':perms, 'modules': modules})
         
     else:
         #   Otherwise, the default view is a blank form.
