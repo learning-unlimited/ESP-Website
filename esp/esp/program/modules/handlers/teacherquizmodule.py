@@ -77,11 +77,11 @@ class TeacherQuizController(object):
 
     def unmarkCompleted(self, user):
         """Mark a user as not having completed the quiz."""
-        Records.objects.filter(user=user, event=self.event, program__anchor=self.program_anchor).delete()
+        Record.objects.filter(user=user, event=self.event, program__anchor=self.program_anchor).delete()
 
     def isCompleted(self, user):
         """Has a user completed the quiz?"""
-        if Records.objects.filter(user=user, event=self.event, program__anchor=self.program_anchor).count()>0:
+        if Record.objects.filter(user=user, event=self.event, program__anchor=self.program_anchor).count()>0:
             return True
         return False
 

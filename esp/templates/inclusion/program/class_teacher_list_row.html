@@ -73,7 +73,7 @@
 {% if teacherclsmodule.allow_coteach %}
 <tr>
   <td class="clsleft"><b>(Co-)Teachers: </b></td>
-  <td class="clsmiddle" colspan="4">{% for t in cls.teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
+  <td class="clsmiddle" colspan="4">{% for t in cls.get_teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
   {% block cls_row_4_buttons %}
   <td class="clsright">
     <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">

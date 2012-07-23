@@ -264,7 +264,7 @@ class ClassCreationController(object):
         new_data = cls.__dict__
         mail_ctxt = dict(new_data.iteritems())
         
-        mail_ctxt['title'] = cls.title()
+        mail_ctxt['title'] = cls.title
         mail_ctxt['one'] = cls.parent_program.anchor.parent.name
         mail_ctxt['two'] = cls.parent_program.anchor.name
         mail_ctxt['DEFAULT_HOST'] = settings.DEFAULT_HOST
@@ -309,14 +309,14 @@ class ClassCreationController(object):
         
         recipients = [teacher.email for teacher in cls.get_teachers()]
         if recipients:
-            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
+            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title, \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
                       ('%s Class Registration <%s>' % (self.program.anchor.parent.name, self.program.director_email)), \
                       recipients, False)
 
         if self.program.director_email:
             mail_ctxt['admin'] = True
-            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
+            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title, \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
                       ('%s Class Registration <%s>' % (self.program.anchor.parent.name, self.program.director_email)), \
                       [self.program.director_email], False)
