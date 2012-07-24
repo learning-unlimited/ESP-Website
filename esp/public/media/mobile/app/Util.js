@@ -2,6 +2,10 @@ Ext.define('LU.Util', {
 
     singleton: true,
 
+    requires: [
+        'Ext.util.DelayedTask'
+    ],
+
     config: {
 
         difficultyGrouper: {
@@ -122,6 +126,10 @@ Ext.define('LU.Util', {
 
     getUpdateScheduleUrl: function(id, sections, override) {
         return '/onsite/' + this.getProgram().get('baseUrl') + '/update_schedule_json?user=' + id + '&sections=[' + sections + ']&override=' + override;
+    },
+
+    getStudentRegistrationUrl: function() {
+        return '/onsite/' + this.getProgram().get('baseUrl') + '/onsite_create';
     },
 
     getProgramTitle: function() {
@@ -302,5 +310,51 @@ Ext.define('LU.Util', {
                 'X-CSRFToken': LU.Util.getCsrfToken(options)
             }
         }, options));
+    },
+
+    setLoadingMask: function(message, cls, showIndicator) {
+        this.loadingMask.setIndicator(showIndicator);
+        if (showIndicator) {
+            this.loadingMask.setMessage(message);
+        } else {
+            this.loadingMask.setMessage('');
+            var el = this.loadingMask.element.down('.x-mask-message');
+            el.parent().addCls('load-container');    // add cls to .x-mask-inner
+            el.addCls('load-content');
+            el.createChild({
+                tag: 'div',
+                cls: 'icon ' + cls
+            });
+            el.createChild({
+                tag: 'div',
+                cls: 'text',
+                html: message
+            });
+        }
+    },
+
+    showLoadingMask: function(message, showIndicator) {
+        if (typeof message === 'undefined') message = 'Loading...';
+        if (typeof showIndicator === 'undefined') showIndicator = true;
+
+        this.loadingMask = Ext.create('Ext.LoadMask', {
+            message: message,
+            indicator: showIndicator
+        });
+        Ext.Viewport.setMasked(this.loadingMask);
+    },
+
+    hideLoadingMask: function(delay) {
+        if (typeof delay === 'undefined') delay = 0;
+
+        if (!this.task) {
+            var mask = this.loadingMask;
+
+            this.task = Ext.create('Ext.util.DelayedTask', function() {
+                mask.destroy();
+                Ext.Viewport.setMasked(false);
+            });
+        }
+        this.task.delay(delay);
     }
 });

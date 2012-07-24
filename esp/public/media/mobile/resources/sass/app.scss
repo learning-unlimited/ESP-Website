@@ -268,3 +268,32 @@ $gray-color: #7d7d7d;
         }
     }
 }
+
+.x-mask .load-container {
+    @include border-radius(.3em);
+    line-height: .95em;
+    padding: .6em;
+
+    .load-content {
+        max-width: none !important;
+        min-width: 0 !important;
+
+        .icon {
+            float: left;
+            -webkit-mask-repeat: no-repeat;
+            -webkit-mask-size: 1.1em;
+            width: 1.1em;
+            height: 1.1em;
+            background-color: #fff;
+            margin-right: .5em;
+        }
+
+        .text {
+            float: left;
+        }
+
+        // icons
+        .success { -webkit-mask-image: theme_image('default', 'pictos/check2.png'); }
+        .error { -webkit-mask-image: theme_image('default', 'pictos/warning_black.png'); }
+    }
+}

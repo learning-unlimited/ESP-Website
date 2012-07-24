@@ -9,9 +9,7 @@ Ext.define('LU.view.onsite_interface.Main', {
                 xclass: 'LU.view.student.Card'
             },
             {
-                title: 'Register',
-                iconCls: 'compose',
-                html: 'Register Screen'
+                xclass: 'LU.view.register.Form'
             },
             {
                 title: 'Schedule',

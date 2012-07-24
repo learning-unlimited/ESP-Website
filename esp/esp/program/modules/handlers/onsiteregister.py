@@ -38,7 +38,7 @@ from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User, ContactInfo, StudentInfo
 from esp.datatree.models import *
-from django.http import HttpResponseRedirect
+from django.http import HttpResponseRedirect, HttpResponse
 from esp.program.models import RegistrationProfile
 from esp.program.modules.forms.onsite import OnSiteRegForm
 from esp.accounting_docs.models   import Document
@@ -141,11 +141,21 @@ class OnSiteRegister(ProgramModuleObj):
                 ub.save()
 
                 new_user.recoverPassword()
-                
-                return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {
-                    'student': new_user, 
-                    'retUrl': '/onsite/%s/classchange_grid?student_id=%s' % (self.program.getUrlBase(), new_user.id)
-                    })
+
+                if request.is_ajax():
+                    import simplejson
+                    resp = HttpResponse(mimetype='application/json')
+                    result_dict = {
+                        'success': 'true',
+                        'user_id': new_user.id
+                    }
+                    simplejson.dump(result_dict, resp)
+                    return resp
+                else:
+                    return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {
+                        'student': new_user,
+                        'retUrl': '/onsite/%s/classchange_grid?student_id=%s' % (self.program.getUrlBase(), new_user.id)
+                        })
 
         else:
             form = OnSiteRegForm()

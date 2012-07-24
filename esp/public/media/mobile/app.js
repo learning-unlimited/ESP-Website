@@ -45,6 +45,7 @@ Ext.application({
         'Classes',
         'Schedule',
         'Students',
+        'Register',
         'Programs'
     ],
 
@@ -77,6 +78,8 @@ Ext.application({
         'student.Detail',
         'student.Profile',
         'student.Schedule',
+
+        'register.Form',
 
         'onsite_interface.Main'
     ],
