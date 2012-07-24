@@ -23,6 +23,15 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
 @include pictos-iconmask('note2');
 @include pictos-iconmask('user3');
 
+@mixin mask-image($name, $size, $color) {
+    -webkit-mask-image: theme_image('default', 'pictos/' + $name);
+    -webkit-mask-repeat: no-repeat;
+    -webkit-mask-size: $size;
+    width: $size;
+    height: $size;
+    background-color: $color;
+}
+
 .bold {
     font-weight: bold;
 }
@@ -259,15 +268,14 @@ $gray-color: #7d7d7d;
 
         .arrow {
             @include box-flex(1);
-            // theme_image is found in sdk/resources/themes/lib/theme_images.rb
-            -webkit-mask-image: theme_image('default', 'pictos/code3.png');
-            -webkit-mask-size: 1em;
-            width: 1em;
-            height: 1em;
-            background-color: #6e6e6e;
+            @include mask-image('code3.png', 1em, #6e6e6e);
         }
     }
 }
+
+/*
+ * Register
+ */
 
 .x-mask .load-container {
     @include border-radius(.3em);
@@ -278,22 +286,18 @@ $gray-color: #7d7d7d;
         max-width: none !important;
         min-width: 0 !important;
 
-        .icon {
+        .icon, .text {
             float: left;
-            -webkit-mask-repeat: no-repeat;
-            -webkit-mask-size: 1.1em;
-            width: 1.1em;
-            height: 1.1em;
-            background-color: #fff;
+        }
+
+        .icon {
             margin-right: .5em;
         }
 
-        .text {
-            float: left;
-        }
-
         // icons
-        .success { -webkit-mask-image: theme_image('default', 'pictos/check2.png'); }
-        .error { -webkit-mask-image: theme_image('default', 'pictos/warning_black.png'); }
+        $mask-size: 1.1em;
+        $mask-color: #fff;
+        .success { @include mask-image('check2.png', $mask-size, $mask-color); }
+        .error { @include mask-image('warning_black.png', $mask-size, $mask-color); }
     }
 }
