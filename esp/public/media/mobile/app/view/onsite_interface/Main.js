@@ -5,12 +5,8 @@ Ext.define('LU.view.onsite_interface.Main', {
     config: {
         tabBarPosition: 'bottom',
         items: [
-            {
-                xclass: 'LU.view.student.Card'
-            },
-            {
-                xclass: 'LU.view.register.Form'
-            },
+            { xtype: 'studentContainer' },
+            { xtype: 'registerForm' },
             {
                 title: 'Schedule',
                 iconCls: 'time',

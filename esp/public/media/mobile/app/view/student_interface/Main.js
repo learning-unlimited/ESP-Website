@@ -5,12 +5,8 @@ Ext.define('LU.view.student_interface.Main', {
     config: {
         tabBarPosition: 'bottom',
         items: [
-            {
-                xclass: 'LU.view.class.Card'
-            },
-            {
-                xclass: 'LU.view.schedule.Card'
-            }
+            { xtype: 'classContainer' },
+            { xtype: 'scheduleContainer' }
         ]
     }
 });
