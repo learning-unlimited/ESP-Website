@@ -1,7 +1,10 @@
 {% load render_qsd %}
 
-<table style="text-align: center" align="center" width="400">
-<tr><th>Steps for Registration</th><th>Done?</th></tr>
+<div class="row">
+<div class="span1">&nbsp;</div>
+<div class="span6">
+<table class="table table-condensed" align="center" width="400">
+<tr class="well"><th>Steps for Registration</th><th>Done?</th></tr>
 {% for module in modules %}
 {% if module.isStep %}
 <tr>
@@ -21,16 +24,19 @@
 {% else %}
 <a href="#module-{{ module.id }}">
 {% endif %}
-{% with module.isCompleted as moduleCompleted %}
-<img src="/media/images/{% if not moduleCompleted %}no{% endif %}checkmark.gif" 
-    {% if moduleCompleted %}title="Done!" alt="Done!"{% else %}
-    title="Not Done" alt="Not Done"{% endif %} class="nocheckmark" />
+{% if module.isCompleted %}
+    <i class="icon-ok"></i>
+{% else %}
+    <i class="icon-remove"></i>
+{% endif %}
 </a>
-{% endwith %}
+
 </td>
 </tr>
 {% endif %}
 {% endfor %}
 {% inline_qsd_block program.anchor "learn:extra_steps" request.user %}<tr><td></td><td></td></tr>{% end_inline_qsd_block %}
 </table>
+</div>
+</div>
 
