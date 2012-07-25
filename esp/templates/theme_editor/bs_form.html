@@ -12,7 +12,7 @@
 {% for field in form.visible_fields %}
 
 <div class="control-group">
-  {{ field.label_tag }}
+  <label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
   <div class="controls">
     {{ field }}
   {% if field.errors %}
