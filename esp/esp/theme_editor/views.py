@@ -196,7 +196,9 @@ def editor(request):
     available_themes_paths = glob.glob(path.join(themes_dir,'*.less'))
     available_themes = []
     for theme_path in available_themes_paths:
-        available_themes.append(re.search(r'theme_editor/themes/(.+)\.less',theme_path).group(1))
+        search_results = re.search(r'theme_editor/themes/(.+)\.less',theme_path)
+        if search_results:
+            available_themes.append(search_results.group(1))
     context.update({'available_themes':available_themes})
     context.update({'last_used_settings':'variables_backup'})
     # load a bunch of preset fonts
