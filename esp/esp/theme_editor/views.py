@@ -181,7 +181,7 @@ def theme_submit(request):
         return HttpResponseRedirect('/')
     f = open(path.join(themes_dir, 'bootstrap.css'), 'w')
     # finally compile less to css
-    subprocess.call(["lessc", "--compress", path.join(less_dir, 'bootstrap.less')], stdout=f)
+    subprocess.call(["lessc", "--compress", path.join(less_dir, 'bootstrap.less')], stdout=f, shell=True)
     f.close()
     # for debugging, uncomment the next line
     #return HttpResponse(str(dict(request.POST)))
