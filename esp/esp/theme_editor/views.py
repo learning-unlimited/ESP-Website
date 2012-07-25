@@ -1,40 +1,16 @@
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.template import Context, Template
-from esp.settings import PROJECT_ROOT
 from django.http import HttpResponse, HttpResponseRedirect
+
 from esp.users.models import admin_required
+from esp.theme_editor.settings import *
+
 import subprocess
 from os import path, remove
 import re
 import shutil
 import glob
-
-# can we avoid hardcoding this?
-less_dir = path.join(PROJECT_ROOT, 'public/media/theme_editor/less/') #directory containing less files used by theme editor
-themes_dir = path.join(PROJECT_ROOT, 'public/media/theme_editor/themes/') #directory containing the themes
-variables_template_less = path.join(less_dir, 'variables_template.less')
-variables_less = path.join(less_dir, 'variables.less')
-# directory containing the javascript that shows the palette
-palette_dir = path.join(PROJECT_ROOT, 'public/media/theme_editor/')
-
-# and this...
-sans_serif_fonts = {"Impact":"Impact, Charcoal, sans-serif",
-                    "Palatino Linotype":"'Palatino Linotype', 'Book Antiqua', Palatino, serif",
-                    "Tahoma":"Tahoma, Geneva, sans-serif",
-                    "Century Gothic":"'Century Gothic', sans-serif",
-                    "Lucida Sans Unicode":"'Lucida Sans Unicode', 'Lucida Grande', sans-serif",
-                    "Arial Black":"'Arial Black', Gadget, sans-serif",
-                    "Times New Roman":"'Times New Roman', Times, serif",
-                    "Arial Narrow":"'Arial Narrow', sans-serif",
-                    "Verdana":"Verdana, Geneva, sans-serif",
-                    "Copperplate Gothic Light":"'Copperplate Gothic Light', Copperplate, sans-serif",
-                    "Lucida Console":"'Lucida Console', Monaco, monospace",
-                    "Gill Sans":"'Gill Sans', 'Gill Sans MT', sans-serif",
-                    "Trebuchet MS":"'Trebuchet MS', Helvetica', sans-serif",
-                    "Courier New":"'Courier New', Courier, monospace",
-                    "Arial":"Arial, Helvetica, sans-serif",
-                    "Georgia":"Georgia, serif"}
 
 def get_theme_name(theme_file_path):
     f = open(theme_file_path).read()
