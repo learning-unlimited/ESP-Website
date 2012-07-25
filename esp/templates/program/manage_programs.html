@@ -1,57 +1,55 @@
 {% extends "main.html" %}
 {% load render_qsd %}
 
-{% block stylesheets %}
-{{block.super}}
-<link rel="stylesheet" href="/media/styles/battlescreen.css" type="text/css" />
-{% endblock %}
-
 {% block title %}Manage a Program{% endblock %}
 
 {% block content %}
 
-<div id="battlescreen">
+<h2>Manage a Program</h2>
 
-<table class="welcomebox" width="100%" cellpadding="0" cellspacing="0" align="center">
+<table class="table" width="100%" align="center">
 <thead>
-  <tr class="welcomebox">
-    <th align="center" class="welcomebox">
+  <tr>
+    <th align="center">
         Welcome, {{ user.first_name }}!
     </th>
   </tr>
 </thead>
 <tbody>
-  <tr class="welcomebox">
+  <tr>
     <td>
         {% render_inline_qsd "Q/Web" "manage:programs" %}
     </td>
   </tr>
-  <tr class="welcomebox">
-
-    <td bgcolor="#FFFFFF" class="welcomebox">
+  <tr>
+    <td>
 Select a program to manage it.
     </td>
   </tr>
 </tbody>
-
 </table>
 
-
-<br />
-
-<br />
-<h3>Programs you are an Administrator of:</h3>
-<br />
+<table class="table table-striped table-condensed" align="center">
+<thead>
+  <tr>
+    <th align="center">Programs you are an Administrator of:</th>
+  </tr>
+</thead>
+<tbody>
 {% for program in admPrograms %}
-<a href="/manage/{{program.getUrlBase}}/main"
+    <tr><td><a href="/manage/{{program.getUrlBase}}/main"
   title="Manage {{program.niceName}}">
   {{program.niceName}}
-</a>
-   <br />
+</a></td></tr>
 {% endfor %}
-<br />
-<b><a href="/manage/newprogram" title="Create a New Program">
+</tbody>
+<thead>
+  <tr>
+    <th align="center"><b><a href="/manage/newprogram" title="Create a New Program">
    Create a New Program...
-</a></b>
+</a></b></th>
+  </tr>
+</thead>
+</table>
 
 {% endblock %}
