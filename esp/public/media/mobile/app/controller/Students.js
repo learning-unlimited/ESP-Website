@@ -195,7 +195,7 @@ Ext.define('LU.controller.Students', {
             container = this.studentDetail;
 
         Ext.Viewport.setMasked({ xtype: 'loadmask' });
-        LU.Util.getClasses(function(result) {
+        LU.Util.getRegisteredClasses(function(result) {
             if (!result) {
                 var classStore = Ext.getStore('Classes');
                 classStore.setGrouper(LU.Util.getTimeGrouper());

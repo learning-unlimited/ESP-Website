@@ -7,6 +7,7 @@ Ext.define('LU.Util', {
     ],
 
     config: {
+        isClassStoreLoaded: false,
 
         difficultyGrouper: {
             groupFn: function(record) {
@@ -158,18 +159,22 @@ Ext.define('LU.Util', {
         return temp;
     },
 
-    fetchCatalog: function(callback) {
+    getCatalog: function(callback) {
         Ext.Ajax.request({
             url: this.getCatalogUrl(),
             success: function(result) {
 
                 var data = Ext.JSON.decode(result.responseText),
-                    timeStore = this.timeStore,
-                    classStore = this.classStore,
+                    timeStore = Ext.getStore('Timings'),
+                    classStore = Ext.getStore('Classes'),
                     registeredClassStore = this.registeredClassStore,
                     registeredTimeStore = this.registeredTimeStore,
-                    role = this.role,
-                    sectionIds = this.sectionIds;
+                    role = this.role || this.getUser().get('role'),
+                    sectionIds = this.sectionIds || [];
+
+                // clears any previous existing models
+                classStore.removeAll();
+                timeStore.removeAll();
 
                 // flattens the data received from server
                 // i.e. each section will have its individual record
@@ -235,9 +240,11 @@ Ext.define('LU.Util', {
                     });
                 });
 
+                this.setIsClassStoreLoaded(true);
                 callback();
             },
             failure: function(result) {
+                this.setIsClassStoreLoaded(false);
                 callback({
                     'message': 'Failed to fetch catalog',
                     'result': result
@@ -247,16 +254,10 @@ Ext.define('LU.Util', {
         });
     },
 
-    getClasses: function(callback, studentId) {
+    getRegisteredClasses: function(callback, studentId) {
         // note: user has to be logged in before this function is called
 
-        this.classStore = Ext.getStore('Classes'),
-        this.timeStore = Ext.getStore('Timings'),
         this.role = this.getUser().get('role');
-
-        // clears any previous existing models
-        this.classStore.removeAll();
-        this.timeStore.removeAll();
 
         if (this.role == 'student') {
             this.registeredSectionStore = Ext.getStore('RegisteredSections');
@@ -277,7 +278,7 @@ Ext.define('LU.Util', {
                 callback: function(records, operation, success) {
                     if (success) {
                         this.sectionIds = this.getRegisteredSectionIds(this.registeredSectionStore, 'section_id');
-                        this.fetchCatalog(callback);
+                        this.getCatalog(callback);
                     } else {
                         callback({ 'message': 'Failed to fetch registered classes' });
                     }
@@ -290,7 +291,7 @@ Ext.define('LU.Util', {
                 success: function(result) {
                     var response = Ext.JSON.decode(result.responseText);
                     this.sectionIds = this.getRegisteredSectionIds(response.sections, 'section__id');
-                    this.fetchCatalog(callback);
+                    this.getCatalog(callback);
                 },
                 failure: function(result) {
                     callback({

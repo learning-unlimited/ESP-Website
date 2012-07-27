@@ -59,7 +59,7 @@ Ext.define('LU.controller.Programs', {
                 }
             });
         } else if (user.get('role') === 'student') {
-            LU.Util.getClasses(function(result) {
+            LU.Util.getRegisteredClasses(function(result) {
                 var next;
                 if (!result) {
                     next = Ext.widget('student');
