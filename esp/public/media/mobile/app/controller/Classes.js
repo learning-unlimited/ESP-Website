@@ -30,7 +30,7 @@ Ext.define('LU.controller.Classes', {
                 itemtap: 'onClassTap'
             },
             logout: {
-                tap: 'onLogout'
+                tap: LU.Util.logout
             }
         }
     },
@@ -106,18 +106,5 @@ Ext.define('LU.controller.Classes', {
 
     onSearchClear: function() {
         Ext.getStore('Classes').clearFilter();
-    },
-
-    onLogout: function() {
-        Ext.Ajax.request({
-            url: '/myesp/ajax_signout/',
-            success: function(result) {
-                Ext.Viewport.getActiveItem().destroy();
-                Ext.Viewport.setActiveItem(Ext.widget('main'));
-            },
-            failure: function(result) {
-                Ext.Msg.alert('Logout Error', 'An unknown error has occurred. You may wish to try logging out later.');
-            }
-        });
     }
 });
