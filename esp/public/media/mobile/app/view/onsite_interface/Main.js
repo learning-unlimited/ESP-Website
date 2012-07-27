@@ -7,11 +7,7 @@ Ext.define('LU.view.onsite_interface.Main', {
         items: [
             { xtype: 'studentContainer' },
             { xtype: 'registerForm' },
-            {
-                title: 'Schedule',
-                iconCls: 'time',
-                html: 'Schedule Screen'
-            }
+            { xtype: 'classContainer' }
         ]
     }
 });

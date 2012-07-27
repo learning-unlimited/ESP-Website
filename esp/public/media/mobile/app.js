@@ -41,6 +41,7 @@ Ext.application({
     ],
 
     controllers: [
+        'Main',
         'Login',
         'Classes',
         'Schedule',

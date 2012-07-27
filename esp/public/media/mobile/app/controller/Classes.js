@@ -21,6 +21,9 @@ Ext.define('LU.controller.Classes', {
                 keyup: 'onSearch',
                 clearicontap: 'onSearchClear'
             },
+            classContainer: {
+                back: 'onBack'
+            },
             classList: {
                 initialize: 'onListInit',
                 show: 'onListShow',
@@ -54,6 +57,12 @@ Ext.define('LU.controller.Classes', {
         this.getClassList().deselectAll();
     },
 
+    onBack: function(container, opts) {
+        if (container.up('onsite')) {
+            container.getNavigationBar().hide();
+        }
+    },
+
     onListInit: function(list, opts) {
         list.getStore().clearFilter();
         list.getStore().setGrouper(LU.Util.getStringGrouper('title_upper'));
@@ -73,6 +82,7 @@ Ext.define('LU.controller.Classes', {
             this.classDetail = Ext.widget('classDetail');
         }
         this.classDetail.config.title = record.get('title');
+        this.getClassContainer().getNavigationBar().show();
         this.getClassContainer().push(this.classDetail);
         this.getClassInfo().setRecord(record);
 
