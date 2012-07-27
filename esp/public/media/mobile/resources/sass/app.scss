@@ -21,7 +21,9 @@ $login-field-border: 1px solid rgba(0,0,0,.185);
 @include sencha-msgbox;
 
 @include pictos-iconmask('note2');
+@include pictos-iconmask('note3');
 @include pictos-iconmask('user3');
+@include pictos-iconmask('team1');
 
 @mixin mask-image($name, $size, $color) {
     -webkit-mask-image: theme_image('default', 'pictos/' + $name);

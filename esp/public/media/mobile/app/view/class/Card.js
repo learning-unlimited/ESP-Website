@@ -15,8 +15,8 @@ Ext.define('LU.view.class.Card', {
                 }
             ]
         },
-        title: 'Browse',
-        iconCls: 'search',
+        title: 'Classes',
+        iconCls: 'note3',
 
         autoDestroy: false,
 

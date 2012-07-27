@@ -15,8 +15,8 @@ Ext.define('LU.view.student.Card', {
                 }
             ]
         },
-        title: 'Search',
-        iconCls: 'search',
+        title: 'Students',
+        iconCls: 'team1',
 
         autoDestroy: false,
 
