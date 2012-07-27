@@ -359,12 +359,25 @@ Ext.define('LU.Util', {
         this.task.delay(delay);
     },
 
+    cleanUp: function() {
+        this.setIsClassStoreLoaded(false);
+        if (this.task) this.task.destroy();
+        if (this.role) this.role = null;
+        if (this.sectionIds) this.sectionIds = [];
+        if (this.registeredSectionStore) this.registeredSectionStore.removeAll();
+        if (this.registeredClassStore) this.registeredClassStore.removeAll();
+        if (this.registeredTimeStore) this.registeredTimeStore.removeAll();
+        Ext.getStore('Classes').removeAll();
+        Ext.getStore('Timings').removeAll();
+    },
+
     logout: function() {
         Ext.Ajax.request({
             url: '/myesp/ajax_signout/',
             success: function(result) {
                 Ext.Viewport.getActiveItem().destroy();
                 Ext.Viewport.setActiveItem(Ext.widget('main'));
+                LU.Util.cleanUp();
             },
             failure: function(result) {
                 Ext.Msg.alert('Logout Error', 'An unknown error has occurred. You may wish to try logging out later.');
