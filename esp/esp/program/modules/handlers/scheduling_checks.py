@@ -4,23 +4,22 @@ from copy import deepcopy
 from math import ceil
 
 class SchedulingCheckRunner:
-     def __init__(self, program, output_file, lunch=[], high_school_only=[]):
+     def __init__(self, program):
           """
           high_school_only and lunch should be lists of indeces of timeslots for the high school
           only block and for lunch respectively
           """
           self.p = program
-          self.high_school_blocks = [program.getTimeSlots()[i] for i in high_school_only]
+          #self.high_school_blocks = [program.getTimeSlots()[i] for i in high_school_only]
+          self.high_school_blocks = self._get_high_school_only()
           #lunch blocks should be a list of lists of blocks that cover lunch
           self.lunch_blocks = self._getLunchByDay()
-          self.output = output_file
           self.listed_sections = False
 
           #report on setup
-          #TODO:  use list reporting function here
-          if( len(high_school_only)>0 ):
+          if( len(self.high_school_blocks)>0 ):
                self._format(self.high_school_blocks, title="High School Only Blocks")
-          if( len(lunch)>0 ):
+          if( len(self.lunch_blocks)>0 ):
                self._format(self.lunch_blocks, title="Lunch Blocks")
 
      #TODO:  refactor this so it's shared with lottery code
@@ -42,6 +41,15 @@ class SchedulingCheckRunner:
             lunch_by_day[dates.index(d)].append(ts)
         return lunch_by_day
 
+     def _get_high_school_only(self):
+          """  Returns a list of blocks which start after 7 PM.  At MIT, these blocks are high school
+          only.  So this is a pretty MIT-Centric function.
+          """
+          l = []
+          for ts in self.p.getTimeSlots():
+               if ts.start.hour >= 19:
+                    l.append(ts)
+          return l
 
      #TODO: look through email for what other sanity checks should be added on top of these.
      def run_diagnostics(self):
