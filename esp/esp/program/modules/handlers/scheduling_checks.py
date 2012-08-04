@@ -3,20 +3,16 @@ from esp.program.models.class_ import open_class_category
 from copy import deepcopy
 from math import ceil
 
-splash = Program.objects.filter(id=74)[0]
-high_school_blocks = [9, 10, 11]
-lunch = [3, 4]
-
 class SchedulingCheckRunner:
      def __init__(self, program, output_file, lunch=[], high_school_only=[]):
           """
           high_school_only and lunch should be lists of indeces of timeslots for the high school
           only block and for lunch respectively
           """
-          self.high_school_blocks = [splash.getTimeSlots()[i] for i in high_school_only]
-          #lunch blocks should be a list of lists of blocks that cover lunch
-          self.lunch_blocks = [[splash.getTimeSlots()[i] for i in l] for l in lunch]
           self.p = program
+          self.high_school_blocks = [program.getTimeSlots()[i] for i in high_school_only]
+          #lunch blocks should be a list of lists of blocks that cover lunch
+          self.lunch_blocks = self._getLunchByDay()
           self.output = output_file
           self.listed_sections = False
 
@@ -26,7 +22,27 @@ class SchedulingCheckRunner:
                self._format(self.high_school_blocks, title="High School Only Blocks")
           if( len(lunch)>0 ):
                self._format(self.lunch_blocks, title="Lunch Blocks")
-     
+
+     #TODO:  refactor this so it's shared with lottery code
+     def _getLunchByDay(self):
+        import numpy
+        #   Get IDs of timeslots allocated to lunch by day
+        #   (note: requires that this is constant across days)
+        lunch_schedule = numpy.zeros(self.p.num_timeslots())
+        lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
+        #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
+        dates = []
+        for ts in self.p.getTimeSlots():
+            ts_day = date(ts.start.year, ts.start.month, ts.start.day)
+            if ts_day not in dates:
+                dates.append(ts_day)
+        lunch_by_day = [[] for x in dates]
+        for ts in lunch_timeslots:
+            d = date(ts.start.year, ts.start.month, ts.start.day)
+            lunch_by_day[dates.index(d)].append(ts)
+        return lunch_by_day
+
+
      #TODO: look through email for what other sanity checks should be added on top of these.
      def run_diagnostics(self):
           self.incompletely_scheduled_classes()
