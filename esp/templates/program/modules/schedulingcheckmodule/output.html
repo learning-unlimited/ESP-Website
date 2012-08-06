@@ -28,19 +28,10 @@ function updateDocs(docs) {
 
 <h1>Schedule Diagnostic Output for {{program.niceName}} </h1>
 
-  <p><b>{{ "High School Only Blocks" }}</b></p>
-  <p> {{ checks.High_School_Only_Blocks }} </p>
-
-  <p><b>{{ "Lunch Blocks" }}</b></p>
-  <p> {{ checks.Lunch_Blocks }} </p>
-
-{% for key, value in checks.iteritems %}
+{% for value in checks %}
 <ul>
-  <p><b>{{ key }}</b></p>
   <p> 
-    {% for line in value %}
-       {{ line }} <br> 
-    {% endfor %}
+    {{ value }}
   </p>
 </ul>
 {% endfor %}

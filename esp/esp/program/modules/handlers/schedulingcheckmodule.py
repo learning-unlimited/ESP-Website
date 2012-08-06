@@ -23,18 +23,47 @@ class SchedulingCheckModule(ProgramModuleObj):
     @needs_admin
     def scheduling_checks(self, request, tl, one, two, module, extra, prog):
          s = SchedulingCheckRunner(prog)
-         s.run_diagnostics()
-         context = {'checks': s.results}
+         results = s.run_diagnostics()
+         context = {'checks': results}
          return render_to_response(self.baseDir()+'output.html', request, (prog, tl), context)
 
+
+#TODO:  how to call unbound methods?
+#TODO:  does python have some interface equivalent
+#Formatter
+class RawSCFormatter:
+    def format_table(self, l, title):
+        return l
+
+    def format_list(self, l, title):
+        return l
+
+class HTMLSCFormatter:
+    #requires: d, a two level dictionary where the the first set of
+    #   keys are the headings expected on the side of the table, and
+    #   the second set are the headings expected on the top of the table
+    def format_table(self, d, title):
+        if type(d) == list:
+            return title + _format_simple_table(l)
+        return title
+
+    def format_list(self, l, title):
+        return title
+
+    def _format_simple_table(self, l):
+        return ""
+
+#Generate html report and generate text report functions?
 class SchedulingCheckRunner:
-     def __init__(self, program):
+     def __init__(self, program, formatter=RawSCFormatter()):
           """
           high_school_only and lunch should be lists of indeces of timeslots for the high school
           only block and for lunch respectively
           """
           self.p = program
-          self.results = {}
+          self.results = []
+          #TODO:  is this the 
+          self.formatter = formatter
           #self.high_school_blocks = [program.getTimeSlots()[i] for i in high_school_only]
           self.high_school_blocks = self._get_high_school_only()
           #lunch blocks should be a list of lists of blocks that cover lunch
@@ -43,10 +72,6 @@ class SchedulingCheckRunner:
 
           #TODO:  find a more elegant solution to this problemXo
           #report on setup
-          if( len(self.high_school_blocks)>0 ):
-               self._format(self.high_school_blocks, 0, "High_School_Only_Blocks")
-          if( len(self.lunch_blocks)>0 ):
-               self._format(self.lunch_blocks, 0, "Lunch_Blocks")
 
      #TODO:  refactor this so it's shared with lottery code
      def _getLunchByDay(self):
@@ -79,15 +104,19 @@ class SchedulingCheckRunner:
 
      #TODO: look through email for what other sanity checks should be added on top of these.
      def run_diagnostics(self):
-          self.incompletely_scheduled_classes()
-          self.multiple_classes_same_room_same_time()
-          self.teachers_teaching_two_classes_same_time()
-          self.classes_which_cover_lunch()
-          self.room_capacity_mismatch()
-          self.middle_school_evening_classes()
-          self.capacity_by_category()
-          self.capacity_by_grade()
-          self.admins_teaching_per_timeblock()
+         return [
+             self.lunch_blocks_setup(),
+             self.high_school_only_setup(),
+             self.incompletely_scheduled_classes(),
+             self.multiple_classes_same_room_same_time(),
+             self.teachers_teaching_two_classes_same_time(),
+             self.classes_which_cover_lunch(),
+             self.room_capacity_mismatch(),
+             self.middle_school_evening_classes(),
+             self.capacity_by_category(),
+             self.capacity_by_grade(),
+             self.admins_teaching_per_timeblock(),
+          ]
 
      #################################################
      #
@@ -114,37 +143,6 @@ class SchedulingCheckRunner:
                self.listed_sections = True
                return self.all_sections
 
-     def _report(self, d, title):
-          self._format(d, 0, title)
-
-     def _format(self, d, indent, title):
-          if not title in self.results:
-               self.results[title] = []
-          if type(d) == dict:
-               self._format_dict(d, indent, title)
-          elif type(d) == list:
-               self._format_list(d, indent, title)
-          else:
-               self._print(self._indent_str(indent) + str(d), title)
-     #TODO: rework this to have a format function
-     #recursively print the contents of a dictionary
-     def _format_dict(self, d, indent, title):
-          for key in d:
-               self._print(self._indent_str(indent) + str(key), title)
-               self._format(d[key], indent+1, title)
-
-     #print the contents of a list, one item on each line
-     #TODO:  make this as smart as format list
-     def _format_list(self, l, indent, title):
-          for i in l:
-               self._format(i, indent + 1, title)
-
-     def _indent_str(self, indent):
-          return reduce(lambda x,y: x+y, ["   "]*indent, "")
-
-     def _print(self, message, title):
-          self.results[title].append(message)
-     
      #TODO:  make this also runnable as a script
 
      #################################################
@@ -152,6 +150,11 @@ class SchedulingCheckRunner:
      #    Diagnostic functions
      #
      #################################################
+     def lunch_blocks_setup(self):
+         return self.formatter.format_list(self.lunch_blocks, "Lunch Blocks")
+
+     def high_school_only_setup(self):
+         return self.formatter.format_list(self.high_school_blocks, "High School Only Blocks")
 
      def incompletely_scheduled_classes(self):
           problem_classes = []
@@ -162,7 +165,7 @@ class SchedulingCheckRunner:
                     problem_classes.append(s)
                elif(len(rooms) != len(mt)):
                     problem_classes.append(s)
-          self._report(problem_classes, "Classes not completely scheduled:")
+          return self.formatter.format_list(problem_classes, "Classes not completely scheduled:")
 
      def classes_which_cover_lunch(self):
           l = []
@@ -171,7 +174,7 @@ class SchedulingCheckRunner:
                for lunch in self.lunch_blocks:
                     if not (False in [b in mt for b in lunch]):
                          l.append(s)
-          self._report(l, "Classes which are scheduled over lunch")
+          return self.formatter.format_list(l, "Classes which are scheduled over lunch")
 
      #TODO:  test this using data where some teacher is teaching two classes at once
      def teachers_teaching_two_classes_same_time(self):
@@ -185,7 +188,7 @@ class SchedulingCheckRunner:
                               d[t][teach] = s
                          else:
                               l.append([t, s, d[mt][t]])
-          self._report(l, "Teachers teaching two classes at once")
+          return self.formatter.format_list(l, "Teachers teaching two classes at once")
 
      def multiple_classes_same_room_same_time(self):
           d = self._timeslot_dict(slot=lambda: {})
@@ -199,7 +202,7 @@ class SchedulingCheckRunner:
                               d[t][r] = s
                          else:
                               l.append([t, r, s, d[t][r]])
-          self._report(l, "Double-booked rooms") 
+          return self.formatter.format_list(l, "Double-booked rooms") 
                
      def middle_school_evening_classes(self):
           hso = set(self.high_school_blocks)
@@ -210,83 +213,84 @@ class SchedulingCheckRunner:
           sections = filter(lambda x: len(set(x.get_meeting_times()) & hso) > 0, sections )
 
           #reporting    
-          self._report(sections, "Classes allowing middle school students during the high school only block")
+          self.formatter.format_list(sections, "Classes allowing middle school students during the high school only block")
           middle_school_only = filter(lambda x: x.parent_class.grade_max < 9, sections)
-          self._report(middle_school_only, "Classe wiht only middle school students during the high school only block")
+          return self.formatter.format_list(middle_school_only, "Classe wiht only middle school students during the high school only block")
 
-     def room_capacity_mismatch(self):
+     def room_capacity_mismatch(self, lower_reporting_ratio=0.5, upper_reporting_ratio=1.5):
           l = []
-          lower_reporting_ratio = 0.5
-          upper_reporting_ratio = 1.5
           for s in self._all_class_sections():
                r = s.classrooms()
                if len(r) > 0:
                     room = r[0]
                     cls = s.parent_class
                     if room.num_students < lower_reporting_ratio*cls.class_size_max or room.num_students > upper_reporting_ratio*cls.class_size_max:
-                         #TODO:  add functionality to format list to be able to do something useful here
-                         l.append(str(s) + "\n  class capacity: " + str(cls.class_size_max) + " room capacity: " + str(room.num_students))
-          self._report(l, "Class max size/room max size mismatches")
+                         l.append({"Section": str(s), "Class Max": cls.class_size_max, "Room Max": room.num_students})
+          return self.formatter.format_table(l, "Class max size/room max size mismatches")
 
 
      def capacity_by_category(self):
           #generating a dictionary of class categories
+          #TODO:  get rid of lunch and walkins here
           class_categories =  self.p.class_categories.all().values_list('category', flat=True)
           class_cat_d = {}
           for cat in class_categories:
                if not cat == open_class_category():
-                    class_cat_d[cat] = [0, 0]
+                    class_cat_d[cat] = 0
           def class_category_dict():
                return deepcopy(class_cat_d)
 
           #populating it with data
-          d = self._timeslot_dict(slot=class_category_dict)
+          d_classes = self._timeslot_dict(slot=class_category_dict)
+          d_capacity = self._timeslot_dict(slot=class_category_dict)
           for s in self._all_class_sections():
                mt =  s.get_meeting_times()
                for t in mt:
-                    d[t][s.category.category][0] += 1
-                    d[t][s.category.category][1] += s.capacity
-          
-          #convert to tupples for formatting-ness
-          for k1 in d:
-               for k2 in d[k1]: 
-                    d[k1][k2] = tuple(d[k1][k2])
-          self._report(d, "Capacity in each block by category.\nGrade: [choices, available slots]")
+                    d_classes[t][s.category.category] += 1
+                    d_capacity[t][s.category.category] += s.capacity
+          #TODO:  fix this it sucks
+          return [
+              self.formatter.format_table(d_classes, "Number of classes in each block by grade."),
+              self.formatter.format_table(d_capacity, "Total capacity in each block by grade.")
+          ]
+
          
      def capacity_by_grade(self):
           grades =  range(7, 13, 1)
           grades_d = {}
           for grade in grades:
-               grades_d[grade] = [0, 0]
+               grades_d[grade] = 0
           def grade_dict():
                return deepcopy(grades_d)
 
           #populating it with data
-          d = self._timeslot_dict(slot=grade_dict)
-
-          d = self._timeslot_dict(grade_dict)
+          d_classes = self._timeslot_dict(slot=grade_dict)
+          d_capacity = self._timeslot_dict(slot=grade_dict)
           for s in self._all_class_sections():
                cls = s.parent_class 
                mt =  s.get_meeting_times()
                for t in mt:
                     for grade in range(cls.grade_min, cls.grade_max + 1, 1):
-                         d[t][grade][0] += 1
-                         d[t][grade][1] += s.capacity
-
-          dict_title = "Capacity in each block by grade.\nGrade: [choices, available slots]"
-          #convert to tupples for formatting-ness
-          for k1 in d:
-               for k2 in d[k1]: 
-                    d[k1][k2] = tuple(d[k1][k2])
-          self._report(d, dict_title)
+                         d_classes[t][grade] += 1
+                         d_capacity[t][grade] += s.capacity
+          return[
+              self.formatter.format_table(d_classes, "Number of classes in each block by grade."),
+              self.formatter.format_table(d_capacity, "Total capacity in each block by grade.")
+              ]
+          
 
      def admins_teaching_per_timeblock(self):
-          d = self._timeslot_dict(lambda: [])
+          key_string = "Admins Teaching"
+          def admin_dict():
+               return { key_string: [] }
+
+          d = self._timeslot_dict(slot=admin_dict)
           for s in self._all_class_sections():
                teachers = s.parent_class.teachers()
                admin_teachers = [t for t in teachers if t.isAdministrator()]
                for a in admin_teachers:
                     mt =  s.get_meeting_times()
                     for t in mt:
-                         d[t].append(a.username)
-          self._report(d, "Admins teaching per timeslot")
+                         d[t][key_string].append(a.username)
+          return self.formatter.format_table(d, "Admins teaching per timeslot")
+
