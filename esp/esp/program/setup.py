@@ -129,7 +129,7 @@ def commit_program(prog, datatrees, userbits, perms, modules, costs = (0, 0)):
         return new_ub
 
     def gen_perm(tup):
-        new_perm=Permission(permission_type=tup[0])
+        new_perm=Permission(permission_type=tup[0], program=prog)
 
         if tup[2]:
             new_perm.startdate = tup[2]
@@ -145,13 +145,13 @@ def commit_program(prog, datatrees, userbits, perms, modules, costs = (0, 0)):
             new_perm.save()
             return
         elif tup[1] is None and tup[0].startswith("Teacher"):
-            new_perm.role=Group.objects.get(name="Student")
+            new_perm.role=Group.objects.get(name="Teacher")
             new_perm.save()
             return
 
         #It's not for a specific user and not a teacher or student deadline
         for x in ESPUser.getTypes():
-            newnew_perm=Permission(permission_type=new_perm.permission_type, role=Group.objects.get(name=x), startdate=new_perm.startdate, enddate=new_perm.enddate)
+            newnew_perm=Permission(permission_type=new_perm.permission_type, role=Group.objects.get(name=x), startdate=new_perm.startdate, enddate=new_perm.enddate, program=prog)
             newnew_perm.save()
         
     for dt_tup in datatrees:

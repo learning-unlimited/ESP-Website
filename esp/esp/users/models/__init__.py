@@ -1990,7 +1990,7 @@ class Record(models.Model):
 def flatten(choices):
     l=[]
     for x in choices:
-        if type(x[1])!=type(tuple): l.append(x[0])
+        if type(x[1])!=tuple: l.append(x[0])
         else: l=l+flatten(x[1])
     return l
 
@@ -2013,6 +2013,8 @@ class Permission(models.Model):
                 ("Student/Applications","Apply for classes"),
                 ("Student/Catalog","View the catalog"),
                 ("Student/Classes",""),
+                ("Student/Classes/All",""),
+                ("Student/Classes/OneClass",""),
                 ("Student/Classes/Lottery","Enter the lottery"),
                 ("Student/Classes/Lottery/View","View lottery results"),
                 ("Student/ExtraCosts","Extra costs page"),
@@ -2028,10 +2030,13 @@ class Permission(models.Model):
                 ("Teacher/All", "All teacher deadlines"),
                 ("Teacher/Acknowledgement", "Teacher acknowledgement"),
                 ("Teacher/Availability", "Set availability"),
+                ("Teacher/Catalog",""),
                 ("Teacher/Classes", ""),
+                ("Teacher/Classes/All", ""),
                 ("Teacher/Classes/View", ""),
                 ("Teacher/Classes/Edit", ""),
                 ("Teacher/Classes/Create",""),
+                ("Teacher/Classes/SelectStudents",""),
                 ("Teacher/Quiz", "Teacher quiz"),
                 ("Teacher/MainPage","Registration mainpage"),
                 ("Teacher/Survey","Teacher Survey"),
@@ -2047,9 +2052,9 @@ class Permission(models.Model):
     implications = {"Administer":[x for x in flatten(PERMISSION_CHOICES)
                                   if x!="Administer"],
                     "Student/All": [x for x in flatten(PERMISSION_CHOICES)
-                                if x.startswith("Student/")],
+                                if x.startswith("Student")],
                     "Teacher/All": [x for x in flatten(PERMISSION_CHOICES)
-                                if x.startswith("Teacher/")],
+                                if x.startswith("Teacher")],
                     }
     #i'm not really sure if implications is a good idea
     #use sparingly
@@ -2085,7 +2090,61 @@ class Permission(models.Model):
         qstart = Q(startdate=None) | Q(startdate__lte=when)
         qend = Q(enddate=None) | Q(enddate__gte=when)
         return initial_qset.filter(qstart & qend).exists()
+    
+    #list of all the permission types which are deadlines
+    deadline_types = [x for x in flatten(PERMISSION_CHOICES) if x.startswith("Teacher") or x.startswith("Student")]
 
+    @classmethod
+    def deadlines(cls):
+        return cls.objects.filter(permission_type__in = cls.deadline_types)
+
+    def is_open(self, when=None):
+        if when is None:
+            when = datetime.now()
+        return (self.startdate is None or self.startdate < when) and \
+               (self.enddate is None or self.enddate > when)
+
+    def recursive(self):
+        return bool(self.implications.get(self.permission_type, None))
+
+    def __unicode__(self):
+        #TODO
+        if self.user is not None:
+            user = self.user.username
+        else:
+            user = self.role
+
+        if self.program is not None:
+            program = self.program.niceName()
+        else:
+            program = "None"
+        
+        return "GRANT %s ON %s TO %s" % (self.permission_type,
+                                         program, user)
+
+    @classmethod
+    def nice_name_lookup(cls,perm_type):
+        def squash(choices):
+            l=[]
+            for x in choices:
+                if type(x[1])!=tuple: l.append(x)
+                else: l=l+squash(x[1])
+            return l
+        
+        for x in squash(cls.PERMISSION_CHOICES):
+            if x[0] == perm_type: return x[1]
+
+    def nice_name(self):
+        def squash(choices):
+            l=[]
+            for x in choices:
+                if type(x[1])!=tuple: l.append(x)
+                else: l=l+squash(x[1])
+            return l
+        
+        for x in squash(self.PERMISSION_CHOICES):
+            if x[0] == self.permission_type: return x[1]
+        
 
 def install():
     """
