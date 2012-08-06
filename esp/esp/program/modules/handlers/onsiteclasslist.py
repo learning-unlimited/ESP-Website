@@ -213,7 +213,7 @@ LIMIT 1
                 if contact:
                     address = ''
                     if contact.address_street and contact.address_city and contact.address_state and contact.address_zip:
-                        address = '%s\n%s, %s %s' % (contact.address_street, contact.address_city, contact.address_state, contact.address_zip)
+                        address = '%s,\n%s, %s %s' % (contact.address_street, contact.address_city, contact.address_state, contact.address_zip)
 
                     contact_info = {
                         'email': contact.e_mail,
