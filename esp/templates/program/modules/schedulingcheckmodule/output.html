@@ -31,7 +31,7 @@ function updateDocs(docs) {
 {% for value in checks %}
 <ul>
   <p> 
-    {{ value }}
+    {{ value|safe }}
   </p>
 </ul>
 {% endfor %}

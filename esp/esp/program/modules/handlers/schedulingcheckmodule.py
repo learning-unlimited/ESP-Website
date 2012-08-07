@@ -27,51 +27,92 @@ class SchedulingCheckModule(ProgramModuleObj):
          context = {'checks': results}
          return render_to_response(self.baseDir()+'output.html', request, (prog, tl), context)
 
-
-#TODO:  how to call unbound methods?
 #TODO:  does python have some interface equivalent
 #Formatter
 class RawSCFormatter:
-    def format_table(self, l, title):
+    def format_table(self, l, title, options={}):
         return l
 
-    def format_list(self, l, title):
+    def format_list(self, l, title, options={}):
         return l
 
 class HTMLSCFormatter:
     #requires: d, a two level dictionary where the the first set of
     #   keys are the headings expected on the side of the table, and
     #   the second set are the headings expected on the top of the table
-    def format_table(self, d, title):
+    def format_table(self, d, title, options={}):
         if type(d) == list:
-            return title + _format_simple_table(l)
-        return title
+            return self._format_list_table(d, title, options['headings'])
+        else:
+            return self._format_dict_table(d, title, options['headings'])
 
     def format_list(self, l, title):
-        return title
+        output = self._table_title(title, [title])
+        for row in l:
+            output += self._table_row([row])
+        output += "</table>"
+        return output
 
-    def _format_simple_table(self, l):
-        return ""
+    def _table_start(self):
+        output = "<table cellpadding=10 style=\"border: 1px solid black; border-collapse: collapse;\">"
+        return output
 
-#Generate html report and generate text report functions?
+    def _table_title(self, title, headings):
+        output = self._table_start()
+        output += "<tr><th colspan=\""+str(len(headings))+"\" align=\"center\">" + str(title) + "</th></tr>"
+        return output
+
+    def _table_headings(self, headings):
+        #column headings
+        next_row = ""
+        for h in headings:
+            next_row = next_row + "<th><div style=\"cursor: pointer;\">" + str(h) + "</div></th>"
+        next_row = next_row + "</tr></thread>"
+        return next_row
+
+    def _table_row(self, row):
+        next_row = ""
+        for r in row:
+            next_row += "<td>" + str(r) + "</td>"
+        next_row += "</tr>"
+        return next_row
+        
+    def _format_list_table(self, d, title, headings):
+        output = self._table_title(title, headings)
+        output = output + self._table_headings(headings)
+        for row in d:
+            ordered_row = [row[h] for h in headings]
+            output = output + self._table_row(ordered_row) 
+        output = output + "</table>"
+        return output
+
+    def _format_dict_table(self, d, title, headings):
+        output = self._table_title(title, headings)
+        output = output + self._table_headings([""] + headings)
+
+        for key, row in d.iteritems():
+            ordered_row = [row[h] for h in headings]
+            output = output + self._table_row([key] + ordered_row)
+        output += "</table>"
+        return output
+
 class SchedulingCheckRunner:
-     def __init__(self, program, formatter=RawSCFormatter()):
+#Generate html report and generate text report functions?lingCheckRunner:
+     def __init__(self, program, formatter=HTMLSCFormatter()):
           """
           high_school_only and lunch should be lists of indeces of timeslots for the high school
           only block and for lunch respectively
           """
           self.p = program
-          self.results = []
-          #TODO:  is this the 
           self.formatter = formatter
-          #self.high_school_blocks = [program.getTimeSlots()[i] for i in high_school_only]
-          self.high_school_blocks = self._get_high_school_only()
-          #lunch blocks should be a list of lists of blocks that cover lunch
-          self.lunch_blocks = self._getLunchByDay()
-          self.listed_sections = False
 
-          #TODO:  find a more elegant solution to this problemXo
-          #report on setup
+          self.high_school_blocks = self._get_high_school_only()
+          self.lunch_blocks = self._getLunchByDay()
+
+          #things that we'll calculate lazilly
+          self.listed_sections = False
+          self.d_categories = []
+          self.d_grades = []
 
      #TODO:  refactor this so it's shared with lottery code
      def _getLunchByDay(self):
@@ -102,7 +143,6 @@ class SchedulingCheckRunner:
                     l.append(ts)
           return l
 
-     #TODO: look through email for what other sanity checks should be added on top of these.
      def run_diagnostics(self):
          return [
              self.lunch_blocks_setup(),
@@ -113,7 +153,9 @@ class SchedulingCheckRunner:
              self.classes_which_cover_lunch(),
              self.room_capacity_mismatch(),
              self.middle_school_evening_classes(),
+             self.classes_by_category(),
              self.capacity_by_category(),
+             self.classes_by_grade(),
              self.capacity_by_grade(),
              self.admins_teaching_per_timeblock(),
           ]
@@ -143,7 +185,6 @@ class SchedulingCheckRunner:
                self.listed_sections = True
                return self.all_sections
 
-     #TODO:  make this also runnable as a script
 
      #################################################
      #
@@ -151,7 +192,8 @@ class SchedulingCheckRunner:
      #
      #################################################
      def lunch_blocks_setup(self):
-         return self.formatter.format_list(self.lunch_blocks, "Lunch Blocks")
+         lunch_block_strings = [[str(l) for l in lunch_block_list] for lunch_block_list in self.lunch_blocks]
+         return self.formatter.format_list(lunch_block_strings, "Lunch Blocks")
 
      def high_school_only_setup(self):
          return self.formatter.format_list(self.high_school_blocks, "High School Only Blocks")
@@ -187,8 +229,8 @@ class SchedulingCheckRunner:
                          if not teach in d[t]:
                               d[t][teach] = s
                          else:
-                              l.append([t, s, d[mt][t]])
-          return self.formatter.format_list(l, "Teachers teaching two classes at once")
+                              l.append({"Teacher": teach, "Timeslot":t, "Section 1": s, "Section 2": d[mt][t]})
+          return self.formatter.format_table(l, "Teachers teaching two classes at once", {'headings': ["Teacher", "Timeslot", "Section 1", "Section 2"]})
 
      def multiple_classes_same_room_same_time(self):
           d = self._timeslot_dict(slot=lambda: {})
@@ -201,9 +243,9 @@ class SchedulingCheckRunner:
                          if not r in d[t]:
                               d[t][r] = s
                          else:
-                              l.append([t, r, s, d[t][r]])
-          return self.formatter.format_list(l, "Double-booked rooms") 
-               
+                              l.append({"Timeslot": t, "Room":r, "Section 1":s, "Section2":d[t][r]})
+          return self.formatter.format_table(l, "Double-booked rooms", {"headings": ["Room", "Timeslot", "Section 1", "Section 2"]})
+
      def middle_school_evening_classes(self):
           hso = set(self.high_school_blocks)
           sections = self._all_class_sections()
@@ -226,17 +268,25 @@ class SchedulingCheckRunner:
                     cls = s.parent_class
                     if room.num_students < lower_reporting_ratio*cls.class_size_max or room.num_students > upper_reporting_ratio*cls.class_size_max:
                          l.append({"Section": str(s), "Class Max": cls.class_size_max, "Room Max": room.num_students})
-          return self.formatter.format_table(l, "Class max size/room max size mismatches")
+          return self.formatter.format_table(l, "Class max size/room max size mismatches", {'headings': ["Section", "Class Max", "Room Max"]})
 
+     #for classes_by_category and capacity_by_category
+     def _calculate_d_categories(self):
+          if len(self.d_categories) > 0:
+              return self.d_categories
 
-     def capacity_by_category(self):
+          self.class_categories =  list(self.p.class_categories.all().values_list('category', flat=True))
+
+          #not regular class categories          
+          open_class_cat = open_class_category().category
+          if open_class_cat in self.class_categories: self.class_categories.remove(open_class_cat)
+          lunch_cat = "Lunch" #TODO:  add a lunch_category function to the program model?
+          if lunch_cat in self.class_categories: self.class_categories.remove(lunch_cat)
+
           #generating a dictionary of class categories
-          #TODO:  get rid of lunch and walkins here
-          class_categories =  self.p.class_categories.all().values_list('category', flat=True)
           class_cat_d = {}
-          for cat in class_categories:
-               if not cat == open_class_category():
-                    class_cat_d[cat] = 0
+          for cat in self.class_categories:
+              class_cat_d[cat] = 0
           def class_category_dict():
                return deepcopy(class_cat_d)
 
@@ -248,17 +298,27 @@ class SchedulingCheckRunner:
                for t in mt:
                     d_classes[t][s.category.category] += 1
                     d_capacity[t][s.category.category] += s.capacity
-          #TODO:  fix this it sucks
-          return [
-              self.formatter.format_table(d_classes, "Number of classes in each block by grade."),
-              self.formatter.format_table(d_capacity, "Total capacity in each block by grade.")
-          ]
+
+          self.d_categories = {"classes":d_classes, "capacity":d_capacity}
+          return self.d_categories
+
+     def capacity_by_category(self):
+         self._calculate_d_categories()
+         return  self.formatter.format_table(self.d_categories["capacity"], "Total capacity in each block by category.", {"headings": self.class_categories})
+        
+
+     def classes_by_category(self):
+         self._calculate_d_categories()
+         return  self.formatter.format_table(self.d_categories["classes"], "Number of classes in each block by category.", {"headings": self.class_categories})
 
          
-     def capacity_by_grade(self):
-          grades =  range(7, 13, 1)
+     def _calculate_d_grades(self):
+          if len(self.d_grades) > 0:
+             return self.d_grades
+
+          self.grades = range(7, 13, 1)
           grades_d = {}
-          for grade in grades:
+          for grade in self.grades:
                grades_d[grade] = 0
           def grade_dict():
                return deepcopy(grades_d)
@@ -273,10 +333,18 @@ class SchedulingCheckRunner:
                     for grade in range(cls.grade_min, cls.grade_max + 1, 1):
                          d_classes[t][grade] += 1
                          d_capacity[t][grade] += s.capacity
-          return[
-              self.formatter.format_table(d_classes, "Number of classes in each block by grade."),
-              self.formatter.format_table(d_capacity, "Total capacity in each block by grade.")
-              ]
+          self.d_grades = { "capacity": d_capacity, "classes": d_classes }
+          return self.d_grades
+
+     def capacity_by_grade(self):
+         self._calculate_d_grades()
+         return  self.formatter.format_table(self.d_grades["capacity"], "Total capacity in each block by grade.", {"headings": self.grades})
+        
+
+     def classes_by_grade(self):
+         self._calculate_d_grades()
+         return  self.formatter.format_table(self.d_grades["classes"], "Number of classes in each block by grade.", {"headings": self.grades})
+
           
 
      def admins_teaching_per_timeblock(self):
@@ -291,6 +359,6 @@ class SchedulingCheckRunner:
                for a in admin_teachers:
                     mt =  s.get_meeting_times()
                     for t in mt:
-                         d[t][key_string].append(a.username)
-          return self.formatter.format_table(d, "Admins teaching per timeslot")
+                         d[t][key_string].append(str(a))
+          return self.formatter.format_table(d, "Admins teaching per timeslot", {"headings":[key_string]})
 
