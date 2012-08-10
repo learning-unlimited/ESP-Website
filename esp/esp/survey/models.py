@@ -39,6 +39,8 @@ import datetime
 from django.db import models
 from django.template import loader
 from django.core.cache import cache
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import generic
 
 try:
     import cPickle as pickle
@@ -93,20 +95,19 @@ class ListField(object):
 class Survey(models.Model):
     """ A single survey. """
     name = models.CharField(max_length=255)
-    anchor = AjaxForeignKey(DataTree, related_name='surveys',
-                            help_text="Usually the program.")
+    program = models.ForeignKey(Program, related_name='surveys',
+                                blank=True, null=True,
+                                help_text="Blank if not associated to a program")
 
     category = models.CharField(max_length=32) # teach|learn|etc
     
     def __unicode__(self):
-        return '%s (%s) for %s' % (self.name, self.category, unicode(self.anchor))
+        return '%s (%s) for %s' % (self.name, self.category, unicode(self.program))
     
     def num_participants(self):
-        #   If there is a program anchored to the anchor, select the appropriate number
+        #   If there is a program for this survey, select the appropriate number
         #   of participants based on the category.
-        from esp.program.models import Program
-        
-        progs = Program.objects.filter(anchor=self.anchor)
+        prog = self.program
         if progs.count() == 1:
             prog = progs[0]
             if self.category == 'teach':
@@ -166,7 +167,7 @@ class SurveyResponse(models.Model):
                 except ValueError:
                     raise ESPError(), 'Error getting IDs from %s' % key
 
-                new_answer.anchor = sec.anchor
+                new_answer.target = sec
                 
             elif len(str_list) == 2:
                 try:
@@ -176,7 +177,7 @@ class SurveyResponse(models.Model):
                     raise ESPError(), 'Error finding question from %s' % key
                 except ValueError:
                     raise ESPError(), 'Error getting IDs from %s' % key
-                new_answer.anchor = self.survey.anchor
+                new_answer.target = self.survey.program
             
             new_answer.answer = value
             new_answer.question = question 
@@ -189,7 +190,7 @@ class SurveyResponse(models.Model):
         return answers
     
     def __unicode__(self):
-        return "Survey for %s filled out at %s" % (self.survey.anchor,
+        return "Survey for %s filled out at %s" % (unicode(self.survey.program),
                                                    self.time_filled)
                                                    
     
@@ -224,7 +225,7 @@ class Question(models.Model):
     _param_values = models.TextField("Parameter values", blank=True,
                                      help_text="A pipe (|) delimited list of values.")
     param_values = ListField('_param_values')
-    anchor = AjaxForeignKey(DataTree, related_name="questions", help_text="What is this quesiton related to?")
+    per_class = models.BooleanField(default=False)
     seq = models.IntegerField(default=0)
 
     def get_params(self):
@@ -273,7 +274,7 @@ class Question(models.Model):
         params['id'] = self.id
         params['value'] = value
         
-        if self.anchor.name == 'Classes':
+        if self.per_class:
             params['for_class'] = True
 
         return loader.render_to_string(self.question_type.template_file, params)
@@ -317,7 +318,13 @@ class Answer(models.Model):
 
     survey_response = models.ForeignKey(SurveyResponse, db_index=True,
                                         related_name='answers')
-    anchor = AjaxForeignKey(DataTree)                                        
+
+    ## Generic ForeignKey: either the program, the class, or the section ##
+    content_type = models.ForeignKey(ContentType, blank=True, null=True)
+    object_id = models.PositiveIntegerField(blank=True, null=True)
+    target = generic.GenericForeignKey(ct_field='content_type', fk_field='object_id')
+    ## End Generic ForeignKey ##
+
     question = models.ForeignKey(Question, db_index=True)
     value = models.TextField()
 
