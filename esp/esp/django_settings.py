@@ -222,6 +222,7 @@ INSTALLED_APPS = (
     'form_utils',
     'esp.seltests',
     'esp.dataviews',
+    'esp.mobiletests'
 )
 
 import os
