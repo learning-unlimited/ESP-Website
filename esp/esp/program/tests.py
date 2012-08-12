@@ -701,6 +701,9 @@ class ProgramFrameworkTest(TestCase):
     #   Does not get called by default, but subclasses can call it.
     def classreg_students(self):
         ignore_ts = []
+
+        # get the max id of students and create an array of size (max_id + 1)
+        self.student_schedules = [None] * (int(max(self.students, key=lambda student: student.id).id) + 1)
         for student in self.students:
             schedule_full = False
             while not schedule_full:
@@ -713,6 +716,11 @@ class ProgramFrameworkTest(TestCase):
                 if self.program.sections().filter(meeting_times=target_ts).exists():
                     sec = random.choice(self.program.sections().filter(meeting_times=target_ts))
                     sec.preregister_student(student, fast_force_create=True)
+
+                    index = int(student.id)
+                    if self.student_schedules[index] is None:
+                        self.student_schedules[index] = []
+                    self.student_schedules[index].append(sec.id)
                 else:
                     ignore_ts.append(target_ts)
 
