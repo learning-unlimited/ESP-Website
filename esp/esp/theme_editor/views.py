@@ -210,3 +210,5 @@ def editor(request):
 
     return render_to_response('theme_editor/editor.html', context, context_instance=RequestContext(request))
 
+def layout(request):
+    return render_to_response('main-html/mockup.html', {}, context_instance=RequestContext(request))
