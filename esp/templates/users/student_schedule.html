@@ -13,13 +13,6 @@
 
 </style>
 
-{% comment %} <hr>
-<p><font style="font-size: 18pt;"><center>
-<a href="/learn/{{one}}/{{two}}/catalog">Click Here</a> to select your
-classes!</center></font>
-</p>
-<hr>
-<br /> {% endcomment %}
 <p>
 {% load render_qsd %}
 {% inline_qsd_block program.anchor class_schedule_header_text request.user %}
@@ -45,10 +38,7 @@ you arrive.
     <br />
 {% endif %}
 
-<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
-
-<div id="program_form">
-<table cellpadding="3" class="fullwidth">
+<table cellpadding="3" class="table table-condensed table-bordered table-striped">
 <tr>
     <th colspan="3">
     Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}
@@ -133,6 +123,5 @@ you arrive.
     {% endifequal %}
 {% endfor %}
 </table> 
-</div>
 
 <br/>

@@ -7,9 +7,12 @@ Customize your title formatting here.  For example:
 {% block fulltitle %}{% block title %}{% endblock %}{% endblock %}
 
 {% block stylesheets %}
-{{ block.super }}
-{# Customize your stylesheets here #}
-{# <link rel="stylesheet" href="/media/styles/main.css" type="text/css" /> #}
+    {{ block.super }}
+    {% comment %}
+    If you would like to customize the appearance of your site beyond the possibilities of the eheme editor, you may add additional stylesheets here.
+    Example stylesheet inclusion tag:
+    <link rel="stylesheet" href="/media/styles/main.css" type="text/css" />
+    {% endcomment %}
 {% endblock %}
 
 {% block javascript %}

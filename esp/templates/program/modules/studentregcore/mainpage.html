@@ -2,12 +2,6 @@
 
 {% block title %}{{program.niceName}} Registration{% endblock %}
 
-{% block stylesheets %}
-{{ block.super }}
-<link rel="stylesheet" href="/media/styles/catalog.css" type="text/css" />
-<link rel="stylesheet" href="/media/styles/progressbar.css" type="text/css" />
-{% endblock %}
-
 {% load subsection %}
 {% block subsection %}
 {% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
@@ -35,7 +29,6 @@
 <br /><br />
 <h1>Student registration for {{program.niceName}} </h1>
 {% if not request.user.onsite_local %}
-    <div id="catalog">
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 {% if program.isFull %}{% if program.program_allow_waitlist %}
 <div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>
@@ -55,9 +48,10 @@
 {% end_inline_qsd_block %}
 
 {% render_inline_qsd program.anchor "learn:studentregheader" %}
-    <center><div class="note">
-    <b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.
-    </div></center>
+<div class="alert alert-info">
+<i class="icon-info-sign"></i>
+<b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.
+</div>
     
 {% ifequal scrmi.progress_mode 1 %}
     {% include "program/modules/checkboxes.html" %}
@@ -76,16 +70,12 @@
 {% for module in modules %}
 {% if module.useTemplate %}
 <a name="module-{{module.id}}"></a>
-<br />
 {% include module.getTemplate %}
 {% endif %}
 {% endfor %}
-</div>
-<br />
 
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
 <center>
-
 
 {% if program.isFull %}{% if program.program_allow_waitlist %}
 <div class="errormsg">This program is now full!  Click below to add yourself to the waitlist.</div>

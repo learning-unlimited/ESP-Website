@@ -7,26 +7,15 @@
     <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
     <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
     
-        <link href="/media/theme_editor/docs/assets/css/docs.css" rel="stylesheet"/>
-        <link rel="stylesheet" type="text/css" href="/media/theme_editor/themes/bootstrap.css"/> 
+    <link href="/media/theme_editor/docs/assets/css/docs.css" rel="stylesheet"/>
+    <link rel="stylesheet" type="text/css" href="/media/theme_editor/themes/bootstrap.css"/> 
+    
 	<script type="text/javascript"> localStorage.clear(); </script>
 
-    {#    <link href="/media/bootstrap/docs/assets/css/bootstrap.css" rel="stylesheet"/>  #}
-    <link href="/media/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet"/>
+    <link href="https://cdn.learningu.org/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet"/>
+    <link href="https://cdn.learningu.org/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>
 
-    <link href="/media/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>
-      
-      
     <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
-
-    {% comment %}
-    <style type="text/css">
-      /*lswh @import "https://ajax.googleapis.com/ajax/libs/dojo/1.5/dijit/themes/tundra/tundra.css";*/
-    </style>
-    {% endcomment %}
-
-
-    
 
     {% block stylesheets %}
     {% endblock %}
@@ -36,9 +25,8 @@ status, admin status et c. It is in the header to prevent nasty rearrangements
 while the page is loading. Javascript should usually go in the javascript block
 at the end of the page.
     {% endcomment %}
-    <script type="text/javascript" src="/media/bootstrap/docs/assets/js/jquery.js"> </script>
+    <script type="text/javascript" src="https://cdn.learningu.org/jquery/jquery-1.7.1.js"> </script>
     <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
-
     <script language="JavaScript">
       $j = $.noConflict();
     </script>
@@ -47,23 +35,6 @@ at the end of the page.
     <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
     <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
 
-    <!-- Internet Explorer refuses to load media content over HTTP by default
-	 when the page has been loaded over HTTPS.  This is a security policy.
-	 However, Dojo has HTTP references hard-coded in a few places.  This
-	 script below provides a workaround until we stop using Dojo.   -->
-{% comment %}     <script type="text/javascript">
-      djConfig = {
-      modulePaths: {
-      "dojo": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo",
-      "dijit": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dijit",
-      "dojox": "https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojox"
-      },
-      parseOnLoad: true
-      };
-    </script>
-
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/dojo/1.6.1/dojo/dojo.xd.js"></script>
-{% endcomment %} 
     <script type="text/javascript">
       /* <![CDATA[ */
       $j(document).ready(function() {
@@ -72,59 +43,31 @@ at the end of the page.
       /* ]]> */
     </script>
 
-    
     {% block xtrajs %}{% endblock %}
-
   </head>
+  
   <body>
-
     {% block body %}{% endblock %}
 
-    {% block counter %}
-    {% endblock %}
+    {% block counter %}{% endblock %}
 
-
-
-
-     <!-- Placed at the end of the document so the pages load faster -->
-
-
-{# Don't need this right now    <script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script> #}
-    <script src="/media/bootstrap/docs/assets/js/google-code-prettify/prettify.js"></script>
-    <script src="/media/bootstrap/docs/assets/js/bootstrap-transition.js"></script>
-    <script src="/media/bootstrap/docs/assets/js/bootstrap-alert.js"></script>
-    <script src="/media/bootstrap/docs/assets/js/bootstrap-modal.js"></script>
-    <script src="/media/bootstrap/docs/assets/js/bootstrap-dropdown.js"></script>
-    <script src="/media/bootstrap/docs/assets/js/bootstrap-scrollspy.js"></script>
-    <script src="/media/bootstrap/docs/assets/js/bootstrap-tab.js"></script>
-    <script src="/media/bootstrap/docs/assets/js/bootstrap-tooltip.js"></script>
-    <script src="/media/bootstrap/docs/assets/js/bootstrap-popover.js"></script>
-    <script src="/media/bootstrap/docs/assets/js/bootstrap-button.js"></script>
-    <script src="/media/bootstrap/docs/assets/js/bootstrap-collapse.js"></script>
-    <script src="/media/bootstrap/docs/assets/js/bootstrap-carousel.js"></script>
-    <script src="/media/bootstrap/docs/assets/js/bootstrap-typeahead.js"></script>
-    <script src="/media/bootstrap/docs/assets/js/application.js"></script>
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/google-code-prettify/prettify.js"></script>
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/bootstrap-transition.js"></script>
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/bootstrap-alert.js"></script>
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/bootstrap-modal.js"></script>
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/bootstrap-dropdown.js"></script>
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/bootstrap-scrollspy.js"></script>
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/bootstrap-tab.js"></script>
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/bootstrap-tooltip.js"></script>
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/bootstrap-popover.js"></script>
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/bootstrap-button.js"></script>
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/bootstrap-collapse.js"></script>
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/bootstrap-carousel.js"></script>
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/bootstrap-typeahead.js"></script>
+    <script src="https://cdn.learningu.org/bootstrap/docs/assets/js/application.js"></script>
+    
     <script src="/media/theme_editor/theme_editor.js" type="text/javascript"></script>
-
-{% comment %}    <script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
-
-    <script type="text/javascript" src="/media/scripts/yui/yahoo/yahoo-min.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/yahoo-dom-event/yahoo-dom-event.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/dom/dom-min.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/connection/connection-min.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/animation/animation-min.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/autocomplete/autocomplete-min.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/logger/logger-min.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/dragdrop/dragdrop-debug.js"></script>
-    <script type="text/javascript" src="/media/scripts/yui/container/container-min.js"></script>
-
-    <script type="text/javascript" src="/media/scripts/crashkit-javascript.js"> </script>
-
-    <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
-
-{% endcomment %}
-    <script type="text/javascript" src="/media/scripts/nav.js"></script>
-
+    <script src="/media/scripts/nav.js" type="text/javascript"></script>
   </body>
-
 </html>
