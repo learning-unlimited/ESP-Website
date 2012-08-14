@@ -1,14 +1,11 @@
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, main_call, meets_deadline
 from esp.web.util        import render_to_response
-from esp.users.models   import ESPUser, UserBit, Record
+from esp.users.models   import ESPUser, Record
 from esp.datatree.models import GetNode
 from django import forms
 from django.db.models.query import Q
 from esp.middleware.threadlocalrequest import get_current_request
-
-#GetNode('V/Flags/Registration/Teacher/Acknowledgement')
-#GetNode('V/Deadline/Registration/Teacher/Acknowledgement')
 
 def teacheracknowledgementform_factory(prog):
     name = "TeacherAcknowledgementForm"
@@ -26,14 +23,6 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             "module_type": "teach",
             "required": False,
         }
-    
-    @property
-    def flags_verb(self): 
-        return GetNode('V/Flags/Registration/Teacher/Acknowledgement')
-    
-    @property
-    def deadline_verb(self):
-        return GetNode('V/Deadline/Registration/Teacher/Acknowledgement')
     
     def isCompleted(self):
         return Record.objects.filter(user=get_current_request().user,
@@ -65,11 +54,11 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         from datetime import datetime
         qo = Q(record__program=self.program, record__event="teacheracknowledgement")
         if QObject is True:
-            return {'acknowledgement': self.getQForUser(qf)}
+            return {'acknowledgement': self.getQForUser(qo)}
         
-        teacher_list = ESPUser.objects.filter(qf).distinct()
+        teacher_list = ESPUser.objects.filter(qo).distinct()
         
-        return {'acknowledgement': teacher_list }#[t['user'] for t in teacher_list]}
+        return {'acknowledgement': teacher_list }
 
     def teacherDesc(self):
         return {'acknowledgement': """Teachers who have submitted the acknowledgement for the program."""}    

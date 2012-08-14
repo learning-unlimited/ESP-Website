@@ -1072,7 +1072,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.waitlist_rt, created = RegistrationType.objects.get_or_create(name='Waitlist/1')
 
         # Add some priorities and interesteds for the lottery
-        es = Event.objects.filter(anchor=self.program.anchor)
+        es = Event.objects.filter(program=self.program)
         for student in self.students:
             # Give the student a starting grade
             startGrade = int(random.random() * 6) + 7

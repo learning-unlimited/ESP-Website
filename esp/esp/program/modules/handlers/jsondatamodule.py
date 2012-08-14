@@ -197,7 +197,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                     continue
                 teacher_dict[t.id] = True
                 # Build up teacher availability
-                availabilities = UserAvailability.objects.filter(user__in=s.parent_class.get_teachers()).filter(QTree(event__anchor__below = prog.anchor)).values('user_id', 'event_id')
+                availabilities = UserAvailability.objects.filter(user__in=s.parent_class.get_teachers()).filter(event__program = prog).values('user_id', 'event_id')
                 avail_for_user = defaultdict(list)
                 for avail in availabilities:
                     avail_for_user[avail['user_id']].append(avail['event_id'])

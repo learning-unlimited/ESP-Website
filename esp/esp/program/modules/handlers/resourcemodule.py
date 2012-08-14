@@ -240,7 +240,7 @@ class ResourceModule(ProgramModuleObj):
                 
                 if data['command'] == 'reallyremove':
                     #   delete this resource for all time blocks within the program
-                    rl = Resource.objects.get(id=data['id']).identical_resources().filter(event__anchor=self.program_anchor_cached())
+                    rl = Resource.objects.get(id=data['id']).identical_resources().filter(event__program=self.program)
                     for r in rl:
                         r.delete()
                     

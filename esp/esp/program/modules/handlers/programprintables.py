@@ -907,7 +907,7 @@ Volunteer schedule for %s:
             if parent_program_students.has_key('classreg'):
                 parent_program_students_classreg = parent_program_students['classreg']
         
-        all_events = Event.objects.filter(anchor=prog.anchor).order_by('start')
+        all_events = Event.objects.filter(program=prog).order_by('start')
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
@@ -932,7 +932,7 @@ Volunteer schedule for %s:
 
             #   Insert entries for the compulsory timeblocks into the schedule
             min_index = 0
-            times_compulsory = Event.objects.filter(anchor=prog.anchor, event_type__description='Compulsory').order_by('start')
+            times_compulsory = Event.objects.filter(progam=prog, event_type__description='Compulsory').order_by('start')
             for t in times_compulsory:
                 i = min_index
                 while i < len(classes):

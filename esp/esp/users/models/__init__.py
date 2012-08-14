@@ -448,7 +448,7 @@ class ESPUser(User, AnonymousUser):
             can teach for a particular program. """
         from esp.cal.models import Event
 
-        valid_events = Event.objects.filter(useravailability__user=self, anchor=program.anchor).order_by('start')
+        valid_events = Event.objects.filter(useravailability__user=self, program=program).order_by('start')
 
         if not ignore_classes:
             #   Subtract out the times that they are already teaching.
@@ -467,17 +467,14 @@ class ESPUser(User, AnonymousUser):
     # even though that shouldn't change often
     getAvailableTimes.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'program': sec.parent_program})
     getAvailableTimes.depend_on_row(lambda:UserAvailability, lambda ua:
-                                        # FIXME: What if resource.event.anchor somehow isn't a program?
-                                        # Probably want a helper method return a special "nothing" object (XXX: NOT None)
-                                        # and have key_sets discarded if they contain it
-                                        {'program': Program.objects.get(anchor=ua.event.anchor),
+                                        {'program': ua.event.program,
                                             'self': ua.user})
     # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurence...)
     # though Event shouldn't change much
 
     def clearAvailableTimes(self, program):
         """ Clear this teacher's availability for a program """
-        self.useravailability_set.filter(QTree(event__anchor__below=program.anchor)).delete()
+        self.useravailability_set.filter(event__program=program).delete()
 
     def addAvailableTime(self, program, timeslot):
         from esp.resources.models import Resource, ResourceType

@@ -655,7 +655,7 @@ class Program(models.Model, CustomFormsLinkModel):
             are grabbed.  The default excludes 'compulsory' events, which are
             not intended to be used for classes (they're for lunch, photos, etc.)
         """
-        return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).select_related('event_type').order_by('start')
+        return Event.objects.filter(program=self).exclude(event_type__description__in=exclude_types).select_related('event_type').order_by('start')
 
     #   In situations where you just want a list of all time slots in the program,
     #   that can be cached.
@@ -725,7 +725,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getResources(self):
         from esp.resources.models import Resource
-        return Resource.objects.filter(event__anchor=self.anchor)
+        return Resource.objects.filter(event__program=self)
     
     def getFloatingResources(self, timeslot=None, queryset=False):
         from esp.resources.models import ResourceType
