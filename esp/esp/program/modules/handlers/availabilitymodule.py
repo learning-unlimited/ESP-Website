@@ -108,7 +108,7 @@ class AvailabilityModule(ProgramModuleObj):
     def teachers(self, QObject = False):
         """ Returns a list of teachers who have indicated at least one segment of teaching availability for this program. """
         
-        qf = Q(useravailability__event__anchor=self.program_anchor_cached(), useravailability__role=self.teacher_role_node)
+        qf = Q(useravailability__event__program=self.program, useravailability__role=self.teacher_role_node)
         if QObject is True:
             return {'availability': self.getQForUser(qf)}
         

@@ -3,63 +3,39 @@ import datetime
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
-
+from esp.program.models import Program
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Adding model 'EventType'
-        db.create_table('cal_eventtype', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('description', self.gf('django.db.models.fields.TextField')()),
-        ))
-        db.send_create_signal('cal', ['EventType'])
+        # Adding field 'Event.name'
+        db.add_column('cal_event', 'name', self.gf('django.db.models.fields.CharField')(default='', max_length=80), keep_default=False)
 
-        # Adding model 'Series'
-        db.create_table('cal_series', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('description', self.gf('django.db.models.fields.TextField')()),
-            ('target', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'])),
-        ))
-        db.send_create_signal('cal', ['Series'])
+        # Adding field 'Event.program'
+        db.add_column('cal_event', 'program', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['program.Program'], null=True, blank=True), keep_default=False)
 
-        # Adding model 'Event'
-        db.create_table('cal_event', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('anchor', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'])),
-            ('start', self.gf('django.db.models.fields.DateTimeField')()),
-            ('end', self.gf('django.db.models.fields.DateTimeField')()),
-            ('short_description', self.gf('django.db.models.fields.TextField')()),
-            ('description', self.gf('django.db.models.fields.TextField')()),
-            ('event_type', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cal.EventType'])),
-            ('priority', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
-        ))
-        db.send_create_signal('cal', ['Event'])
+        for e in orm.Event.objects.all():
+            p = None
+            node = e.anchor
+            while node != None:
+                try:
+                    p = orm["program.Program"].objects.get(anchor=node)
+                    break
+                except:
+                    node=node.parent
+            e.program = p
+            if p is None:
+                e.name=e.anchor.uri
+            else:
+                e.name="".join(e.anchor.uri.split(p.anchor.uri+"/",1))
+                #the part of the uri after the program
 
-        # Adding model 'EmailReminder'
-        db.create_table('cal_emailreminder', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('event', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cal.Event'])),
-            ('email', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dbmail.MessageRequest'])),
-            ('date_to_send', self.gf('django.db.models.fields.DateTimeField')()),
-            ('sent', self.gf('django.db.models.fields.BooleanField')(default=True)),
-        ))
-        db.send_create_signal('cal', ['EmailReminder'])
+        # Deleting field 'Event.event_type'
+        db.delete_column('cal_event', 'anchor_id')
 
     def backwards(self, orm):
-        
-        # Deleting model 'EventType'
-        db.delete_table('cal_eventtype')
-
-        # Deleting model 'Series'
-        db.delete_table('cal_series')
-
-        # Deleting model 'Event'
-        db.delete_table('cal_event')
-
-        # Deleting model 'EmailReminder'
-        db.delete_table('cal_emailreminder')
+        raise RuntimeError("Cannot undelete column anchor_id")
 
     models = {
         'auth.group': {
@@ -104,9 +80,10 @@ class Migration(SchemaMigration):
             'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
             'description': ('django.db.models.fields.TextField', [], {}),
             'end': ('django.db.models.fields.DateTimeField', [], {}),
-            'event_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['cal.EventType']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
             'priority': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']"}),
             'short_description': ('django.db.models.fields.TextField', [], {}),
             'start': ('django.db.models.fields.DateTimeField', [], {})
         },
@@ -154,6 +131,38 @@ class Migration(SchemaMigration):
             'sender': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'special_headers': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'subject': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'})
+        },
+        'program.classcategories': {
+            'Meta': {'object_name': 'ClassCategories'},
+            'category': ('django.db.models.fields.TextField', [], {}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'seq': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'symbol': ('django.db.models.fields.CharField', [], {'default': "'?'", 'max_length': '1'})
+        },
+        'program.program': {
+            'Meta': {'object_name': 'Program'},
+            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']", 'unique': 'True'}),
+            'class_categories': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ClassCategories']", 'symmetrical': 'False'}),
+            'director_email': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
+            'grade_max': ('django.db.models.fields.IntegerField', [], {}),
+            'grade_min': ('django.db.models.fields.IntegerField', [], {}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
+            'program_allow_waitlist': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'program_modules': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ProgramModule']", 'symmetrical': 'False'}),
+            'program_size_max': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
+            'url': ('django.db.models.fields.CharField', [], {'max_length': '80'})
+        },
+        'program.programmodule': {
+            'Meta': {'object_name': 'ProgramModule'},
+            'admin_title': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
+            'handler': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'inline_template': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True', 'blank': 'True'}),
+            'link_title': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True', 'blank': 'True'}),
+            'module_type': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
+            'required': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'seq': ('django.db.models.fields.IntegerField', [], {})
         },
         'users.espuser': {
             'Meta': {'object_name': 'ESPUser', 'db_table': "'auth_user'", '_ormbases': ['auth.User'], 'proxy': 'True'}

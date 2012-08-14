@@ -41,9 +41,9 @@ admin_site.register(EventType)
 admin_site.register(Series)
 
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'short_description', 'event_type')
+    list_display = ('id', 'title', 'short_description')
     list_filter = ('start', 'end')
-    pass
+
 admin_site.register(Event, EventAdmin)
 
 admin_site.register(EmailReminder)

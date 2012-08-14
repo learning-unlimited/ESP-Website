@@ -90,7 +90,7 @@ class EquipmentForm(forms.Form):
         self.fields['resource_type'].initial = resource.res_type.name
         
     def save_equipment(self, program):
-        initial_resources = list(Resource.objects.filter(name=self.cleaned_data['name'], event__anchor=program.anchor))
+        initial_resources = list(Resource.objects.filter(name=self.cleaned_data['name'], event__program=program))
         new_timeslots = [Event.objects.get(id=int(id_str)) for id_str in self.cleaned_data['times_available']]
         new_restype = ResourceType.objects.get(id=int(self.cleaned_data['resource_type']))
         
