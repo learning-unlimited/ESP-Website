@@ -189,7 +189,6 @@ class ClassManager(ProcedureManager):
             classes = classes.filter(sections__meeting_times=ts)
         
         select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration", "program_classsection" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND "program_classsection"."parent_class_id" = "program_class"."id" AND "program_studentregistration"."start_date" <= %s AND "program_studentregistration"."end_date" >= %s)'),
-                             #('teacher_ids', 'SELECT list(DISTINCT "users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
                              ('teacher_ids', 'SELECT list(DISTINCT espuser_id) FROM program_class_teachers Where program_class_teachers.classsubject_id=program_class.id'),
                              ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'),
                              ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')'),
@@ -287,8 +286,6 @@ class ClassManager(ProcedureManager):
     catalog_cached.depend_on_model(lambda: ClassSection)
     catalog_cached.depend_on_model(lambda: QSDMedia)
     catalog_cached.depend_on_model(lambda: Tag)
-    catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
-                                 lambda bit: bit.applies_to_verb('V/Flags/Registration/Teacher'))
     #catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
     #                             lambda bit: bit.applies_to_verb('V/Flags/Registration/Enrolled')) # This will expire a *lot*, and the value that it saves can be gotten from cache (with effort) instead of from SQL.  Should go do that.
     catalog_cached.depend_on_row(lambda: QuasiStaticData, lambda page: {},
@@ -318,20 +315,21 @@ class ClassSection(models.Model):
         sec_index = ''.join(id_[1:])
         id_ = id_[0]
         
-        query_set = cls.objects.filter(parent_class__anchor__name__istartswith=id_.split('s')[0])
+        query_set = cls.objects.filter(parent_class__category__symbol=id_[0],
+                                       parent_class__id__startswith=id_[1:])
 
         if len(clsname) > 1:
             title  = ':'.join(clsname[1:])
             if len(title.strip()) > 0:
-                query_set = query_set.filter(parent_class__anchor__friendly_name__istartswith = title.strip())
+                query_set = query_set.filter(parent_class__title__istartswith = title.strip())
 
-        values_set = query_set.order_by('anchor__name').select_related()#.values('anchor__name', 'parent_class__anchor__friendly_name', 'id')
+        values_set = query_set.order_by('parent_class__category__symbol','id').select_related()#.values('anchor__name', 'parent_class__anchor__friendly_name', 'id')
         values = []
         for v in values_set:
             index = str(v.index())
             if (not sec_index) or (sec_index == index):
-                values.append({'parent_class__anchor__name': v.parent_class.anchor.name,
-                               'parent_class__anchor__friendly_name': v.parent_class.anchor.friendly_name,
+                values.append({'parent_class__anchor__name': v.parent_class.emailcode(),
+                               'parent_class__anchor__friendly_name': v.parent_class.title,
                                'secnum': index,
                                'id': str(v.id)})
 
@@ -948,16 +946,6 @@ class ClassSection(models.Model):
             return "Some of the teachers (could not determine which) are unavailable at this time."
         return False
 
-    def students_dict_old(self):
-        verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.get_uri())
-        result = defaultdict(list)
-        userbits = UserBit.objects.filter(QTree(verb__below = verb_base), qsc=self.anchor).filter(enddate__gte=datetime.datetime.now()).distinct()
-        for u in userbits:
-            bit_str = u.verb.get_uri()[uri_start:]
-            result[bit_str].append(ESPUser(u.user))
-        return PropertyDict(result)
-
     #   If the values returned by this function are ever needed in QuerySet form,
     #   something will need to be changed.
     @cache_function
@@ -1165,7 +1153,7 @@ class ClassSection(models.Model):
         return StudentRegistration.objects.filter(section=self, user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
     
     def getRegVerbs(self, user, allowed_verbs=False):
-        """ Get the list of verbs that a student has within this class's anchor. """
+        """ Get the list of reg-types that a student has on this class. """
         if not allowed_verbs:
             return [v.relationship for v in self.getRegistrations(user).distinct()]
         else:
@@ -1282,7 +1270,7 @@ class ClassSection(models.Model):
     class Meta:
         db_table = 'program_classsection'
         app_label = 'program'
-        ordering = ['anchor__name']
+        ordering = ['id']
 
 class ClassSubject(models.Model, CustomFormsLinkModel):
     """ An ESP course.  The course includes one or more ClassSections which may be linked by ClassImplications. """
@@ -1599,17 +1587,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def cache_time(self):
         return 99999
     
-    #@cache_function
-    #def title(self):
-    #    return self.anchor.friendly_name
-        
-    #def title_selector(node):
-    #    if node.classsubject_set.all().count() == 1:
-    #        return {'self': node.classsubject_set.all()[0]}
-    #    return {}
-    #title.depend_on_row(lambda: DataTree, title_selector)
-    #title.admin_order_field = 'anchor__friendly_name'	# Admin Panel Display Configuration
-
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
         return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
@@ -1729,23 +1706,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         return True
     
-    def makeAdmin(self, user, endtime = None):
-        v = GetNode('V/Administer/Edit')
-
-        ub, created = UserBit.objects.get_or_create(user = user,
-                                qsc = self.anchor,
-                                verb = v)
-
-
-        return True        
-
-    def removeAdmin(self, user):
-        v = GetNode('V/Administer/Edit')
-        UserBit.objects.filter(user = user,
-                               qsc = self.anchor,
-                               verb = v).delete()
-        return True
-
     def getResourceRequests(self): # get all resource requests associated with this ClassSubject
         from esp.resources.models import ResourceRequest
         return ResourceRequest.objects.filter(target__parent_class=self)
@@ -1877,14 +1837,8 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     docs_summary.depend_on_model(lambda: QSDMedia)
 
     def getUrlBase(self):
-        """ gets the base url of this class """
-        return self.url() # This makes looking up subprograms by name work; I've left it so that it can be undone without too much effort
-        tmpnode = self.anchor
-        urllist = []
-        while tmpnode.name != 'Programs':
-            urllist.insert(0,tmpnode.name)
-            tmpnode = tmpnode.parent
-        return "/".join(urllist)
+        """ Gets the base url of this class """
+        return self.url()
 
     def getRegistrations(self, user):
         from esp.program.models import StudentRegistration

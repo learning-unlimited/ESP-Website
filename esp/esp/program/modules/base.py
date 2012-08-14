@@ -322,8 +322,8 @@ class ProgramModuleObj(models.Model):
         canView = get_current_request().user.isOnsite(self.program)
 
         if not canView:
-            test_node = GetNode('V/Deadline/Registration/'+{'learn':'Student', 'teach':'Teacher'}[self.module.module_type]+extension)
-            canView = UserBit.UserHasPerms(get_current_request().user, self.program.anchor_id, test_node)
+            deadline = {'learn':'Student', 'teach':'Teacher'}[self.module.module_type]+extension
+            canView = Permission.user_has_perms(get_current_request().user, deadline, program=self.program)
 
         return canView
 

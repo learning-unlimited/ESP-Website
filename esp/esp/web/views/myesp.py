@@ -249,9 +249,8 @@ def myesp_onsite(request, module):
 	user = ESPUser(request.user)
 	if not user.isOnsite():
 		raise ESPError(False), 'You are not a valid on-site user, please go away.'
-	verb = GetNode('V/Registration/OnSite')
 	
-	progs = UserBit.find_by_anchor_perms(Program, user = user, verb = verb)
+	progs = Permission.program_by_perms(user,"Onsite")
 
         # Order them decreasing by id
         # - Currently reverse the list in Python, otherwise fbap's cache is ignored

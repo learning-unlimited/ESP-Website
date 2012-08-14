@@ -45,7 +45,7 @@ class Attendance(models.Model):
         ## At least order by ID, since we're most likely to see data from recent programs
 
         prog_name_lower = prog_name.lower()
-        for p in Program.objects.all().select_related('anchor', 'anchor__parent').order_by('-id'):
+        for p in Program.objects.all().select_related('name').order_by('-id'):
             if prog_name_lower in p.niceName().lower():
                 return p
 

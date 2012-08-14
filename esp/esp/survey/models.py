@@ -108,8 +108,7 @@ class Survey(models.Model):
         #   If there is a program for this survey, select the appropriate number
         #   of participants based on the category.
         prog = self.program
-        if progs.count() == 1:
-            prog = progs[0]
+        if progs:
             if self.category == 'teach':
                 return prog.teachers()['class_approved'].count()
             elif self.category == 'learn':

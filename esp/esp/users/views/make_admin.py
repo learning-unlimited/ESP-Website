@@ -5,7 +5,6 @@ from django.db.utils import IntegrityError
 from esp.users.models import admin_required
 from esp.users.forms.make_admin import MakeAdminForm
 from esp.web.util.main import render_to_response
-from esp.users.models import UserBit
 from esp.datatree.models import *
 
 @admin_required
@@ -26,8 +25,6 @@ def make_user_admin(target_user):
     setattr(target_user, 'is_staff', True)
     setattr(target_user, 'is_superuser', True)
 
-    # Set the userbits
-    target_user.userbit_set.add(UserBit(verb = GetNode('V/Administer'), qsc = GetNode('Q')))
     target_user.makeRole("Administrator")
 
     #   Clear the UserBit cache for this user
