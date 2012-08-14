@@ -39,7 +39,7 @@ from django.db.models import Count
 from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
 from esp.datatree.models import *
-from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types
+from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types, Record
 from datetime import datetime, timedelta, date
 from django.core.cache import cache
 from django.db.models import Q
@@ -315,10 +315,6 @@ class Program(models.Model, CustomFormsLinkModel):
         
         return retVal
 
-    #def url(self):
-    #    str_array = self.anchor.tree_encode()
-    #    return '/'.join(str_array[-2:])
-    
     def __unicode__(self):
         return self.niceName()
 
@@ -329,7 +325,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return self.name
 
     def niceSubName(self):
-        return self.name#anchor.name.replace('_', ' ')
+        return self.name
 
     def getUrlBase(self):
         """ gets the base url of this class """
@@ -404,9 +400,6 @@ class Program(models.Model, CustomFormsLinkModel):
     
         counts = {}
         checked_in_ids = self.students()['attended'].values_list('id', flat=True)
-        qsc_map = {}
-        for sec in self.sections().values('id', 'anchor'):
-            qsc_map[sec['anchor']] = sec['id']
     
         reg_type = RegistrationType.get_map()['Enrolled']
 
@@ -541,7 +534,7 @@ class Program(models.Model, CustomFormsLinkModel):
         elif students_dict.has_key('satprepinfo'):
             students_count = ESPUser.objects.filter(students_dict['satprepinfo']).distinct().count()
         else:
-            students_count = ESPUser.objects.filter(userbit__qsc=self.anchor['Confirmation']).distinct().count()
+            students_count = ESPUser.objects.filter(record__event="reg_confirmed",record__program=self).distinct().count()
 
         isfull = ( students_count >= self.program_size_max )
 
@@ -549,10 +542,7 @@ class Program(models.Model, CustomFormsLinkModel):
     isFull.depend_on_cache(lambda: ClassSection.num_students, lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
     isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
     isFull.depend_on_row(lambda: SATPrepRegInfo, lambda reginfo: {'self': reginfo.program})
-    isFull.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.qsc.name == 'Confirmation')
-        
-    def classes_node(self):
-        return DataTree.objects.get(parent = self.anchor, name = 'Classes')
+    isFull.depend_on_row(lambda: Record, lambda rec: {}, lambda rec: rec.event_type == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
 
     @cache_function
     def getScheduleConstraints(self):
@@ -575,16 +565,8 @@ class Program(models.Model, CustomFormsLinkModel):
         ResourceAssignment.objects.filter(target__parent_class__parent_program=self, lock_level__lt=lock_level).update(lock_level=lock_level)
 
     def isConfirmed(self, espuser):
-        v = GetNode('V/Flags/Public')
-        userbits = UserBit.objects.filter(verb = v, user = espuser,
-                         qsc = self.anchor.tree_create(['Confirmation']))
-
-        userbits = userbits.filter(enddate__gte=datetime.now())
-
-        if len(userbits) < 1:
-            return False
-        
-        return True
+        return Record.objects.filter(event="reg_confirmed",user=espuser,
+                                     program=self).exists()
     
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
     "Classrooms."  So, if you try to call the old functions (which have no point anymore), then 
@@ -802,12 +784,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getSurveys(self):
         from esp.survey.models import Survey
-        return Survey.objects.filter(anchor=self.anchor)
-    
-    def getSubprograms(self):
-        if not self.anchor.has_key('Subprograms'):
-            return Program.objects.filter(id=-1)
-        return Program.objects.filter(anchor__parent__in=self.anchor['Subprograms'].children())
+        return Survey.objects.filter(program=self)
     
     @cache_function
     def getParentProgram(self):
@@ -1016,11 +993,6 @@ class Program(models.Model, CustomFormsLinkModel):
         else: 
             return 1
     
-    @staticmethod
-    def find_by_perms(user, verb):
-        """ Fetch a list of relevant programs for a given user and verb """
-        return UserBit.find_by_anchor_perms(Program,user,verb)
-
     @cache_function
     def by_prog_inst(cls, program, instance):
         prog_inst = Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
@@ -1221,15 +1193,13 @@ class RegistrationProfile(models.Model):
 
     def confirmStudentReg(self, user):
         """ Confirm the specified user's registration in the program """
-        bits = UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now())
-        if bits.count() == 0:
-            bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
+        records = Record.objects.filter(user=self.user, event="reg_confirmed")
+        if records.count() == 0:
+            record = Record.objects.create(user=self.user, event="reg_confirmed", program=self.program)
 
     def cancelStudentRegConfirmation(self, user):
         """ Cancel the registration confirmation for the specified student """
         raise ESPError(), "Error: You can't cancel a registration confirmation!  Confirmations are final!"
-        #for bit in UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc__parent=self.anchor, qsc__name="Confirmation").filter(enddate__gte=datetime.now()):
-        #    bit.expire()
         
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """

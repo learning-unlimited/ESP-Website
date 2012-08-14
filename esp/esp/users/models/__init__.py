@@ -655,9 +655,6 @@ class ESPUser(User, AnonymousUser):
     def isEnrolledInClass(self, clsObj, request=None):
         return clsObj.students().filter(id=self.id).exists()
 
-    def canAdminister(self, nodeObj):
-        return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
-
     def canRegToFullProgram(self, nodeObj):
         return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Flags/RegAllowed/ProgramFull'))
 
@@ -1960,7 +1957,6 @@ class Record(models.Model):
     #well defined set of possibilities, we'll use a set of choices
     #if you want to use this model for an additional thing, 
     #add it as a choice
-    #how to organize ie program modules and stuff?
     EVENT_CHOICES=(
         ("student_survey", "Completed student survey"),
         ("teacher_survey", "Completed teacher survey"),
@@ -2029,6 +2025,7 @@ class Permission(models.Model):
                 ("Teacher", "Basic teacher access"),
                 ("Teacher/All", "All teacher deadlines"),
                 ("Teacher/Acknowledgement", "Teacher acknowledgement"),
+                ("Teacher/AppReview", "Review students' apps"),
                 ("Teacher/Availability", "Set availability"),
                 ("Teacher/Catalog",""),
                 ("Teacher/Classes", ""),
@@ -2042,7 +2039,6 @@ class Permission(models.Model):
                 ("Teacher/Survey","Teacher Survey"),
                 ("Teacher/Profile","Set profile info"),
                 ("Teacher/Survey", "Access to survey"),
-                ("Teacher/AppReview","Review applications"),
                 )
          ),
     )
@@ -2085,11 +2081,7 @@ class Permission(models.Model):
 
         quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
         initial_qset = self.objects.filter(quser).filter(permission_type__in=perms, program=program)
-        if when is None:
-            when = datetime.now()
-        qstart = Q(startdate=None) | Q(startdate__lte=when)
-        qend = Q(enddate=None) | Q(enddate__gte=when)
-        return initial_qset.filter(qstart & qend).exists()
+        return initial_qset.filter(self.is_open_qobject()).exists()
     
     #list of all the permission types which are deadlines
     deadline_types = [x for x in flatten(PERMISSION_CHOICES) if x.startswith("Teacher") or x.startswith("Student")]
@@ -2103,6 +2095,14 @@ class Permission(models.Model):
             when = datetime.now()
         return (self.startdate is None or self.startdate < when) and \
                (self.enddate is None or self.enddate > when)
+
+    @staticmethod
+    def is_open_qobject(when=None):
+        if when is None:
+            when = datetime.now()
+        qstart = Q(startdate=None) | Q(startdate__lte=when)
+        qend = Q(enddate=None) | Q(enddate__gte=when)
+        return qstart & qend
 
     def recursive(self):
         return bool(self.implications.get(self.permission_type, None))
@@ -2145,6 +2145,19 @@ class Permission(models.Model):
         for x in squash(self.PERMISSION_CHOICES):
             if x[0] == self.permission_type: return x[1]
         
+    @classmethod
+    def program_by_perm(cls,user,perm):
+        """Find all program that user has perm"""
+        implies = [perm]
+        implies+=[x for x,y in cls.implications.items() if perm in y]
+        now=datetime.now()
+        qstart = Q(permission__startdate=None) | Q(permission__startdate__lte=now)
+        qend = Q(permission__enddate=None) | Q(permission__enddate__gte=now)
+
+        return Program.objects.filter(qstart & qend,
+                                      permission__user=user,
+                                      permission__permission_type__in=implies)
+
 
 def install():
     """

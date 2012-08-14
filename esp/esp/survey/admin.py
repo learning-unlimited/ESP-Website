@@ -53,7 +53,7 @@ def copy_surveys(modeladmin, request, queryset):
 
         for q in questions:
             # Create a new question for the new survey
-            newq, created = Question.objects.get_or_create(survey=newsurvey, name=q.name, question_type=q.question_type, _param_values=q._param_values, target=q.target, seq=q.seq)
+            newq, created = Question.objects.get_or_create(survey=newsurvey, name=q.name, question_type=q.question_type, _param_values=q._param_values, per_class=q.per_class, seq=q.seq)
             newq.save()
 
         newsurvey.save()

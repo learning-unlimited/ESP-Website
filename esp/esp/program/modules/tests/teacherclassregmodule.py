@@ -64,7 +64,6 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.free_teacher2.set_password('password')
         self.free_teacher2.save()
         # Make the primary teacher an admin of the class
-        self.cls.makeAdmin(self.teacher)
 
         # Get and remember the instance of TeacherClassRegModule
         pm = ProgramModule.objects.get(handler='TeacherClassRegModule')

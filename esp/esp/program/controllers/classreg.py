@@ -183,7 +183,6 @@ class ClassCreationController(object):
         self.add_teacher_to_program_mailinglist(user)
 
         cls.makeTeacher(user)
-        cls.makeAdmin(user, self.crmi.teacher_class_noedit)
         cls.subscribe(user)
         self.program.teacherSubscribe(user)
 
