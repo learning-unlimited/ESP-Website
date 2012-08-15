@@ -1,0 +1,129 @@
+{% extends "elements/html" %}
+
+{% block title %}{% endblock %}
+
+{% block stylesheets %}
+{{block.super}}
+<style rel="text/css">
+  .tab-pane a{
+  margin-left:20px;
+  margin-right:20px;
+  }
+</style>
+{% endblock %}
+
+{% block javascript %}
+{{block.super}}
+{# add custom scripts here #}
+{% endblock %}
+
+{% block body %}
+
+{% comment %}
+{% endcomment %}
+
+{% block navbar %}
+{% include "navbar.html" %}
+{% endblock navbar %}
+
+{% block main %}
+<div class="container">
+  <div class="row">
+
+    {% block sidebar %}
+    <div id="sidebar">
+      <ul class="nav nav-list sidebar">
+
+	<li><img src="http://www.kilentra.net/lu/generic_logo_short.png"/></li>
+	<li> <img src="http://www.kilentra.net/lu/lu_logo_mini.png"/ style="margin-right:10px;"><span style="font-size:0.8em;">Supported by <a href="http://www.learningu.org/">Learning Unlimited</a></span></li>
+	{% include "sidebar/me.html" %}
+	{% include "sidebar/admin.html" %}
+	{% include "sidebar/programs.html" %}
+      </ul>
+    </div>
+    {% endblock sidebar %}
+
+    <div id="main" class="span12">
+      {% block content %}
+      <h2>TEACH ANYTHING. LEARN ANYTHING.</h2>
+
+      We are a student-run organization connecting enthusiastic teachers with curious students.
+      <br /><br />
+      <div class="tabbable">
+	<ul class="nav nav-tabs">
+	  <li class="active"><a href="#teach" data-toggle="tab">Teach</a></li>
+	  <li><a href="#learn" data-toggle="tab">Learn</a></li>
+	  <li><a href="#volunteer" data-toggle="tab">Volunteer</a></li>
+	</ul>
+	<div class="tab-content">
+	  <div id="teach" class="tab-pane active">
+	    <a href="#">About Splash</a>
+	    <a href="#">Eligibility and Training</a>
+	    <a href="#">Browse Previous Courses</a> 
+	    <a href="#">Browse Requested Topics</a> 
+	  </div>
+	  <div class="tab-pane" id="learn">
+	    <a href="#">About Splash</a> 
+	    <a href="#">How to Register</a> 
+	    <a href="#">Directions and Parking</a> 
+	    <a href="#">Frequently Asked Questions</a>
+	  </div>
+	  <div class="tab-pane" id="volunteer">
+	    <a href="#">Volunteer Needs</a>
+	    <a href="#">About the Administrators</a>
+	  </div>
+	</div>
+
+	<h1>Choose Your Adventure</h1>
+	<p>
+	  For one Saturday in April, high school students from all over the Chicago area and beyond are welcomed to the Northwestern University campus to take classes from NU students and community members about anything. Thats right, anything. Whether youre interested in science, the humanities, or just random things you may never have heard about, weve got a class for you! 
+	</p>
+
+	<div class="row-fluid" style="margin-top:30px;">
+	  <div class="span3">
+	    <img src="http://www.kilentra.net/lu/example_class.jpg" />
+	  </div>
+	  <div class="span9">
+	    Teacher Vincent Lee advises a student on multispectral image processing during a 3-hour Photoshop course at MIT's Splash 2009.  <a href="#">Search/browse a complete list of courses here.</a>
+	  </div>
+	</div>
+	
+	<h2>The teachers</h2>
+	<p>
+	  Most of your teachers will be undergraduate and graduate students from Stanford University, including:
+	  <ul>
+            <li><a href="#">Michael Shaw</a>, Physics graduate student</li>
+            <li><a href="#">Catherine Lu</a>, Chemistry undergraduate student</li>
+            <li><a href="#">Pallav Agrawal</a>, Civil/Environmental Engineering graduate student</li>
+	  </ul>
+	</p>
+	
+	<h2>The subjects</h2>
+	<p>
+	  Teachers design their own courses with the aid of student volunteers and training materials provided by <a href="http://www.learningu.org">Learning Unlimited</a>.
+	</p>
+	
+	<h3>The logistics</h3>
+	<p>
+	  The next Splash is on Saturday and Sunday, November 19-20.  Anyone enrolled in 7th through 12th grade may attend.  Registration is not open yet, but you may create an account to subscribe to e-mail or text message notifications.
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock content%}
+{% endblock main %}
+
+<div class="container">
+  <footer style="margin-bottom:15px; text-align:center;">
+    <hr />
+    {% block footer %}
+    Copyright 2011, Splash at Your University - <a href="#">E-mail us</a> - <a href="#">More contact information</a>
+    {% endblock footer %}
+  </footer>
+</div>
+
+{% endblock body %}
+
+
+
+
