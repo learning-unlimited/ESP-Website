@@ -105,7 +105,7 @@ class FakeState(object):
 class UserAvailability(models.Model):
     user = AjaxForeignKey('ESPUser')
     event = models.ForeignKey(Event)
-    role = AjaxForeignKey(DataTree)
+    role = models.ForeignKey('auth.Group')
     priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
 
     class Meta:
