@@ -45,8 +45,8 @@ $j(document).ready(function(){
 	$j('#palette_div div.sp-replacer.sp-light:last').remove();
 	$j('#palette_div input:last').remove()
     });    
-    $('[rel=popover]').each(function(){
-	$(this).popover({placement:'left', animation:false}); //interesting bug: $ calls jquery 1.7.1 but $j calls the older version
+    $j('[rel=popover]').each(function(){
+	$j(this).popover({placement:'left', animation:false});
     });
 });
 
