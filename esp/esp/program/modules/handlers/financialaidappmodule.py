@@ -42,7 +42,7 @@ from django.db.models.query       import Q
 from django.template.loader import get_template
 from esp.program.models  import FinancialAidRequest
 from esp.tagdict.models import Tag
-from esp.settings import DEFAULT_HOST, SERVER_EMAIL
+from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
 from django              import forms
 
@@ -75,9 +75,9 @@ class FinancialAidAppModule(ProgramModuleObj):
         
 
     def studentDesc(self):
-        return {'studentfinaid_complete': """Students who have completed the student financial aid applications.""",
-                'studentfinaid':          """Students who have started the student financial aid applications.""",
-                'studentfinaid_approved': """Students who have been granted financial aid."""}
+        return {'studentfinaid_complete': """Students who have completed a financial aid application""",
+                'studentfinaid':          """Students who have started a financial aid application""",
+                'studentfinaid_approved': """Students who have been granted financial aid"""}
     
     def isCompleted(self):
         return get_current_request().user.appliedFinancialAid(self.program)
@@ -108,8 +108,7 @@ class FinancialAidAppModule(ProgramModuleObj):
         """
         from datetime import datetime
         from esp.dbmail.models import send_mail
-        from esp.settings import SITE_INFO
-        
+                
         app, created = FinancialAidRequest.objects.get_or_create(user = request.user,
                                                                 program = self.program)
 
@@ -182,9 +181,9 @@ This request can be (re)viewed at:
     str(app.household_income),
     str(app.student_prepare),
     app.extra_explaination,
-    DEFAULT_HOST, # server hostname
+    settings.DEFAULT_HOST, # server hostname
     str(app.id)), 
-                            SERVER_EMAIL,
+                            settings.SERVER_EMAIL,
                             [ prog.director_email ] )
                               
                 return self.goToCore(tl)

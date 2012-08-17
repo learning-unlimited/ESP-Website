@@ -142,8 +142,10 @@ class OnSiteRegister(ProgramModuleObj):
 
                 new_user.recoverPassword()
                 
-                return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {'student': new_user, 'retUrl': '/onsite/%s/schedule_students?extra=285&op=usersearch&userid=%s' % \
-                                                                                                   (self.program.getUrlBase(), new_user.id)})
+                return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {
+                    'student': new_user, 
+                    'retUrl': '/onsite/%s/classchange_grid?student_id=%s' % (self.program.getUrlBase(), new_user.id)
+                    })
 
         else:
             form = OnSiteRegForm()

@@ -7,7 +7,7 @@ from esp.users.models import K12School, StudentInfo
 from esp.utils.defaultclass import defaultclass
 from datetime import datetime
 from esp.program.models import RegistrationProfile
-from esp.settings import INSTITUTION_NAME
+from django.conf import settings
 import re
 import simplejson as json
 from django.contrib.localflavor.us.forms import USPhoneNumberField
@@ -213,7 +213,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     unmatched_school = forms.BooleanField(required=False)
     school = forms.CharField(max_length=128, required=False)
-    dob = forms.DateField(widget=SplitDateWidget())
+    dob = forms.DateField(widget=SplitDateWidget(min_year=datetime.now().year-20))
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
     heard_about = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HeardAboutESPChoices, HeardAboutESPChoices)))#forms.CharField(required=False)
@@ -426,7 +426,7 @@ class TeacherInfoForm(FormWithRequiredCss):
 
     graduation_year = SizedCharField(length=4, max_length=4, required=False)
     is_graduate_student = forms.BooleanField(required=False, label='Graduate student?')
-    from_here = forms.ChoiceField(choices=from_here_answers, widget = forms.RadioSelect(), label='Are you currently enrolled at %s?' % INSTITUTION_NAME)
+    from_here = forms.ChoiceField(choices=from_here_answers, widget = forms.RadioSelect(), label='Are you currently enrolled at %s?' % settings.INSTITUTION_NAME)
     school = SizedCharField(length=24, max_length=128, required=False)
     major = SizedCharField(length=30, max_length=32, required=False)
     shirt_size = forms.ChoiceField(choices=([('','')]+list(shirt_sizes)), required=False)
@@ -464,7 +464,7 @@ class TeacherInfoForm(FormWithRequiredCss):
         school = cleaned_data.get('school')
 
         if from_here == "False" and school == "":
-            msg = u'Please enter your affiliation if you are not from %s.' % INSTITUTION_NAME
+            msg = u'Please enter your affiliation if you are not from %s.' % settings.INSTITUTION_NAME
             self._errors['school'] = forms.util.ErrorList([msg])
             del cleaned_data['from_here']
             del cleaned_data['school']

@@ -40,7 +40,7 @@ from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
 from esp.datatree.models import *
 from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.core.cache import cache
 from django.db.models import Q
 from django.db.models.query import QuerySet
@@ -48,9 +48,9 @@ from django.contrib.localflavor.us.models import PhoneNumberField
 from esp.db.fields import AjaxForeignKey
 from esp.middleware import ESPError, AjaxError
 from esp.cache import cache_function
+from esp.cache.key_set import wildcard
 from esp.tagdict.models import Tag
-from esp.settings import DEFAULT_HOST
-
+from django.conf import settings
 from collections import defaultdict
 import simplejson as json
 
@@ -229,14 +229,12 @@ class ArchiveClass(models.Model):
             self.teacher_ids = '|%s|' % '|'.join([str(u.id) for u in users])
         
     def students(self):
-        from esp.users.models import ESPUser
         useridlist = [int(x) for x in self.student_ids.strip('|').split('|')]
         return ESPUser.objects.filter(id__in = useridlist)
     
     def teachers(self):
-        from esp.users.models import ESPUser
         useridlist = [int(x) for x in self.teacher_ids.strip('|').split('|')]
-        return User.objects.filter(id__in = useridlist)
+        return ESPUser.objects.filter(id__in = useridlist)
     
     @staticmethod
     def getForUser(user):
@@ -262,24 +260,20 @@ def _get_type_url(type):
         return self._type_url[type]
 
     return _really_get_type_url
-        
     
 
-    
 class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
     
     #from esp.program.models.class_ import ClassCategories
 
-	#customforms definitions
+    #customforms definitions
     form_link_name='Program'
     
     anchor = AjaxForeignKey(DataTree,unique=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField()
-    class_size_min = models.IntegerField(default=5)
-    class_size_max = models.IntegerField(default=200)
     program_size_max = models.IntegerField(null=True)
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule)
@@ -464,6 +458,20 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return clean_counts
 
+    @cache_function
+    def getListDescriptions(self):
+        desc = {}
+        modules = self.getModules()
+        desc_functions = ['studentDesc', 'teacherDesc', 'volunteerDesc']
+        for module in modules:
+            for func in desc_functions:
+                if hasattr(module, func):
+                    tmpdict = getattr(module, func)()
+                    if tmpdict is not None:
+                        desc.update(tmpdict)
+        return desc
+    getListDescriptions.depend_on_m2m(lambda: Program, 'program_modules', lambda program, module: {'self': program})
+
     def getLists(self, QObjects=False):
         from esp.users.models import ESPUser
         
@@ -478,25 +486,13 @@ class Program(models.Model, CustomFormsLinkModel):
             lists[k] = {'list': v,
                         'description':''}
 
-        desc  = {}
-        for module in learnmodules:
-            tmpdict = module.studentDesc()
-            if tmpdict is not None:
-                desc.update(tmpdict)
-        for module in teachmodules:
-            tmpdict = module.teacherDesc()
-            if tmpdict is not None:
-                desc.update(tmpdict)
-        for module in teachmodules:
-            tmpdict = module.volunteerDesc()
-            if tmpdict is not None:
-                desc.update(tmpdict)
+        desc = self.getListDescriptions()
                 
         for k, v in desc.items():
-            lists[k]['description'] = v
+            if k in lists:
+                lists[k]['description'] = v
+                
         usertypes = ['Student', 'Teacher', 'Guardian', 'Educator', 'Volunteer']
-
-        
 
         for usertype in usertypes:
             lists['all_'+usertype.lower()+'s'] = {'description':
@@ -543,17 +539,11 @@ class Program(models.Model, CustomFormsLinkModel):
         if QObject:
             return union
         else:
-            return User.objects.filter(union).distinct()    
+            return ESPUser.objects.filter(union).distinct()    
 
-    def isFull(self, use_cache=True):
+    @cache_function
+    def isFull(self):
         """ Can this program accept any more students? """
-        CACHE_KEY = "PROGRAM__ISFULL_%s" % self.id
-        CACHE_DURATION = 10
-
-        if use_cache:
-            isfull = cache.get(CACHE_KEY)
-            if isfull != None:
-                return isfull
 
         # Some programs don't have caps; this is represented with program_size_max in [ 0, None ]
         if self.program_size_max is None or self.program_size_max == 0:
@@ -566,17 +556,15 @@ class Program(models.Model, CustomFormsLinkModel):
             students_count = ESPUser.objects.filter(students_dict['satprepinfo']).distinct().count()
         else:
             students_count = ESPUser.objects.filter(userbit__qsc=self.anchor['Confirmation']).distinct().count()
-#            students_count = 0
-#            for c in self.classes():
-#                students_count += c.num_students(use_cache=True)
 
         isfull = ( students_count >= self.program_size_max )
 
-        if use_cache:
-            cache.set(CACHE_KEY, isfull, CACHE_DURATION)
-
         return isfull
-    
+    isFull.depend_on_cache(lambda: ClassSection.num_students, lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
+    isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
+    isFull.depend_on_row(lambda: SATPrepRegInfo, lambda reginfo: {'self': reginfo.program})
+    isFull.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.qsc.name == 'Confirmation')
+        
     def classes_node(self):
         return DataTree.objects.get(parent = self.anchor, name = 'Classes')
 
@@ -591,6 +579,14 @@ class Program(models.Model, CustomFormsLinkModel):
         return BooleanToken    
     getScheduleConstraints.depend_on_model(get_sc_model)
     getScheduleConstraints.depend_on_model(get_bt_model)
+
+    def lock_schedule(self, lock_level=1):
+        """ Locks all schedule assignments for the program, for convenience
+            (e.g. between scheduling some sections manually and running
+            automatic scheduling).
+        """
+        from esp.resources.models import ResourceAssignment
+        ResourceAssignment.objects.filter(target__parent_class__parent_program=self, lock_level__lt=lock_level).update(lock_level=lock_level)
 
     def isConfirmed(self, espuser):
         v = GetNode('V/Flags/Public')
@@ -669,12 +665,9 @@ class Program(models.Model, CustomFormsLinkModel):
     def classes(self):
         return ClassSubject.objects.filter(parent_program = self).order_by('id')        
 
-    def class_ids_implied(self, use_cache=True):
+    @cache_function
+    def class_ids_implied(self):
         """ Returns the class ids implied by classes in this program. Returns [-1] for none so the cache doesn't keep getting hit. """
-        cache_key = 'PROGRAM__CLASS_IDS_IMPLIED__%s' % self.id
-        retVal = cache.get(cache_key)
-        if retVal and use_cache:
-            return retVal
         retVal = set([])
         for c in self.classes():
             for imp in c.classimplication_set.all():
@@ -682,10 +675,10 @@ class Program(models.Model, CustomFormsLinkModel):
         if len(retVal) < 1:
             retVal = [-1]
         retVal = list(retVal)
-        cache.set(cache_key, retVal, 9999)
         return retVal
+    class_ids_implied.depend_on_row(lambda: ClassImplication, lambda ci: {'self': ci.cls.parent_program})
 
-    def sections(self, use_cache=True):
+    def sections(self):
         return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
 
     def getTimeSlots(self, exclude_types=['Compulsory','Volunteer']):
@@ -714,6 +707,14 @@ class Program(models.Model, CustomFormsLinkModel):
             time_sum = time_sum + (t.end - t.start)
         return time_sum
 
+    def dates(self):
+        result = []
+        for ts in self.getTimeSlotList():
+            ts_day = date(ts.start.year, ts.start.month, ts.start.day)
+            if ts_day not in result:
+                result.append(ts_day)
+        return result
+    
     def date_range(self):
         dates = self.getTimeSlots()
         d1 = min(dates).start
@@ -953,27 +954,21 @@ class Program(models.Model, CustomFormsLinkModel):
                 
         return extension
 
+    @cache_function
     def getColor(self):
         if hasattr(self, "_getColor"):
             return self._getColor
-        
-        cache_key = 'PROGRAM__COLOR_%s' % self.id
-        retVal = cache.get(cache_key)
-        
-        if not retVal:
-            mod = self.programmoduleobj_set.filter(module__admin_title='Teacher Signup Classes')
-            if mod.count() == 1:
-                modinfo = mod[0].classregmoduleinfo_set.all()
-                if modinfo.count() == 1:
-                    retVal = modinfo[0].color_code
-                    if retVal == None:
-                        retVal = -1 # store None as -1 because we read None as the absence of a cached value
-                    cache.set(cache_key, retVal, 9999)
-        if retVal == -1:
-            return None
+
+        mod = self.programmoduleobj_set.filter(module__admin_title='Teacher Signup Classes')
+        retVal = None
+        if mod.count() == 1:
+            modinfo = mod[0].classregmoduleinfo_set.all()
+            if modinfo.count() == 1:
+                retVal = modinfo[0].color_code
 
         self._getColor = retVal
         return retVal
+    getColor.depend_on_row(lambda: ClassRegModuleInfo, lambda crmi: {'self': crmi.module.program})
     
     def visibleEnrollments(self):
         """
@@ -1040,17 +1035,17 @@ class Program(models.Model, CustomFormsLinkModel):
         """ Fetch a list of relevant programs for a given user and verb """
         return UserBit.find_by_anchor_perms(Program,user,verb)
 
-    @classmethod
+    @cache_function
     def by_prog_inst(cls, program, instance):
-        CACHE_KEY = "PROGRAM__BY_PROG_INST__%s__%s" % (program, instance)
-        prog_inst = cache.get(CACHE_KEY)
-        if prog_inst:
-            return prog_inst
-        else:
-            prog_inst = Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
-            cache.add(CACHE_KEY, prog_inst, timeout=86400)
-            return prog_inst
-
+        prog_inst = Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
+        return prog_inst
+    by_prog_inst.depend_on_row(lambda: Program, lambda prog: {'program': prog})
+    def program_selector(node):
+        if node.program_set.all().count() == 1:
+            return {'program': node.program_set.all()[0]}
+        return {}
+    by_prog_inst.depend_on_row(lambda: DataTree, program_selector)
+    by_prog_inst = classmethod(by_prog_inst)
     
 class BusSchedule(models.Model):
     """ A scheduled bus journey associated with a program """
@@ -1476,7 +1471,7 @@ class FinancialAidRequest(models.Model):
 
 
         string = "%s (%s@%s) for %s (%s, %s) %s"%\
-                 (ESPUser(self.user).name(), self.user.username, DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
+                 (ESPUser(self.user).name(), self.user.username, settings.DEFAULT_HOST, self.program.niceName(), self.household_income, explanation, reducedlunch)
 
         if self.done:
             string = "Finished: [" + string + "]"
@@ -1603,7 +1598,7 @@ class BooleanExpression(models.Model):
             new_token = BooleanToken(text=token_or_value)
         elif duplicate:
             token_type = type(token_or_value)
-            print 'Adding duplicate of token %s, type %s, to %s' % (token_or_value.id, token_type.__name__, unicode(self))
+            #   print 'Adding duplicate of token %s, type %s, to %s' % (token_or_value.id, token_type.__name__, unicode(self))
             new_token = token_type()
             #   Copy over fields that don't describe relations
             for item in new_token._meta.fields:
@@ -1655,6 +1650,11 @@ class ScheduleMap:
     def add_section(self, sec):
         for t in sec.timeslot_ids():
             self.map[t].append(sec)
+            
+    def remove_section(self, sec):
+        for t in sec.timeslot_ids():
+            if sec in self.map[t]:
+                self.map[t].remove(sec)
 
     def __marinade__(self):
         import hashlib
@@ -1840,7 +1840,13 @@ class VolunteerOffer(models.Model):
 class RegistrationType(models.Model):
     #   The 'key' (not really the primary key since we may want duplicate names)
     name = models.CharField(max_length=32)
+    
+    #   A more understandable name that is displayed by default, but has no effect on behavior
+    displayName = models.CharField(max_length=32, blank=True, null=True)
+    
+    #   A more detailed description
     description = models.TextField(blank=True, null=True)
+    
     #   Purely for bookkeeping on the part of administrators 
     #   without reading the whole description
     category = models.CharField(max_length=32)
@@ -1873,7 +1879,10 @@ class RegistrationType(models.Model):
     get_map = staticmethod(get_map)
 
     def __unicode__(self):
-        return self.name
+        if self.displayName is not None and self.displayName != "":
+            return self.displayName
+        else:
+            return self.name
 
 class StudentRegistration(models.Model):
     section = AjaxForeignKey('ClassSection')

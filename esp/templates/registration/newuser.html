@@ -61,7 +61,6 @@
     
     {% if form.errors %}
 
-
     <div class="errors">
       <p>There 
       {% if form.errors|length_is:1 %}is an error{% else %}
@@ -77,9 +76,6 @@
     <div class="form-actions">
     <input type="submit" value="{% if accounts %}Confirm: Create another account for this e-mail{% else %}Create account{% endif %}" name="submit" />
     </div>
-    
-
-
   </fieldset>
 </form>
 </div>

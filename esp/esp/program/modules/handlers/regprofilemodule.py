@@ -65,7 +65,7 @@ class RegProfileModule(ProgramModuleObj):
         return {'student_profile': students }
 
     def studentDesc(self):
-        return {'student_profile': """Students who have completed the profile."""}
+        return {'student_profile': """Students who have filled out a profile"""}
 
     def teachers(self, QObject = False):
         if QObject:
@@ -75,7 +75,7 @@ class RegProfileModule(ProgramModuleObj):
         return {'teacher_profile': teachers }
 
     def teacherDesc(self):
-        return {'teacher_profile': """Teachers who have completed the profile."""}
+        return {'teacher_profile': """Teachers who have filled out a profile"""}
 
     @main_call
     @needs_account

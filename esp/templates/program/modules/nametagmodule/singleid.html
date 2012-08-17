@@ -21,7 +21,7 @@
       <td class="left company">
         {{ group_name }}
       </td>
-      <td class="right phone"> {{ phone_number }}</td>
+      <td class="right phone"> {% if phone_number %}{{ phone_number }}{% endif %}</td>
     </tr>
     </table>
     <div class="firstspace">&nbsp;</div>

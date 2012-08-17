@@ -80,25 +80,20 @@ class SATPrepOnSiteRegister(ProgramModuleObj):
                 new_data = form.cleaned_data
                 username = base_uname = (new_data['first_name'][0]+ \
                                          new_data['last_name']).lower()
-                if User.objects.filter(username = username).count() > 0:
+                if ESPUser.objects.filter(username = username).count() > 0:
                     i = 2
                     username = base_uname + str(i)
-                    while User.objects.filter(username = username).count() > 0:
+                    while ESPUser.objects.filter(username = username).count() > 0:
                         i += 1
                         username = base_uname + str(i)
-                new_user = User(username = username,
+                new_user = ESPUser(username = username,
                                 first_name = new_data['first_name'],
                                 last_name  = new_data['last_name'],
                                 email      = new_data['email'],
                                 is_staff   = False,
                                 is_superuser = False)
                 new_user.save()
-
                 self.student = new_user
-
-                new_user = ESPUser(new_user)
-                
-                new_user.save()
                 new_user.recoverPassword()
 
                 #update satprep information

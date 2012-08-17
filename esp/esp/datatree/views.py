@@ -18,15 +18,26 @@ def ajax_children(request):
 
     if limit > 0:
         output = list(node.descendants().exclude(id=tree_id)[:limit])
+        direct_children = list(node.children().exclude(id=tree_id)[:limit])
     else:
         output = list(node.descendants().exclude(id=tree_id))
+        direct_children = list(node.children().exclude(id=tree_id))
     output.sort(key=lambda x: x.rangestart)
-    items = []
+    direct_children = [c.id for c in direct_children]
+    items = {}
     for item in output:
-        children = [{'_reference': str(c.id)} for c in item.children()]
-        items.append({'id': str(item.id), 'name': item.name, 'type': 'DataTree', 'parent_id': str(item.parent_id), 'friendly_name': item.friendly_name.replace("'",""), 'children': children})
+        children = [c.id for c in item.children()]
+        items[item.id] = {
+            'id': str(item.id),
+            'name': item.name,
+            'data': item.name, # jstree expects the name to be called "data"
+            'type': 'DataTree',
+            'parent_id': str(item.parent_id),
+            'friendly_name': item.friendly_name.replace("'",""),
+            'children': children
+        }
     
-    output2 = {'identifier': 'id', 'label': 'name', 'items': items}
+    output2 = {'items': items, 'direct_children': direct_children}
     content = simplejson.dumps(output2)
 
     return HttpResponse(content, mimetype = 'javascript/javascript')

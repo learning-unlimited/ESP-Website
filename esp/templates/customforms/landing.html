@@ -1,19 +1,9 @@
-{% extends 'main.html' %}
+{% extends "main.html" %}
 
 {% block stylesheets %}
-    
     {{ block.super }}
-
-    <link rel="stylesheet" type="text/css" href="/media/default_styles/reset-min.css">
     <link rel="stylesheet" type="text/css" href="/media/default_styles/customforms-landing.css" />
 {% endblock %}  
-
-{% block javascript %}
-    
-    {{ block.super }}
-
-    <script src="/media/scripts/jquery-1.5.1.min.js"></script>
-{% endblock %}
 
 {% block content %}
     <h1 class="title">Your Forms</h1>
@@ -23,11 +13,10 @@
         {% for form in form_list %}
             <tr>
                 <td>{{form.title}}</td> 
-                <td><a href="/customforms/view/{{form.id}}/">Fill</a></td>
-                <td><a href="/customforms/responses/{{form.id}}/">View Responses</a></td>
+                <td><a href="/customforms/view/{{ form.id }}/">Fill</a></td>
+                <td><a href="/customforms/responses/{{ form.id }}/">View Responses</a></td>
             </tr>   
         {% endfor %}    
     </table>
     <br/><br/>
-    
 {% endblock %}

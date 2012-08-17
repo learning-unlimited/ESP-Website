@@ -47,8 +47,7 @@ from esp.accounting_docs.models import Document
 from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
-from esp.settings import INSTITUTION_NAME, DEFAULT_EMAIL_ADDRESSES
-
+from django.conf import settings
 class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings):
     @classmethod
     def module_properties(cls):
@@ -121,14 +120,14 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
             document = invoice.docs_next.all()[0]
         except:
             raise
-            # raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:%s\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience." % DEFAULT_EMAIL_ADDRESSES['support']
+            # raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:%s\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience." % settings.DEFAULT_EMAIL_ADDRESSES['support']
 
         one = document.anchor.parent.name
         two = document.anchor.name
 
         context = {}
         context['postdata'] = request.POST.copy()
-        context['support_email'] = DEFAULT_EMAIL_ADDRESSES['support']
+        context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
         context['prog'] = prog
 
         #   Don't redirect to receipt just yet, in case they haven't finished all steps of registration
@@ -141,7 +140,7 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         if request.method == 'POST':
             context['postdata'] = request.POST.copy()
         context['prog'] = prog
-        context['support_email'] = DEFAULT_EMAIL_ADDRESSES['support']
+        context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
         return render_to_response(self.baseDir() + 'failure.html', request, (prog, tl), context)
 
     @main_call
@@ -171,9 +170,9 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
             context['hostname'] = request.META['HTTP_HOST']
         else:
             context['hostname'] = Site.objects.get_current().domain
-        context['institution'] = INSTITUTION_NAME
+        context['institution'] = settings.INSTITUTION_NAME
         context['storename'] = self.store_id
-        context['support_email'] = DEFAULT_EMAIL_ADDRESSES['support']
+        context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
         try:
             context['itemizedcosttotal'] = invoice.cost()
         except EmptyTransactionException:

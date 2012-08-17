@@ -93,7 +93,7 @@ class OnSiteClassList(ProgramModuleObj):
         #   Fetch a reduced version of the catalog to save time
         data = {
             #   Todo: section current capacity ? (see ClassSection.get_capacity())
-            'classes': list(ClassSubject.objects.filter(parent_program=prog, status__gt=0).extra({'teacher_names': """SELECT array_to_string(array_agg(auth_user.first_name || ' ' || auth_user.last_name), ', ') FROM users_userbit, auth_user, datatree_datatree WHERE users_userbit.user_id = auth_user.id AND	users_userbit.qsc_id = program_class.anchor_id 	AND	users_userbit.verb_id = datatree_datatree.id AND datatree_datatree.uri = 'V/Flags/Registration/Teacher'""", 'class_size_max_optimal': """SELECT	program_classsizerange.range_max FROM program_classsizerange WHERE program_classsizerange.id = optimal_class_size_range_id"""}).values('id', 'class_size_max', 'class_size_max_optimal', 'class_info', 'grade_min', 'grade_max', 'anchor__name', 'anchor__friendly_name', 'teacher_names', 'category__symbol')),
+            'classes': list(ClassSubject.objects.filter(parent_program=prog, status__gt=0).extra({'teacher_names': """SELECT array_to_string(array_agg(auth_user.first_name || ' ' || auth_user.last_name), ', ') FROM users_userbit, auth_user, datatree_datatree WHERE users_userbit.user_id = auth_user.id AND	users_userbit.qsc_id = program_class.anchor_id 	AND	users_userbit.verb_id = datatree_datatree.id AND datatree_datatree.uri = 'V/Flags/Registration/Teacher'""", 'class_size_max_optimal': """SELECT	program_classsizerange.range_max FROM program_classsizerange WHERE program_classsizerange.id = optimal_class_size_range_id"""}).values('id', 'class_size_max', 'class_size_max_optimal', 'class_info', 'prereqs', 'hardness_rating', 'grade_min', 'grade_max', 'anchor__name', 'anchor__friendly_name', 'teacher_names', 'category__symbol')),
             'sections': list(ClassSection.objects.filter(parent_class__parent_program=prog, status__gt=0).extra({'event_ids':  """SELECT list("cal_event"."id") FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id")"""}).values('id', 'max_class_capacity', 'parent_class__id', 'anchor__name', 'enrolled_students', 'event_ids')),
             'timeslots': list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label')),
             'categories': list(prog.class_categories.all().order_by('-symbol').values('id', 'symbol', 'category')),
@@ -123,8 +123,14 @@ AND	"users_studentinfo"."user_id" = "auth_user"."id"
 ORDER BY program_registrationprofile.id DESC
 LIMIT 1
         """ % ESPUser.current_schoolyear()
-        #   To ensure we don't miss anyone, fetch students who have a profile for the program
-        data = ESPUser.objects.filter(registrationprofile__program=prog, userbit__verb__uri='V/Flags/UserRole/Student').extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
+        #   Try to ensure we don't miss anyone
+        students_dict = self.program.students(QObjects=True)
+        student_types = ['student_profile']     #   You could add more list names here, but it would get very slow.
+        students_Q = Q()
+        for student_type in student_types:
+            students_Q = students_Q | students_dict[student_type]
+        students = ESPUser.objects.filter(students_Q).distinct()
+        data = students.extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
         simplejson.dump(list(data), resp)
         return resp
     
@@ -279,6 +285,7 @@ LIMIT 1
         context['timeslots'] = prog.getTimeSlots()
         context['printers'] = GetNode('V/Publish/Print').children().values_list('name', flat=True)
         context['program'] = prog
+        context['initial_student'] = request.GET.get('student_id', '')
         return render_to_response(self.baseDir()+'ajax_status.html', request, (prog, tl), context)
 
     @aux_call

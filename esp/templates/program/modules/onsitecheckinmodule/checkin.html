@@ -6,7 +6,7 @@
 
 {% block content %}
 <style type="text/css">
-.nocheckmark { border: 1px solid black; }
+  .nocheckmark { border: 1px solid black; }
 </style>
 <br />
 <br />
@@ -14,48 +14,90 @@
 {{ program.mainteacherreg }}
 
 <br /><br />
-<h1>Checkin &mdash; For &quot;{{module.student.name}}&quot;</h1>
+<h1>Advanced Checkin &mdash; For &quot;{{module.student.name}}&quot;</h1>
 
-<p style="text-align: center">
-Welcome to student check-in for {{module.student.name}}.  Make sure that the student has:
-<ul>
-<li> handed in Medical and Liability Form
-<li> paid
-</ul>
+{% if not module.hasAttended %}
+<div style="margin:10px">
+  <p>
+    Welcome to student check-in for {{module.student.name}}.  Make sure that the student has:
+    <ul>
+      <li> handed in Medical and Liability Form
+      <li> paid
+    </ul>
+  </p>
+  <br />
+  <br />
+  <form name="checkin" method="POST" action="{{request.path}}">
+    <table>
+      <tr>
+	<td><label for="attended"><strong>Attending? (i.e. here right now?)</strong></label></td>
+	<td><input type="checkbox" name="Attended" id="attended" checked="checked" /></td>
+      </tr>
+      <tr>
+	<td><label for="medical"><strong>Medical Form?</strong></label></td>
+	<td><input type="checkbox" name="MedicalFiled" id="medical" checked="checked" /></td>
+      </tr>
+      <tr>
+	<td><label for="liability"><strong>Liability Form?</strong></label></td>
+	<td><input type="checkbox" name="LiabilityFiled" id="liability" checked="checked" /></td>
+      </tr>
+      <tr>
+	<td><label for="paid"><strong>Paid?</strong></label></td>
+	<td><input type="checkbox" name="Paid" id="paid" checked="checked" /></td>
+      </tr>
+    </table>
+    <input type="hidden" name="userid" value="{{module.student.id}}" />
+    <input type="submit" value="Check-In Student" />
+  </form>
+</div>
+{% else %}
+<div style="margin:10px">
+  <p>
+    {{module.student.name}} already checked in at <b>{{module.timeCheckedIn}}</b>.
+  </p>
+  <form name="checkin">
+    <table>
+      <tr>
+	<td><label for="attended"><strong>Attending? (i.e. here right now?)</strong></label></td>
+	<td><input type="checkbox" name="Attended" id="attended" {% if module.hasAttended %}checked="checked"{% endif %} /></td>
+      </tr>
+      <tr>
+	<td><label for="medical"><strong>Medical Form?</strong></label></td>
+	<td><input type="checkbox" name="MedicalFiled" id="medical" {% if module.hasMedical %}checked="checked"{% endif %} /></td>
+      </tr>
+      <tr>
+	<td><label for="liability"><strong>Liability Form?</strong></label></td>
+	<td><input type="checkbox" name="LiabilityFiled" id="liability" {% if module.hasLiability %}checked="checked"{% endif %} /></td>
+      </tr>
+      <tr>
+	<td><label for="paid"><strong>Paid?</strong></label></td>
+	<td><input type="checkbox" name="Paid" id="paid" {% if module.hasPaid %}checked="checked"{% endif %} /></td>
+      </tr>
+    </table>
+    <input type="hidden" name="userid" value="{{module.student.id}}" />
+    <input type="submit" value="Modify Student Check-In" />
+  </form>
+</div>
+{% endif %}
 <br />
-<br />
-<form name="checkin" method="POST" action="{{request.path}}">
-<input type="hidden" name="Attended" id="attended" value="True">
-<input type="hidden" name="MedicalFiled" id="medical" value="True">
-<input type="hidden" name="LiabilityFiled" id="liability" value="True">
-<input type="hidden" name="Paid" id="paid" value="True">
-
 
 {% comment %} old checkin form: changed for Spark '09 for simplicity --rye
 Welcome to the student check-in for {{module.student.name}}. Please checkoff that the following has been completed:
-</p>
 <br />
 <form name="checkin" method="POST" action="{{request.path}}">
-<label for="attended"><strong>Attending? (i.e. here right now?)</strong></label> &nbsp;&nbsp;
-   <input type="checkbox" name="Attended" id="attended" {% if module.hasAttended %}checked="checked"{% endif %} />
+  <label for="attended"><strong>Attending? (i.e. here right now?)</strong></label> &nbsp;&nbsp;
+  <input type="checkbox" name="Attended" id="attended" {% if module.hasAttended %}checked="checked"{% endif %} />
   <br />
-<label for="medical"><strong>Medical Form?</strong></label> &nbsp;&nbsp;
-   <input type="checkbox" name="MedicalFiled" id="medical" {% if module.hasMedical %}checked="checked"{% endif %} />
-  <br />
-
-<label for="liability"><strong>Liability Form?</strong></label> &nbsp;&nbsp;
-   <input type="checkbox" name="LiabilityFiled" id="liability" {% if module.hasLiability %}checked="checked"{% endif %} />
+  <label for="medical"><strong>Medical Form?</strong></label> &nbsp;&nbsp;
+  <input type="checkbox" name="MedicalFiled" id="medical" {% if module.hasMedical %}checked="checked"{% endif %} />
   <br />
 
-<label for="paid"><strong>Paid?</strong></label> &nbsp;&nbsp;
-   <input type="checkbox" name="Paid" id="paid" {% if module.hasPaid %}checked="checked"{% endif %} />
+  <label for="liability"><strong>Liability Form?</strong></label> &nbsp;&nbsp;
+  <input type="checkbox" name="LiabilityFiled" id="liability" {% if module.hasLiability %}checked="checked"{% endif %} />
   <br />
-<br />{% endcomment %}
-<input type="hidden" name="userid" value="{{module.student.id}}" />
-<input type="submit" value="Check-In Student" />
-</form>
-<br />
 
-
-
-{% endblock %}
+  <label for="paid"><strong>Paid?</strong></label> &nbsp;&nbsp;
+  <input type="checkbox" name="Paid" id="paid" {% if module.hasPaid %}checked="checked"{% endif %} />
+  <br />
+  <br />{% endcomment %}
+  {% endblock %}

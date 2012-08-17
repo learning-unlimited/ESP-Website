@@ -5,16 +5,21 @@
 {% block subsection_name %}Teacher{% endblock %}
 
 {% block xtrajs %}
+<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+<script type="text/javascript">base_url = "{{ program.getUrlBase }}"</script>
+<script type="text/javascript" src="/media/scripts/program/modules/teacherclassregmodule.js"></script>
 <script type="text/javascript">
-    dojo.require("dijit.form.FilteringSelect");
-    dojo.require("dojo.data.ItemFileReadStore");
-    dojo.require("dojox.data.JsonRestStore");
+  // Set up the teacher input autocomplete
+  $j(document).ready(function() {
+    setup_autocomplete();
+  });
 </script>
 {% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}
-<link rel="stylesheet" type="text/css" href="/media/styles/forms.css">
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
 {% endblock %}
 
 {% block content %}
@@ -68,7 +73,7 @@ You currently have no coteachers for this class.
 </table>
 </form>
 {% endif %}
-<form action="{{request.path}}" method="post" name="addteacher">
+<form action="{{request.path}}" method="post" name="addteacher" onsubmit="cleanTeacherSubmit($j(this))">
 <table align="center" width="500">
     <tr>
         <th colspan="2">Add More Coteachers</th>
@@ -81,9 +86,9 @@ You currently have no coteachers for this class.
             <input type="hidden" name="clsid" value="{{ class.id }}" />
             <input type="hidden" name="op" value="add" />
             <input type="hidden" name="coteachers" value="{{ txtTeachers }}" />
-            <div dojoType="dojox.data.JsonRestStore" jsId="stateStore" target="/teach/{{ program.getUrlBase }}/teacherlookup/" idAttribute="id">
-            </div>
-            <input dojoType="dijit.form.FilteringSelect" value="" store="stateStore" searchAttr="name" name="teacher_selected" id="stateInput" style="width: 340px;">
+
+	    <input type="text" name="teacher_name" id="teacher_name" />
+	    <input type="hidden" name="teacher_selected" id="teacher_id" />
         </td>
         <td>
             <input type="submit" class="button" value="Add Teacher" />

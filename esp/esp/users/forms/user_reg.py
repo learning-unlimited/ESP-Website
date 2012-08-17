@@ -1,5 +1,5 @@
-
 from django import forms
+from django.forms.fields import HiddenInput
 from django.contrib.auth.models import User
 from django.db.models.query import Q
 
@@ -32,6 +32,9 @@ class ValidHostEmailField(forms.EmailField):
 
         return email
 
+class EmailUserRegForm(forms.Form):
+    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75)
+
 class UserRegForm(forms.Form):
     """
     A form for users to register for the ESP web site.
@@ -50,7 +53,7 @@ class UserRegForm(forms.Form):
     #   The choices for this field will be set later in __init__()
     initial_role = forms.ChoiceField(choices = [])
 
-    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75)
+    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75, widget=HiddenInput)
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
@@ -75,7 +78,7 @@ class UserRegForm(forms.Form):
         #   - awaiting initial activation
         #   - currently on the e-mail list only (they can be 'upgraded' to a full account)
         awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
-        if User.objects.filter(username__iexact = data).exclude(password = 'emailuser').exclude(awaiting_activation).count() > 0:
+        if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').exclude(awaiting_activation).count() > 0:
             raise forms.ValidationError('Username already in use.')
 
         data = data.strip()
@@ -94,7 +97,10 @@ class UserRegForm(forms.Form):
         user_types = ESPUser.getAllUserTypes()
         role_choices = [(item[0], item[1]['label']) for item in user_types]
         self.fields['initial_role'].choices = [('', 'Pick one...')] + role_choices
-        
+
+class SinglePhaseUserRegForm(UserRegForm):
+    #email field not hidden
+    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75)
 
 class EmailUserForm(CaptchaForm):
     email = ValidHostEmailField(help_text = '(e.g. johndoe@domain.xyz)')
@@ -106,3 +112,16 @@ class EmailPrefForm(forms.Form):
     sms_number = PhoneNumberField(label='Cell Phone', required = False,
                                   help_text='Optional: If you provide us your cell phone number, we can send you SMS text notifications')
 #    sms_opt_in = forms.BooleanField(label='Send Me Text Updates', initial = True, required = False)
+
+class AwaitingActivationEmailForm(forms.Form):
+    """Form used to verify a user is yet to be activated"""
+    username = forms.CharField(min_length=5, max_length=30)
+
+    def clean_username(self):
+        data = self.cleaned_data['username']
+        awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
+        if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(awaiting_activation).count() == 0:
+            raise forms.ValidationError('That username isn\'t waiting to be activated.')
+        
+        data = data.strip()
+        return data

@@ -49,21 +49,22 @@ class UserAttributeGetter(object):
                     '03_fullname': 'Full Name',
                     '04_lastname': 'Last Name',
                     '05_firstname': 'First Name',
-                    '06_email': 'E-mail',
-                    '07_accountdate': 'Created Date',
-                    '08_first_regdate': 'Initial Registration Date',
-                    '09_last_regdate': 'Most Recent Registration Date',
-                    '10_cellphone': 'Cell Phone',
-                    '11_textmsg': 'Text Msg?',
-                    '12_studentrep': 'Student Rep?',
-                    '13_classhours': 'Num Class Hrs',
-                    '14_gradyear': 'Grad Year',
-                    '15_school': 'School',
-                    '16_heard_about': 'Heard about Splash from',
-                    '17_transportation': 'Plan to Get to Splash',
-                    '18_post_hs': 'Post-HS plans',
-                    '19_schoolsystem_id': 'School system ID',
-                    '20_tshirt_size': 'T-Shirt Size',
+                    '06_username': 'Username',
+		    '07_email': 'E-mail',
+                    '08_accountdate': 'Created Date',
+                    '09_first_regdate': 'Initial Registration Date',
+                    '10_last_regdate': 'Most Recent Registration Date',
+                    '11_cellphone': 'Cell Phone',
+                    '12_textmsg': 'Text Msg?',
+                    '13_studentrep': 'Student Rep?',
+                    '14_classhours': 'Num Class Hrs',
+                    '15_gradyear': 'Grad Year',
+                    '16_school': 'School',
+                    '17_heard_about': 'Heard about Splash from',
+                    '18_transportation': 'Plan to Get to Splash',
+                    '19_post_hs': 'Post-HS plans',
+                    '20_schoolsystem_id': 'School system ID',
+                    '21_tshirt_size': 'T-Shirt Size',
                  }
 
         last_label_index = len(labels)
@@ -115,6 +116,9 @@ class UserAttributeGetter(object):
         
     def get_firstname(self):
         return self.user.first_name
+
+    def get_username(self):
+	return self.user.username
         
     def get_email(self):
         return self.user.email

@@ -58,13 +58,14 @@ from esp.web.views.navBar import makeNavBar
 from esp.web.views.myesp import myesp_handlers
 from esp.web.views.archives import archive_handlers
 from esp.middleware import ESPError
-from esp.web.forms.contact_form import ContactForm, email_addresses
+from esp.web.forms.contact_form import ContactForm
 from esp.tagdict.models import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 
 from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
 from django.core.mail import mail_admins
+from django.conf import settings
 
 from django.views.decorators.csrf import csrf_exempt
 
@@ -343,7 +344,7 @@ def contact(request, section='esp'):
 
 
 			try:
-				to_email.append(email_addresses[form.cleaned_data['topic'].lower()])
+				to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
 			except KeyError:
 				to_email.append(fallback_address)
 
@@ -424,7 +425,10 @@ def registration_redirect(request):
 
     nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
     progs = list(progs)
-    if len(progs) == 1:
+    
+    #   If we have 1 program, automatically redirect to registration for that program.
+    #   Most chapters will want this, but it can be disabled by a Tag.
+    if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect', default=True):
         ctxt['prog'] = progs[0]
         ctxt['navnode'] = progs[0].anchor
         return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))

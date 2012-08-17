@@ -71,19 +71,7 @@ class SchedulingModule(ProgramModuleObj):
         context = {}
         context['prog'] = self.program
         context['module'] = self
-        
-        if extra == 'refresh':
-            #   Clear out all of those inclusion tags.
-            for cls in self.program.classes():
-                for sec in cls.sections.all():
-                    sec.clear_resource_cache()
-                for teacher in cls.teachers():
-                    # This probably isn't needed anymore, but oh well
-                    ESPUser.getAvailableTimes.delete_key_set(self=teacher, program=self.program)
-            for room in self.program.getClassrooms():
-                room.clear_schedule_cache(self.program)
-            return HttpResponseRedirect(self.get_full_path())
-        
+
         if request.method == 'POST':
             #   Build up expected post variables: starttime_[clsid], room_[clsid]
             new_dict = request.POST.copy()
@@ -117,15 +105,6 @@ class SchedulingModule(ProgramModuleObj):
                     sec = ClassSection.objects.get(id=commands[1])
                     cls = sec.parent_class
                     
-                    #   Clear the availability cache for the teachers.
-                    for teacher in cls.teachers():
-                        # This probably isn't needed anymore, but oh well
-                        ESPUser.getAvailableTimes.delete_key_set(self=teacher, program=self.program)
-                    
-                    #   Clear the cached data for the rooms that the class has, so the class is removed from those.
-                    if (sec.initial_rooms().count() > 0):
-                        for room in sec.initial_rooms(): room.clear_schedule_cache(self.program)
-                    
                     #   Hope you don't mind this extra temporary attribute.
                     sec.time_changed = False
                     if commands[0] == 'starttime':
@@ -145,11 +124,6 @@ class SchedulingModule(ProgramModuleObj):
                             (status, errors) = sec.assign_room(new_room, compromise=True, clear_others=True)
                             if status is False:
                                 raise ESPError(False), 'Classroom assignment errors: <ul><li>%s</li></ul>' % '</li><li>'.join(errors)
-
-                    #   Clear the cache for this class and its new room.
-                    sec.clear_resource_cache()
-                    if (sec.initial_rooms().count() > 0):
-                        for room in sec.initial_rooms(): room.clear_schedule_cache(self.program)
 
         def count(fn, lst):
             return reduce(lambda count, item: fn(item) and count + 1 or count, lst, 0)

@@ -14,28 +14,30 @@ import time
 from esp.utils import captcha
 
 # DATETIMEWIDGET
-calbtn = u"""<img src="%simages/calbutton_tight.png" alt="calendar" id="%s_btn" style="cursor: pointer; border: none;" title="Select date and time"
-            onmouseover="this.style.background='#444444';" onmouseout="this.style.background=''" />
+calEnable = u"""
 <script type="text/javascript">
-    Calendar.setup({
-        inputField     :    "%s",
-        ifFormat       :    "%s",
-        button         :    "%s_btn",
-        singleClick    :    true,
-        showsTime      :    true
+    $j("#%s").datetimepicker({
+        showOn: 'button',
+        buttonImage: '%simages/calbutton_tight.png',
+        buttonImageOnly: true,
+        dateFormat: '%s',
+        timeFormat: '%s'
     });
 </script>"""
 
 class DateTimeWidget(forms.widgets.TextInput):
-    dformat = '%m/%d/%Y %H:%M'
+    dformat = 'mm/dd/yy'
+    tformat = 'hh:mm'
+    pythondformat = '%m/%d/%Y %H:%M'
 
+    # Note -- these are not actually used in the deadlines template, since we don't include
+    # the entire form, just use variables from. They're here now mainly for responsibility
     class Media:
         css = {
-            'all':  ('calendar/calendar-blue.css',)
+            'all':  ('styles/jquery-ui/jquery-ui.css',)
         }
-        js = ('calendar/calendar.js',
-              'calendar/lang/calendar-en.js',
-              'calendar/calendar-setup.js',)
+        js = ('scripts/jquery-ui.js',
+              'scripts/jquery-ui.timepicker.js')
     
     def render(self, name, value, attrs=None):
         
@@ -44,7 +46,7 @@ class DateTimeWidget(forms.widgets.TextInput):
         
         if value != '': 
             try:
-                final_attrs['value'] = value.strftime(self.dformat)
+                final_attrs['value'] = value.strftime(self.pythondformat)
             except:
                 final_attrs['value'] = value
                 
@@ -52,8 +54,7 @@ class DateTimeWidget(forms.widgets.TextInput):
             final_attrs['id'] = u'%s_id' % (name)
         id = final_attrs['id']
         
-        jsdformat = self.dformat #.replace('%', '%%')
-        cal = calbtn % (settings.MEDIA_URL, id, id, jsdformat, id)
+        cal = calEnable % (id, settings.MEDIA_URL, self.dformat, self.tformat)
         a = u'<input%s />%s' % (forms.util.flatatt(final_attrs), cal)
         return a
 
@@ -79,11 +80,16 @@ class DateTimeWidget(forms.widgets.TextInput):
 class SplitDateWidget(forms.MultiWidget):
     """ A date widget that separates days, etc. """
 
-    def __init__(self, attrs=None):
+    def __init__(self, attrs=None, min_year=None, max_year=None):
         from datetime import datetime
 
-        year_choices = range(datetime.now().year - 70,
-                             datetime.now().year - 10)
+        if min_year is None:
+            min_year = datetime.now().year - 70
+        if max_year is None:
+            max_year = datetime.now().year - 10
+
+        year_choices = range(min_year,
+                             max_year+1)
         year_choices.reverse()
         month_choices = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
         day_choices   = ['%02d' % x for x in range(1, 32)]

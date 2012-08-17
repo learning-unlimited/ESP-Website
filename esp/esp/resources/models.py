@@ -63,22 +63,7 @@ Procedures:
     -   Program resources module lets admin put in classrooms and equipment for the appropriate times.
 """
 
-GLOBAL_RESOURCE_CACHE_KEY="RESOURCE__GLOBAL_KEY"
-
 DISTANCE_FUNC_REGISTRY = {}
-
-def global_resource_rev():
-    retVal = cache.get(GLOBAL_RESOURCE_CACHE_KEY)
-    if retVal:
-        return retVal
-    else:
-        return increment_global_resource_rev()
-
-def increment_global_resource_rev():
-    import random
-    val = random.randint(1,2**30)
-    cache.set(GLOBAL_RESOURCE_CACHE_KEY, val, timeout=86400)
-    return val
 
 class ResourceType(models.Model):
     """ A type of resource (e.g.: Projector, Classroom, Box of Chalk) """
@@ -204,15 +189,7 @@ class Resource(models.Model):
         else:
             self.is_unique = False
 
-        cache_key_QObjects = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.id
-        cache_key = "RESOURCE__%s__IS_AVAILABLE" % self.id
-        
         super(Resource, self).save(*args, **kwargs)
-
-        cache.delete(cache_key_QObjects)
-        cache.delete(cache_key)
-
-        increment_global_resource_rev()
 
     def distance(self, other):
         """
@@ -249,24 +226,19 @@ class Resource(models.Model):
     def satisfies_requests(self, req_class):
         #   Returns a list of 2 items.  The first element is boolean and the second element is a list of the unsatisfied requests.
         #   If there are no unsatisfied requests but the room isn't big enough, the first element will be false.
-        cache_key = "RESOURCES__SATISFIES_REQUESTS__%s__%s" % (self.id, global_resource_rev())
 
-        result = cache.get(cache_key)
-        if not result:
-            result = [True, []]
-            request_list = req_class.getResourceRequests()
-            furnishings = self.associated_resources()
-            id_list = []
+        result = [True, []]
+        request_list = req_class.getResourceRequests()
+        furnishings = self.associated_resources()
+        id_list = []
 
-            for req in request_list:
-                if furnishings.filter(res_type=req.res_type).count() < 1:
-                    result[0] = False
-                    id_list.append(req.id)
-            
-            result[1] = ResourceRequest.objects.filter(id__in=id_list)
+        for req in request_list:
+            if furnishings.filter(res_type=req.res_type).count() < 1:
+                result[0] = False
+                id_list.append(req.id)
+        
+        result[1] = ResourceRequest.objects.filter(id__in=id_list)
 
-            cache.set(cache_key, result, timeout=86400)
-            
         if self.num_students < req_class.num_students():
             result[0] = False
         
@@ -302,40 +274,15 @@ class Resource(models.Model):
     assign_to_class = assign_to_section
         
     def clear_assignments(self, program=None):
-        if program is not None:
-            self.clear_schedule_cache(program)
-            
         self.assignments().delete()
 
     def assignments(self):
-        cache_key = "RESOURCE__ASSIGNMENTS__%s__%s" % (self.id, global_resource_rev())
-        retVal = cache.get(cache_key)
-        if retVal:
-            return retVal
-        
-        retVal = ResourceAssignment.objects.filter(resource__in=self.grouped_resources())
-        cache.set(cache_key, retVal, timeout=86400)
-        return retVal
-    
-    def cache_key(self, program):
-        #   Let's make this key acceptable to memcached...
-        chars_to_avoid = '~!@#$%^&*(){}_ :;,"\\?<>'
-        clean_name = ''.join(c for c in self.name if c not in chars_to_avoid)
-        return 'resource__schedule_sequence:%s,%d' % (clean_name, program.id)
-    
-    def clear_schedule_cache(self, program):
-        from django.core.cache import cache
-        cache.delete(self.cache_key(program))
+        return ResourceAssignment.objects.filter(resource__in=self.grouped_resources())
     
     def schedule_sequence(self, program):
         """ Returns a list of strings, which are the status of the room (and its identical
         companions) at each time block belonging to the program. """
-        from django.core.cache import cache
-        
-        result = cache.get(self.cache_key(program))
-        if result is not None:
-            return result
-        
+
         sequence = []
         event_list = list(program.getTimeSlots())
         room_list = self.identical_resources().filter(event__in=event_list)
@@ -356,8 +303,7 @@ class Resource(models.Model):
                     sequence.append(init_str)
             else:
                 sequence.append('N/A')
-            
-        cache.set(self.cache_key(program), sequence)
+                
         return sequence
     
     def is_conflicted(self):
@@ -416,21 +362,13 @@ class ResourceAssignment(models.Model):
                                                
     target = models.ForeignKey('program.ClassSection', null=True)
     target_subj = models.ForeignKey('program.ClassSubject', null=True)
+    lock_level = models.IntegerField(default=0)
 
-    def save(self, *args, **kwargs):
-        cache_key_QObjects = "RESOURCE__%s__IS_AVAILABLE__QObjects" % self.resource.id
-        cache_key = "RESOURCE__%s__IS_AVAILABLE" % self.resource.id
-        
-        super(ResourceAssignment, self).save(*args, **kwargs)
-
-        cache.delete(cache_key_QObjects)
-        cache.delete(cache_key)
-
-        increment_global_resource_rev()
-        
-    
     def __unicode__(self):
-        return 'Resource assignment for %s' % unicode(self.getTargetOrSubject())
+        result = u'Resource assignment for %s' % unicode(self.getTargetOrSubject())
+        if self.lock_level > 0:
+            result += u' (locked)'
+        return result
     
     def getTargetOrSubject(self):
         """ Returns the most finely specified target. (target if it's set, target_subj otherwise) """

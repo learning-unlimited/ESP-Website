@@ -3,8 +3,9 @@ from django.template.loader import render_to_string
 from esp.web.util.template import cache_inclusion_tag
 from esp.cache import cache_function
 from esp.users.models import ESPUser
-from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion
+from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion, StudentRegistration
 from esp.program.models.class_ import open_class_category
+from esp.program.modules.module_ext import StudentClassRegModuleInfo, ClassRegModuleInfo
 from esp.cache.key_set import wildcard
 from esp.tagdict.models import Tag
     
@@ -39,6 +40,9 @@ render_class_core.cached_function.depend_on_cache(ClassSubject.title, lambda sel
 render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lambda self=wildcard, **kwargs: {'cls': self.parent_class})
 render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_row(StudentAppQuestion, lambda ques: {'cls': ques.subject})
+render_class_core.cached_function.depend_on_model(lambda: StudentClassRegModuleInfo)
+render_class_core.cached_function.depend_on_model(lambda: ClassRegModuleInfo)
+render_class_core.cached_function.depend_on_model(lambda: Tag)
 
 def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, collapse_full_classes=None):
     if not prog:
@@ -76,6 +80,7 @@ def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, colla
 def render_class(cls, user=None, prereg_url=None, filter=False, timeslot=None):
     return render_class_helper(cls, user, prereg_url, filter, timeslot)
 render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
+render_class.cached_function.depend_on_row(lambda: StudentRegistration, lambda reg: {'cls': reg.section.parent_class, 'user': reg.user})
 
 @cache_function
 def render_class_direct(cls, user=None, prereg_url=None, filter=False, timeslot=None):
@@ -113,7 +118,7 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
             errormsg = error1
         else:  # there's some section for which we can add this class; does that hold for this one?
             if section:
-                errormsg = section.cannotAdd(user)
+                errormsg = section.cannotAdd(user, autocorrect_constraints=False)
         
     show_class =  (not filter) or (not errormsg)
     
@@ -125,7 +130,7 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
             'errormsg':   errormsg,
             'temp_full_message': scrmi.temporarily_full_text,
             'show_class': show_class,
-            'hide_full': Tag.getProgramTag('hide_full_classes', cls.parent_program, False)}
+            'hide_full': Tag.getBooleanTag('hide_full_classes', cls.parent_program, False)}
 render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_swap.html')

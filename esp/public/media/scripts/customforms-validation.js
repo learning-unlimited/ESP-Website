@@ -1,5 +1,5 @@
-$(document).ready(function(){
-	var validator=$('#cstform').validate({
+$jcf(document).ready(function(){
+	var validator=$jcf('#cstform').validate({
 		errorPlacement: function(error, element){
 			if(element.is(':radio'))
 				error.appendTo(element.parent().parent().parent().parent());
@@ -15,7 +15,7 @@ $(document).ready(function(){
 	jQuery.validator.addMethod('ddate', DateValidator, "Must be of the format mm/dd/yyyy");
 	
 	//Initializing the tool-tips
-	$('img.qmark').qtip({
+	$jcf('img.qmark').qtip({
 		content:{
 			text:false
 		},

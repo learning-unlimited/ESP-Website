@@ -176,8 +176,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         for item in role_choices:
             role_dict[item[0]] = item[1]
     
-        result = {'classreg': """Students who have have signed up for at least one class.""",
-                  'enrolled': """Students who are enrolled in at least one class."""}
+        result = {'classreg': """Students who signed up for at least one class""",
+                  'enrolled': """Students who are enrolled in at least one class"""}
         allowed_student_types = Tag.getTag("allowed_student_types", target = self.program)
         if allowed_student_types:
             allowed_student_types = allowed_student_types.split(",")
@@ -234,7 +234,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             #   - Michael P, 6/23/2009
             #   if scrmi.use_priority:
             sec.verbs = sec.getRegVerbs(user, allowed_verbs=verbs)
-
+            
             for mt in sec.get_meeting_times():
                 section_dict = {'section': sec, 'changeable': show_changeslot}
                 if mt.id in timeslot_dict:
@@ -498,7 +498,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
             classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
-            if Tag.getProgramTag('hide_full_classes', prog, default='False') != 'False':
+            if Tag.getBooleanTag('hide_full_classes', prog, default=False):
                 classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
             if user_grade != 0:
                 classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
@@ -593,10 +593,11 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
         collapse_full = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
-        hide_full = Tag.getProgramTag('hide_full_classes', prog, False)
+        hide_full = Tag.getBooleanTag('hide_full_classes', prog, False)
         context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'hide_full': hide_full, 'collapse_full': collapse_full}
 
         scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+        context['register_from_catalog'] = scrmi.register_from_catalog
 
         prog_color = prog.getColor()
         collapse_full_classes = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
@@ -738,9 +739,13 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         #   Narrow this down to one class if we're using the priority system.
         if request.GET.has_key('sec_id'):
             oldclasses = oldclasses.filter(id=request.GET['sec_id'])
-        #   Take the student out
+        #   Take the student out if constraints allow
         for sec in oldclasses:
-            sec.unpreregister_student(request.user)
+            result = sec.cannotRemove(request.user)
+            if result:
+                return result
+            else:
+                sec.unpreregister_student(request.user)
         #   Return the ID of classes that were removed.
         return oldclasses.values_list('id', flat=True)
 
@@ -749,7 +754,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @meets_any_deadline(['/Classes/OneClass','/Removal'])
     def clearslot(self, request, tl, one, two, module, extra, prog):
         """ Clear the specified timeslot from a student registration and go back to the same page """
-        if self.clearslot_logic(request, tl, one, two, module, extra, prog):
+        result = self.clearslot_logic(request, tl, one, two, module, extra, prog)
+        if isinstance(result, basestring):
+            raise ESPError(False), result
+        else:
             return self.goToCore(tl)
 
     @aux_call
@@ -819,13 +827,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if error and not request.user.onsite_local:
             # Undo by re-registering the old class. Theoretically "overridefull" is okay, since they were already registered for oldclass anyway.
             oldclass.preregister_student(request.user, overridefull=True, automatic=automatic)
-            oldclass.update_cache_students()
             raise ESPError(False), error
         
         # Attempt to register for the new class
         # Carry over the "automatic" userbit if the new class has the same title.
         if newclass.preregister_student(request.user, request.user.onsite_local, automatic and (newclass.title() == oldclass.title()) ):
-            newclass.update_cache_students()
+            pass
         else:
             oldclass.preregister_student(request.user, overridefull=True, automatic=automatic)
             raise ESPError(False), 'According to our latest information, this class is full. Please go back and choose another class.'

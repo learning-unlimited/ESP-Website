@@ -1,22 +1,17 @@
 .tooltip {
     position: relative; /*this is the key*/
     z-index: 24;
-    color: #000000 !important;
     text-decoration: none !important;
 }
 
-.tooltip:hover {
-    z-index: 25; 
+.tooltip_hover {
     background-color: #ffff99;
+    z-index: 26;
 }
 
-.tooltip span.tooltip_hover {
-    display: none;
-}
-
-.tooltip:hover span.tooltip_hover { /*the span will display just on :hover state*/
-    display: block;
+.tooltip_popup { /*the span will display just on :hover state*/
     position: absolute;
+    z-index: 25;
     top: 2em; 
     left: 2em; 
     width: 25em;

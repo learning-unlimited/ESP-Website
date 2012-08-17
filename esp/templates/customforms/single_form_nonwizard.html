@@ -1,0 +1,6 @@
+	{% if form.non_field_errors %}
+		{{ form.non_field_errors }}
+	{% endif %}
+	{% for fieldset in form.fieldsets %}
+	  {% include "customforms/single_fieldset.html" %}
+	{% endfor %}

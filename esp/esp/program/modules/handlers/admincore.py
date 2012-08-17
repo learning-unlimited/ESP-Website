@@ -79,6 +79,11 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['modules'] = modules
         context['one'] = one
         context['two'] = two
+        context['program'] = prog
+        
+        #   Populate context with variables to show which program module views are available
+        for (tl, view_name) in prog.getModuleViews():
+            context['%s_%s' % (tl, view_name)] = True
 
         return render_to_response(self.baseDir()+'directory.html', request, (prog, tl), context)
 
@@ -104,7 +109,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
     def registrationtype_management(self, request, tl, one, two, module, extra, prog):
         
         from esp.program.modules.forms.admincore import VisibleRegistrationTypeForm as VRTF
-        from esp.settings import DEFAULT_EMAIL_ADDRESSES
+        from django.conf import settings
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
         
         context = {}
@@ -113,7 +118,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['prog'] = prog
         context['POST'] = False
         context['saved'] = False
-        context['support'] = DEFAULT_EMAIL_ADDRESSES['support']
+        context['support'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
         
         if request.method == 'POST':
             context['POST'] = True
@@ -124,6 +129,24 @@ class AdminCore(ProgramModuleObj, CoreModule):
         display_names = list(RTC.getVisibleRegistrationTypeNames(prog, for_VRT_form=True))
         context['form'] = VRTF(data={'display_names': display_names})
         return render_to_response(self.baseDir()+'registrationtype_management.html', request, (prog, tl), context)
+    
+    @aux_call
+    @needs_admin
+    def lunch_constraints(self, request, tl, one, two, module, extra, prog):
+        from esp.program.modules.forms.admincore import LunchConstraintsForm
+        context = {}
+        if request.method == 'POST':
+            context['POST'] = True
+            form = LunchConstraintsForm(prog, request.POST)
+            if form.is_valid():
+                form.save_data()
+                context['saved'] = True
+            else:
+                context['saved'] = False
+        else:
+            form = LunchConstraintsForm(prog)
+        context['form'] = form
+        return render_to_response(self.baseDir()+'lunch_constraints.html', request, (prog, tl), context)
     
     @aux_call
     @needs_admin

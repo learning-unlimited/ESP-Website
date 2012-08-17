@@ -1,13 +1,18 @@
-from django.test import TestCase
+from esp.tests.util import CacheFlushTestCase as TestCase
 from django import forms
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserBit, UserForwarder
+from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserBit, UserForwarder, StudentInfo
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.program.tests import ProgramFrameworkTest
 from esp.datatree.models import GetNode
 from django.contrib.auth import logout, login, authenticate
 from esp.middleware import ESPError
 from esp.users.views import make_user_admin
-from esp.tests.utils import CacheFlushTestCase
+from esp.tests.util import CacheFlushTestCase
+from django.core import mail
+from esp.program.models import RegistrationProfile, Program
+import datetime
+import esp.users.views as views
+from esp.tagdict.models import Tag
 
 class ESPUserTest(TestCase):
     def testInit(self):
@@ -77,6 +82,39 @@ class ESPUserTest(TestCase):
             blocked_illegal_morph = True
 
         self.assertTrue(blocked_illegal_morph, "User '%s' was allowed to morph into an admin!")
+
+    def testGradeChange(self):
+        # Create the admin user
+        adminUser, c1 = ESPUser.objects.get_or_create(username='admin')
+        adminUser.set_password('password')
+        make_user_admin(adminUser)
+        # Create the student user
+        studentUser, c2 = ESPUser.objects.get_or_create(username='student')
+        # Make it a student
+        role_bit, created = UserBit.objects.get_or_create(user=studentUser, qsc=GetNode('Q'), verb=GetNode('V/Flags/UserRole/Student'), recursive=False)
+        # Give it a starting grade
+        student_studentinfo = StudentInfo(user=studentUser, graduation_year=ESPUser.YOGFromGrade(9))
+        student_studentinfo.save()
+        student_regprofile = RegistrationProfile(user=studentUser, student_info=student_studentinfo, most_recent_profile=True)
+        student_regprofile.save()
+        # Check that the grade starts at 9
+        self.failUnless(studentUser.getGrade() == 9)
+
+        # Login the admin
+        self.failUnless(self.client.login(username="admin", password="password"))
+
+        testGrade = 11
+        curYear = ESPUser.current_schoolyear()
+        gradYear = curYear + (12 - testGrade)
+        self.client.get("/manage/userview?username=student&graduation_year="+str(gradYear))
+        self.failUnless(studentUser.getGrade() == testGrade, "Grades don't match: %s %s" % (studentUser.getGrade(), testGrade))
+
+        # Clean up
+        if (c1):
+            adminUser.delete()
+        if (c2):
+            studentUser.delete()
+
 
 
 class PasswordRecoveryTicketTest(TestCase):
@@ -226,9 +264,14 @@ class UserForwarderTest(TestCase):
         self.assertTrue(UserForwarder.follow(self.ub) == (self.ub, False), fwd_info(self.ub))
         self.assertTrue(UserForwarder.follow(self.uc) == (self.ub, True), fwd_info(self.uc))
 
-class MakeAdminTest(CacheFlushTestCase):
+class MakeAdminTest(TestCase):
     def setUp(self):
         self.user, created = ESPUser.objects.get_or_create(username='admin_test')
+        self.user.is_staff = False
+        self.user.is_superview = False
+        UserBit.objects.filter(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Administer')).delete()
+        UserBit.objects.filter(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Flags/UserRole/Administrator')).delete()
+
     def runTest(self):
         # Make sure user starts off with no administrator priviliges
         self.assertFalse(self.user.is_staff)        
@@ -279,3 +322,93 @@ class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
         user=self.students[0]
         self.assertTrue(self.client.login(username=user.username, password='password'))
         super(AjaxScheduleExistenceTest, self).runTest()
+
+class AccountCreationTest(TestCase):
+    
+    def test_phase_1(self):
+        #There's a tag that affects phase 1 so we put the tests into a function
+        #and call it twice here
+        Tag.setTag('ask_about_duplicate_accounts',value='true')
+        self.phase_1()
+        Tag.setTag('ask_about_duplicate_accounts',value='false')
+        self.phase_1()
+        
+
+    def phase_1(self):
+        """Testing the phase 1 of registration, the email address page"""
+        #first try an email that shouldn't have an account
+        #first without follow, to see that it redirects correctly
+        response1 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com"})
+        if Tag.getTag('ask_about_duplicate_accounts', default='false').lower() == 'false':
+            self.assertTemplateUsed(response1,"registration/newuser.html")
+            return
+
+        self.assertRedirects(response1, "/myesp/register/information?email=tsutton125%40gmail.com")
+        
+        #next, make a user with that email and try the same
+        u=ESPUser.objects.create(email="tsutton125@gmail.com")
+        response2 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com"},follow=True)
+        self.assertTemplateUsed(response2, 'registration/newuser_phase1.html')
+        self.assertContains(response2, "do_reg_no_really")
+
+        #check when there's a user awaiting activation
+        #(we check with a regex searching for _ in the password, since that
+        #can't happen normally)
+        u.password="blah_"
+        response3 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com"},follow=True)
+        self.assertTemplateUsed(response3, 'registration/newuser_phase1.html')
+        self.assertContains(response3, "do_reg_no_really")
+
+        #check when you send do_reg_no_really it procedes
+        response4 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com","do_reg_no_really":""},follow=False)
+        self.assertRedirects(response4, "/myesp/register/information?email=tsutton125%40gmail.com")
+        response4 = self.client.post("/myesp/register/",data={"email":"tsutton125@gmail.com","do_reg_no_really":""},follow=True)
+        self.assertContains(response4, "tsutton125@gmail.com")
+
+    def test_phase_2(self):
+        #similarly to phase_1, call helper function twice with tag settings
+        Tag.setTag('require_email_validation',value='True')
+        self.phase_2()
+        Tag.setTag('require_email_validation',value='False')
+        self.phase_2()
+
+    def phase_2(self):
+        """Testing phase 2, where user provides info, and we make the account"""
+
+        url = "/myesp/register/"
+        if Tag.getTag("ask_about_duplicate_accounts", default="false").lower() != "false":
+            url+="information/"
+        response = self.client.post(url,
+                                   data={"username":"username",
+                                         "password":"passw",
+                                         "confirm_password":"passw",
+                                         "first_name":"first",
+                                         "last_name":"last",
+                                         "email":"tsutton125@gmail.com",
+                                         "initial_role":"Teacher"})
+        
+        #test that the user was created properly
+        try:
+            u=ESPUser.objects.get(username="username",
+                                  first_name="first",
+                                  last_name="last",
+                                  email="tsutton125@gmail.com")
+        except ESPUser.DoesNotExist, ESPUser.MultipleObjectsReturned:
+            self.fail("User not created correctly or created multiple times")
+
+        if Tag.getTag('require_email_validation', default='False') != 'True':
+            return
+
+        self.assertFalse(u.is_active)
+        self.assertTrue("_" in u.password)
+
+        self.assertEqual(len(mail.outbox),1)
+        self.assertEqual(len(mail.outbox[0].to),1)
+        self.assertEqual(mail.outbox[0].to[0],u.email)
+        #note: will break if the activation email is changed too much
+        import re
+        match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)",mail.outbox[0].body)
+        self.assertEqual(match.group("user"),u.username)
+        self.assertEqual(match.group("key"),u.password.rsplit("_")[-1])
+        
+

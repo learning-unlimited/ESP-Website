@@ -1,14 +1,28 @@
-
-if($j("#csrfAlert").length == 0)
+var csrfAlert;
+function makeCsrfAlert()
 {
-    newDiv = document.createElement('div');
-    newDiv.setAttribute('id', 'csrfAlert');
-    newDiv.setAttribute('dojoType', 'dijit.Dialog');
-    newDiv.setAttribute('style', 'display:none');
-    newDiv.setAttribute('title', 'Oops!');
-    newText = document.createTextNode('It appears your session has become disconnected. Please make sure cookies are enabled and try again.');
-    newDiv.appendChild(newText);
-    document.body.appendChild(newDiv);
+    if(!$j.ui)
+    {
+	// Load the appropriate javascript and css
+	$j.getScript('/media/scripts/jquery-ui.js', makeCsrfAlert);
+	if (document.createStylesheet)
+	{
+	    document.createStylesheet('/media/styles/jquery-ui/jquery-ui.css');
+	}
+	else
+	{
+	    $j("head").append($j("<link rel='stylesheet' href='/media/styles/jquery-ui/jquery-ui.css' type='text/css' >"));
+	}
+    }
+    else
+    {
+	csrfAlert = $j('<div></div>')
+	    .html('It appears your session has become disconnected. Please make sure cookies are enabled and try again.')
+            .dialog({
+		autoOpen: false,
+		title: 'Oops!'
+            });
+    }
 }
 
 function strip_tags(str)
@@ -18,6 +32,8 @@ function strip_tags(str)
 
 var check_csrf_cookie = function(form)
 {
+    //console.log("CSRF check!");
+    //csrfAlert.dialog('open');
     //If the form is null, return false
     if (!form) return false;
 
@@ -47,7 +63,11 @@ var check_csrf_cookie = function(form)
     csrf_cookie = $j.cookie("csrftoken");
     if (csrf_cookie == null)
     {
-        dijit.byId('csrfAlert').show();
+	if(!csrfAlert)
+	{
+	    makeCsrfAlert();
+	}
+        csrfAlert.dialog('open');
         return false;
     }
 

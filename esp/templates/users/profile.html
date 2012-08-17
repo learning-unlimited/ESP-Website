@@ -7,6 +7,11 @@
 {% autoescape off %}{{ "Profile Editor"|subsection }}{% endautoescape %}
 {% endblock %}
 
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+{% endblock %}
+
 {% block stylesheets %}
 {{ block.super }}
 <style type="text/css">

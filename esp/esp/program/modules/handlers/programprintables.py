@@ -39,7 +39,8 @@ from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, SplashInfo, FinancialAidRequest
-from esp.users.views     import get_user_list, search_for_user
+from esp.users.views     import search_for_user
+from esp.users.controllers.usersearch import UserSearchController
 from esp.web.util.latex  import render_to_latex
 from esp.accounting_docs.models import Document, MultipleDocumentError
 from esp.accounting_core.models import LineItem, LineItemType, Transaction
@@ -234,8 +235,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def coursecatalog(self, request, tl, one, two, module, extra, prog):
         " This renders the course catalog in LaTeX. "
-        from esp.settings import INSTITUTION_NAME, ORGANIZATION_SHORT_NAME
-
+        from django.conf import settings
         classes = ClassSubject.objects.filter(parent_program = self.program)
 
         if request.GET.has_key('mingrade'):
@@ -270,7 +270,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         group_name = Tag.getTag('full_group_name')
         if not group_name:
-            group_name = '%s %s' % (INSTITUTION_NAME, ORGANIZATION_SHORT_NAME)
+            group_name = '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['group_name'] = group_name
 
         #   Hack for timeblock sorting
@@ -442,7 +442,7 @@ class ProgramPrintables(ProgramModuleObj):
         if extra == 'csv':
             template_file = 'teacherlist.csv'
         
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
@@ -579,7 +579,7 @@ class ProgramPrintables(ProgramModuleObj):
 
     @needs_admin
     def studentsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'studentlist.html', extra_func = lambda x: {}):
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
@@ -651,7 +651,7 @@ class ProgramPrintables(ProgramModuleObj):
     def teacherschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher schedules """
 
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
@@ -699,8 +699,7 @@ class ProgramPrintables(ProgramModuleObj):
             from django.template import Template
             from esp.middleware.threadlocalrequest import AutoRequestContext as Context
             from django.template.loader import find_template_source
-            from esp.settings import TEMPLATE_DIRS
-                
+            from django.conf import settings   
             prof = user.getLastProfile()
             
             li_types = prof.program.getLineItemTypes(user)
@@ -720,38 +719,48 @@ class ProgramPrintables(ProgramModuleObj):
             context_dict['itemizedcosttotal'] = invoice.cost()
             context_dict['owe_money'] = ( context_dict['itemizedcosttotal'] != 0 )
             
-            t = Template(open(TEMPLATE_DIRS + '/program/receipts/' + str(prof.program.id) + '_custom_receipt.txt').read())
+            t = Template(open(settings.TEMPLATE_DIRS + '/program/receipts/' + str(prof.program.id) + '_custom_receipt.txt').read())
             c = Context(context_dict)
             result_str = t.render(c)
 
             return result_str
             
         if key == 'schedule':
+            #   Generic schedule function kept for backwards compatibility
             return ProgramPrintables.getSchedule(self.program, user)
-        if key == 'transcript':
+        elif key == 'student_schedule':
+            return ProgramPrintables.getSchedule(self.program, user, 'Student')
+        elif key == 'teacher_schedule':
+            return ProgramPrintables.getSchedule(self.program, user, 'Teacher')
+        elif key == 'volunteer_schedule':
+            return ProgramPrintables.getSchedule(self.program, user, 'Volunteer')
+        elif key == 'transcript':
             return ProgramPrintables.getTranscript(self.program, user, 'text')
-        if key == 'transcript_html':
+        elif key == 'transcript_html':
             return ProgramPrintables.getTranscript(self.program, user, 'html')
-        if key == 'transcript_latex':
+        elif key == 'transcript_latex':
             return ProgramPrintables.getTranscript(self.program, user, 'latex')
 
         return ''
 
     @staticmethod
     def get_student_classlist(program, student):
-        
         # get list of valid classes
         classes = [ cls for cls in student.getEnrolledSections()]
-        
-        # add taugtht classes
-        classes += [ cls for cls in student.getTaughtClasses()  ]
-            
         classes = [ cls for cls in classes
                     if cls.parent_program == program
                     and cls.isAccepted()                       ]
-        # now we sort them by time/title
         classes.sort()
-        
+        return classes
+
+    @staticmethod
+    def get_teacher_classlist(program, teacher):
+        # get list of valid classes
+        classes = [ cls for cls in teacher.getTaughtSections()]
+        classes = [ cls for cls in classes
+                    if cls.parent_program == program
+                    and cls.isAccepted()                       ]
+        classes.sort()
         return classes
 
     @staticmethod
@@ -778,31 +787,46 @@ class ProgramPrintables(ProgramModuleObj):
         return t.render(Context(context))
 
     @staticmethod
-    def getSchedule(program, student):
+    def getSchedule(program, user, schedule_type=None):
         
-        #   This is terrible, but also hilarious enough to leave in.
-        #   (The user passed as the 'student' argument is improperly named, since it could also be a teacher.)
-        schedule_label = 'Student'
-        if student.isTeacher():
-            schedule_label = 'Teacher'
+        if schedule_type is None:
+            if user.isStudent():
+                schedule_type = 'Student'
+            elif user.isTeacher():
+                schedule_type = 'Teacher'
+            elif user.isVolunteer():
+                schedule_type = 'Volunteer'
             
-        schedule = """
+        schedule = ''
+        if schedule_type in ['Student', 'Teacher']:
+            schedule = """
 %s schedule for %s:
 
- Time                   | Class                                  | Room\n""" % (schedule_label, student.name())
-        schedule += '------------------------+----------------------------------------+-----------\n'
-        
-        classes = ProgramPrintables.get_student_classlist(program, student)
-        
-        for cls in classes:
-            rooms = cls.prettyrooms()
-            if len(rooms) == 0:
-                rooms = ' N/A'
-            else:
-                rooms = ' ' + ", ".join(rooms)
+ Time                   | Class                                  | Room\n""" % (schedule_type, user.name())
+            schedule += '------------------------+----------------------------------------+-----------\n'
+            if schedule_type == 'Student':
+                classes = ProgramPrintables.get_student_classlist(program, user)
+            elif schedule_type == 'Teacher':
+                classes = ProgramPrintables.get_teacher_classlist(program, user)
+            for cls in classes:
+                rooms = cls.prettyrooms()
+                if len(rooms) == 0:
+                    rooms = ' N/A'
+                else:
+                    rooms = ' ' + ", ".join(rooms)
+                    
+                schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
                 
-            schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
-               
+        elif schedule_type == 'Volunteer':
+            schedule = """
+Volunteer schedule for %s:
+
+ Time                   | Shift                                  \n""" % (user.name())
+            schedule += '------------------------+----------------------------------------\n'
+            shifts = user.volunteeroffer_set.filter(request__program=program).order_by('request__timeslot__start')
+            for shift in shifts:
+                schedule += ' %s| %s\n' % (shift.request.timeslot.pretty_time().ljust(23), shift.request.timeslot.description.ljust(39))
+
         return schedule
 
     @aux_call
@@ -825,7 +849,7 @@ class ProgramPrintables(ProgramModuleObj):
         if onsite:
             students = [ESPUser(User.objects.get(id=request.GET['userid']))]
         else:
-            filterObj, found = get_user_list(request, self.program.getLists(True))
+            filterObj, found = UserSearchController().create_filter(request, self.program)
     
             if not found:
                 return filterObj
@@ -857,7 +881,7 @@ class ProgramPrintables(ProgramModuleObj):
         if onsite:
             students = [ESPUser(User.objects.get(id=request.GET['userid']))]
         else:
-            filterObj, found = get_user_list(request, self.program.getLists(True))
+            filterObj, found = UserSearchController().create_filter(request, self.program)
     
             if not found:
                 return filterObj
@@ -1009,12 +1033,12 @@ class ProgramPrintables(ProgramModuleObj):
     def flatstudentschedules(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """
 
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
         context = {'module': self }
-        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct() ]
+        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
         students.sort()
         
@@ -1079,7 +1103,7 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def satpreplabels(self, request, tl, one, two, module, extra, prog):
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
@@ -1138,7 +1162,7 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def student_tickets(self, request, tl, one, two, module, extra, prog):
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
         
@@ -1208,14 +1232,14 @@ class ProgramPrintables(ProgramModuleObj):
         """ generate class rosters """
 
 
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
 
 
         context = {'module': self     }
-        teachers = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
+        teachers = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         teachers.sort()
 
         scheditems = []
@@ -1248,12 +1272,12 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def studentchecklist(self, request, tl, one, two, module, extra, prog):
         context = {'module': self}
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
 
-        students= [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct() ]
+        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         students.sort()
 
         studentList = []
@@ -1592,6 +1616,30 @@ class ProgramPrintables(ProgramModuleObj):
                                [smart_str(((section.parent_class.requested_room + '. ') if section.parent_class.requested_room else '') + section.parent_class.message_for_directors)])
 
         response['Content-Disposition'] = 'attachment; filename=ok_times_concise.csv'
+        return response
+
+    @aux_call
+    @needs_admin
+    def csv_schedule(self, request, tl, one, two, module, extra, prog):
+        """ A CSV-formatted list of existing schedule assignments, intended to
+            be used as initial conditions for automatic scheduling.  The response
+            has 4 columns:
+                -   ID of the class section
+                -   Name of the classroom
+                -   ID of the timeslot
+                -   Lock level (usually 0 for unlocked, 1 or higher for locked)
+        """
+        import csv
+        from django.http import HttpResponse
+        from esp.resources.models import ResourceAssignment
+        response = HttpResponse(mimetype="text/csv")
+        write_csv = csv.writer(response)
+        
+        data = ResourceAssignment.objects.filter(target__parent_class__parent_program=prog).order_by('target__id', 'resource__event__id').values_list('target__id', 'resource__name', 'resource__event__id', 'lock_level')
+        for row in data:
+            write_csv.writerow(row)
+        
+        response['Content-Disposition'] = 'attachment; filename=csv_schedule.csv'
         return response
 
     class Meta:

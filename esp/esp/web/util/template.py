@@ -94,7 +94,7 @@ class InclusionTagCacheDecorator(object):
                 if params[0] == 'context':
                     params = params[1:]
                 else:
-                    raise TemplateSyntaxError, "Any tag function decorated with takes_context=True must have a first argument of 'context'"
+                    raise template.TemplateSyntaxError, "Any tag function decorated with takes_context=True must have a first argument of 'context'"
 
             class InclusionNode(template.Node):
 

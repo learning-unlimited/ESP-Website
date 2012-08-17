@@ -5,7 +5,9 @@
 {% block subsection_name %}Register for {{program.niceName}}{% endblock %}
 
 {% block xtrajs %}
-{{block.super }}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery.ui.button.js"></script>
 <script type="text/javascript">
   <!--
 
@@ -14,61 +16,199 @@
       }
       //-->
 </script>
+
+<script language="JavaScript">
+function initialize()
+{
+    $j("#hide_complete_list").click(function () {
+        $j("#show_complete_list").removeClass("manage_hidden");
+        $j("#hide_complete_list").addClass("manage_hidden");
+        $j("#complete_list").addClass("manage_hidden");
+    });
+    $j("#show_complete_list").click(function () {
+        $j("#show_complete_list").addClass("manage_hidden");
+        $j("#hide_complete_list").removeClass("manage_hidden");
+        $j("#complete_list").removeClass("manage_hidden");
+    });
+    $j("div.module_link_large").button();
+}
+
+$j(document).ready(initialize);
+</script>
+
 {% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" href="/media/styles/jquery-ui/jquery-ui.css" type="text/css" />
+    <link rel="stylesheet" href="/media/styles/management.css" type="text/css" />
+    
+    <style type="text/css">
+    .nocheckmark { border: 1px solid black; }
+    </style>
+{% endblock %}
+
 {% block content %}
+
 {% load render_qsd %}
-<style type="text/css">
-  .nocheckmark { border: 1px solid black; }
-</style>
 
-<div class="row">
+<h1>Admin Portal for {{ program.niceName }} </h1>
 
-  <div class="span6 offset1">
-    <h1>Admin Portal for {{program.niceName}} </h1>
+{% inline_qsd_block program.anchor "manage:main_top" request.user %}
+Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="http://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
+{% end_inline_qsd_block %}
 
-    <p style="text-align: center">
-      Welcome to the Administrative Portal for {{program.niceName }}.<br />
-      If you need any assistance, please email <tt>{{ DEFAULT_EMAIL_ADDRESSES.support }}</tt>.
-    </p>
-  </div>
-</div>
-
-{% render_inline_qsd program.anchor "manage:main_top" %}
-<strong>Your options:</strong>
-<br />
-<div class="row">
-  <div class="span3 offset1">
-    <ul>
-      <li><a href="/onsite/{{program.getUrlBase}}/main">Go To On-Site Page</a></li>
-      
-      {% for module in modules %}
-      {% if module.isStep %}
-      {% if not module.useTemplate %}
-      <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
-      {% else %}
-      <li><span onmouseover="updateDocs('{{module.docs|linebreaks|addslashes}}');"><em>{{ module.module.link_title }} (part of Dashboard)</em></span></li>
-      {% endif %}
-      {% endif %}
-      {% endfor %}
-      <li><a href="/manage/{{ one }}/{{ two }}/deadline_management/" title="Deadline Management" onmouseover="updateDocs('<p>Edit Program Deadlines</p>');">Edit Program Deadlines</a></li>
-      <li><a href="/manage/{{ one }}/{{ two }}/registrationtype_management/" title="Registration Type Management" onmouseover="updateDocs('<p>Registration Type Management</p>');">Registration Type Management</a></li>
-      <li><a href="/learn/{{ one }}/{{ two }}/studentreg/" title="Student Registration" onmouseover="updateDocs('<p>Student Reg</p>');">Student Reg</a></li>
-      <li><a href="/learn/{{ one }}/{{ two }}/catalog/" title="Catalog" onmouseover="updateDocs('<p>Catalog</p>');">Catalog</a></li>
-      <li><a href="/manage/{{ one }}/{{ two }}/attendees/" title="Class Attendance" onmouseover="updateDocs('<p>Update Class Attendees</p>');">Update Class Attendees</a></li>
-    </ul>
-  </div>
-
-  <div class="span3">
-    <div class="helpbox">
-      <h4><span>Help</span></h4>
-      <div id="adminhelp">
-	Please select an option to the left to continue, or look down below to select further options.
-      </div>
-      {% render_inline_qsd program.anchor "manage:main_bottom" %}
+<div class="module_group" id="module_group_1">
+    <div class="module_group_header">
+        Configure Your Program
     </div>
-  </div>
+    <div class="module_group_body">
+        <div style="display: inline-block;">
+        <a href="/manage/{{ program.getUrlBase }}/resources"><div class="module_link_large">
+            <div class="module_link_main">Resources</div>
+            <div class="module_link_caption">timeslots, classrooms</div>
+        </div></a>
+        <a href="/manage/{{ program.getUrlBase }}/deadlines"><div class="module_link_large">
+            <div class="module_link_main">Deadlines</div>
+            <div class="module_link_caption">open/close registration</div>
+        </div></a>
+        </div>
+        <div style="display: inline-block;">
+        <ul>
+            {% if manage_teacher_events %}<li><a href="/manage/{{ program.getUrlBase }}/teacher_events">Teacher Training and Interviews</a>: Teachers signed up for each slot</li>{% endif %}
+            {% if manage_lunch_constraints %}<li><a href="/manage/{{ program.getUrlBase }}/lunch_constraints">Lunch Constraints</a>: Rules for your students' schedules</li>{% endif %}
+            {% if manage_registrationtype_management %}<li><a href="/manage/{{ program.getUrlBase }}/registrationtype_management">Student Registration Types</a>: What students see on their schedule after a lottery</li>{% endif %}
+        </ul>
+        </div>
+    </div>
 </div>
 
+<div class="module_group" id="module_group_2">
+    <div class="module_group_header">
+        Coordinate with Participants
+    </div>
+    <div class="module_group_body">
+    <div style="display: inline-block;">
+        <a href="/manage/{{ program.getUrlBase }}/commpanel"><div class="module_link_large">
+            <div class="module_link_main">E-mail</div>
+            <div class="module_link_caption">communications panel</div>
+        </div></a>
+        <a href="/manage/{{ program.getUrlBase }}/admin_morph"><div class="module_link_large">
+            <div class="module_link_main">Morph into User</div>
+            <div class="module_link_caption">&nbsp;</div>
+        </div></a>
+    </div>
+    </div>
+</div>
+
+<div class="module_group" id="module_group_3">
+    <div class="module_group_header">
+        Manage Logistics
+    </div>
+    <div class="module_group_body">
+        <div style="display: inline-block;">
+        <a href="/manage/{{ program.getUrlBase }}/dashboard"><div class="module_link_large">
+            <div class="module_link_main">Dashboard</div>
+            <div class="module_link_caption">review classes and stats</div>
+        </div></a>
+        <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><div class="module_link_large">
+            <div class="module_link_main">Scheduling</div>
+            <div class="module_link_caption">assign rooms and times</div>
+        </div></a>
+        </div>
+        <div style="display: inline-block;">
+        <a href="/manage/{{ program.getUrlBase }}/get_materials"><div class="module_link_large">
+            <div class="module_link_main">Documents</div>
+            <div class="module_link_caption">upload and view files</div>
+        </div></a>
+        <a href="/manage/{{ program.getUrlBase }}/volunteering"><div class="module_link_large">
+            <div class="module_link_main">Volunteers</div>
+            <div class="module_link_caption">create shifts, view signups</div>
+        </div></a>
+        </div>
+    </div>
+</div>
+<table width="95%">
+<tr>
+<td width="50%">
+<div class="module_group" id="module_group_4">
+    <div class="module_group_header">
+        Quick Links
+    </div>
+    <div class="module_group_body">
+    <ul>
+        <li><a href="/learn/{{ program.getUrlBase }}/catalog">Catalog</a></li>
+        <li><a href="/learn/{{ program.getUrlBase }}/studentreg">Student Reg</a></li>
+        <li><a href="/teach/{{ program.getUrlBase }}/teacherreg">Teacher Reg</a></li>
+        <li><a href="/volunteer/{{ program.getUrlBase }}/signup">Volunteer Reg</a></li>
+        <li><a href="/onsite/{{ program.getUrlBase }}/main">Onsite</a></li>
+    </ul>
+    </div>
+</div>
+</td>
+<td width="50%">
+<div class="module_group" id="module_group_5">
+    <div class="module_group_header">
+        Generate Printables
+    </div>
+    <div class="module_group_body">
+    <ul>
+        <li><a href="/manage/{{ program.getUrlBase }}/catalog">PDF Catalog</a></li>
+        <li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a></li>
+        <li><a href="/manage/{{ program.getUrlBase }}/selectidoptions">Nametags</a></li>
+        <li><a href="/manage/{{ program.getUrlBase }}/selectList">Arbitrary User List</a></li>
+        <li><a href="/manage/{{ program.getUrlBase }}/printoptions">All Printables</a></li>
+    </ul>
+    </div>
+</div>
+</td>
+</tr>
+</table>
+
+<div id="show_complete_list" class="module_group_header header_special">Show Complete Module List</div>
+<div id="hide_complete_list" class="module_group_header header_special manage_hidden">Hide Complete Module List</div>
+
+<div id="complete_list" class="manage_hidden">
+<table border="0" width="100%">
+<tr>
+ <td width="40%">
+<ul>
+<li><a href="/onsite/{{program.getUrlBase}}/main">
+     Go To On-Site Page
+    </a>
+</li>
+
+{% for module in modules %}
+{% if module.isStep %}
+  {% if not module.useTemplate %}
+    <li>{% autoescape off %}{{ module.makeLink }}{% endautoescape %}</li>
+  {% else %}
+    <li><span onmouseover="updateDocs('{{module.docs|linebreaks|addslashes}}');"><em>{{ module.module.link_title }} (part of Dashboard)</em></span></li>
+  {% endif %}
+{% endif %}
+{% endfor %}
+<li><a href="/manage/{{ one }}/{{ two }}/deadline_management/" title="Deadline Management" onmouseover="updateDocs('<p>Edit Program Deadlines</p>');">Edit Program Deadlines</a></li>
+<li><a href="/manage/{{ one }}/{{ two }}/lunch_constraints/" title="Setup Lunch Constraints" onmouseover="updateDocs('<p>Setup Lunch Constraints</p>');">Setup Lunch Constraints</a></li>
+<li><a href="/manage/{{ one }}/{{ two }}/registrationtype_management/" title="Registration Type Management" onmouseover="updateDocs('<p>Registration Type Management</p>');">Registration Type Management</a></li>
+<li><a href="/learn/{{ one }}/{{ two }}/studentreg/" title="Student Registration" onmouseover="updateDocs('<p>Student Reg</p>');">Student Reg</a></li>
+<li><a href="/learn/{{ one }}/{{ two }}/catalog/" title="Catalog" onmouseover="updateDocs('<p>Catalog</p>');">Catalog</a></li>
+<li><a href="/manage/{{ one }}/{{ two }}/attendees/" title="Class Attendance" onmouseover="updateDocs('<p>Update Class Attendees</p>');">Update Class Attendees</a></li>
+</ul>
+</td>
+<td style="vertical-align: top;">
+<div class="helpbox">
+<h4><span>Help</span></h4>
+<div id="adminhelp">
+Please select an option to the left to continue, or look down below to select further options.
+</div>
+</td>
+</tr>
+</table>
+</div>
+
+<td colspan="2">
+{% render_inline_qsd program.anchor "manage:main_bottom" %}
+</td>
 
 {% endblock %}
 

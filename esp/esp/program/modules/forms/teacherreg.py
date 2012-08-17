@@ -43,7 +43,7 @@ from esp.program.models import ClassCategories, ClassSubject, ClassSection, Clas
 from esp.program.models.class_ import open_class_category as open_class_category_function
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
-from esp.settings import INSTITUTION_NAME
+from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
 from datetime import datetime, timedelta
 import simplejson as json
@@ -64,7 +64,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     title          = StrippedCharField(    label='Course Title', length=50, max_length=200 )
     category       = forms.ChoiceField( label='Course Category', choices=[], widget=BlankSelectWidget() )
     class_info     = StrippedCharField(   label='Course Description', widget=forms.Textarea(),
-                                        help_text='Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)' )
+                                        help_text='<span class="tex2jax_ignore">Want to enter math? Use <tt>$$ Your-LaTeX-code-here $$</tt>. (e.g. use $$\pi$$ to mention &pi;)</span>' )
     prereqs        = forms.CharField(   label='Course Prerequisites', widget=forms.Textarea(attrs={'rows': 4}), required=False,
                                         help_text='If your course does not have prerequisites, leave this box blank.')
     
@@ -89,7 +89,7 @@ class TeacherClassRegForm(FormWithRequiredCss):
     
     has_own_space  = forms.ChoiceField( label='Location', choices=location_choices, widget=forms.RadioSelect(), required=False )
     requested_room = forms.CharField(   label='Room Request', required=False,
-                                        help_text='If you have a specific room or type of room in mind, name a room at %s that would be ideal for you.' % INSTITUTION_NAME )
+                                        help_text='If you have a specific room or type of room in mind, name a room at %s that would be ideal for you.' % settings.INSTITUTION_NAME )
 
     global_resources = forms.MultipleChoiceField( label='Equipment and Classroom Options',
                                                   choices=[], widget=forms.CheckboxSelectMultiple(), required=False,

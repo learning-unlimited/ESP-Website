@@ -214,6 +214,7 @@ INSTALLED_APPS = (
     'reversion',
     'south',
     'sslauth',
+    'formwizard',
     'form_utils',
     'esp.seltests',
     'esp.dataviews',
@@ -284,22 +285,12 @@ except ImportError:
     from utils.sslauth_create_user import find_ssl_user
 SSLAUTH_CREATE_USERNAME_CALLBACK = find_ssl_user
 
-
-
-email_choices = (
+CONTACTFORM_EMAIL_CHOICES = (
     ('esp','Unknown'),
     ('general','General ESP'),
     ('esp-web','Web Site Problems'),
     ('relations',  'K-12 School Relations'),
     )
 
-# corresponding email addresses                                                                                                                                                     
-email_addresses = {
-    'esp'     : DEFAULT_EMAIL_ADDRESSES['default'],
-    'general'     : DEFAULT_EMAIL_ADDRESSES['default'],
-    'esp-web' : DEFAULT_EMAIL_ADDRESSES['support'],
-    'relations': DEFAULT_EMAIL_ADDRESSES['default'],
-    }
-
-VARNISH_HOST = "localhost"
-VARNISH_PORT = 8000
+# corresponding email addresses - define these defaults in settings.py, since DEFAULT_EMAIL_ADDRESSES will be overwritten in local_settings.py
+CONTACTFORM_EMAIL_ADDRESSES = {}

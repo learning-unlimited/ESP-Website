@@ -1,41 +1,61 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
   <head>
     <title>{% block fulltitle %}{% endblock %}</title>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="description" content="{% block description %}{% endblock %}" />
     <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
     <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
-    
+
+    {% block stylesheets %}
     <link href="/media/theme_editor/docs/assets/css/docs.css" rel="stylesheet"/>
     <link rel="stylesheet" type="text/css" href="/media/theme_editor/themes/bootstrap.css"/> 
     
-	<script type="text/javascript"> localStorage.clear(); </script>
-
     <link href="https://cdn.learningu.org/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet"/>
     <link href="https://cdn.learningu.org/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>
 
     <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
-
-    {% block stylesheets %}
     {% endblock %}
-    {% comment %}
-      The following javascript controls visibility of elements based on login 
-status, admin status et c. It is in the header to prevent nasty rearrangements
-while the page is loading. Javascript should usually go in the javascript block
-at the end of the page.
-    {% endcomment %}
+
+    {% block javascript %}
+    {% block js0 %}
+    <script type="text/javascript" src="/media/scripts/dwcode.js"> </script>
+    <script type="text/javascript" src="/media/scripts/crashkit-javascript.js"> </script>
+    {% endblock js0 %}
+
     {% block jquery %}
     <script type="text/javascript" src="https://cdn.learningu.org/jquery/jquery-1.7.2.js"> </script>
     <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
     <script language="JavaScript">
       $j = $.noConflict();
     </script>
-    {% endblock %}
-    {% block javascript %}
+    {% endblock jquery %}
+
+    {% block js1 %}
     <script type="text/javascript" src="/media/scripts/content/user_data.js"></script>
     <script type="text/javascript" src="/media/scripts/content/user_classes.js"></script>
     <script type="text/javascript" src="/media/scripts/csrf_init.js"></script>
+    
+    <script type="text/javascript" src="https://d3eoax9i5htok0.cloudfront.net/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+      messageStyle: "none",
+      displayAlign: "left",
+      displayIndent: "0em",
+      "HTML-CSS": {
+      styles: {
+      '.MathJax_Display': {
+      display: "inline"
+      }
+      }
+      }
+      });
+    </script>
+
+    <script type="text/javascript" src="/media/scripts/jsprettify-all-latest.js"></script>
+    <script language="JavaScript"> window.jsprettify.run(); </script>
+    {% endblock js1 %}
+
 
     <script type="text/javascript">
       /* <![CDATA[ */
@@ -44,8 +64,10 @@ at the end of the page.
       });
       /* ]]> */
     </script>
-    {% endblock %}
-    {% block xtrajs %}{% endblock %}
+
+    {% block xtrajs %}{% endblock xtrajs %}
+
+    {% endblock javascript %}
   </head>
   
   <body>
@@ -75,3 +97,4 @@ at the end of the page.
     {% endblock %}
   </body>
 </html>
+

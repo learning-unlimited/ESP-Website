@@ -35,7 +35,7 @@ import os
 from django.conf.urls.defaults import patterns, include, handler500, handler404
 from django.contrib import admin
 from esp.admin import admin_site, autodiscover
-from esp.settings import PROJECT_ROOT, MEDIA_ROOT
+from django.conf import settings
 from django.views.generic.base import RedirectView
 
 from esp.section_data import section_redirect_keys, section_prefix_keys
@@ -46,20 +46,10 @@ autodiscover(admin_site)
 handler404 = 'esp.web.util.main.error404'
 handler500 = 'esp.web.util.main.error500'
 
-# generic stuff
-urlpatterns = patterns('esp.web.views.main',
-                        (r'^$', 'home'), # index
-                        (r'^error_reporter', 'error_reporter'),
-                        (r'^web$', 'home'), # index
-                        (r'^esp_web', 'home'), # index
-                        (r'.php$', 'home'), # index
-                        (r'^set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
-                        )
-
-# Use Django's built-in static views to serve static media
-urlpatterns += patterns('django.views.static',
-                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': MEDIA_ROOT}),
-                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': os.path.join(PROJECT_ROOT, 'admin/media/')}),
+# Static media
+urlpatterns = patterns('django.views.static',
+                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': settings.MEDIA_ROOT}),
+                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': os.path.join(settings.PROJECT_ROOT, 'admin/media/')}),
                        )
 
 # Admin stuff
@@ -149,9 +139,9 @@ urlpatterns += patterns('esp.web.views.main',
 
 
     # Program stuff
-                        (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/classchangerequest/?$', 'classchangerequest'),
-                        (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
-                        (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
+    (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/classchangerequest/?$', 'classchangerequest'),
+    (r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
+    (r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
 
     #??? (axiak)
     #(r'^program/Template/$', 'esp.program.views.programTemplateEditor'),

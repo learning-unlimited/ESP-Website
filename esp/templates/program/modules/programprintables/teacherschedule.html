@@ -26,6 +26,10 @@ td.newday { border-width: 2px 1px 0 1px;}
 
 </head>
 <body>
+{% if scheditems|length_is:0 %}
+<div class="title">It looks like you don't have any classes scheduled yet.</div>
+{% endif %} 
+
 {% for scheditem in scheditems %}
 
 {% ifchanged scheditem.teacher.id %}

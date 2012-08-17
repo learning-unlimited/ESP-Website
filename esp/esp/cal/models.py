@@ -185,9 +185,16 @@ class Event(models.Model):
 
     def pretty_time(self, include_date = False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun")
         s = self.start.strftime('%a')
+        s2 = self.end.strftime('%a')
+        # The two days of the week are different
         if include_date:
             s += self.start.strftime(', %b %d,')
-        return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
+            s2 += self.end.strftime(', %b %d,')
+        if s != s2:
+            return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
+               + s2 + ' ' + self.end.strftime('%I:%M%p').lower().strip('0')
+        else:
+            return s + ' ' + self.start.strftime('%I:%M%p').lower().strip('0') + '--' \
                + self.end.strftime('%I:%M%p').lower().strip('0')
     
     def pretty_date(self):

@@ -17,34 +17,10 @@ Customize your title formatting here.  For example:
 
 {% block javascript %}
 {{ block.super }}
-
-{% comment %}
-These script fragments ensure that the backgrounds of the nav bar and 
-content area line up at the bottom of the page.  If you don't need them,
-feel free to remove them.
-
-<script type="text/javascript" src="/media/scripts/match_heights.js"></script>
-<script type="text/javascript">
-  <!--
-      match_content = function () {
-      match_heights(['main', 'navbar']);
-      };
-      $j(document).ready(match_content);
-    -->
-</script>
-{% endcomment %}
 {# Customize your scripts here #}
 {% endblock %}
 
 {% block body %}
-
-{% comment %}
-<style type="text/css">
-  body {
-  background: {% block content_color %}#FFFFFF{% endblock %};
-  }
-</style>
-{% endcomment %}
 
 {% block navbar %}
 {% include "navbar.html" %}
@@ -79,18 +55,17 @@ feel free to remove them.
 
       <div id="navbar_content">
 
-	{% load smartypants %}
-	{% load markdown %}
-	{% for announce in announcements.announcementList %}
+   {% load markdown %}
+    {% for announce in announcements.announcementList %}
         <p>
           <span class="announcementlink_title{% if announce.section %}{{ announce.section }}{% endif %}">
             {% if announce.makeUrl %}
             <a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a>
             {% else %}
             {{ announce.makeTitle }}
-            {% endif %}
-          </span><br />
-          <span class="announcementlink">{% autoescape off %}{{ announce.content|markdown|smartypants }} {% endautoescape %}</span>
+        {% endif %}
+        </span><br />
+        <span class="announcementlink prettify">{% autoescape off %}{{ announce.content|markdown }}{% endautoescape %}</span>
         </p>
 	{% endfor %}
 
