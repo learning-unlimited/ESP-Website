@@ -94,9 +94,14 @@ class AdminCore(ProgramModuleObj, CoreModule):
         of classes with the ability to edit each one.  """
         context = {}
         modules = self.program.getModules(request.user, 'manage')
+        print "Got modules"
         
+        print list(modules)[3]
+        i=0
         for module in modules:
             context = module.prepare(context)
+            print "Prepared module %d: %s" % (i, unicode(module))
+            i+=1
  
         context['modules'] = modules
         context['one'] = one

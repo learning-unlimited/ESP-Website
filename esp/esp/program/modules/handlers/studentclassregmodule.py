@@ -40,7 +40,7 @@ from esp.program.models  import ClassSubject, ClassSection, ClassCategories, Reg
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
-from esp.users.models    import ESPUser, UserBit, User
+from esp.users.models    import ESPUser, UserBit, User, Permission
 from esp.tagdict.models  import Tag
 from esp.cache           import cache_function
 from django.db.models.query import Q
@@ -62,7 +62,7 @@ import simplejson
 def json_encode(obj):
     if isinstance(obj, ClassSubject):
         return { 'id': obj.id,
-                 'title': obj.anchor.friendly_name,
+                 'title': obj.title,
                  'anchor': obj.anchor_id,
                  'parent_program': obj.parent_program_id,
                  'category': obj.category,
@@ -275,10 +275,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         context['prog'] = self.program
         context['one'] = one
         context['two'] = two
-        context['reg_open'] = bool(UserBit.UserHasPerms(request.user,
-                                                        prog.anchor_id,
-                                                        GetNode('V/Deadline/Registration/'+{'learn':'Student',
-                                                                                            'teach':'Teacher'}[tl]+"/Classes")))
+        context['reg_open'] = bool(Permission.user_has_perm(request.user, {'learn':'Student','teach':'Teacher'}[tl]+"/Classes",prog))
+
         schedule_str = render_to_string('users/student_schedule_inline.html', context)
         script_str = render_to_string('users/student_schedule_inline.js', context)
         json_data = {'student_schedule_html': schedule_str, 'script': script_str}
@@ -324,7 +322,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         """ Pre-register the student for the class section in POST['section_id'].
             Return True if there are no errors.
         """
-        reg_verb = GetNode('V/Deadline/Registration/Student/Classes')
+        reg_perm = 'Student/Classes'
         scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
 
         if 'prereg_verb' in request.POST:
@@ -353,7 +351,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             raise ESPError(False), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled."
 
         # Can we register for more than one class yet?
-        if (not request.user.onsite_local) and (not UserBit.objects.UserHasPerms(request.user, prog.anchor, reg_verb ) ):
+        if (not request.user.onsite_local) and (not Permission.user_has_perm(request.user, reg_perm, prog ) ):
             enrolled_classes = ESPUser(request.user).getEnrolledClasses(prog, request)
             # Some classes automatically register people for enforced prerequisites (i.e. HSSP ==> Spark). Don't penalize people for these...
             classes_registered = 0
@@ -368,9 +366,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
             if classes_registered >= 1:
                 datestring = ''
-                bitlist = UserBit.objects.filter(user__isnull=True, qsc=prog.anchor, verb=reg_verb)
-                if len(bitlist) > 0:
-                    d = bitlist[0].startdate
+                sreg_perms=Permission.objects.filter(user__isnull=True, role__name="Student", permission_type=reg_perm, program=prog)
+                if sreg_perms.count() > 0:
+                    d = sreg_perms[0].startdate
                     if d.date() == d.today().date():
                         datestring = ' later today'
                     else:
@@ -424,9 +422,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         
         #   Desired priority level is 1 above current max
         if section.preregister_student(request.user, request.user.onsite_local, priority, prereg_verb = prereg_verb):
-            bits = UserBit.objects.filter(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now())
+            regs = Record.objects.filter(user=request.user, program=prog, permission_type="reg_confirmed")
             if bits.count() == 0 and Tag.getTag('confirm_on_addclass'):
-                bit = UserBit.objects.create(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
+                r = Record.objects.create(user=request.user, program=prog, permission_type="reg_confirmed")
             return True
         else:
             raise ESPError(False), 'According to our latest information, this class is full. Please go back and choose another class.'    

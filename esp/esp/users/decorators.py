@@ -32,7 +32,6 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
-from esp.users.models import UserBit
 from esp.middleware   import ESPError
 from django.contrib.auth.decorators import login_required
 from esp.web.util.main import render_to_response
@@ -51,25 +50,4 @@ def anonymous_only(message="Sorry, you don't need this page -- you're logged in.
         return _inner_function
 
     return _decorator
-
-def UserHasPerms(branch, verb, error_msg = 'You do not have permission to view this page.', log = False):
-    """ This should be used as a decorator. It checks to see if a user has the verb
-        on the branch and will complain according to the error_msg.                 """
-
-
-    def _checkUserDecorator(func):
-
-        @login_required
-        def _checkUser(request, *args, **kwargs):
-
-            if not UserBit.UserHasPerms(qsc = branch, verb = verb, user = request.user):
-                raise ESPError(log), error_msg
-
-            return func(request, *args, **kwargs)
-
-
-        return _checkUser
-
-    return _checkUserDecorator
-
 

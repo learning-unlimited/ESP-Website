@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
-from esp.users.models import ContactInfo, UserBit, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo
+from esp.users.models import ContactInfo, ESPUser, TeacherInfo, StudentInfo, EducatorInfo, GuardianInfo
 from esp.datatree.models import *
 from esp.miniblog.models import AnnouncementLink, Entry
 from esp.miniblog.views import preview_miniblog
@@ -110,10 +110,6 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     from esp.users.models import K12School
     from esp.web.views.main import registration_redirect
     
-    STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
-    STUDREP_QSC  = GetNode('Q')
-
-
     if prog_input is None:
         prog = None
         navnode = GetNode('Q/Web/myesp')
@@ -151,7 +147,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         form = FormClass(curUser, request.POST)
 
         # Don't suddenly demand an explanation from people who are already student reps
-        if UserBit.objects.UserHasPerms(curUser, STUDREP_QSC, STUDREP_VERB):
+        if curUser.isStudentRep():
             if hasattr(form, 'repress_studentrep_expl_error'):
                 form.repress_studentrep_expl_error()
 
@@ -216,9 +212,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             regProf = RegistrationProfile.getLastProfile(curUser)
         new_data = {}
         if curUser.isStudent():
-            new_data['studentrep'] = (UserBit.objects.filter(user = curUser,
-                                     verb = STUDREP_VERB,
-                                     qsc  = STUDREP_QSC).count() > 0)
+            new_data['studentrep'] = curUser.isStudentRep()
         new_data['first_name'] = curUser.first_name
         new_data['last_name']  = curUser.last_name
         new_data['e_mail']     = curUser.email

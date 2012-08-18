@@ -38,7 +38,7 @@ from esp.web.util        import render_to_response
 
 from esp.datatree.models import *
 
-from esp.users.models import ESPUser, UserBit, User
+from esp.users.models import ESPUser, User, Record
 from esp.customforms.models import Form
 from esp.customforms.DynamicForm import FormHandler, ComboForm
 from esp.customforms.DynamicModel import DynamicModelHandler
@@ -55,7 +55,7 @@ class CustomFormModule(ProgramModuleObj):
 
     def __init__(self, *args, **kwargs):
         super(CustomFormModule, self).__init__(*args, **kwargs)
-        self.reg_verb = GetNode('V/Flags/Registration/ExtraFormDone')
+        self.event = "extra_form_done"
 
     @classmethod
     def module_properties(cls):
@@ -76,7 +76,7 @@ class CustomFormModule(ProgramModuleObj):
 
     def isCompleted(self):
         """Return true if user has filled out the teacher quiz."""
-        return UserBit.valid_objects().filter(user=get_current_request().user, qsc=self.program.anchor, verb=self.reg_verb).exists()
+        return Record.objects.filter(user=get_current_request().user, program=self.program, event=self.event).exists()
 
     @main_call
     def extraform(self, request, tl, one, two, module, extra, prog):
@@ -98,7 +98,7 @@ class CustomFormModule(ProgramModuleObj):
                 form_model = dmh.createDynModel()
                 form_model.objects.filter(user=request.user).delete()
                 form_wizard.done([form])
-                bit, created = UserBit.valid_objects().get_or_create(user=request.user, qsc=self.program.anchor, verb=self.reg_verb)
+                bit, created = Record.objects.get_or_create(user=request.user, program=self.program, event=self.event)
                 return self.goToCore(tl)
         else:
             #   If the user already filled out the form, use their earlier response for the initial values

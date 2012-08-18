@@ -60,13 +60,7 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
-        if ( len(Document.get_completed(get_current_request().user, self.program_anchor_cached())) > 0 ):
-            return True
-        else:
-            parent_program = self.program.getParentProgram()
-            if parent_program is not None:
-                return ( len(Document.get_completed(get_current_request().user, parent_program.anchor)) > 0 )
-        return False
+        return len(Document.get_completed(get_current_request().user, self.program_anchor_cached())) > 0
     
     have_paid = isCompleted
 

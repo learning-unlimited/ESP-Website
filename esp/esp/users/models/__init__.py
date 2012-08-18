@@ -822,7 +822,7 @@ class ESPUser(User, AnonymousUser):
         Creates the methods such as isTeacher that determines whether
         or not the user is a member of that user class.
         """
-        user_classes = ('Teacher','Guardian','Educator','Officer','Student','Volunteer')
+        user_classes = ('Teacher','Guardian','Educator','Officer','Student','Volunteer','StudentRep')
         overrides = {'Officer': 'Administrator'}
         for user_class in user_classes:
             method_name = 'is%s' % user_class
@@ -1964,12 +1964,18 @@ class Record(models.Model):
         ("paid","Paid for program"),
         ("med","Submitted medical form"),
         ("liab","Submitted liability form"),
-        ("teacheracknowledgement","Did teacher acknowledgement")
+        ("teacheracknowledgement","Did teacher acknowledgement"),
+        ("lunch_selected","Selected a lunch block"),
+        ("extra_form_done","Filled out Custom Form"),
+        ("waitlist","Waitlisted for a program"),
+        ("interview","Teacher-interviewed for a program"),
+        ("teacher_training","Attended/signed up for teacher-training for a program"),
     )
         
     event = models.CharField(max_length=80,choices=EVENT_CHOICES)
     program = models.ForeignKey("program.Program",blank=True,null=True)
     user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True)
+
     time = models.DateTimeField(blank=True, default = datetime.now)
 
     @classmethod
@@ -2000,14 +2006,15 @@ class Permission(models.Model):
         ("Administer", "Full administrative permissions"),
         ("View", "Able to view a program"),
         ("Onsite", "Access to onsite interfaces"),
+        ("GradeOverride","Ignore grade ranges for studentreg"),
         ("Student Deadlines", (
                 ("Student", "Basic student access"),
                 ("Student/All", "All student deadlines"),
                 ("Student/Applications","Apply for classes"),
                 ("Student/Catalog","View the catalog"),
-                ("Student/Classes",""),
-                ("Student/Classes/All",""),
-                ("Student/Classes/OneClass",""),
+                ("Student/Classes","Classes"),
+                ("Student/Classes/All","Classes/All"),
+                ("Student/Classes/OneClass","Class/OneClass"),
                 ("Student/Classes/Lottery","Enter the lottery"),
                 ("Student/Classes/Lottery/View","View lottery results"),
                 ("Student/ExtraCosts","Extra costs page"),
@@ -2024,13 +2031,13 @@ class Permission(models.Model):
                 ("Teacher/Acknowledgement", "Teacher acknowledgement"),
                 ("Teacher/AppReview", "Review students' apps"),
                 ("Teacher/Availability", "Set availability"),
-                ("Teacher/Catalog",""),
-                ("Teacher/Classes", ""),
-                ("Teacher/Classes/All", ""),
-                ("Teacher/Classes/View", ""),
-                ("Teacher/Classes/Edit", ""),
-                ("Teacher/Classes/Create",""),
-                ("Teacher/Classes/SelectStudents",""),
+                ("Teacher/Catalog","Catalog"),
+                ("Teacher/Classes", "Classes"),
+                ("Teacher/Classes/All", "Class/All"),
+                ("Teacher/Classes/View", "Classes/View"),
+                ("Teacher/Classes/Edit", "Classes/Edit"),
+                ("Teacher/Classes/Create","Classes/Create"),
+                ("Teacher/Classes/SelectStudents","Classes/SelectStudents"),
                 ("Teacher/Quiz", "Teacher quiz"),
                 ("Teacher/MainPage","Registration mainpage"),
                 ("Teacher/Survey","Teacher Survey"),
@@ -2151,9 +2158,14 @@ class Permission(models.Model):
         qstart = Q(permission__startdate=None) | Q(permission__startdate__lte=now)
         qend = Q(permission__enddate=None) | Q(permission__enddate__gte=now)
 
-        return Program.objects.filter(qstart & qend,
-                                      permission__user=user,
-                                      permission__permission_type__in=implies)
+        direct = Program.objects.filter(qstart & qend,
+                                       permission__user=user,
+                                       permission__permission_type__in=implies)
+        role = Program.objects.filter(qstart & qend,
+                                      permission__permission_type__in=implies,
+                                      permission__user__isnull=True,
+                                      permission__role__in=user.groups.all())
+        return direct | role
 
 
 def install():

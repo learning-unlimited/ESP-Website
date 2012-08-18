@@ -153,7 +153,7 @@ def lsr_submit(request, program = None):
     already_flagged_secids = set(int(x.id) for x in already_flagged_sections)
     
     flag_related_sections = classes_flagged | classes_not_flagged
-    flagworthy_sections = ClassSection.objects.filter(id__in=flag_related_sections-already_flagged_secids).select_related('anchor').annotate(first_block=Min('meeting_times__start'))
+    flagworthy_sections = ClassSection.objects.filter(id__in=flag_related_sections-already_flagged_secids).annotate(first_block=Min('meeting_times__start'))
     
     sections_by_block = defaultdict(list)
     sections_by_id = {}   
@@ -177,7 +177,7 @@ def lsr_submit(request, program = None):
     already_interested_sections = request.user.getSections(program=program, verbs=[reg_interested])
     already_interested_secids = set(int(x.id) for x in already_interested_sections)
     interest_related_sections = classes_interest | classes_no_interest
-    sections = ClassSection.objects.filter(id__in = (interest_related_sections - flag_related_sections - already_flagged_secids - already_interested_secids)).select_related('anchor')
+    sections = ClassSection.objects.filter(id__in = (interest_related_sections - flag_related_sections - already_flagged_secids - already_interested_secids))
 
     ## No need to reset sections_by_id
     for s in list(sections) + list(already_interested_sections):
@@ -248,7 +248,7 @@ def lsr_submit_HSSP(request, program, priority_limit, data):  # temporary functi
                     classes_flagged[0].remove(oldRegistration.section.id)
                 break
     
-    flagworthy_sections = [None] + [ClassSection.objects.filter(id__in=classes_flagged[i]).select_related('anchor').select_related(depth=2).annotate(first_block=Min('meeting_times__start')) for i in range(1, priority_limit + 1)]
+    flagworthy_sections = [None] + [ClassSection.objects.filter(id__in=classes_flagged[i]).select_related(depth=2).annotate(first_block=Min('meeting_times__start')) for i in range(1, priority_limit + 1)]
     
     for i in range(1, priority_limit + 1):
         for s in list(flagworthy_sections[i]):

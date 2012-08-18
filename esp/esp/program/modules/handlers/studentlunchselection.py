@@ -112,7 +112,7 @@ class StudentLunchSelection(ProgramModuleObj):
             }
 
     def isCompleted(self):
-        return UserBit.valid_objects().filter(user=get_current_request().user, qsc=self.program.anchor, verb=GetNode('V/Flags/Registration/LunchSelected')).exists()
+        return Record.objects.filter(user=get_current_request().user,event="lunch_selected",program=self.program).exists()
 
     @main_call
     @needs_student
@@ -136,7 +136,7 @@ class StudentLunchSelection(ProgramModuleObj):
                         success = False
                     context['messages'] += [msg]
                 if success:
-                    bit, created = UserBit.valid_objects().get_or_create(user=user, qsc=prog.anchor, verb=GetNode('V/Flags/Registration/LunchSelected'))
+                    rec, created = Record.objects.get_or_create(user=user,program=prog,event="lunch_selected")
                     return self.goToCore(tl)
             else:
                 context['errors'] = True
