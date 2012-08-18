@@ -43,7 +43,7 @@ from django.db.models.query import Q
 #from esp.miniblog.models import Entry
 from esp.datatree.models import GetNode, DataTree
 #from esp.cal.models import Event
-from esp.users.models import ESPUser, UserBit, User, Record
+from esp.users.models import ESPUser, User, Record
 from esp.customforms.models import Form
 from esp.customforms.DynamicForm import FormHandler
 from esp.tagdict.models import Tag
@@ -56,15 +56,10 @@ class TeacherQuizController(object):
 
     twoday_pattern = re.compile('^[^0-9]*([0-9]+)[^0-9]+([0-9]+)[^0-9]*$')
 
-    def __init__(self, program_or_anchor, *args, **kwargs):
+    def __init__(self, program, *args, **kwargs):
         super(TeacherQuizController, self).__init__(*args, **kwargs)
-        self.program_anchor = program_or_anchor
-        # We'll also accept a program
-        if hasattr(self.program_anchor, 'anchor'):
-            self.program_anchor = self.program_anchor.anchor
-        # Make a sad attempt at type safety
-        if not isinstance(self.program_anchor, DataTree):
-            raise TypeError("Argument to constructor should be Program or DataTree node.")
+        self.program = program
+
         # Some setup
         self.event = "teacher_quiz_done"
 
@@ -77,11 +72,11 @@ class TeacherQuizController(object):
 
     def unmarkCompleted(self, user):
         """Mark a user as not having completed the quiz."""
-        Record.objects.filter(user=user, event=self.event, program__anchor=self.program_anchor).delete()
+        Record.objects.filter(user=user, event=self.event, program=self.program).delete()
 
     def isCompleted(self, user):
         """Has a user completed the quiz?"""
-        if Record.objects.filter(user=user, event=self.event, program__anchor=self.program_anchor).count()>0:
+        if Record.objects.filter(user=user, event=self.event, program=self.program).count()>0:
             return True
         return False
 
@@ -95,7 +90,7 @@ class TeacherQuizModule(ProgramModuleObj):
     def controller(self):
         if hasattr(self, '_controller'):
             return self._controller
-        return TeacherQuizController(self.program_anchor_cached())
+        return TeacherQuizController(self.program)
 
     # General Info functions
     @classmethod
@@ -112,7 +107,7 @@ class TeacherQuizModule(ProgramModuleObj):
         """Returns lists of teachers who've completed the teacher quiz."""
 
         qo = Q(record__event=self.event, 
-               record__program__anchor=self.program_anchor_cached())
+               record__program=self.program)
         if QObject is True:
             return {
                 'quiz_done': self.getQForUser(qo),

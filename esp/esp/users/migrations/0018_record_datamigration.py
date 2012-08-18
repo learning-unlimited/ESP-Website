@@ -19,6 +19,8 @@ class Migration(DataMigration):
                  "V/Flags/Registration/MedicalFiled":"med",
                  "V/Flags/Registration/LiabilityFiled":"liab",
                  "V/Flags/Registration/Teacher/Acknowledgement":"teacheracknowledgement",
+                 "V/Flags/Registration/LunchSelected":"lunch_selected",
+                 "V/Flags/Registration/Confirmed":"reg_confirmed",#this one is out-of-date but there might be some leftover
                  }
         for verb, event in verbs.items():
             bits = UserBit.objects.filter(verb__uri=verb).filter(UserBit.not_expired())
@@ -27,9 +29,18 @@ class Migration(DataMigration):
                                       program=Program.objects.get(anchor=bit.qsc),
                                       time=bit.startdate)
 
-    def backwards(self, orm):
-        "Write your backwards methods here."
+        #Reg confirmed
+        for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Confirmation").filter(UserBit.not_expired()):
+            Record.objects.create(user=bit.user,event="reg_confirmed",
+                                  program=Program.objects.get(anchor=bit.qsc.parent, time=bit.startdate))
 
+        #Waitlisted
+        for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Waitlist").filter(UserBit.not_expired()):
+            Record.objects.create(user=bit.user,event="waitlist",
+                                  program=Program.objects.get(anchor=bit.qsc.parent, time=bit.startdate))
+
+    def backwards(self, orm):
+        Record.objects.all().delete()
 
     models = {
         'auth.group': {

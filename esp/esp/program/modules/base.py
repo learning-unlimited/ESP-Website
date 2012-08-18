@@ -72,15 +72,12 @@ class ProgramModuleObj(models.Model):
     required = models.BooleanField()
     required_label = models.CharField(max_length=80, blank=True, null=True)
         
-    def program_anchor_cached(self, parent=False):
+    def program_anchor_cached(self):
         """ We reference "self.program.anchor" quite often.  Getting it requires two DB lookups.  So, cache it. """
-        CACHE_KEY = "PROGRAMMODULEOBJ__PROGRAM__ANCHOR__CACHE__%d,%d" % ((parent and 1 or 0), self.id)
+        CACHE_KEY = "PROGRAMMODULEOBJ__PROGRAM__ANCHOR__CACHE__0,%d" % (self.id,)
         val = cache.get(CACHE_KEY)
         if val == None:
-            if parent and self.program.getParentProgram():
-                val = self.program.getParentProgram().anchor
-            else:
-                val = self.program.anchor
+            val = self.program.anchor
             cache.set(CACHE_KEY, val, 60)
 
         return val

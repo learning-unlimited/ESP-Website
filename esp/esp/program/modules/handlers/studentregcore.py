@@ -37,7 +37,7 @@ from esp.program.modules import module_ext
 from esp.program.models  import Program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.web.util        import render_to_response
-from esp.users.models    import UserBit, ESPUser, User
+from esp.users.models    import ESPUser, User
 from esp.datatree.models import *
 from django.db.models.query import Q
 from esp.middleware   import ESPError
@@ -66,28 +66,14 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     def have_paid(self, user):
         """ Whether the user has paid for this program or its parent program.  """
-        if ( len(Document.get_completed(user, self.program_anchor_cached())) > 0 ):
-            return True
-        else:
-            parent_program = self.program.getParentProgram()
-            if parent_program is not None:
-                return ( len(Document.get_completed(user, parent_program.anchor)) > 0 )
-
-        return False
+        return len(Document.get_completed(user, self.program_anchor_cached())) > 0
 
     def students(self, QObject = False):
-        verb = GetNode('V/Flags/Public')
-        verb2 = GetNode('V/Flags/Registration/Attended')
-        STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
-        STUDREP_QSC  = GetNode('Q')
         now = datetime.now()
         
-        qsc  = GetNode("/".join(self.program_anchor_cached().tree_encode()) + "/Confirmation")
-        qsc_waitlist = GetNode("/".join(self.program_anchor_cached().tree_encode()) + "/Waitlist")
-
         q_confirmed = self.getQForUser(Q(record__event = "reg_confirmed", record__program__anchor=self.program))
         q_attended = self.getQForUser(Q(record__event= "attended", record__program=self.program))
-        q_studentrep = self.getQForUser(Q(userbit__qsc = STUDREP_QSC, userbit__verb = STUDREP_VERB, userbit__startdate__lte=now, userbit__enddate__gte=now))
+        q_studentrep = self.getQForUser(Q(groups__name="StudentRep"))
 
         if QObject:
             retVal = {'confirmed': q_confirmed,
@@ -96,7 +82,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
 
             if self.program.program_allow_waitlist:
-                retVal['waitlisted_students'] = self.getQForUser(Q(userbit__qsc = qsc_waitlist, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now))
+                retVal['waitlisted_students'] = self.getQForUser(Q(record__event="waitlist",record__program=self.program))
                     
             return retVal
 
@@ -105,7 +91,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                   'studentrep': ESPUser.objects.filter(q_studentrep).distinct()}
                   
         if self.program.program_allow_waitlist:
-            retVal['waitlisted_students'] = ESPUser.objects.filter(userbit__qsc = qsc_waitlist, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+            retVal['waitlisted_students'] = ESPUser.objects.filter(Q(record__event="waitlist",record__program=self.program)).distinct()
                   
         return retVal
 
@@ -129,22 +115,24 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         if not self.program.isFull():
             raise ESPError(False), "You can't subscribe to the waitlist of a program that isn't full yet!  Please click 'Back' and refresh the page to see the button to confirm your registration."
 
-        waitlist_all = UserBit.objects.filter(verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Waitlist")).filter(enddate__gte=datetime.now())
-        waitlist = waitlist_all.filter(user=request.user)
+        waitlist = Record.objects.filter(event="waitlist",
+                                         user=request.user,
+                                         program=prog)
         
         if waitlist.count() <= 0:
-            UserBit.objects.create(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Waitlist"), recursive=False)
+            Record.objects.create(event="waitlist", user=request.user,
+                                  program=prog)
             already_on_list = False
         else:
             already_on_list = True
 
-        return render_to_response(self.baseDir()+'waitlist.html', request, (prog, tl), { 'already_on_list': already_on_list, 'waitlist': waitlist_all })
+        return render_to_response(self.baseDir()+'waitlist.html', request, (prog, tl), { 'already_on_list': already_on_list })
         
     @aux_call
     @needs_student
     @meets_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
-        if UserBit.objects.filter(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now()).count() > 0:
+        if Record.objects.filter(user=request.user, event="reg_confirmed",program=prog).count() > 0:
             return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
         return self.confirmreg_new(request, tl, one, two, module, extra, prog)
     
@@ -203,7 +191,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         
         if completedAll:
             if new_reg:
-                bit = UserBit.objects.create(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
+                rec = Record.objects.create(user=user, event="reg_confirmed",
+                                            program=prog)
         else:
             raise ESPError(False), "You must finish all the necessary steps first, then click on the Save button to finish registration."
 
@@ -235,13 +224,11 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         if self.have_paid(request.user):
             raise ESPError(False), "You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund."
         
-        bits = UserBit.objects.filter(user = request.user,
-                                      verb = GetNode('V/Flags/Public'),
-                                      qsc  = GetNode('/'.join(prog.anchor.tree_encode())+'/Confirmation'))
-
-        if len(bits) > 0:
-            for bit in bits:
-                bit.expire()
+        recs = Record.objects.filter(user=request.user,
+                                     event="reg_confirmed",
+                                     program=prog)
+        for rec in recs:
+            rec.delete()
 
         #   If the appropriate flag is set, remove the student from their classes.
         scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
@@ -314,7 +301,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     def getNavBars(self):
         nav_bars = []
-        if super(StudentRegCore, self).deadline_met() or ( self.request.user and self.program and UserBit.objects.UserHasPerms(self.request.user, self.program, GetNode("V/Deadline/Registration/Student/Classes/OneClass")) ):
+        if super(StudentRegCore, self).deadline_met() or ( self.request.user and self.program and Permission.objects.user_has_perms(self.request.user, "Student/Classes/OneClass", program=self.program)):
              nav_bars.append({ 'link': '/learn/%s/studentreg/' % ( self.program.getUrlBase() ),
                       'text': '%s Student Registration' % ( self.program.niceSubName() ),
                       'section': ''})

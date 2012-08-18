@@ -169,7 +169,6 @@ class ClassManager(ProcedureManager):
         now = datetime.datetime.now()
         
         enrolled_type = RegistrationType.get_map(include=['Enrolled'], category='student')['Enrolled']
-        teaching_node=GetNode("V/Flags/Registration/Teacher")
 
         if initial_queryset:
             classes = initial_queryset
@@ -195,9 +194,6 @@ class ClassManager(ProcedureManager):
                              ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
                              
         select_params = [ enrolled_type.id,
-                          now,
-                          now,
-                          teaching_node.id,
                           now,
                           now,
                          ]
@@ -257,10 +253,8 @@ class ClassManager(ProcedureManager):
         # We got classes.  Now get teachers...
         if program != None:
             teachers = ESPUser.objects.filter(classsubject__parent_program=program).distinct()
-            #teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
         else:
             teachers = ESPUser.objects.filter(classsubject__isnull=False)
-            #teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
 
         teachers_by_id = {}
         for t in teachers:            
@@ -766,10 +760,9 @@ class ClassSection(models.Model):
     viable_times.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
     viable_times.depend_on_row(lambda:ClassSection, lambda sec: {'self': sec})
     @staticmethod
-    def key_set_from_userbit(bit):
-        sections = ClassSection.objects.filter(QTree(anchor__below=bit.qsc))
-        return [{'self': sec} for sec in sections]
-    viable_times.depend_on_row(lambda:UserBit, lambda bit: ClassSection.key_set_from_userbit(bit), lambda bit: bit.verb == GetNode('V/Flags/Registration/Teacher'))
+    def key_set_from_subject(subject):
+        return [{'self': sec} for sec in subject.sections]
+    viable_times.depend_on_cache(lambda: ClassSubject.get_teachers, lambda subj:key_set_from_subject(subj))
 
     @cache_function
     def viable_rooms(self):
@@ -1659,12 +1652,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return scrmi.temporarily_full_text
 
         if not Tag.getTag("allowed_student_types", target=self.parent_program):
-            verb_override = GetNode('V/Flags/Registration/GradeOverride')
             if user.getGrade(self.parent_program) < self.grade_min or \
                    user.getGrade(self.parent_program) > self.grade_max:
-                if not UserBit.UserHasPerms(user = user,
-                                            qsc  = self.anchor,
-                                            verb = verb_override):
+                if not Permission.user_has_perms(user = user, program = self, permission_type="GradeOverride"):
                     return 'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.

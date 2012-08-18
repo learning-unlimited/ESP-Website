@@ -742,12 +742,6 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             Q_filters = Q(program=self)
         
-        #   Inherit resource types from parent programs.
-        parent_program = self.getParentProgram()
-        if parent_program is not None:
-            Q_parent = Q(id__in=[rt.id for rt in parent_program.getResourceTypes()])
-            Q_filters = Q_filters | Q_parent
-        
         return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types])
 
     def getResources(self):
@@ -813,17 +807,6 @@ class Program(models.Model, CustomFormsLinkModel):
         from esp.survey.models import Survey
         return Survey.objects.filter(program=self)
     
-    @cache_function
-    def getParentProgram(self):
-        #   Ridiculous syntax is actually correct for our subprograms scheme.
-        pl = []
-        if self.anchor.parent.parent.name == 'Subprograms':
-            pl = Program.objects.filter(anchor=self.anchor.parent.parent.parent)
-        if len(pl) == 1:
-            return pl[0]
-        else:
-            return None
-    getParentProgram.depend_on_model(lambda: Program)
         
     def getLineItemTypes(self, user=None, required=True):
         from esp.accounting_core.models import LineItemType, Balance
@@ -833,19 +816,6 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             li_types = list(LineItemType.objects.filter(anchor__parent=GetNode(self.anchor.get_uri()+'/LineItemTypes/Optional')))
         
-        #   OK, nevermind... Add in *parent program* line items that have not been paid for.
-        parent_li_types = []
-        cur_anchor = self.anchor
-        parent_prog = self.getParentProgram()
-        #   Check if there's a parent program and the student is registered for it.
-        if (parent_prog is not None) and (user is not None) and (User.objects.filter(parent_prog.students(QObjects=True)['classreg']).filter(id=user.id).count() != 0):
-            cur_anchor = parent_prog.anchor
-            parent_li_types += list(LineItemType.objects.filter(anchor=GetNode(parent_prog.anchor.get_uri()+'/LineItemTypes/Required')))
-        for li in parent_li_types:
-            li.bal = Balance.get_current_balance(user, li)
-            if Balance.get_current_balance(user, li)[0] == 0:
-                li_types.append(li)
-                
         return li_types
 
     @cache_function
@@ -1181,25 +1151,12 @@ class RegistrationProfile(models.Model):
         else:
             regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
         if len(regProfList) < 1:
-            if program:
-                # Has this user already filled out a profile for the parent program?
-                parent_program = program.getParentProgram()
-            else:
-                parent_program = None
-            if parent_program is not None:
-                regProf = RegistrationProfile.getLastForProgram(user, parent_program)
-                regProf.program = program
-                # If they've filled out a profile for the parent program, use a copy of that.
-                if regProf.id is not None:
-                    regProf.id = None
+            regProf = RegistrationProfile.getLastProfile(user)
+            regProf.program = program
+            if regProf.id is not None:
+                regProf.id = None
+                if (datetime.now() - regProf.last_ts).days <= 5:
                     regProf.save()
-            else:
-                regProf = RegistrationProfile.getLastProfile(user)
-                regProf.program = program
-                if regProf.id is not None:
-                    regProf.id = None
-                    if (datetime.now() - regProf.last_ts).days <= 5:
-                        regProf.save()
         else:
             regProf = regProfList[0]
         return regProf
@@ -1334,12 +1291,7 @@ class FinancialAidRequest(models.Model):
         from esp.accounting_core.models import LineItemType
         from decimal import Decimal
         
-        #   Take the 'root' program for the tree anchors.
-        pp = self.program.getParentProgram()
-        if pp:
-            anchor = pp.anchor
-        else:
-            anchor = self.program.anchor
+        anchor = self.program.anchor
 
         inv = Document.get_invoice(self.user, anchor)
         txn = inv.txn

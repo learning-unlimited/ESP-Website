@@ -37,6 +37,15 @@ class Migration(DataMigration):
                                role=Group.objects.get(name=x),
                                program=p).save()
                                
+        #gradeoverride
+        go_bits=UserBit.objects.filter(verb__uri="V/Flags/Registration/GradeOverride",qsc__uri__startswith="Q/Programs")
+        for bit in go_bits:
+            try:
+                p=Program.objects.get(anchor=bit.qsc)
+            except Program.DoesNotExist:
+                continue
+            Permission(permission_type="GradeOverride", program=p,user=bit.user).save()
+
         #onsite
         onsite_bits=UserBit.objects.filter(verb__uri="V/Registration/Onsite")
         for bit in onsite_bits:

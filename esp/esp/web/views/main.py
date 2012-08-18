@@ -38,7 +38,7 @@ from django.contrib.sites.models import Site
 from esp.program.modules.base import LOGIN_URL
 from django.contrib.auth import REDIRECT_FIELD_NAME
 from esp.datatree.models import GetNode
-from esp.users.models import GetNodeOrNoBits, ESPUser, UserBit
+from esp.users.models import GetNodeOrNoBits, ESPUser, UserBit, Permission
 from django.http import Http404, HttpResponseRedirect, HttpResponse, MultiValueDict
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
@@ -384,7 +384,7 @@ def registration_redirect(request):
         - A redirect to the currently open registration if exactly one registration is open
         - A list of open registration links otherwise
     """
-    from esp.users.models import ESPUser, UserBit
+    from esp.users.models import ESPUser
     from esp.program.models import Program
 
     #   Make sure we have an ESPUser
@@ -393,17 +393,17 @@ def registration_redirect(request):
     # prepare the rendered page so it points them to open student/teacher reg's
     ctxt = {}
     userrole = {}
-    regverb = None
+    regperm = None
     if user.isStudent():
         userrole['name'] = 'Student'
         userrole['base'] = 'learn'
         userrole['reg'] = 'studentreg'
-        regverb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
+        regperm = 'Student/Classes'
     elif user.isTeacher():
         userrole['name'] = 'Teacher'
         userrole['base'] = 'teach'
         userrole['reg'] = 'teacherreg'
-        regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
+        regperm = 'Teacher/Classes'
     else:
         #   Default to student registration (this will only show if the program
         #   is found via the 'allowed_student_types' Tag)
@@ -413,18 +413,16 @@ def registration_redirect(request):
     ctxt['userrole'] = userrole
     ctxt['navnode'] = GetNode('Q/Web/myesp')
     
-    if regverb:
-        progs_userbit = list(UserBit.find_by_anchor_perms(Program, user=user, verb=regverb))
+    if regperm:
+        progs_deadline = list(Permission.program_by_perm(user,regperm))
     else:
-        progs_userbit = []
+        progs_deadline = []
+
     progs_tag = list(t.target \
             for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
             if isinstance(t.target, Program) \
                 and (set(user.getUserTypes()) & set(t.value.split(","))))
-    progs = set(progs_userbit + progs_tag)
-
-    nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
-    progs = list(progs)
+    progs = list(set(progs_deadline + progs_tag)) #distinct ones
     
     #   If we have 1 program, automatically redirect to registration for that program.
     #   Most chapters will want this, but it can be disabled by a Tag.
@@ -438,7 +436,6 @@ def registration_redirect(request):
             progs.sort(key=lambda x: -x.id)
             ctxt['progs'] = progs
             ctxt['prog'] = progs[0]
-        ctxt['nextreg'] = list(nextreg)
         return render_to_response('users/profile_complete.html', request, GetNode('Q/Web'), ctxt)		    
 
 

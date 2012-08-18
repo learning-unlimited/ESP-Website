@@ -687,8 +687,6 @@ class ProgramPrintables(ProgramModuleObj):
             
             # get program anchor or that of parent program
             p_anchor = prof.program.anchor
-            if prof.program.getParentProgram():
-                p_anchor = prof.program.getParentProgram().anchor
             try:
                 invoice = Document.get_invoice(user, p_anchor, li_types, dont_duplicate=True, get_complete=True)
             except MultipleDocumentError:
@@ -891,14 +889,6 @@ Volunteer schedule for %s:
  
         scheditems = []
         
-        # get the list of students who are in the parent program.
-        parent_program_students_classreg = None
-        parent_program = prog.getParentProgram()
-        if parent_program is not None:
-            parent_program_students = parent_program.students()
-            if parent_program_students.has_key('classreg'):
-                parent_program_students_classreg = parent_program_students['classreg']
-        
         all_events = Event.objects.filter(program=prog).order_by('start')
         for student in students:
             student.updateOnsite(request)
@@ -933,12 +923,6 @@ Volunteer schedule for %s:
                         break
                     i += 1
                 min_index = i
-                
-            # note whether student is in parent program
-            student.in_parent_program = False
-            if parent_program_students_classreg is not None:
-                # we use the filter instead of simply "in" because the types of items in "students" and "parent_program_students_classreg" don't match.
-                student.in_parent_program = parent_program_students_classreg.filter(id=student.id).count() > 0
             
             # get payment information
             li_types = prog.getLineItemTypes(student)
@@ -1228,9 +1212,9 @@ Volunteer schedule for %s:
             else:
                 li_types = prog.getLineItemTypes(student)
                 try:
-                    invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
+                    invoice = Document.get_invoice(student, self.program_anchor_cached(), li_types, dont_duplicate=True, get_complete=True)
                 except MultipleDocumentError:
-                    invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+                    invoice = Document.get_invoice(student, self.program_anchor_cached(), li_types, dont_duplicate=True)
                 if invoice.cost() == 0:
                     paid_symbol = 'X'
 
@@ -1265,9 +1249,9 @@ Volunteer schedule for %s:
                     else:
                         li_types = prog.getLineItemTypes(student)
                         try:
-                            invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
+                            invoice = Document.get_invoice(student, self.program_anchor_cached(), li_types, dont_duplicate=True, get_complete=True)
                         except MultipleDocumentError:
-                            invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+                            invoice = Document.get_invoice(student, self.program_anchor_cached(), li_types, dont_duplicate=True)
                         if invoice.cost() == 0:
                             paid_symbol = 'X'
                     
