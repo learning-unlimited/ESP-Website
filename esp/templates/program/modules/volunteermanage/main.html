@@ -18,11 +18,11 @@
 {% block content %}
 
 {% load render_qsd %}
-{% inline_qsd_block program.anchor volunteer_requests request.user %}
+{% inline_program_qsd_block program volunteer_requests request.user %}
 <p>
 You may request groups of volunteers for your program here.  At the <a href="/volunteer/{{ program.getUrlBase }}/signup">volunteer sign-up page</a>, people will be able to choose from any subset of this list.
 </p>
-{% end_inline_qsd_block %}
+{% end_inline_program_qsd_block %}
 
 <div id="program_form">
 <center>

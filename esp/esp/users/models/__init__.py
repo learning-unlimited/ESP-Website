@@ -231,17 +231,6 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models import RegistrationProfile
         return RegistrationProfile.getLastProfile(self)
 
-    @cache_function
-    def getEditable_ids(self, objType, qsc=None):
-        # As far as I know, fbap's cache is still screwy, so we'll retain this cache at a higher level for now --davidben, 2009-04-06
-        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'), qsc).values_list('id', flat=True)
-    getEditable_ids.get_or_create_token(('self',)) # Currently very difficult to determine type, given anchor
-    getEditable_ids.depend_on_row(lambda:UserBit, lambda bit: {} if bit.user_id is None else {'self': bit.user},
-                                                  lambda bit: bit.applies_to_verb('V/Administer/Edit'))
-
-    def getEditable(self, objType, qsc=None):
-        return objType.objects.filter(id__in=self.getEditable_ids(objType, qsc))
-
     def updateOnsite(self, request):
         if 'user_morph' in request.session:
             if request.session['user_morph']['onsite'] == True:
@@ -344,6 +333,7 @@ class ESPUser(User, AnonymousUser):
             error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
         else:
             return self.classsubject_set.filter(parent_program = program)
+
     getTaughtClassesFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
                                                               lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
                                                                           bit.qsc.parent.name == 'Classes' and
@@ -2167,7 +2157,41 @@ class Permission(models.Model):
                                       permission__role__in=user.groups.all())
         return direct | role
 
+    @staticmethod
+    def user_can_edit_qsd(user,url):
+        #the logic here is as follow:
+        #  -admins can edit any qsd
+        #  -admins of a program can edit qsd of the form
+        #      /section/<Program.url>/<any url>.html
+        #  -teachers of a class with emailcode x (eg x=T1993) can edit
+        #      /section/<Program.url>/Classes/<x>/<any url>.html
+        if url.endswith(".html"):
+            url = url[-5]
+        if user.isAdmin():
+            return True
+        import re
+        m = re.match("^([^/]*)/([^/]*)/([^/]*)/(.*)",url)
+        if m:
+            section, prog1, prog2, rest = m.groups()
+            prog_url = prog1 + "/" + prog2
+            try:
+                prog = Program.objects.get(url=prog_url)
+            except Program.DoesNotExist:
+                #not actually a program
+                return False
+            if user.isAdmin(prog): return True
+            m2 = re.match("Classes/(.)(\d+)/(.*)", rest)
+            if m2:
+                code, cls_id = m2.groups()
+                try:
+                    cls = ClassSubject.objects.get(category__category=code,
+                                                   id=cls_id)
+                except ClassSubject.DoesNotExist:
+                    return False
+                if user in cls.teachers: return True
 
+        return False
+    
 def install():
     """
     Installs some initial useful UserBits.

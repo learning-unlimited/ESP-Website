@@ -9,6 +9,8 @@ from esp.survey.models import Survey, Question, Answer
 
 class Migration(DataMigration):
 
+    depends_on = ( ("program", "0034_class_program_datamigrations"), )
+
     def forwards(self, orm):
 
         #survey model
@@ -21,13 +23,13 @@ class Migration(DataMigration):
             s.save()
 
         #question model
-        for q in Question.objects.all():
+        for q in orm.Question.objects.all():
             if q.anchor.name == 'Classes':
                 q.per_class = True
                 q.save()
 
         #answer model
-        for a in Answer.objects.all():
+        for a in orm.Answer.objects.all():
             o=None
             m = [Program, ClassSubject, ClassSection]
             for mod in m:

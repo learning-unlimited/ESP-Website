@@ -32,7 +32,7 @@ class Migration(DataMigration):
         #Reg confirmed
         for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Confirmation").filter(UserBit.not_expired()):
             Record.objects.create(user=bit.user,event="reg_confirmed",
-                                  program=Program.objects.get(anchor=bit.qsc.parent, time=bit.startdate))
+                                  program=Program.objects.get(anchor=bit.qsc.parent), time=bit.startdate)
 
         #Waitlisted
         for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Waitlist").filter(UserBit.not_expired()):

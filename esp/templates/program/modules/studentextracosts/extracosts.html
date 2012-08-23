@@ -21,14 +21,14 @@ td>ul { list-style-type: none; padding: 0px }
 
 {% load render_qsd %}
 
-{% inline_qsd_block program.anchor learn:extracosts request.user %}
+{% inline_program_qsd_block program learn:extracosts request.user %}
 <h2>This program contains additional items that you can pay for online.</h2>
 <br />
 
 <p>To purchase any of the following items, please check its corresponding checkbox and click "Save".  They will be added to your bill if you pay by credit card.  Otherwise, you will be charged when you arrive for the program.</p>
 
 <p>Food and other additional items can only be changed up until <b>1 week before the program.</b></p>
-{% end_inline_qsd_block %}
+{% end_inline_program_qsd_block %}
 
 <br />
 

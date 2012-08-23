@@ -52,7 +52,7 @@ Welcome to student check-in for {{program.niceName}}.  Make sure that the studen
 
 <br />
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "onsite:status" %}
+{% render_inline_program_qsd program "onsite:status" %}
 
 <h1>Advanced Checkin &mdash; For {{ program.niceName }}</h1>
 <p style="margin: 10px;">

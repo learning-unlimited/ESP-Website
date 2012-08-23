@@ -5,6 +5,7 @@ from south.v2 import DataMigration
 from django.db import models
 from esp.program.models import ClassSubject
 from esp.users.models import UserBit
+from django.core.cache import cache
 
 class Migration(DataMigration):
 
@@ -17,16 +18,16 @@ class Migration(DataMigration):
             if l==0:
                 continue
             if l>1:
-                print bit.qsc, " has multiple classes??"
                 continue
             usr=bit.user
             cls=cls[0]
-            try:
-                cls.teachers.add(usr)
-                i+=1
-            except ValueError:
-                print i#usr.username, cls.anchor
-                raise
+
+            #due to a issue with cache stuff, we'll manually insert the data
+            from django.db import connection, transaction
+            cursor = connection.cursor()
+
+            cursor.execute("INSERT INTO program_class_teachers (classsubject_id, espuser_id) VALUES (%s, %s);",[cls.id, usr.id])
+            transaction.commit_unless_managed()
 
     def backwards(self, orm):
         for cls in ClassSubject.objects.all():

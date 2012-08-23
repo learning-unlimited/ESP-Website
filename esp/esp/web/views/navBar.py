@@ -75,6 +75,8 @@ def nav_category(node, section=''):
 
 def qsd_tree_program(qsdTree, node, section, user):
     """
+    Obselete, exists temporarily
+
     This function will go through the tree and add
     appropriate Program-related entries.
 
@@ -135,7 +137,6 @@ def makeNavBar(user, node, section='', category=None):
             user = ESPUser(self.user)
             node = self.node
             
-            edit_verb = GetNode(EDIT_VERB_STRING)
 
             if not self.category:
                 self.category = nav_category(node, section)
@@ -147,13 +148,10 @@ def makeNavBar(user, node, section='', category=None):
                 
             navbars = list(self.category.get_navbars().order_by('sort_rank'))
             navbar_context = [{'entry': x, 'has_bits': has_edit_bits} for x in navbars]
-
-            # add program entries
-            navbar_context = list(qsd_tree_program(navbar_context, node, section, user))
-
+            print "==============", navbar_context
             context = { 'node': node,
                     'has_edit_bits': has_edit_bits,
-                    'qsdTree': navbar_context,
+                    'entries': navbar_context,
                     'section': section
                         }
 

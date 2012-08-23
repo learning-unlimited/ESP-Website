@@ -83,7 +83,7 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '80'}),
             'priority': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']"}),
+            'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']", "null":"True", "blank":"True"}),
             'short_description': ('django.db.models.fields.TextField', [], {}),
             'start': ('django.db.models.fields.DateTimeField', [], {})
         },

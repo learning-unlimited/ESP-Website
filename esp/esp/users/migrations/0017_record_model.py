@@ -7,6 +7,8 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
+    depends_on = ( ("program","0034_class_program_datamigrations"), )
+
     def forwards(self, orm):
         
         # Adding model 'Record'

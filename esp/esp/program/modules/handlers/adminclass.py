@@ -38,7 +38,7 @@ from esp.program.controllers.consistency import ConsistencyChecker
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
 from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem
-from esp.users.models import UserBit, ESPUser, User
+from esp.users.models import ESPUser, User
 from esp.datatree.models import *
 from esp.cal.models              import Event
 
