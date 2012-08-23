@@ -1,47 +1,43 @@
 # encoding: utf-8
 import datetime
 from south.db import db
-from south.v2 import SchemaMigration
+from south.v2 import DataMigration
 from django.db import models
 
 
-class Migration(SchemaMigration):
+class Migration(DataMigration):
+
 
     def forwards(self, orm):
-        
-        # Adding model 'QuasiStaticData'
-        db.create_table('qsd_quasistaticdata', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('path', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'])),
-            ('name', self.gf('django.db.models.fields.SlugField')(max_length=50)),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=256)),
-            ('content', self.gf('django.db.models.fields.TextField')()),
-            ('nav_category', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['web.NavBarCategory'])),
-            ('create_date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
-            ('author', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
-            ('disabled', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('keywords', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-        ))
-        db.send_create_signal('qsd', ['QuasiStaticData'])
 
-        # Adding model 'ESPQuotations'
-        db.create_table('qsd_espquotations', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('content', self.gf('django.db.models.fields.TextField')()),
-            ('display', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('author', self.gf('django.db.models.fields.CharField')(max_length=64)),
-            ('create_date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2012, 8, 21, 20, 34, 43, 561773))),
-        ))
-        db.send_create_signal('qsd', ['ESPQuotations'])
+        def qsd_url(qsd):
+            my_path = qsd.path
+            path_parts = qsd.path.uri.split('/')
+            program_top = orm["datatree.Datatree"].objects.get(uri='Q/Programs')
+            web_top = orm["datatree.Datatree"].objects.get(uri='Q/Web')
+            if my_path.uri.startswith(program_top.uri):
+                name_parts = qsd.name.split(':')
+                if len(name_parts) > 1:
+                    result =  name_parts[0] + '/' + '/'.join(path_parts[2:] + [name_parts[1]])
+                else:
+                    result = 'programs/' + '/'.join(path_parts[2:] + [name_parts[0]])
+            elif my_path.uri.startswith(web_top.uri):
+                result =  '/'.join(path_parts[2:] + [qsd.name])
+            else:
+                result = '/'.join(path_parts[1:] + [qsd.name])
+            return result
+
+        # Adding field 'QuasiStaticData.url'
+        db.add_column('qsd_quasistaticdata', 'url', self.gf('django.db.models.fields.CharField')(default='', max_length=256), keep_default=False)
+
+        for qsd in orm.QuasiStaticData.objects.all():
+            qsd.url = qsd_url(qsd)
+            qsd.save()
 
     def backwards(self, orm):
         
-        # Deleting model 'QuasiStaticData'
-        db.delete_table('qsd_quasistaticdata')
-
-        # Deleting model 'ESPQuotations'
-        db.delete_table('qsd_espquotations')
+        # Deleting field 'QuasiStaticData.url'
+        db.delete_column('qsd_quasistaticdata', 'url')
 
     models = {
         'auth.group': {
@@ -97,7 +93,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'ESPQuotations'},
             'author': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'content': ('django.db.models.fields.TextField', [], {}),
-            'create_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 21, 20, 34, 43, 561773)'}),
+            'create_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 21, 20, 40, 11, 502778)'}),
             'display': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
         },
@@ -113,7 +109,8 @@ class Migration(SchemaMigration):
             'name': ('django.db.models.fields.SlugField', [], {'max_length': '50'}),
             'nav_category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['web.NavBarCategory']"}),
             'path': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '256'})
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
+            'url': ('django.db.models.fields.CharField', [], {'max_length': '256'})
         },
         'users.espuser': {
             'Meta': {'object_name': 'ESPUser', 'db_table': "'auth_user'", '_ormbases': ['auth.User'], 'proxy': 'True'}

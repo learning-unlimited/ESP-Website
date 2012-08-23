@@ -36,11 +36,8 @@ from django.db import models
 from django.db.models.query import Q
 from esp.datatree.models import *
 from esp.lib.markdown import markdown
-from esp.users.models import UserBit
 from esp.db.fields import AjaxForeignKey  
         
-# Create your models here.
-
 class NavBarCategory(models.Model):
     anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     include_auto_links = models.BooleanField()
@@ -54,6 +51,7 @@ class NavBarCategory(models.Model):
     def default(cls):
         """ Default navigation category.  For now, the one with the lowest ID. """
         if not hasattr(cls, '_default'):
+
             cls._default = cls.objects.all().order_by('id')[0]
         return cls._default
     
@@ -78,7 +76,7 @@ class NavBarEntry(models.Model):
     category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
 
     def can_edit(self, user):
-        return UserBit.UserHasPerms(user, self.path, GetNode('V/Administer/Edit/QSD'))
+        return user.isAdmin()
     
     def __unicode__(self):
         return u'%s:%s (%s) [%s]' % (self.category, self.sort_rank, self.text, self.link)

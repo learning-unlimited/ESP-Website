@@ -17,7 +17,7 @@
 
 {% load render_qsd %}
 
-{% inline_qsd_block program.anchor "payment_failure" request.user %}
+{% inline_program_qsd_block program "payment_failure" request.user %}
 
 <h3>Failure</h3>
 
@@ -32,7 +32,7 @@ If you believe this to be due to a mistake on your part, you may return to the <
 
 <p><a href="/learn/{{ prog.getUrlBase }}/studentreg">Click here</a> to return to the main student registration page.</p>
 
-{% end_inline_qsd_block %}
+{% end_inline_program_qsd_block %}
 
 <p>Received data:
 <ul>

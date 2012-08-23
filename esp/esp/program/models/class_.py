@@ -282,8 +282,17 @@ class ClassManager(ProcedureManager):
     catalog_cached.depend_on_model(lambda: Tag)
     #catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
     #                             lambda bit: bit.applies_to_verb('V/Flags/Registration/Enrolled')) # This will expire a *lot*, and the value that it saves can be gotten from cache (with effort) instead of from SQL.  Should go do that.
+
+    #perhaps make it program-specific?
+    @staticmethod
+    def is_class_index_qsd(qsd):
+        parts = qsd.url.split("/")
+        return (parts and len(parts) > 1) and \
+            parts[-1] == "index" and \
+            parts[0] == "learn" and \
+            "Classes" in parts
     catalog_cached.depend_on_row(lambda: QuasiStaticData, lambda page: {},
-                                 lambda page: ("learn:index" == page.name) and ("Q/Programs/" in page.path.get_uri()) and ("/Classes/" in page.path.get_uri())) # Slightly dirty hack; has assumptions about the tree structure of where index.html pages for QSD will be stored
+                                 lambda page: ClassManager.is_class_index_qsd(page))
 
 
 class ClassSection(models.Model):

@@ -161,12 +161,12 @@ Please review the costs below. If you are concerned that there is a problem, ple
 
 {% comment %}This template has been made fully static for security reasons.
 {% load render_qsd %}
-{% inline_qsd_block program.anchor payment_directions request.user %}
+{% inline_program_qsd_block program payment_directions request.user %}
 {% endcomment %}
 
 <p>If you would like to cancel at this time, you can <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.  Otherwise, please fill out the form below.  Required fields are boxed in a colored border.</p>
 
-{% comment %}{% end_inline_qsd_block %}{% endcomment %}
+{% comment %}{% end_inline_program_qsd_block %}{% endcomment %}
 
 <form onsubmit="return formTest();" action="{{ module.post_url }}" method="post" autocomplete="off"> 
 

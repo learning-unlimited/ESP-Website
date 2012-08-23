@@ -8,18 +8,30 @@ from django.contrib.auth.models import Group
 
 class Migration(SchemaMigration):
 
+    depends_on = ( ("cal", "0002_datatree_removal_1"), )
+
     def forwards(self, orm):
         ua_map = {}
         for a in orm.UserAvailability.objects.all():
             ua_map[a.id]=a.role.name
 
+        #the chain of changes causes problems unless we have this line
+        #without it, upon completion of everything when the db attempts to
+        #commit the transaction, there's an error about pending trigger events
+        db.execute("SET CONSTRAINTS ALL IMMEDIATE")
+
         db.delete_column('users_useravailability', 'role_id')
 
-        db.add_column('users_useravailability', 'role', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.Group'],default=orm['auth.Group'].objects.all()[0].id))
+        db.add_column('users_useravailability', 'role', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.Group'],default=orm['auth.Group'].objects.all()[0].id), keep_default=False)
 
         for a in UserAvailability.objects.all():
+
             a.role = Group.objects.get(name=ua_map[a.id])
-        
+            a.save()
+            pass
+        print "updated??"
+        #raise RuntimeError
+
     def backwards(self, orm):
         
         # Changing field 'UserAvailability.role'

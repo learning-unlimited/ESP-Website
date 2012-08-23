@@ -105,7 +105,7 @@ urlpatterns += patterns('',
                         )
 
 urlpatterns += patterns('esp.qsd.views',
-                        (r'^(?P<subsection>(learn|teach|programs|manage|onsite))/(?P<url>.*)\.html$', 'qsd'),
+                        #(r'^(?P<subsection>(learn|teach|programs|manage|onsite))/(?P<url>.*)\.html$', 'qsd'),
                         (r'^(?P<url>.*)\.html$', 'qsd'),
                         )
 

@@ -88,7 +88,7 @@ class StudentExtraCosts(ProgramModuleObj):
     def studentDesc(self):
         """ Return a description for each line item type that students can be filtered by. """
         student_desc = {}
-        treeq = QTree(anchor__below=self.program_anchor_cached(parent=True))
+        treeq = QTree(anchor__below=self.program_anchor_cached())
         for i in LineItemType.objects.filter(treeq):
             student_desc['extracosts_%d' % i.id] = """Students who have opted for '%s'""" % i.text
 
@@ -98,7 +98,7 @@ class StudentExtraCosts(ProgramModuleObj):
         """ Return the useful lists of students for the Extra Costs module. """
 
         student_lists = {}
-        treeq = QTree(anchor__below=self.program_anchor_cached(parent=True))
+        treeq = QTree(anchor__below=self.program_anchor_cached())
 
         # Get all the line item types for this program.
         for i in LineItemType.objects.filter(treeq):

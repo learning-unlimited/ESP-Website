@@ -6,10 +6,17 @@ from django.db import models
 from esp.users.models import UserBit, Permission, ESPUser
 from esp.program.models import Program
 from django.contrib.auth.models import Group
+from datetime import datetime
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
+        def end(bit):
+            date = bit.enddate
+            if date > datetime.datetime(3000,1,1):
+                return None
+            return date
+
         #Administer
         adm_bits=UserBit.objects.filter(verb__uri="V/Administer",qsc__uri__startswith="Q/Programs")
         for bit in adm_bits:
@@ -17,7 +24,7 @@ class Migration(DataMigration):
                 p=Program.objects.get(anchor=bit.qsc)
             except Program.DoesNotExist:
                 continue
-            Permission(permission_type="Administer", program=p,user=bit.user).save()
+            Permission(permission_type="Administer", program=p, user=bit.user, startdate=bit.startdate, enddate=end(bit)).save()
 
         #view programs
         program_anchors=Program.objects.all().values_list("anchor",flat=True)
@@ -30,12 +37,16 @@ class Migration(DataMigration):
             if bit.user is not None:
                 Permission(permission_type=bit.verb.uri[24:],
                            user=bit.user,
-                           program=p).save()
+                           program=p, 
+                           startdate=bit.startdate,
+                           enddate=end(bit)).save()
             else: 
                 for x in ESPUser.getTypes():
                     Permission(permission_type=bit.verb.uri[24:],
                                role=Group.objects.get(name=x),
-                               program=p).save()
+                               program=p,
+                               startdate=bit.startdate,
+                               enddate=end(bit)).save()
                                
         #gradeoverride
         go_bits=UserBit.objects.filter(verb__uri="V/Flags/Registration/GradeOverride",qsc__uri__startswith="Q/Programs")
@@ -44,7 +55,7 @@ class Migration(DataMigration):
                 p=Program.objects.get(anchor=bit.qsc)
             except Program.DoesNotExist:
                 continue
-            Permission(permission_type="GradeOverride", program=p,user=bit.user).save()
+            Permission(permission_type="GradeOverride", program=p,user=bit.user, startdate=bit.startdate, enddate=end(bit)).save()
 
         #onsite
         onsite_bits=UserBit.objects.filter(verb__uri="V/Registration/Onsite")
@@ -55,7 +66,9 @@ class Migration(DataMigration):
                 continue
             Permission(permission_type="Onsite",
                        user=bit.user,
-                       program=p).save()
+                       program=p, 
+                       startdate=bit.startdate,
+                       enddate=end(bit)).save()
 
         #deadlines
         deadline_bits = UserBit.objects.filter(verb__uri__startswith="V/Deadline/Registration")
@@ -71,15 +84,21 @@ class Migration(DataMigration):
             if bit.user is not None:
                 Permission(permission_type=name,
                            user=bit.user,
-                           program=p).save()
+                           program=p, 
+                           startdate=bit.startdate,
+                           enddate=end(bit)).save()
             elif bit.verb.uri[24:31]=="Teacher":
                 Permission(permission_type=name,
                            role=Group.objects.get(name="Teacher"),
-                           program=p).save()
+                           program=p, 
+                           startdate=bit.startdate,
+                           enddate=end(bit)).save()
             elif bit.verb.uri[24:31]=="Student":
                 Permission(permission_type=name,
                            role=Group.objects.get(name="Student"),
-                           program=p).save()
+                           program=p, 
+                           startdate=bit.startdate,
+                           enddate=end(bit)).save()
 
     def backwards(self, orm):
         Permissions.objects.delete()

@@ -9,39 +9,13 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Adding model 'QuasiStaticData'
-        db.create_table('qsd_quasistaticdata', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('path', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'])),
-            ('name', self.gf('django.db.models.fields.SlugField')(max_length=50)),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=256)),
-            ('content', self.gf('django.db.models.fields.TextField')()),
-            ('nav_category', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['web.NavBarCategory'])),
-            ('create_date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
-            ('author', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
-            ('disabled', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('keywords', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-        ))
-        db.send_create_signal('qsd', ['QuasiStaticData'])
-
-        # Adding model 'ESPQuotations'
-        db.create_table('qsd_espquotations', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('content', self.gf('django.db.models.fields.TextField')()),
-            ('display', self.gf('django.db.models.fields.BooleanField')(default=False)),
-            ('author', self.gf('django.db.models.fields.CharField')(max_length=64)),
-            ('create_date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2012, 8, 21, 20, 34, 43, 561773))),
-        ))
-        db.send_create_signal('qsd', ['ESPQuotations'])
+        # Deleting field 'QuasiStaticData.path'
+        db.delete_column('qsd_quasistaticdata', 'path_id')
 
     def backwards(self, orm):
         
-        # Deleting model 'QuasiStaticData'
-        db.delete_table('qsd_quasistaticdata')
-
-        # Deleting model 'ESPQuotations'
-        db.delete_table('qsd_espquotations')
+        # User chose to not deal with backwards NULL issues for 'QuasiStaticData.path'
+        raise RuntimeError("Cannot reverse this migration. 'QuasiStaticData.path' and its values cannot be restored.")
 
     models = {
         'auth.group': {
@@ -97,7 +71,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'ESPQuotations'},
             'author': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'content': ('django.db.models.fields.TextField', [], {}),
-            'create_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 21, 20, 34, 43, 561773)'}),
+            'create_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 22, 1, 32, 9, 500187)'}),
             'display': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
         },
@@ -112,8 +86,8 @@ class Migration(SchemaMigration):
             'keywords': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'name': ('django.db.models.fields.SlugField', [], {'max_length': '50'}),
             'nav_category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['web.NavBarCategory']"}),
-            'path': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
-            'title': ('django.db.models.fields.CharField', [], {'max_length': '256'})
+            'title': ('django.db.models.fields.CharField', [], {'max_length': '256'}),
+            'url': ('django.db.models.fields.CharField', [], {'max_length': '256'})
         },
         'users.espuser': {
             'Meta': {'object_name': 'ESPUser', 'db_table': "'auth_user'", '_ormbases': ['auth.User'], 'proxy': 'True'}
