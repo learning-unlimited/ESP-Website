@@ -155,6 +155,7 @@ class SchedulingCheckRunner:
              self.wrong_classroom_type(),
              self.classes_missing_resources(),
              self.multiple_classes_same_room_same_time(),
+             self.teachers_unavailable(),
              self.teachers_teaching_two_classes_same_time(),
              self.classes_which_cover_lunch(),
              self.room_capacity_mismatch(),
@@ -398,3 +399,14 @@ class SchedulingCheckRunner:
      def wrong_classroom_type(self):
          self._calculate_classes_missing_resources()
          return self.formatter.format_table(self.l_wrong_classroom_type, "Classes in wrong classroom type", {"headings": ["Section", "Requested Type", "Classroom"]})
+
+     def teachers_unavailable(self):
+         l = []
+         for s in self._all_class_sections():
+             for t in s.teachers:
+                 available = t.getAvailableTimes(s.parent_program, ignore_classes=True)
+                 for e in s.get_meeting_times():
+                     if e not in available:
+                         l.append({"Teacher": t, "Time": e, "Section": s})
+         return self.formatter.format_table(l, "Teachers teaching when they aren't available", {"headings": ["Section", "Teacher", "Time"]})
+
