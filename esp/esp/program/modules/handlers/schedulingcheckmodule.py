@@ -73,6 +73,9 @@ class HTMLSCFormatter:
     def _table_row(self, row):
         next_row = ""
         for r in row:
+            #displaying lists is sometimes borked.  This makes it not borked
+            if type(r) == list:
+                r = [str(i) for i in r]
             next_row += "<td>" + str(r) + "</td>"
         next_row += "</tr>"
         return next_row
@@ -111,6 +114,7 @@ class SchedulingCheckRunner:
 
           #things that we'll calculate lazilly
           self.listed_sections = False
+          self.calculated_classes_missing_resources = False
           self.d_categories = []
           self.d_grades = []
 
@@ -148,6 +152,8 @@ class SchedulingCheckRunner:
              self.lunch_blocks_setup(),
              self.high_school_only_setup(),
              self.incompletely_scheduled_classes(),
+             self.wrong_classroom_type(),
+             self.classes_missing_resources(),
              self.multiple_classes_same_room_same_time(),
              self.teachers_teaching_two_classes_same_time(),
              self.classes_which_cover_lunch(),
@@ -362,3 +368,33 @@ class SchedulingCheckRunner:
                          d[t][key_string].append(str(a))
           return self.formatter.format_table(d, "Admins teaching per timeslot", {"headings":[key_string]})
 
+     def _calculate_classes_missing_resources(self):
+         if self.calculated_classes_missing_resources:
+             return
+         l_resources = []
+         l_classrooms = []
+         for s in self._all_class_sections():
+             unsatisfied_requests = s.unsatisfied_requests()
+             if len(unsatisfied_requests) > 0:
+                 for u in unsatisfied_requests:
+                     #TODO: should be replaced with more general code.  Do all ESP's use the same name for this?
+                     if u.res_type.name == "Classroom Space":
+                         if not u.desired_value == "No preference": #TODO:  is there a way to make this less MIT specific?
+                             l_classrooms.append({ "Section": s, "Requested Type": u.desired_value, "Classroom": s.classrooms()[0] })
+                     else:
+                         l_resources.append({ "Section": s, "Unfulfilled Request": u, "Classroom": s.classrooms()[0] })
+         self.l_wrong_classroom_type = l_classrooms
+         self.l_missing_resources = l_resources
+         print len(self.l_wrong_classroom_type)
+         print len(self.l_missing_resources)
+         self.calculated_classes_missing_resources = True
+         return [l_classrooms, l_resources]
+
+
+     def classes_missing_resources(self):
+         self._calculate_classes_missing_resources()
+         return self.formatter.format_table(self.l_missing_resources, "Unfulfilled Resource Requests", {"headings":["Section", "Unfulfilled Request", "Classroom"]})
+
+     def wrong_classroom_type(self):
+         self._calculate_classes_missing_resources()
+         return self.formatter.format_table(self.l_wrong_classroom_type, "Classes in wrong classroom type", {"headings": ["Section", "Requested Type", "Classroom"]})
