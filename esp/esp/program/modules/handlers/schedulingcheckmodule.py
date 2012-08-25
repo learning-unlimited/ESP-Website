@@ -149,22 +149,23 @@ class SchedulingCheckRunner:
 
      def run_diagnostics(self):
          return [
-             self.lunch_blocks_setup(),
-             self.high_school_only_setup(),
-             self.incompletely_scheduled_classes(),
-             self.wrong_classroom_type(),
-             self.classes_missing_resources(),
-             self.multiple_classes_same_room_same_time(),
-             self.teachers_unavailable(),
-             self.teachers_teaching_two_classes_same_time(),
-             self.classes_which_cover_lunch(),
-             self.room_capacity_mismatch(),
-             self.middle_school_evening_classes(),
-             self.classes_by_category(),
-             self.capacity_by_category(),
-             self.classes_by_grade(),
-             self.capacity_by_grade(),
-             self.admins_teaching_per_timeblock(),
+             #self.lunch_blocks_setup(),
+             #self.high_school_only_setup(),
+             #self.incompletely_scheduled_classes(),
+             #self.wrong_classroom_type(),
+             #self.classes_missing_resources(),
+             #self.multiple_classes_same_room_same_time(),
+             #self.teachers_unavailable(),
+             #self.teachers_teaching_two_classes_same_time(),
+             #self.classes_which_cover_lunch(),
+             #self.room_capacity_mismatch(),
+             #self.middle_school_evening_classes(),
+             #self.classes_by_category(),
+             #self.capacity_by_category(),
+             #self.classes_by_grade(),
+             #self.capacity_by_grade(),
+             #self.admins_teaching_per_timeblock(),
+             self.teachers_who_like_running(),
           ]
 
      #################################################
@@ -410,3 +411,21 @@ class SchedulingCheckRunner:
                          l.append({"Teacher": t, "Time": e, "Section": s})
          return self.formatter.format_table(l, "Teachers teaching when they aren't available", {"headings": ["Section", "Teacher", "Time"]})
 
+     def teachers_who_like_running(self):
+         l = []
+         teachers = self.p.teachers()['class_approved'].distinct()
+         for teacher in teachers:
+             sections = ClassSection.objects.filter(
+                 parent_class__in=teacher.getTaughtClassesFromProgram(self.p).filter(status=10).distinct(),status=10).distinct().order_by('meeting_times__start')
+             for i in range(sections.count()-1):
+                 try:
+                     time1 = sections[i+1].meeting_times.all().order_by('start')[0]
+                     time0 = sections[i].meeting_times.all().order_by('-end')[0]
+                     room0 = sections[i].initial_rooms()[0]
+                     room1 = sections[i+1].initial_rooms()[0]
+                     if (time1.start-time0.end).seconds < 1200 and sections[i].initial_rooms().count() + sections[i+1].initial_rooms().count() and room0.name != room1.name:
+                         l.append({"Teacher": teacher, "Section 1": sections[i], "Section 2": sections[i+1], "Room 1": room0, "Room 2": room1})
+                         #print "%s is teaching %s in %s until %s, and is then teaching %s in %s immediately after" % (teacher.username, sections[i].emailcode(), sections[i].initial_rooms()[0].name, time0.end, sections[i+1].emailcode(), sections[i+1].initial_rooms()[0].name)
+                 except BaseException:
+                     continue
+         return self.formatter.format_table(l, "Teachers who Like Running", {"headings": ["Teacher", "Section 1", "Section 2", "Room 1", "Room 2"]})
