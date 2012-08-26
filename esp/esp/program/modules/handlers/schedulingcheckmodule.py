@@ -7,7 +7,6 @@ from esp.cal.models import *
 from datetime import date
 from esp.web.util.main import render_to_response
 
-#TODO:  data migration to add this module
 class SchedulingCheckModule(ProgramModuleObj):
 
     @classmethod
@@ -27,8 +26,8 @@ class SchedulingCheckModule(ProgramModuleObj):
          context = {'checks': results}
          return render_to_response(self.baseDir()+'output.html', request, (prog, tl), context)
 
-#TODO:  does python have some interface equivalent
-#Formatter
+#For formatting output.  The default is to use HTMLSCFormatter, but someone writing a script
+#may want to use RawSCFormatter to get the original data structures
 class RawSCFormatter:
     def format_table(self, l, title, options={}):
         return l
@@ -118,12 +117,10 @@ class SchedulingCheckRunner:
           self.d_categories = []
           self.d_grades = []
 
-     #TODO:  refactor this so it's shared with lottery code
      def _getLunchByDay(self):
         import numpy
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
-        lunch_schedule = numpy.zeros(self.p.num_timeslots())
         lunch_timeslots = Event.objects.filter(meeting_times__parent_class__parent_program=self.p, meeting_times__parent_class__category__category='Lunch').order_by('start').distinct()
         #   Note: this code should not be necessary once lunch-constraints branch is merged (provides Program.dates())
         dates = []
@@ -149,22 +146,22 @@ class SchedulingCheckRunner:
 
      def run_diagnostics(self):
          return [
-             #self.lunch_blocks_setup(),
-             #self.high_school_only_setup(),
-             #self.incompletely_scheduled_classes(),
-             #self.wrong_classroom_type(),
-             #self.classes_missing_resources(),
-             #self.multiple_classes_same_room_same_time(),
-             #self.teachers_unavailable(),
-             #self.teachers_teaching_two_classes_same_time(),
-             #self.classes_which_cover_lunch(),
-             #self.room_capacity_mismatch(),
-             #self.middle_school_evening_classes(),
-             #self.classes_by_category(),
-             #self.capacity_by_category(),
-             #self.classes_by_grade(),
-             #self.capacity_by_grade(),
-             #self.admins_teaching_per_timeblock(),
+             self.lunch_blocks_setup(),
+             self.high_school_only_setup(),
+             self.incompletely_scheduled_classes(),
+             self.wrong_classroom_type(),
+             self.classes_missing_resources(),
+             self.multiple_classes_same_room_same_time(),
+             self.teachers_unavailable(),
+             self.teachers_teaching_two_classes_same_time(),
+             self.classes_which_cover_lunch(),
+             self.room_capacity_mismatch(),
+             self.middle_school_evening_classes(),
+             self.classes_by_category(),
+             self.capacity_by_category(),
+             self.classes_by_grade(),
+             self.capacity_by_grade(),
+             self.admins_teaching_per_timeblock(),
              self.teachers_who_like_running(),
           ]
 
@@ -222,11 +219,12 @@ class SchedulingCheckRunner:
           for s in self._all_class_sections():
                mt =  s.get_meeting_times()
                for lunch in self.lunch_blocks:
-                    if not (False in [b in mt for b in lunch]):
+                    if len(lunch) == 0:
+                        pass
+                    elif not (False in [b in mt for b in lunch]):
                          l.append(s)
           return self.formatter.format_list(l, "Classes which are scheduled over lunch")
 
-     #TODO:  test this using data where some teacher is teaching two classes at once
      def teachers_teaching_two_classes_same_time(self):
           d = self._timeslot_dict(slot=lambda: {})
           l = []
@@ -237,7 +235,7 @@ class SchedulingCheckRunner:
                          if not teach in d[t]:
                               d[t][teach] = s
                          else:
-                              l.append({"Teacher": teach, "Timeslot":t, "Section 1": s, "Section 2": d[mt][t]})
+                              l.append({"Teacher": teach, "Timeslot":t, "Section 1": s, "Section 2": d[t][teach]})
           return self.formatter.format_table(l, "Teachers teaching two classes at once", {'headings': ["Teacher", "Timeslot", "Section 1", "Section 2"]})
 
      def multiple_classes_same_room_same_time(self):
@@ -288,7 +286,7 @@ class SchedulingCheckRunner:
           #not regular class categories          
           open_class_cat = open_class_category().category
           if open_class_cat in self.class_categories: self.class_categories.remove(open_class_cat)
-          lunch_cat = "Lunch" #TODO:  add a lunch_category function to the program model?
+          lunch_cat = "Lunch"
           if lunch_cat in self.class_categories: self.class_categories.remove(lunch_cat)
 
           #generating a dictionary of class categories
@@ -353,8 +351,6 @@ class SchedulingCheckRunner:
          self._calculate_d_grades()
          return  self.formatter.format_table(self.d_grades["classes"], "Number of classes in each block by grade.", {"headings": self.grades})
 
-          
-
      def admins_teaching_per_timeblock(self):
           key_string = "Admins Teaching"
           def admin_dict():
@@ -379,16 +375,15 @@ class SchedulingCheckRunner:
              unsatisfied_requests = s.unsatisfied_requests()
              if len(unsatisfied_requests) > 0:
                  for u in unsatisfied_requests:
-                     #TODO: should be replaced with more general code.  Do all ESP's use the same name for this?
-                     if u.res_type.name == "Classroom Space":
-                         if not u.desired_value == "No preference": #TODO:  is there a way to make this less MIT specific?
+                     #I'm not sure how MIT specific is.  I don't have access to other databases to know whether this will work 
+                     #on other ESPs' websites
+                     if str.lower(str(u.res_type.name)) == "classroom space":
+                         if not u.desired_value == "No preference":
                              l_classrooms.append({ "Section": s, "Requested Type": u.desired_value, "Classroom": s.classrooms()[0] })
                      else:
                          l_resources.append({ "Section": s, "Unfulfilled Request": u, "Classroom": s.classrooms()[0] })
          self.l_wrong_classroom_type = l_classrooms
          self.l_missing_resources = l_resources
-         print len(self.l_wrong_classroom_type)
-         print len(self.l_missing_resources)
          self.calculated_classes_missing_resources = True
          return [l_classrooms, l_resources]
 
@@ -425,7 +420,6 @@ class SchedulingCheckRunner:
                      room1 = sections[i+1].initial_rooms()[0]
                      if (time1.start-time0.end).seconds < 1200 and sections[i].initial_rooms().count() + sections[i+1].initial_rooms().count() and room0.name != room1.name:
                          l.append({"Teacher": teacher, "Section 1": sections[i], "Section 2": sections[i+1], "Room 1": room0, "Room 2": room1})
-                         #print "%s is teaching %s in %s until %s, and is then teaching %s in %s immediately after" % (teacher.username, sections[i].emailcode(), sections[i].initial_rooms()[0].name, time0.end, sections[i+1].emailcode(), sections[i+1].initial_rooms()[0].name)
                  except BaseException:
                      continue
          return self.formatter.format_table(l, "Teachers who Like Running", {"headings": ["Teacher", "Section 1", "Section 2", "Room 1", "Room 2"]})

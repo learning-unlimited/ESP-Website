@@ -57,7 +57,7 @@ class LotteryAssignmentController(object):
         """ Set constant parameters for a lottery assignment. """
         
         self.program = program
-        self.num_timeslots = self.program.num_timeslots()
+        self.num_timeslots = len(self.program.getTimeSlots())
         self.num_students = self.program.students()['lotteried_students'].count()
         self.num_sections = len(self.program.sections().filter(status__gt=0, registration_status=0))
         
