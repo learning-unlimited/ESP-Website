@@ -98,9 +98,9 @@ $j("#id_%s").autocomplete({
           fn, shadow_field_javascript)
 
         html = """
-<input type="text" id="id_%s" name="%s_raw" value="%s" />
+<input type="text" id="id_%s" name="%s_raw" value="%s" class="span5" />
 <input type="hidden" id="id_%s_data" name="%s" />
-<div class="raw_id_admin">
+<div class="raw_id_admin" style="display: none;">
   <a href="../" class="related-lookup" id="lookup_%s" onclick="return showRelatedObjectLookupPopup(this);">
   <img src="/media/admin/img/admin/selector-search.gif" border="0" width="16" height="16" alt="Lookup" /></a>   
    &nbsp;<strong>%s</strong>
