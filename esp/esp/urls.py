@@ -120,6 +120,7 @@ urlpatterns += patterns('esp.web.views.json',
 # QSD Media
 # aseering 8/14/2007: This ought to be able to be written in a simpler way...
 urlpatterns += patterns('esp.web.views.main',
+                        (r'^$', 'home'),
 
     # Possibly overspecific, possibly too general.
                         (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*)/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
