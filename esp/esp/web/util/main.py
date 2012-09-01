@@ -98,6 +98,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
             prog = prog[0]
             
         #   Add e-mail addresses
+        context['settings'] = settings
         context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
         context['EMAIL_HOST'] = settings.EMAIL_HOST
 
