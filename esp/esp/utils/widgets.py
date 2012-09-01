@@ -76,6 +76,18 @@ class DateTimeWidget(forms.widgets.TextInput):
                 continue
         return None
 
+class ClassAttrMergingSelect(forms.Select):
+
+    def build_attrs(self, extra_attrs=None, **kwargs):
+        attrs = dict(self.attrs, **kwargs)
+        #   Merge 'class' attributes - this is the difference from Django's default implementation
+        if extra_attrs:
+            if 'class' in attrs and 'class' in extra_attrs:
+                attrs['class'] += ' ' + extra_attrs['class']
+                del extra_attrs['class']
+            attrs.update(extra_attrs)
+        return attrs
+
 # TODO: Make this not suck
 class SplitDateWidget(forms.MultiWidget):
     """ A date widget that separates days, etc. """
@@ -98,10 +110,10 @@ class SplitDateWidget(forms.MultiWidget):
                    'day'  : [('',' ')] + zip(range(1, 32), day_choices)
                    }
 
-        year_widget = forms.Select(choices=choices['year'])
-        month_widget = forms.Select(choices=choices['month'])
-        day_widget = forms.Select(choices=choices['day'])
-
+        year_widget = ClassAttrMergingSelect(choices=choices['year'], attrs={'class': 'input-small'})
+        month_widget = ClassAttrMergingSelect(choices=choices['month'], attrs={'class': 'input-medium'})
+        day_widget = ClassAttrMergingSelect(choices=choices['day'], attrs={'class': 'input-mini'})
+        
         widgets = (month_widget, day_widget, year_widget)
         super(SplitDateWidget, self).__init__(widgets, attrs)
 
@@ -124,15 +136,10 @@ class SplitDateWidget(forms.MultiWidget):
             except:
                 return None
 
-    # Put labels in
+    #   Format output
+    #   (labels are now aggregated at beginning of line, as if this is a single control)
     def format_output(self, rendered_widgets):
-        output = u'\n<label for="dob_0">Month:</label>\n'
-        output += rendered_widgets[0]
-        output += u'\n<label for="dob_1">Day:</label>\n'
-        output += rendered_widgets[1]
-        output += u'\n<label for="dob_2">Year:</label>\n'
-        output += rendered_widgets[2]
-        return output
+        return '\n'.join(rendered_widgets)
 
 class CaptchaWidget(forms.widgets.TextInput):
     request = None
