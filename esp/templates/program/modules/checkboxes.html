@@ -1,8 +1,7 @@
 {% load render_qsd %}
 
 <div class="row">
-<div class="span1">&nbsp;</div>
-<div class="span6">
+<div class="span6 offset1">
 <table class="table table-condensed" align="center" width="400">
 <tr class="well"><th>Steps for Registration</th><th>Done?</th></tr>
 {% for module in modules %}
@@ -11,12 +10,12 @@
 <td>{% if module.useTemplate %}
 <a href="#module-{{ module.id }}" title="{{ module.module.link_title }}">
     {{ module.module.link_title }} 
-    </a> <em>(below)</em>
+    </a> <i>(below)</i>
 {% else %}
     {% autoescape off %}{{ module.makeLink }}{% endautoescape %}
 {% endif %}
-{% if module.required_label %}<em>{{ module.required_label }}</em>{% else %}
-    {% if not module.required %}{% if not module.hideNotRequired %} <em>(not required)</em> {% endif %}{% endif %}
+{% if module.required_label %}<i>{{ module.required_label }}</i>{% else %}
+    {% if not module.required %}{% if not module.hideNotRequired %} <i>(not required)</i> {% endif %}{% endif %}
 {% endif %}
 </td>
 <td>{% if not module.useTemplate %}
@@ -35,8 +34,12 @@
 </tr>
 {% endif %}
 {% endfor %}
-{% inline_qsd_block program.anchor "learn:extra_steps" request.user %}<tr><td></td><td></td></tr>{% end_inline_qsd_block %}
+
 </table>
+
+{% inline_qsd_block program.anchor "learn:extra_steps" request.user %}
+{% end_inline_qsd_block %}
+
 </div>
 </div>
 
