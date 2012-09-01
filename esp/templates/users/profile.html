@@ -12,21 +12,6 @@
 <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
 {% endblock %}
 
-{% block stylesheets %}
-{{ block.super }}
-<style type="text/css">
-
-  .required { border: 2px solid black; }
-
-  .form_error { font-size: 80%; font-style: italic; color: #C00; }
-
-  label { font-family: Arial, Lucida, Helvetica, sans-serif; font-size: 0.8em; font-weight: normal;}
-  label.groupheader { font-size: 1.2em; font-weight: bold; }
-  #divmaintext table td { vertical-align: top; }
-
-</style>
-{% endblock %}
-
 {% block content %}
 <div class="row">
   <div class="span6 offset1">
@@ -45,7 +30,6 @@
 </div>
 <div class="row">
   <div class="span6 offset1">
-    <div id="program_form">
       {% if form.errors %}
       <h4 style="color:red">Please fix the following error{{ form.errors|pluralize }} in the form.</h4>
       <ul>
@@ -58,7 +42,7 @@
       </br>
       {% endif %}
 
-      <form action="{{request.path}}" method="post" class="form-horizontal">
+    <form action="{{request.path}}" method="post" class="form-horizontal">
 	<fieldset>
 	<input type="hidden" name="profile_page" value="true" />
 	<input type="hidden" name="current_role" value="{{ profiletype }}" />
@@ -92,15 +76,10 @@
 	{% endifequal %}
 	{% endifequal %}
 
+	<div class="form-actions"><input type="submit" class="btn btn-primary" value="Update your Information!" /></div>
 
-
-	<br />
-	<center><input type="submit" class="button" value="Update your Information!" /></center>
-
-	<br />
 	</fieldset>
-      </form>
-    </div>
+    </form>
   </div>
 </div>
 
