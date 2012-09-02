@@ -16,7 +16,6 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
-<link rel="stylesheet" type="text/css" href="/media/styles/fillslot.css" />
 <style type="text/css">
 input.addbutton {
   visibility: visible;
@@ -27,9 +26,9 @@ input.addbutton {
 {% block content %}
 <br />
 <h1>
-    {{ program.niceName }} <br /> 
-     Pick a class for {{ timeslot.short_description }}
+    {{ program.niceName }} 
 </h1>
+<h3>Pick a class for {{ timeslot.short_description }}</h3>
 
 {% if timeslot.priority %}
 <center><div class="info">{{ timeslot.description }}</div><br /></center>
@@ -48,15 +47,14 @@ input.addbutton {
 {% endif %}
 {% endif %}
 
-<div id="catalog">
-
-<table align="center" style="text-align: center; margin: auto;" width="60%" border="0">
- <tr>
-  <th colspan="2">
+<div class="row">
+<table class="table table-bordered table-condensed span6">
+<tbody>
+ <tr class="info">
+  <td colspan="2">
    <a name="top"></a>Jump to Categories
-  </th>
+  </td>
  </tr>
-
 {% for category in categories %}
 {% if forloop.counter0|divisibleby:2 %}
 <tr>{% endif %}
@@ -70,15 +68,16 @@ input.addbutton {
 </tr>{% endif %} 
 {% endfor %}
 {% if not categories|length|divisibleby:2 %}
+<td>&nbsp;</td>
 </tr>
 {% endif %}
-
+</tbody>
 </table>
+</div>
 
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:fillslot" %}
 
-</div>
 {% load class_render %}
 
 {% if classes|length_is:0 %}
@@ -91,8 +90,6 @@ There are no available classes during this time block for students of your grade
 
 {# If the line below gives you a TemplateSyntaxError, try replacing it with a 'with' tag. #}
 {% for class in classes %}
-
-<div id="catalog">
 
 {% ifchanged class.category_id %}<hr size="1"/>
 
@@ -119,7 +116,6 @@ There are no available classes during this time block for students of your grade
 
 <br />
 {% endfor %}
-</div>
 
 <p><a href="../studentreg">Back to Registration Form</a> (skip this block)</p>
 

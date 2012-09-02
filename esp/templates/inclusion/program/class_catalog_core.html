@@ -1,59 +1,60 @@
-    <tr onclick="swap_visible('class_{{ class.id }}_details');swap_visible('class_{{ class.id }}_content');swap_visible('class_{{ class.id }}_regbuttons');" style="cursor: pointer;" class="prettify">
-      <th colspan="2" style="padding: 5px; width: 70%;{{ colorstring }}">
+    <div onclick="swap_visible('class_{{ class.id }}_content');swap_visible('class_{{ class.id }}_regbuttons');" style="cursor: pointer;{{ colorstring }}" class="class_title">
           {% if class.got_index_qsd %}
            <a href="Classes/{{ class.emailcode }}/index.html">{% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }}</a>
           {% else %}
            {% if show_emailcodes %}{{ class.emailcode }}: {% endif %}{{ class.title|escape }} {% if class.isFull and collapse_full %}<font color="#990000" style="font-size: 14px">Full!</font>{% else %}{% if class.isRegClosed %}<font color="#990000" style="font-size: 14px">Closed!</font>{% endif %}{% endif %}
           {% endif %}
-	 
-	 {% ifnotequal class.hardness_rating "Normal"  %} <br />
-	   <font style="font-size:10px">Difficulty:  {{ class.hardness_rating }}
+	 </div>
+     <div class="class_subtitle_row">
+     <div class="class_difficulty">
+	 {% ifnotequal class.hardness_rating "Normal"  %}
+	   Difficulty:  {{ class.hardness_rating }}
 	   {% ifequal class.hardness_rating "Hard" %}
 	      - This class may be exceptionally difficult
 	   {% endifequal %}
 	   {% ifequal class.hardness_rating "Easy" %}
 	      - This class is meant to be accessible to most students
 	   {% endifequal %}
-	   </font>
 	 {% endifnotequal %}
-
-      </th>
-      <th style="padding: 5px; width: 30%;{{ colorstring }}">
-       <span class="teachers">
+    </div>
+    <div class="class_teachers">
+       Teachers:
        {% for teacher in class.teachers %}
        <a href="/teach/teachers/{{ teacher.username|urlencode }}/bio.html"
           title="The biography of {{teacher.first_name }} {{teacher.last_name }}">{{ teacher.first_name }} {{teacher.last_name }}</a>{% if not forloop.last %},{% endif %}
        {% endfor %}
-       </span>
-       </th>
-     </tr>
-     <tr id="class_{{ class.id }}_content" class="classcontent prettify">
-       <td colspan="3" class="info">
+    </div>
+    </div>
+    
+    <div id="class_{{ class.id }}_content">
+    <br />
+    <div class="class_content">
         {% autoescape off %}
          {{ class.class_info|escape|linebreaksbr }}<br />
         {% endautoescape %}
        {% if class.prereqs %}
        <br /><br />
-       <em>*Prerequisites*</em><br />
+       <b>Prerequisites</b><br />
        <span style="font-style:italic;">
          {{ class.prereqs }}
        </span>
        {% endif %}
-       </td>
-     </tr>
-    <tr id="class_{{ class.id }}_details" class="classdetails prettify">
-      <td style="width: 50%;" valign="top" class="prettify">
+    </div>
+    
+    <div class="class_footer_row">
+    <div class="row">
+        <div class="span4 class_meeting_times">
         {% if show_meeting_times %}
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
-	  {% for sec in class.get_sections %}
+        {% for sec in class.get_sections %}
            {% if not sec.friendly_times|length_is:0 %}Section {{ sec.index }}: {{ sec.friendly_times|join:", "}} <br />{% endif %}
           {% endfor %}
         <br />
         {% endif %}
-      </td>
+      </div>
 
-      <td style="width: 50%;" colspan="2">
+      <div class="span4 class_grades">
          <strong>Grades:</strong>
            <span class="gradelisting grademin" id="class_{{ class.id }}_grade_min">
            {% if not class.parent_program.incrementGrade %}
@@ -83,37 +84,41 @@
            {% endfor %}
         {% endif %}
         <br />
-      </td>
-    </tr>
+    </div>
+    </div>
+    </div>
+    
     {% if class.media_count %}
-    <tr id="{{ cls.id }}_media" class="classmedia">
-      <th colspan="3" class="materials">
+    <div class="class_footer_row">
+    <div id="{{ cls.id }}_media" class="class_doclist">
        <b>Materials for this class include:</b>
-	<span class="doclist">
-	{% for doc in class.docs_summary %}
-	<a href="{{ doc.target_url }}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
-	{% endfor %}
-	</span>
-	<br /><b><a href="{{ class.parent_program.get_learn_url }}class_docs/{{ class.id }}">Click here to view all {{ class.media_count }} documents for {{ class.title }}</a></b>
-      </th>
-     </tr>
+        <span class="doclist">
+        {% for doc in class.docs_summary %}
+        <a href="{{ doc.target_url }}">{{ doc.friendly_name }}</a>{% if not forloop.last %},{% endif %}
+        {% endfor %}
+        {% if class.media_count > class.docs_summary|length %}
+        <b><a href="{{ class.parent_program.get_learn_url }}class_docs/{{ class.id }}">(view all {{ class.media_count }})</a></b>
+        {% endif %}
+        </span>
+    </div>
+    </div>
     {% endif %}
 
     {% with class.numStudentAppQuestions as num_questions %}
     {% if num_questions %}
-    <tr>
-      <th colspan="3" class="materials">
+    <div class="class_footer_row">
+    <div class="class_appquestions_list">
        This class has {{ num_questions }} application question{{ num_questions|pluralize }}.
-      </th>
-     </tr>
+    </div>
+    </div>
     {% endif %}
     {% endwith %}
-
+    </div>
+    
 {% if collapse_full %}
 {% if class.isFull or class.isRegClosed %}
 <!-- This class is already full; start it off as invisible -->
 <script language="JavaScript" type="text/javascript">
-swap_visible('class_{{ class.id }}_details');
 swap_visible('class_{{ class.id }}_content');
 </script>
 {% endif %}
