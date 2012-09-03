@@ -130,7 +130,7 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
             'errormsg':   errormsg,
             'temp_full_message': scrmi.temporarily_full_text,
             'show_class': show_class,
-            'hide_full': Tag.getProgramTag('hide_full_classes', cls.parent_program, False)}
+            'hide_full': Tag.getBooleanTag('hide_full_classes', cls.parent_program, False)}
 render_class.cached_function.depend_on_cache(render_class_core.cached_function, lambda cls=wildcard, **kwargs: {'cls': cls})
 
 @cache_inclusion_tag(register, 'inclusion/program/class_catalog_swap.html')

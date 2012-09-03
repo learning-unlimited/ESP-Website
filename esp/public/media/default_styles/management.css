@@ -36,10 +36,6 @@ div .module_link_large {
     float: left;
 }
 
-div .module_link_separator {
-    clear: both;
-}
-
 div .module_link_main {
     font-size: 1.1em;
     font-weight: bold;

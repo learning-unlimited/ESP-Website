@@ -17,7 +17,7 @@
 Some of your responses are incorrect!  Please consult our instructions and fill in the right answers.
 {% endif %}
 
-<form method="post" action="{{ request.path }}" class="form-stacked">
+<form method="post" enctype="multipart/form-data" action="{{ request.path }}" class="form-stacked">
 {% include "customforms/single_form_nonwizard.html" %}
 <div style="text-align: center;"><input type="submit" value="Done!" /></div>
 

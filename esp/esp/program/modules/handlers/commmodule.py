@@ -39,6 +39,7 @@ from esp.program.models import SATPrepRegInfo
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
+from esp.users.views.usersearch import get_user_checklist
 from django.db.models.query   import Q
 from esp.dbmail.models import ActionHandler
 from django.template import Template
@@ -197,24 +198,12 @@ class CommModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def commpanel(self, request, tl, one, two, module, extra, prog):
+    
+        usc = UserSearchController()
+    
         context = {}
         context['program'] = prog
-        
-        #   Parameters
-        user_types = ['students', 'teachers', 'volunteers']
-        preferred_lists = ['enrolled', 'studentfinaid', 'student_profile', 'class_approved', 'lotteried_students',  'teacher_profile', 'class_proposed', 'volunteer_all']
-        global_categories = [('Student', 'students'), ('Teacher', 'teachers'), ('Guardian', 'parents'), ('Educator', 'parents'), ('Volunteer', 'volunteers')]
-        
-        def map_category_bwd(cat):
-            for pair in global_categories:
-                if cat == pair[1]:
-                    return pair[0]
-        def get_recipient_type(list_name):
-            for user_type in user_types:
-                raw_lists = getattr(prog, user_type)(True)
-                if list_name in raw_lists:
-                    return user_type
-        
+
         #   If list information was submitted, continue to prepare a message
         if request.method == 'POST':
             #   Turn multi-valued QueryDict into standard dictionary
@@ -222,83 +211,22 @@ class CommModule(ProgramModuleObj):
             for key in request.POST:
                 data[key] = request.POST[key]
                 
-            ##  Handle "basic list" submissions
-            if 'base_list' in data and 'recipient_type' in data:
+            ##  Handle normal list selecting submissions
+            if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
         
-                usc = UserSearchController()
                 
-                #   Get the program-specific part of the query (e.g. which list to use)
-                if data['recipient_type'] not in user_types:
-                    recipient_type = 'any'
-                    q_program = Q()
-                else:
-                    if data['base_list'].startswith('all'):
-                        q_program = Q()
-                    else:
-                        program_lists = getattr(prog, data['recipient_type'])(QObjects=True)
-                        q_program = program_lists[data['base_list']]
-                    recipient_type = map_category_bwd(data['recipient_type'])
+                filterObj = usc.filter_from_postdata(prog, data)
+
+                if data['use_checklist'] == '1':
+                    (response, unused) = get_user_checklist(request, ESPUser.objects.filter(filterObj.get_Q()).distinct(), filterObj.id, '/manage/%s/commpanel_old' % prog.getUrlBase())
+                    return response
                     
-                #   Get the user-specific part of the query (e.g. ID, name, school)
-                q_extra = usc.query_from_criteria(recipient_type, data)
-                
-                #   Get a persistent filter object combining these query criteria
-                filterObj = PersistentQueryFilter.create_from_Q(ESPUser, q_extra & q_program)
-                filterObj.useful_name = 'Program list: %s' % data['base_list']
-                filterObj.save()
-                
                 context['filterid'] = filterObj.id
                 context['listcount'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
                 return render_to_response(self.baseDir()+'step2.html', request, (prog, tl), context)
                 
-            ##  Handle "combination list" submissions
-            elif 'combo_base_list' in data:
-                usc = UserSearchController()
-                
-                #   Get an initial query from the supplied base list
-                recipient_type, list_name = data['combo_base_list'].split(':')
-                if list_name.startswith('all'):
-                    q_program = Q()
-                else:
-                    q_program = getattr(prog, recipient_type)(QObjects=True)[list_name]
-                
-                #   Apply Boolean filters
-                #   Base list will be intersected with any lists marked 'AND', and then unioned
-                #   with any lists marked 'OR'.
-                checkbox_keys = map(lambda x: x[9:], filter(lambda x: x.startswith('checkbox_'), data.keys()))
-                and_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('and_'), checkbox_keys))
-                or_keys = map(lambda x: x[3:], filter(lambda x: x.startswith('or_'), checkbox_keys))
-                not_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('not_'), checkbox_keys))
-                
-                for and_list_name in and_keys:
-                    user_type = get_recipient_type(and_list_name)
-                    if user_type:
-                        if and_list_name not in not_keys:
-                            q_program = q_program & (getattr(prog, user_type)(QObjects=True)[and_list_name])
-                        else:
-                            q_program = q_program & (~getattr(prog, user_type)(QObjects=True)[and_list_name])
-                for or_list_name in or_keys:
-                    user_type = get_recipient_type(or_list_name)
-                    if user_type:
-                        if or_list_name not in not_keys:
-                            q_program = q_program | (getattr(prog, user_type)(QObjects=True)[or_list_name])
-                        else:
-                            q_program = q_program | (~getattr(prog, user_type)(QObjects=True)[or_list_name])
-                        
-                #   Get the user-specific part of the query (e.g. ID, name, school)
-                q_extra = usc.query_from_criteria(map_category_bwd(recipient_type), data)
-                
-                #   Get a persistent filter object combining these query criteria
-                filterObj = PersistentQueryFilter.create_from_Q(ESPUser, q_extra & q_program)
-                filterObj.useful_name = 'Custom user list'
-                filterObj.save()
-                
-                context['filterid'] = filterObj.id
-                context['listcount'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
-                return render_to_response(self.baseDir()+'step2.html', request, (prog, tl), context)
-                
+            ##  Prepare a message starting from an earlier request
             elif 'msgreq_id' in data:
-                ##  Prepare a message starting from an earlier request
                 msgreq = MessageRequest.objects.get(id=data['msgreq_id'])
                 context['filterid'] = msgreq.recipients.id
                 context['listcount'] = msgreq.recipients.getList(ESPUser).count()
@@ -312,32 +240,7 @@ class CommModule(ProgramModuleObj):
                 raise ESPError(True), 'What do I do without knowing what kind of users to look for?'
         
         #   Otherwise, render a page that shows the list selection options
-        category_lists = {}
-        list_descriptions = prog.getListDescriptions()
-        
-        #   Add in program-specific lists for most common user types
-        for user_type in user_types:
-            raw_lists = getattr(prog, user_type)(True)
-            category_lists[user_type] = [{'name': key, 'list': raw_lists[key], 'description': list_descriptions[key]} for key in raw_lists]
-            for item in category_lists[user_type]:
-                if item['name'] in preferred_lists:
-                    item['preferred'] = True
-                    
-        #   Add in global lists for each user type
-        for cat_pair in global_categories:
-            key = cat_pair[0].lower() + 's'
-            if cat_pair[1] not in category_lists:
-                category_lists[cat_pair[1]] = []
-            category_lists[cat_pair[1]].insert(0, {'name': 'all_%s' % key, 'list': ESPUser.getAllOfType(cat_pair[0]), 'description': 'All %s in the database' % key, 'preferred': True, 'all_flag': True})
-        
-        #   Add in mailing list accounts
-        category_lists['emaillist'] = [{'name': 'all_emaillist', 'list': Q(password = 'emailuser'), 'description': 'Everyone signed up for the mailing list', 'preferred': True}]
-        
-        context['lists'] = category_lists
-        context['all_list_names'] = []
-        for category in category_lists:
-            for item in category_lists[category]:
-                context['all_list_names'].append(item['name'])
+        context.update(usc.prepare_context(prog))
         
         return render_to_response(self.baseDir()+'commpanel_new.html', request, (prog, tl), context)
 
@@ -360,25 +263,6 @@ class CommModule(ProgramModuleObj):
                                                'replyto': replytoemail,
                                                'subject': subject,
                                                'body': body})
-
-    @needs_student
-    def satprepinfo(self, request, tl, one, two, module, extra, prog):
-        if request.method == 'POST':
-            form = SATPrepInfoForm(request.POST)
-
-            if form.is_valid():
-                reginfo = SATPrepRegInfo.getLastForProgram(request.user, prog)
-                form.instance = reginfo
-                form.save()
-
-                return self.goToCore(tl)
-        else:
-            satPrep = SATPrepRegInfo.getLastForProgram(request.user, prog)
-            form = SATPrepInfoForm(instance = satPrep)
-
-        return render_to_response('program/modules/satprep_stureg.html', request, (prog, tl), {'form':form})
-
-
 
     class Meta:
         abstract = True

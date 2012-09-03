@@ -295,10 +295,5 @@ CONTACTFORM_EMAIL_CHOICES = (
     ('relations',  'K-12 School Relations'),
     )
 
-# corresponding email addresses                                                                                                                                                     
-CONTACTFORM_EMAIL_ADDRESSES = {
-    'esp'     : DEFAULT_EMAIL_ADDRESSES['default'],
-    'general'     : DEFAULT_EMAIL_ADDRESSES['default'],
-    'esp-web' : DEFAULT_EMAIL_ADDRESSES['support'],
-    'relations': DEFAULT_EMAIL_ADDRESSES['default'],
-    }
+# corresponding email addresses - define these defaults in settings.py, since DEFAULT_EMAIL_ADDRESSES will be overwritten in local_settings.py
+CONTACTFORM_EMAIL_ADDRESSES = {}

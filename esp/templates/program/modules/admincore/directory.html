@@ -55,7 +55,7 @@ $j(document).ready(initialize);
 <h1>Admin Portal for {{ program.niceName }} </h1>
 
 {% inline_qsd_block program.anchor "manage:main_top" request.user %}
-Default instructions will be filled out here.
+Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="http://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
 {% end_inline_qsd_block %}
 
 <div class="module_group" id="module_group_1">
@@ -63,6 +63,7 @@ Default instructions will be filled out here.
         Configure Your Program
     </div>
     <div class="module_group_body">
+        <div style="display: inline-block;">
         <a href="/manage/{{ program.getUrlBase }}/resources"><div class="module_link_large">
             <div class="module_link_main">Resources</div>
             <div class="module_link_caption">timeslots, classrooms</div>
@@ -71,12 +72,14 @@ Default instructions will be filled out here.
             <div class="module_link_main">Deadlines</div>
             <div class="module_link_caption">open/close registration</div>
         </div></a>
-        <div class="module_link_separator"></div>
+        </div>
+        <div style="display: inline-block;">
         <ul>
             {% if manage_teacher_events %}<li><a href="/manage/{{ program.getUrlBase }}/teacher_events">Teacher Training and Interviews</a>: Teachers signed up for each slot</li>{% endif %}
             {% if manage_lunch_constraints %}<li><a href="/manage/{{ program.getUrlBase }}/lunch_constraints">Lunch Constraints</a>: Rules for your students' schedules</li>{% endif %}
             {% if manage_registrationtype_management %}<li><a href="/manage/{{ program.getUrlBase }}/registrationtype_management">Student Registration Types</a>: What students see on their schedule after a lottery</li>{% endif %}
         </ul>
+        </div>
     </div>
 </div>
 
@@ -85,6 +88,7 @@ Default instructions will be filled out here.
         Coordinate with Participants
     </div>
     <div class="module_group_body">
+    <div style="display: inline-block;">
         <a href="/manage/{{ program.getUrlBase }}/commpanel"><div class="module_link_large">
             <div class="module_link_main">E-mail</div>
             <div class="module_link_caption">communications panel</div>
@@ -93,7 +97,7 @@ Default instructions will be filled out here.
             <div class="module_link_main">Morph into User</div>
             <div class="module_link_caption">&nbsp;</div>
         </div></a>
-        <div class="module_link_separator"></div>
+    </div>
     </div>
 </div>
 
@@ -102,7 +106,7 @@ Default instructions will be filled out here.
         Manage Logistics
     </div>
     <div class="module_group_body">
-    
+        <div style="display: inline-block;">
         <a href="/manage/{{ program.getUrlBase }}/dashboard"><div class="module_link_large">
             <div class="module_link_main">Dashboard</div>
             <div class="module_link_caption">review classes and stats</div>
@@ -111,6 +115,8 @@ Default instructions will be filled out here.
             <div class="module_link_main">Scheduling</div>
             <div class="module_link_caption">assign rooms and times</div>
         </div></a>
+        </div>
+        <div style="display: inline-block;">
         <a href="/manage/{{ program.getUrlBase }}/get_materials"><div class="module_link_large">
             <div class="module_link_main">Documents</div>
             <div class="module_link_caption">upload and view files</div>
@@ -119,7 +125,7 @@ Default instructions will be filled out here.
             <div class="module_link_main">Volunteers</div>
             <div class="module_link_caption">create shifts, view signups</div>
         </div></a>
-        <div class="module_link_separator"></div>
+        </div>
     </div>
 </div>
 <table width="95%">
@@ -149,7 +155,7 @@ Default instructions will be filled out here.
     <ul>
         <li><a href="/manage/{{ program.getUrlBase }}/catalog">PDF Catalog</a></li>
         <li><a href="/manage/{{ program.getUrlBase }}/studentschedules">Student Schedules</a></li>
-        <li><a href="/manage/{{ program.getUrlBase }}/generatetags">Nametags</a></li>
+        <li><a href="/manage/{{ program.getUrlBase }}/selectidoptions">Nametags</a></li>
         <li><a href="/manage/{{ program.getUrlBase }}/selectList">Arbitrary User List</a></li>
         <li><a href="/manage/{{ program.getUrlBase }}/printoptions">All Printables</a></li>
     </ul>

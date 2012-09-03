@@ -213,7 +213,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     unmatched_school = forms.BooleanField(required=False)
     school = forms.CharField(max_length=128, required=False)
-    dob = forms.DateField(widget=SplitDateWidget())
+    dob = forms.DateField(widget=SplitDateWidget(min_year=datetime.now().year-20))
     studentrep = forms.BooleanField(required=False)
     studentrep_expl = forms.CharField(required=False)
     heard_about = DropdownOtherField(required=False, widget=DropdownOtherWidget(choices=zip(HeardAboutESPChoices, HeardAboutESPChoices)))#forms.CharField(required=False)

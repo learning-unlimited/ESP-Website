@@ -58,6 +58,7 @@ from esp.resources.forms         import ResourceRequestFormSet, ResourceTypeForm
 from datetime                    import timedelta
 from esp.mailman                 import add_list_member
 from django.http                 import HttpResponseRedirect
+from django.db                   import models
 from esp.middleware.threadlocalrequest import get_current_request
 import simplejson as json
 from copy import deepcopy
@@ -117,9 +118,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         #   New approach: Pile the class datatree anchor IDs into the appropriate lists.
 
         Q_isteacher = Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
-        Q_rejected_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status__lt=0)) & Q_isteacher
-        Q_approved_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status__gt=0)) & Q_isteacher
-        Q_proposed_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().filter(status=0)) & Q_isteacher
+        fields_to_defer = [x.name for x in ClassSubject._meta.fields if isinstance(x, models.TextField)]
+        Q_rejected_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().defer(*fields_to_defer).filter(status__lt=0)) & Q_isteacher
+        Q_approved_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().defer(*fields_to_defer).filter(status__gt=0)) & Q_isteacher
+        Q_proposed_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().defer(*fields_to_defer).filter(status=0)) & Q_isteacher
 
         ## is_nearly_full() means at least one section is more than float(ClassSubject.get_capacity_factor()) full
         ## isFull() means that all *scheduled* sections are full
@@ -710,26 +712,30 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         else:
             errors = {}
             
+            resource_types = set([])
             default_restypes = Tag.getProgramTag('default_restypes', program=self.program, )
             if default_restypes:
                 resource_type_labels = json.loads(default_restypes)
-                resource_types = [ResourceType.get_or_create(x, self.program) for x in resource_type_labels]
+                resource_types = resource_types.union(set([ResourceType.get_or_create(x, self.program) for x in resource_type_labels]))
+
+            if static_resource_requests:
+                # With static resource requests, we need to display a form
+                # each available type --- there's no way to add the types
+                # that we didn't start out with
+                # Thus, if default_restype isn't set, we display everything
+                # potentially relevant
+                q_program = Q(program=self.program)
+                if Tag.getTag('allow_global_restypes'):
+                    q_program = q_program | Q(program__isnull=True)
+                resource_types = resource_types.union(set(ResourceType.objects.filter(q_program).order_by('-priority_default')))
             else:
-                if static_resource_requests:
-                    # With static resource requests, we need to display a form
-                    # each available type --- there's no way to add the types
-                    # that we didn't start out with
-                    # Thus, if default_restype isn't set, we display everything
-                    # potentially relevant
-                    q_program = Q(program=self.program)
-                    if Tag.getTag('allow_global_restypes'):
-                        q_program = q_program | Q(program__isnull=True)
-                    resource_types=list(ResourceType.objects.filter(q_program).order_by('-priority_default'))
-                else:
-                    # If we're not using static resource requests, then just
-                    # hardcode some sane defaults
-                    resource_type_labels = ['Classroom', 'A/V']
-                    resource_types = [ResourceType.get_or_create(x, self.program) for x in resource_type_labels]
+                # If we're not using static resource requests, then just
+                # hardcode some sane defaults
+                resource_type_labels = ['Classroom', 'A/V']
+                resource_types = resource_types.union(set([ResourceType.get_or_create(x, self.program) for x in resource_type_labels]))
+
+            # Now that we're done putting together multiple resource type sources, listify!
+            resource_types = list(resource_types)
 
             if newclass is not None:
                 current_data = newclass.__dict__
@@ -903,7 +909,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             users = user_dict.values()
 
             # Construct combo-box items
-            obj_list = [{'name': "%s, %s (%s)" % (user.last_name, user.first_name, user.username), 'username': user.username, 'id': user.id} for user in users]
+            obj_list = [{'name': "%s, %s" % (user.last_name, user.first_name), 'username': user.username, 'id': user.id} for user in users]
         else:
             obj_list = []
 

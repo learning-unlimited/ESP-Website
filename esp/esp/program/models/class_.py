@@ -1132,6 +1132,7 @@ class ClassSection(models.Model):
     isCanceled = isCancelled   
     def isRegOpen(self): return self.registration_status == 0
     def isRegClosed(self): return self.registration_status == 10
+    def isFullOrClosed(self): return self.isFull() or self.isRegClosed()
 
     def getRegistrations(self, user):
         from esp.program.models import StudentRegistration
@@ -1798,6 +1799,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def isRegClosed(self):
         for sec in self.get_sections():
             if not sec.isRegClosed():
+                return False
+        return True
+
+    def isFullOrClosed(self):
+        for sec in self.get_sections():
+            if not sec.isFullOrClosed():
                 return False
         return True
         

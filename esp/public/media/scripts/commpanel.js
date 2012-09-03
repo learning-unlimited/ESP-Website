@@ -133,6 +133,13 @@ function clear_filters(form_name)
     }
 }
 
+function set_field(form_name, field_name, value)
+{
+    var form = $j("#"+form_name)[0];
+    var form_field = $j(form).find(':input[name=' + field_name + ']')[0];
+    $j(form_field).val(value);
+}
+
 function initialize() 
 {
     //  Initialize the main tabs
@@ -200,6 +207,10 @@ function initialize()
     //  Prepare "done" buttons
     $j("#recipient_list_done").click(submit_basic_selection);
     $j("#recipient_filter_done").click(submit_basic_selection);
+    $j("#recipient_filter_checklist").click(function () {
+        set_field("form_basic_list", "use_checklist", "1");
+        submit_basic_selection();
+    });
     
     /*  Combination list tab    */
     
@@ -263,6 +274,10 @@ function initialize()
     
     //  Prepare "done" buttons
     $j("#combo_options_done").click(submit_combo_selection);
+    $j("#combo_filter_checklist").click(function () {
+        set_field("form_combo_list", "use_checklist", "1");
+        submit_combo_selection();
+    });
     $j("#combo_filter_done").click(submit_combo_selection);
     
     /*  Previous e-mails tab    */

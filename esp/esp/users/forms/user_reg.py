@@ -78,7 +78,7 @@ class UserRegForm(forms.Form):
         #   - awaiting initial activation
         #   - currently on the e-mail list only (they can be 'upgraded' to a full account)
         awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
-        if User.objects.filter(username__iexact = data).exclude(password = 'emailuser').exclude(awaiting_activation).count() > 0:
+        if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').exclude(awaiting_activation).count() > 0:
             raise forms.ValidationError('Username already in use.')
 
         data = data.strip()
@@ -120,7 +120,7 @@ class AwaitingActivationEmailForm(forms.Form):
     def clean_username(self):
         data = self.cleaned_data['username']
         awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
-        if User.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(awaiting_activation).count() == 0:
+        if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(awaiting_activation).count() == 0:
             raise forms.ValidationError('That username isn\'t waiting to be activated.')
         
         data = data.strip()

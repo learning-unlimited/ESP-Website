@@ -47,7 +47,6 @@ class DateTimeWidget(forms.widgets.TextInput):
         if value != '': 
             try:
                 final_attrs['value'] = value.strftime(self.pythondformat)
-                print "Using current time"
             except:
                 final_attrs['value'] = value
                 
@@ -81,11 +80,16 @@ class DateTimeWidget(forms.widgets.TextInput):
 class SplitDateWidget(forms.MultiWidget):
     """ A date widget that separates days, etc. """
 
-    def __init__(self, attrs=None):
+    def __init__(self, attrs=None, min_year=None, max_year=None):
         from datetime import datetime
 
-        year_choices = range(datetime.now().year - 70,
-                             datetime.now().year - 10)
+        if min_year is None:
+            min_year = datetime.now().year - 70
+        if max_year is None:
+            max_year = datetime.now().year - 10
+
+        year_choices = range(min_year,
+                             max_year+1)
         year_choices.reverse()
         month_choices = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
         day_choices   = ['%02d' % x for x in range(1, 32)]
