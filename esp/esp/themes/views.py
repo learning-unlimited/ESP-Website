@@ -4,7 +4,7 @@ from django.template import Context, Template
 from django.http import HttpResponse, HttpResponseRedirect
 
 from esp.users.models import admin_required
-from esp.theme_editor.settings import *
+from esp.themes.settings import *
 
 import subprocess
 from os import path, remove
@@ -187,7 +187,7 @@ def editor(request):
 #    for debugging, see context by uncommenting the next line
 #    return HttpResponse(str(context))
 
-    return render_to_response('theme_editor/editor.html', context, context_instance=RequestContext(request))
+    return render_to_response('themes/editor.html', context, context_instance=RequestContext(request))
 
 def layout(request):
     return render_to_response('main-html/mockup.html', {}, context_instance=RequestContext(request))

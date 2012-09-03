@@ -17,4 +17,4 @@ class Migration(SchemaMigration):
         
     }
 
-    complete_apps = ['theme_editor']
+    complete_apps = ['themes']

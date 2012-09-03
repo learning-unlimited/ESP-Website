@@ -210,15 +210,15 @@ INSTALLED_APPS = (
     'esp.cache',
     'esp.cache_loader',
     'esp.tagdict',
+    'esp.seltests',
+    'esp.dataviews',
+    'esp.themes',
     'django_extensions',
     'reversion',
     'south',
     'sslauth',
     'formwizard',
     'form_utils',
-    'esp.seltests',
-    'esp.dataviews',
-    'esp.theme_editor',
 )
 
 import os

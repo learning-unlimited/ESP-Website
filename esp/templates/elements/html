@@ -8,8 +8,14 @@
     <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
 
     {% block stylesheets %}
-    <link href="/media/theme_editor/docs/assets/css/docs.css" rel="stylesheet"/>
+    <link href="/media/themes/docs/assets/css/docs.css" rel="stylesheet"/>
     <link rel="stylesheet" type="text/css" href="/media/theme_editor/themes/bootstrap.css"/> 
+    <style type="text/css">
+    body
+    {
+        padding-top: 60px;
+    }
+    </style>
     
     <link href="https://cdn.learningu.org/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet"/>
     <link href="https://cdn.learningu.org/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>

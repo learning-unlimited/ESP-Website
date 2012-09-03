@@ -193,7 +193,7 @@ urlpatterns +=patterns('esp.customforms.views',
                        )	
 
 #Theme editor
-urlpatterns += patterns('esp.theme_editor.views',
+urlpatterns += patterns('esp.themes.views',
                         (r'^theme/?$', 'editor'),
                         (r'^theme/submit/?$', 'theme_submit'),
                         (r'^layout/?$', 'layout'),
