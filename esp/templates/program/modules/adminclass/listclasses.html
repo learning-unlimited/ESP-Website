@@ -7,7 +7,8 @@
 
   // Check if rapid approval is enabled
   {% load tagdict %}
-  if ({% getBooleanTag 'use_rapid_approval' program %})
+  use_rapid_approval = {% getBooleanTag 'use_rapid_approval' program %};
+  if (use_rapid_approval)
   {
     // Create the class description popup for the Status button
     class_desc_popup = $j('<div></div>').attr('id', "class_status_popup")
