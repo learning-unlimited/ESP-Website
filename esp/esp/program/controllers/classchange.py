@@ -45,12 +45,12 @@ import sys
 import time
 
 from esp.cal.models import Event
-from esp.users.models import ESPUser, StudentInfo
-from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, ClassSection, Program
-from esp.dbmail.models import send_mail, MessageRequest, TextOfEmail
+from esp.users.models import ESPUser
+from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, Program
+from esp.dbmail.models import send_mail
 
 from django.conf import settings
-from django.db.models.query import QuerySet, EmptyQuerySet
+from django.db.models.query import QuerySet
 from django.db.models import Q
 
 class ClassChangeController(object):
@@ -467,7 +467,6 @@ class ClassChangeController(object):
         if self.options['stats_display']:
             print "Sending emails...."
             sys.stdout.flush()
-        from django.conf import settings
         if hasattr(settings, 'EMAILTIMEOUT') and \
                settings.EMAILTIMEOUT is not None:
             self.timeout = settings.EMAILTIMEOUT
