@@ -2151,7 +2151,7 @@ class ClassCategories(models.Model):
         pass
 
 def open_class_category():
-    return ClassCategories.objects.get_or_create(category='Walk-in Seminar', symbol='W', seq=0)[0]
+    return ClassCategories.objects.get_or_create(category=Tag.getProgramTag('open_class_category', default="Walk-in Activites"), symbol=Tag.getProgramTag('open_class_category_symbol', default='W'), seq=0)[0]
 
 @cache_function
 def sections_in_program_by_id(prog):
