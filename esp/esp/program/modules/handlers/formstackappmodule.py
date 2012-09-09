@@ -221,12 +221,20 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
                                   request, (prog, tl), context)
 
     def get_field_info(self):
+        """
+        Returns a list of JSON dicts, one per form field, containing
+        metadata (e.g. field name).
+        """
+
         api_response = self.formstack.form(self.form.id)
         fields = api_response['fields']
         return fields
 
     def get_student_apps(self, save=True):
-        """ Returns a list of StudentApp objects for the current program. """
+        """
+        Returns a list of StudentApp objects, one per valid form submission.
+        """
+
         # return cached copy if available
         if hasattr(self, '_apps'):
             return self._apps
