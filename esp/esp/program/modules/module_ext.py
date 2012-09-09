@@ -42,6 +42,8 @@ from esp.db.fields import AjaxForeignKey
 from django.conf import settings
 from esp.users.models import ESPUser
 from esp.program.models import Program, RegistrationType
+from esp.formstack.api import Formstack
+from esp.formstack.models import FormstackForm
 
 class DBReceipt(models.Model):
     """ Per-program Receipt templates """
@@ -492,3 +494,49 @@ class AJAXChangeLog(models.Model):
                                     'user'      : entry.getUserName() })
 
         return entry_list
+
+class FormstackAppSettings(models.Model):
+    """ Settings for the Formstack student application module. """
+
+    module = models.ForeignKey(ProgramModuleObj)
+
+    # formstack settings
+    form = models.ForeignKey(FormstackForm, null=True)
+    api_key = models.CharField(max_length=80)
+    handshake_key = models.CharField(max_length=80)
+    # end formstack settings
+
+    username_field = models.IntegerField(null=True)
+    coreclass1_field = models.IntegerField(null=True)
+    coreclass2_field = models.IntegerField(null=True)
+    coreclass3_field = models.IntegerField(null=True)
+
+    @property
+    def formstack(self):
+        """ A reference to the Formstack client using the stored API key. """
+        return Formstack(self.api_key)
+
+    def configure(self, args):
+        """
+        Convenience function for setting up the module.
+
+        Sets attributes on the FormstackAppSettings object for each
+        key/value pair in args. Also creates a form field for ESP Username
+        if an already-present one is not specified.
+        """
+        for (key, value) in args.items():
+            if key in self.__class__._meta.get_all_field_names():
+                setattr(self, key, value)
+
+        if self.username_field is None:
+            # create a new read-only field
+            api_response = self.formstack.create_field(self.form_id, {
+                    'field_type': 'text',
+                    'label': 'ESP Username',
+                    'required': 1,
+                    'readonly': 1,
+                    'sort': 1 # puts it at the top of the form
+                    })
+            self.username_field = api_response['id']
+
+        self.save()
