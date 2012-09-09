@@ -228,6 +228,13 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
         # return cached copy if available
         if hasattr(self, '_apps'):
             return self._apps
+
+        # fetch and store if unavailable
+        apps = self.fetch_student_apps(save)
+        self._apps = apps
+        return apps
+
+    def fetch_student_apps(self, save=True):
         # get submissions from the API
         api_response = self.formstack.data(self.form.id, {'per_page': 100})
         submissions = api_response['submissions']
@@ -259,8 +266,6 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
             apps.append(app)
             if save:
                 app.save()
-        # store cached copy
-        self._apps = apps
         return apps
 
     def getNavBars(self):
