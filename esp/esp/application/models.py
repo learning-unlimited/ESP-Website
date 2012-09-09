@@ -15,3 +15,8 @@ class FsStudentApp(models.Model):
 
     def __unicode__(self):
         return "{}'s app for {}".format(self.user, self.program)
+
+    def get_submitted_data(self):
+        fsas = self.program.getModuleExtension('FormstackAppSettings')
+        submission = fsas.formstack.submission(self.id)
+        return submission
