@@ -443,3 +443,61 @@ class FormstackAppSettings(models.Model):
             self.username_field = api_response['id']
 
         self.save()
+
+    def get_field_info(self):
+        """
+        Returns a list of JSON dicts, one per form field, containing
+        metadata (e.g. field name).
+        """
+
+        # return cached copy if available
+        if hasattr(self, '_fields'):
+            return self._fields
+        # get info from the API
+        api_response = self.formstack.form(self.form.id)
+        fields = api_response['fields']
+        # save cached copy
+        self._fields = fields
+        return fields
+
+    def get_student_apps(self, save=True):
+        """
+        Returns a list of StudentApp objects, one per valid form submission.
+        """
+
+        # return cached copy if available
+        if hasattr(self, '_apps'):
+            return self._apps
+        # get submissions from the API
+        api_response = self.formstack.data(self.form.id, {'per_page': 100})
+        submissions = api_response['submissions']
+        for i in range(1, api_response['pages']):
+            api_response = self.formstack.data(self.form.id,
+                                               {'per_page': 100, 'page': i+1})
+            submissions += api_response['submissions']
+        # parse submissions, link usernames, make a StudentApp object
+        apps = []
+        for submission in submissions:
+            submission_id = int(submission['id'])
+            data_dict = { int(entry['field']): entry['value']
+                          for entry in submission['data'] }
+            username = data_dict.get(self.username_field)
+            try:
+                user = ESPUser.objects.get(username=username)
+            except ObjectDoesNotExist:
+                continue # no matching user, ignore
+            coreclass1 = data_dict.get(self.coreclass1_field, '')
+            coreclass2 = data_dict.get(self.coreclass2_field, '')
+            coreclass3 = data_dict.get(self.coreclass3_field, '')
+            app = FsStudentApp(id=submission_id,
+                               user=user,
+                               program=self.program,
+                               coreclass1=coreclass1,
+                               coreclass2=coreclass2,
+                               coreclass3=coreclass3)
+            apps.append(app)
+            if save:
+                app.save()
+        # store cached copy
+        self._apps = apps
+        return apps
