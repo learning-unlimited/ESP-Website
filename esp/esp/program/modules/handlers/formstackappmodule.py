@@ -254,7 +254,8 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
                                program=self.program,
                                coreclass1=coreclass1,
                                coreclass2=coreclass2,
-                               coreclass3=coreclass3)            
+                               coreclass3=coreclass3)
+            app._data = submission # cache submitted data
             apps.append(app)
             if save:
                 app.save()
