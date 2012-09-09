@@ -107,10 +107,13 @@ class Formstack(object):
             
             if len(res) and res['status'] == 'ok':
                 return res['response']
+            elif len(res) and res['status'] == 'error':
+                raise Exception(res['error'])
             else:
                 raise Exception('Unknown Error')
 
-        #TODO: Possible to access HTTP body in HTTPError? 
-        except: pass
+        # I don't know what they were thinking with try ... except: pass
+        # --lua
+        except (): pass
 
         return None
