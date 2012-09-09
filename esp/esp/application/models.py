@@ -19,8 +19,13 @@ class FsStudentApp(models.Model):
     def get_submitted_data(self):
         """ Returns the raw submitted data from the API, as a JSON dict. """
 
+        # return cached copy if available
+        if hasattr(self, '_data'):
+            return self._data
+
         fsas = self.program.getModuleExtension('FormstackAppSettings')
         submission = fsas.formstack.submission(self.id)
+        self._data = submission
         return submission
 
     def get_responses(self):
