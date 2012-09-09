@@ -226,8 +226,14 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
         metadata (e.g. field name).
         """
 
+        # return cached copy if available
+        if hasattr(self, '_fields'):
+            return self._fields
+        # get info from the API
         api_response = self.formstack.form(self.form.id)
         fields = api_response['fields']
+        # save cached copy
+        self._fields = fields
         return fields
 
     def get_student_apps(self, save=True):
