@@ -92,6 +92,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = (Tag.getProgramTag(key='friendly_times_with_date',program=self.program,default=False) == "True")
         context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='true').lower()
+        context['open_class_category'] = Tag.getProgramTag('open_class_category', default="walk-in activity")
         return context
 
 
@@ -834,7 +835,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         context['classes'] = {
             0: {'type': 'class', 'link': 'makeaclass'}, 
-            1: {'type': 'walk-in seminar', 'link': 'makeopenclass'}
+            1: {'type': Tag.getProgramTag('open_class_category', default='walk-in activity'), 'link': 'makeopenclass'}
         }
         if action == 'create' or action == 'edit':
             context['isopenclass'] = 0
@@ -843,6 +844,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             context['grade_range_popup'] = False
             context['classroom_form_advisories'] += '__open_class'
         context['classtype'] = context['classes'][context['isopenclass']]['type']
+        if (context['isopenclass']):
+            context['qsd_tag'] = "teach:makeopenclassqsd"
+        else:
+            context['qsd_tag'] = "teach:makeaclassqsd"
         context['otherclass'] = context['classes'][1 - context['isopenclass']]
         
         context['manage'] = False
