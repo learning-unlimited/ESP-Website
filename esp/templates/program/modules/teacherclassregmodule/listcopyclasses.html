@@ -12,12 +12,12 @@
 {% endblock %}
 
 {% block content %}
-<a href="{{ prog.get_teach_url}}/teacherreg">Go back to the main teacher registration page</a>
+<a href="{{ program.get_teach_url}}teacherreg">Go back to the main teacher registration page</a>
 
 <br /><br />
 
 {% load render_qsd %}
-{% inline_qsd_block prog.anchor "teacher_class_import_description" request.user %}Write instructions here!{% end_inline_qsd_block %}
+{% inline_qsd_block program.anchor "teacher_class_import_description" request.user %}Write instructions here!{% end_inline_qsd_block %}
 
 {% if allow_class_import %}
 <div id="battlescreen">
@@ -52,5 +52,5 @@ Sorry! Class importing is disabled for {{ program.niceName }}.
 {% endif %}
 <br /><br/ >
 
-<a href="{{ prog.get_teach_url}}/teacherreg">Go back to the main teacher registration page</a>
+<a href="{{ program.get_teach_url}}teacherreg">Go back to the main teacher registration page</a>
 {% endblock %}
