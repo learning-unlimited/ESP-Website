@@ -548,7 +548,7 @@ class FormHandler:
 
     def getWizard(self):
         """Returns the ComboForm instance for this form"""
-        self.wizard=ComboForm(self._getFormList(), self.form, self, self._getInitialDa
+        self.wizard=ComboForm(self._getFormList(), self.form, self, self._getInitialData(self.form, self.user))
         return self.wizard
 
     def get_initial_data(self, initial_data=None):
