@@ -220,6 +220,30 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
         return render_to_response(self.baseDir()+'studentapp.html',
                                   request, (prog, tl), context)
 
+    @aux_call
+    @needs_admin
+    def listapps(self, request, tl, one, two, module, extra, prog):
+        apps = self.get_student_apps()
+        context = {}
+        context['apps'] = apps
+        return render_to_response(self.baseDir()+'listapps.html',
+                                  request, (prog, tl), context)
+
+    @aux_call
+    @needs_admin
+    def viewapp(self, request, tl, one, two, module, extra, prog):
+        apps = self.get_student_apps()
+        if extra:
+            matching_apps = [app for app in apps if app.id == int(extra)]
+        else:
+            matching_apps = []
+        if matching_apps:
+            app = matching_apps[0]
+            context = {}
+            context['app'] = app
+            return render_to_response(self.baseDir()+'viewapp.html',
+                                      request, (prog, tl), context)
+
     def get_student_apps(self, save=True):
         """
         Returns a list of StudentApp objects, one per valid form submission.

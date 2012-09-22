@@ -1,0 +1,35 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Application{% endblock %}
+
+{% block xtrajs %}
+{% endblock %}
+
+{% block subsection_name %}Student Application{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
+{% endblock %}
+
+{% block content %}
+<h1>{{ app.user.username }}'s Application for {{ program.niceName }}</h1>
+
+<table style="font-size: smaller">
+  <thead>
+    <tr>
+      <th>Question</th>
+      <th>Response</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for response in app.get_responses %}
+    <tr>
+      <td>{{ response.0 }}:</td>
+      <td>{{ response.1 }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}

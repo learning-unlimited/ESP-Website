@@ -1,0 +1,43 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Application{% endblock %}
+
+{% block xtrajs %}
+{% endblock %}
+
+{% block subsection_name %}Student Application{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
+{% endblock %}
+
+{% block content %}
+<h1>Applications for {{ program.niceName }}</h1>
+
+<table style="font-size: smaller">
+  <thead>
+    <tr>
+      <th>Submission</th>
+      <th>Core Class 1</th>
+      <th>Core Class 2</th>
+      <th>Core Class 3</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for app in apps %}
+    <tr>
+      <td>
+	<a href="/learn/{{ program.getUrlBase }}/viewapp/{{app.id}}">
+	  {{ app.id }}: {{ app.user }}
+	</a>
+      </td>
+      <td>{{ app.coreclass1 }}</td>
+      <td>{{ app.coreclass2 }}</td>
+      <td>{{ app.coreclass3 }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+{% endblock %}
