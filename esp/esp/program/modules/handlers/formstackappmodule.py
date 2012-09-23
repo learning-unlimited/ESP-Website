@@ -280,12 +280,15 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
             coreclass1 = data_dict.get(self.coreclass1_field, '')
             coreclass2 = data_dict.get(self.coreclass2_field, '')
             coreclass3 = data_dict.get(self.coreclass3_field, '')
-            app = FsStudentApp(id=submission_id,
-                               user=user,
-                               program=self.program,
-                               coreclass1=coreclass1,
-                               coreclass2=coreclass2,
-                               coreclass3=coreclass3)
+            if FsStudentApp.objects.filter(id=submission_id).exists():
+                app = FsStudentApp.objects.get(id=submission_id)
+            else:
+                app = FsStudentApp(id=submission_id)
+            app.user = user
+            app.program = self.program
+            app.coreclass1 = coreclass1
+            app.coreclass2 = coreclass2
+            app.coreclass3 = coreclass3
             app._data = submission # cache submitted data
             apps.append(app)
             if save:

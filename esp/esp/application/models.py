@@ -11,7 +11,22 @@ class FsStudentApp(models.Model):
     coreclass1 = models.CharField(max_length=80)
     coreclass2 = models.CharField(max_length=80)
     coreclass3 = models.CharField(max_length=80)
-    # to add: admin status, admin comment, teacher rating?, etc.
+
+    # choices for admin status
+    UNREVIEWED = 0
+    APPROVED = 1
+    ADMITTED = 2
+    REJECTED = 3
+    WAITLIST = 4
+    admin_status = models.IntegerField(default=UNREVIEWED, choices=[
+            (UNREVIEWED, 'Unreviewed'),
+            (APPROVED, 'Approved'),
+            (ADMITTED, 'Admitted'),
+            (REJECTED, 'Rejected'),
+            (WAITLIST, 'Waitlist')
+            ])
+
+    admin_comment = models.TextField()
 
     def __unicode__(self):
         return "{}'s app for {}".format(self.user, self.program)
