@@ -419,30 +419,22 @@ class FormstackAppSettings(models.Model):
         """ A reference to the Formstack client using the stored API key. """
         return Formstack(self.api_key)
 
-    def configure(self, args):
+    def create_username_field(self):
         """
-        Convenience function for setting up the module.
+        Creates a form field for ESP Username, returns the field ID,
+        and sets the username_field attribute on this object.
 
-        Sets attributes on the FormstackAppSettings object for each
-        key/value pair in args. Also creates a form field for ESP Username
-        if an already-present one is not specified.
+        Does not save to the database; you must call .save() yourself.
         """
-        for (key, value) in args.items():
-            if key in self.__class__._meta.get_all_field_names():
-                setattr(self, key, value)
-
-        if self.username_field is None:
-            # create a new read-only field
-            api_response = self.formstack.create_field(self.form_id, {
-                    'field_type': 'text',
-                    'label': 'ESP Username',
-                    'required': 1,
-                    'readonly': 1,
-                    'sort': 1 # puts it at the top of the form
-                    })
-            self.username_field = api_response['id']
-
-        self.save()
+        # create a new read-only field
+        api_response = self.formstack.create_field(self.form_id, {
+                'field_type': 'text',
+                'label': 'ESP Username',
+                'required': 1,
+                'readonly': 1,
+                'sort': 1 # puts it at the top of the form
+                })
+        self.username_field = api_response['id']
 
     def get_field_info(self):
         """
