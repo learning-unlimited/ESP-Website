@@ -19,9 +19,12 @@
   <thead>
     <tr>
       <th>Submission</th>
+      <th>User</th>
       <th>Core Class 1</th>
       <th>Core Class 2</th>
       <th>Core Class 3</th>
+      <th>Admin Status</th>
+      <th>Admin Comment</th>
     </tr>
   </thead>
   <tbody>
@@ -29,12 +32,17 @@
     <tr>
       <td>
 	<a href="/learn/{{ program.getUrlBase }}/viewapp/{{app.id}}">
-	  {{ app.id }}: {{ app.user }}
+	  {{ app.id }}
 	</a>
       </td>
+      <td><a href="/manage/userview?username={{ app.user }}">
+	  {{ app.user }}
+      </a></td>
       <td>{{ app.coreclass1 }}</td>
       <td>{{ app.coreclass2 }}</td>
       <td>{{ app.coreclass3 }}</td>
+      <td>{{ app.get_admin_status_display }}</td>
+      <td>{{ app.admin_comment }}</td>
     </tr>
     {% endfor %}
   </tbody>
