@@ -44,7 +44,7 @@ User Information: <br />
                 <i>{% for v in cls.section.verbs %}{{ v }}{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
             {% endif %}
 	{% comment %}{% endif %}{% endcomment %}
-	{{ cls.section.title }} 
+	{{ cls.section }}{% if not cls.first_meeting_time %} <b>(continued)</b>{% endif %} 
             {% if request.user.onsite_local %}
                 ({{ cls.section.prettyrooms|join:", " }})
             {% endif %}
