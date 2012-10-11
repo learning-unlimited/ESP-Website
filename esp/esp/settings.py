@@ -74,6 +74,10 @@ TEMPLATE_DIRS = (
 
 DEFAULT_HOST = SITE_INFO[1]
 
+for (key,value) in CONTACTFORM_EMAIL_CHOICES:
+    if (key in ('esp','general','esp-web','relations')) and not (key in CONTACTFORM_EMAIL_ADDRESSES):
+        CONTACTFORM_EMAIL_ADDRESSES[key] = DEFAULT_EMAIL_ADDRESSES[{'esp':'default','general':'default','esp-web':'support','relations':'default'}[key]]
+
 #CACHE_BACKEND = "esp.utils.memcached_multikey://174.129.184.116:11211/?timeout=%d" % DEFAULT_CACHE_TIMEOUT
 CACHE_BACKEND = "esp.utils.memcached_multikey://127.0.0.1:11211/?timeout=%d" % DEFAULT_CACHE_TIMEOUT
 
