@@ -42,7 +42,11 @@ class GetProgramTagNode(Node):
         else:
             default = None
         if self.boolean:
-            return str(Tag.getBooleanTag(key, program, default)).lower()
+            result = Tag.getBooleanTag(key, program, default)
+            if isinstance(result, bool):
+                return str(result).lower()
+            else:
+                return 'false'
         else:
             return str(Tag.getProgramTag(key, program, default))
 
