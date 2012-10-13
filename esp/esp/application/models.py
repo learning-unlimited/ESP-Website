@@ -1,11 +1,12 @@
 from django.db import models
+from django.template import Template, Context
 from django.core.exceptions import ObjectDoesNotExist
 from esp.users.models import ESPUser
 from esp.program.models import Program
 from esp.program.modules.base import ProgramModuleObj
 from esp.formstack.api import Formstack
 from esp.formstack.models import FormstackForm
-
+from esp.lib.markdown import markdown
 
 class FormstackAppSettings(models.Model):
     """
@@ -25,6 +26,8 @@ class FormstackAppSettings(models.Model):
     coreclass1_field = models.IntegerField(null=True)
     coreclass2_field = models.IntegerField(null=True)
     coreclass3_field = models.IntegerField(null=True)
+
+    teacher_view_template = models.TextField()
 
     @property
     def formstack(self):
@@ -186,3 +189,14 @@ class FsStudentApp(models.Model):
             result.append((id_to_label[response['field']],
                            response['value']))
         return result
+
+    def get_teacher_view(self):
+        """ Renders a "teacher view" for an app using a configurable template. """
+
+        data = self.get_submitted_data()
+        data_dict = {}
+        for response in data['data']:
+            data_dict[response['field']] = response['value']
+        template = Template(self.program_settings.teacher_view_template)
+        context = Context({'fields': data_dict})
+        return markdown(template.render(context))
