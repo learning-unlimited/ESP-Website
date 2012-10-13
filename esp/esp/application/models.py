@@ -33,6 +33,16 @@ class FormstackAppSettings(models.Model):
         """
         return Formstack(self.api_key)
 
+    def settings(self):
+        """
+        Returns this FormstackAppSettings object, whether you're
+        calling from this class or a module inheriting it.
+        """
+        if isinstance(self, ProgramModuleObj):
+            return self.program.getModuleExtension('FormstackAppSettings')
+        else:
+            return self
+
     def create_username_field(self):
         """
         Creates a form field for ESP Username, returns the field ID,
@@ -107,7 +117,7 @@ class FormstackAppSettings(models.Model):
             else:
                 app = FsStudentApp(id=submission_id)
             app.user = user
-            app.program = self.module.program
+            app.program_settings = self.settings()
             app.coreclass1 = coreclass1
             app.coreclass2 = coreclass2
             app.coreclass3 = coreclass3
@@ -122,7 +132,7 @@ class FsStudentApp(models.Model):
 
     id = models.IntegerField(primary_key=True)
     user = models.ForeignKey(ESPUser)
-    program = models.ForeignKey(Program)
+    program_settings = models.ForeignKey(FormstackAppSettings)
     coreclass1 = models.CharField(max_length=80)
     coreclass2 = models.CharField(max_length=80)
     coreclass3 = models.CharField(max_length=80)
@@ -146,6 +156,14 @@ class FsStudentApp(models.Model):
     def __unicode__(self):
         return "{}'s app for {}".format(self.user, self.program)
 
+    @property
+    def program(self):
+        # Fake "foreign key" to Program. (We don't have a real one
+        # because FormstackAppSettings is what we want most of the
+        # time, and we don't want to have two separate fields that
+        # could disagree.)
+        return self.program_settings.module.program
+
     def get_submitted_data(self):
         """ Returns the raw submitted data from the API, as a JSON dict. """
 
@@ -153,8 +171,7 @@ class FsStudentApp(models.Model):
         if hasattr(self, '_data'):
             return self._data
 
-        fsas = self.program.getModuleExtension('FormstackAppSettings')
-        submission = fsas.formstack.submission(self.id)
+        submission = self.program_settings.formstack.submission(self.id)
         self._data = submission
         return submission
 
@@ -162,8 +179,7 @@ class FsStudentApp(models.Model):
         """ Returns a list of (question, response) tuples from submitted data. """
 
         data = self.get_submitted_data()
-        fsas = self.program.getModuleExtension('FormstackAppSettings')
-        info = fsas.get_field_info()
+        info = self.program_settings.get_field_info()
         id_to_label = { field['id']: field['label'] for field in info }
         result = []
         for response in data['data']:
