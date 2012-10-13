@@ -1,0 +1,10 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Application{% endblock %}
+
+{% block content %}
+<h1>{{ app.user.username }}'s Application for {{ program.niceName }}</h1>
+
+{{ app.get_teacher_view|safe }}
+
+{% endblock %}

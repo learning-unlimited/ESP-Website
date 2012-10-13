@@ -242,6 +242,21 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
             return render_to_response(self.baseDir()+'viewapp.html',
                                       request, (prog, tl), context)
 
+    @aux_call
+    @needs_teacher
+    def teacherviewapp(self, request, tl, one, two, module, extra, prog):
+        apps = self.get_student_apps()
+        if extra:
+            matching_apps = [app for app in apps if app.id == int(extra)]
+        else:
+            matching_apps = []
+        if matching_apps:
+            app = matching_apps[0]
+            context = {}
+            context['app'] = app
+            return render_to_response(self.baseDir()+'teacherviewapp.html',
+                                      request, (prog, tl), context)
+
     def getNavBars(self):
         print 'I wonder if getNavBars gets called anywhere'
         return []
