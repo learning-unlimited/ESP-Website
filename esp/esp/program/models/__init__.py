@@ -689,6 +689,9 @@ class Program(models.Model, CustomFormsLinkModel):
         """
         return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).select_related('event_type').order_by('start')
 
+    def num_timeslots(self):
+        return len(self.getTimeSlots())
+
     #   In situations where you just want a list of all time slots in the program,
     #   that can be cached.
     @cache_function
