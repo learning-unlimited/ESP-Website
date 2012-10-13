@@ -37,8 +37,6 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.users.models    import ESPUser
-from esp.application.models import FsStudentApp
-from django.core.exceptions import ObjectDoesNotExist
 
 class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
     """
@@ -243,57 +241,6 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
             context['app'] = app
             return render_to_response(self.baseDir()+'viewapp.html',
                                       request, (prog, tl), context)
-
-    def get_student_apps(self, save=True):
-        """
-        Returns a list of StudentApp objects, one per valid form submission.
-        """
-
-        # return cached copy if available
-        if hasattr(self, '_apps'):
-            return self._apps
-
-        # fetch and store if unavailable
-        apps = self.fetch_student_apps(save)
-        self._apps = apps
-        return apps
-
-    def fetch_student_apps(self, save=True):
-        # get submissions from the API
-        api_response = self.formstack.data(self.form.id, {'per_page': 100})
-        submissions = api_response['submissions']
-        for i in range(1, api_response['pages']):
-            api_response = self.formstack.data(self.form.id,
-                                               {'per_page': 100, 'page': i+1})
-            submissions += api_response['submissions']
-        # parse submissions, link usernames, make a StudentApp object
-        apps = []
-        for submission in submissions:
-            submission_id = int(submission['id'])
-            data_dict = { int(entry['field']): entry['value']
-                          for entry in submission['data'] }
-            username = data_dict.get(self.username_field)
-            try:
-                user = ESPUser.objects.get(username=username)
-            except ObjectDoesNotExist:
-                continue # no matching user, ignore
-            coreclass1 = data_dict.get(self.coreclass1_field, '')
-            coreclass2 = data_dict.get(self.coreclass2_field, '')
-            coreclass3 = data_dict.get(self.coreclass3_field, '')
-            if FsStudentApp.objects.filter(id=submission_id).exists():
-                app = FsStudentApp.objects.get(id=submission_id)
-            else:
-                app = FsStudentApp(id=submission_id)
-            app.user = user
-            app.program = self.program
-            app.coreclass1 = coreclass1
-            app.coreclass2 = coreclass2
-            app.coreclass3 = coreclass3
-            app._data = submission # cache submitted data
-            apps.append(app)
-            if save:
-                app.save()
-        return apps
 
     def getNavBars(self):
         print 'I wonder if getNavBars gets called anywhere'
