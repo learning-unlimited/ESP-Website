@@ -439,6 +439,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         affected_sections = ClassSection.objects.filter(parent_class__parent_program=prog, resourceassignment__lock_level__lte=lock_level)
         num_affected_sections = affected_sections.distinct().count()
         ResourceAssignment.objects.filter(target__in=affected_sections, lock_level__lte=lock_level).delete()
+        ResourceAssignment.objects.filter(target__isnull=True, target_subj__isnull=True).delete()
+        for section in affected_sections:
+            section.meeting_times.clear()
         
         data = {'message': 'Cleared schedule assignments for %d sections.' % (num_affected_sections)}
         response = HttpResponse(content_type="application/json")
