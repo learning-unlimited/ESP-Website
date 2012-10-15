@@ -39,14 +39,7 @@ from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
 from django.db.models.query       import Q
-from django.template.loader import get_template
-from esp.program.models  import FinancialAidRequest
-from esp.tagdict.models import Tag
-from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
-from django              import forms
-from urllib import urlencode
-
 
 # hackish solution for Splash 2012
 class FormstackMedliabModule(ProgramModuleObj):
