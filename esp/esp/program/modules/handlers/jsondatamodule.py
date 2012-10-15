@@ -214,7 +214,10 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     @aux_call
     @json_response()
     @needs_student
-    def lottery_preferences(self, request, tl, one, two, module, extra, prog):
+    def lottery_preferences(self, request, tl, one, two, module, extra, prog):        
+        if prog.priorityLimit() > 1:
+            return self.lottery_preferences_usepriority(request, prog)
+ 
         sections = list(prog.sections().values('id'))
         sections_interested = StudentRegistration.valid_objects().filter(relationship__name='Interested', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
         sections_priority = StudentRegistration.valid_objects().filter(relationship__name='Priority/1', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
@@ -228,6 +231,19 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             else:
                 item['lottery_priority'] = False
         return {'sections': sections}
+
+    def lottery_preferences_usepriority(self, request, prog): 
+        sections = list(prog.sections().values('id'))
+        for i in range(1, prog.priorityLimit()+1, 1):
+            priority_name = 'Priority/' + str(i)
+            sections_priority = StudentRegistration.valid_objects().filter(relationship__name=priority_name, user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
+            for item in sections:
+                if item['id'] in sections_priority:
+                    item[priority_name] = True
+                #else:
+                #   item['lottery_priority'] = False
+        return {'sections': sections}
+        
         
     @aux_call
     @cache_control(public=True, max_age=300)

@@ -52,8 +52,6 @@ from django.views.decorators.cache import cache_control
 from esp.middleware.threadlocalrequest import get_current_request
 #def json_encode_timeslots(obj):
     
-
-
 class LotteryStudentRegModule(ProgramModuleObj):
 
     def students(self, QObject = False):
@@ -104,13 +102,12 @@ class LotteryStudentRegModule(ProgramModuleObj):
 
         ProgInfo = prog.getModuleExtension('StudentClassRegModuleInfo')
 
-        print ProgInfo.use_priority
-        print ProgInfo.priority_limit
         #HSSP-style lottery
         if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:
-            return render_to_response('program/modules/lotterystudentregmodule/student_reg_old.html', request, (prog, tl), context)
+            print "using priority"
+            return render_to_response('program/modules/lotterystudentregmodule/student_reg_hssp.html', request, (prog, tl), context)
         #Splark/Spash style lottery
-        return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, (prog, tl), context)
+        return render_to_response('program/modules/lotterystudentregmodule/student_reg_splash.html', request, (prog, tl), context)
 
     @aux_call
     @meets_deadline('/Classes/Lottery')

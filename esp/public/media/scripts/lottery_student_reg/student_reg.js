@@ -1,3 +1,4 @@
+
 /**    timeslots: map (id) -> JS object with attributes id, label, start, end, sections (list of IDs)
        sections: map (id) -> JS object with attributes id, emailcode, title, timeslots (sorted list of IDs), grade_min, grade_max, capacity, num_students, lottery_priority, lottery_interested **/
 	
@@ -12,6 +13,8 @@ $j(document).ready(function() {
         'lottery_preferences'
     ];
 
+    user_grade = esp_user['cur_grade'] + (typeof increment_grade == 'undefined' ? 0 : increment_grade);
+
     json_fetch(data_components, show_app, null, fail_gracefully);
 });
 
@@ -20,8 +23,6 @@ var accordion_settings;
 
 // Initializes various jQuery UI things
 jquery_ui_init = function(){
-    // Create the dialog used to show class info
-    create_class_info_dialog();
 
     // Create the accordion settings
     accordion_settings = {
@@ -42,6 +43,16 @@ jquery_ui_init = function(){
     $j("#lsr_content").accordion(accordion_settings);
 };
 
+//returns 1 if a starts after b, and -1 otherwise
+//for use sorting timeslots by start time
+compare_timeslot_starts = function(a, b){
+    var dateA = new Date(a.start.year, a.start.month, a.start.day, a.start.hour, a.start.minute, a.start.second, 0);
+    var dateB = new Date(b.start.year, b.start.month, b.start.day, b.start.hour, b.start.minute, b.start.second, 0);
+    if (dateA > dateB){
+	return 1;
+    }
+    return -1;
+};
 fail_gracefully = function(){
     // Set the HTML to indicate that loading failed
     $j("#timeslots_anchor").html("<p>Data failed to load! It's possible the website JSON Data Module is not enabled. Please contact <a href='mailto:"+support+"'>"+support+"</a> explaining how you got this message and we'll try to fix it.</p>");
@@ -52,6 +63,7 @@ fail_gracefully = function(){
 show_app = function(data){
     timeslots = data['timeslots'];
     sections = data['sections'];
+    timeslot_objects = [];
 
     //initialize array which will hold the class id of the last clicked class priority radio
     last_priority = {};
@@ -66,9 +78,10 @@ show_app = function(data){
     //adds timeslot links to page
     $j("#timeslots_anchor").css("display", "none");
     for(index in sorted_timeslots){
-	t = sorted_timeslots[index];
-	$j("#timeslots_anchor").before(get_timeslot_html(t));
-	add_classes_to_timeslot(t, sections);
+	ts = new Timeslot(sorted_timeslots[index]);
+	timeslot_objects.push(ts);
+	$j("#timeslots_anchor").before(ts.get_timeslot_html());
+	ts.add_classes_to_timeslot(sections);//needs to be updated w/ object-orientedness
     }
 
     //recreate the accordion now to update for the timeslots
@@ -265,135 +278,43 @@ get_walkin_html = function(class_data, timeslot_id){
     return template;
 };
 
-get_carryover_html = function(class_data, timeslot_id){
+function get_carryover_html(class_data, add_link){
     // Create a carried-over class div using a template with keywords replaced below
-    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
-	.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
-	.replace(/%CLASS_TITLE%/g, class_data['title'])
-        .replace(/%CLASS_ID%/g, class_data['id']);
+    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% ";
+    if (add_link){
+	template = template + "[<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]";
+    }
+    template = template + "</p>";
+    template = template.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
+    .replace(/%CLASS_TITLE%/g, class_data['title'])
+    .replace(/%CLASS_ID%/g, class_data['id']);
     return template;
 };
 
-// The class description popup is a global variable, because we only want
-// one object, and we don't want to recreate it each time
-var class_desc_popup;
-// Function to initially create the class description popup (using jQuery UI dialogs)
-create_class_info_dialog = function(){
-    class_desc_popup = $j('<div></div>').dialog({
-	autoOpen: false,
-	minWidth: 400,
-	minHeight: 300,
-	modal: true,
-	buttons: {
-	    Ok: function() {
-		$j(this).dialog("close");
-	    }
-	},
-	title: ''
-    });
+
+function submit_preferences(){
+    $j("#submit_button").text("Submitting...");
+    $j("#submit_button").attr("disabled", "disabled");
+
+    var submit_data = get_submit_data();
+
+    submit_data_string = JSON.stringify(submit_data);
+
+    var submit_url = '/learn/'+base_url+'/lsr_submit';
+
+    //actually submit and redirect to student reg
+    jQuery.ajax({
+	     type: 'POST',
+             url: submit_url,
+	     error: function(a, b, c) {
+                alert("There has been an error on the website. Please contact " + support + " to report this problem.");
+             },
+	     success: function(a, b, c){
+		alert("Your preferences have been successfully saved.");
+		window.location = "studentreg";
+	     },
+	     data: {'json_data': submit_data_string },
+	     headers: {'X-CSRFToken': $j.cookie("csrftoken")}
+     });
 };
 
-// Dictionary to keep track of classes' extra info as and when we load them
-var class_info = {};
-// Initial popup that tells the user we're loading the class data
-loading_class_desc = function(){
-    class_desc_popup.dialog('option', 'title', 'Loading');
-    class_desc_popup.dialog('option', 'width', 400);
-    class_desc_popup.dialog('option', 'height', 200);
-    class_desc_popup.dialog('option', 'position', 'center');
-    class_desc_popup.html('Loading class info...');
-    class_desc_popup.dialog('open');
-};
-
-// Function to fill the class description popup
-fill_class_desc = function(class_id){
-    var parent_class_id = sections[class_id].parent_class;
-    extra_info = class_info[parent_class_id];
-    class_desc_popup.dialog('option', 'title', sections[class_id].emailcode + ": " + extra_info.title);
-    class_desc_popup.dialog('option', 'width', 600);
-    class_desc_popup.dialog('option', 'height', 400);
-    class_desc_popup.dialog('option', 'position', 'center');
-    class_desc_popup.html('');
-    class_desc_popup.append("<p><b>Category:</b> " + extra_info.category + "</p>");
-    //class_desc_popup.append("<p>Difficulty: " + extra_info.difficulty + "</p>");
-    class_desc_popup.append("<p><b>Description:</b> " + extra_info.class_info + "</p>");
-};
-
-// Called to open a class description
-open_class_desc = function(class_id){
-    // Display a loading popup while we wait
-    loading_class_desc();
-
-    // Get the class info if we don't have it already
-    var parent_class_id = sections[class_id].parent_class;
-    if (!class_info[parent_class_id]){
-	json_get('class_info', {'class_id': parent_class_id}, function(data){
-	    // Once we get the class data, store it for later, then go
-	    // fill the popup
-	    class_info[parent_class_id] = data.classes[parent_class_id];
-	    fill_class_desc(class_id);
-	    console.log(class_info);
-	});
-    }
-    else{
-	// If we already have the data, go fill the popup
-	fill_class_desc(class_id);
-    }
-};
-
-// Function to populate a class div with existing preference data
-load_old_preferences = function(class_data){
-    id = class_data['id'];
-    if( class_data['lottery_priority'] )
-    {
-	$j("#"+class_radio_id(id)).prop("checked", true);
-    }
-    if( class_data['lottery_interested'] )
-    {
-	$j("#"+class_checkbox_id(id)).prop("checked", true);
-    }
-};
-
-// Callback for when a priority radio is changed
-priority_changed = function(id, timeslot_id){
-    // Unprioritize all selections in the timeblock
-    for (i in timeslots[timeslot_id].starting_sections){
-	    sections[timeslots[timeslot_id].starting_sections[i]]['lottery_priority'] = false;
-    }
-
-    if(id){
-	// Prioritize this selection
-	sections[id]['lottery_priority'] = true;
-    }
-};
-
-// Callback for when an interested checkbox is changed
-interested_changed = function(id){
-    sections[id]['lottery_interested'] = !sections[id]['lottery_interested'];
-};
-
-// Various functions to create id strings to be used in HTML
-ts_div_from_id = function(id){
-    return "TS_"+id;
-};
-ts_walkin_div_from_id = function(id){
-    return "TS_W_"+id;
-};
-ts_carryover_div_from_id = function(id){
-    return "TS_C_"+id;
-};
-ts_table_from_id = function(id){
-    return "TS_TABLE_"+id;
-};
-ts_radio_name = function(ts_name){
-    return ts_name + '_priority';
-};
-ts_no_preference_id = function(ts_name){
-    return ts_name + '_no_preference';
-};
-class_radio_id = function(id){
-    return "class_radio_" + id;
-};
-class_checkbox_id = function(id){
-    return "interested_"+ id;
-};

@@ -689,6 +689,9 @@ class Program(models.Model, CustomFormsLinkModel):
         """
         return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).select_related('event_type').order_by('start')
 
+    def num_timeslots(self):
+        return len(self.getTimeSlots())
+
     #   In situations where you just want a list of all time slots in the program,
     #   that can be cached.
     @cache_function
@@ -1017,10 +1020,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def incrementGrade(self): 
-        incrementTag = Tag.getProgramTag('increment_default_grade_levels', self)
-        if incrementTag: 
-            return 1
-        return 0
+        return int(Tag.getBooleanTag('increment_default_grade_levels', self, False))
     incrementGrade.depend_on_row(lambda: Tag, lambda tag: {'self' :  tag.target})
     
     def priorityLimit(self):
@@ -1029,6 +1029,13 @@ class Program(models.Model, CustomFormsLinkModel):
             return studentregmodule.priority_limit
         else: 
             return 1
+    
+    def useGradeRangeExceptions(self):
+        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        if studentregmodule:
+            return studentregmodule.use_grade_range_exceptions
+        else:
+            return False
     
     @staticmethod
     def find_by_perms(user, verb):

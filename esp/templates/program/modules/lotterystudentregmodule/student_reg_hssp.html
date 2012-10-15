@@ -18,7 +18,10 @@
 var support = "{{ support }}";
 var open_class_registration = {{ open_class_registration }};
 var open_class_category = "{{ open_class_category }}";
+var increment_grade = {{ prog.incrementGrade }};
+var priority_limit = {{ prog.priorityLimit }};
 </script>
+<script type="text/javascript" src="/media/scripts/lottery_student_reg/hssp_timeslot.js"></script>
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/student_reg.js"></script>
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/preferences.js"></script>
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
@@ -47,12 +50,8 @@ var open_class_category = "{{ open_class_category }}";
 
     <div id="lsr_content">
         <h3 class="header"><a href="#">Instructions</a></h3>
-        <div id="instructions" style="overflow: hidden;">
-            {% inline_qsd_block prog.anchor "lsr_instructions" request.user %}
-Welcome to the registration lottery for {{ prog.niceName }}.  Below you will find a list of every timeslot in the program.  Click on the timeslot to expand a list of classes taking place during that time and select your preferences; you may find it helpful to view the <a href="/learn/{{ prog.getUrlBase }}/catalog">full catalog</a> to learn more about the classes.  For each timeslot, you may indicate your favorite class to take during that timeslot ("Priority" column) and any number of other classes that you are interested in ("Interested" column).
-
-The lottery assignment algorithm maximizes the number of students that get into their first-choice (Priority) classes and then maximizes attendance in the Interested classes.  Because of its randomized nature and the limited capacity of many classes, you should mark lots of classes as Priority or Interested (usually 10 or more per timeslot) in order to ensure a full schedule.
-            {% end_inline_qsd_block %}
+        <div id="instructions">
+            {% inline_qsd_block prog.anchor "lsr_instructions" request.user %}Write instructions here!{% end_inline_qsd_block %}
 	</div>
 
 	<br/>

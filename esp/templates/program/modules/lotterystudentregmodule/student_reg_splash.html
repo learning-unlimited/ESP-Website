@@ -1,0 +1,70 @@
+{% extends "main.html" %}
+{% load render_qsd %}
+
+{% block title %} Class Lottery Registration for {{prog.niceName}} {% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link href="/media/styles/jquery-ui/jquery-ui.css" rel="stylesheet" type="text/css"/>
+{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">    var base_url = "{{ program.getUrlBase }}";  </script>
+<script type="text/javascript">    var program_base_url = "/json/"+base_url+"/";
+var support = "{{ support }}";
+var open_class_registration = {{ open_class_registration }};
+var open_class_category = "{{ open_class_category }}";
+</script>
+<script type="text/javascript" src="/media/scripts/lottery_student_reg/splash_timeslot.js"></script>
+<script type="text/javascript" src="/media/scripts/lottery_student_reg/student_reg.js"></script>
+<script type="text/javascript" src="/media/scripts/lottery_student_reg/class_popups.js"></script>
+<script type="text/javascript" src="/media/scripts/lottery_student_reg/preferences.js"></script>
+<script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+<!--
+<script type="text/javascript">
+  $j.getScript("/media/scripts/jquery-ui-1.8.17.custom.min.js", function(){
+    console.log(create_class_info_dialog);
+    console.log($j("<div></div>").accordion);
+    create_class_info_dialog();
+    jquery_ui_init(); 
+  });
+</script>
+-->
+<script type="text/javascript">
+/**$j(document).ready(function() { 
+    
+});**/              
+</script>
+
+{% endblock %}                      
+
+
+{% block content %} 
+    {% inline_qsd_block prog.anchor "lsr_title" request.user %}Class Lottery for {{prog.niceName}}{% end_inline_qsd_block %}
+
+    <div id="lsr_content">
+        <h3 class="header"><a href="#">Instructions</a></h3>
+        <div id="instructions" style="overflow: hidden;">
+            {% inline_qsd_block prog.anchor "lsr_instructions" request.user %}
+Welcome to the registration lottery for {{ prog.niceName }}.  Below you will find a list of every timeslot in the program.  Click on the timeslot to expand a list of classes taking place during that time and select your preferences; you may find it helpful to view the <a href="/learn/{{ prog.getUrlBase }}/catalog">full catalog</a> to learn more about the classes.  For each timeslot, you may indicate your favorite class to take during that timeslot ("Priority" column) and any number of other classes that you are interested in ("Interested" column).
+
+The lottery assignment algorithm maximizes the number of students that get into their first-choice (Priority) classes and then maximizes attendance in the Interested classes.  Because of its randomized nature and the limited capacity of many classes, you should mark lots of classes as Priority or Interested (usually 10 or more per timeslot) in order to ensure a full schedule.
+            {% end_inline_qsd_block %}
+	</div>
+
+	<br/>
+
+	<div id="timeslots_anchor" style="display:none;"></div>
+
+	<br/>
+
+	<h3 class="header"><a href="#">View and Save Preferences</a></h3>
+	<div id="preferences"></div>
+    </div>
+
+{% endblock %}
