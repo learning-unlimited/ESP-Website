@@ -993,6 +993,13 @@ class Program(models.Model, CustomFormsLinkModel):
         else: 
             return 1
     
+    def useGradeRangeExceptions(self):
+        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        if studentregmodule:
+            return studentregmodule.use_grade_range_exceptions
+        else:
+            return False
+    
     @cache_function
     def by_prog_inst(cls, program, instance):
         prog_inst = Program.objects.select_related().get(url='%s/%s' % (program, instance))
