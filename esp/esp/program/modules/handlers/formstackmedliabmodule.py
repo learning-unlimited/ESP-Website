@@ -39,6 +39,7 @@ from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
 from django.db.models.query       import Q
+from django.shortcuts import redirect
 from esp.middleware.threadlocalrequest import get_current_request
 
 # hackish solution for Splash 2012
@@ -75,6 +76,16 @@ class FormstackMedliabModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'medliab.html',
                                   request, (prog, tl), context)
 
+    @aux_call
+    @needs_student
+    def medicalpostback581309742(self, request, tl, one, two, module, extra, prog):
+        """
+        Marks student off as completed.
+        """
+        UserBit.objects.create(user=request.user,
+                               qsc=self.program.anchor,
+                               verb=self.reg_verb)
+        return redirect('/learn/{}/studentreg'.format(prog.url()))
 
     class Meta:
         abstract = True
