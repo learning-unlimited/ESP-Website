@@ -2035,6 +2035,7 @@ class Permission(models.Model):
                 ("Student/Payment","Pay for a program"),
                 ("Student/Profile","Set profile info"),
                 ("Student/Survey", "Access to survey"),
+                ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
                 )
          ),
         ("Teacher Deadlines", (
