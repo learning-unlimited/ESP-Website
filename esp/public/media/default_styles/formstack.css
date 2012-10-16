@@ -1,24 +1,3 @@
-#page.blue #search_box {
-  background: #fff url('/media/images/formstack/re_blank_tab.png') no-repeat 0% scroll;
-}
-
-#page.blue #search_box a {
-  display: block;
-  height: 35px;
-  
-  text-align: right;
-  margin-right: 25px;
-  background-position: left top;
-  background-repeat: no-repeat;
-  
-  font-size: 15px;
-  line-height: 30px;
-  color: #fff;
-  font-weight: bold;
-  text-decoration: none;
-  font-variant: small-caps;
-}
-
 .fsSection {
   padding-bottom: 20px;
   border-bottom: 1px dotted #999;
@@ -94,8 +73,4 @@ input.fsSubmitButton {
 
 div#content {
   border-bottom: 20px solid #3DC0FF;
-}
-
-#page.blue #main > .corners div {
-  display: none;
 }
