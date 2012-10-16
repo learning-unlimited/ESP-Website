@@ -85,7 +85,7 @@ class FormstackMedliabModule(ProgramModuleObj):
         UserBit.objects.create(user=request.user,
                                qsc=self.program.anchor,
                                verb=self.reg_verb)
-        return redirect('/learn/{}/studentreg'.format(prog.url()))
+        return self.goToCore(tl)
 
     class Meta:
         abstract = True
