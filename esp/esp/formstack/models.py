@@ -1,6 +1,5 @@
 from django.db import models
 from esp.formstack.api import Formstack
-from urllib import urlencode
 
 class FormstackForm(models.Model):
     """
@@ -36,24 +35,8 @@ class FormstackForm(models.Model):
 
     @property
     def url(self):
-        return self.get_url()
-
-    def get_url(self, args={}):
         """ Returns the URL for viewing the form. """
 
-        result = 'http://www.formstack.com/forms/?{}-{}&{}'
-        result = result.format(self.id, self.viewkey, urlencode(args))
-        return result
-
-    def get_javascript(self, args={}):
-        """ Returns as a string the Javascript code for embedding the form. """
-
-        result =  """\
-<script type="text/javascript" src="http://www.formstack.com/forms/js.php?{form}-{viewkey}-v2&{args}"></script>
-<noscript><a href="http://www.formstack.com/forms/?{form}-{viewkey}&{args}" title="Online Form">Online Form - {name}</a></noscript>
-"""
-        result = result.format(form=self.id,
-                               viewkey=self.viewkey,
-                               name=self.name,
-                               args=urlencode(args))
+        result = 'http://www.formstack.com/forms/?{}-{}'
+        result = result.format(self.id, self.viewkey)
         return result
