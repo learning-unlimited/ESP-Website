@@ -65,6 +65,7 @@ class FormstackMedliabModule(ProgramModuleObj):
 
     @main_call
     @needs_student
+    @meets_deadline('/FormstackMedliab')
     def medliab(self, request, tl, one, two, module, extra, prog):
         """
         Landing page redirecting to med-liab form on Formstack.
