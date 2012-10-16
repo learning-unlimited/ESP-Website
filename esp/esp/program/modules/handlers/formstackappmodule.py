@@ -37,6 +37,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.users.models    import ESPUser
+from urllib import urlencode
 
 class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
     """
@@ -212,9 +213,9 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
             # prepopulate username field
             field_name = 'field{}'.format(self.username_field)
             args[field_name] = request.user.username
-        form_embed = self.form.get_javascript(args)
         context = {}
-        context['form_embed'] = form_embed
+        context['form'] = self.form
+        context['args'] = urlencode(args)
         return render_to_response(self.baseDir()+'studentapp.html',
                                   request, (prog, tl), context)
 
