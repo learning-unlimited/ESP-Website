@@ -54,7 +54,7 @@ class FormstackMedliabModule(ProgramModuleObj):
             "admin_title": "Formstack Med-liab Module",
             "link_title": "Medical and Emergency Contact Information",
             "module_type": "learn",
-            "seq": 0,
+            "seq": 3,
             "required": True
             }
 
