@@ -67,7 +67,8 @@ class FormstackMedliabModule(ProgramModuleObj):
     def isCompleted(self):
         return UserBit.valid_objects().filter(user=get_current_request().user,
                                               qsc=self.program.anchor,
-                                              verb=self.reg_verb).exists()
+                                              verb__in=[self.reg_verb,
+                                                        self.bypass_verb]).exists()
 
     @main_call
     @needs_student
@@ -97,7 +98,6 @@ class FormstackMedliabModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def medicalbypass(self, request, tl, one, two, module, extra, prog):
-        # assumes userbit implication: bypass_verb -> reg_verb
         # yes it's hacky, but it's two days before Splash student reg
         status = None
         if request.method == 'POST':
