@@ -70,6 +70,33 @@ class FormstackMedliabModule(ProgramModuleObj):
                                               verb__in=[self.reg_verb,
                                                         self.bypass_verb]).exists()
 
+    def students(self, QObject = False):
+        Q_students = Q(userbit__qsc=self.program.anchor,
+                       userbit__verb=self.reg_verb)
+        Q_students &= UserBit.not_expired('userbit')
+
+        Q_bypass = Q(userbit__qsc=self.program.anchor,
+                     userbit__verb=self.bypass_verb)
+        Q_bypass &= UserBit.not_expired('userbit')
+
+        if QObject:
+            students = Q_students
+            bypass = Q_bypass
+        else:
+            students = ESPUser.objects.filter(Q_students)
+            bypass = ESPUser.objects.filter(Q_bypass)
+
+        return {
+            'studentmedliab': students,
+            'studentmedbypass': bypass
+            }
+
+    def studentDesc(self):
+        return {
+            'studentmedliab': """Students who have completed their medliab online""",
+            'studentmedbypass': """Students who have been granted a medliab bypass"""
+            }
+
     @main_call
     @needs_student
     @meets_deadline('/FormstackMedliab')
