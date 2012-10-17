@@ -51,13 +51,18 @@ class FormstackMedliabModule(ProgramModuleObj):
 
     @classmethod
     def module_properties(cls):
-        return {
-            "admin_title": "Formstack Med-liab Module",
-            "link_title": "Medical and Emergency Contact Information",
-            "module_type": "learn",
-            "seq": 3,
-            "required": True
-            }
+        return [{
+                "admin_title": "Formstack Med-liab Module",
+                "link_title": "Medical and Emergency Contact Information",
+                "module_type": "learn",
+                "seq": 3,
+                "required": True
+                },
+                {
+                "admin_title": "Formstack Med-liab Bypass Page",
+                "link_title": "Grant Medliab Bypass",
+                "module_type": "manage",
+                }]
 
     def isCompleted(self):
         return UserBit.valid_objects().filter(user=get_current_request().user,
@@ -89,7 +94,7 @@ class FormstackMedliabModule(ProgramModuleObj):
                                verb=self.reg_verb)
         return self.goToCore(tl)
 
-    @aux_call
+    @main_call
     @needs_admin
     def medliaboverride(self, request, tl, one, two, module, extra, prog):
         # assumes userbit implication: bypass_verb -> reg_verb
