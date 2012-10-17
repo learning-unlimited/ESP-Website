@@ -158,6 +158,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     var carryovers_list = [];
     for(i in class_id_list){
         id = class_id_list[i];
+	if (typeof(id) != "number") continue;
         section = sections[id];
 
 	// check grade in range or admin
@@ -174,6 +175,7 @@ add_classes_to_timeslot = function(timeslot, sections){
 
     for(i in carryover_id_list){
         id = carryover_id_list[i];
+	if (typeof(id) != "number") continue;
         section = sections[id];
 
 	//check grade in range or admin
@@ -334,7 +336,6 @@ open_class_desc = function(class_id){
 	    // fill the popup
 	    class_info[parent_class_id] = data.classes[parent_class_id];
 	    fill_class_desc(class_id);
-	    console.log(class_info);
 	});
     }
     else{
@@ -360,7 +361,7 @@ load_old_preferences = function(class_data){
 priority_changed = function(id, timeslot_id){
     // Unprioritize all selections in the timeblock
     for (i in timeslots[timeslot_id].starting_sections){
-	    sections[timeslots[timeslot_id].starting_sections[i]]['lottery_priority'] = false;
+        sections[timeslots[timeslot_id].starting_sections[i]]['lottery_priority'] = false;
     }
 
     if(id){
