@@ -89,7 +89,7 @@ compare_timeslot_starts = function(a, b){
 get_walkin_header_html = function()
 {
     if (open_class_registration) {
-        return "<h3>Walk-in Seminars</h3>\
+        return "<h3>"+open_class_category+"</h3>\
         <div id='%TIMESLOT_WALKIN_DIV%' style='margin:1em 1em 1em 1em'></div>";
     }
     return "";
