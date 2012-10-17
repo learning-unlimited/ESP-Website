@@ -243,12 +243,13 @@ get_class_checkbox_html = function(class_data, timeslot_id){
                    id=%CLASS_CHECKBOX_ID%>\
             </input>\
         </p></td>\
-        <td><p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p></td>\
+        <td><p>%CLASS_EMAILCODE%: %CLASS_TITLE% <i>(%CLASS_LENGTH% hours)</i> [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p></td>\
     </tr>"
 	.replace(/%TIMESLOT_ID%/g, timeslot_id)
         .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslots[timeslot_id].label))
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
         .replace('%CLASS_TITLE%', class_data['title'])
+	.replace(/%CLASS_LENGTH%/g, Math.round(class_data['length']))
         .replace(/%CLASS_ID%/g, class_data['id'])
         .replace(/%CLASS_CHECKBOX_ID%/g, class_checkbox_id(class_data['id']))
         .replace(/%CLASS_RADIO_ID%/g, class_radio_id(class_data['id']));
@@ -257,18 +258,20 @@ get_class_checkbox_html = function(class_data, timeslot_id){
 
 get_walkin_html = function(class_data, timeslot_id){
     // Create a walkin div using a template with keywords replaced below
-    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
+    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% <i>(%CLASS_LENGTH% hours)</i> [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
         .replace('%CLASS_TITLE%', class_data['title'])
+	.replace(/%CLASS_LENGTH%/g, Math.round(class_data['length']))
         .replace(/%CLASS_ID%/g, class_data['id']);
     return template;
 };
 
 get_carryover_html = function(class_data, timeslot_id){
     // Create a carried-over class div using a template with keywords replaced below
-    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
+    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% <i>(%CLASS_LENGTH% hours)</i> [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
 	.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
 	.replace(/%CLASS_TITLE%/g, class_data['title'])
+	.replace(/%CLASS_LENGTH%/g, Math.round(class_data['length']))
         .replace(/%CLASS_ID%/g, class_data['id']);
     return template;
 };
