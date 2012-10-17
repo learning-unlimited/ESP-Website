@@ -59,6 +59,7 @@ show_app = function(data){
     //creates a list of the timeslots sorted by start time
     sorted_timeslots = [];
     for(id in timeslots){
+	if (typeof(timeslots[id]) == "function") continue;
 	sorted_timeslots.push(timeslots[id]);
     }
     sorted_timeslots.sort(compare_timeslot_starts);
@@ -67,6 +68,7 @@ show_app = function(data){
     $j("#timeslots_anchor").css("display", "none");
     for(index in sorted_timeslots){
 	t = sorted_timeslots[index];
+	if (typeof(t) == "function") continue;
 	$j("#timeslots_anchor").before(get_timeslot_html(t));
 	add_classes_to_timeslot(t, sections);
     }
@@ -200,6 +202,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     else if (open_class_registration){
     // Add all the walkins classes
         for(i in walkins_list){
+	    if (typeof(walkins_list[i]) == "function") continue;
             $j("#"+ts_walkin_div_from_id(timeslot['id'])).append(get_walkin_html(walkins_list[i], timeslot['id']));
         }
     }
@@ -211,6 +214,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     else{
     // Adds all classes that start in this timeblock
         for(i in classes_list){
+	    if (typeof(classes_list[i]) == "function") continue;
             $j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(classes_list[i], timeslot['id']));
             load_old_preferences(classes_list[i]);
         }
@@ -222,6 +226,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     else{
     // Adds all classes that are carried over from the previous timeblock
         for(i in carryovers_list){
+	    if (typeof(carryovers_list[i]) == "function") continue;
             $j("#"+ts_carryover_div_from_id(timeslot['id'])).append(get_carryover_html(carryovers_list[i], timeslot['id']));
         }
     }
@@ -361,6 +366,7 @@ load_old_preferences = function(class_data){
 priority_changed = function(id, timeslot_id){
     // Unprioritize all selections in the timeblock
     for (i in timeslots[timeslot_id].starting_sections){
+	if (typeof(timeslots[timeslot_id].starting_sections[i]) == "function") continue;
         sections[timeslots[timeslot_id].starting_sections[i]]['lottery_priority'] = false;
     }
 
