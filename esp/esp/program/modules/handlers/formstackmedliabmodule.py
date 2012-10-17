@@ -47,6 +47,7 @@ class FormstackMedliabModule(ProgramModuleObj):
     """ Module for collecting medical information online via Formstack """
 
     reg_verb = GetNode('V/Flags/Registration/FormstackMedliabDone')
+    bypass_verb = GetNode('V/Flags/Registration/FormstackMedliabOverride')
 
     @classmethod
     def module_properties(cls):
@@ -87,6 +88,27 @@ class FormstackMedliabModule(ProgramModuleObj):
                                qsc=self.program.anchor,
                                verb=self.reg_verb)
         return self.goToCore(tl)
+
+    @aux_call
+    @needs_admin
+    def medliaboverride(self, request, tl, one, two, module, extra, prog):
+        # assumes userbit implication: bypass_verb -> reg_verb
+        # yes it's hacky, but it's two days before Splash student reg
+        status = None
+        if request.method == 'POST':
+            username = request.POST['username']
+            if ESPUser.objects.filter(username=username).exists():
+                user = ESPUser.objects.get(username=username)
+                UserBit.objects.create(user=user,
+                                       qsc=self.program.anchor,
+                                       verb=self.bypass_verb)
+                status = 'success'
+            else:
+                status = 'invalid user'
+        context = {'status': status}
+
+        return render_to_response(self.baseDir()+'medliaboverride.html',
+                                  request, (prog, tl), context)
 
     class Meta:
         abstract = True
