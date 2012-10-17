@@ -16,6 +16,9 @@ Username:
 {% if status == 'invalid user' %}
 <p style="color:#f00">Invalid user.</p>
 {% endif %}
+{% if status == 'bit exists' %}
+<p style="color:#f00">Userbit already exists.</p>
+{% endif %}
 {% if status == 'success' %}
 <p style="color:#070">Userbit added successfully.</p>
 {% endif %}

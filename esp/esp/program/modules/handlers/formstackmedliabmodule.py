@@ -131,12 +131,18 @@ class FormstackMedliabModule(ProgramModuleObj):
             username = request.POST['username']
             if ESPUser.objects.filter(username=username).exists():
                 user = ESPUser.objects.get(username=username)
-                UserBit.objects.create(user=user,
-                                       qsc=self.program.anchor,
-                                       verb=self.bypass_verb)
-                status = 'success'
+                if UserBit.objects.filter(user=user,
+                                          qsc=self.program.anchor,
+                                          verb=self.bypass_verb).exists():
+                    status = 'bit exists'
+                else:
+                    UserBit.objects.create(user=user,
+                                           qsc=self.program.anchor,
+                                           verb=self.bypass_verb)
+                    status = 'success'
             else:
                 status = 'invalid user'
+
         context = {'status': status}
 
         return render_to_response(self.baseDir()+'medicalbypass.html',
