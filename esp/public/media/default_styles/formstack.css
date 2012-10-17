@@ -22,6 +22,10 @@ div.fsSectionText,
   font-weight: bold;
 }
 
+.fsLabel.hidden {
+  display: none;
+}
+
 .fsField {
   margin-bottom: 1.6em;
 }
