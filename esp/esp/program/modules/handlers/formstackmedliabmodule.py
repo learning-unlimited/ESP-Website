@@ -96,7 +96,7 @@ class FormstackMedliabModule(ProgramModuleObj):
 
     @main_call
     @needs_admin
-    def medliaboverride(self, request, tl, one, two, module, extra, prog):
+    def medicalbypass(self, request, tl, one, two, module, extra, prog):
         # assumes userbit implication: bypass_verb -> reg_verb
         # yes it's hacky, but it's two days before Splash student reg
         status = None
@@ -112,7 +112,7 @@ class FormstackMedliabModule(ProgramModuleObj):
                 status = 'invalid user'
         context = {'status': status}
 
-        return render_to_response(self.baseDir()+'medliaboverride.html',
+        return render_to_response(self.baseDir()+'medicalbypass.html',
                                   request, (prog, tl), context)
 
     class Meta:
