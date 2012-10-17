@@ -59,7 +59,11 @@ class InlineQSDNode(template.Node):
         except:
             anchor = GetNode(self.input_anchor)
 
-        qsd = self.qsd_name
+        try:
+            qsd = template.Variable(self.qsd_name)
+            qsd = qsd.resolve(context)
+        except:
+            qsd = self.qsd_name
 
         edit_bits = UserBit.UserHasPerms(user, anchor, DataTree.get_by_uri('V/Administer/Edit'))
 

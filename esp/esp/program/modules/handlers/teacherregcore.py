@@ -66,6 +66,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
         context['options'] = prog.getModuleExtension('ClassRegModuleInfo')
         context['one'] = one
         context['two'] = two
+        context['extra_steps'] = "teach:extra_steps"
 
         context['progposts'] = Entry.find_posts_by_perms(request.user,GetNode('V/Subscribe'),
                                                          self.program_anchor_cached().tree_create(['Announcements', 'Teachers']))

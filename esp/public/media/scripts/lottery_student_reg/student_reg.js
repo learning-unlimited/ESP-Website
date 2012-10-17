@@ -102,7 +102,7 @@ compare_timeslot_starts = function(a, b){
 get_walkin_header_html = function()
 {
     if (open_class_registration) {
-        return "<h3>Walk-in Seminars</h3>\
+        return "<h3>"+open_class_category+"</h3>\
         <div id='%TIMESLOT_WALKIN_DIV%' style='margin:1em 1em 1em 1em'></div>";
     }
     return "";
@@ -256,12 +256,13 @@ get_class_checkbox_html = function(class_data, timeslot_id){
                    id=%CLASS_CHECKBOX_ID%>\
             </input>\
         </p></td>\
-        <td><p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p></td>\
+        <td><p>%CLASS_EMAILCODE%: %CLASS_TITLE% <i>(%CLASS_LENGTH% hours)</i> [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p></td>\
     </tr>"
 	.replace(/%TIMESLOT_ID%/g, timeslot_id)
         .replace(/%TS_RADIO_NAME%/g, ts_radio_name(timeslots[timeslot_id].label))
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
         .replace('%CLASS_TITLE%', class_data['title'])
+	.replace(/%CLASS_LENGTH%/g, Math.round(class_data['length']))
         .replace(/%CLASS_ID%/g, class_data['id'])
         .replace(/%CLASS_CHECKBOX_ID%/g, class_checkbox_id(class_data['id']))
         .replace(/%CLASS_RADIO_ID%/g, class_radio_id(class_data['id']));
@@ -270,23 +271,21 @@ get_class_checkbox_html = function(class_data, timeslot_id){
 
 get_walkin_html = function(class_data, timeslot_id){
     // Create a walkin div using a template with keywords replaced below
-    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
+    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% <i>(%CLASS_LENGTH% hours)</i> [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
         .replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
         .replace('%CLASS_TITLE%', class_data['title'])
+	.replace(/%CLASS_LENGTH%/g, Math.round(class_data['length']))
         .replace(/%CLASS_ID%/g, class_data['id']);
     return template;
 };
 
 function get_carryover_html(class_data, add_link){
     // Create a carried-over class div using a template with keywords replaced below
-    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% ";
-    if (add_link){
-	template = template + "[<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]";
-    }
-    template = template + "</p>";
-    template = template.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
-    .replace(/%CLASS_TITLE%/g, class_data['title'])
-    .replace(/%CLASS_ID%/g, class_data['id']);
+    template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% <i>(%CLASS_LENGTH% hours)</i> [<a href='javascript:open_class_desc(%CLASS_ID%)'>More info</a>]</p>"
+	.replace(/%CLASS_EMAILCODE%/g, class_data['emailcode'])
+	.replace(/%CLASS_TITLE%/g, class_data['title'])
+	.replace(/%CLASS_LENGTH%/g, Math.round(class_data['length']))
+        .replace(/%CLASS_ID%/g, class_data['id']);
     return template;
 };
 
