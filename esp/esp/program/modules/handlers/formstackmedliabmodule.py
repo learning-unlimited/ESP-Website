@@ -134,7 +134,11 @@ class FormstackMedliabModule(ProgramModuleObj):
                 if UserBit.objects.filter(user=user,
                                           qsc=self.program.anchor,
                                           verb=self.bypass_verb).exists():
-                    status = 'bit exists'
+                    status = 'bypass bit exists'
+                elif UserBit.objects.filter(user=user,
+                                            qsc=self.program.anchor,
+                                            verb=self.reg_verb).exists():
+                    status = 'reg bit exists'
                 else:
                     UserBit.objects.create(user=user,
                                            qsc=self.program.anchor,
