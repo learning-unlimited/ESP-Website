@@ -362,7 +362,7 @@ class ProgramModuleObj(models.Model):
                 (self.get_full_path(tl=self.module.module_type), self.module.link_title, self.module.link_title)
         else:
             link = u'<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title)
+               (self.get_full_path('manage'), self.module.link_title, self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title)
 
         return mark_safe(link)
 
