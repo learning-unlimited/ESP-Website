@@ -1,0 +1,40 @@
+{% extends "main.html" %}
+
+{% block title %}Medical and Emergency Contact Information for {{program.niceName}}{% endblock %}
+{% block content_title %}{{program.niceName}} Student Registration{% endblock %}
+
+{% block content %}
+<h1>Medical and Emergency Contact Information for {{ program.niceName }}</h1>
+
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "learn:medliab" %}
+
+{% with user.getLastProfile as profile %}
+
+<form method="post" action="https://www.formstack.com/forms/index.php">
+    <input type="hidden" name="form" value="1303763" />
+    <input type="hidden" name="viewkey" value="3Q14XznBaA" />
+    <input type="hidden" name="esp_username" value="{{ user.username }}" />
+    <input type="hidden" name="esp_id_number" value="{{ user.id }}" />
+    <input type="hidden" name="full_legal_name" value="{{ user.first_name }} {{ user.last_name }}" />
+    <input type="hidden" name="birthdate" value="{{ profile.student_info.dob|date }}" />
+    <input type="hidden" name="cell_phone_number" value="{{ profile.contact_user.phone_cell|default:"" }}" />
+    <input type="hidden" name="home_address" value="{{ profile.contact_user.address_street }}&#13;{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {{ profile.contact_user.address_zip }}" />
+    <input type="hidden" name="parentguardian_no_1" value="{{ profile.contact_guardian.first_name }} {{ profile.contact_guardian.last_name }}&#13;Home: {{ profile.contact_guardian.phone_day }}&#13;Cell: {{ profile.contact_emergency.phone_cell|default:"None" }}" />
+    <input type="hidden" name="parentguardian_no_2" value="" />
+    <input type="hidden" name="emergency_contact" value="{{ profile.contact_emergency.first_name }} {{ profile.contact_emergency.last_name }}&#13;{{ profile.contact_emergency.e_mail|default:"Email: None" }}&#13;&#13;Day: {{ profile.contact_emergency.phone_day }}&#13;Cell: {{ profile.contact_emergency.phone_cell|default:"None" }}&#13;&#13;{{ profile.contact_emergency.address_street }}&#13;{{ profile.contact_emergency.address_city }}, {{ profile.contact_emergency.address_state }} {{ profile.contact_emergency.address_zip }}" />
+    <input type="hidden" name="chronic_medical_conditions_requiring_ongoing_care" value="" />
+    <input type="hidden" name="allergies_animals_latex_food_meds_other" value="" />
+    <input type="hidden" name="prescription_medicines_used_regularly_or_needed_on_occasion" value="" />
+    <input type="hidden" name="any_other_health_issues_that_mit_andor_esp_should_be_aware_of" value="" />
+    <input type="hidden" name="date_of_last_tetanus_booster" value="" />
+    <input type="hidden" name="physician_name" value="" />
+    <input type="hidden" name="physician_phone" value="" />
+    <input type="hidden" name="name_of_health_insurance_company" value="" />
+    <input type="hidden" name="primary_subscriber" value="" />
+    <input type="hidden" name="policy_number" value="" />
+    <input type="submit" value="Continue" />
+</form>
+
+{% endwith %}
+{% endblock %}

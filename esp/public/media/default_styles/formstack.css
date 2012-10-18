@@ -1,0 +1,80 @@
+.fsSection {
+  padding-bottom: 20px;
+  border-bottom: 1px dotted #999;
+  margin-bottom: 20px;
+}
+
+div.fsSectionText,
+#content .fsSectionText p {
+  font-size: 13px;
+  margin-top: -15px;
+  margin-bottom: 30px;
+}
+
+#content h2.fsSectionHeading {
+  font-size: 1.2em;
+  margin-bottom: 20px;
+}
+
+.fsLabel {
+  display: block;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+.fsLabel.hidden {
+  display: none;
+}
+
+.fsField {
+  margin-bottom: 1.6em;
+}
+
+fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+select, input, textarea {
+  font-family: monospace;
+}
+
+input[readonly='readonly'], textarea[readonly='readonly'] {
+  background-color: #ddd;
+}
+
+input.fsSubmitButton {
+  font-family: Arial, Lucida, Helvetica, sans-serif;
+  font-size: 0.9em;
+  font-weight: bold;
+}
+
+.fsSupporting {
+  color: #888;
+  font-size: 0.8em;
+  margin-top: -1.4em;
+  margin-bottom: 1.6em;
+  width: 330px;
+}
+
+.ui-datepicker-trigger {
+  margin-bottom: -4px;
+}
+
+.fsError {
+  font-size: 0.8em;
+  margin-bottom: 1.6em;
+  color: red;
+  font-weight: bold;
+}
+
+.fsValidationError input,
+.fsValidationError select,
+.fsValidationError textarea {
+  border: 1px solid #FF0000;
+}
+
+div#content {
+  border-bottom: 20px solid #3DC0FF;
+}

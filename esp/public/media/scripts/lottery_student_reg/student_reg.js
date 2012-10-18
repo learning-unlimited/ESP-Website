@@ -91,8 +91,9 @@ show_app = function(data){
 //returns 1 if a starts after b, and -1 otherwise
 //for use sorting timeslots by start time
 compare_timeslot_starts = function(a, b){
-    var dateA = new Date(a.start.year, a.start.month, a.start.day, a.start.hour, a.start.minute, a.start.second, 0);
-    var dateB = new Date(b.start.year, b.start.month, b.start.day, b.start.hour, b.start.minute, b.start.second, 0);
+    var dateA = new Date(a.start[0], a.start[1], a.start[2], a.start[3], a.start[4], a.start[5], 0);
+    var dateB = new Date(b.start[0], b.start[1], b.start[2], b.start[3], b.start[4], b.start[5], 0);
+
     if (dateA > dateB){
 	return 1;
     }
