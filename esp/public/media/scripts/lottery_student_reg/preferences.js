@@ -9,9 +9,9 @@ function prefs_ts_div_by_priority(id, priority)
 } 
 
 // Appends an individual class section to the containerDiv
-function render_class_section(data, container_div, class_section)
+function render_class_section(sections_data, container_div, class_section)
 {
-    container_div.append(data.sections[class_section].emailcode + ": " + data.sections[class_section].title + "<br/>");
+    container_div.append(sections_data[class_section].emailcode + ": " + sections_data[class_section].title + "<br/>");
 }
 
 

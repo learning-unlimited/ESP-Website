@@ -95,6 +95,7 @@ var Timeslot = function(data){
 	var carryovers_list = [];
 	for(i in class_id_list){
 	    class_id = class_id_list[i];
+	    if (typeof(class_id) != "number") continue;
 	    section = sections[class_id];
 
 	    // check grade in range or admin
@@ -111,6 +112,7 @@ var Timeslot = function(data){
 
 	for(i in carryover_id_list){
 	    section_id = carryover_id_list[i];
+	    if (typeof(section_id) != "number") continue;
 	    section = sections[section_id];
 
 	    //check grade in range or admin
@@ -134,6 +136,7 @@ var Timeslot = function(data){
 	else if (open_class_registration){
 	    // Add all the walkins classes
 	    for(i in walkins_list){
+		if (typeof(walkins_list[i]) == "function") continue;
 		$j("#"+ts_walkin_div).append(this.get_walkin_html(walkins_list[i], timeslot_id));
 	    }
 	}
@@ -145,6 +148,7 @@ var Timeslot = function(data){
 	else{
 	    // Adds all classes that start in this timeblock
 	    for(i in classes_list){
+		if (typeof(classes_list[i]) == "function") continue;
 		class_checkbox = new this.ClassCheckbox(classes_list[i]);
 		class_checkbox.add_self_to_timeslot();
 	    }
@@ -156,6 +160,7 @@ var Timeslot = function(data){
 	else{
 	    // Adds all classes that are carried over from the previous timeblock
 	    for(i in carryovers_list){
+		if (typeof(carryovers_list[i]) == "function") continue;
 		$j("#"+ts_carryover_div).append(get_carryover_html(carryovers_list[i], true));
 	    }
 	}
@@ -181,6 +186,7 @@ var Timeslot = function(data){
 	priority_changed = function(){
 	    // Unprioritize all selections in the timeblock
 	    for (i in timeslot_data['starting_sections']){
+		if (typeof(timeslot_data['starting_sections'][i]) == "function") continue;
 		sections[timeslot_data['starting_sections'][i]]['lottery_priority'] = false;
 	    }
 
@@ -289,6 +295,7 @@ var Timeslot = function(data){
 	interested_sections = [];
 	for(i in data_starting_sections)
 	    {
+		if (typeof(data_starting_sections[i]) == "function") continue;
 		if(sections[data_starting_sections[i]].lottery_priority)
 		    {
 			priority_sections.push(data_starting_sections[i]);
@@ -302,10 +309,15 @@ var Timeslot = function(data){
 	// Render all the priority classes
 	if (priority_sections.length > 0)
 	    {
+		console.log(priority_sections);
 		priority_div.html('');
 		for (i in priority_sections)
 		    {
-			render_class_section(timeslot_data, priority_div, priority_sections[i]);
+			console.log(timeslot_data);
+			console.log(priority_sections[i]);
+			if (typeof(priority_sections[i]) == "function") continue;
+			console.log("section selected");
+			render_class_section(sections, priority_div, priority_sections[i]);
 		    }
 	    }
 	else
@@ -318,10 +330,13 @@ var Timeslot = function(data){
 	// Render all the interested classes
 	if (interested_sections.length > 0)
 	    {
+		console.log(interested_sections);
 		interested_div.html('');
 		for (j in interested_sections)
 		    {
-			render_class_section(timeslot_data, interested_div, interested_sections[j]);
+			if (typeof(interested_sections[j]) == "function") continue;
+			console.log(interested_sections[j]);
+			render_class_section(sections, interested_div, interested_sections[j]);
 		    }
 	    }
 	else

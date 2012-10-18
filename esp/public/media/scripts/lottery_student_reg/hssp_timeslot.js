@@ -15,6 +15,7 @@ var Timeslot = function(data){
 	var sec_id;
 	for(id in timeslot_data["starting_sections"]){
 	    sec_id = timeslot_data["starting_sections"][id];
+	    if (typeof(sec_id) != "number") continue;
 	    for(p = priority_limit; p >= 1; p--){
 		if (sections[sec_id]["Priority/"+p]){
 		    submit_data[sec_id] = [p, timeslot_id];
@@ -60,6 +61,7 @@ var Timeslot = function(data){
 	    $j("#"+ carryover_div_id).append("<h3>Carryovers</h3>");
 	    //add carryovers to carryover div
 	    for(i in carryover_id_list){
+		if (typeof(carryover_id_list[i]) != "number") continue;
 		// if the class doesn't start in this section
 		if($j.inArray(carryover_id_list[i], class_id_list) == -1){
 		    var section = sections[carryover_id_list[i]];
@@ -72,6 +74,7 @@ var Timeslot = function(data){
 
 	for(i in class_id_list){
 	    class_id = class_id_list[i];
+	    if (typeof(class_id) != "number") continue;
 	    section = sections[class_id];
 	    // check grade in range or admin
 	    if((user_grade >= section['grade_min'] && user_grade <= section['grade_max']) || esp_user['cur_admin'] == 1){
@@ -106,6 +109,7 @@ var Timeslot = function(data){
 	this.priority_changed = function(data){
 	    // Unprioritize all selections in the timeblock
 	    for (i in timeslot_data['starting_sections']){
+		if (typeof(timeslot_data['starting_sections'][i]) == "function") continue;
 		sections[timeslot_data['starting_sections'][i]]['Priority/' + priority] = false;
 	    }
 	    var new_id = $j("#"+combobox_id).val();
@@ -120,6 +124,7 @@ var Timeslot = function(data){
 	    var j, id, c;
 	    for (id in class_data){
 		c = class_data[id];
+		if (typeof(c) == "function") continue;
 		if(c["Priority/"+priority] == true){
 		    $j("#"+combobox_id).val(c["id"]);
 		}	      
@@ -131,6 +136,7 @@ var Timeslot = function(data){
 	    $j("#"+combobox_id).css('width','350px');
      	    $j("#"+combobox_id).append("<option> No Class");
 	    for(j in class_data){
+		if (typeof(class_data[j]) == "function") continue;
 		//check grade restriction
 		if( class_data[j]["grade_min"]<=user_grade && class_data[j]["grade_max"] >= user_grade){
 		    $j("#"+combobox_id).append(this.get_class_html(class_data[j]), false);
@@ -201,8 +207,9 @@ var Timeslot = function(data){
 	    var has_priority_class = false;
 	    for(i in data_starting_sections){
 		var index = data_starting_sections[i];
+		if (typeof(index) != "number") continue;
 		if(sections[index]["Priority/" + p] == true){
-		    render_class_section(data, interested_div, index);
+		    render_class_section(sections, interested_div, index);
 		    has_priority_class = true;
 		}
 	    }
@@ -219,8 +226,10 @@ function get_submit_data(){
     var timeslot_submit_data;
     for(id in sections){
 	for(ts in timeslot_objects){
+	    if (typeof(timeslot_objects[ts]) == "function") continue;
 	    timeslot_submit_data = timeslot_objects[ts].get_timeslot_submit_data();
 	    for(tsd in timeslot_submit_data){
+		if (typeof(timeslot_submit_data[tsd]) == "function") continue;
 		building_submit_data[tsd] = timeslot_submit_data[tsd];
 	    }
 	}
