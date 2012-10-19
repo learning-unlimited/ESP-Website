@@ -143,6 +143,7 @@ class FinancialAidAppModule(ProgramModuleObj):
                 else:
                     subj_str = '%s %s applied for Financial Aid for %s' % (request.user.first_name, request.user.last_name, prog.niceName())
                     msg_str = "\n%s %s applied for Financial Aid for %s on %s, but did not state that they receive a free or reduced-price lunch."
+                finaid_email = Tag.getProgramTag('finaid_email', prog, prog.director_email)
                 send_mail(subj_str, (msg_str +
                 """
 
@@ -180,7 +181,7 @@ This request can be (re)viewed at:
     settings.DEFAULT_HOST, # server hostname
     str(app.id)), 
                             settings.SERVER_EMAIL,
-                            [ prog.director_email ] )
+                            [ finaid_email ] )
                               
                 return self.goToCore(tl)
             
