@@ -320,7 +320,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                       'section': ''})
 
         if self.request.user.isAdmin(self.program):
-            nav_bars.append({'link':'/learn/%s/studentreg.html' % (self.program.getUrlBase()),
+            nav_bars.append({'link':'/learn/%s/studentreg/' % (self.program.getUrlBase()),
                              'text':'%s Student Reg Inline Text' % self.program.niceSubName(),
                              'section': 'learn'})
 
