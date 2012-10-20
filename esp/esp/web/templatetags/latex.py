@@ -45,7 +45,6 @@ def texescape(value):
 
     value = unicode(value).strip()
 
-    special_backslash = '!**ABCDEF**!' # something unlikely to be repeated
 
 
     # we will make escape all the strings except those sandwiched between
@@ -57,16 +56,24 @@ def texescape(value):
     if len(strings) % 2 == 0:
         strings = [ value ]
 
+    replacement_pairs=[
+            ('\\', r'!++ABCDEF++!'),
+    ]
+    for char in '&$%#_{}':
+        replacement_pairs.append((char,'\\'+char))
+    replacement_pairs.extend([
+    ('^' , r'\textasciicircum{}'),
+    ('>' , r'\textgreater{}'),
+    ('<' , r'\textless{}'),
+    ('~' , r'\ensuremath{\sim}'),
+    (r'!++ABCDEF++!',r'\textbackslash{}'),
+    ])
+
     for i in range(len(strings)):
         if i % 2 == 1 and i < len(strings) - 1:
             continue
-        strings[i] = strings[i].replace('\\', special_backslash)
-        for char in '&$%#_{}':
-            strings[i] = strings[i].replace(char, '\\' + char)
-        strings[i] = strings[i].replace('^', '\\textasciicircum')
-        strings[i] = strings[i].replace('~', '$\sim$')
-        strings[i] = strings[i].replace(special_backslash, '$\\backslash$')
-    
+        for key , val in replacement_pairs:
+            strings[i] = strings[i].replace(key,val)
 
     value = '$'.join(strings)
 
