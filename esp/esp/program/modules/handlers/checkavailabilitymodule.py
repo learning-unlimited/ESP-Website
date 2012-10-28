@@ -89,7 +89,7 @@ class CheckAvailabilityModule(ProgramModuleObj):
         
         # Now get times that teacher is teaching
         classes = [cls for cls in teacher.getTaughtClasses() if cls.parent_program.id == prog.id ]
-        times = []
+        times = set()
         
         for cls in classes:
             cls_secs = ClassSection.objects.filter(parent_class=cls)
@@ -98,7 +98,7 @@ class CheckAvailabilityModule(ProgramModuleObj):
                 sec_times = Event.objects.filter(meeting_times=cls_sec)
                 
                 for time in sec_times:
-                    times.append(time)
+                    times.add(time)
         
         # Check which are truly available and mark in tuple as True, otherwise as False (will appear red)
         available = []
