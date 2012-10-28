@@ -186,7 +186,8 @@ admin_site.register(ClassSection, SectionAdmin)
 class SubjectAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'parent_program', 'category')
     list_display_links = ('title',)
-    search_fields = ['class_info', 'anchor__friendly_name']
+    search_fields = ['id', 'class_info', 'anchor__friendly_name']
+    list_filter = ('parent_program', 'category')
 admin_site.register(ClassSubject, SubjectAdmin)
 
 class Admin_ClassCategories(admin.ModelAdmin):
