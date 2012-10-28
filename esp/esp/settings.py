@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 
 import os
 
-PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
+PROJECT_ROOT = "/home/sweettea/esp/esp/"
 
 # Configure Django to support ESP
 from django_settings import *
