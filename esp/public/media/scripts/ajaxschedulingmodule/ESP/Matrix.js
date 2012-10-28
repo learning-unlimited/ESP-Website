@@ -358,12 +358,24 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
 (function(){
     var Matrix = ESP.Scheduling.Widgets.Matrix;
     var Resources = ESP.Scheduling.Resources;
-    
+
     /*
      * object caches (mapping from table cells to other stuff)
      */
     Matrix.CELL_CACHE = 'ESP.SCHEDULING.WIDGET.MATRIX.CELL_DATA',
-    
+    Matrix.ResourceIcons={
+    	'Computer lab':'!',
+	'LCD projector':'"',
+	'Sound system':'#',
+	'Kitchen':'$',
+	'!Classroom space':'%',/*outdoor*/
+	'Discussion':'&',
+	'Moveable tables':"'",
+	'Lecture':'(',
+	'Classroom space':')',
+	};
+
+     
     /*
      * accessibility classes (make it easy to manipulate table / data)
      */
@@ -397,12 +409,21 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
             $super()
             this.room = room;
             this.tr = $j('<tr/>').addClass('matrix-row-body');
-            this.td.html(room.block_contents.clone(true));
-            this.td.addClass('matrix-row-header');
+	    this.resources=$j('<div/>').addClass('resource-icons');
             for (var j = 0; j < room.resources.length; j++) {
-                if (room.resources[j]) {
+                var resourc=room.resources[j];
+		if (room.resources[j]) {
                     this.td.addClass('ROOM_rsrc_' + room.resources[j].replace(/[^a-zA-Z]+/g, '-'));
                 }
+		else{
+		    resourc='!'+resourc;
+		    }
+		if(Matrix.ResourceIcons[resourc]!='undefined'){
+			this.resources.html(this.resources.html()+Matrix.ResourceIcons[resourc]);
+			}
+            this.td.html(room.block_contents.clone(true));
+	    this.td.append(this.resources);
+            this.td.addClass('matrix-row-header');
             }
             this.td.addClass('');
             //this.tr.append(this.td);
