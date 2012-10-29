@@ -1,3 +1,15 @@
+ESP.ResourceIcons={
+    	'Computer lab':'!',
+	'LCD projector':'"',
+	'Sound system':'#',
+	'Kitchen':'$',
+	'!Classroom space':'%',/*outdoor*/
+	'Discussion':'&',
+	'Moveable tables':"'",
+	'Lecture':'(',
+	'Classroom space':')',
+	};
+
 // isString() courtesy of <http://www.planetpdf.com/developer/article.asp?ContentID=testing_for_object_types_in_ja>
 // Return a boolean value telling whether
 // the first argument is a string. 
