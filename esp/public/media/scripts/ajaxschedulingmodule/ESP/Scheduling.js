@@ -25,18 +25,18 @@ ESP.Scheduling = function(){
             this.roomfilter.save();
         
         this.matrix = new ESP.Scheduling.Widgets.Matrix(pd.times, pd.rooms, pd.blocks);
-        $j('#matrix-target').text('');
-        $j('#matrix-target').append((new Date()).getMilliseconds());
-        $j('#matrix-target').append(this.matrix.el);
+        $j('#matrix-target').text('')
+			.append((new Date()).getMilliseconds())
+			.append(this.matrix.el);
         if(!this.roomfilter)
             this.roomfilter = new ESP.Scheduling.Widgets.RoomFilter(this.matrix);
         else
             this.roomfilter.restore(this.matrix);
         this.garbage   = new ESP.Scheduling.Widgets.GarbageBin();
-        $j('#directory-target').text('');
-        $j('#directory-target').append(this.searchbox.el);
-        $j('#directory-target').append(this.garbage.el.addClass('float-right'));
-        $j('#directory-target').append(this.directory.el);
+        $j('#directory-target').text('')
+                               .append(this.searchbox.el)
+                               .append(this.garbage.el.addClass('float-right'))
+                               .append(this.directory.el);
     
         ESP.Utilities.evm.bind('drag_dropped', function(event, data){
             var extra = {

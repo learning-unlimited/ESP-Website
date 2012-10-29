@@ -22,13 +22,16 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         var col_header = $j('<table/>').addClass('matrix-column-header-box');
         header.append(col_header);
         var tr = $j('<tr/>').addClass('matrix-row-body');
+	
         col_header.append(tr);
+	var timecells=[];
         for (var i = 0; i < times.length; i++) {
             var c = new Matrix.TimeCell(times[i]);
             time_cells[times[i].uid] = c;
             if (!times[i].seq) c.td.addClass('non-sequential');
-            tr.append(c.td);
+	    timecells.push(c.td);
         }
+        tr.append(timecells);
         
         var body = $j('<div/>').addClass('matrix-body');
         this.matrix.append(body);
@@ -38,6 +41,8 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         body.append(cell_body);
         
         // create rows
+	var row_heads=[];
+	var cell_trs=[];
         for (var i = 0; i < rooms.length; i++) {
             var room = rooms[i];
             
@@ -46,11 +51,13 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             
             block_cells[room.uid] = {};
             var tr = $j('<tr/>');
-            tr.append(rc.td);
-            row_header.append(tr);
-            cell_body.append(rc.tr);
-        }
-        
+       	    tr.append(rc.td);
+	    row_heads.push(tr);
+	    cell_trs.push(rc.tr);
+       }
+       row_header.append(row_heads);
+       cell_body.append(cell_trs);
+ 
         // create individual blocks
         for (var i = 0; i < blocks.length; i++){
             var block = blocks[i];
@@ -62,14 +69,16 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             var row = block_cells[rooms[i].uid];
             var tr = room_cells[rooms[i].uid].tr;
             var lt = false, t = false, td = null;
+            var tds=[];
             for (var j = 0; j < times.length; j++) {
                 t = times[j];
                 td = (row[t.uid] || new Matrix.InvalidCell()).td;
-                tr.append(td);
+		tds.push(td);
                 //if (lt && !ESP.Scheduling.Resources.Time.sequential(lt,t)) td.addClass('non-sequential');
                 if (!t.seq) td.addClass('non-sequential');
                 lt = t;
             }
+	    tr.append(tds);
         }
         
         // set up scrolling
@@ -137,12 +146,12 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 		    cell.status(BlockStatus.UNREVIEWED);
 		}
                 var section = data.section;
-                cell.td.addClass('CLS_category_' + section.category);
-                cell.td.addClass('CLS_id_' + section.id);
-                cell.td.addClass('CLS_length_' + section.length_hr + '_hrs');
-                cell.td.addClass('CLS_status_' + section.status);
-                cell.td.addClass('CLS_grade_min_' + section.grade_min);
-                cell.td.addClass('CLS_grade_max_' + section.grade_max);
+                cell.td.addClass('CLS_category_' + section.category)
+                       .addClass('CLS_id_' + section.id)
+                       .addClass('CLS_length_' + section.length_hr + '_hrs')
+                       .addClass('CLS_status_' + section.status)
+                       .addClass('CLS_grade_min_' + section.grade_min)
+                       .addClass('CLS_grade_max_' + section.grade_max);
 		/*
                 for (var j = 0; j < section.resource_requests.length; j++) {
                     if (section.resource_requests[j][0]) {
@@ -363,18 +372,6 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
      * object caches (mapping from table cells to other stuff)
      */
     Matrix.CELL_CACHE = 'ESP.SCHEDULING.WIDGET.MATRIX.CELL_DATA',
-    Matrix.ResourceIcons={
-    	'Computer lab':'!',
-	'LCD projector':'"',
-	'Sound system':'#',
-	'Kitchen':'$',
-	'!Classroom space':'%',/*outdoor*/
-	'Discussion':'&',
-	'Moveable tables':"'",
-	'Lecture':'(',
-	'Classroom space':')',
-	};
-
      
     /*
      * accessibility classes (make it easy to manipulate table / data)
@@ -418,14 +415,14 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
 		else{
 		    resourc='!'+resourc;
 		    }
-		if(Matrix.ResourceIcons[resourc]!='undefined'){
-			this.resources.html(this.resources.html()+Matrix.ResourceIcons[resourc]);
+		if(ESP.ResourceIcons[resourc]!='undefined'){
+			this.resources.html(this.resources.html()+ESP.ResourceIcons[resourc]);
 			}
-            this.td.html(room.block_contents.clone(true));
-	    this.td.append(this.resources);
-            this.td.addClass('matrix-row-header');
+            this.td.html(room.block_contents.clone(true))
+	           .append(this.resources)
+                   .addClass('matrix-row-header');
             }
-            this.td.addClass('');
+            //this.td.addClass('');
             //this.tr.append(this.td);
         }
     });
