@@ -418,10 +418,15 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
 		if(ESP.ResourceIcons[resourc]!='undefined'){
 			this.resources.html(this.resources.html()+ESP.ResourceIcons[resourc]);
 			}
-            this.td.html(room.block_contents.clone(true))
-	           .append(this.resources)
+		}
+	    var roomstuffdiv=$j('<div/>');
+            roomstuffdiv.html(room.block_contents.clone(true))
+	           .addClass('matrix-row-header-div')
+	           .append(this.resources);
+            this.td.append(roomstuffdiv)
                    .addClass('matrix-row-header');
-            }
+            
+	   // html(room.block_contents.clone(true))
             //this.td.addClass('');
             //this.tr.append(this.td);
         }
