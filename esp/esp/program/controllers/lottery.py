@@ -78,7 +78,7 @@ class LotteryAssignmentController(object):
 
         # One array to keep track of the utility of each student
         # (defined as hours of interested class + 1.5*hours of priority classes)
-        # and the other arrary to keep track of student weigths (defined as # of hours of class signed up for)
+        # and the other arrary to keep track of student weigths (defined as # of classes signed up for)
         self.student_utility_weights = numpy.zeros((self.num_students, ), dtype=numpy.float)
         self.student_utilities = numpy.zeros((self.num_students, ), dtype=numpy.float)
         
@@ -439,8 +439,13 @@ class LotteryAssignmentController(object):
         stats['hist_interest'] = hist_interest
 
         # Compute the overall utility of the current run.
-        # Each student has a utility of sqrt(#hours of interested + 1.5 #hours of priority)
-        # Each student gets a weight of sqrt(# classes regged for)
+        # 1. Each student has a utility of sqrt(#hours of interested + 1.5 #hours of priority).
+        # This measures how happy the student will be with there classes
+        # 2. Each student gets a weight of sqrt(# classes regged for)
+        # This measures how much responsibility we take if the student gets a
+        # bad schedule (we care less if students regged for less classes).
+        # 3. We then sum weight*utility over all students and divide that
+        # by the sum of weights to get a weighted average utility.
         weighted_overall_utility = 0.0
         sum_of_weights=0.0
         for i in range(self.num_students):
