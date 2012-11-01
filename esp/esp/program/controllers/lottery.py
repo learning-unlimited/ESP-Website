@@ -36,6 +36,8 @@ import numpy
 assert numpy.version.short_version >= "1.7.0"
 import numpy.random
 
+import math
+
 from datetime import date, datetime
 
 from esp.cal.models import Event
@@ -73,6 +75,12 @@ class LotteryAssignmentController(object):
         
         self.now = datetime.now()
         numpy.random.seed(self.now.microsecond)
+
+        # One array to keep track of the utility of each student
+        # (defined as hours of interested class + 1.5*hours of priority classes)
+        # and the other arrary to keep track of student weigths (defined as # of hours of class signed up for)
+        self.student_utility_weights = numpy.zeros((self.num_students, ), dtype=numpy.float)
+        self.student_utilities = numpy.zeros((self.num_students, ), dtype=numpy.float)
         
         self.initialize()
         
@@ -112,6 +120,8 @@ class LotteryAssignmentController(object):
         self.student_enrollments = numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.int32)
         self.student_sections = numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool)
         self.student_weights = numpy.ones((self.num_students,))
+        self.student_utilities = numpy.zeros((self.num_students, ), dtype=numpy.float)
+
         
     def initialize(self):
         """ Gather all of the information needed to run the lottery assignment.
@@ -177,6 +187,11 @@ class LotteryAssignmentController(object):
                     self.ranks[self.student_indices[student_id],self.section_indices[section_id]] = ESPUser.getRankInClass(student_id,self.parent_classes[self.section_indices[section_id]])
             for (student_id,section_id) in interest_regs:
                 self.ranks[self.student_indices[student_id],self.section_indices[section_id]] = ESPUser.getRankInClass(student_id,self.parent_classes[self.section_indices[section_id]])
+
+        # Set student utility weights. Counts number of classes that students selected. Used only for computing the overall_utility stat
+        for i in range(self.num_students):
+            self.student_utility_weights[i]+= sum(self.interest[i, :])
+            self.student_utility_weights[i]+= sum([sum(self.priority[priority_level][i,:]) for priority_level in range(self.priority_limit)])
 
         #   Populate section schedule
         section_times = numpy.array(self.sections.values_list('id', 'meeting_times__id'))
@@ -296,6 +311,12 @@ class LotteryAssignmentController(object):
             assert(numpy.sum(self.student_schedules[selected_students, timeslots[i]]) == 0)
             self.student_schedules[selected_students, timeslots[i]] = True
             self.student_enrollments[selected_students, timeslots[i]] = self.section_ids[si]
+
+            # Update student utilies:
+            if priority:
+                self.student_utilities[selected_students]+=1.5
+            else:
+                self.student_utilities[selected_students]+=1
         
         #   Update student weights
         self.student_weights[selected_students] /= weight_factor
@@ -416,6 +437,19 @@ class LotteryAssignmentController(object):
                 hist_interest[key] = 0
             hist_interest[key] += 1
         stats['hist_interest'] = hist_interest
+
+        # Compute the overall utility of the current run.
+        # Each student has a utility of sqrt(#hours of interested + 1.5 #hours of priority)
+        # Each student gets a weight of sqrt(# classes regged for)
+        weighted_overall_utility = 0.0
+        sum_of_weights=0.0
+        for i in range(self.num_students):
+            weighted_overall_utility += math.sqrt(self.student_utility_weights[i]*self.student_utilities[i])
+            sum_of_weights += math.sqrt(self.student_utility_weights[i])
+
+        overall_utility = weighted_overall_utility/sum_of_weights
+
+        stats['overall_utility'] = overall_utility
         
         if self.options['stats_display']:
             print 'Summary statistics:'
