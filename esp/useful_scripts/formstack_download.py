@@ -15,14 +15,15 @@ import pycurl
 import sys
 
 SUBMISSIONS_PER_PAGE = 100
-#  maximum number of form submissions to download in one batch; going over
+#  when enumerating form submissions, the maximum number of metadatas
+#  (submission id, timestamp, etc) to download in one batch; going over
 #  this limit will typically cause Formstack to revert to 25/page or so.
 
 API_BASE = "https://www.formstack.com/api/v2/"
 #   trailing slash, please
 
 BATCH_SIZE = 500
-#  number of submissions to include in one download
+#  number of submissions to include in one export job (i.e. RTF or CSV)
 
 
 # Collect Formstack Connection Information
@@ -58,7 +59,7 @@ class Response(object):
 
 n = 1
 limit = 1
-#  will be update later with the real value, reported by Formstack
+#  num pages, will be update later with the real value as reported by Formstack
 
 while n <= limit:
     url = API_BASE + "form/" + form_id + "/submission" + \
@@ -90,7 +91,7 @@ while n <= limit:
 
     if n == 1:
         limit = form_data['pages']
-        #  number of pages of data
+        #  true number of pages of data
 
         print ""
         sys.stdout.write("[ " + str(limit) + " ] ")
