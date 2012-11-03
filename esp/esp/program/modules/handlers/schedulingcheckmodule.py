@@ -26,6 +26,9 @@ class SchedulingCheckModule(ProgramModuleObj):
          context = {'checks': results}
          return render_to_response(self.baseDir()+'output.html', request, (prog, tl), context)
 
+    class Meta:
+        abstract = True
+
 #For formatting output.  The default is to use HTMLSCFormatter, but someone writing a script
 #may want to use RawSCFormatter to get the original data structures
 class RawSCFormatter:
