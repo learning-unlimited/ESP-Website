@@ -446,15 +446,26 @@ class LotteryAssignmentController(object):
         # bad schedule (we care less if students regged for less classes).
         # 3. We then sum weight*utility over all students and divide that
         # by the sum of weights to get a weighted average utility.
+        #
+        # Also use the utility to get a list of screwed students,
+        # where the level of screwedness is defined by (1+utility)/(1+weight)
+        # So, people with low untilities and high weights (low screwedness scores)
+        # are considered screwed. This is pretty sketchy, so take it with a grain of salt.
         weighted_overall_utility = 0.0
         sum_of_weights=0.0
+        screwed_students=[]
         for i in range(self.num_students):
-            weighted_overall_utility += math.sqrt(self.student_utility_weights[i]*self.student_utilities[i])
-            sum_of_weights += math.sqrt(self.student_utility_weights[i])
-
+            utility = math.sqrt(self.student_utilities[i])
+            weight = math.sqrt((self.student_utility_weights[i]))
+            weighted_overall_utility += utility*weight
+            sum_of_weights += weight
+            screwed_students.append(((1+utility)/(1+weight), self.student_ids(i)))
+            
         overall_utility = weighted_overall_utility/sum_of_weights
-
+        screwed_students.sort()
+        
         stats['overall_utility'] = overall_utility
+        stats['students_by_screwedness'] = screwed_students
         
         if self.options['stats_display']:
             print 'Summary statistics:'
