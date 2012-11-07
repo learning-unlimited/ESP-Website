@@ -12,6 +12,7 @@
  }
 
 </style>
+{% if not request.user.onsite_local %}
 <script type="text/javascript">
 $j(function() {
     // Create two dialog boxes with two different warning messages,
@@ -57,6 +58,7 @@ $j(function() {
     });
 });
 </script>
+{% endif %}
 <div id="enrolled-remove-confirm" class="remove-confirm" style="display:none;">
     <p><span class="ui-icon ui-icon-alert" style="float: left; margin: 0 7px 20px 0;"></span>
         This class will be permanently deleted from your schedule.

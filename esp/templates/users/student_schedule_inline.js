@@ -16,6 +16,7 @@ if (reg_open_new_status != reg_open_status) {
     {% endfor %}
 {% endif %}{% endif %}{% endfor %}
 
+{% if not request.user.onsite_local %}
 $j(function() {
     // Create two dialog boxes with two different warning messages,
     // one that appears when you try to remove an enrolled class,
@@ -59,4 +60,5 @@ $j(function() {
         }
     });
 });
+{% endif %}
 
