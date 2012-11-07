@@ -234,6 +234,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             #   - Michael P, 6/23/2009
             #   if scrmi.use_priority:
             sec.verbs = sec.getRegVerbs(user, allowed_verbs=verbs)
+            sec.verb_names = [v.name for v in sec.verbs]
+            sec.is_enrolled = True if "Enrolled" in sec.verb_names else False
             
             for mt in sec.get_meeting_times():
                 section_dict = {'section': sec, 'changeable': show_changeslot}
