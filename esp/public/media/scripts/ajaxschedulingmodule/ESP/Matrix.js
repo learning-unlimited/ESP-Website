@@ -73,10 +73,12 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         }
         
         // set up scrolling
+	/* obsolete -- see commit 85b783c8b49237a56ee5f3b051984c629a95f85f
         cell_body.scroll(function(evt){
             row_header.css('top','-'+cell_body.scrollTop()+'px');
             col_header.children('tbody').css('left','-'+cell_body.scrollLeft()+'px');
         });
+	*/
         
         var BlockStatus = ESP.Scheduling.Resources.BlockStatus;
         // listen for assignments
