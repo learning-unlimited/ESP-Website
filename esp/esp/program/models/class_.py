@@ -1299,7 +1299,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     status = models.IntegerField(default=0)   
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
-
+    
     @cache_function
     def get_allowable_class_size_ranges(self):
         return self.allowable_class_size_ranges.all()
@@ -1571,6 +1571,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return {'self': node.classsubject_set.all()[0]}
         return {}
     title.depend_on_row(lambda: DataTree, title_selector)
+    title.admin_order_field = 'anchor__friendly_name'	# Admin Panel Display Configuration
 
     @cache_function
     def teachers(self):

@@ -152,8 +152,8 @@ border-spacing: 0px; border-collapse: collapse;
 }
 .directory .header td { height: auto; }
 .directory span { float: left; padding-right: 15px; margin-right: 10px; }
-.directory .sort-by.desc span { background: url(media/down_arrow.png) no-repeat right center; }
-.directory .sort-by.asc span { background: url(media/up_arrow.png) no-repeat right center; }
+.directory .sort-by.desc span { background: url(/media/images/down_arrow.png) no-repeat right center; background-size: 10px 10px; }
+.directory .sort-by.asc span { background: url(/media/images/up_arrow.png) no-repeat right center; background-size: 10px 10px; }
 
 .directory tr { width: 100%; display: block; }
 .directory tr {

@@ -1,6 +1,18 @@
 {% spaceless %}
 <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
 
+<div id="enrolled-remove-confirm" class="remove-confirm" style="display:none;">
+    <p><span class="ui-icon ui-icon-alert" style="float: left; margin-right: 7px;"></span>
+        This class will be permanently deleted from your schedule.
+        If the class fills with new students, you will be unable to add it back to you
+        Are you sure?
+    </p>
+</div>
+<div id="applied-remove-confirm" class="remove-confirm" style="display:none;">
+    <p><span class="ui-icon ui-icon-alert" style="float: left; margin-right: 7px;"></span>
+        Are you sure you want to remove this class?
+    </p>
+</div>
 <div id='program_form' class='program_form_small'>
 <table cellpadding='3' style='width: 500px; margin: auto' border=1>
 <tr>
@@ -53,8 +65,8 @@
             <td width='20%' align='center' style='vertical-align: top !important;'>
             {% for cls in timeslot.1 %}
                 {% if cls.first_meeting_time %}
-                    <a id='remove_{{ timeslot.0.id }}_{{ cls.section.id }}' href='/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}'>[remove]</a>
-                    {% comment %}<a href='/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}'>[remove]</a>{% endcomment %}
+                    <a id='remove_{{ timeslot.0.id }}_{{ cls.section.id }}' href='/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}' class='remove' data-remove-type='{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}' data-sec-code='{{ cls.section.emailcode }}'>[remove]</a>
+                    {% comment %}<a href='/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}' class='remove' data-remove-type='{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}' data-sec-code='{{ cls.section.emailcode }}'>[remove]</a>{% endcomment %}
                     {% if cls.changeable %}
                         <a href='/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}'>[change section]</a>
                     {% endif %}
@@ -75,8 +87,8 @@
             <td width='15%' align='center' style='vertical-align: top !important;'>
             {% for cls in timeslot.1 %}
                 {% if cls.first_meeting_time %}
-                    <a id='remove_{{ timeslot.0.id }}_{{ cls.section.id }}' href='/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}'>[remove]</a>
-                    {% comment %}<a id='clearslotlink' href='/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}'>[remove]</a>{% endcomment %}
+                    <a id='remove_{{ timeslot.0.id }}_{{ cls.section.id }}' href='/learn/{{one}}/{{two}}/ajax_clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}' class='remove' data-remove-type='{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}' data-sec-code='{{ cls.section.emailcode }}'>[remove]</a>
+                    {% comment %}<a id='clearslotlink' href='/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}' class='remove' data-remove-type='{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}' data-sec-code='{{ cls.section.emailcode }}'>[remove]</a>{% endcomment %}
                 {% endif %}
                 <br />
             {% endfor %}

@@ -737,6 +737,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
             # Now that we're done putting together multiple resource type sources, listify!
             resource_types = list(resource_types)
+            resource_types.sort(key=lambda x: -x.priority_default)
 
             if newclass is not None:
                 current_data = newclass.__dict__
