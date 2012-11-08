@@ -30,11 +30,9 @@ $j(function() {
     // Display a warning dialog box, and give the user an option to confirm the removal or cancel it.
     $j("a.remove").click( function(eventObject) {
 
-        // None of the remove links start out with a data-confirmed-remove attribute,
-        // so the hyperlink click is always cancelled at first.
-        // If the user confirms the removal, such an attribute is added;
-        // this handler is called again, doesn't cancel the click event, and returns true;
-        // the clearslot link is followed; and the class is removed.
+        // The hyperlink click is always cancelled at first.
+        // If the user confirms the removal,
+        // the clearslot link is followed, and the class is removed.
         eventObject.preventDefault();
         var $a_remove_tag = $j(this);
         var cls_code = $j(this).attr("data-sec-code");
