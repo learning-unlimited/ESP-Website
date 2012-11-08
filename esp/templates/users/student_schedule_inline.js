@@ -24,7 +24,6 @@ $j(function() {
     // autoOpen: false makes it so that the dialog boxes don't appear on page load.
     $j( "div.remove-confirm" ).dialog({
         resizable: false,
-        height: 140,
         modal: true,
         autoOpen: false,
         closeOnEscape: false,
@@ -34,30 +33,22 @@ $j(function() {
     // Display a warning dialog box, and give the user an option to confirm the removal or cancel it.
     $j("a.remove").click( function(eventObject) {
 
-        // None of the remove links start out with a data-confirmed-remove attribute,
-        // so the hyperlink click is always cancelled at first.
-        // If the user confirms the removal, such an attribute is added;
-        // this handler is called again, doesn't cancel the click event, and returns true;
-        // the clearslot link is followed; and the class is removed.
-        if (!($j(this).attr("data-confirmed-remove"))) {
-            eventObject.preventDefault();
-            var $a_remove_tag = $j(this);
-            var cls_code = $j(this).attr("data-sec-code");
-            var remove_type = $j(this).attr("data-remove-type");    // "enrolled" for enrolled classes, "applied" for non-enrolled classes
-            $j( "#"+remove_type+"-remove-confirm" ).dialog( "option", "title", "Remove class "+cls_code+"?" ).dialog( "option", "buttons", {
-                    "Remove class": function() {
-                        $a_remove_tag.attr("data-confirmed-remove","data-confirmed-remove");
-                        $j( this ).dialog( "close" );
-                        $a_remove_tag.click();
-                    },
-                    Cancel: function() {
-                        $j( this ).dialog( "close" );
-                    }
-            }).dialog( "open" );
-        }
-        else {
-            return true;
-        }
+        // The hyperlink click is always cancelled at first.
+        // If the user confirms the removal,
+        // the clearslot link is followed, and the class is removed.
+        eventObject.preventDefault();
+        var $a_remove_tag = $j(this);
+        var cls_code = $j(this).attr("data-sec-code");
+        var remove_type = $j(this).attr("data-remove-type");    // "enrolled" for enrolled classes, "applied" for non-enrolled classes
+        $j( "#"+remove_type+"-remove-confirm" ).dialog( "option", "title", "Remove class "+cls_code+"?" ).dialog( "option", "buttons", {
+                "Remove class": function() {
+                    $j( this ).dialog( "close" );
+                    window.location.replace($a_remove_tag.attr("href"));
+                },
+                Cancel: function() {
+                    $j( this ).dialog( "close" );
+                }
+        }).dialog( "open" );
     });
 });
 {% endif %}
