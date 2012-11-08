@@ -196,7 +196,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if extension is not None:
             return super(StudentClassRegModule, self).deadline_met(extension)
         else:
-            return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass')
+            return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass') or \
+                   super(StudentClassRegModule, self).deadline_met('/Classes/Lottery')
 
     def prepare(self, context={}):
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
