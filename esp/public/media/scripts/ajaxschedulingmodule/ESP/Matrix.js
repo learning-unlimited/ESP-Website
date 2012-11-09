@@ -73,7 +73,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         }
         
         // set up scrolling
-	/* obsolete -- see commit 85b783c8b49237a56ee5f3b051984c629a95f85f
+	/* obsolete -- see commit b7e793b3106949794ae8e067f66af920981049b7
         cell_body.scroll(function(evt){
             row_header.css('top','-'+cell_body.scrollTop()+'px');
             col_header.children('tbody').css('left','-'+cell_body.scrollLeft()+'px');
