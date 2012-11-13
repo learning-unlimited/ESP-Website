@@ -312,12 +312,15 @@ class Resource(models.Model):
     def available_any_time(self, anchor=None):
         return (len(self.available_times(anchor)) > 0)
     
+    def available_times_html(self, anchor=None):
+        return '<br /> '.join([unicode(e) for e in Event.collapse(self.available_times(anchor))])
+
     def available_times(self, anchor=None):
         if anchor:
             event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times().filter(anchor=anchor)))
         else:
             event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times()))
-        return '<br /> '.join([unicode(e) for e in Event.collapse(event_list)])
+        return event_list
     
     def matching_times(self):
         #   Find all times for which a resource of the same name is available.
