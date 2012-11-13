@@ -852,6 +852,12 @@ class ClassSection(models.Model):
 
     def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
+
+        # Check if section is full
+        if checkFull and self.isFull():
+            scrmi = self.parent_class.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            return scrmi.temporarily_full_text
+
         # Test any scheduling constraints
         relevantConstraints = self.parent_program.getScheduleConstraints()
         #   relevantConstraints = ScheduleConstraint.objects.none()

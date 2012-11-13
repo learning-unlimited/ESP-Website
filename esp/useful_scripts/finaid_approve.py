@@ -3,7 +3,7 @@
 # 
 # Approves not-yet-approved requests where both answers are non-blank/None/whitespace
 # and prints the email address of these users to the screen. Make sure to configure
-# PROGRAM_ID below.
+# PROGRAM_ID and PROGRAM_COST (in dollars) below.
 #
 # This script should be run from the manage.py shell
 #
@@ -15,6 +15,7 @@ import re
 
 # CONFIGURATION
 PROGRAM_ID = 50708  # Splash! 2012
+PROGRAM_COST = 40
 #  the id of the program in the datatree
 
 
@@ -32,6 +33,8 @@ for req in reqs:
     
     print req.user.email
     req.approved = datetime.now()
+    req.amount_received = PROGRAM_COST
+    req.amount_needed = 0
     req.save()
     approved_any = True
 
