@@ -9,12 +9,12 @@
         {% if not class.already_passed %}
             {% ifchanged %}
                 </td></tr>
-               <tr><th class="materials">{{ class.begin_time }}</th></tr>
+               <tr><th class="start_time">{{ class.begin_time }}</th></tr>
                <tr><td>
             {% endifchanged %}
             {% ifchanged %}
                 </td></tr>
-               <tr><th class="materials">{{ class.category.category }}</th></tr>
+               <tr><th class="category">{{ class.category.category }}</th></tr>
                <tr><td>
             {% endifchanged %}
             <div class="classitem"><b>{{ class.emailcode }}</b> ({% for ft in class.friendly_times %}{{ ft }}{% if not forloop.last %}, {% endif %}{% endfor %}): <br /> {{ class.title }} (Grades {{class.parent_class.grade_min}}-{{class.parent_class.grade_max}})<br /></div>
