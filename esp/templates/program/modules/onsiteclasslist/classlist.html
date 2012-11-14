@@ -54,6 +54,8 @@ function scroll()
             next_category++;
         }
     }
+    
+    sessionStorage.onsiteClassListOffset = scroll_offset;
 }
 
 function reset()
@@ -75,6 +77,14 @@ function start_scrolling()
 {
     interval_handle = setInterval(scroll, 50);
 }
+
+$(function(){
+    var startOffset = parseInt(sessionStorage.onsiteClassListOffset);
+    reset();
+    if(startOffset)
+        scroll_offset = startOffset;
+});
+
 </script>
 
 <style type="text/css">
@@ -116,7 +126,7 @@ font-size: 1.7em;
 <title>On-site Class List for {{ prog.niceName }}</title>
 </head>
 
-<body bgcolor="#FFFFFF" onload="reset();">
+<body bgcolor="#FFFFFF">
 
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
 
