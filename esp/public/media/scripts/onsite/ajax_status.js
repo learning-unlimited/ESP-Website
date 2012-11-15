@@ -931,6 +931,10 @@ function refresh_counts() {
     fetch_all(true);
 }
 
+$j(document).scroll(function(){
+    $j("#student_selector_area").css("left", window.scrollX);
+});
+
 $j(document).ready(function () {
     //  Send out initial requests for data.
     //  Once they have all completed, the results will be parsed and the
