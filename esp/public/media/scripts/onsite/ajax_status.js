@@ -572,6 +572,12 @@ function render_table(display_mode, student_id)
             //  TODO: make this snap to the right reliably
             new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
             
+            // Show the class title if we're not in compact mode
+            if (!settings.compact_classes)
+            {
+                new_div.append($j("<div/>").addClass("title").html(section.title));
+            }
+            
             //  Create a tooltip with more information about the class
             new_div.addClass("tooltip");
             var tooltip_div = $j("<span/>").addClass("tooltip_hover").attr("id", div_name);
