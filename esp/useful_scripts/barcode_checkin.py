@@ -18,6 +18,7 @@ import sys
 PROGRAM_ID = 50708  # Splash! 2012
 #  the id of the program in the datatree
 
+attended_verb=GetNode('V/Flags/Registration/Attended')
 
 # LOAD DATA
 ids = []
@@ -57,9 +58,9 @@ for i in ids:
     student = result[0]
 
     # from onsitecheckinmodule.py:
-    existing_bits = UserBit.valid_objects().filter(user=student, qsc=prog.anchor, verb=GetNode('V/Flags/Registration/Attended'))
+    existing_bits = UserBit.valid_objects().filter(user=student, qsc=prog.anchor, verb=attended_verb)
     if not existing_bits.exists():
-        new_bit, created = UserBit.objects.get_or_create(user=student, qsc=prog.anchor, verb=GetNode('V/Flags/Registration/Attended'))
+        new_bit, created = UserBit.objects.get_or_create(user=student, qsc=prog.anchor, verb=attended_verb)
         print '%s: %s %s marked as attended.' % (i, student.first_name, student.last_name)
     else:
         print '%s: already marked as attended' % (i)
