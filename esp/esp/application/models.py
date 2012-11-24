@@ -2,7 +2,7 @@ from django.db import models
 from django.template import Template, Context
 from django.core.exceptions import ObjectDoesNotExist
 from esp.users.models import ESPUser
-from esp.program.models import Program
+from esp.program.models import Program, ClassSubject
 from esp.program.modules.base import ProgramModuleObj
 from esp.formstack.api import Formstack
 from esp.formstack.models import FormstackForm
@@ -36,15 +36,27 @@ class FormstackAppSettings(models.Model):
         """
         return Formstack(self.api_key)
 
-    def settings(self):
+    def get_program(self):
         """
-        Returns this FormstackAppSettings object, whether you're
-        calling from this class or a module inheriting it.
+        Helper function that returns the program associated with this
+        object, whether you're calling from this class or a module
+        inheriting it.
         """
         if isinstance(self, ProgramModuleObj):
-            return self.program.getModuleExtension('FormstackAppSettings')
+            return self.program
+        elif isinstance(self.module, ProgramModuleObj):
+            return self.module.program
         else:
-            return self
+            return None
+
+    def get_subject(self, title):
+        """
+        Helper function that gets a class subject by title.
+        """
+        if title is None:
+            return None
+
+        return self.get_program().classes().get(anchor__friendly_name=title)
 
     def create_username_field(self):
         """
@@ -79,7 +91,7 @@ class FormstackAppSettings(models.Model):
         self._fields = fields
         return fields
 
-    def get_student_apps(self, save=True):
+    def get_student_apps(self):
         """
         Returns a list of StudentApp objects, one per valid form submission.
         """
@@ -89,11 +101,12 @@ class FormstackAppSettings(models.Model):
             return self._apps
 
         # fetch and store if unavailable
-        apps = self.fetch_student_apps(save)
+        apps = self.fetch_student_apps()
         self._apps = apps
         return apps
 
-    def fetch_student_apps(self, save=True):
+    def fetch_student_apps(self):
+        program = self.get_program()
         # get submissions from the API
         api_response = self.formstack.data(self.form.id, {'per_page': 100})
         submissions = api_response['submissions']
@@ -112,33 +125,33 @@ class FormstackAppSettings(models.Model):
                 user = ESPUser.objects.get(username=username)
             except ObjectDoesNotExist:
                 continue # no matching user, ignore
-            coreclass1 = data_dict.get(self.coreclass1_field, '')
-            coreclass2 = data_dict.get(self.coreclass2_field, '')
-            coreclass3 = data_dict.get(self.coreclass3_field, '')
-            if FsStudentApp.objects.filter(id=submission_id).exists():
-                app = FsStudentApp.objects.get(id=submission_id)
-            else:
-                app = FsStudentApp(id=submission_id)
-            app.user = user
-            app.program_settings = self.settings()
-            app.coreclass1 = coreclass1
-            app.coreclass2 = coreclass2
-            app.coreclass3 = coreclass3
+            choices = {}
+            choices[1] = self.get_subject(data_dict.get(self.coreclass1_field))
+            choices[2] = self.get_subject(data_dict.get(self.coreclass2_field))
+            choices[3] = self.get_subject(data_dict.get(self.coreclass3_field))
+            app, created = FormstackStudentApp.objects.get_or_create(
+                submission_id=submission_id,
+                defaults={
+                    'user': user,
+                    'program': program
+                    })
+            for preference, subject in choices.items():
+                if subject is not None:
+                    StudentClassApp.objects.get_or_create(
+                        app=app,
+                        student_preference=preference,
+                        defaults={
+                            'subject': subject
+                            })
             app._data = submission # cache submitted data
             apps.append(app)
-            if save:
-                app.save()
         return apps
 
-class FsStudentApp(models.Model):
-    """ A student's application. """
+class StudentProgramApp(models.Model):
+    """ A student's application to the program. """
 
-    id = models.IntegerField(primary_key=True)
     user = models.ForeignKey(ESPUser)
-    program_settings = models.ForeignKey(FormstackAppSettings)
-    coreclass1 = models.CharField(max_length=80)
-    coreclass2 = models.CharField(max_length=80)
-    coreclass3 = models.CharField(max_length=80)
+    program = models.ForeignKey(Program)
 
     # choices for admin status
     UNREVIEWED = 0
@@ -159,13 +172,40 @@ class FsStudentApp(models.Model):
     def __unicode__(self):
         return "{}'s app for {}".format(self.user, self.program)
 
+    def choices(self):
+        """
+        Returns a dict: preference -> subject, of all the class choices
+        tied to this app.
+        """
+        choices = {}
+        for classapp in self.studentclassapp_set.all():
+            choices[classapp.student_preference] = classapp.subject
+        return choices
+
+class StudentClassApp(models.Model):
+    """ A student's application to a particular class. """
+
+    app = models.ForeignKey(StudentProgramApp)
+    subject = models.ForeignKey(ClassSubject)
+    student_preference = models.PositiveIntegerField()
+
+    teacher_rating = models.PositiveIntegerField(null=True)
+    teacher_comment = models.TextField()
+
+    def __unicode__(self):
+        return "{}'s app for {}".format(self.app.user, self.subject)
+
+    class Meta:
+        unique_together = (('app', 'student_preference'),)
+
+class FormstackStudentApp(StudentProgramApp):
+    """ A student's application through Formstack. """
+
+    submission_id = models.IntegerField(unique=True)
+
     @property
-    def program(self):
-        # Fake "foreign key" to Program. (We don't have a real one
-        # because FormstackAppSettings is what we want most of the
-        # time, and we don't want to have two separate fields that
-        # could disagree.)
-        return self.program_settings.module.program
+    def program_settings(self):
+        return self.program.getModuleExtension('FormstackAppSettings')
 
     def get_submitted_data(self):
         """ Returns the raw submitted data from the API, as a JSON dict. """
@@ -174,7 +214,7 @@ class FsStudentApp(models.Model):
         if hasattr(self, '_data'):
             return self._data
 
-        submission = self.program_settings.formstack.submission(self.id)
+        submission = self.program_settings.formstack.submission(self.submission_id)
         self._data = submission
         return submission
 
