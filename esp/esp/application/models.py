@@ -145,6 +145,10 @@ class FormstackAppSettings(models.Model):
                             })
             app._data = submission # cache submitted data
             apps.append(app)
+        # remove obsolete model instances (deleted from Formstack?)
+        all_apps = FormstackStudentApp.objects.filter(program=program)
+        old_apps = all_apps.exclude(id__in=[app.id for app in apps])
+        old_apps.delete()
         return apps
 
 class StudentProgramApp(models.Model):
