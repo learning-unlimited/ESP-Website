@@ -15,8 +15,8 @@ import re
 
 # CONFIGURATION
 PROGRAM_ID = 50708  # Splash! 2012
-PROGRAM_COST = 40
 #  the id of the program in the datatree
+PROGRAM_COST = 40
 
 
 # ITERATE & APPROVE REQUESTS
