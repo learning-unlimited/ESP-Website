@@ -49,6 +49,7 @@ class AnnouncementLink(models.Model):
     title = models.CharField(max_length=256) 
     category = models.CharField(max_length=32) # Plaintext
     timestamp = models.DateTimeField(default=datetime.datetime.now, editable=False)
+    highlight_begin = models.DateTimeField(blank=True,null=True, help_text="When this should start being showcased.")
     highlight_expire = models.DateTimeField(blank=True,null=True, help_text="When this should stop being showcased.")
     section = models.CharField(max_length=32,blank=True,null=True, help_text="e.g. 'teach' or 'learn' or blank")
     href = models.URLField(help_text="The URL the link should point to.")
@@ -85,6 +86,8 @@ class Entry(models.Model):
                                help_text="(will determine the URL)")
 
     timestamp = models.DateTimeField(default = datetime.datetime.now, editable=False)
+    highlight_begin = models.DateTimeField(blank=True,null=True,
+                                            help_text="When this should start being showcased.")
     highlight_expire = models.DateTimeField(blank=True,null=True,
                                             help_text="When this should stop being showcased.")
     content = models.TextField(help_text='Yes, you can use markdown.') # Markdown-encoded
