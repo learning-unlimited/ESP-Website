@@ -1030,6 +1030,13 @@ class Program(models.Model, CustomFormsLinkModel):
         else: 
             return 1
     
+    def useGradeRangeExceptions(self):
+        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        if studentregmodule:
+            return studentregmodule.use_grade_range_exceptions
+        else:
+            return False
+    
     @staticmethod
     def find_by_perms(user, verb):
         """ Fetch a list of relevant programs for a given user and verb """

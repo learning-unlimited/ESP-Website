@@ -66,6 +66,7 @@ class LotteryAssignmentController(object):
         self.num_students = len(self.lotteried_students)
         self.num_sections = len(self.sections)
         self.priority_limit = self.program.priorityLimit()
+        self.grade_range_exceptions = self.program.useGradeRangeExceptions()
         
         self.options = LotteryAssignmentController.default_options.copy()
         self.options.update(kwargs)
@@ -121,7 +122,7 @@ class LotteryAssignmentController(object):
         """
         
         self.interest = numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool)
-        self.priority = [numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool) for i in range(self.priority_limit+1)]
+        self.priority = [numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool) for i in range(self.priority_limit+2 if self.grade_range_exceptions else self.priority_limit+1)]
         self.ranks = 10*numpy.ones((self.num_students, self.num_sections), dtype=numpy.int32)
         self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool)
         self.section_capacities = numpy.zeros((self.num_sections,), dtype=numpy.uint32)
@@ -160,6 +161,9 @@ class LotteryAssignmentController(object):
         
         #   Populate priority matrix
         priority_regs = [StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Priority/%s'%i, end_date__gte=self.now).values_list('user__id', 'section__id').distinct() for i in range(self.priority_limit+1)]
+        if self.grade_range_exceptions:
+            priority_regs.append(StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='GradeRangeException', end_date__gte=self.now).values_list('user__id', 'section__id').distinct())
+            self.priority_limit += 1
         pra = [numpy.array(priority_regs[i], dtype=numpy.uint32) for i in range(self.priority_limit+1)]
         for i in range(1,self.priority_limit+1):
             try:
@@ -242,7 +246,7 @@ class LotteryAssignmentController(object):
         possible_students = numpy.copy(signup[:, si])
         
         #   Filter students by the section's grade limits
-        if self.options['check_grade']:
+        if self.options['check_grade'] and not (priority == self.priority_limit and self.grade_range_exceptions):
             possible_students *= (self.student_grades >= self.section_grade_min[si])
             possible_students *= (self.student_grades <= self.section_grade_max[si])
 
