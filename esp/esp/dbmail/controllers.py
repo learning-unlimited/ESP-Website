@@ -36,6 +36,8 @@ from esp.lib.markdown import markdown
 from esp.datatree.models import *
 from esp.users.models import UserBit
 from esp.dbmail.models import MessageRequest, TextOfEmail, EmailRequest
+from django.contrib.site.models import Site
+import string, hashlib
 
 class EmailController(object):
     """ The workflow for a broadcast e-mail (distinct from e-mail sent to a specific user)
@@ -132,7 +134,10 @@ MessageRequest """
             #  list of texts to be sent
 
             for user in user_msgs.keys():
-                msg_text = "Daily Digest\n============\n\n"
+                msg_text = "Daily Digest\n============\n\n"             
+   
+                address = Site.objects.get_current().domain
+                address = string.join([address.domain,'/myesp/disableaccount','?disable&id=',str(user.id), '&key=', hashlib.sha256(str(user.date_joined)+str(user.id)).hexdigest()],'')
                 
                 # Generate a shell TextOfEmail
                 textreq = TextOfEmail()
@@ -146,7 +151,7 @@ MessageRequest """
                 for emailreq in user_msgs[user]:
                     msg_text.append("Subject: " + emailreq.msgreq.subject + "\n\n"
                                     + "Message:\n" + emailreq.msgreq.msgtext
-                                    + '-'*30)
+                                    + '-'*30 + '\n\n\n' + 'To unsubscribe, click here: ' + address)
                     emailreq.textofemail = textreq
                     emailreq.save()
 

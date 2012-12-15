@@ -16,6 +16,7 @@ from django.contrib.auth.decorators import login_required
 
 from esp.tagdict.models import Tag
 from esp.users.models.forwarder import UserForwarder
+import hashlib
 
 def filter_username(username, password):
     #   Allow login by e-mail address if so specified
@@ -151,19 +152,36 @@ def signed_out_message(request):
     return render_to_response('registration/logged_out.html',
                               request, request.get_node('Q/Web/myesp'),
                               {})
-                              
-@login_required
+
+#login_required removed to facilitate direct disable via links
 def disable_account(request):
-    
-    curUser = request.user
-    
-    if 'enable' in request.GET:
-        curUser.is_active = True
-        curUser.save()
-    elif 'disable' in request.GET:
+    verify = False     # in order to verify the request
+    if 'id' in request.GET:
+        try:
+            uid = int(request.GET['id'])
+            curUser = User.objects.filter(id=uid)[0]
+            if hashlib.sha256(str(curUser.date_joined)+str(curUser.id)).hexdigest() == request.GET['key']: #verify the passed key
+                verify = True    # request verified   
+        except:
+            pass
+
+    else:
+        curUser = request.user
+
+    if verify:
         curUser.is_active = False
         curUser.save()
-        
+        return HttpResponse("<p>You have successfully unsubscribed</p>")
+    
+    if 'enable' in request.GET and request.user.is_authenticated():
+        curUser.is_active = True
+        curUser.save()
+    elif 'disable' in request.GET and request.user.is_authenticated():
+        curUser.is_active = False
+        curUser.save()
+    else:
+        return HttpResponse("<p>Permission Denied, Please Login</p>")    # when authentication fails, Permission Denied
+ 
     context = {'user': curUser}
         
     return render_to_response('users/disable_account.html', request, request.get_node('Q/Web/myesp'), context)
