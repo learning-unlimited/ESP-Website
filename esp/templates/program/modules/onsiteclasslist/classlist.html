@@ -1,10 +1,14 @@
-
 <html>
 <head>
 
+<script type='text/javascript' src='/media/scripts/jquery.js'></script>
 <script>
 scroll_offset = 0;
 interval_handle = -1;
+categories = [];
+start_times = [];
+next_category = 0;
+next_start_time = 0;
 
 function setElementStyleById(id, propertyName, propertyValue) {
     if (!document.getElementById) return;
@@ -28,21 +32,59 @@ function scroll()
     }
     setElementStyleById("scroller_top", "top", scroll_offset + "px");
     setElementStyleById("scroller_bottom", "top", scroll_offset + elt1.offsetHeight + "px");
+    
+    if(start_times[next_start_time]){
+        if($(start_times[next_start_time]).position().top < -scroll_offset + 24){
+            $(".fixed_header1").css("top", $(start_times[next_start_time]).position().top + scroll_offset);
+        }
+        if($(start_times[next_start_time]).position().top < -scroll_offset){
+            $(".fixed_header1").removeClass("fixed_header1").css("top", "");
+            $(start_times[next_start_time]).addClass("fixed_header1");
+            next_start_time++;
+        }
+    }
+
+    if(categories[next_category]){
+        if($(categories[next_category]).position().top < -scroll_offset + 48){
+            $(".fixed_header2").css("top", $(categories[next_category]).position().top + scroll_offset - 24);
+        }
+        if($(categories[next_category]).position().top < -scroll_offset + 24){
+            $(".fixed_header2").removeClass("fixed_header2").css("top", "");
+            $(categories[next_category]).addClass("fixed_header2");
+            next_category++;
+        }
+    }
+    
+    sessionStorage.onsiteClassListOffset = scroll_offset;
 }
 
 function reset()
 {
     if (interval_handle != -1)
         clearInterval(interval_handle);
+    categories = $(".category");
+    start_times = $(".start_time");
+    next_category = 0;
+    next_start_time = 0;
     scroll_offset = 0;
+    $(".fixed_header1").removeClass("fixed_header1").css("top", "");
+    $(".fixed_header2").removeClass("fixed_header2").css("top", "");
     scroll();
-    setTimeout("start_scrolling();", 50);
+    setTimeout(start_scrolling, 50);
 }
 
 function start_scrolling()
 {
-    interval_handle = setInterval("scroll();", 50);
+    interval_handle = setInterval(scroll, 50);
 }
+
+$(function(){
+    var startOffset = parseInt(sessionStorage.onsiteClassListOffset);
+    reset();
+    if(startOffset)
+        scroll_offset = startOffset;
+});
+
 </script>
 
 <style type="text/css">
@@ -61,8 +103,22 @@ padding-bottom: 5px;
 font-size: 1.2em;
 }
 
-.materials {
+.materials, .begin_time, .category {
 font-size: 1.7em;
+}
+
+.fixed_header1 {
+    position: fixed;
+    top: 0px;
+    width: 49%;
+    z-index: 20;
+}
+
+.fixed_header2 {
+    position: fixed;
+    top: 24px;
+    width: 49%;
+    z-index: 10;
 }
 </style>
 
@@ -70,7 +126,7 @@ font-size: 1.7em;
 <title>On-site Class List for {{ prog.niceName }}</title>
 </head>
 
-<body bgcolor="#FFFFFF" onload="reset();">
+<body bgcolor="#FFFFFF">
 
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
 
