@@ -87,9 +87,11 @@ class TeacherPreviewModule(ProgramModuleObj):
     @aux_call
     def catalogpreview(self, request, tl, one, two, module, extra, prog):
         try:
-            cls = ClassSubject.objects.get(id=int(extra))
-        except:
+            qs = ClassSubject.objects.filter(id=int(extra))
+            cls = qs[0]
+        except (ValueError, IndexError):
             raise Http404('The requested class could not be found.')
+        cls = ClassSubject.objects.catalog(cls.parent_program, force_all=True, initial_queryset=qs)[0]
         return render_to_response(self.baseDir()+'catalogpreview.html', request, (prog, tl), {'class': cls})
     
     def get_handouts(self):
