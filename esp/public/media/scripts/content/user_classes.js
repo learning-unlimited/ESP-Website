@@ -27,5 +27,5 @@ function update_user_classes() {
   }
   
   //    Write user's name in the appropriate spot in the login box
-  $j("#loginbox_user_name").html("Hello, " + esp_user.cur_first_name + " " + esp_user.cur_last_name + " (" + esp_user.cur_username + "/id:" + esp_user.cur_userid + ")!");
+  $j("#loginbox_user_name").html("Hello, " + esp_user.cur_first_name + " " + esp_user.cur_last_name + "<br /><span style='color: #444; font-style: italic;'>" + esp_user.cur_username + " / " + esp_user.cur_userid + "</span>");
 }
