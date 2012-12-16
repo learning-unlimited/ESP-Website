@@ -102,6 +102,7 @@ class ClassCreationController(object):
         return reg_form, resource_formset, restype_formset
     
     def make_class_happen(self, cls, user, reg_form, resource_formset, restype_formset, editing=False):
+        teachers = cls.teachers()
         anchor_modified = self.set_class_data(cls, reg_form)
         self.update_class_sections(cls, int(reg_form.cleaned_data['num_sections']))
 
@@ -109,7 +110,7 @@ class ClassCreationController(object):
         #   added as a teacher if they aren't already one.
         if anchor_modified:
             cls.save()
-            for teacher in cls.teachers():
+            for teacher in teachers:
                 self.associate_teacher_with_class(cls, teacher)
             if not editing:
                 self.associate_teacher_with_class(cls, user)

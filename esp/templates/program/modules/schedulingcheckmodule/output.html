@@ -1,0 +1,39 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Register for {{program.niceName}}{% endblock %}
+
+{% block xtrajs %}
+{{block.super }}
+<script type="text/javascript">
+<!--
+
+function updateDocs(docs) {
+   document.getElementById('adminhelp').innerHTML = docs;
+}
+//-->
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+
+<h1>Schedule Diagnostic Output for {{program.niceName}} </h1>
+
+{% for value in checks %}
+<ul>
+  <p> 
+    {{ value|safe }}
+  </p>
+</ul>
+{% endfor %}
+
+{% endblock %}

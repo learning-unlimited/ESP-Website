@@ -36,14 +36,14 @@ input.button:hover {
 
 // user contact information
 user_contact =  [
-{% for contactitem in module.user.getLastProfile.contact_user.items %}
+{% for contactitem in user.getLastProfile.contact_user.items %}
   ['{{ contactitem.0|striptags|addslashes }}','{{contactitem.1|striptags|addslashes }}'],{% endfor %}
   ['','']
 ];
 
 // guardian contact information
 guardian_contact =  [
-{% for contactitem in module.user.getLastProfile.contact_guardian.items %}
+{% for contactitem in user.getLastProfile.contact_guardian.items %}
   ['{{ contactitem.0|striptags|addslashes }}','{{contactitem.1|striptags|addslashes }}'],{% endfor %}
   ['','']
 ];
