@@ -2,19 +2,23 @@ from django import forms
 from esp.program.models import RegistrationProfile
 from esp.db.forms import AjaxForeignKeyNewformField
 from esp.utils.widgets import DateTimeWidget
+from esp.users.models import K12School
 import datetime
 
 class OnSiteRegForm(forms.Form):
     first_name = forms.CharField(max_length=30, widget=forms.TextInput({'size':20, 'class':'required'}))
     last_name = forms.CharField(max_length=30, widget=forms.TextInput({'size':30, 'class':'required'}))
     email = forms.EmailField(max_length=75, widget=forms.TextInput({'size':20, 'class':'required'}))
+    school = forms.CharField(max_length=128, widget=forms.TextInput({'size':30}), required = False)
+    #k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
+    #school = forms.CharField(max_length=128, required=False)
 
     grade = forms.ChoiceField(choices = zip(range(7, 13), range(7, 13)), widget=forms.Select({'class':'required'}))
 
     paid = forms.BooleanField(required = False)
     medical = forms.BooleanField(required = False)
     liability = forms.BooleanField(required = False)
-        
+    
 class OnSiteSATPrepRegForm(forms.Form):
     # TODO: Would like to subclass OnSiteRegForm, but this one lacks the grade entry
     first_name = forms.CharField(max_length=30, widget=forms.TextInput({'size':20, 'class':'required'}))

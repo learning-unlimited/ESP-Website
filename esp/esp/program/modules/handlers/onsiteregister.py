@@ -110,7 +110,7 @@ class OnSiteRegister(ProgramModuleObj):
                 contact_user.save()
                 regProf.contact_user = contact_user
 
-                student_info = StudentInfo(user = new_user, graduation_year = ESPUser.YOGFromGrade(new_data['grade']))
+                student_info = StudentInfo(user = new_user, graduation_year = ESPUser.YOGFromGrade(new_data['grade']), school = new_data['school'])
                 student_info.save()
                 regProf.student_info = student_info
 
@@ -149,6 +149,21 @@ class OnSiteRegister(ProgramModuleObj):
 
         else:
             form = OnSiteRegForm()
+
+        #try:
+            #if isinstance(new_data['k12school'], K12School):
+                #studentInfo.k12school = new_data['k12school']
+            #else:
+                #if isinstance(new_data['k12school'], int):
+                    #studentInfo.k12school = K12School.objects.get(id=int(new_data['k12school']))
+                #else:
+                    #studentInfo.k12school = K12School.objects.filter(name__icontains=new_data['k12school'])[0]
+
+	#except:
+            #print 'Error, could not find k12school for "%s"' % new_data['k12school']
+            #studentInfo.k12school = None
+
+        #studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
 
 	return render_to_response(self.baseDir()+'reg_info.html', request, (prog, tl), {'form':form, 'current_year':ESPUser.current_schoolyear()})
 

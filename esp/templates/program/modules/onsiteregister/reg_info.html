@@ -4,6 +4,11 @@
 
 {% block subsection_name %}Register for {{program.niceName}}{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+{% endblock %}
+
 {% block content %}
 <style type="text/css">
 .nocheckmark { border: 1px solid black; }
@@ -20,7 +25,7 @@
 Please enter the information for the new student:
 </p>
 <br />
-<form autocomplete="off" name="reg" method="POST" action="{{request.path}}">
+<!--<form autocomplete="off" name="reg" method="POST" action="{{request.path}}">
 <table cellpadding="2" align="center" border="0">
 
 <tr>
@@ -92,7 +97,17 @@ Please enter the information for the new student:
 
 
 
+</form>-->
+<table width="550">
+<form autocomplete="off" name="reg" method="POST" action="{{request.path}}">
+{{ form }}
+<tr>
+ <th colspan="2">
+  <input type="submit" value="Save Registration" />
+ </th>
+</tr>
 </form>
+</table>
 <br />
 
 
