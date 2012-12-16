@@ -293,3 +293,12 @@ class FormstackStudentApp(StudentProgramApp):
         template = Template(self.program_settings.teacher_view_template)
         context = Context({'fields': data_dict})
         return markdown(template.render(context))
+
+class FormstackStudentClassApp(StudentClassApp):
+    """ A student's application to a class through Formstack. """
+
+    def get_responses(self):
+        return self.app.formstackstudentapp.get_responses()
+
+    class Meta:
+        proxy = True
