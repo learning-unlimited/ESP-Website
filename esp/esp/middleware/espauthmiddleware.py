@@ -98,6 +98,7 @@ class ESPAuthMiddleware(object):
                 has_qsd_bits = UserBit.objects.UserHasPerms(espuser, GetNode('Q/Web'), GetNode('V/Administer/Edit/QSD'))
                 
             new_values = {'cur_username': user.username,
+                          'cur_userid': user.id,
                           'cur_email': urllib.quote(user.email.encode(encoding)),
                           'cur_first_name': urllib.quote(user.first_name.encode(encoding)),
                           'cur_last_name': urllib.quote(user.last_name.encode(encoding)),
@@ -117,7 +118,7 @@ class ESPAuthMiddleware(object):
                     modified_cookies = True
 
         if user and not user.is_authenticated():
-            cookies_to_delete = [x for x in ('cur_username','cur_email',
+            cookies_to_delete = [x for x in ('cur_username','cur_userid','cur_email',
                                          'cur_first_name','cur_last_name',
                                          'cur_other_user','cur_retTitle',
                                          'cur_admin', 'cur_roles', 

@@ -1,157 +1,72 @@
-<center>
+{% block xtrajs %}
+  <script type="text/javascript" src="/media/scripts/program/modules/adminvitals.js"></script>
 
-<div id="program_form">
-<table style="border: 1px solid black; border-collapse: collapse;">
-<tr>
-  <th colspan="2" align="center">Program Vitals</th>
-</tr>
-<tr>
-  <th class="smaller">Useful Links</th>
-  <td>
-      <a href="/learn/{{program.getUrlBase}}/studentreg">Student Reg</a><br />
-      <a href="/learn/{{program.getUrlBase}}/catalog">Catalog</a><br />
-      <a href="/teach/{{program.getUrlBase}}/teacherreg">Teacher Reg</a><br />
-  </td>
-</tr>
-<tr>
-  <th class="smaller">Total # of Students</th>
-  <td>{% for value in vitals.studentnum %}
-       <strong>{{ value.0 }}</strong> &ndash; {{value.1.count}}
-      {% if not forloop.last %}<br />{% endif %}
-      {% endfor %}
-  </td>
-</tr>
+  <script type="text/javascript">
+    $j(document).ready(function() {
+      $module_groups = $j("#stats_students")
+        .add("#stats_teachers")
+        .add("#stats_classes")
+        .add("#stats_categories")
+        .add("#stats_hours")
+        .add("#stats_timeslots")
+        .add("#stats_tshirts");
+      $module_group_headers = $module_groups.children(".module_group_header");
+      $module_group_headers.click(getStats);
+    });
+  </script>
+{% endblock %}
 
-<tr>
-  <th class="smaller">Total # of Teachers</th>
-  <td>{% for value in vitals.teachernum %}
-       <strong>{{ value.0 }}</strong> &ndash; {{value.1.count}}
-      {% if not forloop.last %}<br />{% endif %}
-      {% endfor %}
-  </td>
-</tr>
-
-<tr>
-  <th class="smaller">Total # of Classes</th>
-  <td>{{ vitals.classtotal.count }}</td>
-</tr>
-<tr>
-  <th class="smaller">Total # of Class Sections</th>
-  <td>{{ vitals.classsections.count }}</td>
-</tr>
-{% for cat in categories %}
-{% if cat.category == "Lunch" %}
-<tr>
-  <th class="smaller">Total # of Lunch Classes</th>
-  <td>{{ cat.num_subjects }}</td>
-</tr>
-{% endif %}
-{% endfor %}
-<tr>
-  <th class="smaller">Total # of Classes <span style="color: #00C;">Unreviewed</span></th>
-  <td>{{ vitals.classunreviewed.count }}</td>
-</tr>
-<tr>
-  <th class="smaller">Total # of Classes <span style="color: #0C0;">Approved</span></th>
-  <td>{{ vitals.classapproved.count }}</td>
-</tr>
-<tr>
-  <th class="smaller">Total # of Classes <span style="color: #C00;">Rejected</span></th>
-  <td>{{ vitals.classrejected.count }}</td>
-</tr>
-<tr>
-  <th class="smaller">Total # of Classes <span style="color: #990;">Cancelled</span></th>
-  <td>{{ vitals.classcancelled.count }}</td>
-</tr>
-<tr>
-  <th class="smaller">Total # of Class Hours:</th>
-  <td>{{ classhours }}</td>
-</tr>
-<tr>
-  <th class="smaller">Total # of Class-Student-Hours (capacity):</th>
-  <td>{{ classpersonhours }}</td>
-</tr>
-<tr>
-  <th class="smaller">Total # of Class-Student-Hours (registered):</th>
-  <td>{{ classreghours }}</td>
-</tr>
-
-{% for timeslot in vitals.timeslots %}
-
-<tr>
-  <th class="smaller">{{ timeslot.slotname }}</th>
-  <td>Students: {{ timeslot.studentcount.count }} / {{ timeslot.studentcount.max_count }}<br />
-      Classes: {{ timeslot.classcount }}</td>
-</tr>
-{% endfor %}
-</table>
-
+<div class="module_group" id="program_form">
+  <div class="module_group_header">
+    Program Vitals
+  </div>
+  <div class="module_group_body" style="padding: 10px">
+    <p>
+      Statistics about the program in different categories are shown below.
+    </p>
+    <div id="program_vitals_wrapper" style="font-size: 0.8em">
+      <div class="module_group" id="stats_students">
+	<div class="module_group_header module_group_expandable">Students <span class="expand_collapse_text">(click to expand)</span></div>
+	<div class="module_group_body" style="display:none">
+	  Loading data...
+	</div>
+      </div>
+      <div class="module_group" id="stats_teachers">
+	<div class="module_group_header module_group_expandable">Teachers <span class="expand_collapse_text">(click to expand)</span></div>
+	<div class="module_group_body" style="display:none">
+	  Loading data...
+	</div>
+      </div>
+      <div class="module_group" id="stats_classes">
+	<div class="module_group_header module_group_expandable">Classes <span class="expand_collapse_text">(click to expand)</span></div>
+	<div class="module_group_body" style="display:none">
+	  Loading data...
+	</div>
+      </div>
+      <div class="module_group" id="stats_categories">
+	<div class="module_group_header module_group_expandable">Categories <span class="expand_collapse_text">(click to expand)</span></div>
+	<div class="module_group_body" style="display:none">
+	  Loading data...
+	</div>
+      </div>
+      <div class="module_group" id="stats_hours">
+	<div class="module_group_header module_group_expandable">Hours <span class="expand_collapse_text">(click to expand)</span></div>
+	<div class="module_group_body" style="display:none">
+	  Loading data...
+	</div>
+      </div>
+      <div class="module_group" id="stats_timeslots">
+	<div class="module_group_header module_group_expandable">Timeslots <span class="expand_collapse_text">(click to expand)</span></div>
+	<div class="module_group_body" style="display:none">
+	  Loading data...
+	</div>
+      </div>
+      <div class="module_group" id="stats_tshirts">
+	<div class="module_group_header module_group_expandable">T-Shirts <span class="expand_collapse_text">(click to expand)</span></div>
+	<div class="module_group_body" style="display:none">
+	  Loading data...
+	</div>
+      </div>
+    </div>
+  </div>
 </div>
-
-<!-- T-Shirt Estimates -->
-<hr />
-<h2 style="text-align: center">T-Shirt Estimates</h2>
-<br />
-<div id="program_form">
-<table>
-
-{% comment %} (removed, as students don't have t-shirt info anymore --rye 02-18-09)
-<tr><th colspan="{{ shirt_sizes|length|add:1 }}">Students registered for at least one class</th></tr>
-<tr>
-    <td></td>
-    {% for shirt_size in shirt_sizes %}
-        <th class="smaller">{{ shirt_size.1 }}</th>
-    {% endfor %}
-</tr>
-{% for type in shirts.students %}
-<tr>
-    <th class="smaller">{{ type.type }}</th>
-    {% for count in type.distribution %}
-        <td>{{ count }}</td>
-    {% endfor %}
-</tr>
-{% endfor %}{% endcomment %}
-
-<tr><th colspan="{{ shirt_sizes|length|add:1 }}">Teachers teaching approved classes</th></tr>
-<tr>
-    <td></td>
-    {% for shirt_size in shirt_sizes %}
-        <th class="smaller">{{ shirt_size.1 }}</th>
-    {% endfor %}
-</tr>
-{% for type in shirts.teachers %}
-<tr>
-    <th class="smaller">{{ type.type }}</th>
-    {% for count in type.distribution %}
-        <td>{{ count }}</td>
-    {% endfor %}
-</tr>
-{% endfor %}
-
-</table>
-</div>
-
-<!-- Counts of classes registered by each category -->
-<br /><br />
-<div id="program_form">
-<table>
-
-<tr><th colspan="3">Subject categories</th></tr>
-<tr><td colspan="3">(Note: Totals include unreviewed classes)</td></tr>
-<tr>
-    <td><b>Category</b></th>
-    <th class="smaller"># of subjects</th>
-    <th class="smaller"># of sections</th>
-</tr>
-{% for cat in categories|dictsortreversed:"num_subjects" %}
-<tr>
-    <th class="smaller">{{ cat.category }}</th>
-    <td>{{ cat.num_subjects }}</td>
-    <td>{{ cat.num_sections }}</td>
-</tr>
-{% endfor %}
-
-</table>
-</div>
-
-</center>
