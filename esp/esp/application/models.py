@@ -105,15 +105,11 @@ class StudentProgramApp(models.Model):
     # choices for admin status
     UNREVIEWED = 0
     APPROVED = 1
-    ADMITTED = 2
-    REJECTED = 3
-    WAITLIST = 4
+    REJECTED = -1
     admin_status = models.IntegerField(default=UNREVIEWED, choices=[
             (UNREVIEWED, 'Unreviewed'),
             (APPROVED, 'Approved'),
-            (ADMITTED, 'Admitted'),
             (REJECTED, 'Rejected'),
-            (WAITLIST, 'Waitlist')
             ])
 
     admin_comment = models.TextField()
@@ -131,6 +127,27 @@ class StudentProgramApp(models.Model):
             choices[classapp.student_preference] = classapp.subject
         return choices
 
+    def admitted_to_class(self):
+        """
+        Returns the ClassSubject this student was accepted to, or None.
+        """
+        classapps = self.studentclassapp_set.filter(admission_status=StudentClassApp.ADMITTED)
+        if classapps.exists():
+            assert classapps.count() == 1
+            return classapps[0].subject
+        else:
+            return None
+
+    def waitlisted_to_class(self):
+        """
+        Returns the ClassSubject(s) this student was waitlisted to.
+        """
+        result = []
+        classapps = self.studentclassapp_set.filter(admission_status=StudentClassApp.WAITLIST)
+        for classapp in classapps:
+            result.append(classapp.subject)
+        return result
+
 class StudentClassApp(models.Model):
     """ A student's application to a particular class. """
 
@@ -141,8 +158,33 @@ class StudentClassApp(models.Model):
     teacher_rating = models.PositiveIntegerField(null=True)
     teacher_comment = models.TextField()
 
+    UNASSIGNED = 0
+    ADMITTED = 1
+    WAITLIST = 2
+    admission_status = models.IntegerField(default=UNASSIGNED, choices=[
+            (UNASSIGNED, 'Unassigned'),
+            (ADMITTED, 'Admitted'),
+            (WAITLIST, 'Waitlist'),
+            ])
+
     def __unicode__(self):
         return "{}'s app for {}".format(self.app.user, self.subject)
+
+    def admit(self):
+        # note: this will un-admit the student from all other classes
+        for classapp in self.app.studentclassapp_set.all():
+            classapp.admission_status = self.UNASSIGNED
+            classapp.save()
+        self.admission_status = self.ADMITTED
+        self.save()
+
+    def unadmit(self):
+        self.admission_status = self.UNASSIGNED
+        self.save()
+
+    def waitlist(self):
+        self.admission_status = self.WAITLIST
+        self.save()
 
     class Meta:
         unique_together = (('app', 'student_preference'),)
