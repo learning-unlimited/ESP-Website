@@ -49,15 +49,6 @@ class FormstackAppSettings(models.Model):
         else:
             return None
 
-    def get_subject(self, title):
-        """
-        Helper function that gets a class subject by title.
-        """
-        if title is None:
-            return None
-
-        return self.get_program().classes().get(anchor__friendly_name=title)
-
     def create_username_field(self):
         """
         Creates a form field for ESP Username, returns the field ID,
@@ -101,54 +92,8 @@ class FormstackAppSettings(models.Model):
             return self._apps
 
         # fetch and store if unavailable
-        apps = self.fetch_student_apps()
+        apps = FormstackStudentApp.objects.fetch(self.get_program())
         self._apps = apps
-        return apps
-
-    def fetch_student_apps(self):
-        program = self.get_program()
-        # get submissions from the API
-        api_response = self.formstack.data(self.form.id, {'per_page': 100})
-        submissions = api_response['submissions']
-        for i in range(1, api_response['pages']):
-            api_response = self.formstack.data(self.form.id,
-                                               {'per_page': 100, 'page': i+1})
-            submissions += api_response['submissions']
-        # parse submissions, link usernames, make a StudentApp object
-        apps = []
-        for submission in submissions:
-            submission_id = int(submission['id'])
-            data_dict = { int(entry['field']): entry['value']
-                          for entry in submission['data'] }
-            username = data_dict.get(self.username_field)
-            try:
-                user = ESPUser.objects.get(username=username)
-            except ObjectDoesNotExist:
-                continue # no matching user, ignore
-            choices = {}
-            choices[1] = self.get_subject(data_dict.get(self.coreclass1_field))
-            choices[2] = self.get_subject(data_dict.get(self.coreclass2_field))
-            choices[3] = self.get_subject(data_dict.get(self.coreclass3_field))
-            app, created = FormstackStudentApp.objects.get_or_create(
-                submission_id=submission_id,
-                defaults={
-                    'user': user,
-                    'program': program
-                    })
-            for preference, subject in choices.items():
-                if subject is not None:
-                    StudentClassApp.objects.get_or_create(
-                        app=app,
-                        student_preference=preference,
-                        defaults={
-                            'subject': subject
-                            })
-            app._data = submission # cache submitted data
-            apps.append(app)
-        # remove obsolete model instances (deleted from Formstack?)
-        all_apps = FormstackStudentApp.objects.filter(program=program)
-        old_apps = all_apps.exclude(id__in=[app.id for app in apps])
-        old_apps.delete()
         return apps
 
 class StudentProgramApp(models.Model):
@@ -202,10 +147,72 @@ class StudentClassApp(models.Model):
     class Meta:
         unique_together = (('app', 'student_preference'),)
 
+class FormstackStudentAppManager(models.Manager):
+    fetched = set()
+    def fetch(self, program):
+        """ Get apps for a particular program from the Formstack API. """
+        self.fetched.add(program)
+        # get submissions from the API
+        settings = program.getModuleExtension('FormstackAppSettings')
+        api_response = settings.formstack.data(settings.form.id, {'per_page': 100})
+        submissions = api_response['submissions']
+        for i in range(1, api_response['pages']):
+            api_response = settings.formstack.data(settings.form.id,
+                                               {'per_page': 100, 'page': i+1})
+            submissions += api_response['submissions']
+        # parse submissions, link usernames, make a StudentApp object
+        apps = []
+        for submission in submissions:
+            submission_id = int(submission['id'])
+            data_dict = { int(entry['field']): entry['value']
+                          for entry in submission['data'] }
+            username = data_dict.get(settings.username_field)
+            try:
+                user = ESPUser.objects.get(username=username)
+            except ObjectDoesNotExist:
+                continue # no matching user, ignore
+
+            def get_subject(title):
+                if title is None: return None
+                return program.classes().get(anchor__friendly_name=title)
+
+            choices = {}
+            choices[1] = get_subject(data_dict.get(settings.coreclass1_field))
+            choices[2] = get_subject(data_dict.get(settings.coreclass2_field))
+            choices[3] = get_subject(data_dict.get(settings.coreclass3_field))
+            app, created = self.get_or_create(
+                submission_id=submission_id,
+                defaults={
+                    'user': user,
+                    'program': program
+                    })
+            for preference, subject in choices.items():
+                if subject is not None:
+                    StudentClassApp.objects.get_or_create(
+                        app=app,
+                        student_preference=preference,
+                        defaults={
+                            'subject': subject
+                            })
+            app._data = submission # cache submitted data
+            apps.append(app)
+        # remove obsolete model instances (deleted from Formstack?)
+        all_apps = self.filter(program=program)
+        old_apps = all_apps.exclude(id__in=[app.id for app in apps])
+        old_apps.delete()
+        return apps
+
+    def get_query_set(self):
+        for program in Program.objects.filter(program_modules__handler='FormstackAppModule'):
+            if program not in self.fetched:
+                self.fetch(program)
+        return super(FormstackStudentAppManager, self).get_query_set()
+
 class FormstackStudentApp(StudentProgramApp):
     """ A student's application through Formstack. """
 
     submission_id = models.IntegerField(unique=True)
+    objects = FormstackStudentAppManager()
 
     @property
     def program_settings(self):
