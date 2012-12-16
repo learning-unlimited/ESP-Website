@@ -100,6 +100,7 @@ class Formstack(object):
         args['type'] = 'json'
         req = urllib2.Request(self.__api_url + '/' + method, \
                               urllib.urlencode(args))
+        print 'Formstack API call', req.get_full_url()
         try:
             
             res = urllib2.urlopen(req)
