@@ -1,6 +1,5 @@
 from django.db import models
 from django.template import Template, Context
-from django.core.exceptions import ObjectDoesNotExist
 from esp.users.models import ESPUser
 from esp.program.models import Program, ClassSubject
 from esp.program.modules.base import ProgramModuleObj
@@ -211,12 +210,23 @@ class FormstackStudentAppManager(models.Manager):
             username = data_dict.get(settings.username_field)
             try:
                 user = ESPUser.objects.get(username=username)
-            except ObjectDoesNotExist:
+            except ESPUser.DoesNotExist:
                 continue # no matching user, ignore
 
-            def get_subject(title):
-                if title is None: return None
-                return program.classes().get(anchor__friendly_name=title)
+            def get_subject(s):
+                if s is None: return None
+                val, _, _ = s.partition('|')
+                try:
+                    cls_id = int(val)
+                    cls = program.classes().get(id=cls_id)
+                    return cls
+                except ValueError, ClassSubject.DoesNotExist:
+                    cls_title = val.strip()
+                    clses = program.classes().filter(anchor__friendly_name=cls_title)
+                    if clses:
+                        return clses[0]
+                    else:
+                        return None
 
             choices = {}
             choices[1] = get_subject(data_dict.get(settings.coreclass1_field))
