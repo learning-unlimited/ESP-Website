@@ -19,15 +19,15 @@ class FormstackAppSettings(models.Model):
     # formstack settings
     form = models.ForeignKey(FormstackForm, null=True)
     api_key = models.CharField(max_length=80)
-    handshake_key = models.CharField(max_length=80)
+    handshake_key = models.CharField(max_length=80, blank=True)
     # end formstack settings
 
     username_field = models.IntegerField(null=True)
-    coreclass1_field = models.IntegerField(null=True)
-    coreclass2_field = models.IntegerField(null=True)
-    coreclass3_field = models.IntegerField(null=True)
+    coreclass1_field = models.IntegerField(null=True, blank=True)
+    coreclass2_field = models.IntegerField(null=True, blank=True)
+    coreclass3_field = models.IntegerField(null=True, blank=True)
 
-    teacher_view_template = models.TextField()
+    teacher_view_template = models.TextField(blank=True)
 
     @property
     def formstack(self):
@@ -112,7 +112,7 @@ class StudentProgramApp(models.Model):
             (REJECTED, 'Rejected'),
             ])
 
-    admin_comment = models.TextField()
+    admin_comment = models.TextField(blank=True)
 
     def __unicode__(self):
         return "{}'s app for {}".format(self.user, self.program)
@@ -155,8 +155,8 @@ class StudentClassApp(models.Model):
     subject = models.ForeignKey(ClassSubject)
     student_preference = models.PositiveIntegerField()
 
-    teacher_rating = models.PositiveIntegerField(null=True)
-    teacher_comment = models.TextField()
+    teacher_rating = models.PositiveIntegerField(null=True, blank=True)
+    teacher_comment = models.TextField(blank=True)
 
     UNASSIGNED = 0
     ADMITTED = 1
