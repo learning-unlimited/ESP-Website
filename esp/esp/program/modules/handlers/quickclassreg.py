@@ -96,9 +96,11 @@ class QuickClassReg(ProgramModuleObj):
         cls.category = prog.class_categories.all()[0]
         cls.grade_min = prog.grade_min
         cls.grade_max = prog.grade_max
+        cls.duration = 0.0
         cls.save()
         ccc.update_class_anchorname(cls, title)
         ccc.associate_teacher_with_class(cls, teacher)
+        cls.add_default_section()
         cls.accept()
         return cls
 
