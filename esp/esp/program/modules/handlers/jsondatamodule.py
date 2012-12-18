@@ -194,7 +194,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             s = ClassSection.objects.get(id=section['id'])
             section['index'] = s.index()
             section['parent_class__anchor__name'] += "s" + str(section['index'])
-            section['length'] = float(s.duration) if s.duration is not None else None
+            section['length'] = float(s.duration)
             section['teachers'] = [t.id for t in s.parent_class.teachers()]
             for t in s.parent_class.teachers():
                 if teacher_dict.has_key(t.id):
@@ -240,7 +240,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
 
         for cls in classes:
             c = ClassSubject.objects.get(id=cls['id'])
-            cls['length'] = float(c.duration) if c.duration is not None else None
+            cls['length'] = float(c.duration)
             cls['sections'] = [s.id for s in c.sections.all()]
             cls['teachers'] = [t.id for t in c.teachers()]
             for t in c.teachers():
