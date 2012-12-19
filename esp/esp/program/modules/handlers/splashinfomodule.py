@@ -66,7 +66,7 @@ class SplashInfoModule(ProgramModuleObj):
 
         for val in SplashInfo.objects.values_list('lunchsun').distinct():
             if val[0] is not None:
-                result['lunchsun_'+val[0]] = Q_students & Q(splashinfo__lunchsat=val[0])
+                result['lunchsun_'+val[0]] = Q_students & Q(splashinfo__lunchsun=val[0])
 
         if QObject:
             return result
