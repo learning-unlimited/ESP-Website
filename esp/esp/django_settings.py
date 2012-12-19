@@ -205,7 +205,7 @@ INSTALLED_APPS = (
     'esp.gen_media',
     'esp.dblog',
     'esp.membership',
-    'esp.queue',
+#    'esp.queue',
     'esp.survey',
     'esp.accounting_core',
     'esp.accounting_docs',
