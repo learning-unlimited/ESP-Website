@@ -1,5 +1,5 @@
 from django import forms
-from django.forms.fields import HiddenInput
+from django.forms.fields import HiddenInput, TextInput
 from django.contrib.auth.models import User
 from django.db.models.query import Q
 
@@ -111,13 +111,11 @@ class UserRegForm(forms.Form):
         self.fields['initial_role'].choices = [('', 'Pick one...')] + role_choices
 
 class SinglePhaseUserRegForm(UserRegForm):
-    #email field not hidden
-    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75)
-    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75)
-    def clean_confirm_email(self):
-        if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
-            raise forms.ValidationError('Ensure that you have correctly typed your email both times.')
-        return self.cleaned_data['confirm_email']
+    def __init__(self, *args, **kwargs):
+        #email field not hidden
+        super(SinglePhaseUserRegForm, self).__init__(*args, **kwargs)
+        self.fields['email'].widget = TextInput(attrs=self.fields['email'].widget.attrs)
+        self.fields['confirm_email'].widget = TextInput(attrs=self.fields['confirm_email'].widget.attrs)
 
 class EmailUserForm(CaptchaForm):
     email = ValidHostEmailField(help_text = '(e.g. johndoe@domain.xyz)')
