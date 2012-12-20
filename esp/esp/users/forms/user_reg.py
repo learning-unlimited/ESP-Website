@@ -60,7 +60,7 @@ class UserRegForm(forms.Form):
     initial_role = forms.ChoiceField(choices = [])
 
     email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75, widget=HiddenInput)
-    email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75, widget=HiddenInput)
+    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75, widget=HiddenInput)
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
