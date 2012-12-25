@@ -215,6 +215,7 @@ INSTALLED_APPS = (
     'esp.cache',
     'esp.cache_loader',
     'esp.tagdict',
+    'esp.sapmonkey',
     'django_extensions',
     'reversion',
     'south',

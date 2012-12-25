@@ -127,6 +127,11 @@ urlpatterns += patterns('esp.web.views.json',
      # JSON
     (r'json/teachers/$', 'teacher_lookup'))
 
+# SAPmonkey
+urlpatterns += patterns('',
+    (r'^sapmonkey/', include('esp.sapmonkey.urls'))
+)
+
 # QSD Media
 # aseering 8/14/2007: This ought to be able to be written in a simpler way...
 urlpatterns += patterns('esp.web.views.main',
