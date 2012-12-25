@@ -374,18 +374,6 @@ then
 	#   Django.  So we manually install version 2.4.1.
 	pip install psycopg2==2.4.1
 
-	#	Install sslauth
-	if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]
-	then
-		echo "You do not have sslauth (expected path: $BASEDIR/esp/esp/3rdparty/sslauth)."
-		echo "This is required only if you want to use Apache to serve your site;"
-		echo "Django's manage.py will work fine without it.  If you want to fix this,"
-		echo "go back and grab the Git repository by running this script with the "
-		echo "--git option."
-	else
-		cp -r $BASEDIR/esp/esp/3rdparty/sslauth /usr/local/lib/python2.6/dist-packages/
-	fi
-
     cd $CURDIR
     
     echo "Dependencies have been installed.  Please check this by looking over the"
