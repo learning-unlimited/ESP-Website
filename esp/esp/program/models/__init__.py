@@ -552,8 +552,6 @@ class Program(models.Model, CustomFormsLinkModel):
         students_dict = self.students(QObjects = True)
         if students_dict.has_key('classreg'):
             students_count = ESPUser.objects.filter(students_dict['classreg']).distinct().count()
-        elif students_dict.has_key('satprepinfo'):
-            students_count = ESPUser.objects.filter(students_dict['satprepinfo']).distinct().count()
         else:
             students_count = ESPUser.objects.filter(userbit__qsc=self.anchor['Confirmation']).distinct().count()
 
@@ -562,7 +560,6 @@ class Program(models.Model, CustomFormsLinkModel):
         return isfull
     isFull.depend_on_cache(lambda: ClassSection.num_students, lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
     isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
-    isFull.depend_on_row(lambda: SATPrepRegInfo, lambda reginfo: {'self': reginfo.program})
     isFull.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.qsc.name == 'Confirmation')
         
     def classes_node(self):
@@ -888,7 +885,6 @@ class Program(models.Model, CustomFormsLinkModel):
     # Feel free to adjust. -ageng 2010-10-23
     getModules_cached.depend_on_row(lambda: ClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
     getModules_cached.depend_on_row(lambda: StudentClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
-    getModules_cached.depend_on_row(lambda: SATPrepAdminModuleInfo, lambda modinfo: {'self': modinfo.module.program})
 
     def getModules(self, user = None, tl = None):
         """ Gets modules for this program, optionally attaching a user. """
@@ -1139,41 +1135,6 @@ class SplashInfo(models.Model):
 
     def pretty_sunlunch(self):
         return self.pretty_version('lunchsun')
-
-
-class SATPrepRegInfo(models.Model):
-    """ SATPrep Registration Info """
-    old_math_score = models.IntegerField(blank=True, null=True)
-    old_verb_score = models.IntegerField(blank=True, null=True)
-    old_writ_score = models.IntegerField(blank=True, null=True)
-    diag_math_score = models.IntegerField(blank=True, null=True)
-    diag_verb_score = models.IntegerField(blank=True, null=True)
-    diag_writ_score = models.IntegerField(blank=True, null=True)
-    prac_math_score = models.IntegerField(blank=True, null=True)
-    prac_verb_score = models.IntegerField(blank=True, null=True)
-    prac_writ_score = models.IntegerField(blank=True, null=True)    
-    heard_by = models.CharField(max_length=128, blank=True, null=True)
-    user = AjaxForeignKey(ESPUser)
-    program = models.ForeignKey(Program)
-
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_satprepreginfo'
-        verbose_name = 'SATPrep Registration Info'
-
-    def __unicode__(self):
-        return 'SATPrep registration info for ' +str(self.user) + ' in '+str(self.program)
-    
-    @staticmethod
-    def getLastForProgram(user, program):
-        satPrepList = SATPrepRegInfo.objects.filter(user=user,program=program).order_by('-id')
-        if len(satPrepList) < 1:
-            satPrep = SATPrepRegInfo()
-            satPrep.user = user
-            satPrep.program = program
-        else:
-            satPrep = satPrepList[0]
-        return satPrep
 
 
 class RegistrationProfile(models.Model):
@@ -1913,4 +1874,4 @@ from esp.program.models.app_ import *
 
 # The following are only so that we can refer to them in caching Program.getModules.
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo
+from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo

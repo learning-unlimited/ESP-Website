@@ -43,7 +43,6 @@ from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string, select_template
-from esp.program.models import SATPrepRegInfo
 from esp.users.views    import search_for_user
 from esp.accounting_docs.models   import Document
 

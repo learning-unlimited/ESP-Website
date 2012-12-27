@@ -51,16 +51,6 @@ class DBReceipt(models.Model):
         return 'Registration (%s) receipt for %s' % (self.action, self.program)
 
 
-class SATPrepAdminModuleInfo(models.Model):
-    module        = models.ForeignKey(ProgramModuleObj)
-    num_divisions = models.IntegerField(blank=True, null=True)
-    
-    def __unicode__(self):
-        return 'SATPrep admin settings for %s' % self.module.program
-    
-    class Admin:
-        pass
-
 REG_VERB_BASE = 'V/Flags/Registration'
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
@@ -331,61 +321,6 @@ class RemoteProfile(models.Model):
     class Admin:
         pass
 
-class SATPrepTeacherModuleInfo(models.Model):
-    from esp.users.models import User
-    from esp.program.models import Program
-
-    """ Module that links a user with a program and has SATPrep teacher info"""
-    SAT_SUBJECTS = (
-        ('M', 'Math'),
-        ('V', 'Verbal'),
-        ('W', 'Writing')
-        )
-        
-    SUBJECT_DICT = {'M': 'Math', 'V': 'Verbal', 'W': 'Writing'}
-    #   This is the unanimous decision of the ESP office, as of 9:30pm Thursday Feb 20, 2009.
-    #   Old category labels are kept commented below.   -Michael P
-    SECTION_DICT = {'A': 'Java', 'B': 'Python', 'C': 'QB', 'D': 'C++', 'E': 'MATLAB', 'F': 'Scheme', 'G': 'SQL'}
-    #   SECTION_DICT = {'A': 'Java', 'B': 'Python', 'C': 'QB', 'D': 'C++', 'E': 'MATLAB', 'F': 'Scheme'}
-    #    SECTION_DICT = {'A': 'Libra', 'B': 'Scorpio', 'C': 'Sagittarius', 'D': 'Capricorn', 'E': 'Aquarius', 'F': 'Pisces'}
-    #   SECTION_DICT = {'A': 'Helium', 'B': 'Neon', 'C': 'Argon', 'D': 'Krypton', 'E': 'Xenon', 'F': 'Radon'}
-    #   SECTION_DICT = {'A': 'Mercury', 'B': 'Venus', 'C': 'Mars', 'D': 'Jupiter', 'E': 'Saturn', 'F': 'Neptune'}
-    #   SECTION_DICT = {'A': 'Red', 'B': 'Orange', 'C': 'Yellow', 'D': 'Green', 'E': 'Blue', 'F': 'Violet'}
-
-    sat_math = models.PositiveIntegerField(blank=True, null=True)
-    sat_writ = models.PositiveIntegerField(blank=True, null=True)
-    sat_verb = models.PositiveIntegerField(blank=True, null=True)
-
-    mitid    = models.PositiveIntegerField(blank=True, null=True)
-
-    subject  = models.CharField(max_length=32, choices = SAT_SUBJECTS)
-
-    user     = AjaxForeignKey(ESPUser,blank=True, null=True)
-    program  = models.ForeignKey(Program,blank=True, null=True)
-    section  = models.CharField(max_length=5)
-   
-    def __unicode__(self):
-        return 'SATPrep Information for teacher %s in %s' % \
-                 (str(self.user), str(self.program))
-
-    class Meta:
-        unique_together = ('user', 'program')
-    
-    def get_subject_display(self):
-        if self.subject in SATPrepTeacherModuleInfo.SUBJECT_DICT:
-            return SATPrepTeacherModuleInfo.SUBJECT_DICT[self.subject]
-        else:
-            return 'Unknown'
-        
-    def get_section_display(self):
-        if self.section in SATPrepTeacherModuleInfo.SECTION_DICT:
-            return SATPrepTeacherModuleInfo.SECTION_DICT[self.section]
-        else:
-            return 'Unknown'
-        
-    @staticmethod
-    def subjects():
-        return SATPrepTeacherModuleInfo.SAT_SUBJECTS
 
 """ Model for settings that control the First Data credit card module. """
 class CreditCardSettings(models.Model):

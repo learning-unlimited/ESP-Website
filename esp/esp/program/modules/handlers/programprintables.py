@@ -641,13 +641,6 @@ class ProgramPrintables(ProgramModuleObj):
 
     @aux_call
     @needs_admin
-    def satprepStudentCheckboxes(self, request, tl, one, two, module, extra, prog):
-        students = [ESPUser(student) for student in self.program.students_union() ]
-        students.sort()
-        return render_to_response(self.baseDir()+'satprep_students.html', request, (prog, tl), {'students': students})
-
-    @aux_call
-    @needs_admin
     def teacherschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher schedules """
 
@@ -1099,65 +1092,6 @@ Volunteer schedule for %s:
         context['phone_number'] = Tag.getTag('group_phone_number')
 
         return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
-
-    @aux_call
-    @needs_admin
-    def satpreplabels(self, request, tl, one, two, module, extra, prog):
-        filterObj, found = UserSearchController().create_filter(request, self.program)
-        if not found:
-            return filterObj
-
-        context = {'module': self     }
-        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
-        students.sort()
-                                    
-        finished_verb = GetNode('V/Finished')
-        finished_qsc  = self.program_anchor_cached().tree_create(['SATPrepLabel'])
-
-        numperpage = 10
-            
-        expanded = [[] for i in range(numperpage)]
-
-        users = []
-        for u in students:
-            if u and u.id:
-                for sec in u.getSections(prog):
-                    u = ESPUser(u)
-                    u.sec = sec
-                    users.append(u)
-            
-        for i in range(len(users)):
-            expanded[(i*numperpage)/len(users)].append(users[i])
-
-        users = []
-                
-        for i in range(len(expanded[0])):
-            for j in range(len(expanded)):
-                if len(expanded[j]) <= i:
-                    users.append(None)
-                else:
-                    users.append(expanded[j][i])
-        students = users
-
-        return render_to_response(self.baseDir()+'SATPrepLabels_print.html', request, (prog, tl), {'students': students})
-
-            
-    @aux_call
-    @needs_admin
-    def satpreplabels_bysection(self, request, tl, one, two, module, extra, prog):
-        #   Generate SAT Prep labels sorted by the first-period class.
-        #   This is useful for the practice exam when it is held in the usual classrooms.
-        from esp.cal.models import Event
-        mt_list = []
-        csl = prog.sections()
-        for c in csl:
-            for t in c.meeting_times.all():
-                if t not in mt_list: mt_list.append(t)
-        mt_list.sort(key=lambda x: x.start)        
-        early_time = mt_list[0]
-        sections = csl.filter(meeting_times=early_time)
-
-        return render_to_response(self.baseDir()+'SATPrepLabels_bysection.html', request, (prog, tl), {'sections': sections})
 
     @aux_call
     @needs_admin

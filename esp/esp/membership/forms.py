@@ -147,7 +147,6 @@ class AlumniInfoForm(CaptchaModelForm):
 
 anchor_choices = (  (DataTree.get_by_uri('Q/Programs/HSSP').id, 'HSSP'),
                     (DataTree.get_by_uri('Q/Programs/Splash').id, 'Splash'),
-                    (DataTree.get_by_uri('Q/Programs/SATPrep').id, 'SAT Prep'),
                     (DataTree.get_by_uri('Q/Programs/Junction').id, 'Junction'),
                     (DataTree.get_by_uri('Q/Programs').id, 'Other program'),
                     (None, 'Other'))
