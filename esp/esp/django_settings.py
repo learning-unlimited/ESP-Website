@@ -60,7 +60,8 @@ MEDIA_ROOT_DIR = 'public/media/'
 
 MEDIA_URL = '/media/'
 
-ADMIN_MEDIA_PREFIX = '/media/admin/'
+STATIC_URL = '/media/admin'
+STATIC_ROOT =  '/'
 
 LOGIN_REDIRECT_URL = '/'
 
