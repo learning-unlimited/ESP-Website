@@ -356,7 +356,7 @@ then
 
 	#	Install python libraries
 	python -m easy_install iCalendar
-	python -m easy_install django
+	python -m easy_install django==1.4
 	python -m easy_install repoze.profile
 	python -m easy_install xlwt
 	python -m easy_install simplejson
