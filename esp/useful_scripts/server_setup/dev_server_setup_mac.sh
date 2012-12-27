@@ -485,20 +485,6 @@ then
     python -m easy_install django-selenium-test-runner
     python -m easy_install django-extensions
 
-	#	Install sslauth
-    if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]
-    then
-	echo "You do not have sslauth (expected path: $BASEDIR/esp/esp/3rdparty/sslauth)."
-	echo "This is required only if you want to use Apache to serve your site;"
-	echo "Django's manage.py will work fine without it.  If you want to fix this,"
-	echo "go back and grab the Git repository by running this script with the "
-	echo "--git option."
-    else
-	cp -r $BASEDIR/esp/esp/3rdparty/sslauth /usr/local/lib/python2.6/dist-packages/
-    fi
-
-    cd $DEPDIR
-
     cd $DEPDIR
     wget -O pylibmc.tar.gz http://pypi.python.org/packages/source/p/pylibmc/pylibmc-1.1.1.tar.gz#md5=e43c54e285f8d937a3f1a916256ecc85
     tar -xzf pylibmc.tar.gz
