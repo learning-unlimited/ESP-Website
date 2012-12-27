@@ -81,12 +81,6 @@ We include two Python libraries that you can install: iCalendar and
 python-memcached.  These are located in the /esp/3rdparty directory.  
 Please unzip them and follow their respective installation instructions.
 
-Another Python library, sslauth, is used by default to allow HTTPS
-certificate authentication.  It is located in the /esp/3rdparty directory.
-To install it, add [path to working copy]/esp/3rdparty to your PYTHONPATH
-environment variable or copy the sslauth directory to someplace that is on
-the PYTHONPATH (e.g. /usr/local/lib/python2.6/dist-packages).
-
 2) Set up your database.
 
 a) Create a login role
