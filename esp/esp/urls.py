@@ -116,8 +116,6 @@ urlpatterns += patterns('esp.qsd.views',
 
 # other apps
 urlpatterns += patterns('',
-#                        (r'^alumni/', include('esp.membership.alumni_urls')),
-#                        (r'^membership/', include('esp.membership.urls')),
                         (r'^',  include('esp.miniblog.urls')),
                         (r'^',  include('esp.survey.urls')),
                         )
