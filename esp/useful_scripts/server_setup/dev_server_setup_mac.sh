@@ -473,7 +473,7 @@ then
     python -m easy_install psycopg2
     python -m easy_install ipython
     python -m easy_install iCalendar
-    python -m easy_install django
+    python -m easy_install django==1.4
     python -m easy_install south
     python -m easy_install repoze.profile
     python -m easy_install xlwt

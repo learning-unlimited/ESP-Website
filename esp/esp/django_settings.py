@@ -167,6 +167,7 @@ MIDDLEWARE_GLOBAL = [
     ( 700, 'django.middleware.common.CommonMiddleware'),
    #( 800, 'esp.middleware.esp_sessions.SessionMiddleware'),  # DEPRECATED -- Relies on mem_db, which is currently nonfunctional
     ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
+    ( 950, 'django.contrib.messages.middleware.MessageMiddleware'),
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),
@@ -185,6 +186,7 @@ APPEND_SLASH=False
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.admin',
@@ -243,6 +245,7 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this
                                'esp.context_processors.preload_images',
                                'django.core.context_processors.i18n',
                                'django.contrib.auth.context_processors.auth',
+                               'django.contrib.messages.context_processors.messages',
                                'django.core.context_processors.media',
                                )
 
