@@ -49,7 +49,7 @@ handler500 = 'esp.web.util.main.error500'
 # Static media
 urlpatterns = patterns('django.views.static',
                        (r'^media/(?P<path>.*)$', 'serve', {'document_root': settings.MEDIA_ROOT}),
-                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': os.path.join(settings.PROJECT_ROOT, 'admin/media/')}),
+                       (r'^static/(?P<path>.*)$', 'serve', {'document_root': settings.STATIC_ROOT}),
                        )
 
 # Admin stuff
