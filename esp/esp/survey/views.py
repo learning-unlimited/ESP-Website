@@ -37,8 +37,9 @@ Learning Unlimited, Inc.
 
 import datetime
 from django.db import models
+from django.db.models import Q
 from esp.datatree.models import *
-from esp.users.models import UserBit, ESPUser
+from esp.users.models import UserBit, ESPUser, admin_required
 from esp.program.models import Program, ClassCategories
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
 from esp.web.util import render_to_response
@@ -211,6 +212,38 @@ def display_survey(user, prog, surveys, request, tl, format):
         return render_to_response('survey/review.html', request, prog.anchor, context)
     elif format == 'tex':
         return render_to_latex('survey/review.tex', context, 'pdf')
+
+def dump_survey(user, prog, surveys, request, tl):
+    from esp.program.models import ClassSubject, ClassSection
+
+    if tl == 'manage' and not request.REQUEST.has_key('teacher_id') and not request.REQUEST.has_key('classsection_id') and not request.REQUEST.has_key('classsubject_id'):
+        for s in surveys:
+            s.display_data = {}
+            s.display_data['questions']=s.questions.filter(anchor=prog.anchor).order_by('seq','id')
+            #perclass_questions=s.questions.filter(anchor__parent=prog.anchor).select_related().order_by('seq')
+            col=1
+            s.display_data['questions_dict']={}
+            for q in s.display_data['questions']:
+                s.display_data['questions_dict'][q.id]=col
+                col+=1
+            s.display_data['responses']=s.surveyresponse_set.all().select_related()
+            a=Answer.objects.filter(question__in=s.display_data['questions'])
+            for r in s.display_data['responses']:
+                r.display_answers=a.filter(survey_response=r).order_by('question__seq','question__id')
+        context = {'user': user, 'surveys': surveys, 'program': prog}
+        return render_to_response('survey/dump.xls', request, prog.anchor, context, mimetype="application/vnd.ms-excel")
+    else:
+        #only supported admin-side
+        # return survey_view(request, tl, program, instance)
+        pass
+
+
+@admin_required
+def survey_dump(request, tl, program, instance):
+    """ A dump of all survey results in the given program. """
+
+    (user, prog, surveys) = get_survey_info(request, tl, program, instance)
+    return dump_survey(user, prog, surveys, request, tl)
 
 @login_required
 def survey_review(request, tl, program, instance):

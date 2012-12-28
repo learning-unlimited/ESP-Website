@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook
+        xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+        xmlns:o="urn:schemas-microsoft-com:office:office"
+        xmlns:x="urn:schemas-microsoft-com:office:excel"
+        xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+        xmlns:html="http://www.w3.org/TR/REC-html40">
+<Styles>
+    <Style ss:ID="s22">
+        <NumberFormat ss:Format="yyyy\-mm\-dd"/>
+    </Style>
+</Styles>
+{% load survey %}
+{% for s in surveys %}
+<Worksheet ss:Name="{{ s.name|truncatechars:31 }}">
+    <Table>
+        <Row>
+            <Cell> <Data ss:Type="String">Response ID</Data> </Cell>
+            <Cell> <Data ss:Type="String">Timestamp</Data> </Cell>
+            {% for q in s.display_data.questions %}
+            <Cell> <Data ss:Type="String">{{ q.name }}</Data> </Cell>
+            {% endfor %}
+        </Row>
+        {% for r in s.display_data.responses %}
+        <Row>
+            <Cell> <Data ss:Type="Number">{{ r.id }}</Data> </Cell>
+            <Cell ss:StyleID="s22"> <Data ss:Type="DateTime">{{ r.time_filled|date:"c" }}</Data> </Cell>
+            {% for a in r.display_answers %}
+                {% if a.question.id in s.display_data.questions_dict %}
+                    <Cell ss:Index="{{ a|getcol:s.display_data.questions_dict|add:"2" }}"> <Data ss:Type="{% if a.question.question_type.is_numeric %}Number{% else %}String{% endif %}">{{ a.value|slice:"1:" }}</Data> </Cell>
+                {% endif %}
+            {% endfor %}
+        </Row>
+        {% endfor %}
+    </Table>
+</Worksheet>
+{% endfor %}
+</Workbook>
+        
