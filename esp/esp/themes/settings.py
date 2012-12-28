@@ -5,7 +5,6 @@ from os import path
 # can we avoid hardcoding this?
 less_dir = path.join(settings.PROJECT_ROOT, 'public/media/theme_editor/less/') #directory containing less files used by theme editor
 themes_dir = path.join(settings.PROJECT_ROOT, 'public/media/theme_editor/themes/') #directory containing the themes
-variables_template_less = path.join(less_dir, 'variables_template.less')
 variables_less = path.join(less_dir, 'variables.less')
 # directory containing the javascript that shows the palette
 palette_dir = path.join(settings.PROJECT_ROOT, 'public/media/theme_editor/')

@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+from django.template.loader import render_to_string
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.template import Context, Template
@@ -40,6 +41,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 
 from esp.users.models import admin_required
 from esp.themes.settings import *
+from esp.themes.controllers import ThemeController
 
 import subprocess
 from os import path, remove
@@ -98,9 +100,6 @@ def save(request, less_file):
         if variables_settings['theme_name'] == '': 
             del variables_settings['theme_name']
     
-    f = open(variables_template_less)
-    variables_template = Template(f.read())
-    f.close()
     form_settings = dict(request.POST) # retrieve context from form input, change to POST eventually
 
     for k,v in form_settings.items():
@@ -119,10 +118,11 @@ def save(request, less_file):
     # if theme is only applied, but has some changes, just apply theme and set name as 'None'
     if 'apply' in request.POST:
         del variables_settings['theme_name']
-    w = variables_template.render(Context(variables_settings))
     f = open(theme_file_path, 'w')
-    f.write(w)
+    f.write(render_to_string('themes/bootstrap_variables.less', Context(variables_settings)))
     f.close()
+    
+    return variables_settings
 
 def apply_theme(less_file):
     # in case you are trying to restore the last used settings
@@ -169,6 +169,7 @@ def update_palette(palette_list):
 
 @admin_required
 def theme_submit(request):
+    variables_settings = None
     if 'save' in request.POST:
         if request.POST['saveThemeName'] == '':
             theme_name = get_theme_name(variables_less)
@@ -177,7 +178,7 @@ def theme_submit(request):
         else:
             theme_name = request.POST['saveThemeName']
         save_file_name = theme_name + '.less'
-        save(request, save_file_name)
+        variables_settings = save(request, save_file_name)
         apply_theme(save_file_name)
     elif 'load' in request.POST:
         if request.POST['loadThemeName'] == 'Default':
@@ -189,18 +190,17 @@ def theme_submit(request):
         remove(path.join(themes_dir, request.POST['loadThemeName']+'.less'))
     elif 'apply' in request.POST:
         shutil.copy(variables_less, path.join(less_dir,'variables_backup.less'))
-        save(request, 'variables.less')
+        variables_settings = save(request, 'variables.less')
     elif 'reset' in request.POST:
         pass
     else: 
         return HttpResponseRedirect('/')
-    f = open(path.join(themes_dir, 'bootstrap.css'), 'w')
-    # finally compile less to css
-    lessc_args = ["lessc", "--compress", path.join(less_dir, 'bootstrap.less')]
-    subprocess.call(' '.join(lessc_args), stdout=f, shell=True)
-    f.close()
-    # for debugging, uncomment the next line
-    #return HttpResponse(str(dict(request.POST)))
+    
+    #   Re-generate the CSS for the current theme given the supplied settings
+    if variables_settings:
+        tc = ThemeController()
+        tc.customize_theme('generic1', variables_settings)
+    
     return HttpResponseRedirect('/theme/')
 
 @admin_required    
