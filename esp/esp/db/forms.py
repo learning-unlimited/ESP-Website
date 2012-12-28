@@ -157,6 +157,8 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
                  error_messages=None, show_hidden_initial=False, shadow_field_name=None,
                  *args, **kwargs):
 
+        super(AjaxForeignKeyNewformField, self).__init__(*args, **kwargs)
+
         if ajax_func is None:
             self.widget.ajax_func = 'ajax_autocomplete'
         else:
