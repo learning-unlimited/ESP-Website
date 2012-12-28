@@ -240,7 +240,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
 
         for cls in classes:
             c = ClassSubject.objects.get(id=cls['id'])
-            cls['length'] = float(c.duration)
+            cls['length'] = float(c.duration or 0.0)
             cls['sections'] = [s.id for s in c.sections.all()]
             cls['teachers'] = [t.id for t in c.teachers()]
             for t in c.teachers():
