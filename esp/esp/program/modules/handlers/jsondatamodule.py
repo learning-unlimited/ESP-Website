@@ -217,12 +217,8 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
 
     @aux_call
     @json_response({
-            'id': 'id',
-            'status': 'status',
             'anchor__friendly_name': 'title',
             'category__symbol': 'category',
-            'grade_max': 'grade_max',
-            'grade_min': 'grade_min',
             'anchor__name': 'emailcode',
             })
     @cached_module_view
@@ -236,7 +232,10 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
                 'category__symbol',
                 'anchor__name',
                 'grade_max',
-                'grade_min'))
+                'grade_min',
+                'class_size_max',
+                'message_for_directors',
+                'requested_special_resources'))
 
         for cls in classes:
             c = ClassSubject.objects.get(id=cls['id'])
