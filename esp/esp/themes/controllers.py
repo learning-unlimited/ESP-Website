@@ -45,7 +45,7 @@ import subprocess
 import tempfile
 import distutils.dir_util
 
-THEME_DEBUG = False
+THEME_DEBUG = True
 
 class ThemeController(object):
     """
@@ -120,7 +120,7 @@ class ThemeController(object):
         less_data = ''
         for filename in self.get_less_names(theme_name):
             less_file = open(filename)
-            print 'Including LESS source %s' % filename
+            if THEME_DEBUG: print 'Including LESS source %s' % filename
             less_data += '\n' + less_file.read()
             less_file.close()
         
@@ -132,7 +132,7 @@ class ThemeController(object):
         #   Replace all variable declarations for which we have a value defined
         for (variable_name, variable_value) in variable_data.iteritems():
             less_data = re.sub(r'@%s:(\s*)(.*?);' % variable_name, r'@%s: %s;' % (variable_name, variable_value), less_data)
-            print 'Substituted value %s = %s' % (variable_name, variable_value)
+            #   print 'Substituted value %s = %s' % (variable_name, variable_value)
         
         if THEME_DEBUG:
             tf1 = open('debug_2.less', 'w')
@@ -142,6 +142,7 @@ class ThemeController(object):
         (less_output_fd, less_output_filename) = tempfile.mkstemp()
         less_output_file = os.fdopen(less_output_fd, 'w')
         less_output_file.write(less_data)
+        if THEME_DEBUG: print 'Wrote %d bytes to LESS file %s' % (len(less_data), less_output_filename)
         less_output_file.close()
         
         less_search_path = ', '.join([("'%s'" % dir.replace('\\', '/')) for dir in (settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor/less')])])
@@ -162,8 +163,7 @@ parser.parse(data, function (e, tree) {
 });
         """ % (less_search_path, less_output_filename.replace('\\', '/'))
         
-        if THEME_DEBUG:
-            print js_code
+        #   print js_code
         
         #   Compile to CSS
         lessc_args = ["node"]
@@ -173,7 +173,7 @@ parser.parse(data, function (e, tree) {
         output_file = open(output_filename, 'w')
         output_file.write(css_data)
         output_file.close()
-        print 'Wrote %.1f KB CSS output to %s' % (len(css_data) / 1000., output_filename)
+        if THEME_DEBUG: print 'Wrote %.1f KB CSS output to %s' % (len(css_data) / 1000., output_filename)
 
     def clear_theme(self, theme_name=None):
     
@@ -181,10 +181,10 @@ parser.parse(data, function (e, tree) {
             theme_name = self.get_current_theme()
         
         #   Remove template overrides matching the theme name
-        print 'Clearing theme: %s' % theme_name
+        if THEME_DEBUG: print 'Clearing theme: %s' % theme_name
         for template_name in self.get_template_names(theme_name):
             TemplateOverride.objects.filter(name=template_name).delete()
-            print '-- Removed template override: %s' % template_name
+            if THEME_DEBUG: print '-- Removed template override: %s' % template_name
         
         #   Remove images and script files from the active theme directory
         if os.path.exists(settings.MEDIA_ROOT + 'images/theme'):
@@ -197,13 +197,13 @@ parser.parse(data, function (e, tree) {
     def load_theme(self, theme_name, **kwargs):
     
         #   Create template overrides using data provided (our models handle versioning)
-        print 'Loading theme: %s' % theme_name
+        if THEME_DEBUG: print 'Loading theme: %s' % theme_name
         for template_name in self.get_template_names(theme_name):
             to = TemplateOverride(name=template_name)
             to.content = open(self.base_dir(theme_name) + '/templates/' + template_name).read()
             #   print 'Template override %s contents: \n%s' % (to.name, to.content)
             to.save()
-            print '-- Created template override: %s' % template_name
+            if THEME_DEBUG: print '-- Created template override: %s' % template_name
             
         #   Collect LESS files from appropriate sources and compile CSS
         self.compile_css(theme_name, {}, settings.MEDIA_ROOT + 'styles/theme_compiled.css')
