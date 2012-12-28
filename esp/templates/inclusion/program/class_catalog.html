@@ -28,7 +28,8 @@
                             <div id="addbutton_fillslot_sec{{ section.id }}"><input type="submit" class="addbutton" name="action" value="Click here to add this class" id="submitbutton{{ class.id }}" /></div>
                             <!--                      <div id="addbutton_fillslot_sec{{ section.id }}"><input type="submit" class="addbutton" name="action" value="Add this class" onclick="return submit_prereg({{ class.id }});" id="submitbutton{{ class.id }}" /></div>  -->
                         {% else %}
-                            <div class="addbutton_error">{% autoescape off %}{{ temp_full_message }}{% endautoescape %}</div>
+                            <!-- this branch is obsolete and probably can be removed; see 1b73e4538cc04cc55c4d8886f5b5d0d6f6791c95 (lua) -->
+                            <input type="submit" class="addbutton_disabled" name="action" value="{{ temp_full_message }}" id="submitbutton{{ sec.id }}" disabled />
                         {% endif %}
                         </form>
                     {% endif %}

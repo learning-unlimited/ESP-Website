@@ -9,7 +9,7 @@ from django.contrib.auth.admin import UserAdmin
 
 class UserBitAdmin(admin.ModelAdmin):
     list_display = [ 'id', 'user', 'qsc', 'verb', 'startdate', 'enddate', 'recursive', ]
-    search_fields = ['user__last_name','user__first_name',
+    search_fields = ['user__last_name','user__first_name','user__username',
                      'qsc__uri','verb__uri']
 admin_site.register(UserBit, UserBitAdmin)
 
@@ -28,11 +28,11 @@ admin_site.register(ESPUser, UserAdmin)
 
 class ContactInfoAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'e_mail', 'phone_day', 'address_postal']
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'e_mail']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__username',  'e_mail']
 admin_site.register(ContactInfo, ContactInfoAdmin)
 
 class UserInfoAdmin(admin.ModelAdmin):
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__email']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__username',  'user__email']
 
 class StudentInfoAdmin(UserInfoAdmin):
     list_display = ['id', 'user', 'graduation_year', 'k12school', 'school']

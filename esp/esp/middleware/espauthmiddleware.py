@@ -33,62 +33,28 @@ Learning Unlimited, Inc.
 """
 
 from django.conf import settings
-from django.contrib.auth.middleware import LazyUser, AuthenticationMiddleware
+from django.contrib.auth.middleware import AuthenticationMiddleware, get_user
 from django.contrib.auth.models import AnonymousUser
-from esp.utils.get_user import get_user
 from django.utils.cache import patch_vary_headers
-from esp.users.models import UserBit, GetNode
+from django.utils.functional import SimpleLazyObject
+
+from esp.users.models import ESPUser, UserBit, GetNode
 
 __all__ = ('ESPAuthMiddleware',)
-
-ESPUser = None
-get_user_django = None
-
-class ESPLazyUser(LazyUser):
-    def __get__(self, request, obj_type=None):
-        global get_user_django, ESPUser, get_user
-        if not hasattr(request, '_cached_user'):
-            if get_user is None or ESPUser is None:                
-                from django.contrib.auth import get_user as get_user_django
-                from esp.users.models import ESPUser
-
-            SESSION_KEY = '_auth_user_id'
-
-            user = AnonymousUser()            
-            if request.session.has_key(SESSION_KEY):
-                user_id = request.session[SESSION_KEY]
-                try:
-                    user = get_user(user_id)
-                except ESPUser.DoesNotExist:
-                    pass
-                
-            if not user:
-                request._cached_user = ESPUser(get_user_django(request))
-                request._cached_user.updateOnsite(request)
-            else:
-                request._cached_user = user
-
-        return request._cached_user
 
 class ESPAuthMiddleware(object):
     """ Much like the auth middleware except that this returns an ESPUser. """
 
     def process_request(self, request):
         assert hasattr(request, 'session'), "The Django authentication middleware requires session middleware to be installed. Edit your MIDDLEWARE_CLASSES setting to insert 'django.contrib.sessions.middleware.SessionMiddleware'."
-        request.__class__.user = ESPLazyUser()
         
-        #Call get_token to make sure the CSRF cookie is set on any request
-        #from django.middleware.csrf import get_token
-        #get_token(request)
-
-        return None
+        request.user = SimpleLazyObject(lambda: ESPUser(get_user(request)))
 
     def process_response(self, request, response):
         ## This gets set if we're not supposed to modify the cookie
         if getattr(response, 'no_set_cookies', False):
             return response
-        
-        from esp.users.models import ESPUser
+
         modified_cookies = False
 
         user = getattr(request, '_cached_user', None)
@@ -132,6 +98,7 @@ class ESPAuthMiddleware(object):
                 has_qsd_bits = UserBit.objects.UserHasPerms(espuser, GetNode('Q/Web'), GetNode('V/Administer/Edit/QSD'))
                 
             new_values = {'cur_username': user.username,
+                          'cur_userid': user.id,
                           'cur_email': urllib.quote(user.email.encode(encoding)),
                           'cur_first_name': urllib.quote(user.first_name.encode(encoding)),
                           'cur_last_name': urllib.quote(user.last_name.encode(encoding)),
@@ -151,7 +118,7 @@ class ESPAuthMiddleware(object):
                     modified_cookies = True
 
         if user and not user.is_authenticated():
-            cookies_to_delete = [x for x in ('cur_username','cur_email',
+            cookies_to_delete = [x for x in ('cur_username','cur_userid','cur_email',
                                          'cur_first_name','cur_last_name',
                                          'cur_other_user','cur_retTitle',
                                          'cur_admin', 'cur_roles', 

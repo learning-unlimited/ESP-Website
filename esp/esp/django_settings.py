@@ -60,7 +60,8 @@ MEDIA_ROOT_DIR = 'public/media/'
 
 MEDIA_URL = '/media/'
 
-ADMIN_MEDIA_PREFIX = '/media/admin/'
+STATIC_URL = '/media/admin'
+STATIC_ROOT =  '/'
 
 LOGIN_REDIRECT_URL = '/'
 
@@ -162,10 +163,10 @@ MIDDLEWARE_GLOBAL = [
     ( 700, 'django.middleware.common.CommonMiddleware'),
    #( 800, 'esp.middleware.esp_sessions.SessionMiddleware'),  # DEPRECATED -- Relies on mem_db, which is currently nonfunctional
     ( 900, 'django.contrib.sessions.middleware.SessionMiddleware'),
+    ( 950, 'django.contrib.messages.middleware.MessageMiddleware'),
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),
-    #(1150, 'sslauth.middleware.SSLAuthMiddleware'),
     (1200, 'django.middleware.gzip.GZipMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
@@ -180,6 +181,7 @@ APPEND_SLASH=False
 INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.contenttypes',
+    'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.admin',
@@ -200,7 +202,7 @@ INSTALLED_APPS = (
     'esp.gen_media',
     'esp.dblog',
     'esp.membership',
-    'esp.queue',
+#    'esp.queue',
     'esp.survey',
     'esp.accounting_core',
     'esp.accounting_docs',
@@ -216,7 +218,6 @@ INSTALLED_APPS = (
     'django_extensions',
     'reversion',
     'south',
-    'sslauth',
     'formwizard',
     'form_utils',
 )
@@ -239,6 +240,7 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this
                                'esp.context_processors.preload_images',
                                'django.core.context_processors.i18n',
                                'django.contrib.auth.context_processors.auth',
+                               'django.contrib.messages.context_processors.messages',
                                'django.core.context_processors.media',
                                )
 
@@ -272,18 +274,7 @@ if False:
 
 AUTHENTICATION_BACKENDS = (
     'django.contrib.auth.backends.ModelBackend',
-    'sslauth.backends.SSLAuthBackend',
     )
-
-SSLAUTH_USE_COOKIE = True
-SSLAUTH_CREATE_USER = True
-
-try:
-    from esp.utils.sslauth_create_user import find_ssl_user    
-except ImportError:
-    ## Django hasn't done its sys.path-hacking yet at this point
-    from utils.sslauth_create_user import find_ssl_user
-SSLAUTH_CREATE_USERNAME_CALLBACK = find_ssl_user
 
 CONTACTFORM_EMAIL_CHOICES = (
     ('esp','Unknown'),
