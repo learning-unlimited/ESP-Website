@@ -10,8 +10,8 @@ from esp.program.modules.base import ProgramModuleObj
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        #   These are the 5 modules that have been removed
-        module_name_list = ['SATPrepOnSiteRegister', 'SATPrepAdminSchedule', 'SATPrepTeacherInput', 'SATPrepTeacherModule', 'SATPrepModule']
+        #   These are the 6 modules that have been removed
+        module_name_list = ['SATPrepOnSiteRegister', 'SATPrepAdminSchedule', 'SATPrepTeacherInput', 'SATPrepTeacherModule', 'SATPrepModule', 'RemoteTeacherProfile']
     
         #   Remove program module objects pertaining to SAT Prep modules
         ProgramModuleObj.objects.filter(module__handler__in=module_name_list)

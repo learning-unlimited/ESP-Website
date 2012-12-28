@@ -1046,32 +1046,6 @@ class Program(models.Model, CustomFormsLinkModel):
     by_prog_inst.depend_on_row(lambda: DataTree, program_selector)
     by_prog_inst = classmethod(by_prog_inst)
     
-class BusSchedule(models.Model):
-    """ A scheduled bus journey associated with a program """
-    program = models.ForeignKey(Program)
-    src_dst = models.CharField(max_length=128)
-    departs = models.DateTimeField()
-    arrives = models.DateTimeField()
-
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_busschedule'
-
-    
-class TeacherParticipationProfile(models.Model):
-    """ Profile properties associated with a teacher in a program """
-    teacher = AjaxForeignKey(ESPUser)
-    program = models.ForeignKey(Program)
-    unique_together = (('teacher', 'program'),)
-    bus_schedule = models.ManyToManyField(BusSchedule)
-    can_help = models.BooleanField()
-
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_teacherparticipationprofile'
-
-    def __unicode__(self):
-        return 'Profile for ' + str(self.teacher) + ' in ' + str(self.program)
     
 class SplashInfo(models.Model):
     """ A model that can be used to track additional student preferences specific to

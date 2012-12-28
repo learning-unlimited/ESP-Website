@@ -670,20 +670,6 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'teacherschedule.html', request, (prog, tl), context)
 
-    @aux_call
-    @needs_admin
-    def teacherinfo(self, request, tl, one, two, module, extra, prog):
-        from esp.program.modules.module_ext import RemoteProfile
-        
-        def get_remote_info(teacher):
-            qs = RemoteProfile.objects.filter(user=teacher, program=prog)
-            if qs.count() > 0:
-                return {'remoteprofile': qs[0]}
-            else:
-                return {}
-            
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, extra_func=get_remote_info, template_file='teacherlist_remote.html')
-
     def get_msg_vars(self, user, key):
         user = ESPUser(user)
         

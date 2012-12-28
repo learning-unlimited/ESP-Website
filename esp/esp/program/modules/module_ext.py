@@ -297,31 +297,6 @@ class ClassRegModuleInfo(models.Model):
     def __unicode__(self):
         return 'Class Reg Ext. for %s' % str(self.module)
 
-class RemoteProfile(models.Model):
-    from esp.users.models import User
-    from esp.program.models import Program
-    from esp.cal.models import Event
-
-    user      = AjaxForeignKey(ESPUser,blank=True, null=True)
-    program   = models.ForeignKey(Program,blank=True, null=True)
-    volunteer = models.BooleanField(default = False)
-    need_bus  = models.BooleanField(default = False)
-    bus_runs  = models.ManyToManyField(DataTree,
-                                       related_name="bus_teachers",
-                                       blank=True)
-    volunteer_times = models.ManyToManyField(Event,
-                                             related_name='teacher_volunteer_set',
-                                             blank=True)
-
-    
-    def __unicode__(self):
-        return 'Remote participation info for teacher %s in %s' % \
-                 (str(self.user), str(self.program))      
-
-    class Admin:
-        pass
-
-
 """ Model for settings that control the First Data credit card module. """
 class CreditCardSettings(models.Model):
     module = models.ForeignKey(ProgramModuleObj)
