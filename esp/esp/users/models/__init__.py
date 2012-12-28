@@ -850,7 +850,11 @@ class ESPUser(User, AnonymousUser):
     @staticmethod
     def getAllUserTypes():
         tag_data = Tag.getTag('user_types')
-        result = DEFAULT_USER_TYPES
+        
+        #   Allow Tag to remove user types as well as adding/updating them.
+        #   result = DEFAULT_USER_TYPES
+        result = []
+        
         result_labels = [x[0] for x in result]
         if tag_data:
             json_data = json.loads(tag_data)
