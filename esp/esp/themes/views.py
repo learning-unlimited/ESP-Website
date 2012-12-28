@@ -199,7 +199,7 @@ def theme_submit(request):
     #   Re-generate the CSS for the current theme given the supplied settings
     if variables_settings:
         tc = ThemeController()
-        tc.customize_theme('generic1', variables_settings)
+        tc.customize_theme(variables_settings)
     
     return HttpResponseRedirect('/theme/')
 

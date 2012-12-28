@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.utils.models import TemplateOverride
+from esp.tagdict.models import Tag
 from esp.themes import settings as themes_settings
 
 from django.conf import settings
@@ -52,6 +53,9 @@ class ThemeController(object):
     """
     def __init__(self, *args, **kwargs):
         pass
+        
+    def get_current_theme(self):
+        return Tag.getTag('current_theme_name', default='default')
         
     def get_theme_names(self):
         return os.listdir(settings.PROJECT_ROOT + 'esp/themes/theme_data/')
@@ -170,8 +174,12 @@ parser.parse(data, function (e, tree) {
         output_file.write(css_data)
         output_file.close()
         print 'Wrote %.1f KB CSS output to %s' % (len(css_data) / 1000., output_filename)
+
+    def clear_theme(self, theme_name=None):
+    
+        if theme_name is None:
+            theme_name = self.get_current_theme()
         
-    def clear_theme(self, theme_name):
         #   Remove template overrides matching the theme name
         print 'Clearing theme: %s' % theme_name
         for template_name in self.get_template_names(theme_name):
@@ -183,7 +191,9 @@ parser.parse(data, function (e, tree) {
             distutils.dir_util.remove_tree(settings.MEDIA_ROOT + 'images/theme')
         if os.path.exists(settings.MEDIA_ROOT + 'scripts/theme'):
             distutils.dir_util.remove_tree(settings.MEDIA_ROOT + 'scripts/theme')
-        
+
+        Tag.unSetTag('current_theme_name')
+
     def load_theme(self, theme_name, **kwargs):
     
         #   Create template overrides using data provided (our models handle versioning)
@@ -203,7 +213,8 @@ parser.parse(data, function (e, tree) {
             distutils.dir_util.copy_tree(self.base_dir(theme_name) + '/images', settings.MEDIA_ROOT + 'images/theme')
         if os.path.exists(self.base_dir(theme_name) + '/scripts'):
             distutils.dir_util.copy_tree(self.base_dir(theme_name) + '/scripts', settings.MEDIA_ROOT + 'scripts/theme')
-        
-    def customize_theme(self, theme_name, vars):
-        self.compile_css(theme_name, vars, settings.MEDIA_ROOT + 'styles/theme_compiled.css')
-        
+
+        Tag.setTag('current_theme_name', value=theme_name)
+
+    def customize_theme(self, vars):
+        self.compile_css(self.get_current_theme(), vars, settings.MEDIA_ROOT + 'styles/theme_compiled.css')
