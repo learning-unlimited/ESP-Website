@@ -1,13 +1,14 @@
-from apiclient.discovery import build
-from oauth2client.client import OAuth2Credentials
-import httplib2
-
 from django.conf import settings
 from django.http import HttpResponse, Http404
 
 from esp.users.models import admin_required, ESPUser
 
-OAUTH_SCOPE = "https://www.googleapis.com/auth/drive"
+import gdata.gauth
+import gdata.spreadsheets.client
+
+OAUTH_SCOPES = [ "https://spreadsheets.google.com/feeds",
+    "https://docs.google.com/feeds" ]
+USER_AGENT = ""
 
 @admin_required
 def check_auth(request):
@@ -27,15 +28,14 @@ def lookup_username(request, username):
 
 @admin_required
 def list_budget_categories(request):
-    service = create_google_service()
-    return HttpResponse('OK')
+    ss_client = create_ss_service()
+    worksheets = ss_client.get_worksheets(
+        spreadsheet_key=settings.BUDGET_SPREADSHEET_KEY)
 
+    return HttpResponse(worksheets.entry[0].to_string())
 
-def create_google_service():
-    credentials = OAuth2Credentials.from_json(settings.GOOGLE_CREDENTIALS)
-    
-    http = httplib2.Http()
-    http = credentials.authorize(http)
-    
-    service = build("drive", "v2", http=http)
-    return service
+def create_ss_service():
+    token = gdata.gauth.token_from_blob(settings.GOOGLE_CREDENTIALS)
+    ss_client = gdata.spreadsheets.client.SpreadsheetsClient(source=USER_AGENT)
+    ss_client = token.authorize(ss_client)
+    return ss_client

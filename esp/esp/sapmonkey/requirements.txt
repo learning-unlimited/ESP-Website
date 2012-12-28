@@ -1,2 +1,2 @@
 httplib2
-google-api-python-client
+gdata-python-client # https://developers.google.com/gdata/articles/python_client_lib
