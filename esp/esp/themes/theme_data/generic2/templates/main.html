@@ -1,129 +1,137 @@
 {% extends "elements/html" %}
 
-{% block title %}{% endblock %}
-
-{% block stylesheets %}
-{{block.super}}
-<style rel="text/css">
-  .tab-pane a{
-  margin-left:20px;
-  margin-right:20px;
-  }
-</style>
-{% endblock %}
+{% block fulltitle %}Generic Templates Test - {% block title %}{% endblock %}{% endblock %}
 
 {% block javascript %}
-{{block.super}}
-{# add custom scripts here #}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/theme/main.js"></script>
 {% endblock %}
 
 {% block body %}
 
-{% comment %}
-{% endcomment %}
-
-{% block navbar %}
-{% include "navbar.html" %}
-{% endblock navbar %}
-
 {% block main %}
-<div class="container">
-  <div class="row">
 
-    {% block sidebar %}
-    <div id="sidebar">
-      <ul class="nav nav-list sidebar">
-
-	<li><img src="http://www.kilentra.net/lu/generic_logo_short.png"/></li>
-	<li> <img src="http://www.kilentra.net/lu/lu_logo_mini.png"/ style="margin-right:10px;"><span style="font-size:0.8em;">Supported by <a href="http://www.learningu.org/">Learning Unlimited</a></span></li>
-	{% include "sidebar/me.html" %}
-	{% include "sidebar/admin.html" %}
-	{% include "sidebar/programs.html" %}
-      </ul>
+<div id="top_area">
+<div id="logo_area">
+    <div id="main_logo"><a href="/"><img src="/media/images/theme/generic_logo_short.png"/></a></div>
+    <div id="lu_logo"><a href="http://www.learningu.org/"><img src="/media/images/theme/lu_logo_mini.png"/></a></div>
+    <div id="logo_blurb">
+        Supported by <br /><a href="http://www.learningu.org/">Learning Unlimited</a>
     </div>
-    {% endblock sidebar %}
-
-    <div id="main" class="span12">
-      {% block content %}
-      <h2>TEACH ANYTHING. LEARN ANYTHING.</h2>
-
-      We are a student-run organization connecting enthusiastic teachers with curious students.
-      <br /><br />
-      <div class="tabbable">
-	<ul class="nav nav-tabs">
-	  <li class="active"><a href="#teach" data-toggle="tab">Teach</a></li>
-	  <li><a href="#learn" data-toggle="tab">Learn</a></li>
-	  <li><a href="#volunteer" data-toggle="tab">Volunteer</a></li>
-	</ul>
-	<div class="tab-content">
-	  <div id="teach" class="tab-pane active">
-	    <a href="#">About Splash</a>
-	    <a href="#">Eligibility and Training</a>
-	    <a href="#">Browse Previous Courses</a> 
-	    <a href="#">Browse Requested Topics</a> 
-	  </div>
-	  <div class="tab-pane" id="learn">
-	    <a href="#">About Splash</a> 
-	    <a href="#">How to Register</a> 
-	    <a href="#">Directions and Parking</a> 
-	    <a href="#">Frequently Asked Questions</a>
-	  </div>
-	  <div class="tab-pane" id="volunteer">
-	    <a href="#">Volunteer Needs</a>
-	    <a href="#">About the Administrators</a>
-	  </div>
-	</div>
-
-	<h1>Choose Your Adventure</h1>
-	<p>
-	  For one Saturday in April, high school students from all over the Chicago area and beyond are welcomed to the Northwestern University campus to take classes from NU students and community members about anything. Thats right, anything. Whether youre interested in science, the humanities, or just random things you may never have heard about, weve got a class for you! 
-	</p>
-
-	<div class="row-fluid" style="margin-top:30px;">
-	  <div class="span3">
-	    <img src="http://www.kilentra.net/lu/example_class.jpg" />
-	  </div>
-	  <div class="span9">
-	    Teacher Vincent Lee advises a student on multispectral image processing during a 3-hour Photoshop course at MIT's Splash 2009.  <a href="#">Search/browse a complete list of courses here.</a>
-	  </div>
-	</div>
-	
-	<h2>The teachers</h2>
-	<p>
-	  Most of your teachers will be undergraduate and graduate students from Stanford University, including:
-	  <ul>
-            <li><a href="#">Michael Shaw</a>, Physics graduate student</li>
-            <li><a href="#">Catherine Lu</a>, Chemistry undergraduate student</li>
-            <li><a href="#">Pallav Agrawal</a>, Civil/Environmental Engineering graduate student</li>
-	  </ul>
-	</p>
-	
-	<h2>The subjects</h2>
-	<p>
-	  Teachers design their own courses with the aid of student volunteers and training materials provided by <a href="http://www.learningu.org">Learning Unlimited</a>.
-	</p>
-	
-	<h3>The logistics</h3>
-	<p>
-	  The next Splash is on Saturday and Sunday, November 19-20.  Anyone enrolled in 7th through 12th grade may attend.  Registration is not open yet, but you may create an account to subscribe to e-mail or text message notifications.
-      </div>
-    </div>
-  </div>
-</div>
-{% endblock content%}
-{% endblock main %}
-
-<div class="container">
-  <footer style="margin-bottom:15px; text-align:center;">
-    <hr />
-    {% block footer %}
-    Copyright 2011, Splash at Your University - <a href="#">E-mail us</a> - <a href="#">More contact information</a>
-    {% endblock footer %}
-  </footer>
 </div>
 
-{% endblock body %}
+<div id="nav_area">
+    <div id="nav_buffer">
+        <div id="nav_buffer_background">TEACH ANYTHING. LEARN ANYTHING.</div>
+        <div id="nav_buffer_foreground">We are a student-run organization connecting enthusiastic teachers with curious students.</div>
+    </div>
+    
+    <div id="primary_nav">
+        <div class="toplevel_link toplevel_focus">
+            <a href="/teach/index.html">Teach</a>
+        </div>
+        <div class="toplevel_link">
+            <a href="/learn/index.html">Learn</a>
+        </div>
+        <div class="toplevel_link">
+            <a href="/volunteer/index.html">Volunteer</a>
+        </div>
+        <!-- Should show only for admins ... -->
+        <div class="toplevel_link">
+            <a href="/manage/programs">Manage</a>
+        </div>
+    </div>
 
+    <br />
 
+    <div id="secondary_nav">
+        <div class="sublink">
+            <a href="/teach/about.html">About Splash</a>
+            <a href="/teach/eligibility.html">Eligibility and Training</a>
+            <a href="/teach/previous.html">Browse Previous Courses</a>
+            <a href="/teach/requested.html">Browse Requested Topics</a>
+        </div>
+        <div class="sublink">
+            <a href="/learn/about.html">About Splash</a>
+            <a href="/learn/register.html">How to Register</a>
+            <a href="/learn/directions.html">Directions and Parking</a>
+            <a href="/learn/faq.html">Frequently Asked Questions</a>
+        </div>
+        <div class="sublink">
+            <a href="/volunteer/needs.html">Volunteer Needs</a>
+            <a href="/volunteer/about.html">About the Administrators</a>
+        </div>
+        <div class="sublink">
+            <a href="sandbox.html">Splash! Fall 2011</a>
+            <a href="sandbox.html">HSSP Spring 2011</a>
+            <a href="sandbox.html">Complete Program List</a>
+        </div>
+    </div>
+</div>
+</div>
 
+<div id="bottom_area">
+<div id="boxes_area">
 
+    <div class="box"><div class="box_header">Log in / create account</div>
+    <div id="login_box">
+    <form name="loginform" id="loginform" method="post" action="/myesp/login/">
+    <input type="hidden" name="next" value="/" />
+    <table border="0" cellpadding="0" cellspacing="0" summary=" ">
+      <tr>
+        <td><label for="user">User name: </label></td>
+        <td><input type="text" id="id_username" name="username" id="user" size="8" value="" maxlength="255" class="input-small" /></td>
+        <td>&nbsp;</td>
+      </tr>
+      <tr>
+        <td><label for="pass">Password: </label></td>
+        <td><input type="password" id="id_password" name="password" id="pass" size="8" value="" maxlength="255" class="input-small" /></td>
+        <td>&nbsp;<input type="submit" name="gologin" id="gologin" class="gobutton" value="Go"/></td>
+      </tr>
+      <tr>
+        <td colspan="3">
+            <a href="/myesp/loginhelp.html">Login Help</a>
+            <span style="padding-left: 25px;">
+                <a href="/myesp/register">Register</a>
+            </span>
+        </td>
+      </tr>
+    </table>
+  </form>
+    </div>
+    </div>
+
+    <div class="box"><div class="box_header">Teach for Splash!</div>Splash 2011 will be on Saturday, December 54. You can <a href="sandbox.html">sign up to teach here</a>. </div>
+    <div class="box"><div class="box_header">Our Sister Programs</div>If you're in the Springfield area, you can find more opportunities with <a href="sandbox.html">other organizations like us</a>. </div>
+    <div class="box"><div class="box_header">Student Leader Honored</div>University of Maryland, Baltimore County junior Mindy Or was chosen out of 25 nominees for the Emerging Leader Award, based in part on her contributions to UMBC Splash.  <a href="sandbox.html">Read the full announcement here.</a></div>
+    
+    <!-- Needs to show only if you are an admin -->
+    <div class="box" id="new_announcement_box">
+        <div class="box_header">+ Add Announcement...</div>
+        <div id="inner_announcement_box" class="box_hidden">
+            <form name="announcement_form" method="post" action=".">
+                <p>Title: <input type="text" name="announcement_title" /> </p>
+                <p>Content: <br /><textarea rows="6" cols="25" name="announcement_content">Enter something here</textarea> </p>
+                <p align="center"><input type="submit" class="button" value="Submit" /> </p>
+            </form>
+        </div>
+    </div>
+    
+</div>
+
+<div id="content_area">
+
+    {% block content %}
+    {% endblock %}
+
+    <div id="footer">
+        <p>Copyright 2011, Splash at Your University - <a href="sandbox.html">E-mail us</a> - <a href="sandbox.html">More contact information</a></p>
+        <p>Site hosted by Learning Unlimited - <a href="sandbox.html">E-mail technical support</a></p>
+    </div>
+</div>
+
+</div>
+
+{% endblock %} {# endblock main #}
+
+{% endblock %} {# endblock body #}
