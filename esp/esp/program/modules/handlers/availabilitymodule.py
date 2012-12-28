@@ -66,6 +66,7 @@ class AvailabilityModule(ProgramModuleObj):
             "admin_title": "Teacher Availability",
             "link_title": "Indicate Your Availability",
             "module_type": "teach",
+            "required": True,
             "seq": 0
             }
     
