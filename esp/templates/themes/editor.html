@@ -188,8 +188,6 @@
 	    <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#navbar" rel="popover" data-original-title="Navbar" data-content="Use this section to control the colors for the various elements of the navigation bar. The background fades into the highlight.">Navbar</h3></div>
 	    <div class="collapse" id="navbar">
 
-
-
 	      <div class="control-group">
 		<label class="control-label" for="navbarBackground">Background :  </label>
 		<div class="controls">
@@ -337,6 +335,22 @@
 	      </div>
 	    </div>
 
+        <div class="accordion-group">
+	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" rel="popover" data-original-title="Advanced" data-content="These are additional parameters specific to the currently selected theme.">Advanced</h3></div>
+	      <div class="collapse" id="advanced">
+        {% for category, data in adv_vars.items %}
+        <h4>Category: {{ category }}</h4>
+        {% for varname, varitem in data.items %}
+		<div class="control-group">
+		  <label class="control-label" for="{{ varname }}">{{ varname }}:  </label>
+		  <div class="controls">
+		    <input type="text" class="{{ varitem.0 }}" id="id_{{ varname }}" name="{{ varname }}" value="{{ varitem.1 }}"/>
+		  </div>
+		</div>
+        {% endfor %}
+        {% endfor %}
+	      </div>
+	    </div>
 
 	    <div class="accordion-group">
 	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#theme-properties" rel='popover' data-original-title="Theme Properties" data-content="When you're finished making changes, enter a name and press Save! Enter the name of an existing theme to overwrite it. If you just want to see your changes in action, you're probably looking for the Test button. You can also load or delete a saved theme, or revert to the last configuration.">Theme Properties</h3></div>

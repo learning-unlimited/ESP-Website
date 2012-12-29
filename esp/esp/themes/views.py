@@ -99,7 +99,7 @@ def save(request, less_file):
         # if theme is saved without a name, just set it as default with the name 'None'
         if variables_settings['theme_name'] == '': 
             del variables_settings['theme_name']
-    
+
     form_settings = dict(request.POST) # retrieve context from form input, change to POST eventually
 
     for k,v in form_settings.items():
@@ -113,13 +113,20 @@ def save(request, less_file):
     if 'palette' in form_settings and form_settings['palette'].__class__ != list:
         form_settings['palette'] = [form_settings['palette']]
 
+    variables_settings_orig = variables_settings.copy()
     variables_settings.update(form_settings)
 
     # if theme is only applied, but has some changes, just apply theme and set name as 'None'
     if 'apply' in request.POST:
         del variables_settings['theme_name']
+
+    context = variables_settings
+    tc = ThemeController()
+    context['adv_settings'] = tc.get_current_params()
+    if THEME_DEBUG: print 'Advanced settings include: %s' % context['adv_settings'].keys()
     f = open(theme_file_path, 'w')
-    f.write(render_to_string('themes/bootstrap_variables.less', Context(variables_settings)))
+    f.write(render_to_string('themes/bootstrap_variables.less', context))
+    if THEME_DEBUG: print 'Wrote customized LESS variables to %s' % theme_file_path
     f.close()
     
     return variables_settings
@@ -199,7 +206,7 @@ def theme_submit(request):
     #   Re-generate the CSS for the current theme given the supplied settings
     if variables_settings:
         tc = ThemeController()
-        tc.customize_theme(variables_settings)
+        tc.customize_theme(request.POST)
     
     return HttpResponseRedirect('/theme/')
 
@@ -219,6 +226,29 @@ def editor(request):
     context.update({'sans_fonts':sorted(sans_serif_fonts.iteritems())})
     # load the theme's palette
     update_palette(context['palette'])
+
+    #   Load the theme-specific options
+    tc = ThemeController()
+    current_theme = tc.get_current_theme()
+    adv_vars = tc.find_less_variables(current_theme, theme_only=True)
+    context['adv_vars'] = {}
+    for filename in adv_vars:
+        category_name = path.basename(filename)[:-5]
+        category_vars = {}
+        for key in adv_vars[filename]:
+            #   Detect type of variable based on default value
+            initial_val = adv_vars[filename][key]
+            if key in context:
+                initial_val = context[key]
+                if THEME_DEBUG: print 'Found customized key: %s -> %s' % (key, initial_val)
+            if initial_val.startswith('#'):
+                category_vars[key] = ('color', initial_val)
+            elif initial_val.endswith('px') or initial_val.endswith('em'):
+                category_vars[key] = ('length', initial_val)
+            else:
+                category_vars[key] = ('text', initial_val)
+        context['adv_vars'][category_name] = category_vars
+
 #    for debugging, see context by uncommenting the next line
 #    return HttpResponse(str(context))
 
