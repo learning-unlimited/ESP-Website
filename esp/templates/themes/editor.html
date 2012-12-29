@@ -13,7 +13,9 @@
 
 {% block xtrajs %}
 <script src="/media/theme_editor/spectrum.js" type="text/javascript"></script>
-<script src="/media/theme_editor/palette.js" type="text/javascript"></script>
+<script language="JavaScript">
+var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last %},{% endif %} {% endfor %}];
+</script>
 <link href="https://cdn.learningu.org/bootstrap/docs/assets/css/bootstrap.css" type="text/css" />
 <link href="/media/theme_editor/spectrum.css" rel="stylesheet" />
 <script src="/media/theme_editor/css_auto-reload.js" rel="text/javascript"></script>
@@ -339,7 +341,7 @@
 	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" rel="popover" data-original-title="Advanced" data-content="These are additional parameters specific to the currently selected theme.">Advanced</h3></div>
 	      <div class="collapse" id="advanced">
         {% for category, data in adv_vars.items %}
-        <h4>Category: {{ category }}</h4>
+        {% if not data|length_is:0 %}<h3>Category: {{ category }}<hr /></h3>{% endif %}
         {% for varname, varitem in data.items %}
 		<div class="control-group">
 		  <label class="control-label" for="{{ varname }}">{{ varname }}:  </label>
@@ -358,7 +360,7 @@
 
 		<br />
 		<div class="control-group">
-		  <input id="save" type="text" value="" name="saveThemeName" placeholder="Current: {{theme_name}}" />
+		  <input id="save" type="text" value="" name="saveThemeName" placeholder="Current: {{ last_used_setting }}" />
 		  <button type="submit" class="btn btn-primary" name="save" value="save"> Save </button> 
 
 		  <br />

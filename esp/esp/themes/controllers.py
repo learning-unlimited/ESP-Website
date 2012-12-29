@@ -100,7 +100,10 @@ class ThemeController(object):
         result += self.list_filenames(self.base_dir(theme_name) + '/less', r'\.less$')
         return result
         
-    def find_less_variables(self, theme_name, theme_only=False, flat=False):
+    def find_less_variables(self, theme_name=None, theme_only=False, flat=False):
+        if theme_name is None:
+            theme_name = self.get_current_theme()
+
         #   Return value is a mapping of names to default values (both strings)
         results = {}
         for filename in self.get_less_names(theme_name, theme_only=theme_only):
@@ -110,18 +113,18 @@ class ThemeController(object):
             less_file = open(filename)
             less_data = less_file.read()
             less_file.close()
-            
+
             #   Find variable declarations
             for item in re.findall(r'@([a-zA-Z0-9_]+):\s*(.*?);', less_data):
                 local_results[item[0]] = item[1]
-                
+
             if flat:
                 #   Store all variables in same dictionary if 'flat' mode is requested
                 results.update(local_results)
             else:
                 #   Store in a dictionary based on filename so we know where they came from
                 results[filename] = local_results
-                
+
         return results
         
     def compile_css(self, theme_name, variable_data, output_filename):
@@ -238,11 +241,18 @@ parser.parse(data, function (e, tree) {
         if themes_settings.THEME_DEBUG: print 'Customized %d variables for theme %s' % (len(vars_diff), self.get_current_theme())
         Tag.setTag('current_theme_params', value=json.dumps(vars_diff))
 
+    ##  Customizations - stored as LESS files with modified variables only; palette is included
+
     def save_customizations(self, save_name, theme_name=None, vars=None, palette=None):
         if theme_name is None:
             theme_name = self.get_current_theme()
         if vars is None:
             vars = self.get_current_params()
+
+        vars_orig = self.find_less_variables(theme_name, flat=True)
+        for key in vars.keys():
+            if key not in vars_orig:
+                del vars[key]
 
         context = {}
         context['vars'] = vars
