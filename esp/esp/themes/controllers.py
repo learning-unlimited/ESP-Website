@@ -53,7 +53,7 @@ class ThemeController(object):
     This is a controller for manipulating the currently selected theme.
     """
     def __init__(self, *args, **kwargs):
-        pass
+        self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles/theme_compiled.css')
         
     def get_current_theme(self):
         return Tag.getTag('current_theme_name', default='default')
@@ -205,6 +205,9 @@ parser.parse(data, function (e, tree) {
         if os.path.exists(settings.MEDIA_ROOT + 'scripts/theme'):
             distutils.dir_util.remove_tree(settings.MEDIA_ROOT + 'scripts/theme')
 
+        #   Remove compiled CSS file
+        os.remove(self.css_filename)
+
         Tag.unSetTag('current_theme_name')
         Tag.unSetTag('current_theme_params')
         Tag.unSetTag('current_theme_palette')
@@ -222,7 +225,7 @@ parser.parse(data, function (e, tree) {
             if themes_settings.THEME_DEBUG: print '-- Created template override: %s' % template_name
             
         #   Collect LESS files from appropriate sources and compile CSS
-        self.compile_css(theme_name, {}, settings.MEDIA_ROOT + 'styles/theme_compiled.css')
+        self.compile_css(theme_name, {}, self.css_filename)
         
         #   Copy images and script files to the active theme directory
         if os.path.exists(self.base_dir(theme_name) + '/images'):
@@ -236,7 +239,7 @@ parser.parse(data, function (e, tree) {
         Tag.unSetTag('prev_theme_customization')
 
     def customize_theme(self, vars):
-        self.compile_css(self.get_current_theme(), vars, os.path.join(settings.MEDIA_ROOT, 'styles/theme_compiled.css'))
+        self.compile_css(self.get_current_theme(), vars, self.css_filename)
         vars_available = self.find_less_variables(self.get_current_theme(), flat=True)
         vars_diff = {}
         for key in vars:
