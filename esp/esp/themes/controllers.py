@@ -135,30 +135,31 @@ class ThemeController(object):
             if themes_settings.THEME_DEBUG: print 'Including LESS source %s' % filename
             less_data += '\n' + less_file.read()
             less_file.close()
-        
+
         if themes_settings.THEME_DEBUG:
             tf1 = open('debug_1.less', 'w')
             tf1.write(less_data)
             tf1.close()
-            
+
         #   Replace all variable declarations for which we have a value defined
         for (variable_name, variable_value) in variable_data.iteritems():
             less_data = re.sub(r'@%s:(\s*)(.*?);' % variable_name, r'@%s: %s;' % (variable_name, variable_value), less_data)
-            #   print 'Substituted value %s = %s' % (variable_name, variable_value)
-        
+            #   print '  Substituted value %s = %s' % (variable_name, variable_value)
+
         if themes_settings.THEME_DEBUG:
             tf1 = open('debug_2.less', 'w')
             tf1.write(less_data)
             tf1.close()
-        
+
         (less_output_fd, less_output_filename) = tempfile.mkstemp()
         less_output_file = os.fdopen(less_output_fd, 'w')
         less_output_file.write(less_data)
         if themes_settings.THEME_DEBUG: print 'Wrote %d bytes to LESS file %s' % (len(less_data), less_output_filename)
         less_output_file.close()
-        
+
         less_search_path = ', '.join([("'%s'" % dir.replace('\\', '/')) for dir in (settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor/less')])])
-        
+
+        minify_js = False
         js_code = """
 var fs = require('fs');
 var less = require('less');
@@ -171,17 +172,17 @@ var parser = new(less.Parser)({
 var data = fs.readFileSync('%s', 'utf8');
 
 parser.parse(data, function (e, tree) {
-    console.log(tree.toCSS({ compress: true })); // Minify CSS output
+    console.log(tree.toCSS({ compress: %s })); // Minify CSS output if desired
 });
-        """ % (less_search_path, less_output_filename.replace('\\', '/'))
-        
+        """ % (less_search_path, less_output_filename.replace('\\', '/'), str(minify_js).lower())
+
         #   print js_code
-        
+
         #   Compile to CSS
         lessc_args = ["node"]
         lessc_process = subprocess.Popen(lessc_args, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
         css_data = lessc_process.communicate(input=js_code)[0]
-        
+
         output_file = open(output_filename, 'w')
         output_file.write(css_data)
         output_file.close()
@@ -231,7 +232,7 @@ parser.parse(data, function (e, tree) {
         Tag.setTag('current_theme_params', value='{}')
 
     def customize_theme(self, vars):
-        self.compile_css(self.get_current_theme(), vars, settings.MEDIA_ROOT + 'styles/theme_compiled.css')
+        self.compile_css(self.get_current_theme(), vars, os.path.join(settings.MEDIA_ROOT, 'styles/theme_compiled.css'))
         vars_available = self.find_less_variables(self.get_current_theme(), flat=True)
         vars_diff = {}
         for key in vars:

@@ -50,7 +50,7 @@ def theme_submit(request):
     tc = ThemeController()
     vars = None
     palette = None
-    
+
     if 'save' in request.POST:
         if request.POST['saveThemeName'] == '':
             theme_name = Tag.getTag('prev_theme_customization', default='None')
@@ -73,15 +73,15 @@ def theme_submit(request):
     elif 'reset' in request.POST:
         pass
     else:
-        #   No action specified, go back
+        #   No action specified, go back to editor
         return editor(request)
-    
+
     #   Re-generate the CSS for the current theme given the supplied settings
     if vars:
         tc.customize_theme(vars)
     if palette:
         tc.set_palette(palette)
-    
+
     return HttpResponseRedirect('/theme/')
 
 @admin_required    
