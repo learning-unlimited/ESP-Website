@@ -9,7 +9,7 @@
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:studentapp" %}
 
-<script type="text/javascript" src="http://www.formstack.com/forms/js.php?{{form.id}}-{{form.viewkey}}-v2&{{args}}"></script>
-<noscript><a href="{{form.url}}&{{args}}" title="Online Form">Online Form - {{form.name}}</a></noscript>
+<script type="text/javascript" src="http://www.formstack.com/forms/js.php?{{form.id}}-{{form.get_info.viewkey}}-v2&{{args}}"></script>
+<noscript><a href="{{form.get_info.url}}&{{args}}" title="Online Form">Online Form - {{form.get_info.name}}</a></noscript>
 
 {% endblock %}
