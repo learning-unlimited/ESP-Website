@@ -1,4 +1,4 @@
-{% extends 'main.html' %}
+{% extends "main.html" %}
 
 {#  Override the way jQuery is loaded so that Popovers can be included  #}
 {% block jquery %}
@@ -39,13 +39,8 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
 <div class="row"> {# figure out why this isn't aligning properly #}
 
 <div class="span7 offset1">
-  <h2 style="text-align:center;">Theme Editor <small style="color:black;">alpha</small></h2><br />
-  <p style="font-size:20px; text-align:center;">abcdefghijklmnopqrstuvwxyz 1234567890</p>
-
-
-  
+  <h1>Theme Editor</h1>
   <div class="alert alert-info">
-    <p>Sometimes, after loading, saving, or applying a theme, the changes may not take effect. Try refreshing the page.</p>
     <p>New to the theme editor? <a href="#help-modal" data-toggle="modal">Click here</a>.</p>
   </div>
   <div id="help-modal" class="modal hide fade">
@@ -70,7 +65,7 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
 <br />
 <div class="row">
   <div class="span7 offset1">
-    <form class="well form-horizontal centered-form" method="post" action="/theme/submit/">
+    <form class="well form-horizontal centered-form" method="post" action="/themes/customize/">
       {% csrf_token %} 
       <div class="accordion">
 
@@ -358,7 +353,6 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
 	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#theme-properties" rel='popover' data-original-title="Theme Properties" data-content="When you're finished making changes, enter a name and press Save! Enter the name of an existing theme to overwrite it. If you just want to see your changes in action, you're probably looking for the Test button. You can also load or delete a saved theme, or revert to the last configuration.">Theme Properties</h3></div>
 	      <div class="in collapse" id="theme-properties">
 
-		<br />
 		<div class="control-group">
 		  <input id="save" type="text" value="" name="saveThemeName" placeholder="Current: {{ last_used_setting }}" />
 		  <button type="submit" class="btn btn-primary" name="save" value="save"> Save </button> 
@@ -377,8 +371,8 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
 		      <option value="{{last_used_settings}}"> Last used settings... </option>
 		    </optgroup>
 		  </select>
-		  <button type="submit" class="btn" name="load" value="load"> Load Theme </button> 
-		  <button type="submit" class="btn" name="delete" value="delete"> Delete Theme </button> 
+		  <button type="submit" class="btn" name="load" value="load"> Load </button> 
+		  <button type="submit" class="btn" name="delete" value="delete"> Delete </button> 
 		</div>
 	      </div>
 	    </div>
@@ -391,7 +385,14 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
       </div>
     </form>
   </div>
+  <div align="center">
+    <a href="/themes/">
+    <button type="button" class="btn btn-large btn-primary">Return to themes page</button>
+    </a>
+    <a href="/">
+    <button type="button" class="btn btn-large btn-inverse">Return to home page</button>
+    </a>
+  </div>
 </div>
-
 
 {% endblock %}  
