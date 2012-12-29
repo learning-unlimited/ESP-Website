@@ -288,3 +288,12 @@ parser.parse(data, function (e, tree) {
             if fn.endswith('.less'):
                 result.append(fn[:-5])
         return result
+
+    ##  Palette getter/setter -- palette is a list of strings which each contain
+    ##  HTML color codes, e.g. ["#FFFFFF", "#3366CC"]
+
+    def get_palette(self):
+        return json.loads(Tag.getTag('current_theme_palette', default='[]'))
+
+    def set_palette(self, palette):
+        Tag.setTag('current_theme_palette', value=json.dumps(palette))
