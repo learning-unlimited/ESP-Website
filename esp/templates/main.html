@@ -1,84 +1,21 @@
 {% extends "elements/html" %}
 
-{% comment %}
-Customize your title formatting here.  For example:
-{% block fulltitle %}Splash at UFoo - {% block title %}{% endblock %}{% endblock %} 
-{% endcomment %}
 {% block fulltitle %}{% block title %}{% endblock %}{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
-    {% comment %}
-    If you would like to customize the appearance of your site beyond the possibilities of the theme editor, you may add additional stylesheets here.
-    Example stylesheet inclusion tag:
-    <link rel="stylesheet" href="/media/styles/main.css" type="text/css" />
-    {% endcomment %}
-{% endblock %}
-
-{% block javascript %}
-{{ block.super }}
-{# Customize your scripts here #}
+    {#  Default stylesheets, no customization   #}
+    <link rel="stylesheet" type="text/css" href="/media/theme_editor/themes/bootstrap.css"/>
 {% endblock %}
 
 {% block body %}
-
-{% block navbar %}
-{% include "navbar.html" %}
-{% endblock navbar%}
 
 {% block main %}
 
 <div class="container">
   <div class="row">
     {% block sidebar %}
-    <div class="hidden" id="sidebar">
-      <ul class="nav nav-list sidebar">
-	{% include "sidebar/me.html" %}
-	{% include "sidebar/admin.html" %}
-	{% include "sidebar/programs.html" %}
-      </ul>
-    </div>
     {% endblock %}
-
-
-
-    {% comment %}
-
-    To be cleaned up:
-
-    <div id="navbar">
-      <div id="navbar_content">
-	<span class="announcementlink_title">Relevant Links</span>
-	{% load navbar %}
-	{% navbar_gen request.path None navbar_list %} 
-      </div>
-
-      <div id="navbar_content">
-
-   {% load markdown %}
-    {% for announce in announcements.announcementList %}
-        <p>
-          <span class="announcementlink_title{% if announce.section %}{{ announce.section }}{% endif %}">
-            {% if announce.makeUrl %}
-            <a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a>
-            {% else %}
-            {{ announce.makeTitle }}
-        {% endif %}
-        </span><br />
-        <span class="announcementlink prettify">{% autoescape off %}{{ announce.content|markdown }}{% endautoescape %}</span>
-        </p>
-	{% endfor %}
-
-	<!-- more announcements -->
-	{% if announcements.overflowed %}
-	<div id="divannouncemore">
-          <a href="/myesp/home/">More Notices...</a>
-	</div>
-	{% endif %}
-      </div>
-      
-    </div>
-    {% endcomment %}
 
     <div id="main" class="span12">
       {% block content %}
@@ -88,15 +25,5 @@ Customize your title formatting here.  For example:
 </div>
 </div>
 {% endblock %} {# end block main #}
-
-<div class="container">
-  <footer>
-    <hr />
-    {% block footer %}
-    <a href="/myesp/onsite/">On-Site Registration</a>
-    {% endblock %}
-  </footer>
-</div>
-
 
 {% endblock %} {# end block body #}

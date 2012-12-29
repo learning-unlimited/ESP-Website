@@ -39,7 +39,7 @@ from esp.themes import settings as themes_settings
 from esp.themes.controllers import ThemeController
 
 from django.template import RequestContext
-from django.shortcuts import render_to_response
+from esp.web.util.main import render_to_response
 from django.http import HttpResponse, HttpResponseRedirect
 
 from datetime import datetime
