@@ -89,18 +89,19 @@ class ThemeController(object):
             result += self.list_filenames(dir, r'\.less$')
         return result
         
-    def get_less_names(self, theme_name):
+    def get_less_names(self, theme_name, theme_only=False):
         result = []
-        result += self.global_less()
-        result.append(os.path.join(themes_settings.less_dir, 'variables.less'))
-        result.append(os.path.join(themes_settings.less_dir, 'bootstrap.less'))
+        if not theme_only:
+            result += self.global_less()
+            result.append(os.path.join(themes_settings.less_dir, 'variables.less'))
+            result.append(os.path.join(themes_settings.less_dir, 'bootstrap.less'))
         result += self.list_filenames(self.base_dir(theme_name) + '/less', r'\.less$')
         return result
         
-    def find_less_variables(self, theme_name):
+    def find_less_variables(self, theme_name, theme_only=False, flat=False):
         #   Return value is a mapping of names to default values (both strings)
         results = {}
-        for filename in self.get_less_names(theme_name):
+        for filename in self.get_less_names(theme_name, theme_only=theme_only):
             local_results = {}
         
             #   Read less file
@@ -109,11 +110,15 @@ class ThemeController(object):
             less_file.close()
             
             #   Find variable declarations
-            for item in re.findall(r'@([a-zA-Z0-9_]+):(\s*)(.*?);', less_data):
-                local_results[item[0]] = item[2]
+            for item in re.findall(r'@([a-zA-Z0-9_]+):\s*(.*?);', less_data):
+                local_results[item[0]] = item[1]
                 
-            #   Store in a dictionary based on filename so we know where they came from
-            results[filename] = local_results
+            if flat:
+                #   Store all variables in same dictionary if 'flat' mode is requested
+                results.update(local_results)
+            else:
+                #   Store in a dictionary based on filename so we know where they came from
+                results[filename] = local_results
                 
         return results
         
