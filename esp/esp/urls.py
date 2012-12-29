@@ -192,10 +192,8 @@ urlpatterns +=patterns('esp.customforms.views',
                        (r'^customforms/exceldata/(?P<form_id>\d{1,6})/$', 'getExcelData'),
                        )	
 
-#Theme editor
-urlpatterns += patterns('esp.themes.views',
-                        (r'^theme/?$', 'editor'),
-                        (r'^theme/submit/?$', 'theme_submit'),
-                        (r'^layout/?$', 'layout'),
+#   Theme editor
+urlpatterns += patterns('', 
+                        (r'^themes/', include('esp.themes.urls')) 
                         )
 
