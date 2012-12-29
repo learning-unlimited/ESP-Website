@@ -42,53 +42,49 @@ from django.template import RequestContext
 from django.shortcuts import render_to_response
 from django.http import HttpResponse, HttpResponseRedirect
 
+from datetime import datetime
+import random
+import string
 import os.path
 
 @admin_required
-def theme_submit(request):
-
-    tc = ThemeController()
-    vars = None
-    palette = None
-
-    if 'save' in request.POST:
-        if request.POST['saveThemeName'] == '':
-            theme_name = Tag.getTag('prev_theme_customization', default='None')
-            if theme_name == 'None':
-                return HttpResponseRedirect('/theme/')
-        else:
-            theme_name = request.POST['saveThemeName']
-        vars = request.POST.dict()
-        palette = request.POST.getlist('palette')
-        tc.save_customizations(theme_name, vars=vars, palette=palette)
-        Tag.setTag('prev_theme_customization', value=theme_name)
-    elif 'load' in request.POST:
-        (vars, palette) = tc.load_customizations(request.POST['loadThemeName'])
-        Tag.setTag('prev_theme_customization', value=request.POST['loadThemeName'])
-    elif 'delete' in request.POST:
-        tc.delete_customizations(request.POST['loadThemeName'])
-    elif 'apply' in request.POST:
-        vars = request.POST.dict()
-        palette = request.POST.getlist('palette')
-    elif 'reset' in request.POST:
-        pass
-    else:
-        #   No action specified, go back to editor
-        return editor(request)
-
-    #   Re-generate the CSS for the current theme given the supplied settings
-    if vars:
-        tc.customize_theme(vars)
-    if palette:
-        tc.set_palette(palette)
-
-    return HttpResponseRedirect('/theme/')
-
-@admin_required    
 def editor(request):
 
     tc = ThemeController()
     
+    if request.method == 'POST':
+        #   Handle form submission
+        vars = None
+        palette = None
+
+        if 'save' in request.POST:
+            if request.POST['saveThemeName'] == '':
+                theme_name = Tag.getTag('prev_theme_customization', default='None')
+                if theme_name == 'None':
+                    #   Generate a temporary theme name
+                    random_slug  = ''.join(random.choice(string.lowercase) for i in range(4))
+                    theme_name = 'theme-%s-%s' % (datetime.now().strftime('%Y%m%d'), random_slug)
+            else:
+                theme_name = request.POST['saveThemeName']
+            vars = request.POST.dict()
+            palette = request.POST.getlist('palette')
+            tc.save_customizations(theme_name, vars=vars, palette=palette)
+            Tag.setTag('prev_theme_customization', value=theme_name)
+        elif 'load' in request.POST:
+            (vars, palette) = tc.load_customizations(request.POST['loadThemeName'])
+            Tag.setTag('prev_theme_customization', value=request.POST['loadThemeName'])
+        elif 'delete' in request.POST:
+            tc.delete_customizations(request.POST['loadThemeName'])
+        elif 'apply' in request.POST:
+            vars = request.POST.dict()
+            palette = request.POST.getlist('palette')
+
+        #   Re-generate the CSS for the current theme given the supplied settings
+        if vars:
+            tc.customize_theme(vars)
+        if palette:
+            tc.set_palette(palette)
+
     #   Get current theme and customization settings
     current_theme = tc.get_current_theme()
     context = tc.find_less_variables(flat=True)
