@@ -688,6 +688,7 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 
     #   Static files
     Alias /media $BASEDIR/esp/public/media
+    Alias /static $BASEDIR/esp/public/static
 
     #   WSGI scripted Python
     DocumentRoot $BASEDIR/esp/public
