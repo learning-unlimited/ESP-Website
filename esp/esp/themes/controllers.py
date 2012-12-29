@@ -277,3 +277,6 @@ parser.parse(data, function (e, tree) {
 
         print (vars, palette)
         return (vars, palette)
+        
+    def delete_customizations(self, save_name):
+        os.remove(os.path.join(themes_settings.themes_dir, '%s.less' % save_name))
