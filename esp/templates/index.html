@@ -7,37 +7,34 @@
 {% block heading %}  
 <div class="row-fluid">
   <div class="span12">
-    <div class="hero-unit">
-      <h1>Welcome to ESP</h1>
+    <div class="well">
+      <h1>New Site</h1>
+      <h3>You've just set up a Web site for {{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }}!</h3>
+      <a href="/themes/">
+        <button class="btn btn-large btn-block btn-primary" type="button" style="width: 75%; font-size: 1.5em;">Configure site appearance</button>
+      </a>
     </div>
   </div>
 </div>
 {% endblock %}
 
+{% load render_qsd %}
+
+{% inline_qsd_block Q/Web homepage_qsdpart None %}
 <div class="row-fluid">
   <div class="span4">
     <a href="/learn/index.html"><h2>Learn</h2></a>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam rutrum venenatis porta. Ut nisl sapien, pulvinar in suscipit ut, tempor blandit enim. Curabitur arcu ante, facilisis vitae dictum id, interdum non risus. Vestibulum at turpis lacus.</p>
+    <p>Edit this page to serve as a starting point for your students.</p>
   </div>
   <div class="span4">
     <a href="/teach/index.html"><h2>Teach</h2></a>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam rutrum venenatis porta. Ut nisl sapien, pulvinar in suscipit ut, tempor blandit enim. Curabitur arcu ante, facilisis vitae dictum id, interdum non risus. Vestibulum at turpis lacus.</p>
+        <p>Edit this page to serve as a starting point for your teachers.</p>
   </div>
   <div class="span4">
     <a href="/volunteer/index.html"><h2>Volunteer</h2></a>
-    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Etiam rutrum venenatis porta. Ut nisl sapien, pulvinar in suscipit ut, tempor blandit enim. Curabitur arcu ante, facilisis vitae dictum id, interdum non risus. Vestibulum at turpis lacus. 
+        <p>Edit this page to serve as a starting point for your volunteers.</p>
   </div>
 </div>
-
-
-
-
-
-{% comment %}
-{% load render_qsd %}
-{% render_inline_qsd "Q/Web" "homepage_qsdpart" %}
-{% endcomment %}
-
+{% end_inline_qsd_block %}
 
 {% endblock %}
-
