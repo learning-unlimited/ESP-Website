@@ -44,8 +44,7 @@ import re
 import subprocess
 import tempfile
 import distutils.dir_util
-
-THEME_DEBUG = True
+import simplejson as json
 
 class ThemeController(object):
     """
@@ -56,6 +55,9 @@ class ThemeController(object):
         
     def get_current_theme(self):
         return Tag.getTag('current_theme_name', default='default')
+        
+    def get_current_params(self):
+        return json.loads(Tag.getTag('current_theme_params', default='{}'))
         
     def get_theme_names(self):
         return os.listdir(settings.PROJECT_ROOT + 'esp/themes/theme_data/')
@@ -120,11 +122,11 @@ class ThemeController(object):
         less_data = ''
         for filename in self.get_less_names(theme_name):
             less_file = open(filename)
-            if THEME_DEBUG: print 'Including LESS source %s' % filename
+            if themes_settings.THEME_DEBUG: print 'Including LESS source %s' % filename
             less_data += '\n' + less_file.read()
             less_file.close()
         
-        if THEME_DEBUG:
+        if themes_settings.THEME_DEBUG:
             tf1 = open('debug_1.less', 'w')
             tf1.write(less_data)
             tf1.close()
@@ -134,7 +136,7 @@ class ThemeController(object):
             less_data = re.sub(r'@%s:(\s*)(.*?);' % variable_name, r'@%s: %s;' % (variable_name, variable_value), less_data)
             #   print 'Substituted value %s = %s' % (variable_name, variable_value)
         
-        if THEME_DEBUG:
+        if themes_settings.THEME_DEBUG:
             tf1 = open('debug_2.less', 'w')
             tf1.write(less_data)
             tf1.close()
@@ -142,7 +144,7 @@ class ThemeController(object):
         (less_output_fd, less_output_filename) = tempfile.mkstemp()
         less_output_file = os.fdopen(less_output_fd, 'w')
         less_output_file.write(less_data)
-        if THEME_DEBUG: print 'Wrote %d bytes to LESS file %s' % (len(less_data), less_output_filename)
+        if themes_settings.THEME_DEBUG: print 'Wrote %d bytes to LESS file %s' % (len(less_data), less_output_filename)
         less_output_file.close()
         
         less_search_path = ', '.join([("'%s'" % dir.replace('\\', '/')) for dir in (settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor/less')])])
@@ -173,7 +175,7 @@ parser.parse(data, function (e, tree) {
         output_file = open(output_filename, 'w')
         output_file.write(css_data)
         output_file.close()
-        if THEME_DEBUG: print 'Wrote %.1f KB CSS output to %s' % (len(css_data) / 1000., output_filename)
+        if themes_settings.THEME_DEBUG: print 'Wrote %.1f KB CSS output to %s' % (len(css_data) / 1000., output_filename)
 
     def clear_theme(self, theme_name=None):
     
@@ -181,10 +183,10 @@ parser.parse(data, function (e, tree) {
             theme_name = self.get_current_theme()
         
         #   Remove template overrides matching the theme name
-        if THEME_DEBUG: print 'Clearing theme: %s' % theme_name
+        if themes_settings.THEME_DEBUG: print 'Clearing theme: %s' % theme_name
         for template_name in self.get_template_names(theme_name):
             TemplateOverride.objects.filter(name=template_name).delete()
-            if THEME_DEBUG: print '-- Removed template override: %s' % template_name
+            if themes_settings.THEME_DEBUG: print '-- Removed template override: %s' % template_name
         
         #   Remove images and script files from the active theme directory
         if os.path.exists(settings.MEDIA_ROOT + 'images/theme'):
@@ -193,17 +195,18 @@ parser.parse(data, function (e, tree) {
             distutils.dir_util.remove_tree(settings.MEDIA_ROOT + 'scripts/theme')
 
         Tag.unSetTag('current_theme_name')
+        Tag.unSetTag('current_theme_params')
 
     def load_theme(self, theme_name, **kwargs):
     
         #   Create template overrides using data provided (our models handle versioning)
-        if THEME_DEBUG: print 'Loading theme: %s' % theme_name
+        if themes_settings.THEME_DEBUG: print 'Loading theme: %s' % theme_name
         for template_name in self.get_template_names(theme_name):
             to = TemplateOverride(name=template_name)
             to.content = open(self.base_dir(theme_name) + '/templates/' + template_name).read()
             #   print 'Template override %s contents: \n%s' % (to.name, to.content)
             to.save()
-            if THEME_DEBUG: print '-- Created template override: %s' % template_name
+            if themes_settings.THEME_DEBUG: print '-- Created template override: %s' % template_name
             
         #   Collect LESS files from appropriate sources and compile CSS
         self.compile_css(theme_name, {}, settings.MEDIA_ROOT + 'styles/theme_compiled.css')
@@ -215,6 +218,16 @@ parser.parse(data, function (e, tree) {
             distutils.dir_util.copy_tree(self.base_dir(theme_name) + '/scripts', settings.MEDIA_ROOT + 'scripts/theme')
 
         Tag.setTag('current_theme_name', value=theme_name)
+        Tag.setTag('current_theme_params', value='{}')
 
     def customize_theme(self, vars):
         self.compile_css(self.get_current_theme(), vars, settings.MEDIA_ROOT + 'styles/theme_compiled.css')
+        vars_available = self.find_less_variables(self.get_current_theme(), flat=True)
+        vars_diff = {}
+        for key in vars:
+            if key in vars_available and len(vars[key].strip()) > 0 and vars[key] != vars_available[key]:
+                print 'Customizing: %s -> %s' % (key, vars[key])
+                vars_diff[key] = vars[key]
+        if themes_settings.THEME_DEBUG: print 'Customized %d variables for theme %s' % (len(vars_diff), self.get_current_theme())
+        Tag.setTag('current_theme_params', value=json.dumps(vars_diff))
+

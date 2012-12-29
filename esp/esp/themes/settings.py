@@ -26,4 +26,5 @@ sans_serif_fonts = {"Impact":"Impact, Charcoal, sans-serif",
                     "Courier New":"'Courier New', Courier, monospace",
                     "Arial":"Arial, Helvetica, sans-serif",
                     "Georgia":"Georgia, serif"}
-                    
+
+THEME_DEBUG = True
