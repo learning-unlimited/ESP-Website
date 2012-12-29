@@ -48,6 +48,14 @@ import string
 import os.path
 
 @admin_required
+def landing(request):
+    context = {}
+    tc = ThemeController()
+    context['theme_name'] = tc.get_current_theme()
+    context['last_customization_name'] = Tag.getTag('prev_theme_customization', default='None')
+    return render_to_response('themes/landing.html', context)
+
+@admin_required
 def selector(request):
     context = {}
     tc = ThemeController()

@@ -1,0 +1,25 @@
+{% extends "main.html" %}
+{% block title %}Themes{% endblock %}
+{% block content %}
+
+<h1>Themes - Site Appearance Customization</h1>
+
+<div class="span5 offset2 well">
+    <center>
+    <h3>Current theme: {{ theme_name }} </h3>
+    <a href="/themes/select/">
+    <button class="btn btn-large btn-block btn-primary" type="button">Step 1: Select a theme</button>
+    </a>
+    </center>
+</div>
+<br />
+<div class="span5 offset2 well">
+    <center>
+    <h3>Current customization: {{ last_customization_name }} </h3>
+    <a href="/themes/customize/">
+    <button class="btn btn-large btn-block btn-primary" type="button">Step 2: Customize the theme</button>
+    </a>
+    </center>
+</div>
+
+{% endblock %}
