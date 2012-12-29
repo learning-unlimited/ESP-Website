@@ -179,23 +179,31 @@ class StudentClassApp(models.Model):
 
 class FormstackStudentAppManager(models.Manager):
     fetched = set()
+
     def fetch(self, program):
         """ Get apps for a particular program from the Formstack API. """
+
+        # avoid infinite recursion
         self.fetched.add(program)
+
         # get submissions from the API
         settings = program.getModuleExtension('FormstackAppSettings')
         submissions = settings.form.get_submissions()
-        # parse submissions, link usernames, make a StudentApp object
+
+        # parse submitted data and make model instances
         apps = []
         for submission in submissions:
             data_dict = { int(entry['field']): entry['value']
                           for entry in submission.get_data() }
+
+            # link user
             username = data_dict.get(settings.username_field)
             try:
                 user = ESPUser.objects.get(username=username)
             except ESPUser.DoesNotExist:
                 continue # no matching user, ignore
 
+            # link class subjects
             def get_subject(s):
                 if s is None: return None
                 val, _, _ = s.partition('|')
@@ -215,26 +223,24 @@ class FormstackStudentAppManager(models.Manager):
             choices[1] = get_subject(data_dict.get(settings.coreclass1_field))
             choices[2] = get_subject(data_dict.get(settings.coreclass2_field))
             choices[3] = get_subject(data_dict.get(settings.coreclass3_field))
-            app, created = self.get_or_create(
-                submission_id=submission_id,
-                defaults={
-                    'user': user,
-                    'program': program
-                    })
+
+            # update app object, or make one if it doesn't exist
+            try:
+                app = self.get(submission_id=submission.id)
+            except self.model.DoesNotExist:
+                app = self.model(submission_id=submission.id)
+            app.user = user
+            app.program = program
+
+            # update class app objects
             for preference, subject in choices.items():
                 if subject is not None:
-                    StudentClassApp.objects.get_or_create(
-                        app=app,
-                        student_preference=preference,
-                        defaults={
-                            'subject': subject
-                            })
-            app._data = submission # cache submitted data
+                    try:
+                        classapp = StudentClassApp.objects.get(app=app, student_preference=preference)
+                    except StudentClassApp.DoesNotExist:
+                        classapp = StudentClassApp(app=app, student_preference=preference)
+                    classapp.subject = subject
             apps.append(app)
-        # remove obsolete model instances (deleted from Formstack?)
-        all_apps = self.filter(program=program)
-        old_apps = all_apps.exclude(id__in=[app.id for app in apps])
-        old_apps.delete()
         return apps
 
     def get_query_set(self):
