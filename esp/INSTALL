@@ -166,14 +166,6 @@ $ cd ./public/media
 $ ln -s default_images images
 $ ln -s default_styles styles
 
-e) Make admin interface pretty
-
-You will need to add a symbolic link for the images and stylesheets used by
-the Django admin interface (/admin).  From the same directory (/public/media)
-as above:
-
-$ ln -s /var/lib/python-support/python2.5/django/contrib/admin/media admin
-
 
 4) Explore your site
 
