@@ -256,6 +256,8 @@ parser.parse(data, function (e, tree) {
             theme_name = self.get_current_theme()
         if vars is None:
             vars = self.get_current_params()
+        if palette is None:
+            palette = self.get_palette()
 
         vars_orig = self.find_less_variables(theme_name, flat=True)
         for key in vars.keys():
