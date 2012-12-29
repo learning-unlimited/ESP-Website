@@ -12,7 +12,11 @@
 @import "reset.less";
 
 // Core variables and mixins
-@import "variables.less"; // Modify this for custom colors, font-sizes, etc
+//  In the generic templates system, variables are provided in the same LESS file,
+//  so we don't need this include.  The rest of the includes are kept since they are
+//  needed for Bootstrap to work.
+//  -- Michael Price, 12/28/2012
+//  @import "variables.less";
 @import "mixins.less";
 
 // Grid system and page structure
