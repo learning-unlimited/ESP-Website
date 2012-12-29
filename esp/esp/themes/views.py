@@ -48,6 +48,24 @@ import string
 import os.path
 
 @admin_required
+def selector(request):
+    context = {}
+    tc = ThemeController()
+    
+    if request.method == 'POST' and 'action' in request.POST:
+        if request.POST['action'] == 'select':
+            theme_name = request.POST['theme']
+            tc.save_customizations('%s-last' % tc.get_current_theme())
+            tc.load_theme(theme_name)
+        elif request.POST['action'] == 'clear':
+            tc.save_customizations('%s-last' % tc.get_current_theme())
+            tc.clear_theme()
+    
+    context['theme_name'] = tc.get_current_theme()
+    context['themes'] = tc.get_theme_names()
+    return render_to_response('themes/selector.html', context)
+
+@admin_required
 def editor(request):
 
     tc = ThemeController()
