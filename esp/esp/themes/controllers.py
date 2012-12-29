@@ -38,6 +38,8 @@ from esp.tagdict.models import Tag
 from esp.themes import settings as themes_settings
 
 from django.conf import settings
+from django.template.loader import render_to_string
+
 import cStringIO
 import os
 import re
@@ -236,3 +238,42 @@ parser.parse(data, function (e, tree) {
         if themes_settings.THEME_DEBUG: print 'Customized %d variables for theme %s' % (len(vars_diff), self.get_current_theme())
         Tag.setTag('current_theme_params', value=json.dumps(vars_diff))
 
+    def save_customizations(self, save_name, theme_name=None, vars=None, palette=None):
+        if theme_name is None:
+            theme_name = self.get_current_theme()
+        if vars is None:
+            vars = self.get_current_params()
+
+        context = {}
+        context['vars'] = vars
+        context['base_theme'] = theme_name
+        context['save_name'] = save_name
+        context['palette'] = palette
+
+        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % save_name), 'w')
+        f.write(render_to_string('themes/custom_vars.less', context))
+        f.close()
+
+    def load_customizations(self, save_name):
+
+        f = open(os.path.join(themes_settings.themes_dir, '%s.less' % save_name), 'r')
+        data = f.read()
+        f.close()
+
+        #   Collect LESS variables
+        vars = {}
+        for match in re.findall(r'@(\w+):\s*(.*?);', data):
+            vars[match[0]] = match[1]
+
+        #   Collect save name stored in file
+        save_name_match = re.search(r'// Theme Name: (.+?)\n', data)
+        if save_name_match:
+            assert(save_name == save_name_match.group(1))
+
+        #   Collect palette
+        palette = []
+        for match in re.findall(r'palette:(#?\w+?);', data):
+            palette.append(match)
+
+        print (vars, palette)
+        return (vars, palette)
