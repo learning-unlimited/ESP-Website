@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from django.views.generic.simple import direct_to_template
+from django.views.generic.base import TemplateView
 from django.http import HttpResponseRedirect
 from esp.users.models import ESPUser
 
@@ -51,6 +51,4 @@ def index(request, *args, **kwargs):
         else:
             return HttpResponseRedirect('/learn/index.html')
 
-    return direct_to_template(request, *args, **kwargs)
-
-
+    return TemplateView.as_view(request, *args, **kwargs)
