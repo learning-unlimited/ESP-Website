@@ -280,3 +280,11 @@ parser.parse(data, function (e, tree) {
         
     def delete_customizations(self, save_name):
         os.remove(os.path.join(themes_settings.themes_dir, '%s.less' % save_name))
+
+    def get_customization_names(self):
+        result = []
+        filenames = os.listdir(os.path.join(themes_settings.themes_dir))
+        for fn in filenames:
+            if fn.endswith('.less'):
+                result.append(fn[:-5])
+        return result
