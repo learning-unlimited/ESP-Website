@@ -4,7 +4,7 @@ from esp.users.models import ESPUser
 from esp.program.models import Program, ClassSubject
 from esp.program.modules.base import ProgramModuleObj
 from esp.formstack.api import Formstack
-from esp.formstack.models import FormstackForm
+from esp.formstack.models import FormstackForm, FormstackSubmission
 from esp.lib.markdown import markdown
 
 class FormstackAppSettings(models.Model):
@@ -16,7 +16,7 @@ class FormstackAppSettings(models.Model):
     module = models.ForeignKey(ProgramModuleObj)
 
     # formstack settings
-    form = models.ForeignKey(FormstackForm, null=True)
+    form_id = models.IntegerField(null=True)
     api_key = models.CharField(max_length=80)
     handshake_key = models.CharField(max_length=80, blank=True)
     # end formstack settings
@@ -34,6 +34,10 @@ class FormstackAppSettings(models.Model):
         A reference to the Formstack client using the stored API key.
         """
         return Formstack(self.api_key)
+
+    @property
+    def form(self):
+        return FormstackForm(self.form_id, self.formstack)
 
     def get_program(self):
         """
@@ -71,29 +75,14 @@ class FormstackAppSettings(models.Model):
         metadata (e.g. field name).
         """
 
-        # return cached copy if available
-        if hasattr(self, '_fields'):
-            return self._fields
-        # get info from the API
-        api_response = self.formstack.form(self.form.id)
-        fields = api_response['fields']
-        # save cached copy
-        self._fields = fields
-        return fields
+        return self.form.get_field_info()
 
     def get_student_apps(self):
         """
         Returns a list of StudentApp objects, one per valid form submission.
         """
 
-        # return cached copy if available
-        if hasattr(self, '_apps'):
-            return self._apps
-
-        # fetch and store if unavailable
-        apps = FormstackStudentApp.objects.fetch(self.get_program())
-        self._apps = apps
-        return apps
+        return FormstackStudentApp.objects.fetch(self.get_program())
 
 class StudentProgramApp(models.Model):
     """ A student's application to the program. """
@@ -195,18 +184,12 @@ class FormstackStudentAppManager(models.Manager):
         self.fetched.add(program)
         # get submissions from the API
         settings = program.getModuleExtension('FormstackAppSettings')
-        api_response = settings.formstack.data(settings.form.id, {'per_page': 100})
-        submissions = api_response['submissions']
-        for i in range(1, api_response['pages']):
-            api_response = settings.formstack.data(settings.form.id,
-                                               {'per_page': 100, 'page': i+1})
-            submissions += api_response['submissions']
+        submissions = settings.form.get_submissions()
         # parse submissions, link usernames, make a StudentApp object
         apps = []
         for submission in submissions:
-            submission_id = int(submission['id'])
             data_dict = { int(entry['field']): entry['value']
-                          for entry in submission['data'] }
+                          for entry in submission.get_data() }
             username = data_dict.get(settings.username_field)
             try:
                 user = ESPUser.objects.get(username=username)
@@ -270,16 +253,14 @@ class FormstackStudentApp(StudentProgramApp):
     def program_settings(self):
         return self.program.getModuleExtension('FormstackAppSettings')
 
+    @property
+    def submission(self):
+        return FormstackSubmission(self.submission_id, self.program_settings.formstack)
+
     def get_submitted_data(self):
         """ Returns the raw submitted data from the API, as a JSON dict. """
 
-        # return cached copy if available
-        if hasattr(self, '_data'):
-            return self._data
-
-        submission = self.program_settings.formstack.submission(self.submission_id)
-        self._data = submission
-        return submission
+        return self.submission.get_data()
 
     def get_responses(self):
         """ Returns a list of (question, response) tuples from submitted data. """
@@ -288,7 +269,7 @@ class FormstackStudentApp(StudentProgramApp):
         info = self.program_settings.get_field_info()
         id_to_label = { field['id']: field['label'] for field in info }
         result = []
-        for response in data['data']:
+        for response in data:
             result.append((id_to_label[response['field']],
                            response['value']))
         return result
@@ -298,7 +279,7 @@ class FormstackStudentApp(StudentProgramApp):
 
         data = self.get_submitted_data()
         data_dict = {}
-        for response in data['data']:
+        for response in data:
             data_dict[response['field']] = response['value']
         template = Template(self.program_settings.teacher_view_template)
         context = Context({'fields': data_dict})
