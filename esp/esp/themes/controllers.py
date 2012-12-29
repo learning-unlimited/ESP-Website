@@ -207,6 +207,8 @@ parser.parse(data, function (e, tree) {
 
         Tag.unSetTag('current_theme_name')
         Tag.unSetTag('current_theme_params')
+        Tag.unSetTag('current_theme_palette')
+        Tag.unSetTag('prev_theme_customization')
 
     def load_theme(self, theme_name, **kwargs):
     
@@ -230,6 +232,8 @@ parser.parse(data, function (e, tree) {
 
         Tag.setTag('current_theme_name', value=theme_name)
         Tag.setTag('current_theme_params', value='{}')
+        Tag.unSetTag('current_theme_palette')
+        Tag.unSetTag('prev_theme_customization')
 
     def customize_theme(self, vars):
         self.compile_css(self.get_current_theme(), vars, os.path.join(settings.MEDIA_ROOT, 'styles/theme_compiled.css'))
