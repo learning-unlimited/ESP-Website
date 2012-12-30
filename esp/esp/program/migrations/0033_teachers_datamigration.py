@@ -10,7 +10,10 @@ from django.core.cache import cache
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        bits=UserBit.objects.filter(verb__uri="V/Flags/Registration/Teacher")
+        #   Use only currently valid UserBits
+        bits=UserBit.valid_objects().filter(verb__uri="V/Flags/Registration/Teacher")
+        #   Keep track of pairs copied so far so we don't duplicate
+        pairs_so_far = set()
         i=0
         for bit in bits:
             cls=ClassSubject.objects.filter(anchor=bit.qsc)
@@ -21,7 +24,12 @@ class Migration(DataMigration):
                 continue
             usr=bit.user
             cls=cls[0]
-
+            
+            #   Skip (user, class) pairs that we already stored
+            if (cls.id, usr.id) in pairs_so_far:
+                continue
+            pairs_so_far.add((cls.id, usr.id))
+            
             #due to a issue with cache stuff, we'll manually insert the data
             from django.db import connection, transaction
             cursor = connection.cursor()
