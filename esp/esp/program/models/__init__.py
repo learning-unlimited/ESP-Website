@@ -809,13 +809,13 @@ class Program(models.Model, CustomFormsLinkModel):
     
         
     def getLineItemTypes(self, user=None, required=True):
-        from esp.accounting_core.models import LineItemType, Balance
-        
+        from esp.accounting.controllers import ProgramAccountingController
+        pac = ProgramAccountingController(self)
         if required:
-            li_types = list(LineItemType.objects.filter(anchor=GetNode(self.anchor.get_uri()+'/LineItemTypes/Required')))
+            li_types = list(pac.get_lineitemtypes(required_only=True))
         else:
-            li_types = list(LineItemType.objects.filter(anchor__parent=GetNode(self.anchor.get_uri()+'/LineItemTypes/Optional')))
-        
+            li_types = list(pac.get_lineitemtypes(optional_only=True))
+
         return li_types
 
     @cache_function
