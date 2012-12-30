@@ -93,7 +93,7 @@ class ProgramPrintables(ProgramModuleObj):
             lineitems = LineItem.objects.forProgram(prog).order_by('li_type','user').select_related()
         
         for lineitem in lineitems:
-            lineitem.has_financial_aid = ESPUser(lineitem.user).hasFinancialAid(prog.anchor)
+            lineitem.has_financial_aid = ESPUser(lineitem.user).hasFinancialAid(prog)
 
         def sort_fn(a,b):
             if a.user.last_name.lower() > b.user.last_name.lower():
@@ -949,7 +949,7 @@ Volunteer schedule for %s:
             student.itemizedcosttotal = invoice.cost()
             
             # check financial aid
-            student.has_financial_aid = student.hasFinancialAid(prog.anchor)
+            student.has_financial_aid = student.hasFinancialAid(prog)
             if student.has_financial_aid and not student.itemizedcosts.filter(li_type__text=u'Financial Aid', amount__gt=0).distinct().count() and not student.itemizedcosts.filter(anchor__uri=prog.anchor.uri+"/Accounts/FinancialAid", amount__gt=0).distinct().count():
                 apps = FinancialAidRequest.objects.filter(user=student, program=prog, approved__isnull=False).distinct()
                 aid = max(list(apps.values_list('amount_received', flat=True).distinct()))
@@ -1274,7 +1274,7 @@ Volunteer schedule for %s:
                 else:
                     finaid_status = 'Req. (No RL)'
             
-            if student.hasFinancialAid(self.program_anchor_cached()):
+            if student.hasFinancialAid(self.program):
                 paid_symbol = 'X'
                 finaid_status = 'Approved'
             else:
@@ -1312,7 +1312,7 @@ Volunteer schedule for %s:
             for student in students:
                 if c in student.getEnrolledClasses(self.program):
                     paid_symbol = ''
-                    if student.hasFinancialAid(self.program_anchor_cached()):
+                    if student.hasFinancialAid(self.program):
                         paid_symbol = 'X'
                     else:
                         li_types = prog.getLineItemTypes(student)
