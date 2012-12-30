@@ -208,6 +208,7 @@ INSTALLED_APPS = (
     'esp.membership',
 #    'esp.queue',
     'esp.survey',
+    'esp.accounting',
     'esp.accounting_core',
     'esp.accounting_docs',
     'esp.shortterm',
