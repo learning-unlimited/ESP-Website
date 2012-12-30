@@ -323,7 +323,7 @@ class ProgramModuleObj(models.Model):
 
         if not canView:
             deadline = {'learn':'Student', 'teach':'Teacher'}[self.module.module_type]+extension
-            canView = Permission.user_has_perms(get_current_request().user, deadline, program=self.program)
+            canView = Permission.user_has_perm(get_current_request().user, deadline, program=self.program)
 
         return canView
 
