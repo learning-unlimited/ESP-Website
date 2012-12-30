@@ -257,12 +257,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     
         return {'classes': classes, 'teachers': teachers}
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
-    # Put this import here rather than at the toplevel, because wildcard messes things up
-    from esp.cache.key_set import wildcard
-    class_subjects.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
-    class_subjects.cached_function.depend_on_cache(ClassSubject.teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
 
-        
     @aux_call
     @json_response()
     @needs_student
