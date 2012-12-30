@@ -62,7 +62,7 @@ class FinancialAidAppModule(ProgramModuleObj):
         Q_students = Q(financialaidrequest__program = self.program)
 
         Q_students_complete = Q(financialaidrequest__done = True)
-        Q_students_approved = Q(financialaidrequest__amount_received__gt=0) | Q(financialaidrequest__approved__isnull=False)
+        Q_students_approved = Q(financialaidrequest__financialaidgrant__percent__isnull=False) | Q(financialaidrequest__financialaidgrant__amount_max_dec__isnull=False)
 
         if QObject:
             return {'studentfinaid_complete': Q_students & Q_students_complete,
