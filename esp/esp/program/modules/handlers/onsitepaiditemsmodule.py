@@ -38,12 +38,12 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
+from esp.users.controllers.usersearch import UserSearchController
 from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponseRedirect
 from esp.users.views    import search_for_user
-from esp.accounting_docs.models   import Document
-from esp.accounting_core.models   import LineItemType
+from esp.accounting.controllers import IndividualAccountingController
 
 
 class OnsitePaidItemsModule(ProgramModuleObj):
@@ -60,23 +60,22 @@ class OnsitePaidItemsModule(ProgramModuleObj):
     @needs_onsite
     def paiditems(self, request, tl, one, two, module, extra, prog):
 
-        user, found = search_for_user(request, self.program.students_union())
+        #   Get a user
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
-            return user
+            return filterObj
+        user = filterObj.getList(ESPUser).distinct()[0]
 
+        #   Get the optional purchases for that user
+        iac = IndividualAccountingController(prog, user)
         context = {}
         context['student'] = user
         context['program'] = prog
-
-        li_types = prog.getLineItemTypes(user)
-
-        try:
-            invoice = Document.get_invoice(user, prog.anchor, li_types, dont_duplicate=True, get_complete=True)
-        except:
-            invoice = Document.get_invoice(user, prog.anchor, li_types, dont_duplicate=True)
-
-        context['reserveditems'] = invoice.get_items()
-        context['cost'] = invoice.cost()
+        context['requireditems'] = iac.get_transfers(required_only=True)
+        context['reserveditems'] = iac.get_transfers(optional_only=True)
+        context['amount_requested'] = iac.amount_requested()
+        context['amount_finaid'] = iac.amount_finaid()
+        context['amount_due'] = iac.amount_due()
         
         return render_to_response(self.baseDir()+'paiditems.html', request, (prog, tl), context)
 
