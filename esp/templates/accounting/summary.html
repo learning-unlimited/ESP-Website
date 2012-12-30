@@ -1,0 +1,25 @@
+{% extends "main.html" %}
+
+{% block title %}Accounting{% endblock %}
+
+{% block content %}
+
+<h1>Accounts Summary</h1>
+
+<ul>
+{% for account in accounts %}
+    <li>
+    <b>{{ account.description_title }}</b> ({{ account.name }})
+    <br />
+    {{ account.description_contents|linebreaksbr }}
+    <ul>
+        <li>Balance: ${{ account.balance }}</li>
+        <li>Value of pending transactions: ${{ account.pending_balance }} (included in balance)</li>
+    </ul>
+    <br />
+    </li>
+{% endfor %}
+
+</ul>
+
+{% endblock %}
