@@ -39,10 +39,9 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.web.util        import render_to_response
 from esp.users.models    import ESPUser, User
 from esp.datatree.models import *
+from esp.accounting.controllers import IndividualAccountingController
 from django.db.models.query import Q
 from esp.middleware   import ESPError
-from esp.accounting_docs.models import Document
-from esp.accounting_core.models import LineItemType, EmptyTransactionException
 from decimal import Decimal
 from datetime import datetime
 from django.db import models
@@ -65,8 +64,9 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             }
 
     def have_paid(self, user):
-        """ Whether the user has paid for this program or its parent program.  """
-        return len(Document.get_completed(user, self.program_anchor_cached())) > 0
+        """ Whether the user has paid for this program.  """
+        iac = IndividualAccountingController(self.program, user)
+        return (iac.amount_due() <= 0)
 
     def students(self, QObject = False):
         now = datetime.now()
@@ -149,19 +149,13 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         from esp.program.modules.module_ext import DBReceipt
 
-        try:
-            invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True, get_complete=True)
-        except:
-            invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True)
-
-        #   Why is get_complete false?
-        receipt = Document.get_receipt(request.user, prog.anchor, [], get_complete=False)
+        iac = IndividualAccountingController(request.user)
 
         context = {}
         context['one'] = one
         context['two'] = two
 
-        context['itemizedcosts'] = invoice.get_items()
+        context['itemizedcosts'] = iac.get_transfers()
 
         user = ESPUser(request.user)
         context['finaid'] = user.hasFinancialAid(prog)
@@ -169,11 +163,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             context['finaid_app'] = user.financialaidrequest_set.filter(program=prog).order_by('-id')[0]
         else:
             context['finaid_app'] = None
-
-        try:
-            context['balance'] = Decimal("%0.2f" % invoice.cost())
-        except EmptyTransactionException:
-            context['balance'] = Decimal("0.0")
+        context['balance'] = iac.amount_due()
             
         context['owe_money'] = ( context['balance'] != Decimal("0.0") )
 
