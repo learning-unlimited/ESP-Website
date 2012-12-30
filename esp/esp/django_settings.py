@@ -209,6 +209,7 @@ INSTALLED_APPS = (
     'esp.gen_media',
     'esp.dblog',
     'esp.survey',
+    'esp.accounting',
     'esp.accounting_core',
     'esp.accounting_docs',
     'esp.shortterm',
