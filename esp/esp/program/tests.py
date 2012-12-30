@@ -248,7 +248,7 @@ class ProgramHappenTest(TestCase):
         from esp.users.models import ESPUser
         from esp.program.models import Program, ProgramModule, ClassCategories
         from esp.program.modules.base import ProgramModuleObj
-        from esp.accounting_core.models import LineItemType
+        from esp.accounting.models import LineItemType
         from decimal import Decimal
         # Imports for the HttpRequest hack
         from esp.program.views import newprogram
@@ -310,7 +310,7 @@ class ProgramHappenTest(TestCase):
         self.assertEqual( self.prog.anchor, self.program_type_anchor[prog_dict['term']], u'Anchor not properly set.' )
         # Program Cost
         self.assertEqual(
-            Decimal(-LineItemType.objects.get(anchor__name="Required", anchor__parent__parent=self.prog.anchor).amount),
+            Decimal(LineItemType.objects.get(required=True, program=self.prog).amount),
             Decimal(prog_dict['base_cost']),
             'Program admission cost not set properly.' )
     
