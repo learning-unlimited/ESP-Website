@@ -670,93 +670,26 @@ class ESPUser(User, AnonymousUser):
     def get_finaid_model():
         from esp.program.models import FinancialAidRequest
         return FinancialAidRequest
+    def get_finaid_grant_model():
+        from esp.program.models import FinancialAidRequest
+        return FinancialAidRequest
 
     @cache_function
     def appliedFinancialAid(self, program):
         return self.financialaidrequest_set.all().filter(program=program, done=True).count() > 0
     #   Invalidate cache when any of the user's financial aid requests are changed
     appliedFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
+    appliedFinancialAid.depend_on_row(get_finaid_grant_model, lambda fr: {'self': fr.request.user})
 
     @cache_function
-    def hasFinancialAid(self, anchor):
-        from esp.program.models import Program, FinancialAidRequest
-        progs = [p['id'] for p in Program.objects.filter(anchor=anchor).values('id')]
-        apps = FinancialAidRequest.objects.filter(user=self, program__in=progs)
-        for a in apps:
-            if a.approved:
-                return True
-        return False
-    hasFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
-
-    def paymentStatus(self, anchor=None):
-        """ Returns a tuple of (has_paid, status_str, amount_owed, line_items) to indicate
-        the user's payment obligations to ESP:
-        -   has_paid: True or False, indicating whether any money is owed to
-            the accounts under the specified anchor
-        -   status: A string briefly explaining the status of the transactions
-        -   amount_owed: A Decimal for the amount they need to pay
-        -   line_items: A list of the relevant line items
-        """
-        from esp.accounting_docs.models import Document
-        from esp.accounting_core.models import LineItem, Transaction
-
-        if anchor is None:
-            anchor = GetNode('Q/Programs')
-
-        receivable_parent = GetNode('Q/Accounts/Receivable')
-        realized_parent = GetNode('Q/Accounts/Realized')
-
-        #   We have to check both complete and incomplete documents belonging to the anchor.
-        docs = Document.objects.filter(user=self, anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend)
-
-        li_list = []
-        for d in docs:
-            li_list += list(d.txn.lineitem_set.all())
-
-        amt_charged = 0
-        amt_expected = 0
-        amt_paid = 0
-        #   Compute amount charged by looking at line items posted under the specified anchor.
-        #   Compute amount expected by looking at line items posted to Accounts Receivable.
-        #   Compute amount paid by looking at line items posted to Accounts Realized.
-        #   Exclude duplicate line items.  We may want to remove this soon, but it was
-        #   a necessity for HSSP/Spark.   -Michael
-        previous_li = []
-        for li in li_list:
-            li_str = '%.2f,%d,%d' % (li.amount, li.li_type.id, li.anchor.id)
-            if li_str not in previous_li:
-                previous_li.append(li_str)
-            else:
-                continue
-
-            if li.anchor in anchor:
-                amt_charged -= li.amount
-            if li.anchor in receivable_parent:
-                amt_expected += li.amount
-            if li.anchor in realized_parent:
-                amt_paid += li.amount
-        has_paid = False
-        status = 'Unknown'
-        if amt_charged == 0:
-            status = 'No charges'
-        elif amt_expected != 0:
-            if amt_paid == 0:
-                status = 'Pending/Unpaid'
-            else:
-                status = 'Partially paid'
-        elif amt_charged > 0 and amt_paid == 0:
-            status = 'Unpaid'
+    def hasFinancialAid(self, program):
+        from esp.accounting.controllers import IndividualAccountingController
+        iac = IndividualAccountingController(program, self)
+        if iac.finaid_amount() > 0:
+            return True
         else:
-            status = 'Fully paid'
-            has_paid = True
-        
-        amt_owed = amt_charged - amt_paid
-        return (has_paid, status, amt_owed, li_list)
-
-    has_paid = lambda x, y: x.paymentStatus(y)[0]
-    payment_status_str = lambda x, y: x.paymentStatus(y)[1]
-    amount_owed = lambda x, y: x.paymentStatus(y)[2]
-    line_items = lambda x, y: x.paymentStatus(y)[3]
+            return False
+    hasFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
 
     def isOnsite(self, program = None):
         return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
