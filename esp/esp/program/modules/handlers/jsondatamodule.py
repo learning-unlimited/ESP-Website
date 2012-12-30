@@ -220,7 +220,50 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     # Put this import here rather than at the toplevel, because wildcard messes things up
     from esp.cache.key_set import wildcard
     sections.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
-        
+
+    @aux_call
+    @json_response({
+            'id': 'id',
+            'status': 'status',
+            'anchor__friendly_name': 'title',
+            'category__symbol': 'category',
+            'grade_max': 'grade_max',
+            'grade_min': 'grade_min',
+            'anchor__name': 'emailcode',
+            })
+    @cached_module_view
+    def class_subjects(prog):
+        teacher_dict = {}
+        teachers = []
+        classes = list(prog.classes().values(
+                'id',
+                'status',
+                'anchor__friendly_name',
+                'category__symbol',
+                'anchor__name',
+                'grade_max',
+                'grade_min'))
+
+        for cls in classes:
+            c = ClassSubject.objects.get(id=cls['id'])
+            cls['length'] = float(c.duration)
+            cls['sections'] = [s.id for s in c.sections.all()]
+            cls['teachers'] = [t.id for t in c.teachers()]
+            for t in c.teachers():
+                if teacher_dict.has_key(t.id):
+                    continue
+                teacher_dict[t.id] = True
+                # Build up teacher availability
+                availabilities = UserAvailability.objects.filter(user__in=c.teachers()).filter(QTree(event__anchor__below = prog.anchor)).values('user_id', 'event_id')
+                avail_for_user = defaultdict(list)
+                for avail in availabilities:
+                    avail_for_user[avail['user_id']].append(avail['event_id'])
+                teachers.append({'id': t.id, 'first_name': t.first_name, 'last\
+_name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for x in t.getTaughtSectionsFromProgram(prog)]})
+    
+        return {'classes': classes, 'teachers': teachers}
+    class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
+
     @aux_call
     @json_response()
     @needs_student
