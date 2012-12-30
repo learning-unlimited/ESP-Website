@@ -13,7 +13,7 @@ class Migration(DataMigration):
     def forwards(self, orm):
         def end(bit):
             date = bit.enddate
-            if date > datetime.datetime(3000,1,1):
+            if date > datetime(3000,1,1):
                 return None
             return date
 
