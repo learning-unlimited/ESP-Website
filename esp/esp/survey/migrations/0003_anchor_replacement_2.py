@@ -4,6 +4,7 @@ from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 from django.core.exceptions import MultipleObjectsReturned
+from django.contrib.contenttypes.models import ContentType
 from esp.program.models import Program, ClassSubject, ClassSection
 from esp.survey.models import Survey, Question, Answer
 
@@ -28,25 +29,39 @@ class Migration(DataMigration):
                 q.per_class = True
                 q.save()
 
-        #answer model
-        for a in orm.Answer.objects.all():
-            o=None
-            m = [Program, ClassSubject, ClassSection]
-            for mod in m:
-                try:
-                    o = mod.objects.get(anchor=a.anchor)
-                    break
-                except mod.DoesNotExist:
-                    #it's not this model, hopefully the next one
-                    continue
-                except MultipleObjectsReturned:
-                    #something in the database is messed up already
-                    o = mod.objects.filter(anchor=a.anchor)[0]
-                    break
+        ##  Rather than updating each answer with a separate query, we'll update
+        ##  them in batches for each target object they're associated to.  There
+        ##  are less programs, class subjects, and class sections than there are
+        ##  answers.
 
-            #o might still be None, that's okay
-            a.target = o
-            a.save()
+        #   Find answers associated with programs
+        program_ct = ContentType.objects.get(app_label='program', model='program')
+        for program in Program.objects.all():
+            orm.Answer.objects.filter(anchor=program.anchor).update(object_id=program.id, content_type=program_ct)
+        print 'Updated %d programs' % Program.objects.all().count()
+        
+        #   Find answers associated with class subjects
+        subject_ct = ContentType.objects.get(app_label='program', model='classsubject')
+        print 'Need to update %d class subjects' % ClassSubject.objects.all().count()
+        N = 0
+        for subject in ClassSubject.objects.all():
+            orm.Answer.objects.filter(anchor=subject.anchor).update(object_id=subject.id, content_type=subject_ct)
+            N += 1
+            if N % 500 == 0:
+                print '-- Updated %d class subjects' % N
+
+        #   Find answers associated with class sections
+        section_ct = ContentType.objects.get(app_label='program', model='classsection')
+        print 'Need to update %d class sections' % ClassSection.objects.all().count()
+        N = 0
+        for section in ClassSection.objects.all():
+            try:
+                orm.Answer.objects.filter(anchor=section.anchor).update(object_id=section.id, content_type=section_ct)
+            except:
+                print 'Section without valid anchor: %s' % section
+            N += 1
+            if N % 500 == 0:
+                print '-- Updated %d class sections' % N
 
     def backwards(self, orm):
         "Write your backwards methods here."
