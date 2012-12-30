@@ -172,6 +172,17 @@ class AvailabilityModule(ProgramModuleObj):
         # must set the ignore_classes=True parameter above, otherwise when a teacher tries to edit their
         # availability, it will show their scheduled times as unavailable.
 
+        #   Fetch the timeslots the teacher is scheduled in and grey them out.
+        #   If we found a timeslot that they are scheduled in but is not available, show a warning.
+        taken_slots = []
+        user_sections = teacher.getTaughtSections(self.program)
+        conflict_found = False
+        for section in user_sections:
+            for timeslot in section.get_meeting_times():
+                taken_slots.append(timeslot)
+                if timeslot not in available_slots:
+                    conflict_found = True
+
         if not (len(available_slots) or blank): # I'm not sure whether or not we want the "or blank"
             #   If they didn't enter anything, make everything checked by default.
             available_slots = self.program.getTimeSlots()
@@ -180,11 +191,12 @@ class AvailabilityModule(ProgramModuleObj):
             #   for a in available_slots:
             #       teacher.addAvailableTime(self.program, a)
 
-        context = {'groups': [{'selections': [{'checked': (t in available_slots), 'slot': t} for t in group]} for group in time_groups]}
+        context = {'groups': [{'selections': [{'checked': (t in available_slots), 'taken': (t in taken_slots), 'slot': t} for t in group]} for group in time_groups]}
         context['num_groups'] = len(context['groups'])
         context['prog'] = self.program
         context['is_overbooked'] = (not self.isCompleted() and (request.user.getTaughtTime(self.program) > timedelta(0)))
         context['submitted_blank'] = blank
+        context['conflict_found'] = conflict_found
         
         return render_to_response(self.baseDir()+'availability_form.html', request, (prog, tl), context)
 

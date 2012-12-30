@@ -855,6 +855,12 @@ class ClassSection(models.Model):
 
     def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
+
+        # Check if section is full
+        if checkFull and self.isFull():
+            scrmi = self.parent_class.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            return scrmi.temporarily_full_text
+
         # Test any scheduling constraints
         relevantConstraints = self.parent_program.getScheduleConstraints()
         #   relevantConstraints = ScheduleConstraint.objects.none()
@@ -1125,6 +1131,7 @@ class ClassSection(models.Model):
     isCanceled = isCancelled   
     def isRegOpen(self): return self.registration_status == 0
     def isRegClosed(self): return self.registration_status == 10
+    def isFullOrClosed(self): return self.isFull() or self.isRegClosed()
 
     def getRegistrations(self, user):
         from esp.program.models import StudentRegistration
@@ -1293,7 +1300,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     status = models.IntegerField(default=0)   
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
-
+    
     @cache_function
     def get_allowable_class_size_ranges(self):
         return self.allowable_class_size_ranges.all()
@@ -1552,6 +1559,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def cache_time(self):
         return 99999
     
+    title.admin_order_field = 'anchor__friendly_name'	# Admin Panel Display Configuration
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
         return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
@@ -1725,6 +1733,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def isRegClosed(self):
         for sec in self.get_sections():
             if not sec.isRegClosed():
+                return False
+        return True
+
+    def isFullOrClosed(self):
+        for sec in self.get_sections():
+            if not sec.isFullOrClosed():
                 return False
         return True
         

@@ -533,8 +533,7 @@ class AdminClass(ProgramModuleObj):
         # set txtTeachers and coteachers....
         if not request.POST.has_key('coteachers'):
             coteachers = cls.get_teachers()
-            coteachers = [ ESPUser(user) for user in coteachers
-                           if user.id != request.user.id           ]
+            coteachers = [ ESPUser(user) for user in coteachers ]
             
             txtTeachers = ",".join([str(user.id) for user in coteachers ])
             
@@ -557,8 +556,6 @@ class AdminClass(ProgramModuleObj):
             if len(request.POST['teacher_selected'].strip()) == 0:
                 error = 'Error - Please click on the name when it drops down.'
 
-            elif (request.POST['teacher_selected'] == str(request.user.id)):
-                error = 'Error - You cannot select yourself as a coteacher!'
             elif request.POST['teacher_selected'] in txtTeachers.split(','):
                 error = 'Error - You already added this teacher as a coteacher!'
 
@@ -633,7 +630,6 @@ class AdminClass(ProgramModuleObj):
     @aux_call
     @needs_admin
     def teacherlookup(self, request, tl, one, two, module, extra, prog, newclass = None):
-        print "teacherlookup"
         # Search for teachers with names that start with search string
         if not request.GET.has_key('name') or request.POST.has_key('name'):
             return self.goToCore(tl)

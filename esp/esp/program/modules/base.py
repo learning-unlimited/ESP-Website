@@ -273,7 +273,7 @@ class ProgramModuleObj(models.Model):
         except:
             return (False, True)
         
-        classes = ClassSubject.objects.filter(id = clsid)
+        classes = ClassSubject.objects.filter(id = clsid, parent_program = self.program)
             
         if len(classes) == 1:
             if not get_current_request().user.canEdit(classes[0]):

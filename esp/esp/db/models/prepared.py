@@ -37,7 +37,7 @@ class InvalidSQLProcedure(PreparedStatementError):
     pass
 
 
-if 'mysql' in settings.DATABASE_ENGINE.lower():
+if 'mysql' in settings.DATABASES['default']['ENGINE'].lower():
     prepared_command = 'CALL'
     db_mysql = True
 else:

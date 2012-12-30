@@ -436,14 +436,22 @@ class AJAXSchedulingModule(ProgramModuleObj):
             lock_level = 0
         print lock_level
             
-        affected_sections = ClassSection.objects.filter(parent_class__parent_program=prog, resourceassignment__lock_level__lte=lock_level)
-        num_affected_sections = affected_sections.distinct().count()
-        ResourceAssignment.objects.filter(target__in=affected_sections, lock_level__lte=lock_level).delete()
-        
+        num_affected_sections = self.clear_schedule_logic(prog, lock_level)
+
         data = {'message': 'Cleared schedule assignments for %d sections.' % (num_affected_sections)}
         response = HttpResponse(content_type="application/json")
         simplejson.dump(data, response)
         return response
+
+    def clear_schedule_logic(self, prog, lock_level=0):
+        affected_sections = ClassSection.objects.filter(parent_class__parent_program=prog, resourceassignment__lock_level__lte=lock_level)
+        num_affected_sections = affected_sections.distinct().count()
+        ResourceAssignment.objects.filter(target__in=affected_sections, lock_level__lte=lock_level).delete()
+        ResourceAssignment.objects.filter(target__isnull=True, target_subj__isnull=True).delete()
+        for section in affected_sections:
+            section.meeting_times.clear()
+        
+        return num_affected_sections
 
     class Meta:
         abstract = True

@@ -151,3 +151,6 @@ class StudentLunchSelection(ProgramModuleObj):
         context['forms'] = forms
         
         return render_to_response(self.baseDir()+'select_lunch.html', context)
+
+    class Meta:
+        abstract = True

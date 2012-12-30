@@ -5,6 +5,8 @@ from esp.users.views.emailpref import *
 from esp.users.views.make_admin import *
 from esp.users.models import ESPUser
 
+from esp.program.modules.base import needs_admin
+
 from django.http import HttpResponseRedirect, HttpResponse
 from django.template import RequestContext
 from esp.web.util.main import render_to_response
@@ -165,3 +167,13 @@ def disable_account(request):
     context = {'user': curUser}
         
     return render_to_response('users/disable_account.html', request, request.get_node('Q/Web/myesp'), context)
+
+def morph_into_user(request):
+    morph_user = ESPUser.objects.get(id=request.GET[u'morph_user'])
+    request.user.switch_to_user(request,
+                                morph_user,
+                                '/manage/userview?username=' + morph_user.username,
+                                'User Search for '+morph_user.name(),
+                                False)
+
+    return HttpResponseRedirect('/')

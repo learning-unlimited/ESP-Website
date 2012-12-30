@@ -27,4 +27,7 @@ def make_user_admin(target_user):
 
     target_user.makeRole("Administrator")
 
+    #   Clear the UserBit cache for this user
+    UserBit.objects.cache(target_user).update()
+
     target_user.save()

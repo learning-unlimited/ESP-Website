@@ -47,7 +47,7 @@ var open_class_category = "{{ open_class_category }}";
 
     <div id="lsr_content">
         <h3 class="header"><a href="#">Instructions</a></h3>
-        <div id="instructions">
+        <div id="instructions" style="overflow: hidden;">
             {% inline_program_qsd_block prog "lsr_instructions" request.user %}
 Welcome to the registration lottery for {{ prog.niceName }}.  Below you will find a list of every timeslot in the program.  Click on the timeslot to expand a list of classes taking place during that time and select your preferences; you may find it helpful to view the <a href="/learn/{{ prog.getUrlBase }}/catalog">full catalog</a> to learn more about the classes.  For each timeslot, you may indicate your favorite class to take during that timeslot ("Priority" column) and any number of other classes that you are interested in ("Interested" column).
 

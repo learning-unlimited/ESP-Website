@@ -239,7 +239,6 @@ main_text = """
         <script type="text/javascript" src="/media/scripts/yui/menu/menu-min.js"></script>
 
         <script type="text/javascript" src="/media/scripts/json.js"></script>
-        <script type="text/javascript" src="/media/scripts/ddlist.js"></script>
     {% endif %}
 
 <script type="text/javascript" src="/media/scripts/jquery.js"> </script>

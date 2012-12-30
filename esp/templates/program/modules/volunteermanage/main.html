@@ -5,14 +5,13 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-    <link rel="stylesheet" type="text/css" href="/media/calendar/calendar-blue.css" />
+    <link rel="stylesheet" href="/media/styles/jquery-ui/jquery-ui.css" type="text/css" />
 {% endblock %}
 
 {% block javascript %}
     {{ block.super }}
-    <script type="text/javascript" src="/media/calendar/calendar.js"></script>
-    <script type="text/javascript" src="/media/calendar/lang/calendar-en.js"></script>
-    <script type="text/javascript" src="/media/calendar/calendar-setup.js"></script>
+    <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+    <script type="text/javascript" src="/media/scripts/jquery-ui.timepicker.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -29,7 +28,7 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
 <table style="border: 1px solid #cccccc;">
 <tr>
 <th colspan="3" align="center">Current Volunteer Shifts and Offers</th>
-</tr>
+</tr
 {% if requests|length_is:0 %}
     <td colspan="3">No requests at this time.  Please add some using the form below.</td>
 {% else %}
@@ -50,6 +49,7 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
     </tr>
     {% endfor %}
 {% endif %}
+<tr><td colspan="3" align="center"><a href="/manage/{{ program.getUrlBase }}/volunteering/csv">Download volunteer signup CSV</a></td></tr>
 </table>
 </center>
 
@@ -59,7 +59,7 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
 <center>
 <table width="400">
 <tr>
-    <th colspan="2">Request Volunteer Shift</th>
+    <th colspan="2">Create Volunteer Shift</th>
 </tr>
     {{ form }}
 <tr>   

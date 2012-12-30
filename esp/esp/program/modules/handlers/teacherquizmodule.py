@@ -139,12 +139,13 @@ class TeacherQuizModule(ProgramModuleObj):
         else:
             raise ESPError('Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the quiz_form_id Tag.')
         
-        form_wizard = FormHandler(cf, request, request.user).getWizard()
+        form_wizard = FormHandler(cf, request, request.user).get_wizard()
+        form_wizard.curr_request = request
     
         if request.method == 'POST':
-            form = form_wizard.get_form(0, request.POST)
+            form = form_wizard.get_form(0, request.POST, request.FILES)
             if form.is_valid():
-                form_wizard.done(request, [form])
+                form_wizard.done([form])
                 self.controller.markCompleted(request.user)
                 return self.goToCore(tl)
         else:

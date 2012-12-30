@@ -438,7 +438,12 @@ class ESPUser(User, AnonymousUser):
             can teach for a particular program. """
         from esp.cal.models import Event
 
-        valid_events = Event.objects.filter(useravailability__user=self, program=program).order_by('start')
+        #   Detect whether the program has the availability module, and assume
+        #   the user is always available if it isn't there.
+        if program.program_modules.filter(handler='AvailabilityModule').exists():
+            valid_events = Event.objects.filter(useravailability__user=self, program=program).order_by('start')
+        else:
+            valid_events = program.getTimeSlots()
 
         if not ignore_classes:
             #   Subtract out the times that they are already teaching.
@@ -456,6 +461,7 @@ class ESPUser(User, AnonymousUser):
     # FIXME: Really should take into account section's teachers...
     # even though that shouldn't change often
     getAvailableTimes.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'program': sec.parent_program})
+    getAvailableTimes.depend_on_m2m(lambda:Program, 'program_modules', lambda prog, pm: {'program': prog})
     getAvailableTimes.depend_on_row(lambda:UserAvailability, lambda ua:
                                         {'program': ua.event.program,
                                             'self': ua.user})
@@ -1848,8 +1854,9 @@ class PasswordRecoveryTicket(models.Model):
         if self.user.username != username:
             return False
 
-        # Change the password
+        # Change the password, and activate the account
         self.user.set_password(password)
+        self.user.is_active = True
         self.user.save()
 
         # Invalidate all other tickets

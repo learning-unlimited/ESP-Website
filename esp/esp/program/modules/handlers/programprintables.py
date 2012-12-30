@@ -39,7 +39,8 @@ from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, SplashInfo, FinancialAidRequest
-from esp.users.views     import get_user_list, search_for_user
+from esp.users.views     import search_for_user
+from esp.users.controllers.usersearch import UserSearchController
 from esp.web.util.latex  import render_to_latex
 from esp.accounting_docs.models import Document, MultipleDocumentError
 from esp.accounting_core.models import LineItem, LineItemType, Transaction
@@ -441,7 +442,7 @@ class ProgramPrintables(ProgramModuleObj):
         if extra == 'csv':
             template_file = 'teacherlist.csv'
         
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
@@ -578,7 +579,7 @@ class ProgramPrintables(ProgramModuleObj):
 
     @needs_admin
     def studentsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'studentlist.html', extra_func = lambda x: {}):
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
@@ -650,7 +651,7 @@ class ProgramPrintables(ProgramModuleObj):
     def teacherschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher schedules """
 
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
@@ -846,7 +847,7 @@ Volunteer schedule for %s:
         if onsite:
             students = [ESPUser(User.objects.get(id=request.GET['userid']))]
         else:
-            filterObj, found = get_user_list(request, self.program.getLists(True))
+            filterObj, found = UserSearchController().create_filter(request, self.program)
     
             if not found:
                 return filterObj
@@ -878,7 +879,7 @@ Volunteer schedule for %s:
         if onsite:
             students = [ESPUser(User.objects.get(id=request.GET['userid']))]
         else:
-            filterObj, found = get_user_list(request, self.program.getLists(True))
+            filterObj, found = UserSearchController().create_filter(request, self.program)
     
             if not found:
                 return filterObj
@@ -1016,12 +1017,12 @@ Volunteer schedule for %s:
     def flatstudentschedules(self, request, tl, one, two, module, extra, prog):
         """ generate student schedules """
 
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
         context = {'module': self }
-        students = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct() ]
+        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
 
         students.sort()
         
@@ -1086,7 +1087,7 @@ Volunteer schedule for %s:
     @aux_call
     @needs_admin
     def satpreplabels(self, request, tl, one, two, module, extra, prog):
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
@@ -1145,7 +1146,7 @@ Volunteer schedule for %s:
     @aux_call
     @needs_admin
     def student_tickets(self, request, tl, one, two, module, extra, prog):
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
         
@@ -1215,14 +1216,14 @@ Volunteer schedule for %s:
         """ generate class rosters """
 
 
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
 
 
         context = {'module': self     }
-        teachers = [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct()]
+        teachers = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         teachers.sort()
 
         scheditems = []
@@ -1255,12 +1256,12 @@ Volunteer schedule for %s:
     @needs_admin
     def studentchecklist(self, request, tl, one, two, module, extra, prog):
         context = {'module': self}
-        filterObj, found = get_user_list(request, self.program.getLists(True))
+        filterObj, found = UserSearchController().create_filter(request, self.program)
         if not found:
             return filterObj
 
 
-        students= [ ESPUser(user) for user in User.objects.filter(filterObj.get_Q()).distinct() ]
+        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
         students.sort()
 
         studentList = []

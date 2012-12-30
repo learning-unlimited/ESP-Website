@@ -20,7 +20,7 @@ Before you can register classes in {{ prog.niceName }}, please let us know which
 </p>
 
 <p>
-You must include enough times (in contiguous blocks) for all of the classes that you would like to teach.
+You must include enough times (in contiguous blocks) for all of the classes that you would like to teach.  If classes have already been scheduled, the times taken by the classes are grayed out below.
 </p>
 
 <p>
@@ -34,6 +34,14 @@ You must include enough times (in contiguous blocks) for all of the classes that
 We have detected that you are currently signed up to teach more hours of class than you have hours of availability.  This makes it impossible to schedule your classes.  Please add to your available times in order to continue with registration.
 </p>
 {% end_inline_program_qsd_block %}
+{% endif %}
+
+{% if conflict_found %}
+{% inline_qsd_block program.anchor teacher_conflict request.user %}
+<p style="color: red;">
+You are scheduled to teach a class during at least one timeslot in which you are not marked as available.  Please <a href="mailto:{{ prog.director_email }}">contact the directors</a> immediately to resolve this conflict.
+</p>
+{% end_inline_qsd_block %}
 {% endif %}
 
 {% if submitted_blank %}
@@ -59,8 +67,8 @@ You submitted a schedule with no available times.  You can't register a class wi
     {% endif %}
         {% for t in h.selections %}
         <tr>
-            <td align="center"><input type="checkbox" name="timeslots" value="{{ t.slot.id }}" {% if t.checked %}checked{% endif %} /></td>
-            <td>{{ t.slot.short_description }}</td>
+            <td align="center"><input type="checkbox" name="timeslots" value="{{ t.slot.id }}" {% if t.checked %}checked{% endif %} {% if t.taken %}disabled{% endif %} /></td>
+            <td><span style="color: {% if t.taken %}gray{% else %}black{% endif %};">{{ t.slot.short_description }}</span></td>
         </tr>
         {% endfor %}
     {% endfor %}

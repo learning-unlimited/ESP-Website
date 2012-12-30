@@ -12,6 +12,56 @@
  }
 
 </style>
+{% if not request.user.onsite_local %}
+<script type="text/javascript">
+$j(function() {
+    // Create two dialog boxes with two different warning messages,
+    // one that appears when you try to remove an enrolled class,
+    // and another that appears when you try removing a non-enrolled class.
+    // autoOpen: false makes it so that the dialog boxes don't appear on page load.
+    $j( "div.remove-confirm" ).dialog({
+        resizable: false,
+        modal: true,
+        autoOpen: false,
+        closeOnEscape: false,
+    });
+
+    // When clicking any remove link, handle the event here rather than immediately removing the class.
+    // Display a warning dialog box, and give the user an option to confirm the removal or cancel it.
+    $j("a.remove").click( function(eventObject) {
+
+        // The hyperlink click is always cancelled at first.
+        // If the user confirms the removal,
+        // the clearslot link is followed, and the class is removed.
+        eventObject.preventDefault();
+        var $a_remove_tag = $j(this);
+        var cls_code = $j(this).attr("data-sec-code");
+        var remove_type = $j(this).attr("data-remove-type");    // "enrolled" for enrolled classes, "applied" for non-enrolled classes
+        $j( "#"+remove_type+"-remove-confirm" ).dialog( "option", "title", "Remove class "+cls_code+"?" ).dialog( "option", "buttons", {
+            "Remove class": function() {
+                $j( this ).dialog( "close" );
+                window.location.replace($a_remove_tag.attr("href"));
+            },
+            "Cancel": function() {
+                $j( this ).dialog( "close" );
+            }
+        }).dialog( "open" );
+    });
+});
+</script>
+{% endif %}
+<div id="enrolled-remove-confirm" class="remove-confirm" style="display:none;">
+    <p><span class="ui-icon ui-icon-alert" style="float: left; margin-right: 7px;"></span>
+        This class will be permanently deleted from your schedule.
+        If the class fills with new students, you will be unable to add it back to your schedule.
+        Are you sure?
+    </p>
+</div>
+<div id="applied-remove-confirm" class="remove-confirm" style="display:none;">
+    <p><span class="ui-icon ui-icon-alert" style="float: left; margin-right: 7px;"></span>
+        Are you sure you want to remove this class?
+    </p>
+</div>
 
 {% comment %} <hr>
 <p><font style="font-size: 18pt;"><center>
@@ -77,7 +127,7 @@ you arrive.
                 <i>{% for v in cls.section.verbs %}<span class="{{ v }}">{{ v }}</span>{% if not forloop.last %}, {% endif %}{% endfor %}:</i>
             {% endif %}
 	{% comment %}{% endif %}{% endcomment %}
-	{{ cls.section.title }} 
+	{{ cls.section }}{% if not cls.first_meeting_time %} <b>(continued)</b>{% endif %} 
             
             {% if request.user.onsite_local %}
                 ({{ cls.section.prettyrooms|join:", " }})
@@ -96,9 +146,11 @@ you arrive.
             onclick="window.location='/learn/{{one}}/{{two}}/catalog';">
           <br />Or: {% endcomment %} 
             {% for cls in timeslot.1 %}
-                <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a>
-                {% if cls.changeable %}
-                    <a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[change section]</a>
+                {% if cls.first_meeting_time %}
+                    <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}" class="remove" data-remove-type="{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}" data-sec-code="{{ cls.section.emailcode }}">[remove]</a>
+                    {% if cls.changeable %}
+                        <a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[change section]</a>
+                    {% endif %}
                 {% endif %}
                 <br />
             {% endfor %}
@@ -114,7 +166,10 @@ you arrive.
             {% if allow_removal %}
             <td width='25%' align='center' style="vertical-align: top !important;">
             {% for cls in timeslot.1 %}
-                <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[remove]</a><br />
+                {% if cls.first_meeting_time %}
+                    <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}" class="remove" data-remove-type="{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}" data-sec-code="{{ cls.section.emailcode }}">[remove]</a>
+                {% endif %}
+                <br />
             {% endfor %}
             </td>
             {% endif %}

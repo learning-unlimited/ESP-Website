@@ -572,6 +572,12 @@ function render_table(display_mode, student_id)
             //  TODO: make this snap to the right reliably
             new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
             
+            // Show the class title if we're not in compact mode
+            if (!settings.compact_classes)
+            {
+                new_div.append($j("<div/>").addClass("title").html(section.title));
+            }
+            
             //  Create a tooltip with more information about the class
             new_div.addClass("tooltip");
             var tooltip_div = $j("<span/>").addClass("tooltip_hover").attr("id", div_name);
@@ -626,7 +632,6 @@ function render_classchange_table(student_id)
     render_table("classchange", student_id);
     update_checkboxes();
     add_message("Displaying class changes matrix for " + data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + "), grade " + data.students[student_id].grade, "message_header");
-    add_message("Display settings can be found at the <a href=\"#settings\">bottom of the page</a>.");
 }
 
 /*  This function populates the linked data structures once all components have arrived.
@@ -925,6 +930,10 @@ function refresh_counts() {
     add_message("Pinging server for updated information, please stand by...", "message_header");
     fetch_all(true);
 }
+
+$j(document).scroll(function(){
+    $j("#student_selector_area").css("left", window.scrollX);
+});
 
 $j(document).ready(function () {
     //  Send out initial requests for data.

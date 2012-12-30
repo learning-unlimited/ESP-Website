@@ -57,7 +57,7 @@ admin_site.register(ProgramModule, ProgramModuleAdmin)
     
 class ArchiveClassAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'year', 'date', 'category', 'program', 'teacher')
-    search_fields = ['description', 'title', 'program', 'teacher', 'category']
+    search_fields = ['id', 'description', 'title', 'program', 'teacher', 'category']
     pass
 admin_site.register(ArchiveClass, ArchiveClassAdmin)
 
@@ -97,6 +97,7 @@ admin_site.register(TeacherBio, TeacherBioAdmin)
 class FinancialAidRequestAdmin(admin.ModelAdmin):
     list_display = ('user', 'approved', 'reduced_lunch', 'program', 'household_income', 'extra_explaination')
     search_fields = ['user__username', 'user__first_name', 'user__last_name', 'id', 'program__anchor__parent__friendly_name', 'program__anchor__friendly_name']
+    list_filter = ['program']
 admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
 
 class Admin_SplashInfo(admin.ModelAdmin):
@@ -168,7 +169,7 @@ def expire_student_registrations(modeladmin, request, queryset):
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = ['user__last_name', 'user__first_name', 'user__email', 'id', 'section__id']
+    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__anchor__name']
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
 def sec_classrooms(obj):
@@ -188,6 +189,7 @@ class SubjectAdmin(admin.ModelAdmin):
     list_display_links = ('title',)
     search_fields = ['class_info', 'title']
     exclude = ('teachers',)
+    list_filter = ('parent_program', 'category')
 admin_site.register(ClassSubject, SubjectAdmin)
 
 class Admin_ClassCategories(admin.ModelAdmin):

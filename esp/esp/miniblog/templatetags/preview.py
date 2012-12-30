@@ -30,12 +30,7 @@ class MiniblogNode(template.Node):
         try:
             user_obj = template.resolve_variable(self.user, context)
         except template.VariableDoesNotExist:
-            if self.user == "AnonymousUser" or self.user == "None":
-                user_obj = AnonymousUser()
-            else:
-                raise template.VariableDoesNotExist, "Argument to miniblog_for_user, %s, did not exist" % self.user
-        if not isinstance(user_obj, (User, AnonymousUser)):
-            raise template.TemplateSyntaxError("Requires a user object, recieved '%s'" % user_obj)
+            user_obj = None
 
         context[self.var_name] = get_visible_announcements(user_obj, self.limit, self.tl)
         return ''

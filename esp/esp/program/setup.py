@@ -218,6 +218,7 @@ VerbNodes = (
     'V/Deadline/Registration/Student/Classes/OneClass',
     'V/Deadline/Registration/Student/Confirm',
     'V/Deadline/Registration/Student/ExtraCosts',
+    'V/Deadline/Registration/Student/Finaid',
     'V/Deadline/Registration/Student/MainPage',
     'V/Deadline/Registration/Student/Payment',
     'V/Deadline/Registration/Teacher',
