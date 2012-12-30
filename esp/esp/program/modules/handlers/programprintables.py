@@ -624,7 +624,7 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def students_lineitem(self, request, tl, one, two, module, extra, prog):
-        from esp.accounting_core.models import LineItem
+        from esp.accounting.models import Transfer
         #   Determine line item
         student_ids = []
         if request.GET.has_key('id'):
@@ -633,9 +633,9 @@ class ProgramPrintables(ProgramModuleObj):
         else:
             lit_id = request.session['li_type_id']
 
-        line_items = LineItem.objects.filter(li_type__id=lit_id)
+        line_items = Transfer.objects.filter(line_item__id=lit_id)
         for l in line_items:
-            student_ids.append(l.transaction.document_set.all()[0].user.id)
+            student_ids.append(l.user_id)
 
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog, filt_exp = lambda x: x.id in student_ids)
 
