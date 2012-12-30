@@ -62,7 +62,6 @@ class ProgramCreationForm(BetterModelForm):
     publish_start     = forms.DateTimeField(label = 'Program-Visible-on-Website Date', widget = DateTimeWidget())
     publish_end       = forms.DateTimeField(label = 'Program-Completely-Over Archive Date', widget = DateTimeWidget())
     base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
-    finaid_cost       = forms.IntegerField( label = 'Cost to Students who receive Financial Aid $', min_value = 0 )
     anchor            = forms.ModelChoiceField([], label = "Program Type")
     program_modules   = forms.MultipleChoiceField(choices = [], label = 'Program Modules')
 
@@ -91,7 +90,7 @@ class ProgramCreationForm(BetterModelForm):
 ('Program Title', {'fields': ['term', 'term_friendly'] }),
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['admins','director_email']}),
-                     ('Financial Details' ,{'fields':['base_cost','finaid_cost']}),
+                     ('Financial Details' ,{'fields':['base_cost']}),
                      ('Program Internal details' ,{'fields':['anchor','program_modules','class_categories']}),
                      ('Registrations Date',{'fields':['publish_start','publish_end','teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
 
@@ -118,7 +117,6 @@ ProgramCreationForm.base_fields['publish_start'].line_group = 1
 ProgramCreationForm.base_fields['publish_end'].line_group = 1
 
 ProgramCreationForm.base_fields['base_cost'].line_group = 4
-ProgramCreationForm.base_fields['finaid_cost'].line_group = 4
 '''
 
 class StatisticsQueryForm(forms.Form):

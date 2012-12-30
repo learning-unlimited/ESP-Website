@@ -59,7 +59,8 @@ from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
-from esp.accounting_core.models import LineItemType, CompletedTransactionException
+from esp.accounting_core.models import CompletedTransactionException
+from esp.accounting.controllers import ProgramAccountingController
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
@@ -520,11 +521,10 @@ def newprogram(request):
             template_prog["teacher_reg_start"] = oldest_bit.startdate
             template_prog["teacher_reg_end"] = newest_bit.enddate
 
-        
-        line_items = LineItemType.objects.filter(anchor__name="Required", anchor__parent__parent=tprogram.anchor).values("amount", "finaid_amount")
+        pac = ProgramAccountingController(tprogram)
+        line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
 
-        template_prog["base_cost"] = int(-sum([ x["amount"] for x in line_items]))
-        template_prog["finaid_cost"] = int(-sum([ x["finaid_amount"] for x in line_items ]))
+        template_prog["base_cost"] = int(sum(x["amount_dec"] for x in line_items))
 
     if 'checked' in request.GET:
         # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.

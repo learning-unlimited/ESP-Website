@@ -37,7 +37,7 @@ from esp.users.models import ESPUser, User, UserBit, Permission
 from esp.users.models.userbits import UserBitImplication
 from esp.program.Lists_ClassCategories import populate as populate_LCC
 from esp.program.models import Program, ProgramModule
-from esp.accounting_core.models import LineItemType
+from esp.accounting.controllers import ProgramAccountingController
 from django.contrib.auth.models import Group
 
 #   Changed this function to accept a dictionary so that it can be called directly
@@ -170,14 +170,9 @@ def commit_program(prog, datatrees, userbits, perms, modules, costs = (0, 0)):
     for perm_tup in perms:
         gen_perm(perm_tup)
 
-    l = LineItemType()
-    l.text = prog.niceName() + " Admission"
-    l.amount = -costs[0]
-    l.anchor = prog.anchor["LineItemTypes"]["Required"]
-    l.finaid_amount = -costs[1]
-    l.finaid_anchor = prog.anchor["Accounts"]["FinancialAid"]
-    l.save()
-        
+    pac = ProgramAccountingController()
+    pac.setup_lineitemtypes(costs[0])
+    
     #   Create a userbit implication giving permanent registration access to the directors.
     ubi = UserBitImplication()
     ubi.qsc_original = prog.anchor
