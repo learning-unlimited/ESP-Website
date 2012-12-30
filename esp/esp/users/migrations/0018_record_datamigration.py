@@ -11,6 +11,13 @@ class Migration(DataMigration):
     def forwards(self, orm):
         #probably not the fastest way to do this migration, but it works
 
+        #   Find a list of program anchors - these are the only valid places for UserBits to
+        #   be attached if we want to convert them to Records
+        program_anchors = Program.objects.all().values_list('anchor__id', flat=True)
+        program_map = {}
+        for id in program_anchors:
+            program_map[id] = Program.objects.get(anchor__id=id)
+
         verbs = {"V/Flags/Survey/Filed":"student_survey",
                  "V/Flags/TeacherSurvey/Filed":"teacher_survey",
                  "V/Flags/Registration/Attended":"attended",
@@ -23,21 +30,21 @@ class Migration(DataMigration):
                  "V/Flags/Registration/Confirmed":"reg_confirmed",#this one is out-of-date but there might be some leftover
                  }
         for verb, event in verbs.items():
-            bits = UserBit.objects.filter(verb__uri=verb).filter(UserBit.not_expired())
+            bits = UserBit.objects.filter(verb__uri=verb, qsc__in=program_anchors).filter(UserBit.not_expired())
             for bit in bits:
                 Record.objects.create(user=bit.user, event=event,
-                                      program=Program.objects.get(anchor=bit.qsc),
+                                      program=program_map[bit.qsc.id],
                                       time=bit.startdate)
 
         #Reg confirmed
-        for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Confirmation").filter(UserBit.not_expired()):
+        for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Confirmation", qsc__parent__in=program_anchors).filter(UserBit.not_expired()).select_related('qsc__parent'):
             Record.objects.create(user=bit.user,event="reg_confirmed",
-                                  program=Program.objects.get(anchor=bit.qsc.parent), time=bit.startdate)
+                                  program=program_map[bit.qsc.parent.id], time=bit.startdate)
 
         #Waitlisted
-        for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Waitlist").filter(UserBit.not_expired()):
+        for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Waitlist", qsc__parent__in=program_anchors).filter(UserBit.not_expired()).select_related('qsc__parent'):
             Record.objects.create(user=bit.user,event="waitlist",
-                                  program=Program.objects.get(anchor=bit.qsc.parent, time=bit.startdate))
+                                  program=program_map[bit.qsc.parent.id], time=bit.startdate)
 
     def backwards(self, orm):
         Record.objects.all().delete()
