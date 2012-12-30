@@ -42,8 +42,7 @@ from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from esp.program.models import RegistrationProfile
 from esp.program.modules.forms.onsite import OnSiteRegForm
-from esp.accounting_docs.models   import Document
-
+from esp.accounting.controllers import IndividualAccountingController
 
 class OnSiteRegister(ProgramModuleObj):
     @classmethod
@@ -58,11 +57,11 @@ class OnSiteRegister(ProgramModuleObj):
     def updatePaid(self, paid=True):
         """ Create an invoice for the student and, if paid is True, create a receipt showing
         that they have paid all of the money they owe for the program. """
-        li_types = self.program.getLineItemTypes(self.student)
-        doc = Document.get_invoice(self.student, self.program_anchor_cached(), li_types)
-        Document.prepare_onsite(self.student, doc.locator)
-        if paid:
-            Document.receive_onsite(self.student, doc.locator)
+        if not self.hasPaid():
+            iac = IndividualAccountingController(self.program, self.user)
+            iac.add_required_transfers()
+            if paid:
+                iac.submit_payment(iac.amount_due())
 
     def createBit(self, extension):
         if extension == 'Paid':

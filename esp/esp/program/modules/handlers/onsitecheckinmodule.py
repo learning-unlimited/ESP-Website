@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 from esp.program.modules.forms.onsite import OnSiteRapidCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
+from esp.accounting.controllers import IndividualAccountingController
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.users.models    import ESPUser, UserBit, User, Record
@@ -45,7 +46,6 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string, select_template
 from esp.program.models import SATPrepRegInfo
 from esp.users.views    import search_for_user
-from esp.accounting_docs.models   import Document
 
 import simplejson as json
 
@@ -64,11 +64,10 @@ class OnSiteCheckinModule(ProgramModuleObj):
         """ Close off the student's invoice and, if paid is True, create a receipt showing
         that they have paid all of the money they owe for the program. """
         if not self.hasPaid():
-            doc = Document.get_invoice(self.student, self.program_anchor_cached())
-            Document.prepare_onsite(self.student, doc.locator)
+            iac = IndividualAccountingController(self.program, self.user)
+            iac.add_required_transfers()
             if paid:
-                Document.receive_onsite(self.student, doc.locator)
-            
+                iac.submit_payment(iac.amount_due())
 
     def create_record(self, event):
         if event=="paid":
