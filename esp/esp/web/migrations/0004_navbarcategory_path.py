@@ -13,7 +13,8 @@ class Migration(DataMigration):
         db.add_column('web_navbarcategory', 'path', self.gf('django.db.models.fields.CharField')(default='', max_length=128), keep_default=False)
 
         for navcat in orm.NavBarCategory.objects.all():
-            navcat.path = navcat.anchor.uri
+            if navcat.anchor:
+                navcat.path = navcat.anchor.uri
             navcat.save()
 
     def backwards(self, orm):
