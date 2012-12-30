@@ -111,7 +111,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         except EmptyTransactionException:
             context['itemizedcosttotal'] = 0
             
-        context['financial_aid'] = user.hasFinancialAid(prog.anchor)
+        context['financial_aid'] = user.hasFinancialAid(prog)
         context['invoice'] = invoice
         
         return render_to_response(self.baseDir() + 'cardpay.html', request, (prog, tl), context)
