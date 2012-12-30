@@ -180,6 +180,9 @@ urlpatterns += patterns('esp.web.views.navBar',
 urlpatterns += patterns('', 
     (r'^dataviews/', include('esp.dataviews.urls')) )
 
+urlpatterns += patterns('', 
+    (r'^accounting/', include('esp.accounting.urls')) )
+
 urlpatterns +=patterns('esp.customforms.views',
 	(r'^customforms/$','landing'),
 	(r'^customforms/create/$','formBuilder'),
