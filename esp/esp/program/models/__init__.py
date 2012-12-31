@@ -1307,6 +1307,7 @@ class FinancialAidRequest(models.Model):
     class Meta:
         app_label = 'program'
         db_table = 'program_financialaidrequest'
+        unique_together = ('program', 'user')
 
     def __unicode__(self):
         """ Represent this as a string. """
