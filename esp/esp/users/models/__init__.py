@@ -656,8 +656,8 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models import FinancialAidRequest
         return FinancialAidRequest
     def get_finaid_grant_model():
-        from esp.program.models import FinancialAidRequest
-        return FinancialAidRequest
+        from esp.accounting.models import FinancialAidGrant
+        return FinancialAidGrant
 
     @cache_function
     def appliedFinancialAid(self, program):
