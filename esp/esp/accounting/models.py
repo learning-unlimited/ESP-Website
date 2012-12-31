@@ -100,6 +100,9 @@ class FinancialAidGrant(models.Model):
     def __unicode__(self):
         return u'Grant %s (max $%s, %d%% discount) at %s' % (self.user, self.amount_max_dec, self.percent, self.program)
 
+    class Meta:
+        unique_together = ('request',)
+
 class Account(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField()

@@ -252,7 +252,7 @@ class IndividualAccountingController(ProgramAccountingController):
 
         aid_amount = Decimal('0')
         if FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).exists():
-            latest_grant = FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).order_by('-id')[0]
+            latest_grant = FinancialAidGrant.objects.get(request__user=self.user, request__program=self.program)
             print 'Applying financial aid for %s at %s' % (self.user.name(), self.program.niceName())
 
             if latest_grant.amount_max_dec is not None:
