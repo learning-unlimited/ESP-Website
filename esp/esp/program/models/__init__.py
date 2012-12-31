@@ -1294,9 +1294,6 @@ class FinancialAidRequest(models.Model):
         if self.done:
             string = "Finished: [" + string + "]"
 
-        if self.reviewed:
-            string += " (REVIEWED)"
-
         return string
         
 """ Functions for scheduling constraints
