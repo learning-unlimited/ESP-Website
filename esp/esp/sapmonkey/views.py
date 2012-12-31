@@ -24,13 +24,18 @@ def check_auth(request):
 @admin_required
 def lookup_username(request, username):
     result = ESPUser.objects.filter(username=username)
-    if len(result) != 1:
-        raise Http404
+    if len(result) == 0:
+        result = ESPUser.objects.filter(username__iexact=username)
+        if len(result) != 1:
+            raise Http404()
+    
+    elif len(result) > 1:
+        raise Http404()
     
     user = result[0]
     isMIT = user.email.strip().endswith("@mit.edu")
     
-    response_data = {'isMIT': isMIT, 'name': user.name()}
+    response_data = {'isMIT': isMIT, 'name': user.name(), 'username': user.username}
     return HttpResponse(json.dumps(response_data), mimetype='application/json')
 
 @admin_required
@@ -39,13 +44,15 @@ def list_budget_categories(request):
     worksheets = srv.get_worksheets(spreadsheet_key=settings.BUDGET_SPREADSHEET_KEY)
     
     response_data = dict()
+    response_data['programs'] = list()
+    response_data['categories'] = dict()
     
     # Insert extra budgets (e.x., for past programs, etc.)
     #  These go in Miscellaneous
     for c in settings.EXTRA_BUDGETS:
-        response_data[c] = []
+        response_data['programs'].append(c)
     
-    # Iterate over each worksheet (i.e., each program's budget)    
+    # Iterate over each worksheet (i.e., each program's budget)
     for w in worksheets.entry:
         budget_categories = list()
         
@@ -84,7 +91,8 @@ def list_budget_categories(request):
                     item = category + ' - ' + cell_entry.content.text
                     budget_categories.append(item)
         
-        response_data[w.title.text] = budget_categories
+        response_data['programs'].append(w.title.text)
+        response_data['categories'][w.title.text] = budget_categories
     
     return HttpResponse(json.dumps(response_data), mimetype='application/json')
 
@@ -179,7 +187,7 @@ def find_program(search):
                     i += 1
                     break
         
-        if i == len(names):
+        if i == len(parts):
             return r
     
     return None
