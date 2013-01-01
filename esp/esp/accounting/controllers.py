@@ -171,7 +171,7 @@ class IndividualAccountingController(ProgramAccountingController):
     def apply_preferences(self, optional_items):
         """ Function to ensure there are transfers for this user corresponding
             to optional line item types, accoring to their preferences.
-            optional_items is a list of 2-tuples: (item name, quantity) """
+            optional_items is a list of 3-tuples: (item name, quantity, cost option) """
 
         result = []
         program_account = self.default_program_account()
@@ -188,7 +188,8 @@ class IndividualAccountingController(ProgramAccountingController):
                 if lit.text == item[0]:
                     matched = True
                     for i in range(item[1]):
-                        result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=lit.amount_dec))
+                        if item[2] != 0:
+                            result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=item[2]))
                     break
             if not matched:
                 raise Exception('Could not find a line item type matching "%s"' % item[0])
@@ -202,14 +203,16 @@ class IndividualAccountingController(ProgramAccountingController):
         return Transfer.objects.filter(user=self.user, line_item__in=line_items)
 
     def get_preferences(self):
-        #   Return a list of 2-tuples: (item name, quantity)
+        #   Return a list of 3-tuples: (item name, quantity, cost option)
         result = []
         transfers = self.get_transfers(optional_only=True)
         for transfer in transfers:
             li_name = transfer.line_item.text
-            if li_name not in map(lambda x: x[0], result):
-                result.append([li_name, 0])
-            result_index = map(lambda x: x[0], result).index(li_name)
+            if (li_name, transfer.amount_dec) not in map(lambda x: (x[0], x[2]), result):
+                result.append([li_name, 0, transfer.amount_dec])
+                result_index = len(result) - 1
+            else:
+                result_index = map(lambda x: (x[0], x[2]), result).index((li_name, transfer.amount_dec))
             result[result_index][1] += 1
         return result
 
