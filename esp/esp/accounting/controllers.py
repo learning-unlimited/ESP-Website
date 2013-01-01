@@ -200,7 +200,7 @@ class IndividualAccountingController(ProgramAccountingController):
         program_account = self.default_program_account()
         source_account = self.default_source_account()
         line_items = self.get_lineitemtypes(**kwargs)
-        return Transfer.objects.filter(user=self.user, line_item__in=line_items)
+        return Transfer.objects.filter(user=self.user, line_item__in=line_items).order_by('id')
 
     def get_preferences(self):
         #   Return a list of 3-tuples: (item name, quantity, cost option)
