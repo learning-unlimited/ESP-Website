@@ -1152,19 +1152,13 @@ Volunteer schedule for %s:
                 else:
                     finaid_status = 'Req. (No RL)'
             
-            if student.hasFinancialAid(self.program):
+            iac = IndividualAccountingController(self.program, student)
+            if iac.amount_due() <= 0:
                 paid_symbol = 'X'
+            if student.hasFinancialAid(self.program):
                 finaid_status = 'Approved'
-            else:
-                li_types = prog.getLineItemTypes(student)
-                try:
-                    invoice = Document.get_invoice(student, self.program_anchor_cached(), li_types, dont_duplicate=True, get_complete=True)
-                except MultipleDocumentError:
-                    invoice = Document.get_invoice(student, self.program_anchor_cached(), li_types, dont_duplicate=True)
-                if invoice.cost() == 0:
-                    paid_symbol = 'X'
 
-            studentList.append({'user': student, 'paid': paid_symbol, 'finaid': finaid_status})
+            studentList.append({'user': student, 'paid': paid_symbol, 'amount_due': iac.amount_due(), 'finaid': finaid_status})
 
         context['students'] = students
         context['studentList'] = studentList
