@@ -849,16 +849,11 @@ Volunteer schedule for %s:
         from django.http import HttpResponse
         response = HttpResponse(mimetype='text/csv')
         writer = csv.writer(response)
-
+        writer.writerow(('Control ID', 'Student ID', 'Last name', 'First name', 'Total cost', 'Finaid grant', 'Amount paid', 'Amount owed'))
         for student in students:            
-            li_types = prog.getLineItemTypes(student)
-            try:
-                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
-            except MultipleDocumentError:
-                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+            iac = IndividualAccountingController(self.program, student)
+            writer.writerow((iac.get_id(), student.id, student.last_name.encode('ascii', 'replace'), student.first_name.encode('ascii', 'replace'), '%.2f' % iac.amount_requested(), '%.2f' % iac.amount_finaid(), '%.2f' % iac.amount_paid(), '%.2f' % iac.amount_due()))
 
-            writer.writerow((invoice.locator, student.id, student.last_name.encode('ascii', 'replace'), student.first_name.encode('ascii', 'replace'), invoice.cost()))
-                
         return response
         
     @aux_call
