@@ -1954,6 +1954,7 @@ class Permission(models.Model):
                 ("Student/Profile","Set profile info"),
                 ("Student/Survey", "Access to survey"),
                 ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
+                ("Student/Finaid", "Access to financial aid application"),
                 )
          ),
         ("Teacher Deadlines", (
