@@ -670,7 +670,7 @@ class ESPUser(User, AnonymousUser):
     def hasFinancialAid(self, program):
         from esp.accounting.controllers import IndividualAccountingController
         iac = IndividualAccountingController(program, self)
-        if iac.finaid_amount() > 0:
+        if iac.amount_finaid() > 0:
             return True
         else:
             return False
