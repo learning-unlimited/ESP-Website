@@ -613,45 +613,37 @@ def submit_transaction(request):
     
     if request.POST.has_key("decision") and request.POST["decision"] != "REJECT":
 
-        try:
-            from decimal import Decimal
-            post_locator = request.POST['merchantDefinedData1']
-            post_amount = Decimal(request.POST['orderAmount'])
-            post_id = request.POST['requestID']
-            
-            document = Document.receive_creditcard(request.user, post_locator, post_amount, post_id)
-        except CompletedTransactionException:
-            from django.conf import settings
-            invoice = Document.get_by_locator(post_locator)
-            # Look for duplicate payment by checking old receipts for different cc_ref.
-            cc_receipts = invoice.docs_next.filter(cc_ref__isnull=False).exclude(cc_ref=post_id)
-            # Prepare to send e-mail notification of duplicate postback.
-            # This should be cleaned up sometime. And we shouldn't hardcode esp-treasurer@mit.edu.
-            recipient_list = [contact[1] for contact in settings.ADMINS]
-            refs = 'Cybersource request ID: %s' % post_id
-            if cc_receipts:
-                #recipient_list.append('esp-treasurer@mit.edu')
-                #recipient_list.append('ageng@mit.edu') # Because I want to play space invaders too!
-                recipient_list.append(settings.DEFAULT_EMAIL_ADDRESSES['treasury']) 
-                subject = 'DUPLICATE PAYMENT'
-                refs += '\n\nPrevious payments\' Cybersource IDs: ' + ( u', '.join([x.cc_ref for x in cc_receipts]) )
-            else:
-                subject = 'Duplicate Postback'
-            # Send mail!
-            send_mail('[ ESP CC ] ' + subject + ' for #' + post_locator + ' by ' + invoice.user.first_name + ' ' + invoice.user.last_name, \
-                  """%s Notification\n--------------------------------- \n\nDocument: %s\n\n%s\n\nUser: %s %s (%s)\n\nCardholder: %s, %s\n\nProgram anchor: %s\n\nRequest: %s\n\n""" % \
-                  (subject, invoice.locator, refs, invoice.user.first_name, invoice.user.last_name, invoice.user.id, request.POST.get('billTo_lastName', '--'), request.POST.get('billTo_firstName', '--'), invoice.anchor.get_uri(), request) , \
-                  settings.SERVER_EMAIL, recipient_list, True)
-            # Get the document that would've been created instead
-            document = invoice.docs_next.all()[0]
-        except:
-            raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:" + settings.DEFAULT_EMAIL_ADDRESSES['default'] + "\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience."
+        #   Figure out which user and program the payment are for.
+        post_identifier = request.POST.get('merchantDefinedData1', '')
+        iac = IndividualAccountingController.from_identifier(post_identifier)
+        post_amount = Decimal(request.POST.get('orderAmount', '0.0'))
 
-        one = document.anchor.parent.name
-        two = document.anchor.name
+        #   Warn for possible duplicate payments
+        prev_payments = iac.get_transfers().filter(line_item=iac.default_payments_lineitemtype())
+        if prev_payments.count() > 0 and iac.amount_due() <= 0:
+            from django.conf import settings
+            recipient_list = [contact[1] for contact in settings.ADMINS]
+            recipient_list.append(settings.DEFAULT_EMAIL_ADDRESSES['treasury']) 
+            refs = 'Cybersource request ID: %s' % post_id
+
+            subject = 'Possible Duplicate Postback/Payment'
+            refs = 'User: %s (%d); Program: %s (%d)' % (iac.user.name(), iac.user.id, self.program.niceName(), self.program.id)
+            refs += '\n\nPrevious payments\' Transfer IDs: ' + ( u', '.join([x.id for x in prev_payments]) )
+
+            # Send mail!
+            send_mail('[ ESP CC ] ' + subject + ' by ' + iac.user.first_name + ' ' + iac.user.last_name, \
+                  """%s Notification\n--------------------------------- \n\n%s\n\nUser: %s %s (%s)\n\nCardholder: %s, %s\n\nRequest: %s\n\n""" % \
+                  (subject, refs, request.user.first_name, request.user.last_name, request.user.id, request.POST.get('billTo_lastName', '--'), request.POST.get('billTo_firstName', '--'), request) , \
+                  settings.SERVER_EMAIL, recipient_list, True)
+
+        #   Save the payment as a transfer in the database
+        iac.submit_payment(post_amount)
+
+        one = 'learn'
+        two = iac.program.url.split('/')[0]
 
         return HttpResponseRedirect("http://%s/learn/%s/%s/confirmreg" % (request.META['HTTP_HOST'], one, two))
-        
+
     return render_to_response( 'accounting_docs/credit_rejected.html', request, GetNode('Q/Accounting'), {} )
 
 # This really should go in qsd
