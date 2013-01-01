@@ -34,7 +34,8 @@ Learning Unlimited, Inc.
 """
 
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType
-from esp.program.models import FinancialAidRequest
+from esp.program.models import FinancialAidRequest, Program
+from esp.users.models import ESPUser
 
 from django.db.models import Sum
 from django.template.defaultfilters import slugify
@@ -215,6 +216,41 @@ class IndividualAccountingController(ProgramAccountingController):
                 result_index = map(lambda x: (x[0], x[2]), result).index((li_name, transfer.amount_dec))
             result[result_index][1] += 1
         return result
+
+    ##  Functions to turn a user's account status for a program into a string
+    ##  and to recover their account status from such a string
+
+    def get_id(self):
+        return '%d/%d' % (self.program.id, self.user.id)
+
+    def get_identifier(self):
+        #   A brief string containing information about the user and 
+        #   which purchases are included at this time
+        purchases_str = ';'.join(['%d,%.2f' % (t.line_item.id, t.amount) for t in self.get_transfers()])
+        return '%s:%s' % (self.get_id(), purchases_str)
+
+    @staticmethod
+    def from_id(id):
+        sections = id.split('/')
+        program = Program.objects.get(id=sections[0])
+        user = ESPUser.objects.get(id=sections[1])
+        return IndividualAccountingController(program, user)
+
+    @staticmethod
+    def from_identifier(identifier):
+        #   Parse string
+        sections = identifier.split(':')
+        transfer_strings = sections[1].split(';')
+        iac = IndividualAccountingController.from_id(sections[0])
+        transfer_list = iac.get_transfers()
+        if len(transfer_strings) != len(transfer_list):
+            print 'Warning, expected %d transfers for this program/user but got %d; not checking transfers for consistency' % (iac.get_transfers().count(), len(transfer_strings))
+            return iac
+        for i in range(len(transfer_strings)):
+            t = transfer_list[i]
+            if transfer_strings[i] != '%d,%.2f' % (t.line_item.id, t.amount):
+                print 'Warning, inconsistent transfer: expected "%s", got "%s"' % ((t.line_item.id, t.amount), transfer_strings[i])
+        return iac
 
     def set_finaid_params(self, dollar_amount, discount_percent):
         #   Get the user's financial aid request or create one if it doesn't exist
