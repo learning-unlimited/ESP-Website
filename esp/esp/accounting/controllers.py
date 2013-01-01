@@ -51,6 +51,31 @@ class BaseAccountingController(object):
     def default_finaid_account(self):
         return Account.objects.get(name='grants')
 
+    def execute_transfers(self, transfers):
+        """ Simultaneously execute a set of transfers. """
+
+        accounts_source = transfers.order_by('source').distinct('source').values_list('source', flat=True)
+        accounts_dest = transfers.order_by('destination').distinct('destination').values_list('destination', flat=True)
+
+        total_change = Decimal('0')
+
+        for account_id in accounts_source:
+            account = Account.objects.get(id=account_id)
+            outflow = transfers.filter(source=account, executed=False).aggregate(Sum('amount_dec'))['amount_dec__sum']
+            account.balance_dec -= outflow
+            total_change -= outflow
+            account.save()
+        for account_id in accounts_dest:
+            account = Account.objects.get(id=account_id)
+            inflow = transfers.filter(destination=account, executed=False).aggregate(Sum('amount_dec'))['amount_dec__sum']
+            account.balance_dec += inflow
+            total_change += inflow
+            account.save()
+
+        transfers.update(executed=True)
+
+        return total_change
+
 
 class GlobalAccountingController(BaseAccountingController):
 
@@ -65,7 +90,6 @@ class GlobalAccountingController(BaseAccountingController):
             (account, created) = Account.objects.get_or_create(name=account_info[0], description=account_info[1])
             result.append(account)
         return result
-
 
 class ProgramAccountingController(BaseAccountingController):
     def __init__(self, program, *args, **kwargs):
@@ -156,8 +180,20 @@ class ProgramAccountingController(BaseAccountingController):
     def all_transfers(self, **kwargs):
         return Transfer.objects.filter(line_item__in=self.get_lineitemtypes(**kwargs))
 
-    def execute_pending_transfers(self):
-        pass
+    def execute_pending_transfers(self, users):
+        """ "Close the books" for this program, with the selected users.
+            Typically this will be all students that attended the program. """
+
+        #   Finalize financial aid for these users
+        for grant in FinancialAidGrant.objects.filter(request__program=self.program, request__user__in=users):
+            grant.finalize()
+
+        #   Execute sibling discounts for these users
+        for splashinfo in SplashInfo.objects.filter(program=self.program, student__in=users):
+            splashinfo.execute_sibling_discount()
+
+        #   Execute transfers for these users
+        self.execute_transfers(Transfer.objects.filter(user__in=users, line_item__program=self.program))
 
 
 class IndividualAccountingController(ProgramAccountingController):
