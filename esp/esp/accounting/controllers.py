@@ -314,9 +314,11 @@ class IndividualAccountingController(ProgramAccountingController):
         
         return amount_requested
     
-    def amount_finaid(self, amount_requested=None):
+    def amount_finaid(self, amount_requested=None, amount_siblingdiscount=None):
         if amount_requested is None:
             amount_requested = self.amount_requested()
+        if amount_siblingdiscount is None:
+            amount_siblingdiscount = self.amount_siblingdiscount()
 
         aid_amount = Decimal('0')
         if FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).exists():
@@ -325,16 +327,16 @@ class IndividualAccountingController(ProgramAccountingController):
 
             if latest_grant.amount_max_dec is not None:
                 print '-- Aid ceiling: %s' % latest_grant.amount_max_dec
-                if amount_requested > latest_grant.amount_max_dec:
+                if amount_requested - amount_siblingdiscount > latest_grant.amount_max_dec:
                     aid_amount = latest_grant.amount_max_dec
                     print '   Aid updated to %s' % aid_amount
                 else:
-                    aid_amount = amount_requested
+                    aid_amount = amount_requested - amount_siblingdiscount
                     print '   Aid updated to %s (equal to amount due)'
 
             if latest_grant.percent is not None:
                 print '-- Discount percentage: %s%%' % latest_grant.percent
-                discount_aid_amount = (Decimal('0.01') * latest_grant.percent) * (amount_requested - aid_amount)
+                discount_aid_amount = (Decimal('0.01') * latest_grant.percent) * (amount_requested - amount_siblingdiscount - aid_amount)
                 aid_amount += discount_aid_amount
                 print '   Aid updated to %s' % aid_amount
 
@@ -363,7 +365,8 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def amount_due(self):
         amt_request = self.amount_requested()
-        return amt_request - self.amount_finaid(amt_request) - self.amount_siblingdiscount() - self.amount_paid()
+        amt_sibling = self.amount_siblingdiscount()
+        return amt_request - self.amount_finaid(amt_request, amt_sibling) - amt_sibling - self.amount_paid()
 
     def clear_payments(self):
         #   Remove all payments listed for this user at this program
