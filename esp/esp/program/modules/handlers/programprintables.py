@@ -1251,18 +1251,11 @@ Volunteer schedule for %s:
             
             for student in students:
                 if c in student.getEnrolledClasses(self.program):
-                    paid_symbol = ''
-                    if student.hasFinancialAid(self.program):
+                    iac = IndividualAccountingController(self.program, student)
+                    if iac.amount_due() <= 0:
                         paid_symbol = 'X'
                     else:
-                        li_types = prog.getLineItemTypes(student)
-                        try:
-                            invoice = Document.get_invoice(student, self.program_anchor_cached(), li_types, dont_duplicate=True, get_complete=True)
-                        except MultipleDocumentError:
-                            invoice = Document.get_invoice(student, self.program_anchor_cached(), li_types, dont_duplicate=True)
-                        if invoice.cost() == 0:
-                            paid_symbol = 'X'
-                    
+                        paid_symbol = ''
                     student_list.append({'user': student, 'paid': paid_symbol})
             
             class_dict['students'] = student_list
