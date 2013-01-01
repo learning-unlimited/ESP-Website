@@ -143,6 +143,9 @@ class ProgramAccountingController(BaseAccountingController):
             
         return qs.order_by('text', '-id').distinct('text')
 
+    def all_transfers(self, **kwargs):
+        return Transfer.objects.filter(line_item__in=self.get_lineitemtypes(**kwargs))
+
     def execute_pending_transfers(self):
         pass
 
