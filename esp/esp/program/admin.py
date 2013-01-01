@@ -49,6 +49,7 @@ from esp.program.models import RegistrationType, StudentRegistration
 from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
 
+from esp.accounting.models import FinancialAidGrant
 
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
@@ -94,10 +95,17 @@ class TeacherBioAdmin(admin.ModelAdmin):
 
 admin_site.register(TeacherBio, TeacherBioAdmin)
 
+class FinancialAidGrantInline(admin.TabularInline):
+    model = FinancialAidGrant
+    extra = 1
+    max_num = 1
+    verbose_name_plural = 'Financial aid grant - enter 100 in "Percent" field to waive entire cost'
+
 class FinancialAidRequestAdmin(admin.ModelAdmin):
     list_display = ('user', 'approved', 'reduced_lunch', 'program', 'household_income', 'extra_explaination')
     search_fields = ['user__username', 'user__first_name', 'user__last_name', 'id', 'program__anchor__parent__friendly_name', 'program__anchor__friendly_name']
     list_filter = ['program']
+    inlines = [FinancialAidGrantInline,]
 admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
 
 class Admin_SplashInfo(admin.ModelAdmin):
