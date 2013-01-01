@@ -911,57 +911,17 @@ Volunteer schedule for %s:
                 min_index = i
             
             # get payment information
-            li_types = prog.getLineItemTypes(student)
-            try:
-                invoice = Document.get_invoice(student, prog.anchor, li_types, dont_duplicate=True, get_complete=True)
-            except MultipleDocumentError:
-                invoice = Document.get_invoice(student, prog.anchor, li_types, dont_duplicate=True)
+            iac = IndividualAccountingController(prog, student)
             
             # attach payment information to student
-            student.invoice_id = invoice.locator
-            student.itemizedcosts = invoice.get_items()
-            student.meals = student.itemizedcosts.filter(li_type__anchor__parent__name__in=('Optional','BuyMultiSelect')).distinct()  # catch everything that's not admission to the program.
-            student.admission = student.itemizedcosts.filter(li_type__anchor__name='Required').distinct()  # Program admission
-            student.paid_online = student.itemizedcosts.filter(anchor__parent__name='Receivable').distinct()  # LineItems for having paid online.
-            student.itemizedcosttotal = invoice.cost()
-            
-            # check financial aid
-            student.has_financial_aid = student.hasFinancialAid(prog)
-            if student.has_financial_aid and not student.itemizedcosts.filter(li_type__text=u'Financial Aid', amount__gt=0).distinct().count() and not student.itemizedcosts.filter(anchor__uri=prog.anchor.uri+"/Accounts/FinancialAid", amount__gt=0).distinct().count():
-                apps = FinancialAidRequest.objects.filter(user=student, program=prog, approved__isnull=False).distinct()
-                aid = max(list(apps.values_list('amount_received', flat=True).distinct()))
-                if aid:
-                    student.itemizedcosttotal -= aid
-                else:
-                    student.itemizedcosttotal = 0.0
-
-            # add cost/credit information from SplashInfo (looks in JSON Tag: splashinfo_costs)
-            student.splashinfo = SplashInfo.getForUser(student, prog)
-            if student.splashinfo:
-                tag_data = Tag.getTag('splashinfo_costs', target=prog)
-                if not tag_data: tag_data = Tag.getTag('splashinfo_costs')
-                if tag_data:
-                    tag_struct = json.loads(tag_data)
-                    for key in tag_struct:
-                        val = getattr(student.splashinfo, key)
-                        if val in tag_struct[key] and not student.has_financial_aid:
-                            student.itemizedcosttotal += Decimal(str(tag_struct[key][val]))
-                if student.splashinfo.siblingdiscount:
-                    amt_str = Tag.getTag('splashinfo_sibling_discount')
-                    if not amt_str:
-                        amt_str = '20.0'
-                    if not student.has_financial_aid:
-                        student.itemizedcosttotal -= Decimal(amt_str)
+            student.invoice_id = iac.get_id()
+            student.itemizedcosts = iac.get_transfers()
+            student.meals = iac.get_transfers(optional_only=True)  # catch everything that's not admission to the program.
+            student.admission = iac.get_transfers(required_only=True)  # Program admission
+            student.paid_online = iac.has_paid()
+            student.itemizedcosttotal = iac.amount_due()
 
             student.has_paid = ( student.itemizedcosttotal == 0 )
-            
-            # MIT Splash purchase counts; temporary, should be harmless
-            student.shirtcount = student.meals.filter(text__contains='T-shirt').count()
-            student.photocount = student.meals.filter(text__contains='Photo').count()
-            student.saturday_lunch = student.meals.filter(text__contains='Saturday Lunch').count()
-            student.sunday_lunch = student.meals.filter(text__contains='Sunday Lunch').count()
-            student.saturday_dinner = student.meals.filter(text__contains='Saturday Dinner').count()
-
             student.payment_info = True
             student.classes = classes
             
