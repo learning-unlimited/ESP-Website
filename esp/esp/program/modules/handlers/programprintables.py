@@ -42,8 +42,6 @@ from esp.program.models  import ClassSubject, ClassSection, SplashInfo, Financia
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
 from esp.web.util.latex  import render_to_latex
-from esp.accounting_docs.models import Document, MultipleDocumentError
-from esp.accounting_core.models import LineItem, LineItemType, Transaction
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
