@@ -1291,8 +1291,6 @@ class FinancialAidRequest(models.Model):
     program = models.ForeignKey(Program, editable = False)
     user    = AjaxForeignKey(ESPUser, editable = False)
 
-    approved = models.DateTimeField(blank=True, null=True)
-
     reduced_lunch = models.BooleanField(verbose_name = 'Do you receive free/reduced lunch at school?', blank=True, default=False)
 
     household_income = models.CharField(verbose_name = 'Approximately what is your household income (round to the nearest $10,000)?', null=True, blank=True,
@@ -1303,6 +1301,10 @@ class FinancialAidRequest(models.Model):
     student_prepare = models.BooleanField(verbose_name = 'Did anyone besides the student fill out any portions of this form?', blank=True, default=False)
 
     done = models.BooleanField(default=False, editable=False)
+
+    @property
+    def approved(self):
+        return (self.financialaidgrant_set.all().count() > 0)
 
     class Meta:
         app_label = 'program'
