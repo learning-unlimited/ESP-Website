@@ -38,9 +38,8 @@ from esp.datatree.models import *
 from esp.web.util        import render_to_response
 from datetime            import datetime        
 from django.db.models.query     import Q
-from esp.users.models    import User, ESPUser
-from esp.accounting_core.models import LineItemType, EmptyTransactionException, Balance
-from esp.accounting_docs.models import Document
+from esp.users.models    import ESPUser
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
@@ -56,16 +55,13 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
-        return len(Document.get_completed(get_current_request().user, self.program_anchor_cached())) > 0
-    
+        return IndividualAccountingController(self.program, get_current_request().user).has_paid()
     have_paid = isCompleted
 
     def students(self, QObject = False):
-        # this should be fixed...this is the best I can do for now - Axiak
-        # I think this is substantially better; it's the same thing, but in one query. - Adam
-        #transactions = Transaction.objects.filter(anchor = self.program_anchor_cached())
-        #userids = [ x.document_id for x in documents ]
-        QObj = Q(document__anchor=self.program_anchor_cached(), document__doctype=3, document__cc_ref__gt='')
+        #   This query represented students who have a payment transfer from the outside
+        pac = ProgramAccountingController(self.program)
+        QObj = Q(transfer__source__isnull=True, transfer__lineitem=pac.default_payments_lineitemtype())
 
         if QObject:
             return {'creditcard': QObj}
@@ -79,41 +75,32 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
     @meets_deadline('/Payment')
     @usercheck_usetl
     def startpay_cybersource(self, request, tl, one, two, module, extra, prog):
-        if self.have_paid():
-            raise ESPError(False), "You've already paid for this program; you can't pay again!"
-                    
         return render_to_response(self.baseDir() + 'cardstart.html', request, (prog, tl), {})
 
     @aux_call
     @meets_deadline('/Payment')
     @usercheck_usetl
     def paynow_cybersource(self, request, tl, one, two, module, extra, prog):
-        if self.have_paid():
-            raise ESPError(False), "You've already paid for this program; you can't pay again!"
-        
+
         # Force users to pay for non-optional stuffs
         user = ESPUser(request.user)
-        
-        #   Default line item types
-        li_types = self.program.getLineItemTypes(user)
 
-        invoice = Document.get_invoice(user, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+        iac = IndividualAccountingController(self.program, request.user)
         context = {}
         context['module'] = self
         context['one'] = one
         context['two'] = two
         context['tl']  = tl
         context['user'] = user
-        context['itemizedcosts'] = invoice.get_items()
+        context['invoice_id'] = iac.get_id()
+        context['identifier'] = iac.get_identifier()
+        payment_type = iac.default_payments_lineitemtype()
+        context['itemizedcosts'] = iac.get_transfers().exclude(line_item=payment_type).order_by('-line_item__required')
+        context['itemizedcosttotal'] = iac.amount_due()
+        context['subtotal'] = iac.amount_requested()
+        context['financial_aid'] = iac.amount_finaid()
+        context['amount_paid'] = iac.amount_paid()
 
-        try:
-            context['itemizedcosttotal'] = invoice.cost()
-        except EmptyTransactionException:
-            context['itemizedcosttotal'] = 0
-            
-        context['financial_aid'] = user.hasFinancialAid(prog)
-        context['invoice'] = invoice
-        
         return render_to_response(self.baseDir() + 'cardpay.html', request, (prog, tl), context)
 
     class Meta:
