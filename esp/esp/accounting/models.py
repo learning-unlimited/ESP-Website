@@ -57,9 +57,39 @@ class LineItemType(models.Model):
             return None
         else:
             return float(self.amount_dec)
-        
+    
+    @property
+    def num_options(self):
+        return self.lineitemoptions_set.all().count()
+    
+    @property
+    def options(self):
+        return self.lineitemoptions_set.all().values_list('amount_dec', 'description').order_by('amount_dec')
+    
+    @property
+    def options_str(self):
+        return [('%.2f' % x[0], x[1]) for x in self.options]
+
     def __unicode__(self):
-        return u'%s for %s ($%s)' % (self.text, self.program, self.amount_dec)
+        if self.num_options == 0:
+            return u'%s for %s ($%s)' % (self.text, self.program, self.amount_dec)
+        else:
+            return u'%s for %s (%d options)' % (self.text, self.program, self.options.count())
+
+class LineItemOptions(models.Model):
+    lineitem_type = models.ForeignKey(LineItemType)
+    description = models.TextField()
+    amount_dec = models.DecimalField(max_digits=9, decimal_places=2, blank=True, null=True, help_text='The cost of this line item.')
+
+    @property
+    def amount(self):
+        if self.amount_dec is None:
+            return None
+        else:
+            return float(self.amount_dec)
+            
+    def __unicode__(self):
+        return u'%s ($%.2f)' % (self.description, self.amount_dec)
 
 class FinancialAidGrant(models.Model):
     request = AjaxForeignKey(FinancialAidRequest)

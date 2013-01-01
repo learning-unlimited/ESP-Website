@@ -33,11 +33,15 @@ Learning Unlimited, Inc.
 """
 from django.contrib import admin
 from esp.admin import admin_site
-from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType
+from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType, LineItemOptions
+
+class LIOInline(admin.TabularInline):
+    model = LineItemOptions
 
 class LITAdmin(admin.ModelAdmin):
-    list_display = ['text', 'amount', 'program', 'required', 'max_quantity']
+    list_display = ['text', 'amount', 'program', 'required', 'num_options', 'max_quantity']
     search_fields = ['text', 'amount', 'program__url']
+    inlines = [LIOInline,]
 admin_site.register(LineItemType, LITAdmin)
 
 class TransferAdmin(admin.ModelAdmin):
