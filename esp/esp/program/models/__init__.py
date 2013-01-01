@@ -53,6 +53,7 @@ from esp.tagdict.models import Tag
 from django.conf import settings
 from collections import defaultdict
 import simplejson as json
+from decimal import Decimal
 
 from esp.customforms.linkfields import CustomFormsLinkModel
 
@@ -1064,6 +1065,44 @@ class SplashInfo(models.Model):
 
     def pretty_sunlunch(self):
         return self.pretty_version('lunchsun')
+
+    def execute_sibling_discount(self):
+        if self.siblingdiscount:
+            from esp.accounting.controllers import IndividualAccountingController
+            from esp.accounting.models import Transfer
+            iac = IndividualAccountingController(self.program, self.student)
+            source_account = iac.default_finaid_account()
+            dest_account = iac.default_source_account()
+            line_item_type = iac.default_siblingdiscount_lineitemtype()
+            transfer, created = Transfer.objects.get_or_create(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type, amount_dec=Decimal('20.00'))
+            return transfer
+
+    def save(self):
+        from esp.accounting.controllers import IndividualAccountingController
+
+        #   We have two things to put in: "Saturday Lunch" and "Sunday Lunch".  
+        #   If they are not there, they will be created.  These names are hard coded.
+        from esp.accounting.models import LineItemType
+        LineItemType.objects.get_or_create(program=self.program, text='Saturday Lunch')
+        LineItemType.objects.get_or_create(program=self.program, text='Sunday Lunch')
+
+        #   Figure out how much everything costs
+        cost_info = json.loads(Tag.getProgramTag('splashinfo_costs', self.program, default='{}'))
+
+        #   Save accounting information
+        iac = IndividualAccountingController(self.program, self.student)
+
+        if self.lunchsat == 'no':
+            iac.set_preference('Saturday Lunch', 0)
+        else:
+            iac.set_preference('Saturday Lunch', 1, cost_info['lunchsat'][self.lunchsat])
+
+        if self.lunchsun == 'no':
+            iac.set_preference('Sunday Lunch', 0)
+        else:
+            iac.set_preference('Sunday Lunch', 1, cost_info['lunchsun'][self.lunchsun])
+        
+        super(SplashInfo, self).save()
 
 
 class RegistrationProfile(models.Model):
