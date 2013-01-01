@@ -41,13 +41,15 @@ from django.db.models.query     import Q
 from django.http         import HttpResponseRedirect
 from django.core.mail import send_mail
 from django.contrib.sites.models import Site
-from esp.users.models    import User, ESPUser
-from esp.accounting_core.models import LineItemType, EmptyTransactionException, Balance, CompletedTransactionException
-from esp.accounting_docs.models import Document
+from esp.users.models    import ESPUser
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
 from django.conf import settings
+
+from decimal import Decimal
+
 class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings):
     @classmethod
     def module_properties(cls):
@@ -60,16 +62,13 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
-        return len(Document.get_completed(get_current_request().user, self.program_anchor_cached())) > 0
-    
+        return IndividualAccountingController(self.program, get_current_request().user).has_paid()
     have_paid = isCompleted
 
     def students(self, QObject = False):
-        # this should be fixed...this is the best I can do for now - Axiak
-        # I think this is substantially better; it's the same thing, but in one query. - Adam
-        #transactions = Transaction.objects.filter(anchor = self.program_anchor_cached())
-        #userids = [ x.document_id for x in documents ]
-        QObj = Q(document__anchor=self.program_anchor_cached(), document__doctype=3, document__cc_ref__gt='')
+        #   This query represented students who have a payment transfer from the outside
+        pac = ProgramAccountingController(self.program)
+        QObj = Q(transfer__source__isnull=True, transfer__lineitem=pac.default_payments_lineitemtype())
 
         if QObject:
             return {'creditcard': QObj}
@@ -86,38 +85,36 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         if request.method == 'GET' or request.POST.get('status', '') != 'APPROVED':
             return self.payment_failure(request, tl, one, two, module, extra, prog)
 
-        try:
-            from decimal import Decimal
-            post_locator = request.POST.get('invoice_number', '')
-            post_amount = Decimal(request.POST.get('total', '0.0'))
-            post_id = request.POST.get('refnumber', '')       
-            document = Document.receive_creditcard(request.user, post_locator, post_amount, post_id)
-        except CompletedTransactionException:
-            from django.conf import settings
-            invoice = Document.get_by_locator(post_locator)
-            # Look for duplicate payment by checking old receipts for different cc_ref.
-            cc_receipts = invoice.docs_next.filter(cc_ref__isnull=False).exclude(cc_ref=post_id)
-            # Prepare to send e-mail notification of duplicate postback.
-            recipient_list = [contact[1] for contact in settings.ADMINS]
-            refs = 'Cybersource request ID: %s' % post_id
-            if cc_receipts:
-                subject = 'DUPLICATE PAYMENT'
-                refs += '\n\nPrevious payments\' Cybersource IDs: ' + ( u', '.join([x.cc_ref for x in cc_receipts]) )
-            else:
-                subject = 'Duplicate Postback'
-            # Send mail!
-            send_mail('[ ESP CC ] ' + subject + ' for #' + post_locator + ' by ' + invoice.user.first_name + ' ' + invoice.user.last_name, \
-                  """%s Notification\n--------------------------------- \n\nDocument: %s\n\n%s\n\nUser: %s %s (%s)\n\nCardholder: %s\n\nProgram anchor: %s\n\nRequest: %s\n\n""" % \
-                  (subject, invoice.locator, refs, invoice.user.first_name, invoice.user.last_name, invoice.user.id, request.POST.get('bname', '--'), invoice.anchor.get_uri(), request) , \
-                  settings.SERVER_EMAIL, recipient_list, True)
-            # Get the document that would've been created instead
-            document = invoice.docs_next.all()[0]
-        except:
-            raise
-            # raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:%s\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience." % settings.DEFAULT_EMAIL_ADDRESSES['support']
+        #   We should already know what user/program this is for, but it should also be stored.
+        iac = IndividualAccountingController(self.program, request.user)
+        post_locator = request.POST.get('ponumber', '')
+        assert(post_locator == iac.get_id())
 
-        one = document.anchor.parent.name
-        two = document.anchor.name
+        post_identifier = request.POST.get('invoice_number', '')
+        #   Optional: The line of code below would check consistency of the user's
+        #   invoice items against the ones associated with the payment.
+        #   assert(post_identifier == iac.get_identifier())
+
+        post_amount = Decimal(request.POST.get('total', '0.0'))
+
+        #   Warn for possible duplicate payments
+        prev_payments = iac.get_transfers().filter(line_item=iac.default_payments_lineitemtype())
+        if prev_payments.count() > 0 and iac.amount_due() <= 0:
+            from django.conf import settings
+            recipient_list = [contact[1] for contact in settings.ADMINS]
+
+            subject = 'Possible Duplicate Postback/Payment'
+            refs = 'User: %s (%d); Program: %s (%d)' % (request.user.name(), request.user.id, self.program.niceName(), self.program.id)
+            refs += '\n\nPrevious payments\' Transfer IDs: ' + ( u', '.join([x.id for x in prev_payments]) )
+
+            # Send mail!
+            send_mail('[ ESP CC ] ' + subject + ' by ' + invoice.user.first_name + ' ' + invoice.user.last_name, \
+                  """%s Notification\n--------------------------------- \n\n%s\n\nUser: %s %s (%s)\n\nCardholder: %s\n\nRequest: %s\n\n""" % \
+                  (subject, refs, request.user.first_name, request.user.last_name, request.user.id, request.POST.get('bname', '--'), request) , \
+                  settings.SERVER_EMAIL, recipient_list, True)
+
+        #   Save the payment as a transfer in the database
+        iac.submit_payment(post_amount)
 
         context = {}
         context['postdata'] = request.POST.copy()
@@ -141,25 +138,25 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
     @meets_deadline('/Payment')
     @usercheck_usetl
     def payonline(self, request, tl, one, two, module, extra, prog):
-        if self.have_paid():
-            raise ESPError(False), "You've already paid for this program; you can't pay again!"
-        
-        # Force users to pay for non-optional stuffs
-        user = ESPUser(request.user)
-        
-        #   Default line item types
-        li_types = self.program.getLineItemTypes(user)
 
-        # Get settings
-        invoice = Document.get_invoice(user, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+        user = ESPUser(request.user)
+
+        iac = IndividualAccountingController(self.program, request.user)
         context = {}
         context['module'] = self
         context['one'] = one
         context['two'] = two
         context['tl']  = tl
         context['user'] = user
-        context['itemizedcosts'] = invoice.get_items()
-        context['program'] = self.program
+        context['invoice_id'] = iac.get_id()
+        context['identifier'] = iac.get_identifier()
+        payment_type = iac.default_payments_lineitemtype()
+        context['itemizedcosts'] = iac.get_transfers().exclude(line_item=payment_type).order_by('-line_item__required')
+        context['itemizedcosttotal'] = iac.amount_due()
+        context['subtotal'] = iac.amount_requested()
+        context['financial_aid'] = iac.amount_finaid()
+        context['amount_paid'] = iac.amount_paid()
+
         if 'HTTP_HOST' in request.META:
             context['hostname'] = request.META['HTTP_HOST']
         else:
@@ -167,13 +164,6 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         context['institution'] = settings.INSTITUTION_NAME
         context['storename'] = self.store_id
         context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
-        try:
-            context['itemizedcosttotal'] = invoice.cost()
-        except EmptyTransactionException:
-            context['itemizedcosttotal'] = 0
-
-        context['financial_aid'] = user.hasFinancialAid(prog)
-        context['invoice'] = invoice
         
         return render_to_response(self.baseDir() + 'cardpay.html', request, (prog, tl), context)
 
