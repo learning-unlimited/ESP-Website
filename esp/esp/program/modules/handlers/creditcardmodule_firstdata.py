@@ -151,10 +151,13 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         context['invoice_id'] = iac.get_id()
         context['identifier'] = iac.get_identifier()
         payment_type = iac.default_payments_lineitemtype()
-        context['itemizedcosts'] = iac.get_transfers().exclude(line_item=payment_type).order_by('-line_item__required')
+        sibling_type = iac.default_siblingdiscount_lineitemtype()
+        grant_type = iac.default_finaid_lineitemtype()
+        context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=[payment_type, sibling_type, grant_type]).order_by('-line_item__required')
         context['itemizedcosttotal'] = iac.amount_due()
         context['subtotal'] = iac.amount_requested()
         context['financial_aid'] = iac.amount_finaid()
+        context['sibling_discount'] = iac.amount_siblingdiscount()
         context['amount_paid'] = iac.amount_paid()
 
         if 'HTTP_HOST' in request.META:
