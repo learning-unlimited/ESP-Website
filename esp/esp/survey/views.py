@@ -219,17 +219,40 @@ def dump_survey(user, prog, surveys, request, tl):
     if tl == 'manage' and not request.REQUEST.has_key('teacher_id') and not request.REQUEST.has_key('classsection_id') and not request.REQUEST.has_key('classsubject_id'):
         for s in surveys:
             s.display_data = {}
+
+            #load questions, and pack which column each goes in
             s.display_data['questions']=s.questions.filter(anchor=prog.anchor).order_by('seq','id')
-            #perclass_questions=s.questions.filter(anchor__parent=prog.anchor).select_related().order_by('seq')
             col=1
             s.display_data['questions_dict']={}
             for q in s.display_data['questions']:
                 s.display_data['questions_dict'][q.id]=col
                 col+=1
-            s.display_data['responses']=s.surveyresponse_set.all().select_related()
-            a=Answer.objects.filter(question__in=s.display_data['questions'])
+
+            #load responses and answers, and pack answers into response objects
+            s.display_data['responses']=s.surveyresponse_set.all()
+            a=Answer.objects.filter(question__in=s.display_data['questions']).select_related('question', 'question__question_type','survey_response')
             for r in s.display_data['responses']:
                 r.display_answers=a.filter(survey_response=r).order_by('question__seq','question__id')
+            
+            s.display_data_perclass={}
+            #load per-class questions, and store the column of each
+            s.display_data_perclass['questions']=s.questions.filter(anchor__parent=prog.anchor).order_by('seq','id')
+            col=1
+            s.display_data_perclass['questions_dict']={}
+            for q in s.display_data_perclass['questions']:
+                s.display_data_perclass['questions_dict'][q.id]=col
+                col+=1
+
+            print "classes"
+
+            s.display_data_perclass['responses']=s.surveyresponse_set.all()
+            a=Answer.objects.filter(question__in=s.display_data_perclass['questions']).select_related()
+            for r in s.display_data_perclass['responses']:
+                r.classes=ClassSection.objects.filter(anchor__parent__parent__parent=prog.anchor,anchor__answer__survey_response=r).distinct()
+                r.class_answers={}
+                for c in r.classes:
+                    r.class_answers[c.id]=a.filter(survey_response=r,anchor=c.anchor).order_by('question__seq','question__id')
+            print "rendering"
         context = {'user': user, 'surveys': surveys, 'program': prog}
         return render_to_response('survey/dump.xls', request, prog.anchor, context, mimetype="application/vnd.ms-excel")
     else:

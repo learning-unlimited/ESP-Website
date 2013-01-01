@@ -28,10 +28,38 @@
             <Cell ss:StyleID="s22"> <Data ss:Type="DateTime">{{ r.time_filled|date:"c" }}</Data> </Cell>
             {% for a in r.display_answers %}
                 {% if a.question.id in s.display_data.questions_dict %}
-                    <Cell ss:Index="{{ a|getcol:s.display_data.questions_dict|add:"2" }}"> <Data ss:Type="{% if a.question.question_type.is_numeric %}Number{% else %}String{% endif %}">{{ a.value|slice:"1:" }}</Data> </Cell>
+                    <Cell ss:Index="{{ a.question.id|dictlookup:s.display_data.questions_dict|add:"2" }}"> <Data ss:Type="{% if a.question.question_type.is_numeric %}Number{% else %}String{% endif %}">{{ a.value|slice:"1:" }}</Data> </Cell>
                 {% endif %}
             {% endfor %}
         </Row>
+        {% endfor %}
+    </Table>
+</Worksheet>
+<Worksheet ss:Name="{{ s.name|truncatechars:19 }} (per-class)">
+    <Table>
+        <Row>
+            <Cell> <Data ss:Type="String">Response ID</Data> </Cell>
+            <Cell> <Data ss:Type="String">Timestamp</Data> </Cell>
+            <Cell> <Data ss:Type="String">Class number</Data> </Cell>
+            <Cell> <Data ss:Type="String">Class name</Data> </Cell>
+            {% for q in s.display_data_perclass.questions %}
+            <Cell> <Data ss:Type="String">{{ q.name }}</Data> </Cell>
+            {% endfor %}
+        </Row>
+        {% for r in s.display_data_perclass.responses %}
+        {% for c in r.classes %}
+        <Row>
+            <Cell> <Data ss:Type="Number">{{ r.id }}</Data> </Cell>
+            <Cell ss:StyleID="s22"> <Data ss:Type="DateTime">{{ r.time_filled|date:"c" }}</Data> </Cell>
+            <Cell> <Data ss:Type="String">{{ c.emailcode }}</Data> </Cell>
+            <Cell> <Data ss:Type="String">{{ c.title }}</Data> </Cell>
+            {% for a in c.id|dictlookup:r.class_answers %}
+                {% if a.question.id in s.display_data_perclass.questions_dict %}
+                    <Cell ss:Index="{{ a.question.id|dictlookup:s.display_data_perclass.questions_dict|add:"4" }}"> <Data ss:Type="{% if a.question.question_type.is_numeric %}Number{% else %}String{% endif %}">{{ a.value|slice:"1:" }}</Data> </Cell>
+                {% endif %}
+            {% endfor %}
+        </Row>
+        {% endfor %}
         {% endfor %}
     </Table>
 </Worksheet>

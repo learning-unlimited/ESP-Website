@@ -222,6 +222,6 @@ def favorite_classes(answer_list, limit=20):
     return result_list
 
 @register.filter(is_safe=True)
-def getcol(ans,questions_dict):
+def dictlookup(key,dict):
     '''Get the correct column for the answer, for dump_survey.'''
-    return questions_dict[ans.question.id]
+    return dict[key]
