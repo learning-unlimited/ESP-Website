@@ -200,6 +200,22 @@ class IndividualAccountingController(ProgramAccountingController):
 
         return result
 
+    def set_preference(self, lineitem_name, quantity, amount=None):
+        #   Sets a single preference
+        line_item = self.get_lineitemtypes().get(text=lineitem_name)
+        if amount:
+            self.get_transfers().filter(line_item=line_item, amount_dec=amount).delete()
+        else:
+            self.get_transfers().filter(line_item=line_item).delete()
+            amount = line_item.amount_dec
+
+        result = []
+        program_account = self.default_program_account()
+        source_account = self.default_source_account()
+        for i in range(quantity):
+            result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=line_item, amount_dec=amount))
+        return result
+
     def get_transfers(self, **kwargs):
         program_account = self.default_program_account()
         source_account = self.default_source_account()
