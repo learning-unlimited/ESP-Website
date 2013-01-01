@@ -121,11 +121,12 @@ class FinancialAidGrant(models.Model):
         iac = IndividualAccountingController(self.program, self.user)
         source_account = iac.default_finaid_account()
         dest_account = iac.default_source_account()
-        line_item_type = iac.default_finaid_lineitemtype(self.program)
+        line_item_type = iac.default_finaid_lineitemtype()
 
-        transfer = Transfer.objects.create(source=source_account, destination=dest_account, user=self.user, line_item=line_item_type, amount_dec=iac.amount_finaid())
+        (transfer, created) = Transfer.objects.get_or_create(source=source_account, destination=dest_account, user=self.user, line_item=line_item_type, amount_dec=iac.amount_finaid())
         self.finalized = True
         self.save()
+        return transfer
         
     def __unicode__(self):
         return u'Grant %s (max $%s, %d%% discount) at %s' % (self.user, self.amount_max_dec, self.percent, self.program)
