@@ -138,7 +138,7 @@ class ProgramAccountingController(BaseAccountingController):
         elif payment_only:
             qs = LineItemType.objects.filter(program=self.program, required=False, for_payments=True, for_finaid=False) 
         else:
-            LineItemType.objects.filter(program=self.program) 
+            qs = LineItemType.objects.filter(program=self.program)
             
         return qs.order_by('text', '-id').distinct('text')
 
