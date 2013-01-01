@@ -9,12 +9,24 @@
         <th class="smaller">User: {{ user.name }}</th>
         <th class="smaller">Event: {{ program.niceName }}</th>
     </tr>
-    {% for lineitem in itemizedcosts %}
+    {% for item in itemizedcosts %}
     <tr>
-        <td>{{ lineitem.text }}</td>
-        <td>${{ lineitem.negative_amount|floatformat:2 }}</td>
+        <td>{{ item.line_item.text }}</td>
+        <td>${{ item.amount|floatformat:2 }}</td>
     </tr>
     {% endfor %}
+    {% if financial_aid %}
+    <tr>
+        <td>Financial Aid Grant</td>
+        <td>-${{ financial_aid|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
+    {% if amount_paid %}
+    <tr>
+        <td>Amount Paid (so far)</td>
+        <td>-${{ amount_paid|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
     <tr>
         <td align="right"><b>Total:</b></td>
         <td>${{ itemizedcosttotal|floatformat:2 }}</td>
