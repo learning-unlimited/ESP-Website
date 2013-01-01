@@ -44,11 +44,12 @@ from esp.users.controllers.usersearch import UserSearchController
 from esp.web.util.latex  import render_to_latex
 from esp.accounting_docs.models import Document, MultipleDocumentError
 from esp.accounting_core.models import LineItem, LineItemType, Transaction
+from esp.accounting.controllers import IndividualAccountingController
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
 from django.conf import settings
-from django.template.loader import select_template
+from django.template.loader import select_template, render_to_string
 from django.utils.encoding import smart_str
 
 from decimal import Decimal
@@ -677,33 +678,23 @@ class ProgramPrintables(ProgramModuleObj):
         
         if key == 'receipt':
             #   Take the user's most recent registration profile.
-            from django.template import Template
             from esp.middleware.threadlocalrequest import AutoRequestContext as Context
-            from django.template.loader import find_template_source
             from django.conf import settings   
             prof = user.getLastProfile()
-            
-            li_types = prof.program.getLineItemTypes(user)
-            
-            # get program anchor or that of parent program
-            p_anchor = prof.program.anchor
-            try:
-                invoice = Document.get_invoice(user, p_anchor, li_types, dont_duplicate=True, get_complete=True)
-            except MultipleDocumentError:
-                invoice = Document.get_invoice(user, p_anchor, li_types, dont_duplicate=True)
-            
-            context_dict = {'prog': prof.program, 'first_name': user.first_name, 'last_name': user.last_name, 'username': user.username, 'e_mail': prof.contact_user.e_mail, 'schedule': ProgramPrintables.getSchedule(prof.program, user)}
-            
-            context_dict['itemizedcosts'] = invoice.get_items()
-            context_dict['itemizedcosttotal'] = invoice.cost()
-            context_dict['owe_money'] = ( context_dict['itemizedcosttotal'] != 0 )
-            
-            t = Template(open(settings.TEMPLATE_DIRS + '/program/receipts/' + str(prof.program.id) + '_custom_receipt.txt').read())
-            c = Context(context_dict)
-            result_str = t.render(c)
 
-            return result_str
-            
+            iac = IndividualAccountingController(self.program, user)
+
+            context = {'program': self.program, 'user': self.user}
+
+            payment_type = iac.default_payments_lineitemtype()
+            context['itemizedcosts'] = iac.get_transfers().exclude(line_item=payment_type).order_by('-line_item__required')
+            context['itemizedcosttotal'] = iac.amount_due()
+            context['subtotal'] = iac.amount_requested()
+            context['financial_aid'] = iac.amount_finaid()
+            context['amount_paid'] = iac.amount_paid()
+
+            return render_to_string(self.baseDir() + 'accounting_receipt.txt', context)
+
         if key == 'schedule':
             #   Generic schedule function kept for backwards compatibility
             return ProgramPrintables.getSchedule(self.program, user)
