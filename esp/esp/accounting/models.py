@@ -199,6 +199,21 @@ class Transfer(models.Model):
         self.executed = True
         self.save()
 
+    def unexecute(self):
+        if not self.executed:
+            return
+
+        source = self.source
+        source.balance_dec += self.amount_dec
+        source.save()
+
+        destination = self.destination
+        destination.balance_dec -= self.amount_dec
+        destination.save()
+
+        self.executed = False
+        self.save()
+
     def __unicode__(self):
         base_result = u'Transfer $%s from %s to %s' % (self.amount_dec, self.source, self.destination)
         if self.executed:
