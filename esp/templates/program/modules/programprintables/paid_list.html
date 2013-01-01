@@ -46,10 +46,10 @@ td, th {
 <tr>
  <td><div style="width: 15px; height: 15px; border: solid black 2px;">&nbsp;</div></td>
  <td>{{ lineitem.user.first_name }} {{ lineitem.user.last_name }}</td>
-{% if single_select %}{% else %} <td>{{ lineitem.li_type.text }}</td>{% endif %}
-{% if hide_paid %}{% else %} <td>{% if lineitem.transaction.complete %}X{% endif %}</td>
+{% if single_select %}{% else %} <td>{{ lineitem.line_item.text }}</td>{% endif %}
+{% if hide_paid %}{% else %} <td>{% if lineitem.executed %}X{% endif %}</td>
  <td>{% if lineitem.has_financial_aid %}X{% endif %}</td>
- <td>{{ lineitem.amount|floatformat:2 }}</td>
+ <td>${{ lineitem.amount|floatformat:2 }}</td>
 {% endif %}
 </tr>
 {% endfor %}

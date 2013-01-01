@@ -44,7 +44,7 @@ from esp.users.controllers.usersearch import UserSearchController
 from esp.web.util.latex  import render_to_latex
 from esp.accounting_docs.models import Document, MultipleDocumentError
 from esp.accounting_core.models import LineItem, LineItemType, Transaction
-from esp.accounting.controllers import IndividualAccountingController
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
@@ -69,14 +69,15 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def paid_list_filter(self, request, tl, one, two, module, extra, prog):
-        lineitemtypes = LineItemType.objects.forProgram(prog)
+        pac = ProgramAccountingController(prog)
+        lineitemtypes = pac.get_lineitemtypes(optional_only=True)
         context = { 'lineitemtypes': lineitemtypes }
         return render_to_response(self.baseDir()+'paid_list_filter.html', request, (prog, tl), context)
 
     @aux_call
     @needs_admin
     def paid_list(self, request, tl, one, two, module, extra, prog):
-
+        pac = ProgramAccountingController(prog)
         if request.GET.has_key('filter'):
             try:
                 ids = [ int(x) for x in request.GET.getlist('filter') ]
@@ -86,12 +87,12 @@ class ProgramPrintables(ProgramModuleObj):
                 single_select = False
 
             if ids == None:
-                lineitems = LineItem.objects.forProgram(prog).order_by('li_type','user').select_related()
+                transfers = pac.all_transfers(optional_only=True).order_by('line_item','user').select_related()
             else:
-                lineitems = LineItem.objects.forProgram(prog).filter(li_type__id__in=ids).order_by('li_type','user').select_related()
+                lineitems = pac.all_transfers(optional_only=True).filter(line_item__id__in=ids).order_by('line_item','user').select_related()
         else:
             single_select = False
-            lineitems = LineItem.objects.forProgram(prog).order_by('li_type','user').select_related()
+            lineitems = pac.all_transfers(optional_only=True).order_by('line_item','user').select_related()
         
         for lineitem in lineitems:
             lineitem.has_financial_aid = ESPUser(lineitem.user).hasFinancialAid(prog)
