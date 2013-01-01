@@ -927,6 +927,8 @@ Volunteer schedule for %s:
             student.meals = iac.get_transfers(optional_only=True)  # catch everything that's not admission to the program.
             student.admission = iac.get_transfers(required_only=True)  # Program admission
             student.paid_online = iac.has_paid()
+            student.amount_finaid = iac.amount_finaid()
+            student.amount_siblingdiscount = iac.amount_siblingdiscount()
             student.itemizedcosttotal = iac.amount_due()
 
             student.has_paid = ( student.itemizedcosttotal == 0 )

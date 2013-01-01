@@ -15,6 +15,12 @@
         <td>${{ item.amount|floatformat:2 }}</td>
     </tr>
     {% endfor %}
+    {% if sibling_discount %}
+    <tr>
+        <td>Sibling Discount</td>
+        <td>-${{ sibling_discount|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
     {% if financial_aid %}
     <tr>
         <td>Financial Aid Grant</td>
