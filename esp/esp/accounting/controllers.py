@@ -283,6 +283,12 @@ class IndividualAccountingController(ProgramAccountingController):
             amount_paid = Decimal('0')
         return amount_paid
     
+    def has_paid(self, in_full=False):
+        if in_full:
+            return (self.amount_paid() > 0) and (self.amount_due <= 0)
+        else:
+            return (self.amount_paid() > 0)
+
     def amount_due(self):
         amt_request = self.amount_requested()
         return amt_request - self.amount_finaid(amt_request) - self.amount_paid()
