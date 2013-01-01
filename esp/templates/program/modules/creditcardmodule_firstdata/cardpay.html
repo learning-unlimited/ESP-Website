@@ -171,17 +171,17 @@ Please review the costs below. If you are concerned that there is a problem, ple
 <form onsubmit="return formTest();" action="{{ module.post_url }}" method="post" autocomplete="off"> 
 
 <input type="hidden" name="storename" value="{{ module.store_id }}" />
-<input type="hidden" name="oid" value="{{ module.invoice_prefix }}-{{ invoice.get_locator }}" />
+<input type="hidden" name="oid" value="{{ invoice_id }}" />
 <input type="hidden" id="id_chargetotal" name="chargetotal" value="{{ itemizedcosttotal|floatformat:2 }}" />
 <input type="hidden" id="id_total" name="total" value="{{ itemizedcosttotal|floatformat:2 }}" />
-<input type="hidden" name="ponumber" value="{{ invoice.txn.id }}" />
-<input type="hidden" name="invoice_number" value="{{ invoice.locator }}" />
+<input type="hidden" name="ponumber" value="{{ invoice_id }}" />
+<input type="hidden" name="invoice_number" value="{{ identifier }}" />
 <input type="hidden" name="userid" value="{{ user.id }}" />
 <input type="hidden" name="txntype" value="sale" />
 <input type="hidden" name="bcountry" value="US" />
 <input type="hidden" name="responseSuccessURL" value="https://{{ hostname }}/learn/{{ program.getUrlBase }}/payment_success" />
 <input type="hidden" name="responseFailureURL" value="https://{{ hostname }}/learn/{{ program.getUrlBase }}/payment_failure" />
-<input type="hidden" name="comments" value="LU Credit Card Invoice {{ module.invoice_prefix }}-{{ invoice.get_locator }} (for {{ program.niceName }} at {{ institution }})" />
+<input type="hidden" name="comments" value="LU Credit Card Invoice {{ invoice_id }} (for {{ program.niceName }} at {{ institution }})" />
 
 <p>
 Autofill contact information:
