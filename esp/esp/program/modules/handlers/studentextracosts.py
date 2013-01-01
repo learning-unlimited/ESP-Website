@@ -44,10 +44,12 @@ from django.template.loader import get_template
 from esp.program.models  import StudentApplication
 from django              import forms
 from django.contrib.auth.models import User
-from esp.accounting_docs.models import Document
-from esp.accounting_core.models import LineItem, LineItemType
+from esp.accounting_core.models import LineItemType
+from esp.accounting.controllers import IndividualAccountingController, ProgramAccountingController
 from esp.middleware.threadlocalrequest import get_current_request
 from collections import defaultdict
+
+from decimal import Decimal
 
 class CostItem(forms.Form):
     cost = forms.BooleanField(required=False, label='')
@@ -65,8 +67,6 @@ class MultiSelectCostItem(forms.Form):
         self.fields['cost'].choices = choices
         self.fields['cost'].required = required
 
-        print "Field ", required
-        
 # pick extra items to buy for each program
 class StudentExtraCosts(ProgramModuleObj):
 
@@ -78,18 +78,16 @@ class StudentExtraCosts(ProgramModuleObj):
             "module_type": "learn",
             "seq": 30
             }
-    
-    def get_invoice(self):
-        return Document.get_invoice(get_current_request().user, self.program_anchor_cached(parent=True), [], dont_duplicate=True)
 
     def have_paid(self):
-        return ( Document.objects.filter(user=get_current_request().user, anchor=self.program_anchor_cached(parent=True), txn__complete=True).count() > 0 )
+        iac = IndividualAccountingController(self.program, get_current_request().user)
+        return (iac.amount_due() <= 0)
 
     def studentDesc(self):
         """ Return a description for each line item type that students can be filtered by. """
         student_desc = {}
-        treeq = QTree(anchor__below=self.program_anchor_cached())
-        for i in LineItemType.objects.filter(treeq):
+        pac = ProgramAccountingController(self.program)
+        for i in pac.get_lineitemtypes(optional_only=True):
             student_desc['extracosts_%d' % i.id] = """Students who have opted for '%s'""" % i.text
 
         return student_desc
@@ -98,19 +96,20 @@ class StudentExtraCosts(ProgramModuleObj):
         """ Return the useful lists of students for the Extra Costs module. """
 
         student_lists = {}
-        treeq = QTree(anchor__below=self.program_anchor_cached())
-
+        pac = ProgramAccountingController(self.program)
+        
         # Get all the line item types for this program.
-        for i in LineItemType.objects.filter(treeq):
+        for i in pac.get_lineitemtypes(optional_only=True):
             if QObject:
-                student_lists['extracosts_%d' % i.id] = self.getQForUser(Q(accounting_lineitem__li_type = i))
+                student_lists['extracosts_%d' % i.id] = self.getQForUser(Q(transfer__line_item = i))
             else:
-                student_lists['extracosts_%d' % i.id] = ESPUser.objects.filter(accounting_lineitem__li_type = i).distinct()
+                student_lists['extracosts_%d' % i.id] = ESPUser.objects.filter(transfer__line_item = i).distinct()
 
         return student_lists
 
     def isCompleted(self):
-        return ( Document.objects.filter(user=get_current_request().user, anchor=self.program_anchor_cached(parent=True), txn__complete=True).count() > 0 or self.get_invoice().txn.lineitem_set.all().count() > 0 )
+        iac = IndividualAccountingController(self.program, get_current_request().user)
+        return (len(iac.get_preferences()) > 0)
 
     @main_call
     @needs_student
@@ -125,112 +124,93 @@ class StudentExtraCosts(ProgramModuleObj):
         if self.have_paid():
             raise ESPError(False), "You've already paid for this program; you can't pay again!"
 
-        #costs_list = set(LineItemType.forAnchor(prog.anchor).filter(optional=True).filter(lineitem__transaction__isnull=False, lineitem__user=request.user)) | set([x for x in LineItemType.forAnchor(prog.anchor).filter(optional=True) if x.lineitem_set.count() == 0])
-        costs_list = LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Optional/BuyOne'))
-        multicosts_list = LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Optional/BuyMany'))
-        multiselect_list = LineItemType.objects.filter(anchor__parent__in=(GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required/BuyMultiSelect'), GetNode(prog.anchor.get_uri()+'/LineItemTypes/Optional/BuyMultiSelect'))).select_related('anchor', 'anchor__parent__parent')
+        #   Determine which line item types we will be asking about
+        iac = IndividualAccountingController(self.program, get_current_request().user)
+        costs_list = iac.get_lineitemtypes(optional_only=True).filter(max_quantity__lte=1, lineitemoptions__isnull=True)
+        multicosts_list = iac.get_lineitemtypes(optional_only=True).filter(max_quantity__gt=1, lineitemoptions__isnull=True)
+        multiselect_list = iac.get_lineitemtypes(optional_only=True).filter(lineitemoptions__isnull=False)
 
-        multiselect_dict = defaultdict(list)
-        for elt in multiselect_list:
-            multiselect_dict[elt.anchor].append(elt)
+        #   Fetch the user's current preferences
+        prefs = iac.get_preferences()
 
-        for lst in multiselect_dict.itervalues():
-            lst.sort(key=lambda li: li.text)
-        
-        doc = self.get_invoice()
-
-        def first_if_any(lst):
-            try:
-                return lst[0]
-            except:
-                return None
+        forms_all_valid = True
 
         ## Another dirty hack, left as an exercise to the reader
         if request.method == 'POST':
+
+            #   Initialize a list of forms using the POST data
             costs_db = [ { 'LineItemType': x, 
-                           'CostChoice': CostItem(request.POST, prefix="%s_" % x.id) }
+                           'CostChoice': CostItem(request.POST, prefix="%s" % x.id) }
                          for x in costs_list ] + \
                          [ x for x in \
                            [ { 'LineItemType': x, 
-                               'CostChoice': MultiCostItem(request.POST, prefix="%s_" % x.id) }
+                               'CostChoice': MultiCostItem(request.POST, prefix="%s" % x.id) }
                              for x in multicosts_list ] \
                            if x['CostChoice'].is_valid() and x['CostChoice'].cleaned_data.has_key('cost') ] + \
-                           [ { 'LineItemType': l,
-                               'CostChoice': MultiSelectCostItem(request.POST, prefix="multi%s_" % l.anchor.id,
-                                                                 required=(l.anchor.parent.parent.name == 'Required'),
-                                                                 choices=[(li.id, str(li.text)) for li in multiselect_dict[l.anchor]]) }
-                             for l in multiselect_list ]
+                           [ { 'LineItemType': x,
+                               'CostChoice': MultiSelectCostItem(request.POST, prefix="multi%s" % x.id,
+                                                     choices=x.options_str,
+                                                     required=(x.required)) }
+                             for x in multiselect_list ]
 
-            for i in costs_db:
-                if not i['CostChoice'].is_valid():
-                    checked_ids = set( [ x.li_type_id for x in doc.txn.lineitem_set.all() ] )
-                    li = None  ## Ugly hack, left as an exercise to the reader
-                    forms = [ { 'form': CostItem( request.POST, prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ) } ),
-                                'LineItem': x }
-                              for x in costs_list ] + \
-                              [ { 'form': MultiCostItem( request.POST, prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ), 'count': max(1, doc.txn.lineitem_set.filter(li_type=x).count()) } ),
-                                  'LineItem': x }
-                                for x in multicosts_list ] + \
-                                [ { 'form': MultiSelectCostItem( request.POST, prefix="multi%s_" % anchor.id,
-                                                                 initial={'cost': first_if_any(list(checked_ids.intersection(set(li.id for li in li_list))))},
-                                                                 choices=[(li.id, str(li.text)) for li in li_list],
-                                                                 required=(li.anchor.parent.parent.name == 'Required' if li else False)),
-                                    'LineItem': {'text': anchor.name, 'description': mark_safe(anchor.friendly_name)} }
-                                  for anchor, li_list in multiselect_dict.iteritems() ]
-        
-
-                    return render_to_response(self.baseDir()+'extracosts.html',
-                                              request,
-                                              (self.program, tl),
-                                              { 'errors': True, 'forms': forms, 'financial_aid': ESPUser(request.user).hasFinancialAid(prog.anchor), 'select_qty': len(multicosts_list) > 0 })
-                    break
-                
-                if i['CostChoice'].cleaned_data['cost'] and \
-                       ((not isinstance(i['CostChoice'], MultiSelectCostItem)) or int(i['CostChoice'].cleaned_data['cost']) == i['LineItemType'].id):
-                    if i['CostChoice'].cleaned_data.has_key('count'):
-                        try:
-                            count = int(i['CostChoice'].cleaned_data['count'])
-                        except ValueError:
-                            raise ESPError(True), "Error: Invalid cost value"
-                    else:
-                        count = 1
-
-                    lis = doc.txn.lineitem_set.filter(li_type=i['LineItemType'])
-                    lis_count = lis.count()
-
-                    if lis_count > count:
-                        for i in xrange(lis_count - count):
-                            lis[i].delete()
-
-                    if lis_count < count:
-                        for c in xrange(count - lis_count):
-                            doc.txn.add_item(request.user, i['LineItemType'], ESPUser(request.user).hasFinancialAid(prog.anchor))
-
+            #   Get a list of the (line item, quantity) pairs stored in the forms
+            #   as well as a list of line items which had invalid forms
+            form_prefs = []
+            preserve_items = []
+            for item in costs_db:
+                form = item['CostChoice']
+                lineitem_type = item['LineItemType']
+                if form.is_valid():
+                    if isinstance(form, CostItem):
+                        if form.cleaned_data['cost'] is True:
+                            form_prefs.append((lineitem_type.text, 1, lineitem_type.amount))
+                    elif isinstance(form, MultiCostItem):
+                        if form.cleaned_data['cost'] is True:
+                            form_prefs.append((lineitem_type.text, form.cleaned_data['count'], lineitem_type.amount))
+                    elif isinstance(form, MultiSelectCostItem):
+                        form_prefs.append((lineitem_type.text, 1, Decimal(form.cleaned_data['cost'])))
                 else:
-                    doc.txn.lineitem_set.filter(li_type=i['LineItemType']).delete()
+                    #   Preserve selected quantity for any items that we don't have a valid form for
+                    preserve_items.append(lineitem_type.text)
+                    forms_all_valid = False
 
-            return self.goToCore(tl)
+            #   Merge previous and new preferences (update only if the form was valid)
+            new_prefs = []
+            for lineitem_name in preserve_items:
+                if lineitem_name in map(lambda x: x[0], prefs):
+                    new_prefs.append(prefs[map(lambda x: x[0], prefs).index(lineitem_name)])
+            new_prefs += form_prefs
 
-        checked_ids = set( [ x.li_type_id for x in doc.txn.lineitem_set.all() ] )
-        li = None  ## Ugly hack, left as an exercise to the reader
-        forms = [ { 'form': CostItem( prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ) } ),
+            iac.apply_preferences(new_prefs)
+
+            #   Redirect to main student reg page if all data was recorded properly
+            #   (otherwise, the code below will reload the page)
+            if forms_all_valid:
+                return self.goToCore(tl)
+
+        count_map = {}
+        for lineitem_type in iac.get_lineitemtypes(optional_only=True):
+            count_map[lineitem_type.text] = [lineitem_type.id, 0, None]
+        for item in iac.get_preferences():
+            count_map[item[0]][1] = item[1]
+            count_map[item[0]][2] = item[2]
+        forms = [ { 'form': CostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0) } ),
                     'LineItem': x }
                   for x in costs_list ] + \
-                  [ { 'form': MultiCostItem( prefix="%s_" % x.id, initial={'cost': (x.id in checked_ids ), 'count': max(1, doc.txn.lineitem_set.filter(li_type=x).count()) } ),
+                  [ { 'form': MultiCostItem( prefix="%s" % x.id, initial={'cost': (count_map[x.text][1] > 0), 'count': count_map[x.text][1] } ),
                       'LineItem': x }
                     for x in multicosts_list ] + \
-                    [ { 'form': MultiSelectCostItem( prefix="multi%s_" % anchor.id,
-                                                     initial={'cost': first_if_any(list(checked_ids.intersection(set(li.id for li in li_list))))},
-                                                     choices=[(li.id, str(li.text)) for li in li_list],
-                                                     required=(li.anchor.parent.parent.name == 'Required' if li else False)),
-                        'LineItem': {'text': anchor.name, 'description': mark_safe(anchor.friendly_name)} }
-                      for anchor, li_list in multiselect_dict.iteritems() ]
-        
+                    [ { 'form': MultiSelectCostItem( prefix="multi%s" % x.id,
+                                                     initial={'cost': (('%.2f' % count_map[x.text][2]) if count_map[x.text][2] else None)},
+                                                     choices=x.options_str,
+                                                     required=(x.required)),
+                        'LineItem': x }
+                      for x in multiselect_list ]
 
         return render_to_response(self.baseDir()+'extracosts.html',
                                   request,
                                   (self.program, tl),
-                                  { 'forms': forms, 'financial_aid': ESPUser(request.user).hasFinancialAid(prog.anchor), 'select_qty': len(multicosts_list) > 0 })
+                                  { 'errors': not forms_all_valid, 'forms': forms, 'financial_aid': ESPUser(request.user).hasFinancialAid(prog), 'select_qty': len(multicosts_list) > 0 })
 
 
     class Meta:
