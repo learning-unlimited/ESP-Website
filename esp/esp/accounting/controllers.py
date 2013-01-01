@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType
-from esp.program.models import FinancialAidRequest, Program
+from esp.program.models import FinancialAidRequest, Program, SplashInfo
 from esp.users.models import ESPUser
 
 from django.db.models import Sum
@@ -95,21 +95,28 @@ class ProgramAccountingController(BaseAccountingController):
             for_payments=False
         )
         result.append(lit_required)
-        
+
         (lit_payments, created) = LineItemType.objects.get_or_create(
             text='Student payment',
             program=program,
             for_payments=True
         )
         result.append(lit_payments)
-        
+
         (lit_finaid, created) = LineItemType.objects.get_or_create(
             text='Financial aid grant',
             program=program,
             for_finaid=True
         )
         result.append(lit_finaid)
-        
+
+        (lit_sibling, created) = LineItemType.objects.get_or_create(
+            text='Sibling discount',
+            program=program,
+            for_finaid=True
+        )
+        result.append(lit_sibling)
+
         for item in optional_items:
             (lit_optional, created) = LineItemType.objects.get_or_create(
                 text=item[0],
@@ -129,7 +136,10 @@ class ProgramAccountingController(BaseAccountingController):
         return LineItemType.objects.filter(program=self.program, for_payments=True).order_by('-id')[0]
     
     def default_finaid_lineitemtype(self):
-        return LineItemType.objects.filter(program=self.program, for_finaid=True).order_by('-id')[0]
+        return LineItemType.objects.filter(program=self.program, for_finaid=True, text='Financial aid grant').order_by('-id')[0]
+
+    def default_siblingdiscount_lineitemtype(self):
+        return LineItemType.objects.filter(program=self.program, for_finaid=True, text='Sibling discount').order_by('-id')[0]
 
     def get_lineitemtypes(self, required_only=False, optional_only=False, payment_only=False):
         if required_only:
@@ -330,6 +340,13 @@ class IndividualAccountingController(ProgramAccountingController):
 
         return aid_amount
     
+    def amount_siblingdiscount(self):
+        #   Hard-coded $20 discount for now; could be made into a Tag in the future
+        if SplashInfo.objects.filter(program=self.program, student=self.user, siblingdiscount=True).exists():
+            return Decimal('20.00')
+        else:
+            return Decimal('0')
+    
     def amount_paid(self):
         #   Compute sum of all transfers from outside (e.g. credit card payments) that are for this user
         if Transfer.objects.filter(user=self.user, line_item=self.default_payments_lineitemtype(), source__isnull=True).exists():
@@ -346,7 +363,7 @@ class IndividualAccountingController(ProgramAccountingController):
 
     def amount_due(self):
         amt_request = self.amount_requested()
-        return amt_request - self.amount_finaid(amt_request) - self.amount_paid()
+        return amt_request - self.amount_finaid(amt_request) - self.amount_siblingdiscount() - self.amount_paid()
 
     def clear_payments(self):
         #   Remove all payments listed for this user at this program
