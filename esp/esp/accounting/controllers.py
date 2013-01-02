@@ -51,7 +51,7 @@ class BaseAccountingController(object):
     def default_finaid_account(self):
         return Account.objects.get(name='grants')
 
-    def execute_transfers(self, transfers):
+    def execute_transfers(self, transfers, reverse=False):
         """ Simultaneously execute a set of transfers. """
 
         accounts_source = transfers.order_by('source').distinct('source').values_list('source', flat=True)
@@ -60,19 +60,29 @@ class BaseAccountingController(object):
         total_change = Decimal('0')
 
         for account_id in accounts_source:
-            account = Account.objects.get(id=account_id)
-            outflow = transfers.filter(source=account, executed=False).aggregate(Sum('amount_dec'))['amount_dec__sum']
-            account.balance_dec -= outflow
-            total_change -= outflow
-            account.save()
+            if account_id is not None:
+                account = Account.objects.get(id=account_id)
+                outflow = transfers.filter(source=account, executed=reverse).aggregate(Sum('amount_dec'))['amount_dec__sum']
+                if reverse:
+                    account.balance_dec += outflow
+                    total_change += outflow
+                else:
+                    account.balance_dec -= outflow
+                    total_change -= outflow
+                account.save()
         for account_id in accounts_dest:
-            account = Account.objects.get(id=account_id)
-            inflow = transfers.filter(destination=account, executed=False).aggregate(Sum('amount_dec'))['amount_dec__sum']
-            account.balance_dec += inflow
-            total_change += inflow
-            account.save()
+            if account_id is not None:
+                account = Account.objects.get(id=account_id)
+                inflow = transfers.filter(destination=account, executed=reverse).aggregate(Sum('amount_dec'))['amount_dec__sum']
+                if reverse:
+                    account.balance_dec -= inflow
+                    total_change -= inflow
+                else:
+                    account.balance_dec += inflow
+                    total_change += inflow
+                account.save()
 
-        transfers.update(executed=True)
+        transfers.update(executed=not reverse)
 
         return total_change
 
