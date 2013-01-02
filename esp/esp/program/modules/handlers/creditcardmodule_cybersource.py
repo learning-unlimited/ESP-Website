@@ -61,7 +61,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
     def students(self, QObject = False):
         #   This query represented students who have a payment transfer from the outside
         pac = ProgramAccountingController(self.program)
-        QObj = Q(transfer__source__isnull=True, transfer__lineitem=pac.default_payments_lineitemtype())
+        QObj = Q(transfer__source__isnull=True, transfer__line_item=pac.default_payments_lineitemtype())
 
         if QObject:
             return {'creditcard': QObj}
