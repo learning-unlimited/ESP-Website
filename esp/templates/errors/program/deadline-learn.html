@@ -7,12 +7,16 @@
 
 {% block content %}
 
-<h1>Student Registration Currently Unavailable</h1>
+<h1>Student Registration Closed</h1>
+
+<strong>
+<p>
+This registration page ({{ moduleObj.module.getFriendlyName }}) is not currently open, possibly because you are either too early or too late.  Please follow the program's tab on the left side of the <a href="/learn/index.html">students section</a> of our site for information about the schedule for this program.  Alternatively, feel free to go <a href="javascript:history.back();">back</a> to the page that you came from.
+</p>
 
 <p>
-<strong>
-This registration page is not currently open.  Please follow the program's tab on the left side of the <a href="/learn/index.html">students section</a> of our site for information about the schedule for this program.  Alternatively, feel free to go <a href="javascript:history.back();">back</a> to the page that you came from.<br />
+If you think this message was in error, send us an <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">email</a>, telling us what you were trying to do, the URL of the page, and that {{ extension }} closed.
+</p>
 </strong>
-<br />
 
 {% endblock %}
