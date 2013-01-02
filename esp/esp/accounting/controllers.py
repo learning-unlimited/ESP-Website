@@ -218,6 +218,9 @@ class ProgramAccountingController(BaseAccountingController):
     def all_transfers(self, **kwargs):
         return Transfer.objects.filter(line_item__in=self.get_lineitemtypes(**kwargs))
 
+    def all_accounts(self):
+        return Account.objects.filter(program=self.program)
+
     def execute_pending_transfers(self, users):
         """ "Close the books" for this program, with the selected users.
             Typically this will be all students that attended the program. """
