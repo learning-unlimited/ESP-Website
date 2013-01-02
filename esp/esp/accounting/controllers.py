@@ -283,8 +283,11 @@ class IndividualAccountingController(ProgramAccountingController):
                 if lit.text == item[0]:
                     matched = True
                     for i in range(item[1]):
-                        if item[2] != 0:
-                            result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=item[2]))
+                        if item[2] is not None:
+                            if item[2] != 0:
+                                result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=item[2]))
+                        else:
+                            result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=lit.amount_dec))
                     break
             if not matched:
                 raise Exception('Could not find a line item type matching "%s"' % item[0])
