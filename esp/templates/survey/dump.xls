@@ -28,7 +28,9 @@
             <Cell ss:StyleID="s22"> <Data ss:Type="DateTime">{{ r.time_filled|date:"c" }}</Data> </Cell>
             {% for a in r.display_answers %}
                 {% if a.question.id in s.display_data.questions_dict %}
-                    <Cell ss:Index="{{ a.question.id|dictlookup:s.display_data.questions_dict|add:"2" }}"> <Data ss:Type="{% if a.question.question_type.is_numeric %}Number{% else %}String{% endif %}">{{ a.value|slice:"1:" }}</Data> </Cell>
+                {% if a.answer %}
+                    <Cell ss:Index="{{ a.question.id|dictlookup:s.display_data.questions_dict|add:"2" }}"> <Data ss:Type="{% if a.question.question_type.is_numeric %}Number{% else %}String{% endif %}">{{ a.answer }}</Data> </Cell>
+                {% endif %}
                 {% endif %}
             {% endfor %}
         </Row>
@@ -55,7 +57,9 @@
             <Cell> <Data ss:Type="String">{{ c.title }}</Data> </Cell>
             {% for a in c.id|dictlookup:r.class_answers %}
                 {% if a.question.id in s.display_data_perclass.questions_dict %}
-                    <Cell ss:Index="{{ a.question.id|dictlookup:s.display_data_perclass.questions_dict|add:"4" }}"> <Data ss:Type="{% if a.question.question_type.is_numeric %}Number{% else %}String{% endif %}">{{ a.value|slice:"1:" }}</Data> </Cell>
+                {% if a.answer %}
+                    <Cell ss:Index="{{ a.question.id|dictlookup:s.display_data_perclass.questions_dict|add:"4" }}"> <Data ss:Type="{% if a.question.question_type.is_numeric %}Number{% else %}String{% endif %}">{{ a.answer }}</Data> </Cell>
+                {% endif %}
                 {% endif %}
             {% endfor %}
         </Row>

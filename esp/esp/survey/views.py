@@ -243,16 +243,13 @@ def dump_survey(user, prog, surveys, request, tl):
                 s.display_data_perclass['questions_dict'][q.id]=col
                 col+=1
 
-            print "classes"
-
             s.display_data_perclass['responses']=s.surveyresponse_set.all()
-            a=Answer.objects.filter(question__in=s.display_data_perclass['questions']).select_related()
+            a=Answer.objects.filter(question__in=s.display_data_perclass['questions']).select_related('question', 'question__question_type','survey_response')
             for r in s.display_data_perclass['responses']:
                 r.classes=ClassSection.objects.filter(anchor__parent__parent__parent=prog.anchor,anchor__answer__survey_response=r).distinct()
                 r.class_answers={}
                 for c in r.classes:
-                    r.class_answers[c.id]=a.filter(survey_response=r,anchor=c.anchor).order_by('question__seq','question__id')
-            print "rendering"
+                    r.class_answers[c.id]=a.filter(survey_response=r,anchor=c.anchor_id).order_by('question__seq','question__id')
         context = {'user': user, 'surveys': surveys, 'program': prog}
         return render_to_response('survey/dump.xls', request, prog.anchor, context, mimetype="application/vnd.ms-excel")
     else:
