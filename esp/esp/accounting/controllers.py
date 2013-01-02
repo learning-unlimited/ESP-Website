@@ -236,6 +236,10 @@ class ProgramAccountingController(BaseAccountingController):
         #   Execute transfers for these users
         self.execute_transfers(Transfer.objects.filter(user__in=users, line_item__program=self.program))
 
+    def remove_pending_transfers(self, users):
+        """ Clear financial records for these users; if they didn't show up,
+            we shouldn't be expecting their money.  """
+        self.all_transfers().filter(user__in=users, executed=False).delete()
 
 class IndividualAccountingController(ProgramAccountingController):
     def __init__(self, program, user, *args, **kwargs):
