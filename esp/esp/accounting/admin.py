@@ -46,7 +46,7 @@ admin_site.register(LineItemType, LITAdmin)
 
 class TransferAdmin(admin.ModelAdmin):
     list_display = ['id', 'line_item', 'user', 'timestamp', 'source', 'destination', 'amount_dec', 'executed']
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'source__name', 'destination__name']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'source__name', 'destination__name', 'line_item__text']
 admin_site.register(Transfer, TransferAdmin)
 
 class AccountAdmin(admin.ModelAdmin):
