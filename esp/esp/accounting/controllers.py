@@ -105,6 +105,14 @@ class ProgramAccountingController(BaseAccountingController):
     def __init__(self, program, *args, **kwargs):
         self.program = program
 
+    def clear_all_data(self):
+        #   Clear all financial data for the program
+        FinancialAidGrant.objects.filter(request__program=self.program).delete()
+        self.execute_transfers(self.all_transfers(), reverse=True)
+        self.all_transfers().delete()
+        self.get_lineitemtypes().delete()
+        self.all_accounts().delete()
+
     def setup_accounts(self):
         #   For now, just create a single account for the program.  In the
         #   future we may want finer grained accounting per program.
