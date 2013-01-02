@@ -36,7 +36,8 @@ from django.conf.urls.defaults import patterns, include, handler500, handler404
 from django.contrib import admin
 from esp.admin import admin_site, autodiscover
 from django.conf import settings
-from django.conf.urls.static import staticfiles_urlpatterns, static
+from django.conf.urls.static import static
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.generic.base import RedirectView
 
 from esp.section_data import section_redirect_keys, section_prefix_keys
