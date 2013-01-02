@@ -60,8 +60,8 @@ MEDIA_ROOT_DIR = 'public/media/'
 
 MEDIA_URL = '/media/'
 
-STATIC_URL = '/media/admin'
-STATIC_ROOT =  '/'
+STATIC_ROOT_DIR =  'public/static/'
+STATIC_URL = '/static/'
 
 LOGIN_REDIRECT_URL = '/'
 
@@ -188,6 +188,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.sites',
+    'django.contrib.staticfiles',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'esp.datatree',

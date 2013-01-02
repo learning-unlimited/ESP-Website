@@ -65,6 +65,7 @@ SERVER_EMAIL = 'server@%s' % EMAIL_HOST_SENDER
 
 # compute some derived settings
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, MEDIA_ROOT_DIR)
+STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_ROOT_DIR)
 
 MANAGERS = ADMINS
 
