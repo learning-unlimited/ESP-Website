@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType
+from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType, LineItemOptions
 from esp.program.models import FinancialAidRequest, Program, SplashInfo
 from esp.users.models import ESPUser
 
@@ -120,14 +120,18 @@ class ProgramAccountingController(BaseAccountingController):
         (account, created) = Account.objects.get_or_create(name=slugify(program.name), description='Main account for %s' % program.niceName(), program=program)
         return account
 
-    def setup_lineitemtypes(self, base_cost, optional_items=None):
+    def setup_lineitemtypes(self, base_cost, optional_items=None, select_items=None):
         result = []
         program = self.program
 
         #   optional_items is list of 3-tuples: (item name, cost, max quantity)
         if optional_items is None:
             optional_items = ()
-            
+
+        #   select_items is list of 2-tuples: (item name, [(choice 1 name, choice 1 cost), (choice 2 name, choice 2 cost), ...])
+        if select_items is None:
+            select_items = ()
+
         (lit_required, created) = LineItemType.objects.get_or_create(
             text='Program admission',
             amount_dec=Decimal('%.2f' % base_cost),
@@ -169,6 +173,22 @@ class ProgramAccountingController(BaseAccountingController):
                 for_payments=False
             )
             result.append(lit_optional)
+
+        for item in select_items:
+            (lit_select, created) = LineItemType.objects.get_or_create(
+                text=item[0],
+                required=False,
+                max_quantity=1,
+                program=program,
+            )
+            for option in item[1]:
+                (lio, created) = LineItemOptions.objects.get_or_create(
+                lineitem_type=lit_select,
+                description=option[0],
+                amount_dec=option[1]
+                )
+            result.append(lit_select)
+
         return result
 
     def default_program_account(self):
