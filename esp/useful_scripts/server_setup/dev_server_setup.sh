@@ -553,7 +553,6 @@ then
         mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/styles
         mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/uploaded
         
-        cp -r ${DJANGO_DIR}/contrib/admin/media $MEDIADIR/admin
         ln -sf ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media $BASEDIR/esp/public/custom_media
         ln -sf $BASEDIR/esp/public/custom_media/images $BASEDIR/esp/public/media/images
         ln -sf $BASEDIR/esp/public/custom_media/styles $BASEDIR/esp/public/media/styles
@@ -562,7 +561,6 @@ then
         #   Set up default media directories
         ln -sf $MEDIADIR/default_styles $MEDIADIR/styles
         ln -sf $MEDIADIR/default_images $MEDIADIR/images
-        ln -sf ${DJANGO_DIR}/contrib/admin/media $MEDIADIR/admin
         echo "Default media files have been linked into the site's media directories."
     fi
 
@@ -688,6 +686,7 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 
     #   Static files
     Alias /media $BASEDIR/esp/public/media
+    Alias /static $BASEDIR/esp/public/static
 
     #   WSGI scripted Python
     DocumentRoot $BASEDIR/esp/public
