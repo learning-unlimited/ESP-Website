@@ -134,6 +134,17 @@ TIME_ZONE = 'America/New_York'
 
 LANGUAGE_CODE = 'en-us'
 
+##########################
+# Example shorturl usage #
+##########################
+
+ # valid characters in the shorturl are letters, numberes, hyphen and underscore
+ # redirects should either be full URLs or relative to the server root (beginning with a /)
+
+#SHORTURLS = {
+#    'example': 'http://esp.mit.edu/learn/Splash/2012/catalog',     # will redirect /example to MIT's Splash catalog
+#}
+
 
 ################################################################################
 #                                                                              #
