@@ -64,5 +64,9 @@ def autodiscover(site):
             if module_has_submodule(mod, 'admin'):
                 raise
 
+#   Properly add needed contrib modules to the Admin site
+from django.contrib.sites.models import Site
+admin_site.register(Site)
 
-
+from django.contrib.redirects.models import Redirect
+admin_site.register(Redirect)
