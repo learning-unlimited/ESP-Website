@@ -175,6 +175,7 @@ MIDDLEWARE_GLOBAL = [
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
     (1600, 'esp.datatree.middleware.DataTreeLockMiddleware'),
+    (9000, 'django.contrib.redirects.middleware.RedirectFallbackMiddleware'),
 ]
 
 ROOT_URLCONF = 'esp.urls'
@@ -222,6 +223,7 @@ INSTALLED_APPS = (
     'form_utils',
     'esp.seltests',
     'esp.dataviews',
+    'django.contrib.redirects',
 )
 
 import os
