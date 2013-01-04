@@ -197,3 +197,8 @@ urlpatterns +=patterns('esp.customforms.views',
 	(r'^customforms/builddata/$', 'formBuilderData'),
 	(r'^customforms/exceldata/(?P<form_id>\d{1,6})/$', 'getExcelData'),
 	)	
+
+# Short URLs
+urlpatterns += patterns('esp.web.views.shorturls',
+    (r'^(?P<tag>[-A-Za-z0-9_]+)$', 'resolve'),
+    )
