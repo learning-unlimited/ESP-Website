@@ -188,13 +188,13 @@ class FormstackStudentAppManager(models.Manager):
 
         # get submissions from the API
         settings = program.getModuleExtension('FormstackAppSettings')
-        submissions = settings.form.get_submissions()
+        submissions = settings.form.submissions()
 
         # parse submitted data and make model instances
         apps = []
         for submission in submissions:
             data_dict = { int(entry['field']): entry['value']
-                          for entry in submission.get_data() }
+                          for entry in submission.data() }
 
             # link user
             username = data_dict.get(settings.username_field)
@@ -266,7 +266,7 @@ class FormstackStudentApp(StudentProgramApp):
     def get_submitted_data(self):
         """ Returns the raw submitted data from the API, as a JSON dict. """
 
-        return self.submission.get_data()
+        return self.submission.data()
 
     def get_responses(self):
         """ Returns a list of (question, response) tuples from submitted data. """
@@ -295,7 +295,7 @@ class FormstackStudentClassApp(StudentClassApp):
     """ A student's application to a class through Formstack. """
 
     def get_responses(self):
-        return self.app.formstackstudentapp.get_responses()
+        return self.app.formstackstudentapp.responses()
 
     class Meta:
         proxy = True

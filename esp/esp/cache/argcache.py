@@ -184,7 +184,7 @@ class ArgCache(WithDelayableMethods):
             existing.locked = True
         return existing
 
-    def __init__(self, name, params, uid=None, cache=cache, *args, **kwargs):
+    def __init__(self, name, params, uid=None, cache=cache, timeout_seconds=None, *args, **kwargs):
         if uid is None:
             uid = name
         super(ArgCache, self).__init__(*args, **kwargs)
@@ -195,6 +195,7 @@ class ArgCache(WithDelayableMethods):
         self.params = params
         self.uid = uid
         self.cache = cache
+        self.timeout_seconds = timeout_seconds
         self.tokens = []
         self.token_dict = {}
         self.locked = False
@@ -390,6 +391,9 @@ class ArgCache(WithDelayableMethods):
         wrapped_value = [value]
         for tkey in token_keys:
             wrapped_value.append(ans_dict[tkey])
+
+        if timeout_seconds is None:
+            timeout_seconds = self.timeout_seconds
             
         self.cache.set(key, wrapped_value, timeout_seconds)
     set.alters_data = True
