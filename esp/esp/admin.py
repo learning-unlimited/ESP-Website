@@ -65,8 +65,6 @@ def autodiscover(site):
                 raise
 
 #   Properly add needed contrib modules to the Admin site
-from esp.admin import admin_site
-
 from django.contrib.sites.models import Site
 admin_site.register(Site)
 
