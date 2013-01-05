@@ -1,5 +1,6 @@
-from django.db import models
+from django.db import models, transaction
 from django.template import Template, Context
+from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import Program, ClassSubject
 from esp.program.modules.base import ProgramModuleObj
@@ -43,8 +44,6 @@ class FormstackAppSettings(models.Model):
         """
         Creates a form field for ESP Username, returns the field ID,
         and sets the username_field attribute on this object.
-
-        Does not save to the database; you must call .save() yourself.
         """
         # create a new read-only field
         api_response = self.formstack.create_field(self.form_id, {
@@ -55,6 +54,7 @@ class FormstackAppSettings(models.Model):
                 'sort': 1 # puts it at the top of the form
                 })
         self.username_field = api_response['id']
+        self.save()
 
 class StudentProgramApp(models.Model):
     """ A student's application to the program. """
@@ -150,32 +150,21 @@ class StudentClassApp(models.Model):
         unique_together = (('app', 'student_preference'),)
 
 class FormstackStudentAppManager(models.Manager):
-    fetched = set()
+    locked = False
 
+    @cache_function
     def fetch(self, program):
         """ Get apps for a particular program from the Formstack API. """
 
-        # avoid infinite recursion
-        self.fetched.add(program)
+        try:
+            # avoid infinite recursion
+            self.locked = True
 
-        # get submissions from the API
-        settings = program.getModuleExtension('FormstackAppSettings')
-        submissions = settings.form.submissions()
+            # get submissions from the API
+            settings = program.getModuleExtension('FormstackAppSettings')
+            submissions = settings.form.submissions()
 
-        # parse submitted data and make model instances
-        apps = []
-        for submission in submissions:
-            data_dict = { int(entry['field']): entry['value']
-                          for entry in submission.data() }
-
-            # link user
-            username = data_dict.get(settings.username_field)
-            try:
-                user = ESPUser.objects.get(username=username)
-            except ESPUser.DoesNotExist:
-                continue # no matching user, ignore
-
-            # link class subjects
+            # define mapping from string to class subject
             def get_subject(s):
                 if s is None: return None
                 val, _, _ = s.partition('|')
@@ -191,33 +180,57 @@ class FormstackStudentAppManager(models.Manager):
                     else:
                         return None
 
-            choices = {}
-            choices[1] = get_subject(data_dict.get(settings.coreclass1_field))
-            choices[2] = get_subject(data_dict.get(settings.coreclass2_field))
-            choices[3] = get_subject(data_dict.get(settings.coreclass3_field))
+            # parse submitted data and make model instances
+            apps = []
+            for submission in submissions:
+                data_dict = { int(entry['field']): entry['value']
+                              for entry in submission.data() }
 
-            # update app object, or make one if it doesn't exist
-            try:
-                app = self.get(submission_id=submission.id)
-            except self.model.DoesNotExist:
-                app = self.model(submission_id=submission.id)
-            app.user = user
-            app.program = program
+                # link user
+                username = data_dict.get(settings.username_field)
+                try:
+                    user = ESPUser.objects.get(username=username)
+                except ESPUser.DoesNotExist:
+                    continue # no matching user, ignore
 
-            # update class app objects
-            for preference, subject in choices.items():
-                if subject is not None:
-                    try:
-                        classapp = StudentClassApp.objects.get(app=app, student_preference=preference)
-                    except StudentClassApp.DoesNotExist:
-                        classapp = StudentClassApp(app=app, student_preference=preference)
-                    classapp.subject = subject
-            apps.append(app)
+                # link class subjects
+                choices = {}
+                choices[1] = get_subject(data_dict.get(settings.coreclass1_field))
+                choices[2] = get_subject(data_dict.get(settings.coreclass2_field))
+                choices[3] = get_subject(data_dict.get(settings.coreclass3_field))
+
+                # update app object, or make one if it doesn't exist
+                try:
+                    app = self.get(submission_id=submission.id)
+                except self.model.DoesNotExist:
+                    app = self.model(submission_id=submission.id)
+                app.user = user
+                app.program = program
+
+                # update class app objects
+                for preference, subject in choices.items():
+                    if subject is not None:
+                        try:
+                            classapp = StudentClassApp.objects.get(app=app, student_preference=preference)
+                        except StudentClassApp.DoesNotExist:
+                            classapp = StudentClassApp(app=app, student_preference=preference)
+                        classapp.subject = subject
+                apps.append(app)
+
+            # save changes
+            with transaction.commit_on_success():
+                for app in apps:
+                    app.save()
+        finally:
+            self.locked = False
+
         return apps
+    fetch.depend_on_cache(FormstackForm.submissions, lambda **kwargs: {})
+    fetch.depend_on_cache(FormstackSubmission.data, lambda **kwargs: {})
 
     def get_query_set(self):
-        for program in Program.objects.filter(program_modules__handler='FormstackAppModule'):
-            if program not in self.fetched:
+        if not self.locked:
+            for program in Program.objects.filter(program_modules__handler='FormstackAppModule'):
                 self.fetch(program)
         return super(FormstackStudentAppManager, self).get_query_set()
 
