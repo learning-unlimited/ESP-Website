@@ -60,8 +60,8 @@ MEDIA_ROOT_DIR = 'public/media/'
 
 MEDIA_URL = '/media/'
 
-STATIC_URL = '/media/admin'
-STATIC_ROOT =  '/'
+STATIC_ROOT_DIR =  'public/static/'
+STATIC_URL = '/static/'
 
 LOGIN_REDIRECT_URL = '/'
 
@@ -176,6 +176,7 @@ MIDDLEWARE_GLOBAL = [
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
     (1600, 'esp.datatree.middleware.DataTreeLockMiddleware'),
+    (9000, 'django.contrib.redirects.middleware.RedirectFallbackMiddleware'),
 ]
 
 ROOT_URLCONF = 'esp.urls'
@@ -188,6 +189,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.sites',
+    'django.contrib.staticfiles',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'esp.datatree',
@@ -225,6 +227,7 @@ INSTALLED_APPS = (
     'esp.dataviews',
     'esp.formstack',
     'esp.application',
+    'django.contrib.redirects',
 )
 
 import os
