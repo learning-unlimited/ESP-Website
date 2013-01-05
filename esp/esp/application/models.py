@@ -39,19 +39,6 @@ class FormstackAppSettings(models.Model):
     def form(self):
         return FormstackForm(self.form_id, self.formstack)
 
-    def get_program(self):
-        """
-        Helper function that returns the program associated with this
-        object, whether you're calling from this class or a module
-        inheriting it.
-        """
-        if isinstance(self, ProgramModuleObj):
-            return self.program
-        elif isinstance(self.module, ProgramModuleObj):
-            return self.module.program
-        else:
-            return None
-
     def create_username_field(self):
         """
         Creates a form field for ESP Username, returns the field ID,
@@ -68,21 +55,6 @@ class FormstackAppSettings(models.Model):
                 'sort': 1 # puts it at the top of the form
                 })
         self.username_field = api_response['id']
-
-    def get_field_info(self):
-        """
-        Returns a list of JSON dicts, one per form field, containing
-        metadata (e.g. field name).
-        """
-
-        return self.form.get_field_info()
-
-    def get_student_apps(self):
-        """
-        Returns a list of StudentApp objects, one per valid form submission.
-        """
-
-        return FormstackStudentApp.objects.fetch(self.get_program())
 
 class StudentProgramApp(models.Model):
     """ A student's application to the program. """
@@ -263,17 +235,12 @@ class FormstackStudentApp(StudentProgramApp):
     def submission(self):
         return FormstackSubmission(self.submission_id, self.program_settings.formstack)
 
-    def get_submitted_data(self):
-        """ Returns the raw submitted data from the API, as a JSON dict. """
-
-        return self.submission.data()
-
     def get_responses(self):
         """ Returns a list of (question, response) tuples from submitted data. """
 
-        data = self.get_submitted_data()
-        info = self.program_settings.get_field_info()
-        id_to_label = { field['id']: field['label'] for field in info }
+        data = self.submission.data()
+        field_info = self.program_settings.field_info()
+        id_to_label = { field['id']: field['label'] for field in field_info }
         result = []
         for response in data:
             result.append((id_to_label[response['field']],
@@ -283,7 +250,7 @@ class FormstackStudentApp(StudentProgramApp):
     def get_teacher_view(self):
         """ Renders a "teacher view" for an app using a configurable template. """
 
-        data = self.get_submitted_data()
+        data = self.submission.data()
         data_dict = {}
         for response in data:
             data_dict[response['field']] = response['value']
