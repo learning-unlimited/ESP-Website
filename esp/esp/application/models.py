@@ -22,12 +22,15 @@ class FormstackAppSettings(models.Model):
     handshake_key = models.CharField(max_length=80, blank=True)
     # end formstack settings
 
-    username_field = models.IntegerField(null=True)
+    username_field = models.IntegerField(null=True, blank=True)
     coreclass1_field = models.IntegerField(null=True, blank=True)
     coreclass2_field = models.IntegerField(null=True, blank=True)
     coreclass3_field = models.IntegerField(null=True, blank=True)
 
-    teacher_view_template = models.TextField(blank=True)
+    teacher_view_template = models.TextField(blank=True, help_text="""\
+A template for what teachers see when they view an app, formatted in
+Markdown. To include the content of a field, use {{field.12345}} where
+12345 is the field id.""")
 
     @property
     def formstack(self):

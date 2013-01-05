@@ -19,6 +19,10 @@ def get_forms_for_api_key(api_key):
     """ Shortcut function that returns a list of FormstackForms associated with an API key. """
     return FormstackForm.for_api_key(Formstack(api_key))
 
+def get_form_by_id(form_id, api_key):
+    """ Shortcut function that returns a FormstackForm from a form ID. """
+    return FormstackForm(form_id, Formstack(api_key))
+
 class FormstackForm(object):
     """
     A Formstack form.
