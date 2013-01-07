@@ -88,7 +88,15 @@ class ThemeController(object):
         
     def get_template_names(self, theme_name):
         return self.list_filenames(self.base_dir(theme_name) + '/templates', r'\.html$', mask_base=True)
-        
+
+    def get_config_form_class(self, theme_name):
+        try:
+            theme_form_module = __import__('esp.themes.theme_data.%s.config_form' % theme_name, (), (), 'ConfigForm')
+            form = theme_form_module.ConfigForm
+            return form
+        except:
+            return None
+
     def global_less(self, search_dirs=None):
         if search_dirs is None:
             search_dirs = settings.LESS_SEARCH_PATH

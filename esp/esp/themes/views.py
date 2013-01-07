@@ -38,11 +38,12 @@ from esp.tagdict.models import Tag
 from esp.themes import settings as themes_settings
 from esp.themes.controllers import ThemeController
 
-from django.template import RequestContext
 from esp.web.util.main import render_to_response
 from django.http import HttpResponse, HttpResponseRedirect
+from django.conf import settings
 
 from datetime import datetime
+import simplejson as json
 import random
 import string
 import os.path
@@ -62,7 +63,12 @@ def selector(request):
     
     if request.method == 'POST' and 'action' in request.POST:
         if request.POST['action'] == 'select':
-            theme_name = request.POST['theme']
+            theme_name = request.POST['theme'].replace(' (current)', '')
+
+            #   Display configuration form if one is provided for the selected theme
+            if tc.get_config_form_class(theme_name) is not None:
+                return configure(request, current_theme=theme_name, force_display=True)
+
             tc.save_customizations('%s-last' % tc.get_current_theme())
             tc.load_theme(theme_name)
         elif request.POST['action'] == 'clear':
@@ -72,6 +78,37 @@ def selector(request):
     context['theme_name'] = tc.get_current_theme()
     context['themes'] = tc.get_theme_names()
     return render_to_response('themes/selector.html', context)
+
+@admin_required
+def configure(request, current_theme=None, force_display=False):
+    context = {}
+    tc = ThemeController()
+    if current_theme is None:
+        current_theme = request.POST.get('theme', None) or tc.get_current_theme()
+    context['theme_name'] = current_theme
+
+    form_class = tc.get_config_form_class(current_theme)
+    if form_class is None:
+        form = None
+        return render_to_response('themes/configure_form.html', context)
+    
+    if request.method == 'POST' and not force_display:
+        form = form_class(request.POST.copy())
+        
+        if form.is_valid():
+            #   Done; save results and go back to landing page.
+            if form.cleaned_data['theme'] != tc.get_current_theme():
+                tc.save_customizations('%s-last' % tc.get_current_theme())
+            if form.cleaned_data['just_selected']:
+                tc.load_theme(form.cleaned_data['theme'])
+            form.save_to_tag()
+            return HttpResponseRedirect('/themes/')
+    else:
+        form = form_class.load_from_tag(theme_name=current_theme, just_selected=force_display)
+
+    context['form'] = form
+    
+    return render_to_response('themes/configure_form.html', context)
 
 @admin_required
 def editor(request):
@@ -143,5 +180,5 @@ def editor(request):
                 category_vars[key] = ('text', initial_val)
         context['adv_vars'][category_name] = category_vars
 
-    return render_to_response('themes/editor.html', context, context_instance=RequestContext(request))
+    return render_to_response('themes/editor.html', context)
 
