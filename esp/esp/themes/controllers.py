@@ -60,13 +60,13 @@ class ThemeController(object):
         
     def get_current_params(self):
         return json.loads(Tag.getTag('current_theme_params', default='{}'))
-        
+
     def get_theme_names(self):
-        return os.listdir(settings.PROJECT_ROOT + 'esp/themes/theme_data/')
-        
+        return filter(lambda x: '.py' not in x, os.listdir(settings.PROJECT_ROOT + 'esp/themes/theme_data/'))
+
     def base_dir(self, theme_name):
         return settings.PROJECT_ROOT + 'esp/themes/theme_data/%s' % theme_name
-        
+
     def list_filenames(self, dir, file_regexp, mask_base=False):
         result = []
         bd_len = len(dir)
