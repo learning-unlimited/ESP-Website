@@ -849,21 +849,9 @@ class ESPUser(User, AnonymousUser):
 
     @staticmethod
     def getAllUserTypes():
-        tag_data = Tag.getTag('user_types')
-        
         #   Allow Tag to remove user types as well as adding/updating them.
-        #   result = DEFAULT_USER_TYPES
-        result = []
-        
-        result_labels = [x[0] for x in result]
-        if tag_data:
-            json_data = json.loads(tag_data)
-            for entry in json_data:
-                if entry[0] not in result_labels:
-                    result.append(entry)
-                else:
-                    result[result_labels.index(entry[0])][1] = entry[1]
-        return result
+        #   So, if you set the Tag, be sure to include all of the user types you want.
+        return json.loads(Tag.getTag('user_types', default=json.dumps(DEFAULT_USER_TYPES)))
 
     def getUserTypes(self):
         """ Return the set of types for this user """
