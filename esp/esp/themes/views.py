@@ -70,6 +70,7 @@ def selector(request):
                 return configure(request, current_theme=theme_name, force_display=True)
 
             tc.save_customizations('%s-last' % tc.get_current_theme())
+            tc.clear_theme()
             tc.load_theme(theme_name)
         elif request.POST['action'] == 'clear':
             tc.save_customizations('%s-last' % tc.get_current_theme())
@@ -100,6 +101,7 @@ def configure(request, current_theme=None, force_display=False):
             if form.cleaned_data['theme'] != tc.get_current_theme():
                 tc.save_customizations('%s-last' % tc.get_current_theme())
             if form.cleaned_data['just_selected']:
+                tc.clear_theme()
                 tc.load_theme(form.cleaned_data['theme'])
             form.save_to_tag()
             return HttpResponseRedirect('/themes/')
