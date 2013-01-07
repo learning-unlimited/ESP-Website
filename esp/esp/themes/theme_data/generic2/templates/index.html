@@ -1,0 +1,64 @@
+{% extends "main.html" %}  
+  
+{% block content %}
+{% load render_qsd %}
+
+{% inline_qsd_block Q/Web homepage_qsdpart None %}
+    <h1>Choose Your Adventure</h1>
+    <p>
+    For one Saturday in April, high school students from all over the Chicago area and beyond are welcomed to the Northwestern University campus to take classes from NU students and community members about anything. That's right, anything. Whether you're interested in science, the humanities, or just random things you may never have heard about, we've got a class for you! 
+    </p>
+    
+    <div class="box content_box">
+        <div class="box_header">Example Course</div>
+        <img src="http://www.kilentra.net/lu/example_class.jpg" />
+        Teacher Vincent Lee advises a student on multispectral image processing during a 3-hour Photoshop course at MIT's Splash 2009.  <a href="sandbox.html">Search/browse a complete list of courses here.</a>
+    </div>
+    
+    <h2>The teachers</h2>
+    <p>
+        Most of your teachers will be undergraduate and graduate students from Stanford University, including:
+        <ul>
+            <li><a href="sandbox.html">Michael Shaw</a>, Physics graduate student</li>
+            <li><a href="sandbox.html">Catherine Lu</a>, Chemistry undergraduate student</li>
+            <li><a href="sandbox.html">Pallav Agrawal</a>, Civil/Environmental Engineering graduate student</li>
+        </ul>
+    </p>
+    
+    <h2>The subjects</h2>
+    <p>
+        Teachers design their own courses with the aid of student volunteers and training materials provided by <a href="http://www.learningu.org">Learning Unlimited</a>.
+    </p>
+    
+    <h3>The logistics</h3>
+    <p>
+        The next Splash is on Saturday and Sunday, November 19-20.  Anyone enrolled in 7th through 12th grade may attend.  Registration is not open yet, but you may create an account to subscribe to e-mail or text message notifications.
+        <center><form method="POST" action="/volunteer/Splash/2011_Spring/signup/"><div style='display:none'><input type='hidden' name='csrfmiddlewaretoken' value='cbbde965602bfa247be971aede32e069' /></div>
+<center>
+
+<table width="500">
+<tr>
+    <th class="heading" colspan="2">Volunteer for Splash! Spring 2011</th>
+</tr>
+<tr>
+    <td colspan="2">If you have an account, please <a href="/myesp/login?next=/volunteer/Splash/2011_Spring/signup/">click here</a> to log in and return to this page.</td>
+</tr>
+
+    <tr><th><label for="id_name">Your Name:</label></th><td><input id="id_name" type="text" name="name" maxlength="80" /></td></tr>
+
+<tr><th><label for="id_email">E-mail address:</label></th><td><input type="text" name="email" id="id_email" /></td></tr>
+<tr><th><label for="id_requests_0">Timeslots:</label></th><td><ul>
+<li><label for="id_requests_0"><input type="checkbox" name="requests" value="43" id="id_requests_0" /> Sat 7:30am--9:30am: Early Morning Session</label></li>
+<li><label for="id_requests_1"><input type="checkbox" name="requests" value="44" id="id_requests_1" /> Sat 8:00am--10:00am: Morning Registration Session</label></li>
+<li><label for="id_requests_4"><input type="checkbox" name="requests" value="53" id="id_requests_4" /> Sun 5:30pm--7:30pm: Clean-up Session</label></li>
+</ul>Sign up for one or more shifts; remember to avoid conflicts with your classes if you're teaching!</td></tr>
+<tr><th><label for="id_confirm">Confirm:</label></th><td><input type="checkbox" name="confirm" id="id_confirm" /><span style="color: #993300; font-weight: bold;"> I agree to show up at the time(s) selected above.</span><input type="hidden" name="user" id="id_user" /></td></tr>
+<tr>   
+    <td colspan="2" align="center"><input type="submit" value="Submit" /></td>
+</tr>
+</table>
+</center>
+</form></center>
+    </p>
+{% end_inline_qsd_block %}
+{% endblock %}

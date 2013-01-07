@@ -1,6 +1,6 @@
 {% extends "elements/html" %}
 
-{% block fulltitle %}Generic Templates Test - {% block title %}{% endblock %}{% endblock %}
+{% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}{% endblock %}{% endblock %}
 
 {% block javascript %}
     {{ block.super }}
@@ -22,101 +22,86 @@
 
 <div id="nav_area">
     <div id="nav_buffer">
-        <div id="nav_buffer_background">TEACH ANYTHING. LEARN ANYTHING.</div>
-        <div id="nav_buffer_foreground">We are a student-run organization connecting enthusiastic teachers with curious students.</div>
+        <div id="nav_buffer_background">{{ theme.title_text }}</div>
+        <div id="nav_buffer_foreground">{{ theme.subtitle_text }}</div>
     </div>
     
     <div id="primary_nav">
-        <div class="toplevel_link toplevel_focus">
-            <a href="/teach/index.html">Teach</a>
+        {% for category in theme.nav_structure %}
+        <div class="toplevel_link{% if request.path|slice:":5" == category.header_link|slice:":5" %} toplevel_focus{% endif %}">
+            <a href="{{ category.header_link }}">{{ category.header }}</a>
         </div>
-        <div class="toplevel_link">
-            <a href="/learn/index.html">Learn</a>
-        </div>
-        <div class="toplevel_link">
-            <a href="/volunteer/index.html">Volunteer</a>
-        </div>
-        <!-- Should show only for admins ... -->
-        <div class="toplevel_link">
-            <a href="/manage/programs">Manage</a>
-        </div>
+        {% endfor %}
     </div>
 
     <br />
 
     <div id="secondary_nav">
+        {% for category in theme.nav_structure %}
         <div class="sublink">
-            <a href="/teach/about.html">About Splash</a>
-            <a href="/teach/eligibility.html">Eligibility and Training</a>
-            <a href="/teach/previous.html">Browse Previous Courses</a>
-            <a href="/teach/requested.html">Browse Requested Topics</a>
+        {% for item in category.links %}
+        <a href="{{ item.link }}">{{ item.text }}</a>
+        {% endfor %}
         </div>
-        <div class="sublink">
-            <a href="/learn/about.html">About Splash</a>
-            <a href="/learn/register.html">How to Register</a>
-            <a href="/learn/directions.html">Directions and Parking</a>
-            <a href="/learn/faq.html">Frequently Asked Questions</a>
-        </div>
-        <div class="sublink">
-            <a href="/volunteer/needs.html">Volunteer Needs</a>
-            <a href="/volunteer/about.html">About the Administrators</a>
-        </div>
-        <div class="sublink">
-            <a href="sandbox.html">Splash! Fall 2011</a>
-            <a href="sandbox.html">HSSP Spring 2011</a>
-            <a href="sandbox.html">Complete Program List</a>
-        </div>
+        {% endfor %}
     </div>
 </div>
 </div>
 
 <div id="bottom_area">
 <div id="boxes_area">
-
-    <div class="box"><div class="box_header">Log in / create account</div>
-    <div id="login_box">
-    <form name="loginform" id="loginform" method="post" action="/myesp/login/">
-    <input type="hidden" name="next" value="/" />
-    <table border="0" cellpadding="0" cellspacing="0" summary=" ">
-      <tr>
-        <td><label for="user">User name: </label></td>
-        <td><input type="text" id="id_username" name="username" id="user" size="8" value="" maxlength="255" class="input-small" /></td>
-        <td>&nbsp;</td>
-      </tr>
-      <tr>
-        <td><label for="pass">Password: </label></td>
-        <td><input type="password" id="id_password" name="password" id="pass" size="8" value="" maxlength="255" class="input-small" /></td>
-        <td>&nbsp;<input type="submit" name="gologin" id="gologin" class="gobutton" value="Go"/></td>
-      </tr>
-      <tr>
-        <td colspan="3">
-            <a href="/myesp/loginhelp.html">Login Help</a>
-            <span style="padding-left: 25px;">
-                <a href="/myesp/register">Register</a>
-            </span>
-        </td>
-      </tr>
-    </table>
-  </form>
-    </div>
-    </div>
-
-    <div class="box"><div class="box_header">Teach for Splash!</div>Splash 2011 will be on Saturday, December 54. You can <a href="sandbox.html">sign up to teach here</a>. </div>
-    <div class="box"><div class="box_header">Our Sister Programs</div>If you're in the Springfield area, you can find more opportunities with <a href="sandbox.html">other organizations like us</a>. </div>
-    <div class="box"><div class="box_header">Student Leader Honored</div>University of Maryland, Baltimore County junior Mindy Or was chosen out of 25 nominees for the Emerging Leader Award, based in part on her contributions to UMBC Splash.  <a href="sandbox.html">Read the full announcement here.</a></div>
-    
-    <!-- Needs to show only if you are an admin -->
-    <div class="box" id="new_announcement_box">
-        <div class="box_header">+ Add Announcement...</div>
-        <div id="inner_announcement_box" class="box_hidden">
-            <form name="announcement_form" method="post" action=".">
-                <p>Title: <input type="text" name="announcement_title" /> </p>
-                <p>Content: <br /><textarea rows="6" cols="25" name="announcement_content">Enter something here</textarea> </p>
-                <p align="center"><input type="submit" class="button" value="Submit" /> </p>
-            </form>
-        </div>
+    <!-- Login -->
+    <div class="box" style="text-align: right;">
+    {% include "users/loginbox_content.html" %}
     </div>
     
+    <!-- Announcements -->
+    {% load preview %}
+    {% if request.path == "/teach/index.html" %}
+        {% miniblog_for_user AnonymousUser as announcements teach 3 %}
+    {% else %}
+        {% miniblog_for_user AnonymousUser as announcements learn 3 %}
+    {% endif %}
+
+    {% if not announcements.announcementList|length_is:0 %}
+    {% load markdown %}
+    {% for announce in announcements.announcementList %}
+    <div class="box">
+        {% if announce.makeUrl %}
+        <div class="box_header"><a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a></div>
+        {% else %}
+        <div class="box_header">{{ announce.makeTitle }}</div>{{ announce.content }}
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% if announcements.overflowed %}
+    <div class="box" id="divannouncemore">
+        <div class="box_header"><a href="/myesp/home/">More Notices...</a></div>
+    </div>
+    {% endif %}
+    {% endif %}
+    
+    <!-- Admin -->
+    <div class="box admin hidden">
+    <div class="box_header"> Admin</div>	
+    <ul>
+	<li class="admin hidden"><a href="/manage/programs/"><i class="icon-th-large"></i> Manage Programs</a></li>
+	<li class="admin hidden"><a href="/themes/"><i class="icon-pencil"></i> Theme Settings</a></li>
+	<li class="admin hidden"><a href="/admin/"><i class="icon-tasks"></i> DB Admin pages</a>
+    <ul>
+        <li class="admin hidden"><a href="/admin/miniblog/entry/">Sidebar messages</a></li>
+        <li class="admin hidden"><a href="/admin/miniblog/announcementlink/">Sidebar links</a></li>
+    </ul>
+    </li>
+    <li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script language="JavaScript">document.write(esp_user.cur_retTitle);</script></a></li>
+    </ul>
+    </div>
+
+    <!-- Onsite -->
+    <div class="box onsite hidden">
+    <div class="box_header"><a href="/myesp/onsite/">On-site registration</a></div>
+    </div>
+
 </div>
 
 <div id="content_area">
@@ -125,8 +110,8 @@
     {% endblock %}
 
     <div id="footer">
-        <p>Copyright 2011, Splash at Your University - <a href="sandbox.html">E-mail us</a> - <a href="sandbox.html">More contact information</a></p>
-        <p>Site hosted by Learning Unlimited - <a href="sandbox.html">E-mail technical support</a></p>
+        <p>Copyright 2013, {{ settings.ORGANIZATION_SHORT_NAME }} at {{ settings.INSTITUTION_NAME }} - <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.default }}">E-mail us</a> - <a href="/contact/contact/">Contact Form</a></p>
+        <p>Site hosted by Learning Unlimited - <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">E-mail technical support</a></p>
     </div>
 </div>
 
