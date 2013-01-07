@@ -80,10 +80,11 @@ class ThemeController(object):
             for filename in dir_tup[2]:
                 if re.search(file_regexp, filename):
                     if mask_base:
-                        full_name = dir_tup[0][bd_len:] + filename
+                        full_name = ('%s/%s' % (dir_tup[0][bd_len:], filename))[1:]
                     else:
                         full_name = dir_tup[0] + '/' + filename
-                    result.append(full_name)
+                    #   Hack needed for Windows - may not be necessary for other OS
+                    result.append(full_name.replace('\\', '/'))
         return result
         
     def get_template_names(self, theme_name):
