@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.utils.models import TemplateOverride
+from esp.utils.template import Loader as TemplateOverrideLoader
 from esp.tagdict.models import Tag
 from esp.themes import settings as themes_settings
 
@@ -213,7 +214,10 @@ parser.parse(data, function (e, tree) {
         for template_name in self.get_template_names(theme_name):
             TemplateOverride.objects.filter(name=template_name).delete()
             if themes_settings.THEME_DEBUG: print '-- Removed template override: %s' % template_name
-        
+
+        #   Clear template override cache
+        TemplateOverrideLoader.get_template_hash.delete_all()
+
         #   Remove images and script files from the active theme directory
         if os.path.exists(settings.MEDIA_ROOT + 'images/theme'):
             distutils.dir_util.remove_tree(settings.MEDIA_ROOT + 'images/theme')
@@ -238,7 +242,10 @@ parser.parse(data, function (e, tree) {
             #   print 'Template override %s contents: \n%s' % (to.name, to.content)
             to.save()
             if themes_settings.THEME_DEBUG: print '-- Created template override: %s' % template_name
-            
+
+        #   Clear template override cache
+        TemplateOverrideLoader.get_template_hash.delete_all()
+
         #   Collect LESS files from appropriate sources and compile CSS
         self.compile_css(theme_name, {}, self.css_filename)
         
