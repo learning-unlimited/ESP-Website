@@ -45,10 +45,10 @@ class ThemeConfigurationForm(forms.Form):
     just_selected = forms.NullBooleanField(widget=forms.HiddenInput, initial=False)
 
     def prepare_for_serialization(self, data):
-        pass
+        return data
 
     def recover_from_serialization(self, data):
-        pass
+        return data
     
     def save_to_tag(self):
         tc = ThemeController()

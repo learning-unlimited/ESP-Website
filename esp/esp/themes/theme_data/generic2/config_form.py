@@ -171,7 +171,7 @@ class ConfigForm(ThemeConfigurationForm):
     title_text = forms.CharField()
     subtitle_text = forms.CharField()
     titlebar_prefix = forms.CharField()
-    featured_programs = forms.ModelMultipleChoiceField(queryset=Program.objects.all())
+    featured_programs = forms.ModelMultipleChoiceField(queryset=Program.objects.all(), required=False)
     nav_structure = forms.Field(widget=NavStructureWidget)
 
     def prepare_for_serialization(self, data):
@@ -186,6 +186,7 @@ class ConfigForm(ThemeConfigurationForm):
         result = data.copy()
 
         #   Replace "featured programs" (url, name) dicts with actual programs
-        result['featured_programs'] = [Program.objects.get(anchor__uri__icontains=x['url']) for x in data['featured_programs']]
+        if 'featured_programs' in data:
+            result['featured_programs'] = [Program.objects.get(anchor__uri__icontains=x['url']) for x in data['featured_programs']]
 
         return result
