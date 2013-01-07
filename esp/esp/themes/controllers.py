@@ -64,6 +64,12 @@ class ThemeController(object):
     def get_theme_names(self):
         return filter(lambda x: '.py' not in x, os.listdir(settings.PROJECT_ROOT + 'esp/themes/theme_data/'))
 
+    def get_template_settings(self):
+        return json.loads(Tag.getTag('theme_template_control', default='{}'))
+
+    def set_template_settings(self, data):
+        Tag.setTag('theme_template_control', value=json.dumps(data))
+
     def base_dir(self, theme_name):
         return settings.PROJECT_ROOT + 'esp/themes/theme_data/%s' % theme_name
 

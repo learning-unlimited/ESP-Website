@@ -41,8 +41,10 @@ from django.contrib.auth.models import AnonymousUser
 from esp.program.models import Program
 from esp.qsd.models import ESPQuotations
 from esp.middleware import ESPError
+from esp.themes.controllers import ThemeController
 from django.conf import settings
 import django.shortcuts
+
 
 def get_from_id(id, module, strtype = 'object', error = True):
     """ This function will get an object from its id, and return an appropriate error if need be. """
@@ -81,11 +83,14 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
     if isinstance(prog, (list, tuple)) and auto_per_program_templates:
         template = [_per_program_template_name(prog[0], t) for t in template] + template
 
+    tc = ThemeController()
+
     # if there are only two arguments
     if context is None and prog is None:
         context = {'navbar_list': []}
         context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
         context['EMAIL_HOST'] = settings.EMAIL_HOST
+        context['theme'] = tc.get_template_settings()
         return django.shortcuts.render_to_response(template, requestOrContext, Context(context), mimetype=mimetype)
     
     if context is not None:
@@ -101,6 +106,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
         context['settings'] = settings
         context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
         context['EMAIL_HOST'] = settings.EMAIL_HOST
+        context['theme'] = tc.get_template_settings()
 
         if not context.has_key('program'):
             if type(prog) == Program:
