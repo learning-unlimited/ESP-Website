@@ -38,7 +38,7 @@ from esp.web.util        import render_to_response
 from esp.utils.decorators import json_response
 from esp.application.models import StudentProgramApp, StudentClassApp, FormstackStudentProgramApp
 
-class TeacherAdmissionsDashboard(ProgramModuleObj):
+class AdmissionsDashboard(ProgramModuleObj):
     """
     A dashboard for Junction core teachers to review applications for their class.
 
@@ -48,19 +48,34 @@ class TeacherAdmissionsDashboard(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return [{
-            "admin_title": "Teacher Admissions Dashboard",
-            "link_title": "Review Applications",
-            "module_type": "teach",
-            }]
+                "admin_title": "Teacher Admissions Dashboard",
+                "link_title": "Admissions Dashboard",
+                "module_type": "teach",
+                },
+                {
+                "admin_title": "Admin Admissions Dashboard",
+                "link_title": "Admissions Dashboard",
+                "module_type": "manage",
+                }]
 
-    @aux_call
+    @main_call
+    def admissions(self, request, tl, *args):
+        if tl == 'manage':
+            return self.admissions_manage(request, tl, *args)
+        elif tl == 'teach':
+            return self.admissions_teach(request, tl, *args)
+
+    @needs_admin
+    def admissions_manage(self, request, tl, one, two, module, extra, prog):
+        pass
+
     @needs_teacher
-    def admissions(self, request, tl, one, two, module, extra, prog):
+    def admissions_teach(self, request, tl, one, two, module, extra, prog):
         if request.user.isAdmin(prog):
             classes = prog.classes()
         else:
             classes = request.user.getTaughtClassesFromProgram(prog)
-        return render_to_response(self.baseDir() + 'admissions.html',
+        return render_to_response(self.baseDir() + 'admissions_teach.html',
                                   request,
                                   (prog, tl),
                                   {'classes': classes})
