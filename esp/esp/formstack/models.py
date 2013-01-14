@@ -32,9 +32,6 @@ class FormstackForm(object):
         self.id = form_id
         self.name = None
         self.formstack = formstack
-        if formstack is not None:
-            info = self.info()
-            self.name = info['name']
 
     @classmethod
     def for_api_key(cls, formstack):
@@ -50,10 +47,7 @@ class FormstackForm(object):
         return forms
 
     def __unicode__(self):
-        if self.name is not None:
-            return u'{0}: {1}'.format(self.id, self.name)
-        else:
-            return u'{0}'.format(self.id)
+        return u'{0}'.format(self.id)
 
     def __repr__(self):
         return u'<FormstackForm: {0}>'.format(self)

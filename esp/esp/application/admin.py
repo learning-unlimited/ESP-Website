@@ -50,6 +50,8 @@ class FormstackAppSettingsAdmin(admin.ModelAdmin):
     list_display = ['module']
 
     def forms_for_api_key(self, fsas):
+        if fsas.api_key is None:
+            return ''
         lines = []
         for form in get_forms_for_api_key(fsas.api_key):
             line = '{0}: {1}'.format(form.id, form.name)
@@ -58,6 +60,8 @@ class FormstackAppSettingsAdmin(admin.ModelAdmin):
     forms_for_api_key.allow_tags = True
 
     def form_fields(self, fsas):
+        if fsas.api_key is None or fsas.form_id is None:
+            return ''
         lines = []
         form = get_form_by_id(fsas.form_id, fsas.api_key)
         for field in form.field_info():
