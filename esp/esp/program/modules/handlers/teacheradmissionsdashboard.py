@@ -88,7 +88,7 @@ class TeacherAdmissionsDashboard(ProgramModuleObj):
                               'name': classapp.app.user.name()}
             result['subject'] = {'id': classapp.subject.id,
                                  'title': classapp.subject.title()}
-            result['content'] = classapp.get_teacher_view()
+            result['content'] = classapp.get_teacher_view(prog)
             result['rating'] = classapp.teacher_rating
             result['ranking'] = classapp.teacher_ranking
             result['comment'] = classapp.teacher_comment
