@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>Teacher Admissions Dashboard</title>
+
+<!-- FIXME: check relevant files into repo -->
+<link rel="stylesheet" type="text/css" href="http://quickui.org/release/quickui.css"/>
+<link rel="stylesheet" type="text/css" href="http://quickui.org/release/quickui.catalog.css"/>
+
+<script type="text/javascript" src="/media/scripts/jquery.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery.cookie.js"></script>
+<script type="text/javascript" src="http://quickui.org/release/quickui.js"></script>
+<script type="text/javascript" src="http://quickui.org/release/quickui.catalog.js"></script>
+
+<link rel="stylesheet" type="text/css" href="/media/styles/admissions.css" />
+
+<script type="text/javascript"> var program_base_url = "/teach/{{ program.getUrlBase }}";  </script>
+<script type="text/javascript" src="/media/scripts/program/modules/teacheradmissionsdashboard.js"></script>
+
+<link rel="icon" href="/media/images/favicon.ico" />
+
+</head>
+
+<body>
+  <div id="students-list">
+    <p>
+      Review applications for class:
+      <select id="class-dropdown">
+	<option></option>
+	{% for cls in classes %}
+	<option value="{{ cls.id }}">{{ cls.title }}</option>
+	{% endfor %}
+      </select>
+    </p>
+    <table>
+      <thead><tr>
+        <th>Name</th>
+        <th>Rating</th>
+        <th>Ranking</th>
+        <th>Comments</th>
+      </tr></thead>
+      <tbody></tbody>
+    </table>
+    <p id="loading" style="display: none">Loading...</p>
+  </div>
+  <div id="student-detail">
+    <p>Click on a student's name to the left to view their app here.</p>
+  </div>
+</body>
+
+</html>
