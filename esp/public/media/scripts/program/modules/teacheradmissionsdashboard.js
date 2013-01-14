@@ -5,7 +5,9 @@ function make_table_row(app, num_apps) {
         .addClass('name')
         .text(app.user.name)
         .click(function () {
-            $('#student-detail').html(app.content);
+            var converter = Markdown.getSanitizingConverter();
+            var html = converter.makeHtml(app.content);
+            $('#student-detail').html(html);
             return false;
         })
 

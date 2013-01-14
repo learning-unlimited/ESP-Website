@@ -7,7 +7,6 @@ from esp.program.models import Program, ClassSubject
 from esp.program.modules.base import ProgramModuleObj
 from esp.formstack.api import Formstack
 from esp.formstack.models import FormstackForm, FormstackSubmission
-from esp.lib.markdown import markdown
 
 class FormstackAppSettings(models.Model):
     """
@@ -287,9 +286,11 @@ class FormstackStudentProgramApp(StudentProgramApp):
     def submission(self):
         return FormstackSubmission(self.submission_id, self.program_settings.formstack)
 
-    def get_responses(self):
+    def get_responses(self, program=None):
         """ Returns a list of (question, response) tuples from submitted data. """
 
+        if program and program == self.program:
+            self.program = program # optimization: if we're calling this a lot, passing in the same program object lets us save results
         data = self.submission.data()
         field_info = self.program_settings.form.field_info()
         id_to_label = { field['id']: field['label'] for field in field_info }
@@ -299,16 +300,18 @@ class FormstackStudentProgramApp(StudentProgramApp):
                            response['value']))
         return result
 
-    def get_teacher_view(self):
+    def get_teacher_view(self, program=None):
         """ Renders a "teacher view" for an app using a configurable template. """
 
+        if program and program == self.program:
+            self.program = program # optimization: if we're calling this a lot, passing in the same program object lets us save results
         data = self.submission.data()
         data_dict = {}
         for response in data:
             data_dict[response['field']] = response['value']
         template = Template(self.program_settings.teacher_view_template)
         context = Context({'fields': data_dict})
-        return markdown(template.render(context))
+        return template.render(context)
 
     class Meta:
         proxy = True
@@ -316,11 +319,11 @@ class FormstackStudentProgramApp(StudentProgramApp):
 class FormstackStudentClassApp(StudentClassApp):
     """ A student's application to a class through Formstack. """
 
-    def get_responses(self):
-        return self.app.get_responses()
+    def get_responses(self, prog=None):
+        return self.app.get_responses(prog)
 
-    def get_teacher_view(self):
-        return self.app.get_teacher_view()
+    def get_teacher_view(self, prog=None):
+        return self.app.get_teacher_view(prog)
 
     class Meta:
         proxy = True
