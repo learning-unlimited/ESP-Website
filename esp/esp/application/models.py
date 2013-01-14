@@ -41,7 +41,9 @@ Markdown. To include the content of a field, use {{field.12345}} where
 
     @property
     def form(self):
-        return FormstackForm(self.form_id, self.formstack)
+        if self.form_id is not None:
+            return FormstackForm(self.form_id, self.formstack)
+        return None
 
     def create_username_field(self):
         """

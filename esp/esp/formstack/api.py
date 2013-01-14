@@ -109,12 +109,17 @@ class Formstack(object):
             if len(res) and res['status'] == 'ok':
                 return res['response']
             elif len(res) and res['status'] == 'error':
-                raise Exception(res['error'])
+                raise APIError(res['error'])
             else:
-                raise Exception('Unknown Error')
+                raise APIError('Unknown Error')
 
         # I don't know what they were thinking with try ... except: pass
         # --lua
-        except (): pass
+        except urllib2.URLError as e:
+            raise APIError(e)
 
         return None
+
+class APIError(Exception):
+    def __str__(self):
+        return 'Formstack API error: {0}'.format(self.message)
