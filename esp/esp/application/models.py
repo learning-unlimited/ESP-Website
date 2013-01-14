@@ -291,7 +291,7 @@ class FormstackStudentProgramApp(StudentProgramApp):
         """ Returns a list of (question, response) tuples from submitted data. """
 
         data = self.submission.data()
-        field_info = self.program_settings.field_info()
+        field_info = self.program_settings.form.field_info()
         id_to_label = { field['id']: field['label'] for field in field_info }
         result = []
         for response in data:
