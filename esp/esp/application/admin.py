@@ -39,7 +39,7 @@ from esp.admin import admin_site
 
 from esp.program.models import ClassSubject
 from esp.formstack.models import get_forms_for_api_key, get_form_by_id
-from esp.application.models import FormstackAppSettings, FormstackStudentApp, FormstackStudentClassApp
+from esp.application.models import FormstackAppSettings, FormstackStudentProgramApp, FormstackStudentClassApp
 
 class FormstackAppSettingsAdmin(admin.ModelAdmin):
     fields = ['module', 'api_key', 'forms_for_api_key', 'form_id',
@@ -80,7 +80,7 @@ class FormstackStudentClassAppInline(admin.TabularInline):
     readonly_fields = ['student_preference', 'subject']
     max_num = 0
 
-class FormstackStudentAppAdmin(admin.ModelAdmin):
+class FormstackStudentProgramAppAdmin(admin.ModelAdmin):
     fields = ['submission_id', 'program', 'user',
               'admin_status', 'admin_comment',
               'admissions_pretty',
@@ -129,7 +129,7 @@ class FormstackStudentAppAdmin(admin.ModelAdmin):
         FormstackStudentClassAppInline,
         ]
 
-admin_site.register(FormstackStudentApp, FormstackStudentAppAdmin)
+admin_site.register(FormstackStudentProgramApp, FormstackStudentProgramAppAdmin)
 
 class FormstackStudentClassAppAdmin(admin.ModelAdmin):
     fields = ['user', 'student_preference', 'subject',

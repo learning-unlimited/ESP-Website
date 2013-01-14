@@ -1,4 +1,5 @@
 from django.db import models, transaction
+from django.db.models.loading import get_model
 from django.template import Template, Context
 from esp.cache import cache_function
 from esp.users.models import ESPUser
@@ -79,8 +80,23 @@ class StudentProgramApp(models.Model):
 
     admin_comment = models.TextField(blank=True)
 
+    app_type = models.CharField(max_length=80, choices=[
+            ('Formstack', 'Formstack'),
+            ])
+
+    # formstack
+    submission_id = models.IntegerField(null=True, unique=True)
+
     def __unicode__(self):
         return "{}'s app for {}".format(self.user, self.program)
+
+    def __init__(self, *args, **kwargs):
+        super(StudentProgramApp, self).__init__(*args, **kwargs)
+
+        if self.__class__ == StudentProgramApp:
+            model = get_model('application', self.app_type + self.__class__.__name__)
+            if model is not None:
+                self.__class__ = model
 
     def choices(self):
         """
@@ -135,6 +151,14 @@ class StudentClassApp(models.Model):
     def __unicode__(self):
         return "{}'s app for {}".format(self.app.user, self.subject)
 
+    def __init__(self, *args, **kwargs):
+        super(StudentClassApp, self).__init__(*args, **kwargs)
+
+        if self.__class__ == StudentClassApp:
+            model = get_model('application', self.app.app_type + self.__class__.__name__)
+            if model is not None:
+                self.__class__ = model
+
     def admit(self):
         # note: this will un-admit the student from all other classes
         for classapp in self.app.studentclassapp_set.all():
@@ -154,7 +178,7 @@ class StudentClassApp(models.Model):
     class Meta:
         unique_together = (('app', 'student_preference'),)
 
-class FormstackStudentAppManager(models.Manager):
+class FormstackStudentProgramAppManager(models.Manager):
     locked = False
 
     @cache_function
@@ -236,13 +260,16 @@ class FormstackStudentAppManager(models.Manager):
         if not self.locked:
             for program in Program.objects.filter(program_modules__handler='FormstackAppModule'):
                 self.fetch(program)
-        return super(FormstackStudentAppManager, self).get_query_set()
+        return super(FormstackStudentProgramAppManager, self).get_query_set().filter(app_type='Formstack')
 
-class FormstackStudentApp(StudentProgramApp):
+class FormstackStudentProgramApp(StudentProgramApp):
     """ A student's application through Formstack. """
 
-    submission_id = models.IntegerField(unique=True)
-    objects = FormstackStudentAppManager()
+    objects = FormstackStudentProgramAppManager()
+
+    def __init__(self, *args, **kwargs):
+        super(FormstackStudentProgramApp, self).__init__(*args, **kwargs)
+        self.app_type = 'Formstack'
 
     @property
     def program_settings(self):
@@ -275,11 +302,17 @@ class FormstackStudentApp(StudentProgramApp):
         context = Context({'fields': data_dict})
         return markdown(template.render(context))
 
+    class Meta:
+        proxy = True
+
 class FormstackStudentClassApp(StudentClassApp):
     """ A student's application to a class through Formstack. """
 
     def get_responses(self):
-        return self.app.formstackstudentapp.responses()
+        return self.app.get_responses()
+
+    def get_teacher_view(self):
+        return self.app.get_teacher_view()
 
     class Meta:
         proxy = True
