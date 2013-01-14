@@ -76,7 +76,7 @@ admin_site.register(FormstackAppSettings, FormstackAppSettingsAdmin)
 class FormstackStudentClassAppInline(admin.TabularInline):
     model = FormstackStudentClassApp
     fields = ['student_preference', 'subject',
-              'teacher_rating', 'teacher_comment']
+              'teacher_rating', 'teacher_ranking', 'teacher_comment']
     readonly_fields = ['student_preference', 'subject']
     max_num = 0
 
@@ -134,7 +134,7 @@ admin_site.register(FormstackStudentProgramApp, FormstackStudentProgramAppAdmin)
 class FormstackStudentClassAppAdmin(admin.ModelAdmin):
     fields = ['user', 'student_preference', 'subject',
               'admin_status', 'admin_comment',
-              'teacher_rating', 'teacher_comment',
+              'teacher_rating', 'teacher_ranking', 'teacher_comment',
               'admissions_pretty',
               'responses_pretty']
     readonly_fields = ['user', 'student_preference', 'subject',
@@ -143,7 +143,7 @@ class FormstackStudentClassAppAdmin(admin.ModelAdmin):
                        'responses_pretty']
     list_display = ['user', 'student_preference', 'subject',
                     'admin_status', 'admin_comment',
-                    'teacher_rating', 'teacher_comment',
+                    'teacher_rating', 'teacher_ranking', 'teacher_comment',
                     'admissions_pretty']
     list_display_links = ['user']
     list_filter = ['app__admin_status']

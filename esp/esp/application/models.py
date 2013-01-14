@@ -136,7 +136,15 @@ class StudentClassApp(models.Model):
     subject = models.ForeignKey(ClassSubject)
     student_preference = models.PositiveIntegerField()
 
-    teacher_rating = models.PositiveIntegerField(null=True, blank=True)
+    GREEN = 1
+    YELLOW = 2
+    RED = 3
+    teacher_rating = models.PositiveIntegerField(null=True, blank=True, choices=[
+            (GREEN, 'Green'),
+            (YELLOW, 'Yellow'),
+            (RED, 'Red'),
+            ])
+    teacher_ranking = models.PositiveIntegerField(null=True, blank=True)
     teacher_comment = models.TextField(blank=True)
 
     UNASSIGNED = 0
