@@ -1,0 +1,43 @@
+body {
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+}
+body, input {
+    font: 15px Verdana, Arial, sans-serif;
+}
+#students-list {
+    float: left;
+    width: 40%;
+    height: 100%;
+    overflow: auto;
+}
+#student-detail {
+    float: left;
+    width: 60%;
+    height: 100%;
+    overflow: auto;
+}
+#students-list table {
+    width: 100%;
+    border-collapse: collapse;
+}
+#students-list td, #students-list th {
+    border-bottom: 1px solid #777;
+    padding: 5px;
+    text-align: center;
+}
+#students-list td:first-child {
+    text-align: left;
+}
+#students-list .comments {
+    max-width: 10em;
+    max-height: 5em;
+    overflow: hidden;
+    cursor: pointer;
+}
+#student-detail p {
+    margin: 1em;
+}
