@@ -186,46 +186,45 @@ class FormstackStudentAppManager(models.Manager):
                         return None
 
             # parse submitted data and make model instances
-            apps = []
-            for submission in submissions:
-                data_dict = { int(entry['field']): entry['value']
-                              for entry in submission.data() }
-
-                # link user
-                username = data_dict.get(settings.username_field)
-                try:
-                    user = ESPUser.objects.get(username=username)
-                except ESPUser.DoesNotExist:
-                    continue # no matching user, ignore
-
-                # link class subjects
-                choices = {}
-                choices[1] = get_subject(data_dict.get(settings.coreclass1_field))
-                choices[2] = get_subject(data_dict.get(settings.coreclass2_field))
-                choices[3] = get_subject(data_dict.get(settings.coreclass3_field))
-
-                # update app object, or make one if it doesn't exist
-                try:
-                    app = self.get(submission_id=submission.id)
-                except self.model.DoesNotExist:
-                    app = self.model(submission_id=submission.id)
-                app.user = user
-                app.program = program
-
-                # update class app objects
-                for preference, subject in choices.items():
-                    if subject is not None:
-                        try:
-                            classapp = StudentClassApp.objects.get(app=app, student_preference=preference)
-                        except StudentClassApp.DoesNotExist:
-                            classapp = StudentClassApp(app=app, student_preference=preference)
-                        classapp.subject = subject
-                apps.append(app)
-
-            # save changes
             with transaction.commit_on_success():
-                for app in apps:
+                apps = []
+                for submission in submissions:
+                    data_dict = { int(entry['field']): entry['value']
+                                  for entry in submission.data() }
+
+                    # link user
+                    username = data_dict.get(settings.username_field)
+                    try:
+                        user = ESPUser.objects.get(username=username)
+                    except ESPUser.DoesNotExist:
+                        continue # no matching user, ignore
+
+                    # link class subjects
+                    choices = {}
+                    choices[1] = get_subject(data_dict.get(settings.coreclass1_field))
+                    choices[2] = get_subject(data_dict.get(settings.coreclass2_field))
+                    choices[3] = get_subject(data_dict.get(settings.coreclass3_field))
+
+                    # update app object, or make one if it doesn't exist
+                    try:
+                        app = self.get(submission_id=submission.id)
+                    except self.model.DoesNotExist:
+                        app = self.model(submission_id=submission.id)
+                    app.user = user
+                    app.program = program
                     app.save()
+
+                    # update class app objects
+                    for preference, subject in choices.items():
+                        if subject is not None:
+                            try:
+                                classapp = FormstackStudentClassApp.objects.get(app=app, student_preference=preference)
+                            except FormstackStudentClassApp.DoesNotExist:
+                                classapp = FormstackStudentClassApp(app=app, student_preference=preference)
+                            classapp.subject = subject
+                            classapp.save()
+                    apps.append(app)
+
         finally:
             self.locked = False
 
