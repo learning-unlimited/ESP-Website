@@ -88,12 +88,11 @@ class AdmissionsDashboard(ProgramModuleObj):
         if prog.getModuleExtension('FormstackAppSettings'):
             FormstackStudentProgramApp.objects.fetch(prog) # force fetch them all for efficiency
         classapps = StudentClassApp.objects.filter(app__program=prog)
+        if not request.user.isAdmin(prog):
+            classes = request.user.getTaughtClassesFromProgram(prog)
+            classapps = classapps.filter(subject__in=classes)
         if extra:
             classapps = classapps.filter(subject__id=extra)
-        else:
-            if not request.user.isAdmin(prog):
-                classes = request.user.getTaughtClassesFromProgram(prog)
-                classapps = classapps.filter(subject__in=classes)
 
         results = []
         for classapp in classapps:
