@@ -74,7 +74,7 @@ def get_colors(json_str):
 @register.filter
 def extract_theme(str):
     str = (str + '//').split('/')
-    return theme.get(str[2],False) or theme.get(str[1],False) or 'yellowgreen'
+    return theme.get(str[2],False) or theme.get(str[1],False) or 'tabcolor1'
 
 
 @register.filter
