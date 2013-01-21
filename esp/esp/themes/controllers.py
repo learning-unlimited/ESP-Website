@@ -160,6 +160,10 @@ class ThemeController(object):
             tf1.write(less_data)
             tf1.close()
 
+        #   Make icon image path load from the CDN by default
+        if 'iconSpritePath' not in variable_data:
+            variable_data['iconSpritePath'] = '"%s/bootstrap/img/glyphicons-halflings.png"' % settings.CDN_ADDRESS
+
         #   Replace all variable declarations for which we have a value defined
         for (variable_name, variable_value) in variable_data.iteritems():
             less_data = re.sub(r'@%s:(\s*)(.*?);' % variable_name, r'@%s: %s;' % (variable_name, variable_value), less_data)
