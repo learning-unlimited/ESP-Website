@@ -53,4 +53,8 @@ content_html:
     '    </form>',
     name: 'User Search'
     });
-    
+
+ESP.registerAdminModule({
+    content_html: '    <a href="/themes/">Theme Settings</a><br /><a href="/admin/">DB Admin pages</a>',
+    name: 'Links'
+    });    

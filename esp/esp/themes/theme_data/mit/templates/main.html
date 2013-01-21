@@ -1,6 +1,6 @@
 {% extends "elements/html" %}
 
-{% block fulltitle %}MIT ESP - {% block title %}Home{% endblock %}{% endblock %}
+{% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}Home{% endblock %}{% endblock %}
 
 {% load main %} {# helpful functions #}
 
@@ -76,86 +76,47 @@
   <div id="adminbar_content"></div>
 </div>
 <script type="text/javascript" src="/media/scripts/theme/mit_usersearch.js"> </script>
-    <div class="hidden">{{ '{"": "tabcolor1", "Splash": "tabcolor2", "Spark": "tabcolor3", "HSSP": "tabcolor4", "SATPrep": "tabcolor5", "Junction": "tabcolor6", "Delve": "tabcolor7", "ProveIt": "tabcolor8", "myesp": "tabcolor9", "logistics": "tabcolor9", "manage": "tabcolor10"}'|get_colors }}</div>
     <div id="page" class="{{ request.path|extract_theme }}">
-  <div id="tab_sidebar">
+    <div id="tab_sidebar">
       <ul id="menu">
-	{% with request.path|split:"/"|index:1 as split_url %}
-	{% with split_url|notequal:"learn" as default_flag %}
-	{% if split_url|equal:"teach"|bool_or:default_flag %}
-	<li id="tab_logo" class="tabcolor1" ><span class="accent">&nbsp;</span><a href="/teach/index.html"><img id="logo" alt="home" src="/media/images/theme/logo.png" /></a></li>
-	<li id="tab_splash" class="tabcolor2" ><span class="accent">&nbsp;</span><a href="/teach/Splash/index.html">SPLASH</a></li>
-	<li id="tab_spark" class="tabcolor3" ><span class="accent">&nbsp;</span><a href="/teach/Spark/index.html">SPARK</a></li>
-	<li id="tab_hssp" class="tabcolor4" ><span class="accent">&nbsp;</span><a href="/teach/HSSP/index.html">HSSP</a></li>
-	<li id="tab_satprep" class="tabcolor5" ><span class="accent">&nbsp;</span><a href="/teach/SATPrep/index.html">SATPrep</a></li>
-	<li id="tab_junction" class="tabcolor6" ><span class="accent">&nbsp;</span><a href="/teach/Junction/index.html">JUNCTION</a></li>
-	<li id="tab_delve" class="tabcolor7" ><span class="accent">&nbsp;</span><a href="/teach/Delve/index.html">DELVE</a></li>
-	<li id="tab_proveit" class="tabcolor8" ><span class="accent">&nbsp;</span><a href="/teach/ProveIt/index.html">ProveIt</a></li>
-	{% else %}
-	<li id="tab_logo" class="tabcolor1" ><span class="accent">&nbsp;</span><a href="/learn/index.html"><img id="logo" alt="home" src="/media/images/theme/logo.png" /></a></li>
-	<li id="tab_splash" class="tabcolor2" ><span class="accent">&nbsp;</span><a href="/learn/Splash/index.html">SPLASH</a></li>
-	<li id="tab_spark" class="tabcolor3" ><span class="accent">&nbsp;</span><a href="/learn/Spark/index.html">SPARK</a></li>
-	<li id="tab_hssp" class="tabcolor4" ><span class="accent">&nbsp;</span><a href="/learn/HSSP/index.html">HSSP</a></li>
-	<li id="tab_satprep" class="tabcolor5" ><span class="accent">&nbsp;</span><a href="/learn/SATPrep/index.html">SATPrep</a></li>
-	<li id="tab_junction" class="tabcolor6" ><span class="accent">&nbsp;</span><a href="/learn/Junction/index.html">JUNCTION</a></li>
-	<li id="tab_delve" class="tabcolor7" ><span class="accent">&nbsp;</span><a href="/learn/Delve/index.html">DELVE</a></li>
-	<li id="tab_proveit" class="tabcolor8" ><span class="accent">&nbsp;</span><a href="/learn/ProveIt/index.html">ProveIt</a></li>
-	<li id="tab_parents" class="tabcolor9" ><span class="accent">&nbsp;</span><a href="/learn/parents/index.html">PARENTS</a></li>
-	{% endif %}
-	{% endwith %}
-	{% endwith %}
-{% with request.path|split:"/"|index:1 as split_url %}{% ifequal split_url "teach" %}
-	<li id="tab_logistics" class="tabcolor9"><span class="accent">&nbsp;</span><a href="/teach/logistics/index.html">LOGISTICS</a></li>
-{% endifequal %}{% endwith %}
-<div class="admin hidden">
-	<li id="tab_admin" class="tabcolor10" ><span class="accent">&nbsp;</span><a href="/manage/programs/">MANAGE</a></li>
-</div>
-<div class="unmorph hidden">
-        <li id="tab_admin" class="tabcolor10" ><span class="accent">&nbsp;</span><a href="/myesp/switchback/">UNMORPH</a><div id="unmorph_text" style="font-size: 0.7em; margin-left: 16px"></div></li>
-</div>
+      <li id="tab_logo" class="tabcolor0" ><span class="accent">&nbsp;</span><a href="/"><img id="logo" alt="home" src="/media/images/theme/logo.png" /></a></li>
+      {% for category in theme.nav_structure %}
+      {% if request.path|slice:':5' == category.header_link|slice:':5' %}
+      {% for item in category.links %}
+        <li id="tab_{{ forloop.counter }}" class="tabcolor{{ forloop.counter }}" ><span class="accent">&nbsp;</span><a href="{{ item.link }}">{{ item.text.upper }}</a></li>
+      {% endfor %}
+      {% endif %}
+      {% endfor %}
+        <div class="admin hidden">
+            <li id="tab_admin" class="tabcolor9" ><span class="accent">&nbsp;</span><a href="/manage/programs/">MANAGE</a></li>
+        </div>
+        <div class="unmorph hidden">
+            <li id="tab_admin" class="tabcolor9" ><span class="accent">&nbsp;</span><a href="/myesp/switchback/">UNMORPH</a><div id="unmorph_text" style="font-size: 0.7em; margin-left: 16px"></div></li>
+        </div>
       </ul>
   </div>
   <div id="body">
     <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
     <div id="header">
-      <div id="cross_link">
-	{% with split_url=request.path|split:"/"|index:1 prog_url=request.path|split:"/"|index:2 %}
-	{% if split_url|notequal:"teach" %}
-    <span class="leftedge inactive"><a href="/teach/index.html"></a></span><span class="teach inactive"><a href="/teach/index.html">Teach</a></span>
-	{% else %}
-	<span class="leftedge"><a href="/teach/index.html"></a></span><span class="teach"><a href="{{ request.path|mux_tl:"teach" }}">Teach</a></span>
-	{% endif %}
-	{% if split_url|notequal:"learn" %}
-	<span class="leftedge inactive"><a href="/learn/index.html"></a></span><span class="learn inactive"><a href="/learn/index.html">Learn</a></span>
-	{% else %}
-	<span class="leftedge"><a href="/learn/index.html"></a></span><span class="learn"><a href="{{ request.path|mux_tl:"learn" }}">Learn</a></span>
-	{% endif %}
-	{% if split_url|notequal:"volunteer" %}
-	<span class="leftedge inactive"><a href="/volunteer/index.html"></a></span><span class="volunteer inactive"><a href="/volunteer/index.html">Volunteer</a></span>
-	{% else %}
-	<span class="leftedge"><a href="/volunteer/index.html"></a></span><span class="volunteer"><a href="/volunteer/index.html">Volunteer</a></span>
-	{% endif %}
-	{% endwith %}
-      </div>
+
+    <div id="cross_link">
+    {% for category in theme.nav_structure %}
+    <span class="leftedge{% if request.path|slice:':5' != category.header_link|slice:':5' %} inactive{% endif %}"><a href="{{ category.header_link }}"></a></span><span class="teach{% if request.path|slice:':5' != category.header_link|slice:':5' %} inactive{% endif %}"><a href="{{ category.header_link }}">{{ category.header }}</a></span>
+    {% endfor %}
+    </div>
       <div id="search_box">
       <span class="leftedge"></span>
-	<form name="search_form" method="get" action="http://search.mit.edu/search">
-	 <input type='hidden' name='site' value='mit' />
-	 <input type='hidden' name='client' value='mit' />
-	 <input type='hidden' name='proxystylesheet' value='mit' />
-	 <input type='hidden' name='output' value='xml_no_dtd' />
-	 <input type='hidden' name='as_dt' value='i' />
-	 <input type='hidden' name='as_sitesearch' value='esp.mit.edu' />
+	<form name="search_form" method="get" action="http://www.google.com/search">
+	 <input type='hidden' name='sitesearch' value='{{ request.META.HTTP_HOST }}' />
 	  <input type="text" id="search_field" name="q" />
 	  <input type="hidden" id="search_submit" name="search_submit" value="" />
       <input type="image" src="/media/images/theme/search-icon.png" />
 	</form>
       </div>
       <div id="contact_info">
-	<span class="title accentcolor">MIT Educational Studies Program</span>
-      <span class="normal">84 Massachusetts Avenue, Room W20-467</span>
-      <span class="normal">Cambridge, MA 02139</span>
-      <span class="normal">E-mail: <a href="mailto:esp@mit.edu">esp@mit.edu</a></span>
+	<span class="title accentcolor">{{ theme.full_group_name }}</span>
+      <span class="normal">{{ theme.contact_info|linebreaksbr }}</span>
+      <span class="normal">E-mail: <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.default }}">{{ DEFAULT_EMAIL_ADDRESSES.default }}</a></span>
       <span class="normal"><a href="/contact.html">contact us</a></span>
       <span class="normal"><a href="/faq.html">FAQ</a></span>
       </div>
@@ -237,7 +198,7 @@
       </div>
       <!--[if lte IE 6]>
 	  <div id="ie6_warning">
-<p>You're using a really old Web browser!  This site'll look a lot better if you <a href="http://www.microsoft.com/windows/internet-explorer/">upgrade</a>.</p>
+<p>You're using a really old Web browser!  This site will look a lot better if you <a href="http://www.microsoft.com/windows/internet-explorer/">upgrade</a>.</p>
 	  </div>
       <![endif]-->
       {% with request.path|split:"/"|index:1 as split_url %}
@@ -249,27 +210,9 @@
       {% endwith %}
     </div>
     <div id="footer">
-      &copy; MIT Educational Studies Program, 2012
+      &copy; {{ theme.full_group_name }}, 2013
     </div>
   </div>
 </div>
 
-{% endblock %}
-
- {% block counter %}
-<div class="offscreen">
-<!-- Web Reporting -->
-<!-- Disabled
-  <img src="http://counter.mit.edu/tally" width="1" height="1" alt="" />
--->
-<script src="https://ssl.google-analytics.com/urchin.js" type="text/javascript">
-</script>
-<script type="text/javascript">
-_uacct = "UA-1901567-1";
-try {
-  urchinTracker();
-} catch(err) {}  // Apparently Google sometimes throws exceptions here, and apparently sometimes urchin.js fails to load; either way, let's not error out
-</script>
-<!-- End Web Reporting -->
-</div>
 {% endblock %}

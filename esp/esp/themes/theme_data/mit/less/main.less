@@ -1,3 +1,24 @@
+/* tabcolor0 */
+#page.tabcolor0 .forecolor { color: @tabcolor0_base_color; }
+#page.tabcolor0 .backcolor { color: darken(@tabcolor0_base_color, 20%); }
+#page.tabcolor0 .accentcolor { color: darken(@tabcolor0_base_color, 30%); }
+#page.tabcolor0 #body { background: @tabcolor0_base_color; }
+.tabcolor0 a { color: darken(@tabcolor0_base_color, 30%); }
+#page.tabcolor0 #search_box { background: @tabcolor0_base_color; }
+#page.tabcolor0 #login_submit { background: darken(@tabcolor0_base_color, 20%); }
+#page.tabcolor0 #login_signup { background: darken(@tabcolor0_base_color, 30%); }
+li.tabcolor0 a { background-color: @tabcolor0_base_color; }
+#page.tabcolor0 #menu li.tabcolor0 { margin-left: 0; width: 130px }
+#page.tabcolor0 #submenu { background: darken(@tabcolor0_base_color, 30%); }
+#page.tabcolor0 #content_header { background: darken(@tabcolor0_base_color, 20%); }
+#page.tabcolor0 #cross_link .inactive a { background: darken(@tabcolor0_base_color, 20%); }
+#page.tabcolor0 #cross_link .leftedge.inactive a { background: darken(@tabcolor0_base_color, 20%); border-right-color: darken(@tabcolor0_base_color, 20%); border-bottom-color: darken(@tabcolor0_base_color, 20%); } 
+#page.tabcolor0 #cross_link .leftedge a { background: @tabcolor0_base_color; border-right-color: @tabcolor0_base_color; border-bottom-color: @tabcolor0_base_color; } 
+#page.tabcolor0 #search_box .leftedge { border-bottom-color: @tabcolor0_base_color;  border-right-color: @tabcolor0_base_color; } 
+#page.tabcolor0 #cross_link a { background: @tabcolor0_base_color; }
+#page.tabcolor0 #login_arrow1 { border-right: 10px solid darken(@tabcolor0_base_color, 20%); }
+#page.tabcolor0 #login_arrow2 { border-right: 10px solid darken(@tabcolor0_base_color, 30%); }
+
 /* tabcolor1 */
 #page.tabcolor1 .forecolor { color: @tabcolor1_base_color; }
 #page.tabcolor1 .backcolor { color: darken(@tabcolor1_base_color, 20%); }
@@ -187,28 +208,8 @@ li.tabcolor9 a { background-color: @tabcolor9_base_color; }
 #page.tabcolor9 #login_arrow1 { border-right: 10px solid darken(@tabcolor9_base_color, 20%); }
 #page.tabcolor9 #login_arrow2 { border-right: 10px solid darken(@tabcolor9_base_color, 30%); }
 
-/* tabcolor10 */
-#page.tabcolor10 .forecolor { color: @tabcolor10_base_color; }
-#page.tabcolor10 .backcolor { color: darken(@tabcolor10_base_color, 20%); }
-#page.tabcolor10 .accentcolor { color: darken(@tabcolor10_base_color, 30%); }
-#page.tabcolor10 #body { background: @tabcolor10_base_color; }
-.tabcolor10 a { color: darken(@tabcolor10_base_color, 30%); }
-#page.tabcolor10 #search_box { background: @tabcolor10_base_color; }
-#page.tabcolor10 #login_submit { background: darken(@tabcolor10_base_color, 20%); }
-#page.tabcolor10 #login_signup { background: darken(@tabcolor10_base_color, 30%); }
-li.tabcolor10 a { background-color: @tabcolor10_base_color; }
-#page.tabcolor10 #menu li.tabcolor10 { margin-left: 0; width: 130px }
-#page.tabcolor10 #submenu { background: darken(@tabcolor10_base_color, 30%); }
-#page.tabcolor10 #content_header { background: darken(@tabcolor10_base_color, 20%); }
-#page.tabcolor10 #cross_link .inactive a { background: darken(@tabcolor10_base_color, 20%); }
-#page.tabcolor10 #cross_link .leftedge.inactive a { background: darken(@tabcolor10_base_color, 20%); border-right-color: darken(@tabcolor10_base_color, 20%); border-bottom-color: darken(@tabcolor10_base_color, 20%); } 
-#page.tabcolor10 #cross_link .leftedge a { background: @tabcolor10_base_color; border-right-color: @tabcolor10_base_color; border-bottom-color: @tabcolor10_base_color; } 
-#page.tabcolor10 #search_box .leftedge { border-bottom-color: @tabcolor10_base_color;  border-right-color: @tabcolor10_base_color; } 
-#page.tabcolor10 #cross_link a { background: @tabcolor10_base_color; }
-#page.tabcolor10 #login_arrow1 { border-right: 10px solid darken(@tabcolor10_base_color, 20%); }
-#page.tabcolor10 #login_arrow2 { border-right: 10px solid darken(@tabcolor10_base_color, 30%); }
-
-#menu li.tabcolor1 .accent { background-color: darken(@tabcolor1_base_color, 20%); height: 106px; }
+#menu li.tabcolor0 .accent { background-color: darken(@tabcolor0_base_color, 20%); height: 106px; }
+#menu li.tabcolor1 .accent { background-color: darken(@tabcolor1_base_color, 20%); height: 35px; }
 #menu li.tabcolor2 .accent { background-color: darken(@tabcolor2_base_color, 20%); height: 35px; }
 #menu li.tabcolor3 .accent { background-color: darken(@tabcolor3_base_color, 20%); height: 35px; }
 #menu li.tabcolor4 .accent { background-color: darken(@tabcolor4_base_color, 20%); height: 35px; }
@@ -217,7 +218,6 @@ li.tabcolor10 a { background-color: @tabcolor10_base_color; }
 #menu li.tabcolor7 .accent { background-color: darken(@tabcolor7_base_color, 20%); height: 35px; }
 #menu li.tabcolor8 .accent { background-color: darken(@tabcolor8_base_color, 20%); height: 35px; }
 #menu li.tabcolor9 .accent { background-color: darken(@tabcolor9_base_color, 20%); height: 35px; }
-#menu li.tabcolor10 .accent { background-color: darken(@tabcolor10_base_color, 20%); height: 35px; }
 
 /*
  * Utilities
@@ -340,15 +340,8 @@ font-variant: small-caps;
 text-transform: uppercase;
 }
 
-#menu #tab_logo {
-/*background-image: url(/media/images/theme/tab_main.png);*/
-}
 #menu #tab_logo a {
-height: 106px;
-background-image: url(/media/images/theme/tab_main.png);
-/*background-image: url(/media/images/theme/logo.png);
-background-position: left center;
-background-repeat: no-repeat;*/
+    height: 106px;
 }
 
 #menu #tab_logo #logo {
@@ -424,7 +417,6 @@ font-family: sans-serif;
 display: block;
 }
 #contact_info .title {
-/*color: tabcolor10;*/
 font-size: 9pt;
 font-weight: bold;
 }
@@ -776,15 +768,15 @@ padding: 6px 10px 15px;
 }
 
 table.pdoxtable {
-	border: 1px solid tabcolor10;
+	border: 1px solid black;
 }
 
 table.pdoxtable td {
-        border: 1px solid tabcolor10;
+        border: 1px solid black;
 }
 
 table.pdoxtable th {
-        border: 1px solid tabcolor10;
+        border: 1px solid black;
 }
 
 table.plaintable {
@@ -845,9 +837,9 @@ table.plaintable th {
 #content th.small { font-size: .8em }
 #content label.header { font-weight: bold; }
 #content select, input[type=text], input[type=file], input[type=password], textarea { border: 1px solid #b7b7b7; }
-#content select.requitabcolor4, input[type=text].requitabcolor4, input[type=password].requitabcolor4, input[type=file].requitabcolor4, textarea.requitabcolor4 { border: 1px solid #FFb7b7; }
-#content select:focus, input[type=text]:focus, input[type=password]:focus, textarea:focus { border: 1px solid tabcolor10; }
-#content select:focus.requitabcolor4, input[type=text]:focus.requitabcolor4, input[type=password]:focus.requitabcolor4, textarea:focus.requitabcolor4 { border: 1px solid #F00; }
+#content select.required, input[type=text].required, input[type=password].required, input[type=file].required, textarea.required { border: 1px solid #FFb7b7; }
+#content select:focus, input[type=text]:focus, input[type=password]:focus, textarea:focus { border: 1px solid red; }
+#content select:focus.required, input[type=text]:focus.required, input[type=password]:focus.required, textarea:focus.required { border: 1px solid #F00; }
 .form_error { font-size: 80%; font-style: italic; color: #C00; }
 
 
@@ -895,7 +887,7 @@ div.question {
 }
   
 .sql { 
-  border: 1px solid tabcolor10;
+  border: 1px solid red;
   position: absolute;
   top: 10000em;
   font-style: normal;

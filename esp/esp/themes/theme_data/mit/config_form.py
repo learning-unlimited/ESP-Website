@@ -34,9 +34,12 @@ Learning Unlimited, Inc.
 """
 
 from esp.themes.forms import ThemeConfigurationForm
+from esp.utils.widgets import NavStructureWidget
+
 from django import forms
 
 class ConfigForm(ThemeConfigurationForm):
     titlebar_prefix = forms.CharField()
-    welcome_message = forms.CharField()
-
+    full_group_name = forms.CharField()
+    contact_info = forms.CharField(widget=forms.Textarea)
+    nav_structure = forms.Field(widget=NavStructureWidget)
