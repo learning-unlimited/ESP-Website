@@ -32,14 +32,21 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.users.models import ESPUser, ZipCode
+from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter
 from esp.middleware import ESPError
+from esp.web.util import render_to_response
 
 from django.db.models.query import Q
 
 import re
 
 class UserSearchController(object):
+
+    #   Static parameters
+    user_types = ['students', 'teachers', 'volunteers']
+    preferred_lists = ['enrolled', 'studentfinaid', 'student_profile', 'class_approved', 'lotteried_students',  'teacher_profile', 'class_proposed', 'volunteer_all']
+    global_categories = [('Student', 'students'), ('Teacher', 'teachers'), ('Guardian', 'parents'), ('Educator', 'parents'), ('Volunteer', 'volunteers')]
+
     def __init__(self, *args, **kwargs):
         self.updated = False
 
@@ -155,3 +162,146 @@ class UserSearchController(object):
                 
         return Q_base & (Q_include & ~Q_exclude)
         
+    def query_from_postdata(self, program, data):
+        """ Get a Q object for the targeted list of users from the POST data submitted
+            on the main "comm panel" page
+        """
+
+        def map_category_bwd(cat):
+            for pair in UserSearchController.global_categories:
+                if cat == pair[1]:
+                    return pair[0]
+        def get_recipient_type(list_name):
+            for user_type in UserSearchController.user_types:
+                raw_lists = getattr(program, user_type)(True)
+                if list_name in raw_lists:
+                    return user_type
+                    
+        if 'base_list' in data and 'recipient_type' in data:
+            #   Get the program-specific part of the query (e.g. which list to use)
+            if data['recipient_type'] not in UserSearchController.user_types:
+                recipient_type = 'any'
+                q_program = Q()
+            else:
+                if data['base_list'].startswith('all'):
+                    q_program = Q()
+                    recipient_type = map_category_bwd(data['recipient_type'])
+                else:
+                    program_lists = getattr(program, data['recipient_type'])(QObjects=True)
+                    q_program = program_lists[data['base_list']]
+                    """ Some program queries rely on UserBits, and since user types are also stored in
+                        UserBits we cannot store both of these in a single Q object.  To compensate, we
+                        ignore the user type when performing a program-specific query.  """
+                    recipient_type = 'any'
+                
+            #   Get the user-specific part of the query (e.g. ID, name, school)
+            q_extra = self.query_from_criteria(recipient_type, data)
+            
+        ##  Handle "combination list" submissions
+        elif 'combo_base_list' in data:
+            #   Get an initial query from the supplied base list
+            recipient_type, list_name = data['combo_base_list'].split(':')
+            if list_name.startswith('all'):
+                q_program = Q()
+            else:
+                q_program = getattr(program, recipient_type)(QObjects=True)[list_name]
+            
+            #   Apply Boolean filters
+            #   Base list will be intersected with any lists marked 'AND', and then unioned
+            #   with any lists marked 'OR'.
+            checkbox_keys = map(lambda x: x[9:], filter(lambda x: x.startswith('checkbox_'), data.keys()))
+            and_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('and_'), checkbox_keys))
+            or_keys = map(lambda x: x[3:], filter(lambda x: x.startswith('or_'), checkbox_keys))
+            not_keys = map(lambda x: x[4:], filter(lambda x: x.startswith('not_'), checkbox_keys))
+            
+            for and_list_name in and_keys:
+                user_type = get_recipient_type(and_list_name)
+                if user_type:
+                    if and_list_name not in not_keys:
+                        q_program = q_program & (getattr(program, user_type)(QObjects=True)[and_list_name])
+                    else:
+                        q_program = q_program & (~getattr(program, user_type)(QObjects=True)[and_list_name])
+            for or_list_name in or_keys:
+                user_type = get_recipient_type(or_list_name)
+                if user_type:
+                    if or_list_name not in not_keys:
+                        q_program = q_program | (getattr(program, user_type)(QObjects=True)[or_list_name])
+                    else:
+                        q_program = q_program | (~getattr(program, user_type)(QObjects=True)[or_list_name])
+                    
+            #   Get the user-specific part of the query (e.g. ID, name, school)
+            q_extra = self.query_from_criteria(map_category_bwd(recipient_type), data)
+         
+        return (q_extra & q_program)
+
+    def filter_from_postdata(self, program, data):
+        """ Wraps the query_from_postdata function above to return a PersistentQueryFilter. """
+    
+        query = self.query_from_postdata(program, data)
+        filterObj = PersistentQueryFilter.create_from_Q(ESPUser, query)
+        if 'base_list' in data and 'recipient_type' in data:
+            filterObj.useful_name = 'Program list: %s' % data['base_list']
+        elif 'combo_base_list' in data:
+            filterObj.useful_name = 'Custom user list'
+        filterObj.save()
+        return filterObj
+
+    def prepare_context(self, program, target_path=None):
+        context = {}
+        context['program'] = program
+        category_lists = {}
+        list_descriptions = program.getListDescriptions()
+        
+        #   Add in program-specific lists for most common user types
+        for user_type in UserSearchController.user_types:
+            raw_lists = getattr(program, user_type)(True)
+            category_lists[user_type] = [{'name': key, 'list': raw_lists[key], 'description': list_descriptions[key]} for key in raw_lists]
+            for item in category_lists[user_type]:
+                if item['name'] in UserSearchController.preferred_lists:
+                    item['preferred'] = True
+                    
+        #   Add in global lists for each user type
+        for cat_pair in UserSearchController.global_categories:
+            key = cat_pair[0].lower() + 's'
+            if cat_pair[1] not in category_lists:
+                category_lists[cat_pair[1]] = []
+            category_lists[cat_pair[1]].insert(0, {'name': 'all_%s' % key, 'list': ESPUser.getAllOfType(cat_pair[0]), 'description': 'All %s in the database' % key, 'preferred': True, 'all_flag': True})
+        
+        #   Add in mailing list accounts
+        category_lists['emaillist'] = [{'name': 'all_emaillist', 'list': Q(password = 'emailuser'), 'description': 'Everyone signed up for the mailing list', 'preferred': True}]
+        
+        context['lists'] = category_lists
+        context['all_list_names'] = []
+        for category in category_lists:
+            for item in category_lists[category]:
+                context['all_list_names'].append(item['name'])
+                
+        if target_path is None:
+            target_path = '/manage/%s/commpanel' % program.getUrlBase()
+        context['action_path'] = target_path
+        
+        return context
+    
+    def create_filter(self, request, program, template=None, target_path=None):
+        """ Function to obtain a list of users, possibly requiring multiple requests.
+            Similar to the old get_user_list function.
+        """
+        
+        if template is None:
+            template = 'program/modules/commmodule/usersearch_default.html'
+        
+        if request.method == 'POST':
+            #   Turn multi-valued QueryDict into standard dictionary
+            data = {}
+            for key in request.POST:
+                data[key] = request.POST[key]
+                
+            #   Look for signs that this request contains user search options and act accordingly
+            if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
+                filterObj = self.filter_from_postdata(program, data)
+                return (filterObj, True)
+                
+        if target_path is None:
+            target_path = request.path
+        
+        return (render_to_response(template, request, (program, 'manage'), self.prepare_context(program, target_path)), False)

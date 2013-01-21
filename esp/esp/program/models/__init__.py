@@ -229,14 +229,12 @@ class ArchiveClass(models.Model):
             self.teacher_ids = '|%s|' % '|'.join([str(u.id) for u in users])
         
     def students(self):
-        from esp.users.models import ESPUser
         useridlist = [int(x) for x in self.student_ids.strip('|').split('|')]
         return ESPUser.objects.filter(id__in = useridlist)
     
     def teachers(self):
-        from esp.users.models import ESPUser
         useridlist = [int(x) for x in self.teacher_ids.strip('|').split('|')]
-        return User.objects.filter(id__in = useridlist)
+        return ESPUser.objects.filter(id__in = useridlist)
     
     @staticmethod
     def getForUser(user):
@@ -276,8 +274,6 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField()
-    class_size_min = models.IntegerField(default=5)
-    class_size_max = models.IntegerField(default=200)
     program_size_max = models.IntegerField(null=True)
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule)
@@ -543,7 +539,7 @@ class Program(models.Model, CustomFormsLinkModel):
         if QObject:
             return union
         else:
-            return User.objects.filter(union).distinct()    
+            return ESPUser.objects.filter(union).distinct()    
 
     @cache_function
     def isFull(self):
@@ -632,7 +628,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 result[c.name].timeslots = [c.event]
                 result[c.name].furnishings = c.associated_resources()
                 result[c.name].sequence = c.schedule_sequence(self)
-                result[c.name].prog_available_times = c.available_times(self.anchor)
+                result[c.name].prog_available_times = c.available_times_html(self.anchor)
             else:
                 result[c.name].timeslots.append(c.event)
             
@@ -692,6 +688,9 @@ class Program(models.Model, CustomFormsLinkModel):
             not intended to be used for classes (they're for lunch, photos, etc.)
         """
         return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).select_related('event_type').order_by('start')
+
+    def num_timeslots(self):
+        return len(self.getTimeSlots())
 
     #   In situations where you just want a list of all time slots in the program,
     #   that can be cached.
@@ -1883,7 +1882,7 @@ class RegistrationType(models.Model):
     get_map = staticmethod(get_map)
 
     def __unicode__(self):
-        if self.displayName != "":
+        if self.displayName is not None and self.displayName != "":
             return self.displayName
         else:
             return self.name

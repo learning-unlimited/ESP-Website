@@ -53,6 +53,14 @@ $j(document).ready(function() {
     });
 });
 
+//  Function to convert an uploaded file storage location to a URL.
+function file_link_formatter(cellvalue, options, rowObject)
+{
+    var url_path = cellvalue.split("media/uploaded/")[1];
+    var url_dir = cellvalue.split("/");
+    return "<a href=\"/media/uploaded/" + url_path +  "\">" + url_dir[url_dir.length - 1] + "</a>";
+}
+
 var createGrid=function(form_data){
     $j("#jqGrid").jqGrid({
 	datatype: "local",
@@ -61,7 +69,13 @@ var createGrid=function(form_data){
 	    return val[1];
 	}),
 	colModel: $j.map(form_data['questions'], function(val, index) {
-	    return {name:val[0], index: val[0]}
+	    var result = {name: val[0], index: val[0]};
+        //  Substitute in custom formatter defined above in order to link to uploaded files.
+        if (val[2] == "file")
+        {
+            result['formatter'] = file_link_formatter;
+        }
+        return result;
 	}),
 	caption: "Form responses",
 	rowNum: 10,

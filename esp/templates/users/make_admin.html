@@ -4,7 +4,13 @@
 
 {% block stylesheets %}
     {{ block.super }}
-    <link rel="stylesheet" href="/media/admin/base.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+    <link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
+{% endblock %}
+
+{% block xtrajs %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
 {% endblock %}
 
 {% load subsection %}
@@ -16,13 +22,17 @@
 <h1>Make admin</h1>
 
 
+<p>Select an account to make an administrator.</p>
+
 <form action="{{ request.path }}" method="post">
 
 <div id="program_form">
-    Please select the account to make an admin:
     <table width="550">
-    {{ form.as_table }}
-    <tr><td colspan="2"><input type="submit" value="Submit" name="submit" onclick="return confirm('Are you sure you want to make this user an admin?');" /></td></tr>
+      <tr>
+	<th align="center" colspan="2">Grant Administrator Privileges</th>
+      </tr>
+      {{ form.as_table }}
+      <tr><td align="center" colspan="2"><button class="button" type="submit" name="submit" onclick="return confirm('Are you sure you want to make this user an admin?');">Submit</button></td></tr>
     </table>
 </div>
 </form>

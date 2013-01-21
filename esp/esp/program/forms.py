@@ -84,9 +84,8 @@ class ProgramCreationForm(BetterModelForm):
 
     class Meta:
         fieldsets = [
-			
 ('Program Title', {'fields': ['term', 'term_friendly'] }),
-                     ('Program Constraints', {'fields':['grade_min','grade_max','class_size_min','class_size_max','program_size_max','program_allow_waitlist']}),
+                     ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['admins','director_email']}),
                      ('Financial Details' ,{'fields':['base_cost','finaid_cost']}),
                      ('Program Internal details' ,{'fields':['anchor','program_modules','class_categories']}),
@@ -103,9 +102,6 @@ ProgramCreationForm.base_fields['term_friendly'].line_group = -4
 
 ProgramCreationForm.base_fields['grade_min'].line_group = -3
 ProgramCreationForm.base_fields['grade_max'].line_group = -3
-
-ProgramCreationForm.base_fields['class_size_min'].line_group = -2
-ProgramCreationForm.base_fields['class_size_max'].line_group = -2
 
 ProgramCreationForm.base_fields['director_email'].widget = forms.TextInput(attrs={'size': 40})
 ProgramCreationForm.base_fields['director_email'].line_group = -1

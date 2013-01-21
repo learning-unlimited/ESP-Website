@@ -270,8 +270,6 @@ class ProgramHappenTest(TestCase):
                 'term_friendly': 'Winter 3001',
                 'grade_min': '7',
                 'grade_max': '12',
-                'class_size_min': '0',
-                'class_size_max': '500',
                 'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234567@mit.edu',
                 'program_size_max': '3000',
                 'anchor': self.program_type_anchor.id,
@@ -300,11 +298,9 @@ class ProgramHappenTest(TestCase):
         self.assertEqual(
             [unicode(x) for x in
                 [self.prog.grade_min,         self.prog.grade_max,
-                 self.prog.class_size_min,    self.prog.class_size_max,
                  self.prog.director_email,    self.prog.program_size_max] ],
             [unicode(x) for x in
                 [prog_dict['grade_min'],      prog_dict['grade_max'],
-                 prog_dict['class_size_min'], prog_dict['class_size_max'],
                  prog_dict['director_email'], prog_dict['program_size_max']] ],
             u'Program options not properly set.' )
         # Anchor
@@ -595,8 +591,6 @@ class ProgramFrameworkTest(TestCase):
                 'term_friendly': settings['program_instance_label'],
                 'grade_min': '7',
                 'grade_max': '12',
-                'class_size_min': '0',
-                'class_size_max': '500',
                 'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234567@mit.edu',
                 'program_size_max': '3000',
                 'anchor': self.program_type_anchor.id,
@@ -736,8 +730,6 @@ class ProgramFrameworkTest(TestCase):
                 'term_friendly': 'Spring 1111',
                 'grade_min': '7',
                 'grade_max': '12',
-                'class_size_min': '0',
-                'class_size_max': '500',
                 'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234568@mit.edu',
                 'program_size_max': '3000',
                 'anchor': self.program_type_anchor.id,

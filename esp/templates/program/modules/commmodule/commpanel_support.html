@@ -1,0 +1,24 @@
+{% extends "main.html" %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" rel="stylesheet" />
+    <link type="text/css" href="/media/styles/commpanel.css" rel="stylesheet" />
+{% endblock %}
+
+{% block xtrajs %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+    <script type="text/javascript" src="/media/scripts/jquery.ui.button.js"></script>
+{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
+    <script type="text/javascript" src="/media/scripts/commpanel.js"></script>
+    <script type="text/javascript">
+    var program_base_url = "/json/{{ program.getUrlBase }}/";
+    //  Populate list names
+    var list_names = [{% for name in all_list_names %}"{{ name }}"{% if not forloop.last %}, {% endif %}{% endfor %}];
+    </script>
+{% endblock %}

@@ -1,5 +1,5 @@
 from django import forms
-from django.forms.fields import HiddenInput
+from django.forms.fields import HiddenInput, TextInput
 from django.contrib.auth.models import User
 from django.db.models.query import Q
 
@@ -34,6 +34,12 @@ class ValidHostEmailField(forms.EmailField):
 
 class EmailUserRegForm(forms.Form):
     email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75)
+    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75)
+ 
+    def clean_confirm_email(self):
+        if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
+            raise forms.ValidationError('Ensure that you have correctly typed your email both times.')
+        return self.cleaned_data['confirm_email']
 
 class UserRegForm(forms.Form):
     """
@@ -54,6 +60,7 @@ class UserRegForm(forms.Form):
     initial_role = forms.ChoiceField(choices = [])
 
     email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75, widget=HiddenInput)
+    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75, widget=HiddenInput)
 
     def clean_initial_role(self):
         data = self.cleaned_data['initial_role']
@@ -78,7 +85,7 @@ class UserRegForm(forms.Form):
         #   - awaiting initial activation
         #   - currently on the e-mail list only (they can be 'upgraded' to a full account)
         awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
-        if User.objects.filter(username__iexact = data).exclude(password = 'emailuser').exclude(awaiting_activation).count() > 0:
+        if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').exclude(awaiting_activation).count() > 0:
             raise forms.ValidationError('Username already in use.')
 
         data = data.strip()
@@ -88,6 +95,11 @@ class UserRegForm(forms.Form):
         if not (('confirm_password' in self.cleaned_data) and ('password' in self.cleaned_data)) or (self.cleaned_data['confirm_password'] != self.cleaned_data['password']):
             raise forms.ValidationError('Ensure the password and password confirmation are equal.')
         return self.cleaned_data['confirm_password']
+
+    def clean_confirm_email(self):
+        if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
+            raise forms.ValidationError('Ensure that you have correctly typed your email both times.')
+        return self.cleaned_data['confirm_email']
     
     def __init__(self, *args, **kwargs):
         #   Set up the default form
@@ -99,19 +111,33 @@ class UserRegForm(forms.Form):
         self.fields['initial_role'].choices = [('', 'Pick one...')] + role_choices
 
 class SinglePhaseUserRegForm(UserRegForm):
-    #email field not hidden
-    email = ValidHostEmailField(help_text = "<i>Please provide an email address that you check regularly.</i>",max_length=75)
+    def __init__(self, *args, **kwargs):
+        #email field not hidden
+        super(SinglePhaseUserRegForm, self).__init__(*args, **kwargs)
+        self.fields['email'].widget = TextInput(attrs=self.fields['email'].widget.attrs)
+        self.fields['confirm_email'].widget = TextInput(attrs=self.fields['confirm_email'].widget.attrs)
 
 class EmailUserForm(CaptchaForm):
     email = ValidHostEmailField(help_text = '(e.g. johndoe@domain.xyz)')
+    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>",max_length=75)
+    def clean_confirm_email(self):
+        if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
+            raise forms.ValidationError('Ensure that you have correctly typed your email both times.')
+        return self.cleaned_data['confirm_email']
 
 class EmailPrefForm(forms.Form):
     email = ValidHostEmailField(label='E-Mail Address', required = True)
+    confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>")
     first_name = StrippedCharField(label='First Name', length=30, max_length=64, required=True)
     last_name = StrippedCharField(label='Last Name', length=30, max_length=64, required=True)
     sms_number = PhoneNumberField(label='Cell Phone', required = False,
                                   help_text='Optional: If you provide us your cell phone number, we can send you SMS text notifications')
 #    sms_opt_in = forms.BooleanField(label='Send Me Text Updates', initial = True, required = False)
+    
+    def clean_confirm_email(self):
+        if not (('confirm_email' in self.cleaned_data) and ('email' in self.cleaned_data)) or (self.cleaned_data['confirm_email'] != self.cleaned_data['email']):
+            raise forms.ValidationError('Ensure that you have correctly typed your email both times.')
+        return self.cleaned_data['confirm_email']
 
 class AwaitingActivationEmailForm(forms.Form):
     """Form used to verify a user is yet to be activated"""
@@ -120,7 +146,7 @@ class AwaitingActivationEmailForm(forms.Form):
     def clean_username(self):
         data = self.cleaned_data['username']
         awaiting_activation = Q(is_active=False, password__regex='\$(.*)_')
-        if User.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(awaiting_activation).count() == 0:
+        if ESPUser.objects.filter(username__iexact = data).exclude(password = 'emailuser').filter(awaiting_activation).count() == 0:
             raise forms.ValidationError('That username isn\'t waiting to be activated.')
         
         data = data.strip()

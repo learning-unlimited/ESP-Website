@@ -91,7 +91,7 @@ class CustomFormModule(ProgramModuleObj):
         form_wizard.curr_request = request
         
         if request.method == 'POST':
-            form = form_wizard.get_form(0, request.POST)
+            form = form_wizard.get_form(0, request.POST, request.FILES)
             if form.is_valid():
                 #   Delete previous responses from this user
                 dmh = DynamicModelHandler(cf)

@@ -7,9 +7,15 @@
 {% autoescape off %}{{ "Profile Editor"|subsection }}{% endautoescape %}
 {% endblock %}
 
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+{% endblock %}
+
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
 <style type="text/css">
 
 .required { border: 2px solid black; }
@@ -36,7 +42,7 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 <h4 style="color:red">Please fix the following error{{ form.errors|pluralize }} in the form.</h3>
 <ul>
 {% for error in form.errors.items %}
-{% if error.0 %}{{ error.0 }}: {% endif %}{{ error.1 }}
+{% if error.0 %}{% if error.0 == "__all__" %}General{% else %}{{ error.0 }}{% endif %}: {% endif %}{{ error.1 }}
 {% endfor %}
 </ul>
 {% endif %}

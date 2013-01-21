@@ -73,7 +73,7 @@ class Tag(models.Model):
         if tag_val is None:
             return default
         else:
-            if tag_val.lower() == 'true':
+            if tag_val.strip().lower() == 'true' or tag_val.strip() == '1':
                 return True
             else:
                 return False

@@ -198,7 +198,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if extension is not None:
             return super(StudentClassRegModule, self).deadline_met(extension)
         else:
-            return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass')
+            return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass') or \
+                   super(StudentClassRegModule, self).deadline_met('/Classes/Lottery')
 
     def prepare(self, context={}):
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
@@ -236,9 +237,23 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             #   - Michael P, 6/23/2009
             #   if scrmi.use_priority:
             sec.verbs = sec.getRegVerbs(user, allowed_verbs=verbs)
+            sec.verb_names = [v.name for v in sec.verbs]
+            sec.is_enrolled = True if "Enrolled" in sec.verb_names else False
             
-            for mt in sec.get_meeting_times():
-                section_dict = {'section': sec, 'changeable': show_changeslot}
+            # While iterating through the meeting times for a section,
+            # we use this variable to keep track of the first timeslot.
+            # In the section_dict appended to timeslot_dict,
+            # we save whether or not this is the first timeslot for this
+            # section. If it isn't, the student schedule will indicate
+            # this, and will not display the option to remove the
+            # section. This is to prevent students from removing what
+            # they have mistaken to be duplicated classes from their
+            # schedules.
+            first_meeting_time = True
+
+            for mt in sec.get_meeting_times().order_by('start'):
+                section_dict = {'section': sec, 'changeable': show_changeslot, 'first_meeting_time': first_meeting_time}
+                first_meeting_time = False
                 if mt.id in timeslot_dict:
                     timeslot_dict[mt.id].append(section_dict)
                 else:
@@ -500,7 +515,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             classes = list(ClassSubject.objects.catalog(self.program, ts))
         else:
             classes = filter(lambda c: c.grade_min <= user_grade and c.grade_max >= user_grade, list(ClassSubject.objects.catalog(self.program, ts)))
-            if Tag.getProgramTag('hide_full_classes', prog, default='False') != 'False':
+            if Tag.getBooleanTag('hide_full_classes', prog, default=False):
                 classes = filter(lambda c: not c.isFull(timeslot=ts, ignore_changes=True), classes)
             if user_grade != 0:
                 classes = filter(lambda c: c.grade_min <=user_grade and c.grade_max >= user_grade, classes)
@@ -595,7 +610,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         # Allow tag configuration of whether class descriptions get collapsed
         # when the class is full (default: yes)
         collapse_full = ('false' not in Tag.getProgramTag('collapse_full_classes', prog, 'True').lower())
-        hide_full = Tag.getProgramTag('hide_full_classes', prog, False)
+        hide_full = Tag.getBooleanTag('hide_full_classes', prog, False)
         context = {'classes': classes, 'one': one, 'two': two, 'categories': categories.values(), 'hide_full': hide_full, 'collapse_full': collapse_full}
 
         scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
