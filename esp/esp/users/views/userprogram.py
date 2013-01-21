@@ -24,7 +24,9 @@ def get_program(request):
     """
     if request.method == 'GET':
         user = ESPUser(request.user)
-        if user.isOnsite():
+        if user.isAdministrator():
+            programs = user.getEditable(Program).order_by('-id')
+        elif user.isOnsite():
             verb = GetNode('V/Registration/OnSite')
 
             programs = UserBit.find_by_anchor_perms(Program, user=user, verb=verb)
