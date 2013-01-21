@@ -285,3 +285,7 @@ CONTACTFORM_EMAIL_CHOICES = (
 
 # corresponding email addresses - define these defaults in settings.py, since DEFAULT_EMAIL_ADDRESSES will be overwritten in local_settings.py
 CONTACTFORM_EMAIL_ADDRESSES = {}
+
+#   Certain media files can be served from LU's CDN.  The address of the CDN is here.
+#   It can be overridden by setting CDN_ADDRESS in local_settings.py.
+CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
