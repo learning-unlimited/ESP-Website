@@ -236,7 +236,8 @@ parser.parse(data, function (err, tree) {
             distutils.dir_util.remove_tree(settings.MEDIA_ROOT + 'scripts/theme')
 
         #   Remove compiled CSS file
-        os.remove(self.css_filename)
+        if os.path.exists(self.css_filename):
+            os.remove(self.css_filename)
 
         Tag.unSetTag('current_theme_name')
         Tag.unSetTag('current_theme_params')
