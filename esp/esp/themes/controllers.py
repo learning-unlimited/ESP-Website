@@ -187,7 +187,11 @@ var parser = new(less.Parser)({
 
 var data = fs.readFileSync('%s', 'utf8');
 
-parser.parse(data, function (e, tree) {
+parser.parse(data, function (err, tree) {
+    if (err)
+    {
+        return console.error(err);
+    }
     console.log(tree.toCSS({ compress: %s })); // Minify CSS output if desired
 });
         """ % (less_search_path, less_output_filename.replace('\\', '/'), str(minify_js).lower())
