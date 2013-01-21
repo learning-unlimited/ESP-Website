@@ -69,7 +69,10 @@ class ThemeController(object):
         return json.loads(Tag.getTag('theme_template_control', default='{}'))
 
     def set_template_settings(self, data):
-        Tag.setTag('theme_template_control', value=json.dumps(data))
+        #   Merge with the existing settings so you don't forget anything
+        initial_data = self.get_template_settings()
+        initial_data.update(data)
+        Tag.setTag('theme_template_control', value=json.dumps(initial_data))
 
     def base_dir(self, theme_name):
         return settings.PROJECT_ROOT + 'esp/themes/theme_data/%s' % theme_name
