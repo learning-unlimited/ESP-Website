@@ -131,12 +131,13 @@ def ajax_login(request, *args, **kwargs):
     result_dict = {}
     if isMobile:
         result_dict['message'] = result_str
-	if isSuccessful:
-	    result_dict = {
-	        'success': 'true',
-	        'isStudent': 'true' if request.user.isStudent() else 'false',
-            'isOnsite': 'true' if request.user.isOnsite() else 'false'
-	    }
+    if isSuccessful:
+        result_dict = {
+            'success': 'true',
+            'isStudent': 'true' if request.user.isStudent() else 'false',
+            'isOnsite': 'true' if request.user.isOnsite() else 'false',
+            'isAdmin': 'true' if request.user.isAdministrator() else 'false'
+        }
     else:
         result_dict = {'loginbox_html': content}
     

@@ -29,13 +29,15 @@ Ext.define('LU.controller.Login', {
                     var program = Ext.widget('programList');
                     var role = '';
 
-                    if (result.isOnsite === 'true') {
+                    if (result.isAdmin == 'true') {
+                        role = 'admin';
+                    } else if (result.isOnsite === 'true') {
                         role = 'onsite';
                     } else if (result.isStudent == 'true') {
                         role = 'student';
                     } else {
                         // display error message for unknown role
-                        Ext.Msg.alert('Unauthorized Role', 'You have to be either a student or onsite user to access the app.');
+                        Ext.Msg.alert('Unauthorized Role', 'You have to be an administrator, student, or onsite user to access the app.');
                         return;
                     }
 
