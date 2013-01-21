@@ -88,6 +88,7 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
     # if there are only two arguments
     if context is None and prog is None:
         context = {'navbar_list': []}
+        context['settings'] = settings
         context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
         context['EMAIL_HOST'] = settings.EMAIL_HOST
         context['theme'] = tc.get_template_settings()
