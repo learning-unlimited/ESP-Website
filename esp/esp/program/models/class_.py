@@ -1533,7 +1533,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         # SQL's cascading delete thing is sketchy --- if the anchor's corrupt,
         # we want webmin manual intervention
         if anchor and not anchor.name.endswith(str(self.id)):
-            raise ESPError("Tried to delete class %d with corrupt anchor." % self.id)
+            raise ESPError(), "Tried to delete class %d with corrupt anchor." % self.id
 
         if self.num_students() > 0 and not adminoverride:
             return False
