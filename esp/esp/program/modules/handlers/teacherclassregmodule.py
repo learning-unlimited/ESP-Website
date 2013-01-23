@@ -590,11 +590,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         try:
             int(extra)
         except: 
-            raise ESPError("False"), "Invalid integer for class ID!"
+            raise ESPError(False), "Invalid integer for class ID!"
 
         classes = ClassSubject.objects.filter(id = extra)
         if len(classes) == 0:
-            raise ESPError("False"), "No class found matching this ID!"
+            raise ESPError(False), "No class found matching this ID!"
 
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
@@ -620,15 +620,15 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         if request.method == 'POST':
             return self.makeaclass_logic(request, tl, one, two, module, extra, prog)
         if not request.GET.has_key('cls'):
-            raise ESPError("False"), "No class specified!"
+            raise ESPError(False), "No class specified!"
         
         # Select the class
         cls_id = request.GET['cls']
         classes = ClassSubject.objects.filter(id=cls_id)
         if len(classes) == 0:
-            raise ESPError("False"), "No class found matching this ID!"
+            raise ESPError(False), "No class found matching this ID!"
         if len(classes) != 1:
-            raise ESPError("False")
+            raise ESPError(False)
         cls = classes[0]
 
         # Select the correct action

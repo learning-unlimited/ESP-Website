@@ -229,7 +229,7 @@ class ClassRegModuleInfo(models.Model):
             # going to work when called by a sane person, dammit!
             program = self.module.program
         else:
-            raise ESPError("Can't find program from ClassRegModuleInfo")
+            raise ESPError(), "Can't find program from ClassRegModuleInfo"
         return program
     
     def allowed_sections_actual_get(self):
