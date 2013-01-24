@@ -32,18 +32,19 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
+from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_admin, meets_deadline, main_call, aux_call
 from esp.program.modules         import module_ext
-from esp.program.models          import Program
+from esp.program.models          import Program, ClassSection
 from esp.program.controllers.classreg import ClassCreationController
 from esp.middleware              import ESPError
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
+from django.http import HttpResponse, HttpResponseRedirect
 from django                      import forms
 from esp.cal.models              import Event
 from esp.tagdict.models          import Tag
 from django.db.models.query      import Q
-from esp.users.models            import User, ESPUser
+from esp.users.models            import User, ESPUser, UserAvailability
 from esp.resources.models        import ResourceType, Resource
 from django.conf import settings
 from django.template.loader      import render_to_string
@@ -62,12 +63,17 @@ class AvailabilityModule(ProgramModuleObj):
 
     @classmethod
     def module_properties(cls):
-        return {
+        return [ {
             "admin_title": "Teacher Availability",
             "link_title": "Indicate Your Availability",
             "module_type": "teach",
             "seq": 0
-            }
+            }, {
+            "admin_title": "Teacher Availability",
+            "link_title": "Check Teacher Availability",
+            "module_type": "manage",
+            "seq": 0
+            } ]
     
     def prepare(self, context={}):
         """ prepare returns the context for the main availability page. 
@@ -130,6 +136,10 @@ class AvailabilityModule(ProgramModuleObj):
     @needs_teacher
     def availability(self, request, tl, one, two, module, extra, prog):
         #   Renders the teacher availability page and handles submissions of said page.
+        
+        if tl == "manage":
+        	# They probably want to be check someone's availability instead-
+        	return HttpResponseRedirect( '/manage/%s/%s/check_availability' % (one, two) )
         
         teacher = ESPUser(request.user)
         time_options = self.program.getTimeSlots()
@@ -199,6 +209,50 @@ class AvailabilityModule(ProgramModuleObj):
         context['conflict_found'] = conflict_found
         
         return render_to_response(self.baseDir()+'availability_form.html', request, (prog, tl), context)
+
+    @aux_call
+    @needs_admin
+    def check_availability(self, request, tl, one, two, module, extra, prog):
+        """
+        Check availability of the specified user.
+        """
+        
+        if not request.GET.has_key('user'):
+            context = {}
+            return render_to_response(self.baseDir()+'searchform.html', request, (prog, tl), context)
+        
+        try:
+            teacher = ESPUser.objects.get(username=request.GET['user'])
+        except:
+            raise ESPError(False), "That username does not appear to exist!"
+
+        # Get the times that the teacher marked they were available
+        resources = UserAvailability.objects.filter(user=teacher).filter(QTree(event__anchor__below = prog.anchor))
+        
+        # Now get times that teacher is teaching
+        classes = [cls for cls in teacher.getTaughtClasses() if cls.parent_program.id == prog.id ]
+        times = set()
+        
+        for cls in classes:
+            cls_secs = ClassSection.objects.filter(parent_class=cls)
+            
+            for cls_sec in cls_secs:
+                sec_times = Event.objects.filter(meeting_times=cls_sec)
+                
+                for time in sec_times:
+                    times.add(time)
+        
+        # Check which are truly available and mark in tuple as True, otherwise as False (will appear red)
+        available = []
+        
+        for resource in resources:
+            if resource.event not in times:
+                available.append((resource.event.start, resource.event.end, True))
+            else:
+                available.append((resource.event.start, resource.event.end, False))
+
+        context = {'available': available, 'teacher_name': teacher.first_name + ' ' + teacher.last_name}
+        return render_to_response(self.baseDir()+'check_availability.html', request, (prog, tl), context)
 
     class Meta:
         abstract = True
