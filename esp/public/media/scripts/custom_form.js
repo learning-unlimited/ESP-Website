@@ -1370,7 +1370,7 @@ var rebuild=function(metadata) {
 				
 				$j.each(field['attributes'], function(attr_type, attr_value){
 					if($j.inArray(attr_type, ['options', 'limits', 'link_id', 'charlimits', 'wordlimits'])!=-1)
-						field_data.attrs[attr_type]=field[attr_value];
+						field_data.attrs[attr_type]=attr_value;
 				});
 				//Checking for link fields
 				var category=getFieldCategory(field_data['field_type']);
