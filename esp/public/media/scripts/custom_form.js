@@ -534,7 +534,7 @@ var addSpecificOptions=function(elem, options, limtype) {
 		$div.appendTo($j('#other_options'));	
 	}
 	else if(elem=='textField' || elem=='longTextField' || elem=='longAns' || elem=='reallyLongAns'){
-		if(options!='')
+		if(options && options!='')
 			limits=options.split(',');
 		else limits=['',''];
 		frag='<div id="text_limits" class="toolboxText">';
@@ -716,7 +716,7 @@ var onSelectField=function($elem, field_data) {
 	$j("#id_instructions").attr('value',field_data.help_text);
 	
 	//Adding in field-specific options
-	if($j.inArray(ftype, ['radio', 'dropdown', 'multiselect', 'checkboxes']) != -1){
+	if(field_data.attrs['options'] && $j.inArray(ftype, ['radio', 'dropdown', 'multiselect', 'checkboxes']) != -1){
 		options=field_data.attrs['options'].split("|");
 		$j.each(options, function(idx,el) {
 			if(el!="")
