@@ -81,10 +81,10 @@ class SplashInfoModule(ProgramModuleObj):
 
         for val in SplashInfo.objects.values_list('lunchsat').distinct():
             if val[0] is not None:
-                result['lunchsat_'+val[0]] = """Students who selected {} for lunch on Saturday""".format(val[0])
+                result['lunchsat_'+val[0]] = """Students who selected {0} for lunch on Saturday""".format(val[0])
         for val in SplashInfo.objects.values_list('lunchsun').distinct():
             if val[0] is not None:
-                result['lunchsun_'+val[0]] = """Students who selected {} for lunch on Sunday""".format(val[0])
+                result['lunchsun_'+val[0]] = """Students who selected {0} for lunch on Sunday""".format(val[0])
 
         return result
 
