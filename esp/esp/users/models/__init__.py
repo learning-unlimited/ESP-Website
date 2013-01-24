@@ -185,15 +185,26 @@ class ESPUser(User, AnonymousUser):
 
     @classmethod
     def ajax_autocomplete(cls, data):
+        #q_name assumes data is a comma separated list of names
+        #lastname first
+        #q_username is username
+        #q_id is id
+        #this feels kind of weird because it's selecting
+        #from three keys using the same value
         names = data.strip().split(',')
         last = names[0]
-
-        query_set = cls.objects.filter(last_name__istartswith = last.strip())
-
+        username = names[0]
+        idstr = names[0]
+        q_names = Q(last_name__istartswith = last.strip())
         if len(names) > 1:
-            first  = ','.join(names[1:])
-            if len(first.strip()) > 0:
-                query_set = query_set.filter(first_name__istartswith = first.strip())
+          first = ','.join(names[1:])
+          if len(first.strip()) > 0:
+            q_names = q_names & Q(first_name__istartswith = first.strip())
+
+        q_username = Q(username__istartswith = username.strip())
+        q_id = Q(id__istartswith = idstr.strip())
+
+        query_set = cls.objects.filter(q_names | q_username | q_id)
 
         values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'username', 'id')
 
