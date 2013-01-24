@@ -119,6 +119,7 @@ DEFAULT_EMAIL_ADDRESSES = {
     'support': 'websupport@lists.learningu.org',
     'membership': 'info@learningu.org',
     'default': 'info@learningu.org',
+    'treasury': 'esp-credit-cards@mit.edu',
     'mailman_moderator': 'esp-moderators@mit.edu'
 }
 # The name of your host institution.
