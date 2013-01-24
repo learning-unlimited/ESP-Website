@@ -232,27 +232,31 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
             this.directory = directory;
             this.section = section;
             this.el = $j('<tr/>').addClass('class-entry').data("controller",this);
-            this.el.addClass('CLS_category_' + section.category);
-            this.el.addClass('CLS_id_' + section.id);
-            this.el.addClass('CLS_length_' + section.length_hr + '_hrs');
-            this.el.addClass('CLS_status_' + section.status);
-            this.el.addClass('CLS_grade_min_' + section.gradpe_min);
-            this.el.addClass('CLS_grade_max_' + section.grade_max);
-	    /*
-            for (var i = 0; i < section.resource_requests.length; i++) {
-                if (section.resource_requests[i][0]) {
-                    this.el.addClass('CLS_rsrc_req_' + section.resource_requests[i][0].text.replace(/[^a-zA-Z]+/g, '-'));
+            this.el.addClass('CLS_category_' + section.category)
+                   .addClass('CLS_id_' + section.id)
+                   .addClass('CLS_length_' + section.length_hr + '_hrs')
+                   .addClass('CLS_status_' + section.status)
+                   .addClass('CLS_grade_min_' + section.grade_min)
+                   .addClass('CLS_grade_max_' + section.grade_max);
+	    this.rez=$j('<div/>').addClass('resource-icons');
+ /*           for (var i = 0; i < section.resource_requests.length; i++) {
+                if (ESP.ResourceIcons[section.resource_requests[i][0]]!='undefined') {
+                    //this.el.addClass('CLS_rsrc_req_' + section.resource_requests[i][0].text.replace(/[^a-zA-Z]+/g, '-'));
+		    this.rez.html(this.rez.html()+ESP.ResourceIcons[section.resource_request[i][0]]);
                 }
-            }
-	    */
+            }*/
 
             this.tds = {};
+	    var tds=[];
             $j.each(this.directory.properties,function(index, prop){
                 var td = $j('<td style="' + (prop.css(section)||'') + '"></td>');
 		td.append(prop.get(section));
                 this.tds[index] = td;
-                this.el.append(td);
+		tds.push(td)
+      //          this.el.append(td);
             }.bind(this));
+	    this.el.append(tds);
+	    //this.tds[0].append(this.rez);
         },
         draggable: function(){
             ESP.Scheduling.DragDrop.make_draggable(this.el, function(){ return this.section; }.bind(this));

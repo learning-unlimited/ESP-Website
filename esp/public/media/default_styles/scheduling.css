@@ -89,10 +89,15 @@ display: block;
 position: absolute; left: 0; width: 123px; top: 0; bottom: 0;
 border-right: 2px solid #000; background: #eee;
 }
-      .matrix-row-header-box td {
+      .matrix-row-header-box td { /*equivalent to .matrix-row-header*/
 	  width: 100%; max-width: none; min-width: none;
 	  border-bottom: 1px solid #666; font-size: smaller;
-      }
+ 	}
+.matrix-row-header-div { 
+	overflow: hidden;
+	text-overflow:hidden;
+	height:33px;
+}
 
 .matrix-cell-body {
 display: block; overflow: auto;
