@@ -39,6 +39,7 @@ from esp.program.controllers.classreg import ClassCreationController
 from esp.middleware              import ESPError
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
+from django.http import HttpResponse, HttpResponseRedirect
 from django                      import forms
 from esp.cal.models              import Event
 from esp.tagdict.models          import Tag
@@ -69,7 +70,7 @@ class AvailabilityModule(ProgramModuleObj):
             "seq": 0
             }, {
             "admin_title": "Teacher Availability",
-            "link_title": "Indicate Your Availability",
+            "link_title": "Check Teacher Availability",
             "module_type": "manage",
             "seq": 0
             } ]
@@ -135,6 +136,10 @@ class AvailabilityModule(ProgramModuleObj):
     @needs_teacher
     def availability(self, request, tl, one, two, module, extra, prog):
         #   Renders the teacher availability page and handles submissions of said page.
+        
+        if tl == "manage":
+        	# They probably want to be check someone's availability instead-
+        	return HttpResponseRedirect( '/manage/%s/%s/check_availability' % (one, two) )
         
         teacher = ESPUser(request.user)
         time_options = self.program.getTimeSlots()
