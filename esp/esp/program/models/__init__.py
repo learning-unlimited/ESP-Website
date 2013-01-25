@@ -534,12 +534,28 @@ class Program(models.Model, CustomFormsLinkModel):
     def teachers_union(self, QObject = False):
         import operator
         if len(self.teachers().values()) == 0:
-            return []
+            if QObject:
+                return Q(id = -1)
+            else:
+                return ESPUser.objects.filter(id = -1)
         union = reduce(operator.or_, [x for x in self.teachers(True).values() ])
         if QObject:
             return union
         else:
-            return ESPUser.objects.filter(union).distinct()    
+            return ESPUser.objects.filter(union).distinct()   
+ 
+    def volunteers_union(self, QObject = False):
+        import operator
+        if len(self.volunteers().values()) == 0:
+            if QObject:
+                return Q(id = -1)
+            else:
+                return ESPUser.objects.filter(id = -1)
+        union = reduce(operator.or_, [x for x in self.volunteers(True).values() ])
+        if QObject:
+            return union
+        else:
+            return ESPUser.objects.filter(union).distinct()
 
     @cache_function
     def isFull(self):

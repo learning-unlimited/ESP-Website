@@ -63,13 +63,14 @@ class AdminMorph(ProgramModuleObj):
             return render_to_response(self.baseDir()+'options.html', request, (prog, tl), context)
 
         #   Default query is to get program participants
-        query = self.program.students_union(True) | self.program.teachers_union(True)
+        query = self.program.students_union(True) | self.program.teachers_union(True) | self.program.volunteers_union(True)
         
         #   List all of the useful queries we can think of.  If we had some autosave (pickle type)
         #   feature, that could be really cool.
         saved_queries = {   'student': self.program.students_union(True),
                             'teacher': self.program.teachers_union(True),
-                            'program': self.program.students_union(True) | self.program.teachers_union(True),
+                            'volunteer': self.program.volunteers_union(True),
+                            'program': self.program.students_union(True) | self.program.teachers_union(True) | self.program.volunteers_union(True),
                             'all': Q()
                         }
                         
