@@ -136,14 +136,22 @@ class AdmissionsDashboard(ProgramModuleObj):
                 classapp.teacher_ranking = post['teacher_ranking'] or None
             if 'teacher_comment' in post:
                 classapp.teacher_comment = post['teacher_comment']
+            classapp.save()
+
             if request.user.isAdmin():
                 if 'admin_status' in post:
                     classapp.app.admin_status = post['admin_status']
                 if 'admin_comment' in post:
                     classapp.app.admin_comment = post['admin_comment']
+                classapp.app.save()
+
                 if 'admission_status' in post:
-                    classapp.admission_status = post['admission_status']
-            classapp.save()
-            classapp.app.save()
+                    admission_status = int(post['admission_status'])
+                    if admission_status == StudentClassApp.ADMITTED:
+                        classapp.admit()
+                    elif admission_status == StudentClassApp.UNASSIGNED:
+                        classapp.unadmit()
+                    elif admission_status == StudentClassApp.WAITLIST:
+                        classapp.waitlist()
 
             return {'success': 1}
