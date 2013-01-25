@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.program.modules.forms.onsite import OnSiteRapidCheckinForm
+from esp.program.modules.forms.onsite import OnSiteRapidCheckinForm, OnsiteBarcodeCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
@@ -202,6 +202,44 @@ class OnSiteCheckinModule(ProgramModuleObj):
         context['form'] = form
         return render_to_response(self.baseDir()+'ajaxcheckin.html', request, (prog, tl), context)
         
+    @aux_call
+    @needs_onsite
+    def barcodecheckin(self, request, tl, one, two, module, extra, prog):
+        context = {}
+        attended_verb=GetNode('V/Flags/Registration/Attended')
+        prog_anchor=prog.anchor
+        if request.method == 'POST':
+            results = {'not_found': [], 'existing': [], 'new': [], 'not_student': []}
+            form = OnsiteBarcodeCheckinForm(request.POST)
+            if form.is_valid():
+                codes=form.cleaned_data['uids'].split()
+                for code in codes:
+                    result=ESPUser.objects.filter(id=code)
+                    if len(result) > 1:
+                        raise ESPError(False), "Something weird happened, there are two students with ID %s." % code
+                    elif len(result) == 0:
+                        results['not_found'].append(code)
+                    else:
+                        student=result[0]
+                        if student.isStudent():
+                            existing = UserBit.valid_objects().filter(user=student, qsc=prog_anchor, verb=attended_verb)
+                            if existing:
+                                results['existing'].append(code)
+                            else:
+                                new = UserBit(user=student, qsc=prog_anchor, verb=attended_verb)
+                                new.save()
+                                results['new'].append(code)
+                        else:
+                            results['not_student'].append(code)
+        else:
+            results = {}
+            form=OnsiteBarcodeCheckinForm()
+        context['module'] = self
+        context['form'] = form
+        context['results'] = results
+        return render_to_response(self.baseDir()+'barcodecheckin.html', request, (prog, tl), context)
+        
+
 
     @aux_call
     @needs_onsite

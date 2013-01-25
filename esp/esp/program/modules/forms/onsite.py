@@ -34,6 +34,9 @@ class OnSiteSATPrepRegForm(forms.Form):
 class OnSiteRapidCheckinForm(forms.Form):
     user = AjaxForeignKeyNewformField(field=RegistrationProfile.user.field, label='Student')
 
+class OnsiteBarcodeCheckinForm(forms.Form):
+    uids = forms.CharField(label='',widget=forms.Textarea(attrs={'rows': 10}))
+
 class TeacherCheckinForm(forms.Form):
     when = forms.DateTimeField(label='Date/Time', widget=DateTimeWidget, required = False)
     
