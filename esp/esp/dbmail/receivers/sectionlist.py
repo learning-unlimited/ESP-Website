@@ -55,23 +55,23 @@ class SectionList(BaseHandler):
 
         list_name = "%s-%s" % (section.emailcode(), user_type)
 
-        create_list(list_name, "esp-moderators@mit.edu")
+        create_list(list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
         load_list_settings(list_name, "lists/class_mailman.config")
 
         if user_type != "teachers":
             add_list_member(list_name, ["%s %s <%s>" % (x.first_name, x.last_name, x.email, ) for x in section.students()])
 
-            apply_list_settings(list_name, {'moderator': ['esp-moderators@mit.edu', '%s-teachers@esp.mit.edu' % cls.emailcode()]})
+            apply_list_settings(list_name, {'moderator': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], '%s-teachers@%s' % (cls.emailcode(), Site.objects.get_current().domain)]})
             if DEBUG: print "Settings applied..."
-            send_mail("[ESP] Activated class mailing list: %s@esp.mit.edu" % list_name,
+            send_mail("[ESP] Activated class mailing list: %s@%s" % (list_name, Site.objects.get_current().domain),
                       render_to_string("mailman/new_list_intro_teachers.txt", 
                                        { 'classname': str(cls),
                                          'mod_password': set_list_moderator_password(list_name) }),
-                      "esp@mit.edu", ["%s-teachers@esp.mit.edu" % cls.emailcode(), ])
+                      settings.DEFAULT_EMAIL_ADDRESSES['default'], ["%s-teachers@%s" % (cls.emailcode(), Site.objects.get_current().domain), ])
         else:
             apply_list_settings(list_name, {'default_member_moderation': False})
             apply_list_settings(list_name, {'generic_nonmember_action': 0})
-            apply_list_settings(list_name, {'acceptable_aliases': "%s.*-students-.*@esp.mit.edu" % (cls.emailcode(), )})
+            apply_list_settings(list_name, {'acceptable_aliases': "%s.*-students-.*@%s" % (cls.emailcode(), Site.objects.get_current().domain)})
 
         if DEBUG: print "Settings applied still..."
         add_list_member(list_name, [cls.parent_program.director_email])

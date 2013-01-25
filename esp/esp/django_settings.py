@@ -60,8 +60,8 @@ MEDIA_ROOT_DIR = 'public/media/'
 
 MEDIA_URL = '/media/'
 
-STATIC_URL = '/media/admin'
-STATIC_ROOT =  '/'
+STATIC_ROOT_DIR =  'public/static/'
+STATIC_URL = '/static/'
 
 LOGIN_REDIRECT_URL = '/'
 
@@ -119,6 +119,8 @@ DEFAULT_EMAIL_ADDRESSES = {
     'support': 'websupport@lists.learningu.org',
     'membership': 'info@learningu.org',
     'default': 'info@learningu.org',
+    'treasury': 'esp-credit-cards@mit.edu',
+    'mailman_moderator': 'esp-moderators@mit.edu'
 }
 # The name of your host institution.
 INSTITUTION_NAME = 'MIT'
@@ -176,6 +178,7 @@ MIDDLEWARE_GLOBAL = [
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
     (1600, 'esp.datatree.middleware.DataTreeLockMiddleware'),
+    (9000, 'django.contrib.redirects.middleware.RedirectFallbackMiddleware'),
 ]
 
 ROOT_URLCONF = 'esp.urls'
@@ -188,6 +191,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.sites',
+    'django.contrib.staticfiles',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'esp.datatree',
@@ -220,6 +224,7 @@ INSTALLED_APPS = (
     'form_utils',
     'esp.seltests',
     'esp.dataviews',
+    'django.contrib.redirects',
 )
 
 import os
