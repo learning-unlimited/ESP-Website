@@ -1,4 +1,49 @@
+var csrftoken = $.cookie('csrftoken');
+
+$.ajaxSetup({
+    crossDomain: false,
+    beforeSend: function(xhr, settings) {
+        if (settings.type == 'POST') {
+            xhr.setRequestHeader("X-CSRFToken", csrftoken);
+        }
+    }
+});
+
 var tl, program_base_url;
+
+$(function () {
+    tl = $('#tl').val();
+    program_base_url = '/' + tl + '/' + $('#program-base-url').val();
+    $('#class-dropdown').change(function () {
+        var class_id = $(this).val();
+        history.pushState(null, '', program_base_url + '/admissions/' + class_id);
+        load_class(class_id);
+    });
+    $(window).bind('popstate', function () {
+        var class_id = window.location.href.split('/')[7] || '';
+        $('#class-dropdown').val(class_id);
+        load_class(class_id);
+    });
+});
+
+function load_class(class_id) {
+    $('#students-list tbody').empty();
+    if (class_id !== '') {
+        $('#loading').show();
+        $.getJSON(program_base_url + '/apps/' + class_id, populate_table);
+    }
+}
+
+function populate_table(data) {
+    $('#loading').hide();
+    $('#students-list tbody').empty();
+    data.apps.forEach(function (app) {
+        $('#students-list tbody').append(
+            make_table_row(app, data.apps.length)
+        );
+    });
+    sort_table();
+}
 
 function make_table_row(app, num_apps) {
     var $row = $('<tr></tr>');
@@ -83,17 +128,6 @@ function make_table_row(app, num_apps) {
     return $row;
 }
 
-function populate_table(data) {
-    $('#loading').hide();
-    $('#students-list tbody').empty();
-    data.apps.forEach(function (app) {
-        $('#students-list tbody').append(
-            make_table_row(app, data.apps.length)
-        );
-    });
-    sort_table();
-}
-
 function sort_table() {
     var elements = $('#students-list tbody tr');
     elements.sort(function (a, b) {
@@ -136,14 +170,6 @@ function resort_table() {
     $('#students-list tbody').append($a);
 }
 
-function load_class(class_id) {
-    $('#students-list tbody').empty();
-    if (class_id !== '') {
-        $('#loading').show();
-        $.getJSON(program_base_url + '/apps/' + class_id, populate_table);
-    }
-}
-
 function update(app_id, change) {
     $.post(program_base_url + '/update_app/' + app_id,
            change,
@@ -151,29 +177,3 @@ function update(app_id, change) {
                TransientMessage.showMessage('Saved');
            });
 }
-
-var csrftoken = $.cookie('csrftoken');
-
-$.ajaxSetup({
-    crossDomain: false,
-    beforeSend: function(xhr, settings) {
-        if (settings.type == 'POST') {
-            xhr.setRequestHeader("X-CSRFToken", csrftoken);
-        }
-    }
-});
-
-$(function () {
-    tl = $('#tl').val();
-    program_base_url = '/' + tl + '/' + $('#program-base-url').val();
-    $('#class-dropdown').change(function () {
-        var class_id = $(this).val();
-        history.pushState(null, '', program_base_url + '/admissions/' + class_id);
-        load_class(class_id);
-    });
-    $(window).bind('popstate', function () {
-        var class_id = window.location.href.split('/')[7] || '';
-        $('#class-dropdown').val(class_id);
-        load_class(class_id);
-    });
-});
