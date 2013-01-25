@@ -220,3 +220,8 @@ def favorite_classes(answer_list, limit=20):
             result_list.append({'title': '%s: %s' % (cl[0].emailcode(), cl[0].title()), 'votes': class_dict[key]})
 
     return result_list
+
+@register.filter(is_safe=True)
+def dictlookup(key,dict):
+    '''Get the correct column for the answer, for dump_survey.'''
+    return dict[key]
