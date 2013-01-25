@@ -16,9 +16,26 @@ class TimeslotForm(forms.Form):
     def save_timeslot(self, program, slot, type, anchor):
         slot.start = self.cleaned_data['start']
         slot.end = slot.start + timedelta(hours=self.cleaned_data['hours'], minutes=self.cleaned_data['minutes'])
-        slot.event_type = EventType.objects.all()[0]    # default event type for now
-        slot.anchor = GetNode(anchor.uri + "/" + str(slot.start))
         
+        if type == "training":
+            slot.event_type = EventType.objects.get_or_create(description='Teacher Training')[0]
+        elif type == "interview":
+            slot.event_type = EventType.objects.get_or_create(description='Teacher Interview')[0]
+        else:
+            slot.event_type = EventType.objects.all()[0] # default event type
+        
+        # find the next integer that we should use to name this node
+        children_names = []
+        
+        for child in anchor.children():
+            children_names.append(child.name)
+        
+        counter = 0
+        
+        while str(counter) in children_names:
+            counter += 1
+
+        slot.anchor = GetNode(anchor.uri + "/" + str(counter))
         slot.short_description = slot.start.strftime('%A, %B %d %Y %I:%M %p') + " to " + slot.end.strftime('%I:%M %p')
         slot.description = slot.short_description
         
