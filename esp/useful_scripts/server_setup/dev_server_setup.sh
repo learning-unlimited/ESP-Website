@@ -356,7 +356,7 @@ then
 
 	#	Install python libraries
 	python -m easy_install iCalendar
-	python -m easy_install django
+	python -m easy_install django==1.4
 	python -m easy_install repoze.profile
 	python -m easy_install xlwt
 	python -m easy_install simplejson
@@ -373,18 +373,6 @@ then
 	#   you get psycopg2 version 2.4.2, which is too new for the current version of
 	#   Django.  So we manually install version 2.4.1.
 	pip install psycopg2==2.4.1
-
-	#	Install sslauth
-	if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]
-	then
-		echo "You do not have sslauth (expected path: $BASEDIR/esp/esp/3rdparty/sslauth)."
-		echo "This is required only if you want to use Apache to serve your site;"
-		echo "Django's manage.py will work fine without it.  If you want to fix this,"
-		echo "go back and grab the Git repository by running this script with the "
-		echo "--git option."
-	else
-		cp -r $BASEDIR/esp/esp/3rdparty/sslauth /usr/local/lib/python2.6/dist-packages/
-	fi
 
     cd $CURDIR
     
@@ -565,7 +553,6 @@ then
         mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/styles
         mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/uploaded
         
-        cp -r ${DJANGO_DIR}/contrib/admin/media $MEDIADIR/admin
         ln -sf ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media $BASEDIR/esp/public/custom_media
         ln -sf $BASEDIR/esp/public/custom_media/images $BASEDIR/esp/public/media/images
         ln -sf $BASEDIR/esp/public/custom_media/styles $BASEDIR/esp/public/media/styles
@@ -574,7 +561,6 @@ then
         #   Set up default media directories
         ln -sf $MEDIADIR/default_styles $MEDIADIR/styles
         ln -sf $MEDIADIR/default_images $MEDIADIR/images
-        ln -sf ${DJANGO_DIR}/contrib/admin/media $MEDIADIR/admin
         echo "Default media files have been linked into the site's media directories."
     fi
 
@@ -700,6 +686,7 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 
     #   Static files
     Alias /media $BASEDIR/esp/public/media
+    Alias /static $BASEDIR/esp/public/static
 
     #   WSGI scripted Python
     DocumentRoot $BASEDIR/esp/public

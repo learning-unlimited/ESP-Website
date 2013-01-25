@@ -534,7 +534,7 @@ var addSpecificOptions=function(elem, options, limtype) {
 		$div.appendTo($j('#other_options'));	
 	}
 	else if(elem=='textField' || elem=='longTextField' || elem=='longAns' || elem=='reallyLongAns'){
-		if(options!='')
+		if(options && options!='')
 			limits=options.split(',');
 		else limits=['',''];
 		frag='<div id="text_limits" class="toolboxText">';
@@ -716,7 +716,7 @@ var onSelectField=function($elem, field_data) {
 	$j("#id_instructions").attr('value',field_data.help_text);
 	
 	//Adding in field-specific options
-	if($j.inArray(ftype, ['radio', 'dropdown', 'multiselect', 'checkboxes']) != -1){
+	if(field_data.attrs['options'] && $j.inArray(ftype, ['radio', 'dropdown', 'multiselect', 'checkboxes']) != -1){
 		options=field_data.attrs['options'].split("|");
 		$j.each(options, function(idx,el) {
 			if(el!="")
@@ -1368,8 +1368,10 @@ var rebuild=function(metadata) {
 					attrs:{}
 				};
 				
-				if($j.inArray(field['attribute__attr_type'], ['options', 'limits', 'link_id', 'charlimits', 'wordlimits'])!=-1)
-					field_data.attrs[field['attribute__attr_type']]=field['attribute__value'];	
+				$j.each(field['attributes'], function(attr_type, attr_value){
+					if($j.inArray(attr_type, ['options', 'limits', 'link_id', 'charlimits', 'wordlimits'])!=-1)
+						field_data.attrs[attr_type]=attr_value;
+				});
 				//Checking for link fields
 				var category=getFieldCategory(field_data['field_type']);
 				if(category!='Generic' && category!='Personal' && category!='NotReallyFields') {

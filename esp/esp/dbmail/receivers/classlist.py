@@ -5,6 +5,7 @@ from esp.mailman import create_list, load_list_settings, add_list_member, set_li
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
+from django.contrib.sites.models import Site
 
 class ClassList(BaseHandler):
 
@@ -55,28 +56,28 @@ class ClassList(BaseHandler):
 
         list_name = "%s-%s" % (cls.emailcode(), user_type)
 
-        create_list(list_name, "esp-moderators@mit.edu")
+        create_list(list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
         load_list_settings(list_name, "lists/class_mailman.config")
 
         if user_type != "teachers":
             for section in sections:
                 add_list_member(list_name, [x.email for x in section.students()])
 
-            apply_list_settings(list_name, {'moderator': ['esp-moderators@mit.edu', '%s-teachers@esp.mit.edu' % cls.emailcode()]})
-            send_mail("[ESP] Activated class mailing list: %s@esp.mit.edu" % list_name,
+            apply_list_settings(list_name, {'moderator': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], '%s-teachers@%s' % (cls.emailcode(), Site.objects.get_current().domain)]})
+            send_mail("[ESP] Activated class mailing list: %s@%s" % (list_name, Site.objects.get_current().domain),
                       render_to_string("mailman/new_list_intro_teachers.txt", 
                                        { 'classname': str(cls),
                                          'mod_password': set_list_moderator_password(list_name) }), 
-                      "esp@mit.edu", ["%s-teachers@esp.mit.edu" % cls.emailcode(), ])
+                      "esp@mit.edu", ["%s-teachers@%s" % (cls.emailcode(), Site.objects.get_current().domain), ])
         else:
             apply_list_settings(list_name, {'default_member_moderation': False})
             apply_list_settings(list_name, {'generic_nonmember_action': 0})
-            apply_list_settings(list_name, {'acceptable_aliases': "%s.*-students-.*@esp.mit.edu" % (cls.emailcode(), )})
+            apply_list_settings(list_name, {'acceptable_aliases': "%s.*-students-.*@%s" % (cls.emailcode(), Site.objects.get_current().domain)})
 
         add_list_member(list_name, [cls.parent_program.director_email])
         add_list_member(list_name, [x.email for x in cls.teachers()])
 
-        self.recipients = ["%s@esp.mit.edu" % list_name]
+        self.recipients = ["%s@%s" % (list_name, Site.objects.get_current().domain)]
 
         self.send = True
 
