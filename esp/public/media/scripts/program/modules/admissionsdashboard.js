@@ -1,3 +1,5 @@
+var tl, program_base_url;
+
 function make_table_row(app, num_apps) {
     var $row = $('<tr></tr>');
 
@@ -162,6 +164,8 @@ $.ajaxSetup({
 });
 
 $(function () {
+    tl = $('#tl').val();
+    program_base_url = '/' + tl + '/' + $('#program-base-url').val();
     $('#class-dropdown').change(function () {
         var class_id = $(this).val();
         history.pushState(null, '', program_base_url + '/admissions/' + class_id);
