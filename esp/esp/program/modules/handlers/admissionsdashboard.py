@@ -67,7 +67,11 @@ class AdmissionsDashboard(ProgramModuleObj):
 
     @needs_admin
     def admissions_manage(self, request, tl, one, two, module, extra, prog):
-        pass
+        classes = prog.classes()
+        return render_to_response(self.baseDir() + 'admissions.html',
+                                  request,
+                                  (prog, tl),
+                                  {'classes': classes})
 
     @needs_teacher
     def admissions_teach(self, request, tl, one, two, module, extra, prog):
@@ -75,7 +79,7 @@ class AdmissionsDashboard(ProgramModuleObj):
             classes = prog.classes()
         else:
             classes = request.user.getTaughtClassesFromProgram(prog)
-        return render_to_response(self.baseDir() + 'admissions_teach.html',
+        return render_to_response(self.baseDir() + 'admissions.html',
                                   request,
                                   (prog, tl),
                                   {'classes': classes})
