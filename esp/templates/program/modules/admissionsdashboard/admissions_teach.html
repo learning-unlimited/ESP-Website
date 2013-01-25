@@ -17,7 +17,6 @@
 
 <link rel="stylesheet" type="text/css" href="/media/styles/admissions.css" />
 
-<script type="text/javascript"> var program_base_url = "/teach/{{ program.getUrlBase }}";  </script>
 <script type="text/javascript" src="/media/scripts/program/modules/admissionsdashboard.js"></script>
 
 <link rel="icon" href="/media/images/favicon.ico" />
@@ -25,6 +24,8 @@
 </head>
 
 <body>
+  <input type="hidden" id="tl" value="{{ navbar_list.section }}" />
+  <input type="hidden" id="program-base-url" value="{{ program.getUrlBase }}" />
   <div id="students-list">
     <p>
       Review applications for class:
