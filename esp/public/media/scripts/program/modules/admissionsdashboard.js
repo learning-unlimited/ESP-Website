@@ -38,6 +38,18 @@ function load_class(class_id) {
     }
 }
 
+function load_app(app_id) {
+    $('#student-detail').empty();
+    if (app_id !== '') {
+        $.getJSON(program_base_url + '/app/' + app_id, function (data) {
+            var converter = Markdown.getSanitizingConverter();
+            var html = converter.makeHtml(data.app);
+            $('#student-detail').html(html);
+        });
+    }
+    return false;
+}
+
 function populate_table(data) {
     $('#loading').hide();
     $('#students-list tbody').empty();
@@ -81,9 +93,7 @@ function make_table_row(app, num_apps) {
         .addClass('name')
         .text(app.user.name)
         .click(function () {
-            var converter = Markdown.getSanitizingConverter();
-            var html = converter.makeHtml(app.content);
-            $('#student-detail').html(html);
+            load_app(app.id);
             return false;
         });
 
