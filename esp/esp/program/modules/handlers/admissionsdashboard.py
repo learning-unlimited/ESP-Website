@@ -79,8 +79,6 @@ class AdmissionsDashboard(ProgramModuleObj):
     @needs_teacher
     @json_response(None)
     def apps(self, request, tl, one, two, module, extra, prog):
-        if prog.getModuleExtension('FormstackAppSettings'):
-            FormstackStudentProgramApp.objects.fetch(prog) # force fetch them all for efficiency
         classapps = StudentClassApp.objects.filter(app__program=prog)
         if not request.user.isAdmin(prog):
             classes = request.user.getTaughtClassesFromProgram(prog)
@@ -96,7 +94,6 @@ class AdmissionsDashboard(ProgramModuleObj):
                               'name': classapp.app.user.name()}
             result['subject'] = {'id': classapp.subject.id,
                                  'title': classapp.subject.title()}
-            result['content'] = classapp.get_teacher_view(prog)
             result['teacher_rating'] = classapp.teacher_rating
             result['teacher_ranking'] = classapp.teacher_ranking
             result['teacher_comment'] = classapp.teacher_comment
@@ -111,12 +108,27 @@ class AdmissionsDashboard(ProgramModuleObj):
     @aux_call
     @needs_teacher
     @json_response(None)
+    def app(self, request, tl, one, two, module, extra, prog):
+        try:
+            classapp = StudentClassApp.objects.get(id=extra)
+        except StudentClassApp.DoesNotExist:
+            return # XXX: more useful error here
+        if not (request.user.isAdmin(prog) or classapp.subject in request.user.getTaughtClassesFromProgram(prog)):
+            return
+        content = classapp.get_teacher_view(prog)
+        return {'app': content}
+
+    @aux_call
+    @needs_teacher
+    @json_response(None)
     def update_app(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
             try:
                 classapp = StudentClassApp.objects.get(id=extra)
             except StudentClassApp.DoesNotExist:
                 return # XXX: more useful error here
+            if not (request.user.isAdmin(prog) or classapp.subject in request.user.getTaughtClassesFromProgram(prog)):
+                return
             post = request.POST
             if 'teacher_rating' in post:
                 classapp.teacher_rating = post['teacher_rating'] or None
