@@ -10,15 +10,25 @@ body, input {
 }
 #students-list {
     float: left;
-    width: 40%;
     height: 100%;
     overflow: auto;
 }
 #student-detail {
     float: left;
-    width: 60%;
     height: 100%;
     overflow: auto;
+}
+.tl-teach #students-list {
+    width: 40%;
+}
+.tl-teach #student-detail {
+    width: 60%;
+}
+.tl-manage #students-list {
+    width: 55%;
+}
+.tl-manage #student-detail {
+    width: 45%;
 }
 #students-list table {
     width: 100%;
@@ -32,7 +42,7 @@ body, input {
 #students-list td:first-child {
     text-align: left;
 }
-#students-list .comments {
+#students-list .admin_comments, #students-list .teacher_comments {
     max-width: 10em;
     max-height: 5em;
     overflow: hidden;
