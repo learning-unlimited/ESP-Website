@@ -59,31 +59,21 @@ class AdmissionsDashboard(ProgramModuleObj):
                 }]
 
     @main_call
-    def admissions(self, request, tl, *args):
-        if tl == 'manage':
-            return self.admissions_manage(request, tl, *args)
-        elif tl == 'teach':
-            return self.admissions_teach(request, tl, *args)
-
-    @needs_admin
-    def admissions_manage(self, request, tl, one, two, module, extra, prog):
-        classes = prog.classes()
-        return render_to_response(self.baseDir() + 'admissions.html',
-                                  request,
-                                  (prog, tl),
-                                  {'classes': classes})
-
-    @needs_teacher
-    def admissions_teach(self, request, tl, one, two, module, extra, prog):
+    def admissions(self, request, tl, one, two, module, extra, prog):
         if request.user.isAdmin(prog):
             classes = prog.classes()
         else:
             classes = request.user.getTaughtClassesFromProgram(prog)
+        admin_status_choices = StudentProgramApp._meta.get_field('admin_status').choices
+        teacher_rating_choices = StudentClassApp._meta.get_field('teacher_rating').choices
+        admission_status_choices = StudentClassApp._meta.get_field('admission_status').choices
         return render_to_response(self.baseDir() + 'admissions.html',
                                   request,
                                   (prog, tl),
-                                  {'classes': classes})
-
+                                  {'classes': classes,
+                                   'admin_status_choices': admin_status_choices,
+                                   'teacher_rating_choices': teacher_rating_choices,
+                                   'admission_status_choices': admission_status_choices})
 
     @aux_call
     @needs_teacher
@@ -107,9 +97,14 @@ class AdmissionsDashboard(ProgramModuleObj):
             result['subject'] = {'id': classapp.subject.id,
                                  'title': classapp.subject.title()}
             result['content'] = classapp.get_teacher_view(prog)
-            result['rating'] = classapp.teacher_rating
-            result['ranking'] = classapp.teacher_ranking
-            result['comment'] = classapp.teacher_comment
+            result['teacher_rating'] = classapp.teacher_rating
+            result['teacher_ranking'] = classapp.teacher_ranking
+            result['teacher_comment'] = classapp.teacher_comment
+            result['student_preference'] = classapp.student_preference
+            if tl == 'manage' and request.user.isAdmin(prog):
+                result['admin_status'] = classapp.app.admin_status
+                result['admin_comment'] = classapp.app.admin_comment
+                result['admission_status'] = classapp.admission_status
             results.append(result)
         return {'apps': results}
 
@@ -123,12 +118,20 @@ class AdmissionsDashboard(ProgramModuleObj):
             except StudentClassApp.DoesNotExist:
                 return # XXX: more useful error here
             post = request.POST
-            if 'rating' in post:
-                classapp.teacher_rating = post['rating'] or None
-            if 'ranking' in post:
-                classapp.teacher_ranking = post['ranking'] or None
-            if 'comment' in post:
-                classapp.teacher_comment = post['comment']
+            if 'teacher_rating' in post:
+                classapp.teacher_rating = post['teacher_rating'] or None
+            if 'teacher_ranking' in post:
+                classapp.teacher_ranking = post['teacher_ranking'] or None
+            if 'teacher_comment' in post:
+                classapp.teacher_comment = post['teacher_comment']
+            if request.user.isAdmin():
+                if 'admin_status' in post:
+                    classapp.app.admin_status = post['admin_status']
+                if 'admin_comment' in post:
+                    classapp.app.admin_comment = post['admin_comment']
+                if 'admission_status' in post:
+                    classapp.admission_status = post['admission_status']
             classapp.save()
+            classapp.app.save()
 
             return {'success': 1}

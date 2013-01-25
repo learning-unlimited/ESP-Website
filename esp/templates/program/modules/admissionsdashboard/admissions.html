@@ -23,9 +23,24 @@
 
 </head>
 
-<body>
+<body class="tl-{{ navbar_list.section }}">
   <input type="hidden" id="tl" value="{{ navbar_list.section }}" />
   <input type="hidden" id="program-base-url" value="{{ program.getUrlBase }}" />
+  <datalist id="admin-status-choices">
+    {% for val, text in admin_status_choices %}
+    <option value="{{ val }}">{{ text }}</option>
+    {% endfor %}
+  </datalist>
+  <datalist id="teacher-rating-choices">
+    {% for val, text in teacher_rating_choices %}
+    <option value="{{ val }}">{{ text }}</option>
+    {% endfor %}
+  </datalist>
+  <datalist id="admission-status-choices">
+    {% for val, text in admission_status_choices %}
+    <option value="{{ val }}">{{ text }}</option>
+    {% endfor %}
+  </datalist>
   <div id="students-list">
     <p>
       Review applications for class:
@@ -37,15 +52,10 @@
       </select>
     </p>
     <table>
-      <thead><tr>
-        <th>Name</th>
-        <th>Rating</th>
-        <th>Rank</th>
-        <th>Comments</th>
-      </tr></thead>
+      <thead></thead>
       <tbody></tbody>
     </table>
-    <p id="loading" style="display: none">Loading...</p>
+    <p id="loading">Loading...</p>
   </div>
   <div id="student-detail">
     <p>Click on a student's name to the left to view their app here.</p>
