@@ -1933,8 +1933,9 @@ class PasswordRecoveryTicket(models.Model):
         if self.user.username != username:
             return False
 
-        # Change the password
+        # Change the password, and activate the account
         self.user.set_password(password)
+        self.user.is_active = True
         self.user.save()
 
         # Invalidate all other tickets

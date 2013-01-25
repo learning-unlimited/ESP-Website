@@ -71,6 +71,7 @@ show_app = function(data){
     //creates a list of the timeslots sorted by start time
     sorted_timeslots = [];
     for(id in timeslots){
+	if (typeof(timeslots[id]) == "function") continue;
 	sorted_timeslots.push(timeslots[id]);
     }
     sorted_timeslots.sort(compare_timeslot_starts);
@@ -78,7 +79,9 @@ show_app = function(data){
     //adds timeslot links to page
     $j("#timeslots_anchor").css("display", "none");
     for(index in sorted_timeslots){
-	ts = new Timeslot(sorted_timeslots[index]);
+	t = sorted_timeslots[index];
+	if (typeof(t) == "function") continue;
+	ts = new Timeslot(t);
 	timeslot_objects.push(ts);
 	$j("#timeslots_anchor").before(ts.get_timeslot_html());
 	ts.add_classes_to_timeslot(sections);//needs to be updated w/ object-orientedness
@@ -172,6 +175,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     var carryovers_list = [];
     for(i in class_id_list){
         id = class_id_list[i];
+	if (typeof(id) != "number") continue;
         section = sections[id];
 
 	// check grade in range or admin
@@ -188,6 +192,7 @@ add_classes_to_timeslot = function(timeslot, sections){
 
     for(i in carryover_id_list){
         id = carryover_id_list[i];
+	if (typeof(id) != "number") continue;
         section = sections[id];
 
 	//check grade in range or admin
@@ -212,6 +217,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     else if (open_class_registration){
     // Add all the walkins classes
         for(i in walkins_list){
+	    if (typeof(walkins_list[i]) == "function") continue;
             $j("#"+ts_walkin_div_from_id(timeslot['id'])).append(get_walkin_html(walkins_list[i], timeslot['id']));
         }
     }
@@ -223,6 +229,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     else{
     // Adds all classes that start in this timeblock
         for(i in classes_list){
+	    if (typeof(classes_list[i]) == "function") continue;
             $j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(classes_list[i], timeslot['id']));
             load_old_preferences(classes_list[i]);
         }
@@ -234,6 +241,7 @@ add_classes_to_timeslot = function(timeslot, sections){
     else{
     // Adds all classes that are carried over from the previous timeblock
         for(i in carryovers_list){
+	    if (typeof(carryovers_list[i]) == "function") continue;
             $j("#"+ts_carryover_div_from_id(timeslot['id'])).append(get_carryover_html(carryovers_list[i], timeslot['id']));
         }
     }
@@ -296,7 +304,6 @@ function submit_preferences(){
     $j("#submit_button").attr("disabled", "disabled");
 
     var submit_data = get_submit_data();
-
     submit_data_string = JSON.stringify(submit_data);
 
     var submit_url = '/learn/'+base_url+'/lsr_submit';
@@ -317,3 +324,32 @@ function submit_preferences(){
      });
 };
 
+// Callback for when a priority radio is changed
+priority_changed = function(id, timeslot_id){
+    // Unprioritize all selections in the timeblock
+    for (i in timeslots[timeslot_id].starting_sections){
+	if (typeof(timeslots[timeslot_id].starting_sections[i]) == "function") continue;
+        sections[timeslots[timeslot_id].starting_sections[i]]['lottery_priority'] = false;
+    }
+};
+
+// Called to open a class description
+open_class_desc = function(class_id){
+    // Display a loading popup while we wait
+    loading_class_desc();
+
+    // Get the class info if we don't have it already
+    var parent_class_id = sections[class_id].parent_class;
+    if (!class_info[parent_class_id]){
+	json_get('class_info', {'class_id': parent_class_id}, function(data){
+	    // Once we get the class data, store it for later, then go
+	    // fill the popup
+	    class_info[parent_class_id] = data.classes[parent_class_id];
+	    fill_class_desc(class_id);
+	});
+    }
+    else{
+	// If we already have the data, go fill the popup
+	fill_class_desc(class_id);
+    }
+};

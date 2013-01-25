@@ -40,7 +40,7 @@ from esp.datatree.models import *
 from django.db.models.query   import Q
 from esp.middleware     import ESPError
 from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
-from esp.survey.views   import survey_view, survey_review, survey_graphical, survey_review_single, top_classes
+from esp.survey.views   import survey_view, survey_review, survey_graphical, survey_review_single, top_classes, survey_dump
 
 import operator
 
@@ -90,6 +90,8 @@ class SurveyManagement(ProgramModuleObj):
             return self.survey_create(request, tl, one, two, module, extra, prog)
         elif extra == 'review':
             return survey_review(request, tl, one, two)
+        elif extra == 'dump':
+            return survey_dump(request, tl, one, two)
         elif extra == 'review_pdf':
             return survey_graphical(request, tl, one, two)
         elif extra == 'review_single':
