@@ -735,6 +735,8 @@ var onSelectField=function($elem, field_data) {
 	else if(ftype=='section'){
 		$j("#id_required").attr('checked','');
 	}
+	addCorrectnessOptions(ftype);
+	$j('#'+ftype+'_correct_answer').attr('value', field_data.attrs['correct_answer']);
 	if($button.attr('value')=='Add to Form')
 		$button.attr('value','Update').unbind('click').click(updateField);
 		
@@ -1365,13 +1367,9 @@ var rebuild=function(metadata) {
 					help_text:field['help_text'],
 					field_type:field['field_type'],
 					required: field['required'],
-					attrs:{}
+					attrs: field['attributes'],
 				};
 				
-				$j.each(field['attributes'], function(attr_type, attr_value){
-					if($j.inArray(attr_type, ['options', 'limits', 'link_id', 'charlimits', 'wordlimits'])!=-1)
-						field_data.attrs[attr_type]=attr_value;
-				});
 				//Checking for link fields
 				var category=getFieldCategory(field_data['field_type']);
 				if(category!='Generic' && category!='Personal' && category!='NotReallyFields') {
