@@ -179,7 +179,7 @@ def user_registration_phase2(request):
         email = urllib.unquote_plus(request.GET['email'])
     except MultiValueDictKeyError:
         return HttpResponseRedirect(reverse("users.views.user_registration_phase1"))
-    form = UserRegForm(initial={'email':email})
+    form = UserRegForm(initial={'email':email,'confirm_email':email})
     return render_to_response('registration/newuser.html',
                               request, request.get_node('Q/Web/myesp'),{'form':form, 'email':email})
 
