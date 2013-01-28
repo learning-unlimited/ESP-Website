@@ -151,7 +151,7 @@ def lsr_submit(request, program = None):
 
     errors = []
 
-    already_flagged_sections = request.user.getSections(program=program, verbs=[reg_priority]).annotate(first_block=Min('meeting_times__start'))
+    already_flagged_sections = request.user.getSections(program=program, verbs=[reg_priority.name]).annotate(first_block=Min('meeting_times__start'))
     already_flagged_secids = set(int(x.id) for x in already_flagged_sections)
     
     flag_related_sections = classes_flagged | classes_not_flagged
@@ -176,7 +176,7 @@ def lsr_submit(request, program = None):
             if not sections_by_id[s_id].preregister_student(request.user, prereg_verb=reg_priority.name, overridefull=True):
                 errors.append({"text": "Unable to add flagged class", "cls_sections": [s_id], "emailcode": sections_by_id[s_id].emailcode(), "block": None, "flagged": True})
 
-    already_interested_sections = request.user.getSections(program=program, verbs=[reg_interested])
+    already_interested_sections = request.user.getSections(program=program, verbs=[reg_interested.name])
     already_interested_secids = set(int(x.id) for x in already_interested_sections)
     interest_related_sections = classes_interest | classes_no_interest
     sections = ClassSection.objects.filter(id__in = (interest_related_sections - flag_related_sections - already_flagged_secids - already_interested_secids)).select_related('anchor')
