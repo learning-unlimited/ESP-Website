@@ -214,7 +214,10 @@ class OnSiteCheckinModule(ProgramModuleObj):
             if form.is_valid():
                 codes=form.cleaned_data['uids'].split()
                 for code in codes:
-                    result=ESPUser.objects.filter(id=code)
+                    try:
+                        result=ESPUser.objects.filter(id=code)
+                    except ValueError:
+                        results['not_found'].append(code)
                     if len(result) > 1:
                         raise ESPError(False), "Something weird happened, there are two students with ID %s." % code
                     elif len(result) == 0:
