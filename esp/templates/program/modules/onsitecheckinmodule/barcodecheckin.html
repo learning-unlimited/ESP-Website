@@ -1,0 +1,75 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}} Management{% endblock %}
+
+{% block subsection_name %}Barcode check-in for {{program.niceName}}{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel='stylesheet' type='text/css' href='/media/styles/forms.css' />
+{% endblock %}
+
+{% block content %}
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+</style>
+<br />
+<br />
+
+<br /><br />
+<h1>Barcode Checkin &mdash; For {{ program.niceName }}</h1>
+
+<div id='program_form'>
+
+<p>
+Welcome to barcode check-in for {{ program.niceName }}.  Please enter a list of user IDs.
+</p>
+
+{% if results %}
+<p>
+Checked in {{ results.new|length }} students.  {{ results.not_found|length }} students were not found, {{ results.existing|length }} students were already checked in, and {{ results.not_student|length }} IDs did not correspond to students.
+</p>
+{% if results.not_found %}
+<p>
+Students not found:
+{% for id in results.not_found %}
+{{ id }}{% if not forloop.last %},{% endif %}
+{% endfor %}
+</p>
+{% endif %}
+{% if results.not_student %}
+<p>
+IDs not corresponding to students:
+{% for id in results.not_student %}
+{{ id }}{% if not forloop.last %},{% endif %}
+{% endfor %}
+</p>
+{% endif %}
+{% comment %}
+{% if results.existing %}
+<p>
+IDs already checked in:
+{% for id in results.existing %}
+{{ id }}{% if not forloop.last %},{% endif %}
+{% endfor %}
+</p>
+{% endif %}
+{% endcomment %}
+{% endif %}
+
+<form id="checkinform" name="checkinform" method="POST" action="{{ request.path }}">
+                    {{ form.as_p }}
+                    <p>
+                <input type="submit" value="Submit" />
+                </p>
+</form>
+
+<br />
+{% load render_qsd %}
+{% render_inline_qsd program.anchor "onsite:status" %}
+
+
+</div>
+
+
+{% endblock %}
