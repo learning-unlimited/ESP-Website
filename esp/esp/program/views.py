@@ -559,17 +559,17 @@ def newprogram(request):
             teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
             students_list_name = "%s-%s" % (mailing_list_name, "students")
 
-            create_list(students_list_name, "esp-moderators@mit.edu")
-            create_list(teachers_list_name, "esp-moderators@mit.edu")
+            create_list(students_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
+            create_list(teachers_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
 
             load_list_settings(teachers_list_name, "lists/program_mailman.config")
             load_list_settings(students_list_name, "lists/program_mailman.config")
         
-            apply_list_settings(teachers_list_name, {'owner': ['esp-moderators@mit.edu', new_prog.director_email]})
-            apply_list_settings(students_list_name, {'owner': ['esp-moderators@mit.edu', new_prog.director_email]})
+            apply_list_settings(teachers_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
+            apply_list_settings(students_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
 
-            add_list_member(students_list_name, [new_prog.director_email, "esparchive@gmail.com"])
-            add_list_member(teachers_list_name, [new_prog.director_email, "esparchive@gmail.com"])
+            add_list_member(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
+            add_list_member(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
             
 
             return HttpResponseRedirect(manage_url)
@@ -627,7 +627,7 @@ def submit_transaction(request):
             if cc_receipts:
                 #recipient_list.append('esp-treasurer@mit.edu')
                 #recipient_list.append('ageng@mit.edu') # Because I want to play space invaders too!
-                recipient_list.append('esp-credit-cards@mit.edu') 
+                recipient_list.append(settings.DEFAULT_EMAIL_ADDRESSES['treasury']) 
                 subject = 'DUPLICATE PAYMENT'
                 refs += '\n\nPrevious payments\' Cybersource IDs: ' + ( u', '.join([x.cc_ref for x in cc_receipts]) )
             else:
@@ -640,7 +640,7 @@ def submit_transaction(request):
             # Get the document that would've been created instead
             document = invoice.docs_next.all()[0]
         except:
-            raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:esp-web@mit.edu\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience."
+            raise ESPError(), "Your credit card transaction was successful, but a server error occurred while logging it.  The transaction has not been lost (please do not try to pay again!); this just means that the green Credit Card checkbox on the registration page may not be checked off.  Please <a href=\"mailto:" + settings.DEFAULT_EMAIL_ADDRESSES['default'] + "\">e-mail us</a> and ask us to correct this manually.  We apologize for the inconvenience."
 
         one = document.anchor.parent.name
         two = document.anchor.name

@@ -84,7 +84,7 @@ class FinancialAidAppModule(ProgramModuleObj):
 
     @main_call
     @needs_student
-    @meets_deadline()
+    @meets_deadline('/Finaid')
     def finaid(self,request, tl, one, two, module, extra, prog):
         """
         Student financial aid requests.
@@ -101,7 +101,7 @@ class FinancialAidAppModule(ProgramModuleObj):
 
     @aux_call
     @needs_student
-    @meets_deadline()
+    @meets_deadline('/Finaid')
     def finaid_app(self,request, tl, one, two, module, extra, prog):
         """
         A way for a student to apply for financial aid.

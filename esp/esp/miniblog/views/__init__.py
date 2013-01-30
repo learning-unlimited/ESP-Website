@@ -72,7 +72,7 @@ def get_visible_announcements(user, limit, tl):
     grand_total = 0
     overflowed = False
     for model in models_to_search:
-        result = UserBit.find_by_anchor_perms(model, user, verb).order_by('-timestamp').filter(Q(highlight_expire__gte = datetime.now()) | Q(highlight_expire__isnull = True))
+        result = UserBit.find_by_anchor_perms(model, user, verb).order_by('-timestamp').filter(Q(highlight_expire__gte = datetime.now()) | Q(highlight_expire__isnull = True)).filter(Q(highlight_begin__lte = datetime.now()) | Q(highlight_begin__isnull = True))
 	
 	if tl:
 	    result = result.filter(section=tl)
