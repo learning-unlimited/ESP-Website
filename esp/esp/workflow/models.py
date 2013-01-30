@@ -1,4 +1,0 @@
-
-
-class Controller(object):
-    pass
