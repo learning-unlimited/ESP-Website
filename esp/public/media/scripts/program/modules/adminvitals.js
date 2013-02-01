@@ -1,8 +1,5 @@
 statsFilled = false;
 
-// Initialize the json_data holder
-json_data = {};
-
 $j(document).ready(function() {
     $j(".module_group_expandable").click(function() {
 	var $module_group_body = $j(this).next(".module_group_body").toggle();
