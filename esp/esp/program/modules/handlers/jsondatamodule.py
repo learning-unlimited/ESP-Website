@@ -597,7 +597,7 @@ len(teachers[key])))
                 'yes': SplashInfo.objects.filter(program=prog, siblingdiscount=True).distinct().count(),
                 'no':  SplashInfo.objects.filter(program=prog).exclude(siblingdiscount=True).distinct().count()
             }
-        dictOut["stats"].append({"id": "splashinfo", "data": splashinfo_data})
+            dictOut["stats"].append({"id": "splashinfo", "data": splashinfo_data})
         
         return dictOut
     stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
