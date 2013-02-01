@@ -1338,7 +1338,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if len(self.get_sections()) <= 0:
             return "N/A"
         else:
-            return self.get_sections()[0].prettyrooms()
+            rooms = []
+        
+            for subj in self.get_sections():
+            	rooms.extend(subj.prettyrooms())
+       	    
+            return rooms
 
     def ascii_info(self):
         return self.class_info.encode('ascii', 'ignore')
@@ -1458,7 +1463,16 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         for s in self.get_sections():
             collapsed_times += s.friendly_times()
         return collapsed_times
+    
+    def prettyblocks(self):
+        blocks = []
         
+        for s in self.get_sections():
+            rooms = ", ".join(s.prettyrooms())
+            blocks += [(x + " in " + rooms) for x in s.friendly_times()]
+        
+        return blocks
+    
     def students_dict(self):
         result = PropertyDict({})
         for sec in self.get_sections():
@@ -1533,7 +1547,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         # SQL's cascading delete thing is sketchy --- if the anchor's corrupt,
         # we want webmin manual intervention
         if anchor and not anchor.name.endswith(str(self.id)):
-            raise ESPError("Tried to delete class %d with corrupt anchor." % self.id)
+            raise ESPError(), "Tried to delete class %d with corrupt anchor." % self.id
 
         if self.num_students() > 0 and not adminoverride:
             return False

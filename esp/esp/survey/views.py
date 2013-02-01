@@ -36,16 +36,20 @@ Learning Unlimited, Inc.
 """
 
 import datetime
+import xlwt
+from cStringIO import StringIO
 from django.db import models
+from django.db.models import Q
 from esp.datatree.models import *
-from esp.users.models import UserBit, ESPUser
+from esp.users.models import UserBit, ESPUser, admin_required
 from esp.program.models import Program, ClassCategories
 from esp.survey.models import Question, Survey, SurveyResponse, Answer
 from esp.web.util import render_to_response
 from esp.web.util.latex import render_to_latex
 from esp.program.modules.base import needs_admin
 from esp.middleware import ESPError
-from django.http import Http404, HttpResponseRedirect
+from django.http import Http404, HttpResponseRedirect, HttpResponse
+from django.core.servers.basehttp import FileWrapper
 from django.contrib.auth.decorators import login_required
 
 @login_required
@@ -211,6 +215,94 @@ def display_survey(user, prog, surveys, request, tl, format):
         return render_to_response('survey/review.html', request, prog.anchor, context)
     elif format == 'tex':
         return render_to_latex('survey/review.tex', context, 'pdf')
+
+def delist(x):
+    if isinstance(x,list):
+        return ', '.join(x)
+    else:
+        return x
+
+def dump_survey_xlwt(user, prog, surveys, request, tl):
+    from esp.program.models import ClassSubject, ClassSection
+    if tl == 'manage' and not request.REQUEST.has_key('teacher_id') and not request.REQUEST.has_key('classsection_id') and not request.REQUEST.has_key('classsubject_id'):
+        # Styles yoinked from <http://www.djangosnippets.org/snippets/1151/>
+        datetime_style = xlwt.easyxf(num_format_str='yyyy-mm-dd hh:mm:ss')
+        wb=xlwt.Workbook()
+        for s in surveys:
+            if len(s.name)>31:
+                ws=wb.add_sheet(s.name[:28] + "...")
+            else:
+                ws=wb.add_sheet(s.name)
+            ws.write(0,0,'Response ID')
+            ws.write(0,1,'Timestamp')
+            qs=list(s.questions.filter(anchor=prog.anchor).order_by('seq','id'))
+            srs=list(s.surveyresponse_set.all().order_by('id'))
+            i=2
+            q_dict={}
+            for q in qs:
+                q_dict[q.id]=i
+                ws.write(0,i,q.name)
+                i+=1
+            i=1
+            sr_dict={}
+            for sr in srs:
+                sr_dict[sr.id]=i
+                ws.write(i,0,sr.id)
+                ws.write(i,1,sr.time_filled,datetime_style)
+                i+=1
+            for a in Answer.objects.filter(question__in=qs).order_by('id'):
+                ws.write(sr_dict[a.survey_response_id],q_dict[a.question_id],delist(a.answer))
+            #PER-CLASS QUESTIONS
+            if len(s.name)>19:
+                ws_perclass=wb.add_sheet(s.name[:16] + "... (per-class)")
+            else:
+                ws_perclass=wb.add_sheet(s.name + " (per-class)")
+            ws_perclass.write(0,0,"Response ID")
+            ws_perclass.write(0,1,"Timestamp")
+            ws_perclass.write(0,2,"Class Code")
+            ws_perclass.write(0,3,"Class Title")
+            qs_perclass=list(s.questions.filter(anchor__parent=prog.anchor).order_by('seq','id'))
+            i=4
+            q_dict_perclass={}
+            for q in qs_perclass:
+                q_dict_perclass[q.id]=i
+                ws_perclass.write(0,i,q.name)
+                i+=1
+            i=1
+            src_dict_perclass={}
+            for a in Answer.objects.filter(question__in=qs_perclass).order_by('id').select_related('anchor','survey_response').prefetch_related('anchor__classsection_set','anchor__classsection_set__parent_class'):
+                sr=a.survey_response
+                cs=a.anchor.classsection_set.all()
+                if cs:
+                    key=(sr,cs[0])
+                else:
+                    key=sr
+                if key in src_dict_perclass:
+                    row=src_dict_perclass[key]
+                else:
+                    row=i
+                    src_dict_perclass[key]=i
+                    ws_perclass.write(i,0,sr.id)
+                    ws_perclass.write(i,1,sr.time_filled,datetime_style)
+                    if cs:
+                        ws_perclass.write(i,2,cs[0].emailcode())
+                        ws_perclass.write(i,3,cs[0].title())
+                    i+=1
+                ws_perclass.write(row,q_dict_perclass[a.question_id],delist(a.answer))
+        out=StringIO()
+        wb.save(out)
+        response=HttpResponse(out.getvalue(),content_type='application/vnd.ms-excel')
+        response['Content-Disposition']='attachment; filename=dump.xls'
+        return response
+    else:
+        raise ESPError(False), "You need to be an administrator to dump survey results."
+
+@admin_required
+def survey_dump(request, tl, program, instance):
+    """ A dump of all survey results in the given program. """
+
+    (user, prog, surveys) = get_survey_info(request, tl, program, instance)
+    return dump_survey_xlwt(user, prog, surveys, request, tl)
 
 @login_required
 def survey_review(request, tl, program, instance):
