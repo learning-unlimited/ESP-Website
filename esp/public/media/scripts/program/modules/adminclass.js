@@ -1,6 +1,6 @@
 //  Global variables for storing the class and section data
-var classes_global;
-var sections_global;
+var classes_global = {};
+var sections_global = {};
 
 function deleteClass() {
     if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students. \n Deleting is hard to undo, so consider instead marking it unreviewed or rejected.')) {
@@ -334,10 +334,11 @@ function handle_sort_control()
 {
     //  Detect specified sorting method
     var method = $j("#dashboard_sort_control").prop("value");
-    
     //  Update the sorttable_customkey of the first td in each row
     $j("#classes_anchor > tr").each(function (index) {
         var clsid = parseInt($j(this).prop("id").split("-")[1])
+        if (!classes_global.hasOwnProperty(clsid))
+            return;
         var cls = classes_global[clsid];
         if (method == "id")
             $j(this).children("td").first().attr("sorttable_customkey", cls.id);
@@ -353,10 +354,14 @@ function handle_sort_control()
             $j(this).children("td").first().attr("sorttable_customkey", (cls.message_for_directors || "").length + (cls.requested_special_resources || "").length);
     });
     
-    $j("#header-row > th").first().removeClass("sorttable_sorted sorttable_sorted_reverse")
+    $j("#header-row > th").first().removeClass("sorttable_sorted sorttable_sorted_reverse");
+    //  sorttable.makeSortable($j("#dashboard_class_table").get(0));
+    if (sorttable.innerSortFunction)
+        sorttable.innerSortFunction.apply($j("#header-row > th").get(0), []);
 }
 
 function setup_sort_control()
 {
     $j("#dashboard_sort_control").change(handle_sort_control);
+    handle_sort_control();
 }
