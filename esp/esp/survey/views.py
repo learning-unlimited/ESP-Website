@@ -252,7 +252,8 @@ def survey_review_single(request, tl, program, instance):
         other_responses = None
     elif tl == 'teach':
         class_anchors = [x['anchor'] for x in user.getTaughtClasses(prog).values('anchor')]
-        answers = survey_response.answers.filter(anchor__in=class_anchors).order_by('anchor', 'question')
+        section_anchors = [x['anchor'] for x in user.getTaughtSections(prog).values('anchor')]
+        answers = survey_response.answers.filter(anchor__in=(class_anchors+section_anchors)).order_by('anchor', 'question')
         classes_only = True
         other_responses = SurveyResponse.objects.filter(answers__anchor__in=class_anchors).order_by('id').distinct()
     else:
