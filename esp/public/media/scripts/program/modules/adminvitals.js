@@ -111,7 +111,7 @@ function fillStats(data)
     for (var i = 0; i < shirtnum.data.teachers.length; i++)
     {
 	var curDist = shirtnum.data.teachers[i];
-	console.log(curDist);
+	//  console.log(curDist);
 	html_string = html_string.concat("<tr><th class='smaller'>"+curDist.type+"</th>");
 	for (var j = 0; j < curDist.distribution.length; j++)
 	{
