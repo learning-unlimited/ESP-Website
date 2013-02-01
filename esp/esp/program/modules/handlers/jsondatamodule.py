@@ -39,7 +39,7 @@ from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.models import SplashInfo
 from esp.users.models import UserAvailability
 from esp.cal.models import Event
-from esp.program.models import ClassSection, ClassSubject, StudentRegistration, ClassCategories
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories
 from esp.program.models.class_ import open_class_category
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
 from esp.datatree.models import *
@@ -601,7 +601,8 @@ len(teachers[key])))
         
         return dictOut
     stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
-
+    stats.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
+    stats.cached_function.depend_on_row(Program, lambda prog: {'prog': prog})
 
     class Meta:
         abstract = True
