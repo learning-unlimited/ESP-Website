@@ -40,8 +40,6 @@ from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponseRedirect
-from esp.program.models import SATPrepRegInfo
-
 
 
 class OnsiteCore(ProgramModuleObj, CoreModule):
