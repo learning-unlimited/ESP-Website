@@ -709,6 +709,8 @@ class ProgramPrintables(ProgramModuleObj):
             return ProgramPrintables.getSchedule(self.program, user)
         elif key == 'student_schedule':
             return ProgramPrintables.getSchedule(self.program, user, 'Student')
+        elif key == 'student_schedule_norooms':
+            return ProgramPrintables.getSchedule(self.program, user, 'Student', room_numbers=False)
         elif key == 'teacher_schedule':
             return ProgramPrintables.getSchedule(self.program, user, 'Teacher')
         elif key == 'volunteer_schedule':
@@ -766,7 +768,7 @@ class ProgramPrintables(ProgramModuleObj):
         return t.render(Context(context))
 
     @staticmethod
-    def getSchedule(program, user, schedule_type=None):
+    def getSchedule(program, user, schedule_type=None, room_numbers=True):
         
         if schedule_type is None:
             if user.isStudent():
@@ -778,11 +780,17 @@ class ProgramPrintables(ProgramModuleObj):
             
         schedule = ''
         if schedule_type in ['Student', 'Teacher']:
-            schedule = """
-%s schedule for %s:
+            if room_numbers:
+                schedule = """
+    %s schedule for %s:
 
- Time                   | Class                                  | Room\n""" % (schedule_type, user.name())
-            schedule += '------------------------+----------------------------------------+-----------\n'
+     Time                   | Class                                  | Room\n""" % (schedule_type, user.name())
+            else:
+                schedule = """
+    %s schedule for %s:
+
+     Time                   | Class                                  \n""" % (schedule_type, user.name())
+            schedule += '------------------------+---------------------------------------------------\n'
             if schedule_type == 'Student':
                 classes = ProgramPrintables.get_student_classlist(program, user)
             elif schedule_type == 'Teacher':
@@ -793,8 +801,10 @@ class ProgramPrintables(ProgramModuleObj):
                     rooms = ' N/A'
                 else:
                     rooms = ' ' + ", ".join(rooms)
-                    
-                schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
+                if room_numbers:
+                    schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
+                else:
+                    schedule += '%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40))
                 
         elif schedule_type == 'Volunteer':
             schedule = """

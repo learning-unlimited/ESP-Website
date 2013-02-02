@@ -341,14 +341,17 @@ def survey_review_single(request, tl, program, instance):
     if tl == 'manage' and user.isAdmin(prog.anchor):
         answers = survey_response.answers.order_by('anchor', 'question')
         classes_only = False
+        other_responses = None
     elif tl == 'teach':
-        class_anchors = [x['anchor'] for x in user.getTaughtClasses().values('anchor')]
-        answers = survey_response.answers.filter(anchor__in=class_anchors).order_by('anchor', 'question')
+        class_anchors = [x['anchor'] for x in user.getTaughtClasses(prog).values('anchor')]
+        section_anchors = [x['anchor'] for x in user.getTaughtSections(prog).values('anchor')]
+        answers = survey_response.answers.filter(anchor__in=(class_anchors+section_anchors)).order_by('anchor', 'question')
         classes_only = True
+        other_responses = SurveyResponse.objects.filter(answers__anchor__in=class_anchors).order_by('id').distinct()
     else:
         raise ESPError(False), 'You need to be a teacher or administrator of this program to review survey responses.'
     
-    context = {'user': user, 'program': prog, 'response': survey_response, 'answers': answers, 'classes_only': classes_only }
+    context = {'user': user, 'program': prog, 'response': survey_response, 'answers': answers, 'classes_only': classes_only, 'other_responses': other_responses }
     
     return render_to_response('survey/review_single.html', request, prog.anchor, context)
 
