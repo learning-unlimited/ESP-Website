@@ -88,7 +88,7 @@ sorttable = {
 	      // make it clickable to sort
 	      headrow[i].sorttable_columnindex = i;
 	      headrow[i].sorttable_tbody = table.tBodies[0];
-	      dean_addEvent(headrow[i],"click", function(e) {
+	      dean_addEvent(headrow[i],"click", sorttable.innerSortFunction = function(e) {
 
           if (this.className.search(/\bsorttable_sorted\b/) != -1) {
             // if we're already sorted by this column, just 
@@ -166,7 +166,10 @@ sorttable = {
     // guess the type of a column based on its first non-blank row
     sortfn = sorttable.sort_alpha;
     for (var i=0; i<table.tBodies[0].rows.length; i++) {
-      text = sorttable.getInnerText(table.tBodies[0].rows[i].cells[column]);
+      var text = '';
+      if (table.tBodies[0].rows[i].cells.length > column) {
+        text = sorttable.getInnerText(table.tBodies[0].rows[i].cells[column]);
+      }
       if (text != '') {
         if (text.match(/^-?[£$¤]?[\d,.]+%?$/)) {
           return sorttable.sort_numeric;
