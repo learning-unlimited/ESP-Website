@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter
 from esp.middleware import ESPError
 from esp.web.util import render_to_response
+from esp.program.models import Program
 
 from django.db.models.query import Q
 
@@ -43,7 +44,6 @@ import re
 class UserSearchController(object):
 
     #   Static parameters
-    user_types = ['students', 'teachers', 'volunteers']
     preferred_lists = ['enrolled', 'studentfinaid', 'student_profile', 'class_approved', 'lotteried_students',  'teacher_profile', 'class_proposed', 'volunteer_all']
     global_categories = [('Student', 'students'), ('Teacher', 'teachers'), ('Guardian', 'parents'), ('Educator', 'parents'), ('Volunteer', 'volunteers')]
 
@@ -172,14 +172,14 @@ class UserSearchController(object):
                 if cat == pair[1]:
                     return pair[0]
         def get_recipient_type(list_name):
-            for user_type in UserSearchController.user_types:
+            for user_type in Program.USER_TYPE_LIST_FUNCS:
                 raw_lists = getattr(program, user_type)(True)
                 if list_name in raw_lists:
                     return user_type
                     
         if 'base_list' in data and 'recipient_type' in data:
             #   Get the program-specific part of the query (e.g. which list to use)
-            if data['recipient_type'] not in UserSearchController.user_types:
+            if data['recipient_type'] not in Program.USER_TYPE_LIST_FUNCS:
                 recipient_type = 'any'
                 q_program = Q()
             else:
@@ -249,11 +249,12 @@ class UserSearchController(object):
     def prepare_context(self, program, target_path=None):
         context = {}
         context['program'] = program
+        context['user_types'] = ESPUser.getTypes()
         category_lists = {}
         list_descriptions = program.getListDescriptions()
         
         #   Add in program-specific lists for most common user types
-        for user_type in UserSearchController.user_types:
+        for user_type in Program.USER_TYPE_LIST_FUNCS:
             raw_lists = getattr(program, user_type)(True)
             category_lists[user_type] = [{'name': key, 'list': raw_lists[key], 'description': list_descriptions[key]} for key in raw_lists]
             for item in category_lists[user_type]:

@@ -173,6 +173,10 @@ class ESPUser(User, AnonymousUser):
 
         self.other_user = False
 
+        if not hasattr(ESPUser, 'isOfficer'):
+            for user_type in ESPUser.getTypes() + ['Officer']:
+                setattr(ESPUser, 'is%s' % user_type, ESPUser.create_membership_method(user_type))
+
     def is_anonymous(self):
         return self._is_anonymous
 
@@ -453,16 +457,18 @@ class ESPUser(User, AnonymousUser):
 
     @staticmethod
     def getTypes():
-        """ Get a list of the different roles an ESP user can have. By default there are four rols,
-            but there can be more. (Returns ['Student','Teacher','Educator','Guardian']. """
+        """ Get a list of the different roles an ESP user can have. By default there are five roles,
+            but there can be more. (Returns ['Student','Teacher','Educator','Guardian','Volunteer'] by default. """
 
-        return ['Student','Teacher','Educator','Guardian','Volunteer']
+        if not hasattr(ESPUser, '_getTypes'):
+        # The data returned by this function will almost never change,
+        # so cache the return value.
+            ESPUser._getTypes = [x[0] for x in ESPUser.getAllUserTypes()]
+        return ESPUser._getTypes
 
     @staticmethod
     def getAllOfType(strType, QObject = True):
-        types = ['Student', 'Teacher','Guardian','Educator','Volunteer']
-
-        if strType not in types:
+        if strType not in ESPUser.getTypes():
             raise ESPError(), "Invalid type to find all of."
 
         Q_useroftype      = Q(userbit__verb = GetNode('V/Flags/UserRole/'+strType)) &\
@@ -849,17 +855,21 @@ class ESPUser(User, AnonymousUser):
 
     @staticmethod
     def getAllUserTypes():
-        tag_data = Tag.getTag('user_types')
-        result = DEFAULT_USER_TYPES
-        result_labels = [x[0] for x in result]
-        if tag_data:
-            json_data = json.loads(tag_data)
-            for entry in json_data:
-                if entry[0] not in result_labels:
-                    result.append(entry)
-                else:
-                    result[result_labels.index(entry[0])][1] = entry[1]
-        return result
+        if not hasattr(ESPUser, '_getAllUserTypes'):
+        # The data returned by this function will almost never change,
+        # so cache the return value.
+            tag_data = Tag.getTag('user_types')
+            result = DEFAULT_USER_TYPES
+            result_labels = [x[0] for x in result]
+            if tag_data:
+                json_data = json.loads(tag_data)
+                for entry in json_data:
+                    if entry[0] not in result_labels:
+                        result.append(entry)
+                    else:
+                        result[result_labels.index(entry[0])][1] = entry[1]
+            ESPUser._getAllUserTypes = result
+        return ESPUser._getAllUserTypes
 
     def getUserTypes(self):
         """ Return the set of types for this user """
@@ -870,31 +880,28 @@ class ESPUser(User, AnonymousUser):
             
         return retVal
         
-    @classmethod
-    def create_membership_methods(cls):
+    @staticmethod
+    def create_membership_method(user_class):
         """
         Creates the methods such as isTeacher that determins whether
         or not the user is a member of that user class.
         """
-        user_classes = ('Teacher','Guardian','Educator','Officer','Student','Volunteer')
-        overrides = {'Officer': 'Administrator'}
-        for user_class in user_classes:
-            method_name = 'is%s' % user_class
-            bit_name = 'V/Flags/UserRole/%s' % overrides.get(user_class, user_class)
-            property_name = '_userclass_%s' % user_class
-            def method_gen(bit_name, property_name):
-                def _new_method(user):
-                    if not hasattr(user, property_name):
-                        setattr(user, property_name, bool(UserBit.UserHasPerms(user, GetNode('Q'),
-                                                                          GetNode(bit_name))))
-                    return getattr(user, property_name)
+        def _new_method(user):
+            return user.is_user_type(user_class)
+        _new_method.__name__    = 'is%s' % user_class
+        _new_method.__doc__     = "Returns ``True`` if the user is a %s and False otherwise." % user_class
+        return _new_method
 
-                _new_method.__name__ = method_name
-                _new_method.__doc__ = "Returns ``True`` if the user is a %s and False otherwise." % user_class
-
-                return _new_method
-
-            setattr(cls, method_name, method_gen(bit_name, property_name))
+    def is_user_type(self, user_class):
+        """
+        Determines whether the user is a member of user_class.
+        """
+        property_name = '_userclass_%s' % user_class
+        if not hasattr(self, property_name):
+            bit_name = 'V/Flags/UserRole/%s' % {'Officer': 'Administrator'}.get(user_class, user_class)
+            setattr(self, property_name, bool(UserBit.UserHasPerms(self,
+                GetNode('Q'), GetNode(bit_name))))
+        return getattr(self, property_name)
 
     @classmethod
     def get_unused_username(cls, first_name, last_name):
@@ -992,9 +999,6 @@ class ESPUser(User, AnonymousUser):
             return 0
 
         return schoolyear + 12 - grade
-
-
-ESPUser.create_membership_methods()
 
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))

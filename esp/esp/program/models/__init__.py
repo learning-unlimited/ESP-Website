@@ -283,6 +283,20 @@ class Program(models.Model, CustomFormsLinkModel):
         app_label = 'program'
         db_table = 'program_program'
 
+    USER_TYPES_WITH_LIST_FUNCS  = ['Student', 'Teacher', 'Volunteer']   # user types that have ProgramModule user filters
+    USER_TYPE_LIST_FUNCS        = [user_type.lower()+'s' for user_type in USER_TYPES_WITH_LIST_FUNCS]   # the names of these filter methods, e.g. students(), teachers(), volunteers()
+    USER_TYPE_LIST_NUM_FUNCS    = ['num_'+user_type for user_type in USER_TYPE_LIST_FUNCS]  # the names of the num methods, e.g. num_students(), num_teachers()
+    USER_TYPE_LIST_DESC_FUNCS   = [user_type.lower()+'Desc' for user_type in USER_TYPES_WITH_LIST_FUNCS]    # the names of the description methods, e.g. studentDesc(), teacherDesc()
+
+    def __init__(self, *args, **kwargs):
+        super(Program, self).__init__(*args, **kwargs)
+
+        # Setup for the ProgramModule user filters
+        if not hasattr(Program, Program.USER_TYPE_LIST_FUNCS[0]):
+            for i, user_type in enumerate(Program.USER_TYPE_LIST_FUNCS):
+                setattr(Program, user_type, Program.get_users_from_module(user_type))
+                setattr(Program, Program.USER_TYPE_LIST_NUM_FUNCS[i], Program.counts_from_query_dict(getattr(Program, user_type)))
+
     @cache_function
     def isUsingStudentApps(self):
         from esp.program.models.app_ import StudentAppQuestion
@@ -374,6 +388,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return ''
     
+    @staticmethod
     def get_users_from_module(method_name):
         def get_users(self, QObjects=False):
             modules = self.getModules(None)
@@ -383,14 +398,14 @@ class Program(models.Model, CustomFormsLinkModel):
                 if tmpusers is not None:
                     users.update(tmpusers)
             return users
+        get_users.__name__  = method_name
+        get_users.__doc__   = "Returns a dictionary of different sets of %s for this program, as defined by the enabled ProgramModules" % method_name
         return get_users
-    teachers = get_users_from_module('teachers')
-    students = get_users_from_module('students')
-    volunteers = get_users_from_module('volunteers')
 
+    @staticmethod
     def counts_from_query_dict(query_func):
-        def _get_num(self, QObjects=True):
-            result = query_func(self, QObjects)
+        def _get_num(self):
+            result = query_func(self, QObjects=False)
             result_dict = {}
             for key, value in result.iteritems():
                 if isinstance(value, QuerySet):
@@ -398,9 +413,9 @@ class Program(models.Model, CustomFormsLinkModel):
                 else:
                     result_dict[key] = len(value)
             return result_dict
+        _get_num.__name__   = "num_" + query_func.__name__
+        _get_num.__doc__    = "Returns a dictionary of the sizes of the various sets of %s that are returned by Program.%s()" % (query_func.__name__, query_func.__name__)
         return _get_num
-    num_students = counts_from_query_dict(students)
-    num_teachers = counts_from_query_dict(teachers)
 
     @cache_function
     def capacity_by_section_id(self):
@@ -462,9 +477,8 @@ class Program(models.Model, CustomFormsLinkModel):
     def getListDescriptions(self):
         desc = {}
         modules = self.getModules()
-        desc_functions = ['studentDesc', 'teacherDesc', 'volunteerDesc']
         for module in modules:
-            for func in desc_functions:
+            for func in Program.USER_TYPE_LIST_DESC_FUNCS:
                 if hasattr(module, func):
                     tmpdict = getattr(module, func)()
                     if tmpdict is not None:
@@ -492,9 +506,7 @@ class Program(models.Model, CustomFormsLinkModel):
             if k in lists:
                 lists[k]['description'] = v
                 
-        usertypes = ['Student', 'Teacher', 'Guardian', 'Educator', 'Volunteer']
-
-        for usertype in usertypes:
+        for usertype in ESPUser.getTypes():
             lists['all_'+usertype.lower()+'s'] = {'description':
                                    usertype+'s in all of ESP',
                                    'list' : ESPUser.getAllOfType(usertype)}
