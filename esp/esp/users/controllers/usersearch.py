@@ -45,7 +45,6 @@ class UserSearchController(object):
 
     #   Static parameters
     preferred_lists = ['enrolled', 'studentfinaid', 'student_profile', 'class_approved', 'lotteried_students',  'teacher_profile', 'class_proposed', 'volunteer_all']
-    global_categories = [('Student', 'students'), ('Teacher', 'teachers'), ('Guardian', 'parents'), ('Educator', 'parents'), ('Volunteer', 'volunteers')]
 
     def __init__(self, *args, **kwargs):
         self.updated = False
@@ -167,10 +166,6 @@ class UserSearchController(object):
             on the main "comm panel" page
         """
 
-        def map_category_bwd(cat):
-            for pair in UserSearchController.global_categories:
-                if cat == pair[1]:
-                    return pair[0]
         def get_recipient_type(list_name):
             for user_type in Program.USER_TYPE_LIST_FUNCS:
                 raw_lists = getattr(program, user_type)(True)
@@ -179,15 +174,15 @@ class UserSearchController(object):
                     
         if 'base_list' in data and 'recipient_type' in data:
             #   Get the program-specific part of the query (e.g. which list to use)
-            if data['recipient_type'] not in Program.USER_TYPE_LIST_FUNCS:
+            if data['recipient_type'] not in ESPUser.getTypes():
                 recipient_type = 'any'
                 q_program = Q()
             else:
                 if data['base_list'].startswith('all'):
                     q_program = Q()
-                    recipient_type = map_category_bwd(data['recipient_type'])
+                    recipient_type = data['recipient_type']
                 else:
-                    program_lists = getattr(program, data['recipient_type'])(QObjects=True)
+                    program_lists = getattr(program, data['recipient_type'].lower()+'s')(QObjects=True)
                     q_program = program_lists[data['base_list']]
                     """ Some program queries rely on UserBits, and since user types are also stored in
                         UserBits we cannot store both of these in a single Q object.  To compensate, we
@@ -230,7 +225,7 @@ class UserSearchController(object):
                         q_program = q_program | (~getattr(program, user_type)(QObjects=True)[or_list_name])
                     
             #   Get the user-specific part of the query (e.g. ID, name, school)
-            q_extra = self.query_from_criteria(map_category_bwd(recipient_type), data)
+            q_extra = self.query_from_criteria(recipient_type, data)
          
         return (q_extra & q_program)
 
@@ -254,19 +249,19 @@ class UserSearchController(object):
         list_descriptions = program.getListDescriptions()
         
         #   Add in program-specific lists for most common user types
-        for user_type in Program.USER_TYPE_LIST_FUNCS:
-            raw_lists = getattr(program, user_type)(True)
+        for user_type, list_func in zip(Program.USER_TYPES_WITH_LIST_FUNCS, Program.USER_TYPE_LIST_FUNCS):
+            raw_lists = getattr(program, list_func)(True)
             category_lists[user_type] = [{'name': key, 'list': raw_lists[key], 'description': list_descriptions[key]} for key in raw_lists]
             for item in category_lists[user_type]:
                 if item['name'] in UserSearchController.preferred_lists:
                     item['preferred'] = True
                     
         #   Add in global lists for each user type
-        for cat_pair in UserSearchController.global_categories:
-            key = cat_pair[0].lower() + 's'
-            if cat_pair[1] not in category_lists:
-                category_lists[cat_pair[1]] = []
-            category_lists[cat_pair[1]].insert(0, {'name': 'all_%s' % key, 'list': ESPUser.getAllOfType(cat_pair[0]), 'description': 'All %s in the database' % key, 'preferred': True, 'all_flag': True})
+        for user_type in ESPUser.getTypes():
+            key = user_type.lower() + 's'
+            if user_type not in category_lists:
+                category_lists[user_type] = []
+            category_lists[user_type].insert(0, {'name': 'all_%s' % user_type, 'list': ESPUser.getAllOfType(user_type), 'description': 'All %s in the database' % key, 'preferred': True, 'all_flag': True})
         
         #   Add in mailing list accounts
         category_lists['emaillist'] = [{'name': 'all_emaillist', 'list': Q(password = 'emailuser'), 'description': 'Everyone signed up for the mailing list', 'preferred': True}]
