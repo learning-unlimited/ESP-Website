@@ -224,7 +224,8 @@ function createClassRow(clsObj)
     <td class='clsleft classname'> \
       <span title='{{ cls.title }}'> \
         <strong>{{ cls.emailcode }}.</strong> \
-        <span class='{{ title_css_class }}'>{{ cls.title }}</span> \
+        <span class='{{ title_css_class }}'>{{ cls.title }} \
+        <strong>[{{ cls_status }}]</strong></span> \
       </span> \
     </td> \
     <td class='clsmiddle' style='font-size: 12px' width='40px'> \
@@ -288,21 +289,31 @@ function createClassRow(clsObj)
 
 
     var title_css_class = "";
+    var cls_status = "";
     if (clsObj.status == 0)
     {
 	title_css_class = "unapproved dashboard_blue";
+	cls_status = "UNREVIEWED";
     }
     else if (clsObj.status == -10)
     {
 	title_css_class = "unapproved dashboard_red";
+	cls_status = "REJECTED";
+    }
+    else if (clsObj.status == -20)
+    {
+	title_css_class = "unapproved dashboard_red";
+	cls_status = "CANCELLED";
     }
     else if (clsObj.status > 0)
     {
 	title_css_class = "approved";
+	cls_status = "APPROVED";
     }
     else if (clsObj.status <= 0)
     {
 	title_css_class = "unapproved";
+	cls_status = "UNAPPROVED";
     }
 
     var rapid_approval_style = "style='display:none;'";
@@ -318,6 +329,7 @@ function createClassRow(clsObj)
 	.replace(new RegExp("{{ section_links }}", "g"), section_link_list)
 	.replace(new RegExp("{{ program.getUrlBase }}", "g"), base_url)
 	.replace(new RegExp("{{ title_css_class }}", "g"), title_css_class)
+	.replace(new RegExp("{{ cls_status }}", "g"), cls_status)
 	.replace(new RegExp("{{ rapid_approval_style }}", "g"), rapid_approval_style);
 
     // Turn the template into a jQuery node
