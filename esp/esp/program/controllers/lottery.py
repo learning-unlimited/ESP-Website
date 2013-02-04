@@ -395,11 +395,11 @@ class LotteryAssignmentController(object):
         assert(student_ids.shape == section_ids.shape)
         
         relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
-        for i in range(student_ids.shape[0]):
-            #   Note: can be switched to bulk_create once Django 1.4 is out
-            StudentRegistration.objects.create(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship)
-            if i % 1000 == 0 and debug_display:
-                print 'Created %d/%d registrations' % (i, student_ids.shape[0])
+        self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
+        StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
+        print "StudentRegistration enrollments all created to start at %s" % self.now
+        if debug_display:
+            print 'Created %d registrations' % student_ids.shape[0]
         
         self.update_mailman_lists()
     
