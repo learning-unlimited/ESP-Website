@@ -199,7 +199,7 @@ class UserSearchController(object):
             if list_name.startswith('all'):
                 q_program = Q()
             else:
-                q_program = getattr(program, recipient_type)(QObjects=True)[list_name]
+                q_program = getattr(program, recipient_type.lower()+'s')(QObjects=True)[list_name]
             
             #   Apply Boolean filters
             #   Base list will be intersected with any lists marked 'AND', and then unioned
