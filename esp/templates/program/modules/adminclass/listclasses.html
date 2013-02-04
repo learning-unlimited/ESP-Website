@@ -1,5 +1,10 @@
 {% block xtrajs %}
 
+<script type="text/javascript">
+// Initialize the json_data holder
+json_data = {};
+</script>
+
 <script type="text/javascript" src="/media/scripts/program/modules/adminclass.js"></script>
 
 <script type="text/javascript">
@@ -19,6 +24,9 @@
         modal: true,
       });
   }
+
+  // Set up sorting control
+  $j(document).ready(setup_sort_control);
 
   // Start the AJAX request to get the class data and display it
   json_fetch(["sections", "class_subjects"], fillClasses, json_data, function() { alert("Error loading class data"); });
@@ -83,13 +91,23 @@ border: 1px solid black !important;
     <p>Notes: 
       <ul>
 	<li><span class="unapproved dashboard_blue">Blue</span> stands for unreviewed classes and <span class="dashboard_red">Red</span> for rejected classes.</li>
-	<li>You may click on the column headers to sort the classes.</li>
+	<li>You may click on the column headers to sort the classes in ascending or descending order. <br />
+    Select a sorting option for the leftmost column: 
+    <select id="dashboard_sort_control">
+        <option value="id">ID</option>
+        <option value="category">Category</option>
+        <option value="name">Name</option>
+        <option value="status">Status</option>
+        <option value="size">Size</option>
+        <option value="special">Special Requests</option>
+    </select>
+    </li>
       </ul>
     </p>
 
     <div id="battlescreen">
 
-      <table cellpadding="4px" cellspacing="0" class="sortable" style="width: 90%">
+      <table id="dashboard_class_table" cellpadding="4px" cellspacing="0" class="sortable" style="width: 90%">
 	{% if noclasses %}
 	<tr>
 	  <td class="clsleft classname">
@@ -97,7 +115,6 @@ border: 1px solid black !important;
 	  </td>
 	</tr>
 	{% endif %}
-	{% load class_render_row %}
 	<thead>
 	  <tr id="header-row">
 	    <th class="dashboard_colheader"><div style="cursor: pointer;">Class Code/Title</div></th>
@@ -107,7 +124,9 @@ border: 1px solid black !important;
 	  </tr>
 	</thead>
 	<tbody id="classes_anchor">
-	  <tr><td>Loading classes...</td></tr>
+	  <tr>
+        <td colspan="7">Loading classes...</td>
+      </tr>
 	</tbody>
       </table>
     </div>

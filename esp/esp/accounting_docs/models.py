@@ -49,23 +49,6 @@ from esp.accounting_core.models import Transaction
 class MultipleDocumentError(ESPError_Log):
     pass
 
-class PurchaseOrder(models.Model):
-    """ A purchase order available for invoicing in a given accounting ledger """
-    anchor = AjaxForeignKey(DataTree)
-    address = models.TextField()
-    fax = models.CharField(blank=True, max_length=16)
-    phone = models.CharField(blank=True, max_length=16)
-    email = models.EmailField(blank=True)
-    reference = models.TextField()
-    rules = models.TextField()
-    notes = models.TextField()
-
-    def __unicode__(self):
-        return u'PurchaseOrder account %u (ref: %s)' % (self.id, self.reference)
-
-    class Admin:
-        pass
-
 class Document(models.Model):
     """ A tracer for a transaction """
 
@@ -93,7 +76,6 @@ class Document(models.Model):
 
     # Document references
     locator = models.CharField(max_length=16, unique=True)
-    po = models.ForeignKey(PurchaseOrder, null=True)
     cc_ref = models.TextField(blank=True,default='')
 
     # Tools

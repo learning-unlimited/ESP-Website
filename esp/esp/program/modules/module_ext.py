@@ -51,16 +51,6 @@ class DBReceipt(models.Model):
         return 'Registration (%s) receipt for %s' % (self.action, self.program)
 
 
-class SATPrepAdminModuleInfo(models.Model):
-    module        = models.ForeignKey(ProgramModuleObj)
-    num_divisions = models.IntegerField(blank=True, null=True)
-    
-    def __unicode__(self):
-        return 'SATPrep admin settings for %s' % self.module.program
-    
-    class Admin:
-        pass
-
 REG_VERB_BASE = 'V/Flags/Registration'
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
@@ -227,7 +217,7 @@ class ClassRegModuleInfo(models.Model):
             # going to work when called by a sane person, dammit!
             program = self.module.program
         else:
-            raise ESPError(), "Can't find program from ClassRegModuleInfo"
+            raise ESPError("Can't find program from ClassRegModuleInfo")
         return program
     
     def allowed_sections_actual_get(self):

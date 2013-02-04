@@ -1,1 +1,0 @@
-ALTER TABLE modules_studentclassregmoduleinfo ADD COLUMN show_emailcodes boolean;
