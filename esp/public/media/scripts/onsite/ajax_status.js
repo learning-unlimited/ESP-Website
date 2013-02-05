@@ -151,17 +151,20 @@ function setup_settings()
     $j("#override_control").unbind("change");
     $j("#grade_limits_control").unbind("change");
     $j("#compact_classes").unbind("change");
-    
+    $j("#show_closed_reg").unbind("change");
+
     //  Apply settings
     settings.show_full_classes = $j("#hide_full_control").prop("checked");
     settings.override_full = $j("#override_control").prop("checked");
     settings.disable_grade_filter = $j("#grade_limits_control").prop("checked");
     settings.compact_classes = $j("#compact_classes").prop("checked");
-    
+    settings.show_closed_reg = $j("#show_closed_reg").prop("checked");
+
     $j("#hide_full_control").change(handle_settings_change);
     $j("#override_control").change(handle_settings_change);
     $j("#grade_limits_control").change(handle_settings_change);
     $j("#compact_classes").change(handle_settings_change);
+    $j("#show_closed_reg").change(handle_settings_change);
 }
 
 /*  Event handlers  */
@@ -225,6 +228,8 @@ function update_checkboxes()
             //  Disable the checkbox if the class is full, unless we are overriding that
             if ((section.num_students_enrolled >= section.capacity) && (!(settings.override_full)))
                 studentcheckbox.attr("disabled", "disabled");
+	    else if (section.registration_status != 0)
+		studentcheckbox.attr("disabled", "disabled");
             else
                 studentcheckbox.change(handle_checkbox);
         }
@@ -567,10 +572,20 @@ function render_table(display_mode, student_id)
                     new_div.addClass("section_hidden");
             }
             
+	    //  Hide the class if its registration is closed (and we're not showing closed classes)
+	    if ((!(settings.show_closed_reg)) && (section.registration_status != 0))
+                new_div.addClass("section_hidden");
+            
             new_div.append($j("<span/>").addClass("emailcode").html(section.emailcode));
             new_div.append($j("<span/>").addClass("room").html(section.rooms));
             //  TODO: make this snap to the right reliably
             new_div.append($j("<span/>").addClass("studentcounts").attr("id", "studentcounts_" + section.id).html(section.num_students_checked_in.toString() + "/" + section.num_students_enrolled + "/" + section.capacity));
+            
+            // Show the class title if we're not in compact mode
+            if (!settings.compact_classes)
+            {
+                new_div.append($j("<div/>").addClass("title").html(section.title));
+            }
             
             //  Create a tooltip with more information about the class
             new_div.addClass("tooltip");
@@ -626,7 +641,6 @@ function render_classchange_table(student_id)
     render_table("classchange", student_id);
     update_checkboxes();
     add_message("Displaying class changes matrix for " + data.students[student_id].first_name + " " + data.students[student_id].last_name + " (" + student_id + "), grade " + data.students[student_id].grade, "message_header");
-    add_message("Display settings can be found at the <a href=\"#settings\">bottom of the page</a>.");
 }
 
 /*  This function populates the linked data structures once all components have arrived.
@@ -925,6 +939,10 @@ function refresh_counts() {
     add_message("Pinging server for updated information, please stand by...", "message_header");
     fetch_all(true);
 }
+
+$j(document).scroll(function(){
+    $j("#student_selector_area").css("left", window.scrollX);
+});
 
 $j(document).ready(function () {
     //  Send out initial requests for data.

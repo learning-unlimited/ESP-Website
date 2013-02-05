@@ -21,7 +21,9 @@
 </style>
 <br /><br />
 <h1>Survey Response #{{ response.id }} for {{ response.survey.name }} </h1>
-
+<p>
+This is the anonymous survey response of a single student at {{ program.niceName }}.
+</p>
 <div id="program_form">
 <center>
     
@@ -32,7 +34,18 @@
         </tr>
         </table>
     {% endif %}
-    
+    {% if answers|length_is:0 %}
+    </center>
+    <p>
+    This survey response contains no results for any of the classes that you taught.  To see the aggregate results for your classes, <a href="/teach/{{ program.getUrlBase }}/survey/review">click here</a>.  Here are the individual survey responses relevant to you (e.g. students that took one or more of your classes):
+    <ul>
+    {% for resp in other_responses %}
+    <li><a href="/teach/{{ program.getUrlBase }}/survey/review_single?{{ resp.id }}">Survey response #{{ resp.id }}</a></li>
+    {% endfor %}
+    </ul>
+    </p>
+    <center>
+    {% endif %}
     {% for answer in answers %}
         {% ifchanged answer.anchor %}{% if not forloop.first or classes_only %}
             <table class="fullwidth">

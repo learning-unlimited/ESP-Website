@@ -546,12 +546,28 @@ class Program(models.Model, CustomFormsLinkModel):
     def teachers_union(self, QObject = False):
         import operator
         if len(self.teachers().values()) == 0:
-            return []
+            if QObject:
+                return Q(id = -1)
+            else:
+                return ESPUser.objects.filter(id = -1)
         union = reduce(operator.or_, [x for x in self.teachers(True).values() ])
         if QObject:
             return union
         else:
-            return ESPUser.objects.filter(union).distinct()    
+            return ESPUser.objects.filter(union).distinct()   
+ 
+    def volunteers_union(self, QObject = False):
+        import operator
+        if len(self.volunteers().values()) == 0:
+            if QObject:
+                return Q(id = -1)
+            else:
+                return ESPUser.objects.filter(id = -1)
+        union = reduce(operator.or_, [x for x in self.volunteers(True).values() ])
+        if QObject:
+            return union
+        else:
+            return ESPUser.objects.filter(union).distinct()
 
     @cache_function
     def isFull(self):
@@ -564,8 +580,6 @@ class Program(models.Model, CustomFormsLinkModel):
         students_dict = self.students(QObjects = True)
         if students_dict.has_key('classreg'):
             students_count = ESPUser.objects.filter(students_dict['classreg']).distinct().count()
-        elif students_dict.has_key('satprepinfo'):
-            students_count = ESPUser.objects.filter(students_dict['satprepinfo']).distinct().count()
         else:
             students_count = ESPUser.objects.filter(userbit__qsc=self.anchor['Confirmation']).distinct().count()
 
@@ -574,7 +588,6 @@ class Program(models.Model, CustomFormsLinkModel):
         return isfull
     isFull.depend_on_cache(lambda: ClassSection.num_students, lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
     isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
-    isFull.depend_on_row(lambda: SATPrepRegInfo, lambda reginfo: {'self': reginfo.program})
     isFull.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.qsc.name == 'Confirmation')
         
     def classes_node(self):
@@ -640,7 +653,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 result[c.name].timeslots = [c.event]
                 result[c.name].furnishings = c.associated_resources()
                 result[c.name].sequence = c.schedule_sequence(self)
-                result[c.name].prog_available_times = c.available_times(self.anchor)
+                result[c.name].prog_available_times = c.available_times_html(self.anchor)
             else:
                 result[c.name].timeslots.append(c.event)
             
@@ -700,6 +713,9 @@ class Program(models.Model, CustomFormsLinkModel):
             not intended to be used for classes (they're for lunch, photos, etc.)
         """
         return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).select_related('event_type').order_by('start')
+
+    def num_timeslots(self):
+        return len(self.getTimeSlots())
 
     #   In situations where you just want a list of all time slots in the program,
     #   that can be cached.
@@ -897,7 +913,6 @@ class Program(models.Model, CustomFormsLinkModel):
     # Feel free to adjust. -ageng 2010-10-23
     getModules_cached.depend_on_row(lambda: ClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
     getModules_cached.depend_on_row(lambda: StudentClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
-    getModules_cached.depend_on_row(lambda: SATPrepAdminModuleInfo, lambda modinfo: {'self': modinfo.module.program})
 
     def getModules(self, user = None, tl = None):
         """ Gets modules for this program, optionally attaching a user. """
@@ -1059,32 +1074,6 @@ class Program(models.Model, CustomFormsLinkModel):
     by_prog_inst.depend_on_row(lambda: DataTree, program_selector)
     by_prog_inst = classmethod(by_prog_inst)
     
-class BusSchedule(models.Model):
-    """ A scheduled bus journey associated with a program """
-    program = models.ForeignKey(Program)
-    src_dst = models.CharField(max_length=128)
-    departs = models.DateTimeField()
-    arrives = models.DateTimeField()
-
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_busschedule'
-
-    
-class TeacherParticipationProfile(models.Model):
-    """ Profile properties associated with a teacher in a program """
-    teacher = AjaxForeignKey(ESPUser)
-    program = models.ForeignKey(Program)
-    unique_together = (('teacher', 'program'),)
-    bus_schedule = models.ManyToManyField(BusSchedule)
-    can_help = models.BooleanField()
-
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_teacherparticipationprofile'
-
-    def __unicode__(self):
-        return 'Profile for ' + str(self.teacher) + ' in ' + str(self.program)
     
 class SplashInfo(models.Model):
     """ A model that can be used to track additional student preferences specific to
@@ -1148,41 +1137,6 @@ class SplashInfo(models.Model):
 
     def pretty_sunlunch(self):
         return self.pretty_version('lunchsun')
-
-
-class SATPrepRegInfo(models.Model):
-    """ SATPrep Registration Info """
-    old_math_score = models.IntegerField(blank=True, null=True)
-    old_verb_score = models.IntegerField(blank=True, null=True)
-    old_writ_score = models.IntegerField(blank=True, null=True)
-    diag_math_score = models.IntegerField(blank=True, null=True)
-    diag_verb_score = models.IntegerField(blank=True, null=True)
-    diag_writ_score = models.IntegerField(blank=True, null=True)
-    prac_math_score = models.IntegerField(blank=True, null=True)
-    prac_verb_score = models.IntegerField(blank=True, null=True)
-    prac_writ_score = models.IntegerField(blank=True, null=True)    
-    heard_by = models.CharField(max_length=128, blank=True, null=True)
-    user = AjaxForeignKey(ESPUser)
-    program = models.ForeignKey(Program)
-
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_satprepreginfo'
-        verbose_name = 'SATPrep Registration Info'
-
-    def __unicode__(self):
-        return 'SATPrep registration info for ' +str(self.user) + ' in '+str(self.program)
-    
-    @staticmethod
-    def getLastForProgram(user, program):
-        satPrepList = SATPrepRegInfo.objects.filter(user=user,program=program).order_by('-id')
-        if len(satPrepList) < 1:
-            satPrep = SATPrepRegInfo()
-            satPrep.user = user
-            satPrep.program = program
-        else:
-            satPrep = satPrepList[0]
-        return satPrep
 
 
 class RegistrationProfile(models.Model):
@@ -1922,4 +1876,4 @@ from esp.program.models.app_ import *
 
 # The following are only so that we can refer to them in caching Program.getModules.
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo
+from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo

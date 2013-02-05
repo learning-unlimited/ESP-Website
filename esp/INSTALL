@@ -81,12 +81,6 @@ We include two Python libraries that you can install: iCalendar and
 python-memcached.  These are located in the /esp/3rdparty directory.  
 Please unzip them and follow their respective installation instructions.
 
-Another Python library, sslauth, is used by default to allow HTTPS
-certificate authentication.  It is located in the /esp/3rdparty directory.
-To install it, add [path to working copy]/esp/3rdparty to your PYTHONPATH
-environment variable or copy the sslauth directory to someplace that is on
-the PYTHONPATH (e.g. /usr/local/lib/python2.6/dist-packages).
-
 2) Set up your database.
 
 a) Create a login role
@@ -171,14 +165,6 @@ and stylesheets to the active folders:
 $ cd ./public/media
 $ ln -s default_images images
 $ ln -s default_styles styles
-
-e) Make admin interface pretty
-
-You will need to add a symbolic link for the images and stylesheets used by
-the Django admin interface (/admin).  From the same directory (/public/media)
-as above:
-
-$ ln -s /var/lib/python-support/python2.5/django/contrib/admin/media admin
 
 
 4) Explore your site

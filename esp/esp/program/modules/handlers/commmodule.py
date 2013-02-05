@@ -34,8 +34,6 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
 from esp.web.util        import render_to_response
-from esp.program.modules.forms.satprep import SATPrepInfoForm
-from esp.program.models import SATPrepRegInfo
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController

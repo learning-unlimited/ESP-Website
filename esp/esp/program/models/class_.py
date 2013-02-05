@@ -852,6 +852,12 @@ class ClassSection(models.Model):
 
     def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
+
+        # Check if section is full
+        if checkFull and self.isFull():
+            scrmi = self.parent_class.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            return scrmi.temporarily_full_text
+
         # Test any scheduling constraints
         relevantConstraints = self.parent_program.getScheduleConstraints()
         #   relevantConstraints = ScheduleConstraint.objects.none()
@@ -1299,7 +1305,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     status = models.IntegerField(default=0)   
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
-
+    
     @cache_function
     def get_allowable_class_size_ranges(self):
         return self.allowable_class_size_ranges.all()
@@ -1332,7 +1338,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if len(self.get_sections()) <= 0:
             return "N/A"
         else:
-            return self.get_sections()[0].prettyrooms()
+            rooms = []
+        
+            for subj in self.get_sections():
+            	rooms.extend(subj.prettyrooms())
+       	    
+            return rooms
 
     def ascii_info(self):
         return self.class_info.encode('ascii', 'ignore')
@@ -1452,7 +1463,16 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         for s in self.get_sections():
             collapsed_times += s.friendly_times()
         return collapsed_times
+    
+    def prettyblocks(self):
+        blocks = []
         
+        for s in self.get_sections():
+            rooms = ", ".join(s.prettyrooms())
+            blocks += [(x + " in " + rooms) for x in s.friendly_times()]
+        
+        return blocks
+    
     def students_dict(self):
         result = PropertyDict({})
         for sec in self.get_sections():
@@ -1527,7 +1547,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         # SQL's cascading delete thing is sketchy --- if the anchor's corrupt,
         # we want webmin manual intervention
         if anchor and not anchor.name.endswith(str(self.id)):
-            raise ESPError("Tried to delete class %d with corrupt anchor." % self.id)
+            raise ESPError(), "Tried to delete class %d with corrupt anchor." % self.id
 
         if self.num_students() > 0 and not adminoverride:
             return False
@@ -1571,6 +1591,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return {'self': node.classsubject_set.all()[0]}
         return {}
     title.depend_on_row(lambda: DataTree, title_selector)
+    title.admin_order_field = 'anchor__friendly_name'	# Admin Panel Display Configuration
 
     @cache_function
     def teachers(self):

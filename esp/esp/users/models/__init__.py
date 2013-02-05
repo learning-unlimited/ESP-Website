@@ -524,11 +524,14 @@ class ESPUser(User, AnonymousUser):
         """ Clear this teacher's availability for a program """
         self.useravailability_set.filter(QTree(event__anchor__below=program.anchor)).delete()
 
-    def addAvailableTime(self, program, timeslot):
+    def addAvailableTime(self, program, timeslot, role=None):
         from esp.resources.models import Resource, ResourceType
         
         #   Because the timeslot has an anchor, the program is unnecessary.
-        new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot)
+        #   Default to teacher mode
+        if role is None:
+            role = GetNode('V/Flags/UserRole/Teacher')
+        new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot, role=role)
         new_availability.save()
         
     def convertAvailability(self):
@@ -1914,8 +1917,9 @@ class PasswordRecoveryTicket(models.Model):
         if self.user.username != username:
             return False
 
-        # Change the password
+        # Change the password, and activate the account
         self.user.set_password(password)
+        self.user.is_active = True
         self.user.save()
 
         # Invalidate all other tickets

@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 from esp.cache           import cache_function
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule, main_call, aux_call, _checkDeadline_helper
 from esp.program.modules import module_ext
 from esp.program.models  import Program
 from esp.program.controllers.confirmation import ConfirmationEmailController
@@ -296,9 +296,10 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['two'] = two
         context['coremodule'] = self
         context['scrmi'] = prog.getModuleExtension('StudentClassRegModuleInfo')
+        context['can_confirm'] = _checkDeadline_helper(None, '/Confirm', self, request, tl)[0]
         context['isConfirmed'] = self.program.isConfirmed(request.user)            
         context['have_paid'] = self.have_paid(request.user)
-        
+        context['extra_steps'] = "learn:extra_steps"
         context['printers'] = self.printer_names()
         
         if context['scrmi'] and context['scrmi'].use_priority:
@@ -320,7 +321,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
                       'section': ''})
 
         if self.request.user.isAdmin(self.program):
-            nav_bars.append({'link':'/learn/%s/studentreg.html' % (self.program.getUrlBase()),
+            nav_bars.append({'link':'/learn/%s/studentreg/' % (self.program.getUrlBase()),
                              'text':'%s Student Reg Inline Text' % self.program.niceSubName(),
                              'section': 'learn'})
 
