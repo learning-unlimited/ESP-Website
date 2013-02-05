@@ -134,12 +134,18 @@ class LotteryAssignmentController(object):
             if ts_day not in dates:
                 dates.append(ts_day)
         lunch_by_day = [[] for x in dates]
+        ts_count = 0
         for ts in lunch_timeslots:
             d = date(ts.start.year, ts.start.month, ts.start.day)
             lunch_by_day[dates.index(d)].append(ts.id)
             self.lunch_schedule[self.timeslot_indices[ts.id]] = True
-        self.lunch_timeslots = numpy.array(lunch_by_day)
-        
+        for i in range(len(lunch_by_day)):
+            if len(lunch_by_day[i]) > ts_count:
+                ts_count = len(lunch_by_day[i])
+        self.lunch_timeslots = numpy.zeros((len(lunch_by_day), ts_count), dtype=numpy.int32)
+        for i in range(len(lunch_by_day)):
+            self.lunch_timeslots[i, :len(lunch_by_day[i])] = numpy.array(lunch_by_day[i])
+
         now = datetime.now()
         
         #   Populate interest matrix
@@ -213,7 +219,7 @@ class LotteryAssignmentController(object):
         #   Check that this section does not cover all lunch timeslots on any given day
         lunch_overlap = self.lunch_schedule * self.section_schedules[si, :]
         for i in range(self.lunch_timeslots.shape[0]):
-            if self.lunch_timeslots[i].shape[0] != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i, :]]]) >= (self.lunch_timeslots.shape[1]):
+            if len(self.lunch_timeslots[i]) != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i]]]) >= (self.lunch_timeslots.shape[1]):
                 if self.options['stats_display']: print '   Section covered all lunch timeslots %s on day %d, aborting' % (self.lunch_timeslots[i, :], i)
                 return False
         
