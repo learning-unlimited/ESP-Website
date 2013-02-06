@@ -82,7 +82,7 @@ class AdminClass(ProgramModuleObj):
         if field_str == 'reg_status':
             return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
         if field_str == 'room':
-            room_choices = [(c.name, c.name) for c in self.program.groupedClassrooms()]
+            room_choices = list(self.program.getClassrooms().values_list('name','name').order_by('name').distinct())
             return [(None, 'Unassigned')] + room_choices
         if field_str == 'progress':
             return self.program.checkitems.all().values_list('id', 'title')
