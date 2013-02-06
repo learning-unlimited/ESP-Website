@@ -38,6 +38,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
+from esp.tagdict.models  import Tag
 from django.db.models.query       import Q
 from django.shortcuts import redirect
 from esp.middleware.threadlocalrequest import get_current_request
@@ -108,6 +109,8 @@ class FormstackMedliabModule(ProgramModuleObj):
         # Formstack forms
         # for now, just render a QSD page
         context = {}
+        context['formstack_id'] = Tag.getProgramTag('formstack_id', prog)
+        context['formstack_viewkey'] = Tag.getProgramTag('formstack_viewkey', prog)
         return render_to_response(self.baseDir()+'medliab.html',
                                   request, (prog, tl), context)
 
