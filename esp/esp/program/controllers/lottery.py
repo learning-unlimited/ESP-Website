@@ -155,11 +155,19 @@ class LotteryAssignmentController(object):
             if ts_day not in dates:
                 dates.append(ts_day)
         lunch_by_day = [[] for x in dates]
+        ts_count = 0
         for ts in lunch_timeslots:
             d = date(ts.start.year, ts.start.month, ts.start.day)
             lunch_by_day[dates.index(d)].append(ts.id)
             self.lunch_schedule[self.timeslot_indices[ts.id]] = True
-        self.lunch_timeslots = numpy.array(lunch_by_day)
+        for i in range(len(lunch_by_day)):
+            if len(lunch_by_day[i]) > ts_count:
+                ts_count = len(lunch_by_day[i])
+        self.lunch_timeslots = numpy.zeros((len(lunch_by_day), ts_count), dtype=numpy.int32)
+        for i in range(len(lunch_by_day)):
+            self.lunch_timeslots[i, :len(lunch_by_day[i])] = numpy.array(lunch_by_day[i])
+
+        now = datetime.now()
         
         #   Populate interest matrix
         interest_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Interested', end_date__gte=self.now).values_list('user__id', 'section__id').distinct()
@@ -208,7 +216,7 @@ class LotteryAssignmentController(object):
         
         #   Populate student grades; grade will be assumed to be 0 if not entered on profile
         self.student_grades = numpy.zeros((self.num_students,))
-        gradyear_pairs = numpy.array(RegistrationProfile.objects.filter(user__id__in=list(self.student_ids), most_recent_profile=True).values_list('user__id', 'student_info__graduation_year'), dtype=numpy.uint32)
+        gradyear_pairs = numpy.array(RegistrationProfile.objects.filter(user__id__in=list(self.student_ids), most_recent_profile=True, student_info__graduation_year__isnull=False).values_list('user__id', 'student_info__graduation_year'), dtype=numpy.uint32)
         self.student_grades[self.student_indices[gradyear_pairs[:, 0]]] = 12 + ESPUser.current_schoolyear() - gradyear_pairs[:, 1] + self.program.incrementGrade()
         
         #   Find section capacities (TODO: convert to single query)
@@ -253,7 +261,7 @@ class LotteryAssignmentController(object):
         #   Check that this section does not cover all lunch timeslots on any given day
         lunch_overlap = self.lunch_schedule * self.section_schedules[si, :]
         for i in range(self.lunch_timeslots.shape[0]):
-            if self.lunch_timeslots[i].shape[0] != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i, :]]]) >= (self.lunch_timeslots.shape[1]):
+            if len(self.lunch_timeslots[i]) != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i]]]) >= (self.lunch_timeslots.shape[1]):
                 if self.options['stats_display']: print '   Section covered all lunch timeslots %s on day %d, aborting' % (self.lunch_timeslots[i, :], i)
                 return False
         
@@ -504,11 +512,11 @@ class LotteryAssignmentController(object):
         assert(student_ids.shape == section_ids.shape)
         
         relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
-        for i in range(student_ids.shape[0]):
-            #   Note: can be switched to bulk_create once Django 1.4 is out
-            StudentRegistration.objects.create(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship)
-            if i % 1000 == 0 and debug_display:
-                print 'Created %d/%d registrations' % (i, student_ids.shape[0])
+        self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
+        StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
+        print "StudentRegistration enrollments all created to start at %s" % self.now
+        if debug_display:
+            print 'Created %d registrations' % student_ids.shape[0]
         
         self.update_mailman_lists()
     

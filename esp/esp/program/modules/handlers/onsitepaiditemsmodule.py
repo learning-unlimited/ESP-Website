@@ -41,7 +41,6 @@ from esp.users.models    import ESPUser, UserBit, User
 from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponseRedirect
-from esp.program.models import SATPrepRegInfo
 from esp.users.views    import search_for_user
 from esp.accounting_docs.models   import Document
 from esp.accounting_core.models   import LineItemType

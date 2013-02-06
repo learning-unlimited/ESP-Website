@@ -1,1 +1,0 @@
-ALTER TABLE modules_dbreceipt DROP CONSTRAINT modules_dbreceipt_program_id_key;

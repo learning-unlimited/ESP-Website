@@ -196,7 +196,14 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         if extension is not None:
             return super(StudentClassRegModule, self).deadline_met(extension)
         else:
-            return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass') or \
+            return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass')
+
+    def deadline_met_or_lottery_open(self, extension=None):
+        #   Allow default extension to be overridden if necessary
+        if extension is not None:
+            return self.deadline_met(extension)
+        else:
+            return self.deadline_met(extension) or \
                    super(StudentClassRegModule, self).deadline_met('/Classes/Lottery')
 
     def prepare(self, context={}):

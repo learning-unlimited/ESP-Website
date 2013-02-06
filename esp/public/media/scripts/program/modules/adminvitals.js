@@ -7,6 +7,7 @@ function fillStats(data)
     vitals = stats.vitals;
     categories = stats.categories;
     shirtnum = stats.shirtnum;
+    splashinfo = stats.splashinfo;
 
     // Fill in student num data
     $studentnum = $j("#stats_students > .module_group_body");
@@ -95,7 +96,7 @@ function fillStats(data)
     for (var i = 0; i < shirtnum.data.teachers.length; i++)
     {
 	var curDist = shirtnum.data.teachers[i];
-	console.log(curDist);
+	//  console.log(curDist);
 	html_string = html_string.concat("<tr><th class='smaller'>"+curDist.type+"</th>");
 	for (var j = 0; j < curDist.distribution.length; j++)
 	{
@@ -105,6 +106,39 @@ function fillStats(data)
     }
     html_string = html_string.concat("</table>");
     $tshirts.html(html_string);
+    
+    //  Fill in the lunch/sibling discount table
+    $splashinfo = $j("#stats_splashinfo > .module_group_body");
+    if (splashinfo)
+    {
+        $splashinfo.html("<p><ul>    \
+            <li>Saturday Lunch    \
+                <ul id=\"splashinfo_lunchsat_list\">    \
+                </ul>    \
+            </li>    \
+            <li>Sunday Lunch    \
+                <ul id=\"splashinfo_lunchsun_list\">    \
+                </ul>    \
+            </li>    \
+            <li>Sibling Discount    \
+                <ul id=\"splashinfo_siblings_list\">    \
+                </ul>    \
+            </li>    \
+            </ul>    \
+            </p>");
+        var splashinfo_keys = ["lunchsat", "lunchsun", "siblings"];
+        for (var i = 0; i < splashinfo_keys.length; i++)
+        {
+            var ul_top = $j("#splashinfo_" + splashinfo_keys[i] + "_list");
+            for (var key in splashinfo.data[splashinfo_keys[i]])
+            {
+                console.log(splashinfo_keys[i] + ": " + key + " -> " + splashinfo.data[splashinfo_keys[i]][key]);
+                ul_top.append("<li><b>" + key + "</b>: " + splashinfo.data[splashinfo_keys[i]][key]);
+            }
+        }
+    }
+    else
+        $splashinfo.html("SplashInfo module is not enabled -- no statistics");
 }
 
 function getStats()
