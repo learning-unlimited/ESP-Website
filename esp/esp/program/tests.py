@@ -987,7 +987,7 @@ class ModuleControlTest(ProgramFrameworkTest):
     def runTest(self):
         from esp.program.models import ProgramModule
         from esp.program.modules.base import ProgramModuleObj
-        from esp.program.modules.handlers.satprepmodule import SATPrepModule
+        from esp.program.modules.handlers.financialaidappmodule import FinancialAidAppModule
     
         #   Make all default modules non-required
         for pmo in self.program.getModules():
@@ -1004,17 +1004,17 @@ class ModuleControlTest(ProgramFrameworkTest):
         self.assertTrue('Steps for Registration' in response.content)
         
         #   Set a student module to be required and make sure we are shown it.
-        sat_module = ProgramModule.objects.filter(handler='SATPrepModule')[0]
-        moduleobj = ProgramModuleObj.getFromProgModule(self.program, sat_module)
+        fa_module = ProgramModule.objects.filter(handler='FinancialAidAppModule')[0]
+        moduleobj = ProgramModuleObj.getFromProgModule(self.program, fa_module)
         moduleobj.__class__ = ProgramModuleObj
         moduleobj.required = True
         moduleobj.save()
         
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
-        self.assertTrue('SAT Math Score' in response.content)
+        self.assertTrue('Financial Aid' in response.content)
         
         #   Remove the module and make sure we are not shown it anymore.
-        self.program.program_modules.remove(sat_module)
+        self.program.program_modules.remove(fa_module)
         self.program.save()
         
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())

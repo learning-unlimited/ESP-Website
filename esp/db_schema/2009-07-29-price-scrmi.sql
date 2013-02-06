@@ -1,1 +1,0 @@
-ALTER TABLE modules_studentclassregmoduleinfo ADD COLUMN register_from_catalog boolean;

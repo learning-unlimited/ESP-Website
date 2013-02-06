@@ -1,0 +1,26 @@
+{% extends "main.html" %}
+
+{% block title %}Teacher availability: {{ teacher_name }}{% endblock %}
+
+{% block subsection_name %}{{ teacher_name }}: availability in {{program.niceName}}{% endblock %}
+{% block content %}
+
+{% load main %}
+
+<h1>{{ teacher_name }}: availability in {{ program.niceName }}</h1>
+
+<ul>
+{% for t in available %}
+<li>{% if not t.2 %}<font color="red">{% endif %}{{ t.0 }} to {{ t.1 }}{% if not t.2 %}</font>{% endif %}</li>
+{% endfor %}
+</ul>
+<br /><br />
+
+<form method="GET" action="{{ request.path }}">
+Username: <input type="text" name="user" />
+<input type="submit" value="Search" />
+</form>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

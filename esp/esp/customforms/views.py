@@ -20,13 +20,17 @@ def test_func(user):
 
 @user_passes_test(test_func)
 def landing(request):
-    forms = Form.objects.filter(created_by=request.user)
+    forms = Form.objects.all().order_by('-date_created')
+    if not ESPUser(request.user).isAdministrator():
+        forms = forms.filter(created_by=request.user)
     return render_to_response("customforms/landing.html", {'form_list': forms}, context_instance=RequestContext(request))
 
 @user_passes_test(test_func)
 def formBuilder(request):
     prog_list = Program.objects.all()
-    form_list = Form.objects.filter(created_by=request.user)
+    form_list = Form.objects.all().order_by('-date_created')
+    if not ESPUser(request.user).isAdministrator():
+        form_list = form_list.filter(created_by=request.user)
     return render_to_response(
                             'customforms/index.html',
                             {'prog_list': prog_list, 'form_list': form_list, 'only_fkey_models': cf_cache.only_fkey_models.keys()}

@@ -145,15 +145,19 @@ class SchedulingModule(ProgramModuleObj):
     def force_availability(self, request, tl, one, two, module, extra, prog):
         teacher_dict = prog.teachers(QObjects=True)
         unavailable_teachers = ESPUser.objects.filter((teacher_dict['class_approved'] | teacher_dict['class_proposed']) & ~teacher_dict['availability']).distinct()
-
+        
         if request.method == 'POST':
             if request.POST.has_key('sure') and request.POST['sure'] == 'True':
                 
-                #   Find all teachers who have not indicated their availability and do it for them.
+                #   Use the ClassCreationController to send e-mail
+                from esp.program.controllers.classreg import ClassCreationController
+                ccc = ClassCreationController(prog)
+                
                 for teacher in unavailable_teachers:
                     for ts in prog.getTimeSlots():
-                        teacher.addAvailableTime(self.program, ts)
-                        
+                        teacher.addAvailableTime(prog, ts)
+                    ccc.send_availability_email(teacher, note='Availability was overridden by the program directors in order to make your class schedule feasible.  Please contact them for more information.')
+                    
                 return self.scheduling(request, tl, one, two, module, 'refresh', prog)
             else:
                 return self.scheduling(request, tl, one, two, module, '', prog)

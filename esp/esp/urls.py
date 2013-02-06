@@ -36,6 +36,8 @@ from django.conf.urls.defaults import patterns, include, handler500, handler404
 from django.contrib import admin
 from esp.admin import admin_site, autodiscover
 from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.generic.base import RedirectView
 
 from esp.section_data import section_redirect_keys, section_prefix_keys
@@ -47,10 +49,7 @@ handler404 = 'esp.web.util.main.error404'
 handler500 = 'esp.web.util.main.error500'
 
 # Static media
-urlpatterns = patterns('django.views.static',
-                       (r'^media/(?P<path>.*)$', 'serve', {'document_root': settings.MEDIA_ROOT}),
-                       (r'^admin/media/(?P<path>.*)$', 'serve', {'document_root': os.path.join(settings.PROJECT_ROOT, 'admin/media/')}),
-                       )
+urlpatterns = static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) + staticfiles_urlpatterns()
 
 # Admin stuff
 urlpatterns += patterns('',
@@ -116,8 +115,6 @@ urlpatterns += patterns('esp.qsd.views',
 
 # other apps
 urlpatterns += patterns('',
-#                        (r'^alumni/', include('esp.membership.alumni_urls')),
-#                        (r'^membership/', include('esp.membership.urls')),
                         (r'^',  include('esp.miniblog.urls')),
                         (r'^',  include('esp.survey.urls')),
                         )
