@@ -85,6 +85,8 @@ function fill_class_popup(clsid, classes_data) {
     .append("<p><b>Status:</b> " + status_string + "</p>")
     .append("<p><b>Sections:</b> " + class_info.sections.length + "</p>")
     .append("<p><b>Max Size:</b> " + class_info.class_size_max + "</p>")
+    .append("<p><b>Duration:</b> " + class_info.duration + "</p>")
+    .append("<p><b>Grade Range:</b> " + class_info.grade_range + "</p>")
     .append("<p><b>Category:</b> " + class_info.category + "</p>")
     //.append("<p>Difficulty: " + class_info.difficulty + "</p>")
     .append("<p><b>Prereqs:</b> " + class_info.prereqs + "</p>")
