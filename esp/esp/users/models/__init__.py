@@ -455,16 +455,13 @@ class ESPUser(User, AnonymousUser):
             raise ESPError(False), '"%s %s": Unknown User' % (first, last)
         return users[num]
 
-    @staticmethod
+    @cache_function
     def getTypes():
         """ Get a list of the different roles an ESP user can have. By default there are five roles,
             but there can be more. (Returns ['Student','Teacher','Educator','Guardian','Volunteer'] by default. """
-
-        if not hasattr(ESPUser, '_getTypes'):
-        # The data returned by this function will almost never change,
-        # so cache the return value.
-            ESPUser._getTypes = [x[0] for x in ESPUser.getAllUserTypes()]
-        return ESPUser._getTypes
+        return [x[0] for x in ESPUser.getAllUserTypes()]
+    getTypes.depend_on_model(Tag)
+    getTypes = staticmethod(getTypes)
 
     @staticmethod
     def getAllOfType(strType, QObject = True):
@@ -856,23 +853,22 @@ class ESPUser(User, AnonymousUser):
 
     isAdmin = isAdministrator
 
-    @staticmethod
+    @cache_function
     def getAllUserTypes():
-        if not hasattr(ESPUser, '_getAllUserTypes'):
-        # The data returned by this function will almost never change,
-        # so cache the return value.
-            tag_data = Tag.getTag('user_types')
-            result = DEFAULT_USER_TYPES
-            result_labels = [x[0] for x in result]
-            if tag_data:
-                json_data = json.loads(tag_data)
-                for entry in json_data:
-                    if entry[0] not in result_labels:
-                        result.append(entry)
-                    else:
-                        result[result_labels.index(entry[0])][1] = entry[1]
-            ESPUser._getAllUserTypes = result
-        return ESPUser._getAllUserTypes
+        tag_data = Tag.getTag('user_types')
+        result = DEFAULT_USER_TYPES
+        result_labels = [x[0] for x in result]
+        if tag_data:
+            print tag_data
+            json_data = json.loads(tag_data)
+            for entry in json_data:
+                if entry[0] not in result_labels:
+                    result.append(entry)
+                else:
+                    result[result_labels.index(entry[0])][1] = entry[1]
+        return result
+    getAllUserTypes.depend_on_model(Tag)
+    getAllUserTypes = staticmethod(getAllUserTypes)
 
     def getUserTypes(self):
         """ Return the set of types for this user """
