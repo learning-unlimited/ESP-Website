@@ -1003,7 +1003,7 @@ class ClassSection(models.Model):
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
 
-    def cancel(self, email_students=True, explanation=None):
+    def cancel(self, email_students=True, explanation=None, unschedule=True):
         from django.conf import settings
         from django.contrib.sites.models import Site
         from esp.dbmail.models import send_mail
@@ -1033,7 +1033,12 @@ class ClassSection(models.Model):
         send_mail(email_title, email_content, from_email, to_email)
 
         self.clearStudents()
-    
+
+        #   If specified, remove the class's time and room assignment.
+        if unschedule:
+            self.clearRooms()
+            self.meeting_times.clear()
+
         self.status = -20
         self.save()
 
