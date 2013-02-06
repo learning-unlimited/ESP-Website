@@ -94,7 +94,7 @@ function json_fetch_complete(components, on_complete, data, data_fetch_status)
 {
     if (check_json_status(components, data_fetch_status))
     {
-        console.log("Completed fetch of: " + components);
+        //  console.log("Completed fetch of: " + components);
         on_complete(data);
     }
     else

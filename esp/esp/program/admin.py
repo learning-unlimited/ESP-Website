@@ -37,8 +37,8 @@ from django.db.models import ManyToManyField
 
 from esp.admin import admin_site
 
-from esp.program.models import ProgramModule, ArchiveClass, Program, BusSchedule
-from esp.program.models import TeacherParticipationProfile, SATPrepRegInfo, RegistrationProfile
+from esp.program.models import ProgramModule, ArchiveClass, Program
+from esp.program.models import RegistrationProfile
 from esp.program.models import TeacherBio, FinancialAidRequest, SplashInfo
 from esp.program.models import VolunteerRequest, VolunteerOffer
 
@@ -72,16 +72,6 @@ class ProgramAdmin(admin.ModelAdmin):
             kwargs['widget'] = admin.widgets.FilteredSelectMultiple(verbose_name='', is_stacked=False)
         return super(ProgramAdmin, self).formfield_for_dbfield(db_field,**kwargs)
 admin_site.register(Program, ProgramAdmin)
-
-admin_site.register(BusSchedule)
-admin_site.register(TeacherParticipationProfile)
-
-class SATPrepRegInfoAdmin(admin.ModelAdmin):
-    list_display = ('user', 'program')
-    #list_filter = ('program',)
-    search_fields = ['user__username']
-    pass
-admin_site.register(SATPrepRegInfo, SATPrepRegInfoAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'contact_user', 'program')
