@@ -328,6 +328,8 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             'prereqs': cls.prereqs, 
             'sections': [x.id for x in cls.sections.all()],
             'class_size_max': cls.class_size_max,
+            'duration': cls.prettyDuration(),
+            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
         }
 
         return {return_key: [return_dict]}
