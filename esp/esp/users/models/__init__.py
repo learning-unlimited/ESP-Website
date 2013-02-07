@@ -392,8 +392,7 @@ class ESPUser(User, AnonymousUser):
             anchor__userbit_qsc__user=self,
             anchor__userbit_qsc__startdate__lte=when,
             anchor__userbit_qsc__enddate__gte=when,
-            status__gt=-10, #This removes rejected classes
-        ).distinct()
+        ).distinct().exclude(status=-10)
     getTaughtClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
                                                       lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
                                                                   bit.qsc.parent.name == 'Classes' and
