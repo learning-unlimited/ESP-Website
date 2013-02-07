@@ -298,13 +298,6 @@ def find_user(userstr):
             return found_users
         # else, not an e-mail either.  Oh well.
 
-    # Fourth, try titles of courses a teacher has taught?
-    found_users = ESPUser.objects.filter(userbit__qsc__friendly_name__icontains=userstr).distinct()
-    if len(found_users) == 1:
-        return found_users[0]
-    elif len(found_users) > 1:
-        return found_users
-
     # Maybe it's a name?
     # Let's do some playing.
 
@@ -354,6 +347,14 @@ def find_user(userstr):
         return found_users[0]
     elif len(found_users) > 1:
         return found_users
+
+    # lastly, try titles of courses a teacher has taught?
+    found_users = ESPUser.objects.filter(userbit__qsc__friendly_name__icontains=userstr).distinct()
+    if len(found_users) == 1:
+        return found_users[0]
+    elif len(found_users) > 1:
+        return found_users
+    
     # else, we found no one.  Oops.
 
     # Well, we fail.  Sorry.
