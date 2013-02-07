@@ -1,6 +1,6 @@
 #!/bin/bash
 
-PROGRAM="Spark"
+PROGRAM="Splash"
 INSTANCE="2012"
 
 echo "What printer do you want to print to? (lpr printer name)"

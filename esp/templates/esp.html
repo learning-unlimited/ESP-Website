@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+<!-- Concept of potential new website main.html template, by Andrew Geng -->
+	<title>Discover ESP!</title>
+	<style type="text/css">
+		/* Vertical segmentation of the page */
+		#pageheader, #pagemain, #pagefooter {
+			width: 100%;
+			overflow: auto;
+			margin-top: 1em;
+		}
+		/* Horizontal segmentation */
+		#logo, #nav {
+			float: left;
+			width: 12em;
+		}
+		#rootnav, #content, #contact {
+			margin-left: 13em;
+		}
+
+		/* Contact info placement */
+		#postal_address {
+			float: left;
+		}
+		#contact_links {
+			float: right;
+			text-align: right;
+		}
+		#contact_links > ul {
+			list-style-type: none;
+			margin: 0em;
+		}
+
+		/* Logo styling */
+		#logo img {
+			width: 12em;
+			height: 12em;
+			vertical-align: middle; /* Without this, the image has an extra stripe of margin below */
+		}
+
+		/* Root nav layout */
+		#programlist > ul {
+			list-style-type: none;
+			margin: 0em;
+		}
+		#programlist > ul > li {
+			display: inline-block;
+			margin: 1em;
+		}
+		#login {
+			/* clear: both; */
+		}
+
+		/* ??? */
+		.clear {
+			clear: both;
+		}
+
+		/* Rudimentary coloring */
+		#programlist > ul > li, #login, #nav, #content, #contact {
+			background: #cfc;
+		}
+	</style>
+</head>
+
+<body>
+<div id="pageheader">
+	<div id="logo">
+		<a href="/"><img src="esp.png" /></a>
+	</div>
+	<div id="rootnav">
+		<div id="programlist">
+			<ul>
+				<li><a href="">Splash</a></li>
+				<li><a href="">Spark</a></li>
+				<li><a href="">HSSP</a></li>
+				<li><a href="">Junction</a></li>
+				<li><a href="">Delve</a></li>
+			</ul>
+		</div>
+		<div id="login">
+			<ul>
+				<li>Sign in / You are signed in as pikachu.</li>
+				<li>Go to <a href="/learn/index.html">the student site</a></li>
+			</ul>
+		</div>
+	</div>
+</div>
+<div id="pagemain">
+	<div id="nav">
+		<ul>
+			<li><a href="">Go somewhere</a></li>
+			<li><a href="">Go nowhere</a></li>
+			<li><a href="">Go anywhere</a></li>
+			<li><a href="">Go everywhere</a></li>
+		</ul>
+	</div>
+	<div id="content">Cthulhu fhtagn. We run a bunch of programs including cool classes like "49 reasons why California is better than your state."</div>
+</div>
+<div id="pagefooter">
+	<div id="contact">
+		<div id="postal_address">
+			<div>MIT Educational Studies Program</div>
+			<div>84 Massachusetts Avenue, Room W20-467</div>
+			<div>Cambridge, MA 02139</div>
+		</div>
+		<div id="contact_links">
+			<ul>
+				<li>E-mail: <a href="mailto:esp@mit.edu">esp@mit.edu</a></li>
+				<li><a href="/contact.html">contact us</a></li>
+				<li><a href="/faq.html">FAQ</a></li>
+			</ul>
+		</div>
+		<br class="clear" />
+	</div>
+</div>
+
+</body>
+
+</html>

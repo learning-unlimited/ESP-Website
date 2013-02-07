@@ -1,0 +1,27 @@
+
+Dear {{ user.first_name }},
+
+Thank you for registering for Harvard HSSP 2010!  This is a preliminary 
+confirmation email for your HSSP registration; you can come back and 
+change your classes and access online payment until registration closes 
+on February 2. Please come to HSSP on the first day, Saturday, February 
+6, to complete your registration. (If you are unable to come to this 
+first day, please email the HSSP director at lkim@fas.harvard.edu)
+
+Please note that if you have signed up for a class with an application 
+question, you MUST answer the application question. Registration for 
+application questions will be closed on Friday, January 15. Students 
+will be notified about their acceptance by Tuesday, January 19. If there 
+are still spots in these classes, students will be accepted on a rolling 
+basis. The following questions have application questions:
+
+*H3127: The Beatles: A Musical and Social History
+*H3135: Reading Between the Lines: The Art of Interpretation
+*H3150: Perspectives: Analytical Studies of History and Events
+*S3133: Introduction to Special Relativity
+*S3142: African Wildlife Biology
+
+You will be able to change the answers to application questions until 
+January 8.
+
+Harvard ESP Team

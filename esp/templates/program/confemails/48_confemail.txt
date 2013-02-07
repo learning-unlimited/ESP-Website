@@ -1,0 +1,10 @@
+Dear {{ user.first_name }},
+
+Thank you for registering for SATPrep!  This is a preliminary confirmation email for your SATPrep registration; you can come back and apply for financial aid or access online payment until registration closes.
+
+If you have not yet paid and are not receiving financial aid, you can either pay by credit card online or on the day of the diagnostic by cash or check.
+
+Beth Schaffer
+Tony Valderrama
+SATPrep Directors
+

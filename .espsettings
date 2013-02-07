@@ -1,0 +1,3 @@
+#!/bin/bash
+SITENAME="esp"
+DEPDIR="//dependencies"

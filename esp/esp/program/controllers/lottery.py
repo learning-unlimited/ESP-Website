@@ -166,8 +166,6 @@ class LotteryAssignmentController(object):
         self.lunch_timeslots = numpy.zeros((len(lunch_by_day), ts_count), dtype=numpy.int32)
         for i in range(len(lunch_by_day)):
             self.lunch_timeslots[i, :len(lunch_by_day[i])] = numpy.array(lunch_by_day[i])
-
-        now = datetime.now()
         
         #   Populate interest matrix
         interest_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Interested', end_date__gte=self.now).values_list('user__id', 'section__id').distinct()
@@ -467,7 +465,7 @@ class LotteryAssignmentController(object):
             weight = math.sqrt((self.student_utility_weights[i]))
             weighted_overall_utility += utility*weight
             sum_of_weights += weight
-            screwed_students.append(((1+utility)/(1+weight), self.student_ids(i)))
+            screwed_students.append(((1+utility)/(1+weight), self.student_ids[i]))
             
         overall_utility = weighted_overall_utility/sum_of_weights
         screwed_students.sort()
@@ -547,4 +545,35 @@ class LotteryAssignmentController(object):
                     for list_name in list_names:
                         add_list_member(list_name, student.email)
                     add_list_member("%s_%s-students" % (self.program.anchor.parent.name, self.program.anchor.name), student.email)
+                    
+    def tune_parameters(self, params_list, num_runs=20):
+        max_indiv_utility = 0
+        max_indiv_params = (0, 0)
+        max_avg_utility = 0
+        max_avg_params = (0, 0)
+        for i in range(len(params_list)):
+            indiv_utility = 0
+            self.options['Ki'] = params_list[i][0]
+            self.options['Kp'] = params_list[i][1]
+            total_utility = 0
+            print "Running", params_list[i]
+            for j in range(num_runs):
+                self.compute_assignments()
+                s = self.compute_stats()
+                print "\trun:", s['overall_utility']
+                if s['overall_utility'] > indiv_utility:
+                    indiv_utility = s['overall_utility']
+                total_utility += s['overall_utility']
+            avg_utility = total_utility / float(num_runs)
+            print params_list[i], avg_utility, indiv_utility
+            if (avg_utility > max_avg_utility):
+                max_avg_utility = avg_utility
+                max_avg_params = params_list[i]
+            if (indiv_utility > max_indiv_utility):
+                max_indiv_utility = indiv_utility
+                max_indiv_params = params_list[i]
+        self.options['Ki'] = max_indiv_params[0]
+        self.options['Kp'] = max_indiv_params[1]
+        print "Max params (avg):", max_avg_params, max_avg_utility
+        print "Max params (indiv):", max_indiv_params, max_indiv_utility
         

@@ -48,7 +48,7 @@ function scroll()
         if($(categories[next_category]).position().top < -scroll_offset + 48){
             $(".fixed_header2").css("top", $(categories[next_category]).position().top + scroll_offset - 24);
         }
-        if($(categories[next_category]).position().top < -scroll_offset + 24){
+        while(categories[next_category] && $(categories[next_category]).position().top < -scroll_offset + 24){
             $(".fixed_header2").removeClass("fixed_header2").css("top", "");
             $(categories[next_category]).addClass("fixed_header2");
             next_category++;
