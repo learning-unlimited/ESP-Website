@@ -7,3 +7,9 @@ loop will restart it. It seems likely to work to catch the exception and do a
 django.db.close(). I believe that Django will automatically reopen the
 connection when needed. Until that change is made, though, we just restart the
 server.
+
+Why the subdirectory?
+The socket_auth subdirectory exists (probably) because the socket needs to be
+writable by the mit-treasury user (which Remit runs as). Rather than let the
+mit-treasury user write everything in useful_scripts, we create a subdirectory
+and let it write only that.
