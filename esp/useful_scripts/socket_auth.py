@@ -1,8 +1,10 @@
 #!/usr/bin/python
 
-import sys
-import os
 import datetime
+import os
+import os.path
+import stat
+import sys
 import traceback
 
 if __name__ == '__main__':
@@ -34,7 +36,16 @@ socket_path = sys.argv[1]
 
 def server(socket_path):
     server_sock = socket.socket(socket.AF_UNIX)
-    server_sock.bind(socket_path)
+    try:
+        server_sock.bind(socket_path)
+    except socket.error, e:
+        if e.errno == 98 and stat.S_ISSOCK(os.stat(socket_path).st_mode):
+            print "Removing socket and retrying..."
+            os.unlink(socket_path)
+            server_sock.bind(socket_path)
+        else:
+            print "bind: Unexpected error or not a socket"
+            raise
     server_sock.listen(2)
     while True:
         try:
