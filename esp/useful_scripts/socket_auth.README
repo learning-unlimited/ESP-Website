@@ -2,7 +2,8 @@ To start socket_auth, as www-data-mit (or appropriate user), run:
 (umask 002; while true; do rm -f socket_auth/socket_auth.sock; ./socket_auth.py socket_auth/socket_auth.sock; done )
 
 
-To fix connection issue:
-It seems likely to work to catch the exception, do a django.db.close(). I believe that Django will automatically reopen the connection when needed.
-
-Until the code change is made, just restart the server.
+Currently, if the postgres connection dies, socket_auth.py will exit, and the
+loop will restart it. It seems likely to work to catch the exception and do a
+django.db.close(). I believe that Django will automatically reopen the
+connection when needed. Until that change is made, though, we just restart the
+server.
