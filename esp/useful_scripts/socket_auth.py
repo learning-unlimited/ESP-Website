@@ -49,7 +49,7 @@ def server(socket_path):
     server_sock.listen(2)
     while True:
         try:
-            print ">>> accept()", datetime.datetime.now()
+            print ">>> accept() @ %s" % (datetime.datetime.now(), )
             conn, address = server_sock.accept()
             data = conn.makefile().read()
             args = data.strip().split('\n')
