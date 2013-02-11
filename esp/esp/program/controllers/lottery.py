@@ -33,7 +33,6 @@ Learning Unlimited, Inc.
 """
 
 import numpy
-
 assert numpy.version.short_version >= "1.7.0"
 
 import numpy.random
