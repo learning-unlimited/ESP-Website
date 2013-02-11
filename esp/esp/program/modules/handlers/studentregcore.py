@@ -227,7 +227,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     @aux_call
     @needs_student
     @meets_grade    
-    @meets_deadline()
+    @meets_deadline('/Cancel')
     def cancelreg(self, request, tl, one, two, module, extra, prog):
         self.request = request
 
