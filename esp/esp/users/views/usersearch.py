@@ -296,17 +296,9 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
         if (request.GET.has_key('listokay') and request.GET['listokay'] == 'true') or \
            (request.GET.has_key('submitform') and request.GET['submitform'] == 'Use Filtered List'):
-            Q_Filter = None
-            if not hasattr(Q_include, 'old'):
-                Q_Filter = Q_include
-                if not hasattr(Q_exclude, 'old'):
-                    Q_Filter &= ~Q_exclude
-            else:
-                if not hasattr(Q_exclude, 'old'):
-                    Q_Filter = ~Q_exclude
-            
+            Q_Filter = Q(id__in=QSUsers.values_list('id', flat=True))
             return (Q_Filter, True)
-        
+
         context = {'users': users, 'extra':str(extra), 'list': returnList}
 
         return (render_to_response('users/userpick.html', request, None, context), False)
