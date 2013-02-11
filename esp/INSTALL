@@ -55,7 +55,6 @@ reversion       Python 1.5.1            https://github.com/etianen/django-revers
 selenium	Python (easy_install)	N/A
 django-selenium	Python (easy_install)	0.3
 django-selenium-test-runner	Python (easy_install)	N/A
-django-formwizard    Python (pip)        N/A
 
 selenium-server-standalone	System	http://selenium.googlecode.com/files/selenium-server-standalone-2.9.0.jar
 

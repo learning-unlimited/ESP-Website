@@ -220,7 +220,6 @@ INSTALLED_APPS = (
     'django_extensions',
     'reversion',
     'south',
-    'formwizard',
     'form_utils',
     'esp.seltests',
     'esp.dataviews',

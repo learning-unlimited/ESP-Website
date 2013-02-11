@@ -82,7 +82,7 @@ class AdminClass(ProgramModuleObj):
         if field_str == 'reg_status':
             return (('', 'Leave unchanged'), (0, 'Open'), (10, 'Closed'))
         if field_str == 'room':
-            room_choices = [(c.name, c.name) for c in self.program.groupedClassrooms()]
+            room_choices = list(self.program.getClassrooms().values_list('name','name').order_by('name').distinct())
             return [(None, 'Unassigned')] + room_choices
         if field_str == 'progress':
             return self.program.checkitems.all().values_list('id', 'title')
@@ -335,7 +335,7 @@ class AdminClass(ProgramModuleObj):
                 cls_cancel_form.is_bound = True
                 if cls_cancel_form.is_valid():
                     #   Call the Class{Subject,Section}.cancel() method to e-mail and remove students, etc.
-                    cls_cancel_form.cleaned_data['target'].cancel(email_students=True, explanation=cls_cancel_form.cleaned_data['explanation'])
+                    cls_cancel_form.cleaned_data['target'].cancel(email_students=True, include_lottery_students=cls_cancel_form.cleaned_data['email_lottery_students'], explanation=cls_cancel_form.cleaned_data['explanation'])
                     cls_cancel_form = None
             else:
                 j = 0
@@ -344,7 +344,7 @@ class AdminClass(ProgramModuleObj):
                         sec_cancel_forms[j].data = request.POST
                         sec_cancel_forms[j].is_bound = True
                         if sec_cancel_forms[j].is_valid():
-                            sec_cancel_forms[j].cleaned_data['target'].cancel(email_students=True, explanation=sec_cancel_forms[j].cleaned_data['explanation'])
+                            sec_cancel_forms[j].cleaned_data['target'].cancel(email_students=True, include_lottery_students=sec_cancel_forms[j].cleaned_data['email_lottery_students'], explanation=sec_cancel_forms[j].cleaned_data['explanation'])
                             sec_cancel_forms[j] = None
                     j += 1
         
