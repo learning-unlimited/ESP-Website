@@ -134,7 +134,7 @@ When there are already accounts with this email address (depending on some tags)
                     { 'accounts': existing_accounts,'awaitings':awaiting_activation_accounts, 'email':form.cleaned_data['email'], 'site': Site.objects.get_current(), 'form': form })    
 
         #form is valid, and not caring about multiple accounts
-        email=urllib.quote_plus(form.cleaned_data['email'])
+        email = urllib.quote(form.cleaned_data['email'])
         return HttpResponseRedirect(reverse('users.views.user_registration_phase2')+'?email='+email)
     else: #form is not valid
         return render_to_response('registration/newuser_phase1.html',
@@ -176,7 +176,7 @@ def user_registration_phase2(request):
         return HttpResponseRedirect(reverse("users.views.user_registration_phase1"))
 
     try:
-        email = urllib.unquote_plus(request.GET['email'])
+        email = urllib.unquote(request.GET['email'])
     except MultiValueDictKeyError:
         return HttpResponseRedirect(reverse("users.views.user_registration_phase1"))
     form = UserRegForm(initial={'email':email,'confirm_email':email})
