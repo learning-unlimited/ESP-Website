@@ -283,6 +283,20 @@ class Program(models.Model, CustomFormsLinkModel):
         app_label = 'program'
         db_table = 'program_program'
 
+    USER_TYPES_WITH_LIST_FUNCS  = ['Student', 'Teacher', 'Volunteer']   # user types that have ProgramModule user filters
+    USER_TYPE_LIST_FUNCS        = [user_type.lower()+'s' for user_type in USER_TYPES_WITH_LIST_FUNCS]   # the names of these filter methods, e.g. students(), teachers(), volunteers()
+    USER_TYPE_LIST_NUM_FUNCS    = ['num_'+user_type for user_type in USER_TYPE_LIST_FUNCS]  # the names of the num methods, e.g. num_students(), num_teachers()
+    USER_TYPE_LIST_DESC_FUNCS   = [user_type.lower()+'Desc' for user_type in USER_TYPES_WITH_LIST_FUNCS]    # the names of the description methods, e.g. studentDesc(), teacherDesc()
+
+    def __init__(self, *args, **kwargs):
+        super(Program, self).__init__(*args, **kwargs)
+
+        # Setup for the ProgramModule user filters
+        if not hasattr(Program, Program.USER_TYPE_LIST_FUNCS[0]):
+            for i, user_type in enumerate(Program.USER_TYPE_LIST_FUNCS):
+                setattr(Program, user_type, Program.get_users_from_module(user_type))
+                setattr(Program, Program.USER_TYPE_LIST_NUM_FUNCS[i], Program.counts_from_query_dict(getattr(Program, user_type)))
+
     @cache_function
     def isUsingStudentApps(self):
         from esp.program.models.app_ import StudentAppQuestion
@@ -374,6 +388,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
         return ''
     
+    @staticmethod
     def get_users_from_module(method_name):
         def get_users(self, QObjects=False):
             modules = self.getModules(None)
@@ -383,14 +398,14 @@ class Program(models.Model, CustomFormsLinkModel):
                 if tmpusers is not None:
                     users.update(tmpusers)
             return users
+        get_users.__name__  = method_name
+        get_users.__doc__   = "Returns a dictionary of different sets of %s for this program, as defined by the enabled ProgramModules" % method_name
         return get_users
-    teachers = get_users_from_module('teachers')
-    students = get_users_from_module('students')
-    volunteers = get_users_from_module('volunteers')
 
+    @staticmethod
     def counts_from_query_dict(query_func):
-        def _get_num(self, QObjects=True):
-            result = query_func(self, QObjects)
+        def _get_num(self):
+            result = query_func(self, QObjects=False)
             result_dict = {}
             for key, value in result.iteritems():
                 if isinstance(value, QuerySet):
@@ -398,9 +413,9 @@ class Program(models.Model, CustomFormsLinkModel):
                 else:
                     result_dict[key] = len(value)
             return result_dict
+        _get_num.__name__   = "num_" + query_func.__name__
+        _get_num.__doc__    = "Returns a dictionary of the sizes of the various sets of %s that are returned by Program.%s()" % (query_func.__name__, query_func.__name__)
         return _get_num
-    num_students = counts_from_query_dict(students)
-    num_teachers = counts_from_query_dict(teachers)
 
     @cache_function
     def capacity_by_section_id(self):
@@ -462,9 +477,8 @@ class Program(models.Model, CustomFormsLinkModel):
     def getListDescriptions(self):
         desc = {}
         modules = self.getModules()
-        desc_functions = ['studentDesc', 'teacherDesc', 'volunteerDesc']
         for module in modules:
-            for func in desc_functions:
+            for func in Program.USER_TYPE_LIST_DESC_FUNCS:
                 if hasattr(module, func):
                     tmpdict = getattr(module, func)()
                     if tmpdict is not None:
@@ -492,9 +506,7 @@ class Program(models.Model, CustomFormsLinkModel):
             if k in lists:
                 lists[k]['description'] = v
                 
-        usertypes = ['Student', 'Teacher', 'Guardian', 'Educator', 'Volunteer']
-
-        for usertype in usertypes:
+        for usertype in ESPUser.getTypes():
             lists['all_'+usertype.lower()+'s'] = {'description':
                                    usertype+'s in all of ESP',
                                    'list' : ESPUser.getAllOfType(usertype)}
@@ -534,12 +546,28 @@ class Program(models.Model, CustomFormsLinkModel):
     def teachers_union(self, QObject = False):
         import operator
         if len(self.teachers().values()) == 0:
-            return []
+            if QObject:
+                return Q(id = -1)
+            else:
+                return ESPUser.objects.filter(id = -1)
         union = reduce(operator.or_, [x for x in self.teachers(True).values() ])
         if QObject:
             return union
         else:
-            return ESPUser.objects.filter(union).distinct()    
+            return ESPUser.objects.filter(union).distinct()   
+ 
+    def volunteers_union(self, QObject = False):
+        import operator
+        if len(self.volunteers().values()) == 0:
+            if QObject:
+                return Q(id = -1)
+            else:
+                return ESPUser.objects.filter(id = -1)
+        union = reduce(operator.or_, [x for x in self.volunteers(True).values() ])
+        if QObject:
+            return union
+        else:
+            return ESPUser.objects.filter(union).distinct()
 
     @cache_function
     def isFull(self):
@@ -552,8 +580,6 @@ class Program(models.Model, CustomFormsLinkModel):
         students_dict = self.students(QObjects = True)
         if students_dict.has_key('classreg'):
             students_count = ESPUser.objects.filter(students_dict['classreg']).distinct().count()
-        elif students_dict.has_key('satprepinfo'):
-            students_count = ESPUser.objects.filter(students_dict['satprepinfo']).distinct().count()
         else:
             students_count = ESPUser.objects.filter(userbit__qsc=self.anchor['Confirmation']).distinct().count()
 
@@ -562,7 +588,6 @@ class Program(models.Model, CustomFormsLinkModel):
         return isfull
     isFull.depend_on_cache(lambda: ClassSection.num_students, lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
     isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
-    isFull.depend_on_row(lambda: SATPrepRegInfo, lambda reginfo: {'self': reginfo.program})
     isFull.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.qsc.name == 'Confirmation')
         
     def classes_node(self):
@@ -888,7 +913,6 @@ class Program(models.Model, CustomFormsLinkModel):
     # Feel free to adjust. -ageng 2010-10-23
     getModules_cached.depend_on_row(lambda: ClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
     getModules_cached.depend_on_row(lambda: StudentClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
-    getModules_cached.depend_on_row(lambda: SATPrepAdminModuleInfo, lambda modinfo: {'self': modinfo.module.program})
 
     def getModules(self, user = None, tl = None):
         """ Gets modules for this program, optionally attaching a user. """
@@ -1050,32 +1074,6 @@ class Program(models.Model, CustomFormsLinkModel):
     by_prog_inst.depend_on_row(lambda: DataTree, program_selector)
     by_prog_inst = classmethod(by_prog_inst)
     
-class BusSchedule(models.Model):
-    """ A scheduled bus journey associated with a program """
-    program = models.ForeignKey(Program)
-    src_dst = models.CharField(max_length=128)
-    departs = models.DateTimeField()
-    arrives = models.DateTimeField()
-
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_busschedule'
-
-    
-class TeacherParticipationProfile(models.Model):
-    """ Profile properties associated with a teacher in a program """
-    teacher = AjaxForeignKey(ESPUser)
-    program = models.ForeignKey(Program)
-    unique_together = (('teacher', 'program'),)
-    bus_schedule = models.ManyToManyField(BusSchedule)
-    can_help = models.BooleanField()
-
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_teacherparticipationprofile'
-
-    def __unicode__(self):
-        return 'Profile for ' + str(self.teacher) + ' in ' + str(self.program)
     
 class SplashInfo(models.Model):
     """ A model that can be used to track additional student preferences specific to
@@ -1139,41 +1137,6 @@ class SplashInfo(models.Model):
 
     def pretty_sunlunch(self):
         return self.pretty_version('lunchsun')
-
-
-class SATPrepRegInfo(models.Model):
-    """ SATPrep Registration Info """
-    old_math_score = models.IntegerField(blank=True, null=True)
-    old_verb_score = models.IntegerField(blank=True, null=True)
-    old_writ_score = models.IntegerField(blank=True, null=True)
-    diag_math_score = models.IntegerField(blank=True, null=True)
-    diag_verb_score = models.IntegerField(blank=True, null=True)
-    diag_writ_score = models.IntegerField(blank=True, null=True)
-    prac_math_score = models.IntegerField(blank=True, null=True)
-    prac_verb_score = models.IntegerField(blank=True, null=True)
-    prac_writ_score = models.IntegerField(blank=True, null=True)    
-    heard_by = models.CharField(max_length=128, blank=True, null=True)
-    user = AjaxForeignKey(ESPUser)
-    program = models.ForeignKey(Program)
-
-    class Meta:
-        app_label = 'program'
-        db_table = 'program_satprepreginfo'
-        verbose_name = 'SATPrep Registration Info'
-
-    def __unicode__(self):
-        return 'SATPrep registration info for ' +str(self.user) + ' in '+str(self.program)
-    
-    @staticmethod
-    def getLastForProgram(user, program):
-        satPrepList = SATPrepRegInfo.objects.filter(user=user,program=program).order_by('-id')
-        if len(satPrepList) < 1:
-            satPrep = SATPrepRegInfo()
-            satPrep.user = user
-            satPrep.program = program
-        else:
-            satPrep = satPrepList[0]
-        return satPrep
 
 
 class RegistrationProfile(models.Model):
@@ -1913,4 +1876,4 @@ from esp.program.models.app_ import *
 
 # The following are only so that we can refer to them in caching Program.getModules.
 from esp.program.modules.base import ProgramModuleObj
-from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo
+from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo

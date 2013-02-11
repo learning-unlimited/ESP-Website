@@ -76,7 +76,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
         #   Hard-code some views that can be tested using simple teacher/student lists.
         #   Exclude those tested by specialized functions below.
         teacher_views = ['teacherlist', 'teachersbytime', 'teacherinfo', 'teacherschedules']
-        student_views = ['satpreplabels', 'satpreplabels_bysection', 'studentsbyname', 'emergencycontacts', 'flatstudentschedules', 'studentchecklist', 'student_tickets']
+        student_views = ['studentsbyname', 'emergencycontacts', 'flatstudentschedules', 'studentchecklist', 'student_tickets']
         result = []
         for v in teacher_views:
             result.append((v, 'teachers', 'class_approved'))

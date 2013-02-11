@@ -44,6 +44,7 @@ from esp.datatree.models import GetNode
 from esp.cal.models import Event
 from esp.users.models import ESPUser, UserBit, User
 from esp.middleware.threadlocalrequest import get_current_request
+from esp.program.modules.forms.teacherevents import TimeslotForm
 from datetime import datetime
 
 class TeacherEventsModule(ProgramModuleObj):
@@ -173,13 +174,46 @@ class TeacherEventsModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def teacher_events(self, request, tl, one, two, module, extra, prog):
+        context = {}
+        
+        if request.method == 'POST':
+            data = request.POST
+            
+            if data['command'] == 'delete':
+                #   delete timeslot
+                ts = Event.objects.get(id=data['id'])
+                ts.delete()
+                
+            elif data['command'] == 'add':
+                #   add/edit timeslot
+                form = TimeslotForm(data)
+                if form.is_valid():
+                    new_timeslot = Event()
+                    
+                    # decide type
+                    type = "training"
+                    
+                    if data.has_key('submit') and data['submit'] == "Add Interview":
+                        type = "interview"
+                    
+                    form.save_timeslot(self.program, new_timeslot, type, self.qscs[type])
+                else:
+                    context['timeslot_form'] = form
+        
+        if 'timeslot_form' not in context:
+            context['timeslot_form'] = TimeslotForm()
+        
         interview_times = self.getTimes('interview').select_related('anchor__userbit_qsc__user')
         training_times = self.getTimes('training').select_related('anchor__userbit_qsc__user')
         
         for ts in list( interview_times ) + list( training_times ):
             ts.teachers = [ x.user.first_name + ' ' + x.user.last_name + ' <' + x.user.email + '>' for x in self.bitsBySlot( ts.anchor ) ]
         
-        return render_to_response( self.baseDir()+'teacher_events.html', request, (prog, tl), {'prog': prog, 'interview_times': interview_times, 'training_times': training_times} )
+        context['prog'] = prog
+        context['interview_times'] = interview_times
+        context['training_times'] = training_times
+        
+        return render_to_response( self.baseDir()+'teacher_events.html', request, (prog, tl), context )
 
 
 
