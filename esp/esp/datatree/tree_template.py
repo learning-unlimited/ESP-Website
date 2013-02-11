@@ -63,6 +63,7 @@ tree_template = [
     'V/Deadline/Registration/Student/ExtraCosts',
     'V/Deadline/Registration/Student/MainPage',
     'V/Deadline/Registration/Student/Payment',
+    'V/Deadline/Registration/Student/Removal',
     'V/Deadline/Registration/Teacher',
     'V/Deadline/Registration/Teacher/Availability',
     'V/Deadline/Registration/Teacher/Catalog',
