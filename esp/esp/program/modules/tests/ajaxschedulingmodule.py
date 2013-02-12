@@ -165,3 +165,53 @@ class AJAXSchedulingModuleTest(ProgramFrameworkTest):
         self.client.post(ajax_url, {'action': 'assignreg', 'cls': s2.id, 'block_room_assignments': a2})
         self.failUnless(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Existing meeting times clobbered.")
         self.failUnless(set(s2.get_meeting_times()) == set(), "Failed to prevent teacher conflict.")
+
+
+    def test_concurrency_issues(self):
+        from threading import Thread
+        print "testing Concurrency Issues"
+
+        #Goal:  send multiple requests to schedule two classes at conflicting times.  
+        #We want one but not both classes to be scheduled every time.  
+        #Since this is nondeterministic, the fact that this test passes may not mean that everything is ok.
+ 
+        """Schedule classes using the ajax_schedule_class view."""
+
+        self.emptySchedule()
+        self.loginAdmin()
+        self.client.post('/manage/%s/force_availability' % self.program.getUrlBase(), {'sure': 'True'})
+
+        # Get a vacant room
+        rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')[0].id
+        a1 = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
+
+        # Schedule one class.
+        ajax_url = '/manage/%s/ajax_schedule_class' % self.program.getUrlBase()
+        s1, s2 = self.program.sections()[:2]
+        timeslots = self.program.getTimeSlots().order_by('start')
+
+        self.client.post(ajax_url, {'action': 'assignreg', 'cls': s1.id, 'block_room_assignments': rooms})
+        self.client.post(ajax_url, {'action': 'assignreg', 'cls': s2.id, 'block_room_assignments': rooms})
+
+
+        """class AjaxPoster(Thread):
+            def __init__(self, section_id, rooms, client):
+                super(AjaxPoster, self).__init__()
+                self.client = client
+                self.section_id = section_id
+                self.rooms = rooms
+
+            def run(self):
+                print "sending post for section id " + str(self.section_id)
+                self.client.post(ajax_url, {'action': 'assignreg', 'cls': self.section_id, 'block_room_assignments': rooms})
+                print "done with section_id " + str(self.section_id)
+                            
+        threads = []
+        for s in [s1, s2]:
+            threads.append(AjaxPoster(s.id, a1, self.client))
+        
+        for t in threads:
+            t.start()
+            t.join()"""
+        
+        #some asserts about the state of the database after this happens
