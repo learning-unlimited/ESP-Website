@@ -42,7 +42,7 @@ from django.http          import HttpResponseRedirect, Http404
 from django.contrib.auth.decorators import login_required
 from esp.middleware       import ESPError
 from datetime             import datetime
-from esp                  import settings
+from django.conf import settings
 
 @login_required
 def bio_edit(request, tl='', last='', first='', usernum=0, progid = None, external = False, username=''):
