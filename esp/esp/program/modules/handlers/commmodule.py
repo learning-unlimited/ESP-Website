@@ -44,6 +44,8 @@ from django.template import Template
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
 
+from django.conf import settings
+
 class CommModule(ProgramModuleObj):
     """ Want to email all ESP students within a 60 mile radius of NYC?
     How about emailing all esp users within a 30 mile radius of New Hampshire whose last name contains 'e' and 'a'?
@@ -105,8 +107,17 @@ class CommModule(ProgramModuleObj):
         esp_firstuser = ESPUser(firstuser)
         contextdict = {'user'   : ActionHandler(esp_firstuser, esp_firstuser),
                        'program': ActionHandler(self.program, esp_firstuser) }
+
+        #   Save the current context processors - we will disable them for rendering e-mail
+        old_context_processors = settings.TEMPLATE_CONTEXT_PROCESSORS
+        settings.TEMPLATE_CONTEXT_PROCESSORS = []
+
+        #   Render the e-mail using the unaltered context
         renderedtext = Template(htmlbody).render(Context(contextdict))
-        
+
+        #   Restore context processors for future template rendering
+        settings.TEMPLATE_CONTEXT_PROCESSORS = old_context_processors
+
         return render_to_response(self.baseDir()+'preview.html', request,
                                   (prog, tl), {'filterid': filterid,
                                                'listcount': listcount,

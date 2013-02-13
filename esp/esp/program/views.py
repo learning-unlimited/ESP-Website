@@ -298,13 +298,6 @@ def find_user(userstr):
             return found_users
         # else, not an e-mail either.  Oh well.
 
-    # Fourth, try titles of courses a teacher has taught?
-    found_users = ESPUser.objects.filter(userbit__qsc__friendly_name__icontains=userstr).distinct()
-    if len(found_users) == 1:
-        return found_users[0]
-    elif len(found_users) > 1:
-        return found_users
-
     # Maybe it's a name?
     # Let's do some playing.
 
@@ -354,6 +347,14 @@ def find_user(userstr):
         return found_users[0]
     elif len(found_users) > 1:
         return found_users
+
+    # lastly, try titles of courses a teacher has taught?
+    found_users = ESPUser.objects.filter(userbit__qsc__friendly_name__icontains=userstr).distinct()
+    if len(found_users) == 1:
+        return found_users[0]
+    elif len(found_users) > 1:
+        return found_users
+    
     # else, we found no one.  Oops.
 
     # Well, we fail.  Sorry.
@@ -554,22 +555,24 @@ def newprogram(request):
             
             manage_url = '/manage/' + new_prog.url() + '/resources'
 
-            # While we're at it, create the program's mailing list
-            mailing_list_name = "%s_%s" % (new_prog.anchor.parent.name, new_prog.anchor.name)
-            teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
-            students_list_name = "%s-%s" % (mailing_list_name, "students")
+            if 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
+                # While we're at it, create the program's mailing list
+                mailing_list_name = "%s_%s" % (new_prog.anchor.parent.name, new_prog.anchor.name)
+                teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
+                students_list_name = "%s-%s" % (mailing_list_name, "students")
 
-            create_list(students_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
-            create_list(teachers_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
+                create_list(students_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
+                create_list(teachers_list_name, settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'])
 
-            load_list_settings(teachers_list_name, "lists/program_mailman.config")
-            load_list_settings(students_list_name, "lists/program_mailman.config")
+                load_list_settings(teachers_list_name, "lists/program_mailman.config")
+                load_list_settings(students_list_name, "lists/program_mailman.config")
         
-            apply_list_settings(teachers_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
-            apply_list_settings(students_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
+                apply_list_settings(teachers_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
+                apply_list_settings(students_list_name, {'owner': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], new_prog.director_email]})
 
-            add_list_member(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
-            add_list_member(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
+                if 'archive' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
+                    add_list_member(students_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
+                    add_list_member(teachers_list_name, [new_prog.director_email, settings.DEFAULT_EMAIL_ADDRESSES['archive']])
             
 
             return HttpResponseRedirect(manage_url)

@@ -21,16 +21,14 @@
 		<div id="recipient_type_select">
             <div class="step_header"><span class="step_label">Step 1:</span> <span class="step_text"> Who would you like to contact?</span></div>
             <div id="recipient_type_options">
-                <input type="radio" id="recipient_type_students" name="recipient_type" value="students" />
-                <label for="recipient_type_students">Students</label>
-                <input type="radio" id="recipient_type_teachers" name="recipient_type" value="teachers" />
-                <label for="recipient_type_teachers">Teachers</label>
-                <input type="radio" id="recipient_type_volunteers" name="recipient_type" value="volunteers" />
-                <label for="recipient_type_volunteers">Volunteers</label>
-                <input type="radio" id="recipient_type_parents" name="recipient_type" value="parents" />
-                <label for="recipient_type_parents">Parents</label>
-                <input type="radio" id="recipient_type_emaillist" name="recipient_type" value="emaillist" />
-                <label for="recipient_type_emaillist">Mailing list</label>
+                <select id="recipient_type" name="recipient_type">
+                    {% for user_type in user_types %}
+                    <option value="{{ user_type }}" id="{{ "recipient_type_"|add:user_type }}">{{ user_type|capfirst|add:"s" }}</option>
+                    {% endfor %}
+                    <option value="emaillist" id="recipient_type_emaillist">Mailing list</label>
+                </select>
+                <p>&nbsp;</p>
+                <a name="#" class="recipient_step_button" id="recipient_type_next">Continue to select set of contacts</a>
             </div>
         </div>
         

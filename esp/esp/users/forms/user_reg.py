@@ -106,8 +106,7 @@ class UserRegForm(forms.Form):
         super(UserRegForm, self).__init__(*args, **kwargs)
         
         #   Adjust initial_role choices
-        user_types = ESPUser.getAllUserTypes()
-        role_choices = [(item[0], item[1]['label']) for item in user_types]
+        role_choices = [(item[0], item[1]['label']) for item in ESPUser.getAllUserTypes()]
         self.fields['initial_role'].choices = [('', 'Pick one...')] + role_choices
 
 class SinglePhaseUserRegForm(UserRegForm):

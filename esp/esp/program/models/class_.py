@@ -1003,12 +1003,15 @@ class ClassSection(models.Model):
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
 
-    def cancel(self, email_students=True, explanation=None):
+    def cancel(self, email_students=True, include_lottery_students=False, explanation=None, unschedule=True):
         from django.conf import settings
         from django.contrib.sites.models import Site
         from esp.dbmail.models import send_mail
 
-        student_verbs = ['Enrolled', 'Interested', 'Priority/1']
+        if include_lottery_students:
+            student_verbs = ['Enrolled', 'Interested', 'Priority/1']
+        else:
+            student_verbs = ['Enrolled']
 
         context = {'sec': self, 'prog': self.parent_program, 'explanation': explanation}
         context['full_group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
@@ -1033,7 +1036,12 @@ class ClassSection(models.Model):
         send_mail(email_title, email_content, from_email, to_email)
 
         self.clearStudents()
-    
+
+        #   If specified, remove the class's time and room assignment.
+        if unschedule:
+            self.clearRooms()
+            self.meeting_times.clear()
+
         self.status = -20
         self.save()
 
@@ -1875,10 +1883,10 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         self.status = -10
         self.save()
 
-    def cancel(self, email_students=True, explanation=None):
-        """ Cancel this class. Has yet to do anything useful. """
+    def cancel(self, email_students=True, include_lottery_students=False, explanation=None):
+        """ Cancel this class by cancelling all of its sections. """
         for sec in self.sections.all():
-            sec.cancel(email_students, explanation)
+            sec.cancel(email_students, include_lottery_students, explanation)
         self.status = -20
         self.save()
         

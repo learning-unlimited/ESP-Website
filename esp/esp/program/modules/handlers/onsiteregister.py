@@ -36,7 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser, UserBit, User, ContactInfo, StudentInfo
+from esp.users.models    import ESPUser, UserBit, User, ContactInfo, StudentInfo, K12School
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from esp.program.models import RegistrationProfile
@@ -111,6 +111,19 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.contact_user = contact_user
 
                 student_info = StudentInfo(user = new_user, graduation_year = ESPUser.YOGFromGrade(new_data['grade']))
+
+                try:
+                    if isinstance(new_data['k12school'], K12School):
+                        student_info.k12school = new_data['k12school']
+                    else:
+                        if isinstance(new_data['k12school'], int):
+                            student_info.k12school = K12School.objects.get(id=int(new_data['k12school']))
+                        else:
+                            student_info.k12school = K12School.objects.filter(name__icontains=new_data['k12school'])[0]
+                except:
+                    student_info.k12school = None
+                student_info.school = new_data['school'] if not student_info.k12school else student_info.k12school.name
+
                 student_info.save()
                 regProf.student_info = student_info
 

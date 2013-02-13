@@ -728,11 +728,11 @@ class DataTree(models.Model):
             return
 
 
-        if 'postgresql' in settings.DATABASE_ENGINE.lower():
+        if 'postgresql' in settings.DATABASES['default']['ENGINE'].lower():
             false = 'f'
-        elif 'mysql' in settings.DATABASE_ENGINE.lower():
+        elif 'mysql' in settings.DATABASES['default']['ENGINE'].lower():
             false = '0'
-        elif 'sqlite' in settings.DATABASE_ENGINE.lower():
+        elif 'sqlite' in settings.DATABASES['default']['ENGINE'].lower():
             false = 'False'
         else:
             false = '0'
@@ -767,9 +767,9 @@ class DataTree(models.Model):
         op = (above_base and '>=' or '<=')
 
 
-        if 'postgres' in settings.DATABASE_ENGINE.lower() or \
-           'mysql'    in settings.DATABASE_ENGINE.lower():
-            template = 'postgresql' in settings.DATABASE_ENGINE.lower() and \
+        if 'postgres' in settings.DATABASES['default']['ENGINE'].lower() or \
+           'mysql'    in settings.DATABASES['default']['ENGINE'].lower():
+            template = 'postgresql' in settings.DATABASES['default']['ENGINE'].lower() and \
                        "CASE WHEN %s %s %s THEN %s %s ELSE %s END" or \
                        "IF(%s %s %s, %s %s, %s)"                         
 
@@ -790,7 +790,7 @@ class DataTree(models.Model):
                          op,baserange)
             
             
-        elif 'sqlite' in settings.DATABASE_ENGINE.lower():
+        elif 'sqlite' in settings.DATABASES['default']['ENGINE'].lower():
             sql = ['UPDATE %s SET rangestart = rangestart %s WHERE rangestart %s %s;' % \
                     (cls._meta.db_table,
                     stramount, op, baserange),
@@ -798,7 +798,7 @@ class DataTree(models.Model):
                    (cls._meta.db_table,
                     stramount, op, baserange)]
         else:
-            assert False, 'Unkown database engine %s.' % settings.DATABASE_ENGINE
+            assert False, 'Unkown database engine %s.' % settings.DATABASES['default']['ENGINE']
 
         if isinstance(sql, basestring):
             sql = [sql]
