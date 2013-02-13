@@ -70,7 +70,7 @@ class AvailabilityModule(ProgramModuleObj):
             "required": True,
             "seq": 0
             }, {
-            "admin_title": "Teacher Availability",
+            "admin_title": "Teacher Availability Checker",
             "link_title": "Check Teacher Availability",
             "module_type": "manage",
             "seq": 0
