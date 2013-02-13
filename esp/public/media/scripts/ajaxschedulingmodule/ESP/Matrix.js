@@ -11,44 +11,47 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         this.times = times;
         this.rooms = rooms;
         var time_cells = this.time_cells = {};
-        var room_cells = this.room_cells = {};
+        var room_rows = this.room_rows = {};
         var block_cells = this.block_cells = {};
         
-        // set up header
+        //set up header
+	//bla bla bla make a table so we can have things side by side
         var header = $j('<div/>').addClass('matrix-header');
-        this.matrix.append(header);
-        header.append($j('<div/>').addClass('matrix-corner-box'));
-        
-        var col_header = $j('<table/>').addClass('matrix-column-header-box');
-        header.append(col_header);
-        var tr = $j('<tr/>').addClass('matrix-row-body');
-        col_header.append(tr);
+	this.matrix.append(header);
+	var header_table = $j('<table/>').addClass('matrix-column-header-box')
+	header.append(header_table);
+	var hr = $j('<tr/>').addClass('matrix-row-boydy');
+	header_table.append(hr);
+	//add corner box
+	hr.append($j('<div/>').addClass('matrix-corner-box'));
+	//add class times
         for (var i = 0; i < times.length; i++) {
             var c = new Matrix.TimeCell(times[i]);
             time_cells[times[i].uid] = c;
             if (!times[i].seq) c.td.addClass('non-sequential');
-            tr.append(c.td);
+            hr.append(c.td);
         }
         
+	//matrix body
+	//TODO:  can we refactor out this "create a table with a row" business?
         var body = $j('<div/>').addClass('matrix-body');
         this.matrix.append(body);
-        var row_header = $j('<table/>').addClass('matrix-row-header-box');
-        var cell_body = $j('<table/>').addClass('matrix-cell-body');
-        body.append(row_header);
-        body.append(cell_body);
-        
+	var body_table = $j('<table/>')//.addClass("matrix-cell-body");
+	body.append(body_table);
+	body_table.append($j('<colgroup/>').addClass('matrix-row-header-box'));//.append($j('<col>')))
+
         // create rows
         for (var i = 0; i < rooms.length; i++) {
-            var room = rooms[i];
-            
-            var rc = new Matrix.RoomCell(room);
-            room_cells[room.uid] = rc;
-            
-            block_cells[room.uid] = {};
             var tr = $j('<tr/>');
-            tr.append(rc.td);
-            row_header.append(tr);
-            cell_body.append(rc.tr);
+	    body_table.append(tr);
+
+            var room = rooms[i];            
+            var rc = new Matrix.RoomCell(room);
+
+	    tr.append(rc.td);
+
+            room_rows[room.uid] = tr;            
+            block_cells[room.uid] = {};
         }
         
         // create individual blocks
@@ -60,7 +63,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         // add blocks in correct order
         for (var i = 0; i < rooms.length; i++) {
             var row = block_cells[rooms[i].uid];
-            var tr = room_cells[rooms[i].uid].tr;
+            var tr = room_rows[rooms[i].uid];
             var lt = false, t = false, td = null;
             for (var j = 0; j < times.length; j++) {
                 t = times[j];
@@ -206,13 +209,13 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
     },
     
     hideRoom:function(uid){
-        var rc=this.room_cells[uid];
+        var rc=this.room_rows[uid];
         rc.tr.hide();
         rc.td.parent().hide();
     },
     
     showRoom:function(uid){
-        var rc=this.room_cells[uid];
+        var rc=this.room_rows[uid];
         rc.tr.show();
         rc.td.parent().show();
     },
@@ -240,7 +243,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         }
         
         for(var i=0; i<sorted.length; i++){
-            var rc=this.room_cells[sorted[i].uid];
+            var rc=this.room_rows[sorted[i].uid];
             moveToEnd(rc.tr[0]);
             moveToEnd(rc.td.parent()[0]);
         }
@@ -398,16 +401,16 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
         initialize: function($super, room){
             $super()
             this.room = room;
-            this.tr = $j('<tr/>').addClass('matrix-row-body');
             this.td.html(room.block_contents.clone(true));
-            this.td.addClass('matrix-row-header');
+	    //matrix cell class sets the width too narrowly
+	    this.td.removeClass('matrix-cell');
+            this.td.addClass('matrix-row-header-box');
             for (var j = 0; j < room.resources.length; j++) {
                 if (room.resources[j]) {
                     this.td.addClass('ROOM_rsrc_' + room.resources[j].replace(/[^a-zA-Z]+/g, '-'));
                 }
             }
             this.td.addClass('');
-            //this.tr.append(this.td);
         }
     });
     
