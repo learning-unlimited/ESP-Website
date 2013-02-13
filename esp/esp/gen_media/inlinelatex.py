@@ -52,7 +52,8 @@ COMMANDS = {'latex'  : 'latex',
             'dvipng' : 'dvipng'}
 
 try:
-    from esp.settings import NULL_FILE
+    from django.conf import settings
+    NULL_FILE = settings.NULL_FILE
 except:
     NULL_FILE = '/dev/null'
 

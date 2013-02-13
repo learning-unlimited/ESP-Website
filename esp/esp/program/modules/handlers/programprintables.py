@@ -47,7 +47,7 @@ from esp.accounting_core.models import LineItem, LineItemType, Transaction
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
-from esp import settings
+from django.conf import settings
 from django.template.loader import select_template
 from django.utils.encoding import smart_str
 

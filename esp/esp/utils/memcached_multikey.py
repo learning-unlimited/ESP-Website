@@ -7,7 +7,7 @@ try:
     from django.core.cache.backends.memcached import PyLibMCCache as PylibmcCacheClass
 except ImportError:
     from django.core.cache.backends.memcached import CacheClass as PylibmcCacheClass
-from esp import settings
+from django.conf import settings
 from esp.utils.try_multi import try_multi
 from esp.utils import ascii
 import hashlib

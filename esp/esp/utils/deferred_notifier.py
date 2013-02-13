@@ -1,4 +1,4 @@
-from esp import settings
+from django.conf import settings
 
 if getattr(settings, "WARN_ON_LAZY_QUERIES", False):
 

@@ -22,7 +22,7 @@ except:
     print "Couldn't import MultihostCacheClass.  Not running tests against it."
 from utils.defaultclass import defaultclass
 from esp import utils
-from esp import settings
+from django.conf import settings
 from esp.utils.models import TemplateOverride
 
 from django.test import TestCase as DjangoTestCase
