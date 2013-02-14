@@ -26,7 +26,6 @@ ESP.Scheduling = function(){
         
         this.matrix = new ESP.Scheduling.Widgets.Matrix(pd.times, pd.rooms, pd.blocks);
         $j('#matrix-target').text('');
-        $j('#matrix-target').append((new Date()).getMilliseconds());
         $j('#matrix-target').append(this.matrix.el);
         if(!this.roomfilter)
             this.roomfilter = new ESP.Scheduling.Widgets.RoomFilter(this.matrix);
