@@ -36,9 +36,9 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 	//TODO:  can we refactor out this "create a table with a row" business?
         var body = $j('<div/>').addClass('matrix-body');
         this.matrix.append(body);
-	var body_table = $j('<table/>')//.addClass("matrix-cell-body");
+	var body_table = $j('<table/>');
 	body.append(body_table);
-	body_table.append($j('<colgroup/>').addClass('matrix-row-header-box'));//.append($j('<col>')))
+	body_table.append($j('<colgroup/>'));
 
         // create rows
         for (var i = 0; i < rooms.length; i++) {
