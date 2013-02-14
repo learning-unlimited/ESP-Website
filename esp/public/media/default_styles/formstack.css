@@ -75,6 +75,42 @@ input.fsSubmitButton {
   border: 1px solid #FF0000;
 }
 
-div#content {
+#page.yellowgreen div#content {
+  border-bottom: 20px solid #88CF00;
+}
+
+#page.blue div#content {
   border-bottom: 20px solid #3DC0FF;
+}
+
+#page.purple div#content {
+  border-bottom: 20px solid #7932E3;
+}
+
+#page.red div#content {
+  border-bottom: 20px solid #D45437;
+}
+
+#page.orange div#content {
+  border-bottom: 20px solid #FF9D00;
+}
+
+#page.yellow div#content {
+  border-bottom: 20px solid #EDB600;
+}
+
+#page.lightgreen div#content {
+  border-bottom: 20px solid #84BE6A;
+}
+
+#page.darkgreen div#content {
+  border-bottom: 20px solid #478A00;
+}
+
+#page.grey div#content {
+  border-bottom: 20px solid #666666;
+}
+
+#page.black div#content {
+  border-bottom: 20px solid #231F20;
 }
