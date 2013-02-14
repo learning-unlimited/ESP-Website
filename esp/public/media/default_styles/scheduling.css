@@ -40,7 +40,8 @@ padding-bottom: 5px; /*border: 1px solid black;*/
 position: relative;
 }
 #directory-target {
-height: 38%; max-height: 38%; /*overflow: auto;*/
+height: 50%; max-height: 38%; /*overflow: auto;*/
+width: 50%;
 padding-top: 5px; /*border: 1px solid black;*/
 position: relative;
 }
@@ -52,21 +53,22 @@ position: relative;
 .matrix {
 font-family: Arial, Helvetica, sans-serif; font-size: 0.9em;
 border: 2px solid black;
-position: absolute; top: 0; bottom: 0; right: 0; left: 0;
+position: relative; top: 0; bottom: 0; right: 0; left: 0;
+height: 600px;
 }
 
 .matrix-header {
 display: block;
-position: absolute; top: 0px; left: 0px; right: 0px; height: 50px;
+position: relative; top: 0px; left: 0px; right: 0px; height: 0px;
 }
 .matrix-corner-box {
 display: block; z-index: 100;
-position: absolute; left: 0; width: 123px; top: 0; bottom: 0;
+position: relative; left: 0; width: 123px; top: 0; bottom: 0; height: 50px;
 border-right: 2px solid #000; background: #eee;
 }
 .matrix-column-header-box {
 display: block; overflow: hidden;
-position: absolute; left: 125px; right: 0; top: 0; height: 50px;
+position: relative; left: 0; right: 0; top: 0; height: 50px;
 background: #eee;
 }
       .matrix-column-header-box tbody {
@@ -80,14 +82,15 @@ background: #eee;
       }
 
 .matrix-body {
-display: block; overflow: auto;
-position: absolute; top: 50px; left: 0px; right: 0px; bottom: 0px;
+display: block;
+position: relative; top: 50px; left: 0px; right: 0px; bottom: 0px;
 border-top: 2px solid #000;
+height: 550px; overflow: auto;
 }
 .matrix-row-header-box {
 display: block;
-position: absolute; left: 0; top: 0; width: 123px;
-border-right: 2px solid #000; background: #eee;
+position: relative; left: 0; width: 121px; height: 50px; top: 0; bottom: 0;
+border-right: 2px solid #000; border-bottom: 2px solid #000; background: #eee;
 }
       .matrix-row-header-box td {
 	  width: 100%; max-width: none; min-width: none;
@@ -95,12 +98,12 @@ border-right: 2px solid #000; background: #eee;
       }
 
 .matrix-cell-body {
-display: block;
-position: absolute; left: 125px; top: 0;
+display: block; overflow: auto;
+position: relative; left: 125px; right: 0; top: 0; bottom: 0;
 }
 
 .matrix-body tr {
-height: 34px; vertical-align: middle;
+height: 54px; vertical-align: middle;
 }
 
 
@@ -140,20 +143,20 @@ opacity: .6;
  * the Directory
  */
 .directory-table-wrapper {
-position: absolute;
+position: relative;
 top: 50px; left: 0px; right: 0px; bottom: 10px;
 border: 1px solid black;
 }
 
 .directory {
-position: relative; height: 100%; width: 100%;
+position: relative; height:500px; width: 100%;
 border: 1px solid black;
 border-spacing: 0px; border-collapse: collapse;
 }
 .directory .header td { height: auto; }
 .directory span { float: left; padding-right: 15px; margin-right: 10px; }
-.directory .sort-by.desc span { background: url(/media/images/down_arrow.png) no-repeat right center; background-size: 10px 10px; }
-.directory .sort-by.asc span { background: url(/media/images/up_arrow.png) no-repeat right center; background-size: 10px 10px; }
+.directory .sort-by.desc span { background: url(media/down_arrow.png) no-repeat right center; }
+.directory .sort-by.asc span { background: url(media/up_arrow.png) no-repeat right center; }
 
 .directory tr { width: 100%; display: block; }
 .directory tr {
@@ -173,18 +176,18 @@ background-color: #cfc;
 
 .directory thead {
 background-color: #eee; border-bottom: 1px solid black;
-position: absolute;
+position: relative;
 top: 0; height: 40px; left: 0; right: 0;
 }
 
 .directory tbody {
 overflow: auto;
-position: absolute;
+position: relative;
 top: 41px; bottom: 0; left: 0; right: 0;
 }
 
 .searchbox {
-position: absolute;
+position: relative;
 left: 10px; top: 20px;
 right: 10px; height: 20px;
 }
