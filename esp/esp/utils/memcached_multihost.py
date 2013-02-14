@@ -40,7 +40,7 @@ other servers need to regenerate their corresponding cached content).
 
 from django.core.cache.backends.base import BaseCache
 from django.core.cache.backends.memcached import PyLibMCCache as MemcacheCacheClass
-from esp import settings
+from django.conf import settings
 
 class CacheClass(BaseCache):
     def __init__(self, server, params):

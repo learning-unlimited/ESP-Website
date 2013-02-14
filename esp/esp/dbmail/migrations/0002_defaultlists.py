@@ -5,7 +5,7 @@ from south.v2 import SchemaMigration
 from django.db import models
 
 from esp.dbmail.models import EmailList
-from esp import settings
+from django.conf import settings
 
 class Migration(SchemaMigration):
 

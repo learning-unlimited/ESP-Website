@@ -2,7 +2,7 @@ from __future__ import with_statement
 
 import os
 from subprocess import call, Popen, PIPE
-from esp.settings import USE_MAILMAN, PROJECT_ROOT
+from django.conf import settings
 from esp.utils.decorators import enable_with_setting
 from esp.users.models import ESPUser, User
 from tempfile import NamedTemporaryFile
@@ -10,16 +10,16 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 
 
-if USE_MAILMAN:
-    from esp.settings import MAILMAN_PATH as MM_PATH
-    from esp.database_settings import MAILMAN_PASSWORD
+if settings.USE_MAILMAN:
+    MM_PATH = settings.MAILMAN_PATH
+    MAILMAN_PASSWORD = settings.MAILMAN_PASSWORD
 else:
     MAILMAN_PASSWORD = ''
     MM_PATH = "/usr/sbin/"
 
 ## Functions for Mailman interop
 
-@enable_with_setting(USE_MAILMAN)
+@enable_with_setting(settings.USE_MAILMAN)
 def create_list(list, owner, admin_password=MAILMAN_PASSWORD):
     """
     Create the specified mailing list in the local Mailman installation,
@@ -32,7 +32,7 @@ def create_list(list, owner, admin_password=MAILMAN_PASSWORD):
 
     return call([MM_PATH + "newlist", "-q", list, owner, admin_password])
 
-@enable_with_setting(USE_MAILMAN)
+@enable_with_setting(settings.USE_MAILMAN)
 def load_list_settings(list, listfile):
     """
     Load a Mailman list-settings file and configure a list with the specified settings.
@@ -42,12 +42,12 @@ def load_list_settings(list, listfile):
     if listfile[0] == '/':
         listpath = listfile
     else:
-        listpath = os.path.join(PROJECT_ROOT, listfile)
+        listpath = os.path.join(settings.PROJECT_ROOT, listfile)
 
     return call([MM_PATH + "config_list", "-i", listpath, list])
 
 
-@enable_with_setting(USE_MAILMAN)
+@enable_with_setting(settings.USE_MAILMAN)
 def apply_raw_list_settings(list, data):
     """
     Apply the settings in 'data' to the specified list.
@@ -59,7 +59,7 @@ def apply_raw_list_settings(list, data):
         return call([MM_PATH + "config_list", "-i", f.name, list])
 
 
-@enable_with_setting(USE_MAILMAN)
+@enable_with_setting(settings.USE_MAILMAN)
 def apply_list_settings(list, data):
     """
     Apply the settings in 'data' to the specified list.
@@ -74,7 +74,7 @@ def apply_list_settings(list, data):
         return call([MM_PATH + "config_list", "-i", f.name, list])
 
 
-@enable_with_setting(USE_MAILMAN)
+@enable_with_setting(settings.USE_MAILMAN)
 def set_list_owner_password(list, password=None):
     """
     Set the list-owner password for the specified list.
@@ -94,7 +94,7 @@ del sha
     return password
 
 
-@enable_with_setting(USE_MAILMAN)
+@enable_with_setting(settings.USE_MAILMAN)
 def set_list_moderator_password(list, password=None):
     """
     Set the list-owner password for the specified list.
@@ -114,7 +114,7 @@ del sha
     return password
 
 
-@enable_with_setting(USE_MAILMAN)
+@enable_with_setting(settings.USE_MAILMAN)
 def add_list_member(list, member):
     """
     Add the e-mail address 'member' to the local Mailman mailing list 'list'
@@ -136,7 +136,7 @@ def add_list_member(list, member):
 
     return Popen([MM_PATH + "add_members", "--regular-members-file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(member)
 
-@enable_with_setting(USE_MAILMAN)
+@enable_with_setting(settings.USE_MAILMAN)
 def remove_list_member(list, member):
     """
     Remove the e-mail address 'member' from the local Mailman mailing list 'list'
@@ -155,7 +155,7 @@ def remove_list_member(list, member):
 
     return Popen([MM_PATH + "remove_members", "--file=-", list], stdin=PIPE, stdout=PIPE, stderr=PIPE).communicate(str(member))
 
-@enable_with_setting(USE_MAILMAN)
+@enable_with_setting(settings.USE_MAILMAN)
 def list_contents(lst):
     """ Return the list of e-mail addresses on the specified mailing list """
     contents = Popen([MM_PATH + "list_members", lst], stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
@@ -168,14 +168,14 @@ def list_contents(lst):
 
     return contents
 
-@enable_with_setting(USE_MAILMAN)
+@enable_with_setting(settings.USE_MAILMAN)
 def list_members(lst):
     """ Return the list (QuerySet) of ESPUsers who are on this mailing list """
     contents = list_contents(lst)
     usernames = [x[:-12] for x in contents if x[-12:] == "@esp.mit.edu"]
     return ESPUser.objects.filter(Q(email__in=contents) | Q(username__in=usernames))
 
-@enable_with_setting(USE_MAILMAN)
+@enable_with_setting(settings.USE_MAILMAN)
 def all_lists(show_nonpublic=False):
     """
     Return the list of mailing lists served by this server.
@@ -187,7 +187,7 @@ def all_lists(show_nonpublic=False):
         args.append("-a")
     return Popen(args, stdout=PIPE, stderr=PIPE).communicate()[0].split('\n')
 
-@enable_with_setting(USE_MAILMAN)
+@enable_with_setting(settings.USE_MAILMAN)
 def lists_containing(user):
     """ Return all lists that a user is a member of """
     if isinstance(user, basestring):
