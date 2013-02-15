@@ -1367,7 +1367,7 @@ var rebuild=function(metadata) {
 					help_text:field['help_text'],
 					field_type:field['field_type'],
 					required: field['required'],
-					attrs: field['attributes'],
+					attrs: field['attributes']
 				};
 				
 				//Checking for link fields
