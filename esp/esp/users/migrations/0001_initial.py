@@ -7,6 +7,7 @@ class Migration:
     
     depends_on = (
         ("datatree", "0001_initial"),
+        ("tagdict", "0001_initial"),
     )
     
     def forwards(self, orm):
