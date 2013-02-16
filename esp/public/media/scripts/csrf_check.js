@@ -58,7 +58,7 @@ var check_csrf_cookie = function(form)
     }
 
     //Check it
-    csrf_token = $j(form.csrfmiddlewaretoken).val();
+    var csrf_token = $j(form.csrfmiddlewaretoken).val();
     //  console.log(csrf_token);
     csrf_cookie = $j.cookie("csrftoken");
     if (csrf_cookie == null)
