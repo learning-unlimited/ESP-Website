@@ -27,16 +27,19 @@
   <input type="hidden" id="tl" value="{{ navbar_list.section }}" />
   <input type="hidden" id="program-base-url" value="{{ program.getUrlBase }}" />
   <datalist id="admin-status-choices">
+    <option></option>
     {% for val, text in admin_status_choices %}
     <option value="{{ val }}">{{ text }}</option>
     {% endfor %}
   </datalist>
   <datalist id="teacher-rating-choices">
+    <option></option>
     {% for val, text in teacher_rating_choices %}
     <option value="{{ val }}">{{ text }}</option>
     {% endfor %}
   </datalist>
   <datalist id="admission-status-choices">
+    <option></option>
     {% for val, text in admission_status_choices %}
     <option value="{{ val }}">{{ text }}</option>
     {% endfor %}

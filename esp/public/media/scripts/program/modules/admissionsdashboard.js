@@ -86,9 +86,7 @@ function make_table_header_row() {
     return $row;
 }
 
-function make_table_row(app, num_apps) {
-    var $row = $('<tr></tr>');
-
+function make_name_cell(app) {
     var $name = $('<a href="#!"></a>')
         .addClass('name')
         .text(app.user.name)
@@ -96,8 +94,11 @@ function make_table_row(app, num_apps) {
             load_app(app.id);
             return false;
         });
+    return $name;
+}
 
-    var $teacher_rating = $('<select><option></option></select>')
+function make_teacher_rating_cell(app, readonly) {
+    var $teacher_rating = $('<select></select>')
         .addClass('teacher_rating')
         .append(
             $('#teacher-rating-choices').children('option').clone()
@@ -107,7 +108,10 @@ function make_table_row(app, num_apps) {
         .change(function () {
             update(app.id, {'teacher_rating': $(this).val()});
         });
+    return $teacher_rating;
+}
 
+function make_teacher_ranking_cell(app, num_apps) {
     var $teacher_ranking = $('<select><option></option></select>')
         .addClass('teacher_ranking');
     for (var i = 1; i <= num_apps; i++) {
@@ -118,7 +122,10 @@ function make_table_row(app, num_apps) {
         .change(function () {
             update(app.id, {'teacher_ranking': $(this).val()});
         });
+    return $teacher_ranking;
+}
 
+function make_teacher_comments_cell(app) {
     var $teacher_comments = $('<div></div>')
         .addClass('teacher_comments')
         .data('comment', app.teacher_comment || '')
@@ -152,40 +159,46 @@ function make_table_row(app, num_apps) {
             });
             $textarea.focus();
         });
+    return $teacher_comments;
+}
 
-    if (tl == 'manage') {
-        var $admin_status = $('<select></select>')
-            .addClass('admin_status')
-            .append(
-                $('#admin-status-choices').children('option').clone()
-            )
-            .val(app.admin_status)
-            .change(function () {
-                update(app.id, {'admin_status': $(this).val()});
+function make_admin_status_cell(app) {
+    var $admin_status = $('<select></select>')
+        .addClass('admin_status')
+        .append(
+            $('#admin-status-choices').children('option').clone()
+        )
+        .val(app.admin_status)
+        .change(function () {
+            update(app.id, {'admin_status': $(this).val()});
+        });
+    return $admin_status;
+}
+
+function make_admin_comments_cell(app) {
+    var $admin_comments = $('<div></div>')
+        .addClass('admin_comments')
+        .data('comment', app.admin_comment || '')
+        .text(app.admin_comment || '(click to add comment)')
+        .css('color', app.admin_comment ? '' : '#aaa')
+        .click(function () {
+            var text = $admin_comments.data('comment');
+            var $textarea = $('<textarea rows="5" cols="50" />').val(text);
+            var $save = $('<button />').text('Save');
+            var $cancel = $('<button />').text('Cancel');
+            var $dialog = Dialog.showDialog(Dialog, {
+                content: [
+                    'Type your comment below.',
+                    '<br />',
+                    $textarea,
+                    '<br />',
+                    $save,
+                    $cancel,
+                ]
             });
-        var $admin_comments = $('<div></div>')
-            .addClass('admin_comments')
-            .data('comment', app.admin_comment || '')
-            .text(app.admin_comment || '(click to add comment)')
-            .css('color', app.admin_comment ? '' : '#aaa')
-            .click(function () {
-                var text = $admin_comments.data('comment');
-                var $textarea = $('<textarea rows="5" cols="50" />').val(text);
-                var $save = $('<button />').text('Save');
-                var $cancel = $('<button />').text('Cancel');
-                var $dialog = Dialog.showDialog(Dialog, {
-                    content: [
-                        'Type your comment below.',
-                        '<br />',
-                        $textarea,
-                        '<br />',
-                        $save,
-                        $cancel,
-                    ]
-                });
-                $save.click(function () {
-                    var text = $textarea.val();
-                    $admin_comments.data('comment', text)
+            $save.click(function () {
+                var text = $textarea.val();
+                $admin_comments.data('comment', text)
                     .text(text || '(click to add comment)')
                     .css('color', text ? '' : '#aaa');
                 update(app.id, {'admin_comment': text});
@@ -196,42 +209,62 @@ function make_table_row(app, num_apps) {
             });
             $textarea.focus();
         });
-        var $student_preference = $('<div></div>')
-            .addClass('student_preference')
-            .text(app.student_preference);
-        var $admission_status = $('<select></select>')
-            .addClass('admission_status')
-            .append(
-                $('#admission-status-choices').children('option').clone()
-            )
-            .val(app.admission_status)
-            .change(function () {
-                update(app.id, {'admission_status': $(this).val()});
-            });
-    }
+    return $admin_comments;
+}
+
+function make_student_preference_cell(app) {
+    var $student_preference = $('<span></span>')
+        .addClass('student_preference')
+        .text(app.student_preference);
+    return $student_preference;
+}
+
+function make_admission_status_cell(app) {
+    var $admission_status = $('<select></select>')
+        .addClass('admission_status')
+        .append(
+            $('#admission-status-choices').children('option').clone()
+        )
+        .val(app.admission_status)
+        .change(function () {
+            update(app.id, {'admission_status': $(this).val()});
+        });
+    return $admission_status;
+}
+
+function make_table_row(app, num_apps) {
+    var $row = $('<tr></tr>');
 
     if (tl == 'teach') {
-        $row.append(
-            $('<td></td>').append($name),
-            $('<td></td>').append($teacher_rating),
-            $('<td></td>').append($teacher_ranking),
-            $('<td></td>').append($teacher_comments)
-        );
+        var cells = [
+            make_name_cell(app),
+            make_teacher_rating_cell(app),
+            make_teacher_ranking_cell(app, num_apps),
+            make_teacher_comments_cell(app)
+        ];
+        cells.forEach(function (cell) {
+            $('<td></td>').append(cell).appendTo($row);
+        });
+        $row.data('teacher_rating', cells[1]);
+        $row.data('teacher_ranking', cells[2]);
     }
     else if (tl == 'manage') {
-        $row.append(
-            $('<td></td>').append($name),
-            $('<td></td>').append($admin_status),
-            $('<td></td>').append($admin_comments),
-            $('<td></td>').append($teacher_rating),
-            $('<td></td>').append($teacher_ranking),
-            $('<td></td>').append($teacher_comments),
-            $('<td></td>').append($student_preference),
-            $('<td></td>').append($admission_status)
-        );
+        var cells = [
+            make_name_cell(app),
+            make_admin_status_cell(app),
+            make_admin_comments_cell(app),
+            make_teacher_rating_cell(app),
+            make_teacher_ranking_cell(app),
+            make_teacher_comments_cell(app),
+            make_student_preference_cell(app),
+            $admission_status
+        ];
+        cells.forEach(function (cell) {
+            $('<td></td>').append(cell).appendTo($row);
+        });
+        $row.data('teacher_rating', cells[3]);
+        $row.data('teacher_ranking', cells[4]);
     }
-    $row.data('teacher_rating', $teacher_rating);
-    $row.data('teacher_ranking', $teacher_ranking);
 
     return $row;
 }
