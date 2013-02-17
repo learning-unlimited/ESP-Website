@@ -257,7 +257,7 @@ function make_table_row(app, num_apps) {
             make_teacher_ranking_cell(app),
             make_teacher_comments_cell(app),
             make_student_preference_cell(app),
-            $admission_status
+            make_admission_status_cell(app)
         ];
         cells.forEach(function (cell) {
             $('<td></td>').append(cell).appendTo($row);

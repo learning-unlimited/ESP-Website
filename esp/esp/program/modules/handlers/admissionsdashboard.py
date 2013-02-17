@@ -59,6 +59,7 @@ class AdmissionsDashboard(ProgramModuleObj):
                 }]
 
     @main_call
+    @needs_teacher
     def admissions(self, request, tl, one, two, module, extra, prog):
         if request.user.isAdmin(prog):
             classes = prog.classes()
