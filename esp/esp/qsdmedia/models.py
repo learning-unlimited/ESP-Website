@@ -39,6 +39,7 @@ from esp.datatree.models import *
 from django.conf import settings
 from esp.db.fields import AjaxForeignKey
 from time import strftime
+import hashlib
 
 
 # Create your models here.
@@ -55,6 +56,8 @@ class Media(models.Model):
     format = models.TextField(blank=True, null=True)  # Format string; should be human-readable (string format is currently unspecified)
     mime_type = models.CharField(blank=True, null=True, max_length=256, editable=False)
     file_extension = models.TextField(blank=True, null=True, max_length=16, editable=False) # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
+    file_name = models.TextField(blank=True, null=True, max_length=256, editable=False) # original filename that this file should be downloaded as
+    hashed_name = models.TextField(blank=True, null=True, max_length=256, editable=False) # safe hashed filename
 
     #def get_target_file_relative_url(self):a
     #    return str(self.target_file)[ len(root_file_path): ]
@@ -62,6 +65,12 @@ class Media(models.Model):
     def get_target_file_url(self):
         return str(self.target_file.url)
     target_url = property(get_target_file_url)
+
+    def safe_filename(self, filename):
+        m = hashlib.md5()
+        m.update(filename)
+        digest = m.digest()
+        return "".join([hex(ord(c))[2:].zfill(2) for c in digest])
 
     def handle_file(self, file, filename):
         """ Saves a file from request.FILES. """
@@ -76,7 +85,11 @@ class Media(models.Model):
 
         self.mime_type = file.content_type
         self.size = file.size
-        self.target_file.save(filename, file)
+        
+        # hash the filename, easy way to prevent bad filename attacks
+        self.file_name = filename
+        self.hashed_name = self.safe_filename(filename)
+        self.target_file.save(self.hashed_name, file)
 
     def delete(self, *args, **kwargs):
         """ Delete entry; provide hack to fix old absolute-path-storing. """

@@ -179,6 +179,9 @@ urlpatterns += patterns('esp.web.views.navBar',
     
 urlpatterns += patterns('', 
     (r'^dataviews/', include('esp.dataviews.urls')) )
+    
+urlpatterns += patterns('esp.qsdmedia.views', 
+    (r'^download\/([-A-Za-z0-9_ ]+)/?$', 'qsdmedia2') )
 
 urlpatterns +=patterns('esp.customforms.views',
 	(r'^customforms/$','landing'),
