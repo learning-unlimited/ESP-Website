@@ -18,24 +18,40 @@ $(function () {
     $('#students-list thead').append(
         make_table_header_row()
     );
+    $('#save-button').prop('disabled', true).click(save_changes);
     $('#class-dropdown').change(function () {
         var class_id = $(this).val();
         history.pushState(null, '', program_base_url + '/admissions/' + class_id);
-        load_class(class_id);
+        if (load_class(class_id)) {
+            $(this).data('prev', class_id);
+        }
+        else {
+            $(this).val($(this).data('prev'));
+        }
     });
     $(window).bind('popstate', function () {
         var class_id = window.location.href.split('/')[7] || '';
         $('#class-dropdown').val(class_id);
         load_class(class_id);
     });
+    $(window).on('beforeunload', function () {
+        if (!$.isEmptyObject(unsaved_changes)) {
+            return 'You have unsaved changes; if you leave this page, they will be lost.';
+        }
+    });
 });
 
-function load_class(class_id) {
+function load_class(class_id, prev) {
+    if (!$.isEmptyObject(unsaved_changes) && !confirm('You have unsaved changes; if you continue, they will be lost.')) {
+        return false;
+    }
+    discard_changes();
     $('#students-list tbody').empty();
     if (class_id !== '') {
         $('#loading').show();
         $.getJSON(program_base_url + '/apps/' + class_id, populate_table);
     }
+    return true;
 }
 
 function load_app(app_id) {
@@ -106,7 +122,8 @@ function make_teacher_rating_cell(app, readonly) {
         .val(app.teacher_rating || '')
         .change(sort_table)
         .change(function () {
-            update(app.id, {'teacher_rating': $(this).val()});
+            var val = parseInt($(this).val()) || null;
+            update(app.id, {'teacher_rating': val});
         })
         .prop('disabled', !!readonly);
     return $teacher_rating;
@@ -121,7 +138,8 @@ function make_teacher_ranking_cell(app, num_apps, readonly) {
     $teacher_ranking.val(app.teacher_ranking || '')
         .change(sort_table)
         .change(function () {
-            update(app.id, {'teacher_ranking': $(this).val()});
+            var val = parseInt($(this).val()) || null;
+            update(app.id, {'teacher_ranking': val});
         })
         .prop('disabled', !!readonly);
     return $teacher_ranking;
@@ -184,7 +202,8 @@ function make_admin_status_cell(app) {
         )
         .val(app.admin_status)
         .change(function () {
-            update(app.id, {'admin_status': $(this).val()});
+            var val = parseInt($(this).val()) || null;
+            update(app.id, {'admin_status': val});
         });
     return $admin_status;
 }
@@ -241,7 +260,8 @@ function make_admission_status_cell(app) {
         )
         .val(app.admission_status)
         .change(function () {
-            update(app.id, {'admission_status': $(this).val()});
+            var val = parseInt($(this).val()) || null;
+            update(app.id, {'admission_status': val});
         });
     return $admission_status;
 }
@@ -299,10 +319,54 @@ function sort_table() {
     $('#students-list tbody').append(elements);
 }
 
+var unsaved_changes = {};
+var pending_changes = {};
+
 function update(app_id, change) {
-    $.post(program_base_url + '/update_app/' + app_id,
-           change,
-           function () {
-               TransientMessage.showMessage('Saved');
-           });
+    unsaved_changes[app_id] = $.extend(unsaved_changes[app_id] || {},
+                                       change);
+    if ($.isEmptyObject(pending_changes)) {
+        $('#save-button').prop('disabled', false).text('Save');
+    }
 }
+
+function discard_changes() {
+    $('#save-button').prop('disabled', true).text('Save');
+    unsaved_changes = {};
+    pending_changes = {};
+}
+
+function save_changes() {
+    $('#save-button').prop('disabled', true).text('Saving...');
+    if (!$.isEmptyObject(pending_changes)) {
+        // can't save while there are pending changes
+        console.log('foo');
+        return;
+    }
+    pending_changes = $.extend({}, unsaved_changes)
+    unsaved_changes = {};
+    var post_data = { changes: JSON.stringify(pending_changes) };
+    var success = function (data) {
+        data.updated.forEach(function (app_id) {
+            delete pending_changes[app_id];
+        });
+        if ($.isEmptyObject(pending_changes)) {
+            $('#save-button').prop('disabled', true).text('Saved');
+        }
+        else {
+            save_error();
+        }
+    };
+    var save_error = function () {
+        Object.keys(pending_changes).forEach(function (app_id) {
+            unsaved_changes[app_id] = $.extend(pending_changes[app_id],
+                                               unsaved_changes[app_id]);
+            delete pending_changes[app_id];
+        });
+        $('#save-button').prop('disabled', false).text('Save');
+        alert('Encountered an error while saving.');
+    };
+    $.post(program_base_url + '/update_apps', post_data)
+        .done(success).fail(save_error);
+}
+
