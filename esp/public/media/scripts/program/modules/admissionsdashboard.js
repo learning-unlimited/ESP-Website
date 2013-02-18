@@ -107,11 +107,12 @@ function make_teacher_rating_cell(app, readonly) {
         .change(resort_table)
         .change(function () {
             update(app.id, {'teacher_rating': $(this).val()});
-        });
+        })
+        .prop('disabled', !!readonly);
     return $teacher_rating;
 }
 
-function make_teacher_ranking_cell(app, num_apps) {
+function make_teacher_ranking_cell(app, num_apps, readonly) {
     var $teacher_ranking = $('<select><option></option></select>')
         .addClass('teacher_ranking');
     for (var i = 1; i <= num_apps; i++) {
@@ -121,36 +122,49 @@ function make_teacher_ranking_cell(app, num_apps) {
         .change(resort_table)
         .change(function () {
             update(app.id, {'teacher_ranking': $(this).val()});
-        });
+        })
+        .prop('disabled', !!readonly);
     return $teacher_ranking;
 }
 
-function make_teacher_comments_cell(app) {
+function make_teacher_comments_cell(app, readonly) {
     var $textarea = $('<textarea rows="5" cols="50" />');
     var $teacher_comments_dialog = $('<div title="Comments"></div>').append(
-        '<p>Type your comment below.</p>',
+        readonly ? '<p>View teacher comment below.</p>'
+            : '<p>Type your comment below.</p>',
         $textarea
     );
     var $teacher_comments = $('<div></div>')
         .addClass('teacher_comments')
-        .data('comment', app.teacher_comment || '')
-        .text(app.teacher_comment || '(click to add comment)')
-        .css('color', app.teacher_comment ? '' : '#aaa')
         .click(function () {
             var text = $teacher_comments.data('comment');
             $teacher_comments_dialog.dialog('open');
             $textarea.val(text).focus();
         });
+    $teacher_comments.set_comment = function (comment) {
+        if (readonly) {
+            this.data('comment', comment)
+                .text(comment)
+        }
+        else {
+            this.data('comment', comment)
+                .text(comment || '(click to add comment)')
+                .css('color', comment ? '' : '#aaa');
+        }
+    }
+    $teacher_comments.set_comment(app.teacher_comment)
     $teacher_comments_dialog.dialog({
         autoOpen: false,
         modal: true,
         width: 'auto',
-        buttons: {
+        buttons: readonly ? {
+            'Close': function () {
+                $(this).dialog('close');
+            }
+        } : {
             'Save': function () {
                 var text = $textarea.val();
-                $teacher_comments.data('comment', text)
-                    .text(text || '(click to add comment)')
-                    .css('color', text ? '' : '#aaa');
+                $teacher_comments.set_comment(text);
                 update(app.id, {'teacher_comment': text});
                 $(this).dialog('close');
             },
@@ -253,9 +267,9 @@ function make_table_row(app, num_apps) {
             make_name_cell(app),
             make_admin_status_cell(app),
             make_admin_comments_cell(app),
-            make_teacher_rating_cell(app),
-            make_teacher_ranking_cell(app),
-            make_teacher_comments_cell(app),
+            make_teacher_rating_cell(app, true),
+            make_teacher_ranking_cell(app, num_apps, true),
+            make_teacher_comments_cell(app, true),
             make_student_preference_cell(app),
             make_admission_status_cell(app)
         ];
