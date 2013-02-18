@@ -38,6 +38,8 @@ from esp.web.util        import render_to_response
 from esp.utils.decorators import json_response
 from esp.application.models import StudentProgramApp, StudentClassApp, FormstackStudentProgramApp
 
+from django.utils import simplejson as json
+
 class AdmissionsDashboard(ProgramModuleObj):
     """
     A dashboard for Junction core teachers to review applications for their class.
@@ -120,6 +122,38 @@ class AdmissionsDashboard(ProgramModuleObj):
             return
         content = classapp.get_teacher_view(prog)
         return {'app': content}
+
+    @aux_call
+    @needs_teacher
+    @json_response(None)
+    def update_apps(self, request, tl, one, two, module, extra, prog):
+        if request.method == 'POST':
+            updated = []
+
+            changes = json.loads(request.POST['changes'])
+            for app_id, change in changes.items():
+                try:
+                    classapp = StudentClassApp.objects.get(id=app_id)
+                except StudentClassApp.DoesNotExist:
+                    continue
+                if not (request.user.isAdmin(prog) or classapp.subject in request.user.getTaughtClassesFromProgram(prog)):
+                    continue
+                classapp.__dict__.update(change)
+                classapp.save()
+
+                if request.user.isAdmin():
+                    if 'admission_status' in change:
+                        admission_status = int(change['admission_status'])
+                        if admission_status == StudentClassApp.ADMITTED:
+                            classapp.admit()
+                        elif admission_status == StudentClassApp.UNASSIGNED:
+                            classapp.unadmit()
+                        elif admission_status == StudentClassApp.WAITLIST:
+                            classapp.waitlist()
+
+                updated.append(app_id)
+
+            return {'success': 1, 'updated': updated}
 
     @aux_call
     @needs_teacher
