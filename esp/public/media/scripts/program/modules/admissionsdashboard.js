@@ -104,7 +104,7 @@ function make_teacher_rating_cell(app, readonly) {
             $('#teacher-rating-choices').children('option').clone()
         )
         .val(app.teacher_rating || '')
-        .change(resort_table)
+        .change(sort_table)
         .change(function () {
             update(app.id, {'teacher_rating': $(this).val()});
         })
@@ -119,7 +119,7 @@ function make_teacher_ranking_cell(app, num_apps, readonly) {
         $teacher_ranking.append( $('<option></option>').text(i) );
     };
     $teacher_ranking.val(app.teacher_ranking || '')
-        .change(resort_table)
+        .change(sort_table)
         .change(function () {
             update(app.id, {'teacher_ranking': $(this).val()});
         })
@@ -297,32 +297,6 @@ function sort_table() {
         return a_val - b_val;
     });
     $('#students-list tbody').append(elements);
-}
-
-function resort_table() {
-    var $a = $(this).parents('tr', '#students-list tbody');
-    var orig_i = $('#students-list tbody tr').index($a);
-    $a.detach();
-    var elements = $('#students-list tbody tr');
-    for (var i = 0; i < elements.length; i++) {
-        var $b = $(elements[i]);
-        var a_val = parseInt($a.data('teacher_rating').val()) || 1/0;
-        var b_val = parseInt($b.data('teacher_rating').val()) || 1/0;
-        if (a_val < b_val) {
-            $a.insertBefore($b);
-            return;
-        }
-        else if (a_val > b_val) {
-            continue;
-        }
-        a_val = parseInt($a.data('teacher_ranking').val()) || 1/0;
-        b_val = parseInt($b.data('teacher_ranking').val()) || 1/0;
-        if (a_val < b_val || a_val == b_val && orig_i <= i) {
-            $a.insertBefore($b);
-            return;
-        }
-    }
-    $('#students-list tbody').append($a);
 }
 
 function update(app_id, change) {
