@@ -19,20 +19,18 @@ $(function () {
         make_table_header_row()
     );
     $('#save-button').prop('disabled', true).click(save_changes);
+    $('#refresh-button').click(function () {
+        var class_id = $('#class-dropdown').val();
+        load_class(class_id);
+    });
     $('#class-dropdown').change(function () {
         var class_id = $(this).val();
-        history.pushState(null, '', program_base_url + '/admissions/' + class_id);
         if (load_class(class_id)) {
             $(this).data('prev', class_id);
         }
         else {
             $(this).val($(this).data('prev'));
         }
-    });
-    $(window).bind('popstate', function () {
-        var class_id = window.location.href.split('/')[7] || '';
-        $('#class-dropdown').val(class_id);
-        load_class(class_id);
     });
     $(window).on('beforeunload', function () {
         if (!$.isEmptyObject(unsaved_changes)) {
