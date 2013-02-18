@@ -126,6 +126,11 @@ function make_teacher_ranking_cell(app, num_apps) {
 }
 
 function make_teacher_comments_cell(app) {
+    var $textarea = $('<textarea rows="5" cols="50" />');
+    var $teacher_comments_dialog = $('<div title="Comments"></div>').append(
+        '<p>Type your comment below.</p>',
+        $textarea
+    );
     var $teacher_comments = $('<div></div>')
         .addClass('teacher_comments')
         .data('comment', app.teacher_comment || '')
@@ -133,32 +138,27 @@ function make_teacher_comments_cell(app) {
         .css('color', app.teacher_comment ? '' : '#aaa')
         .click(function () {
             var text = $teacher_comments.data('comment');
-            var $textarea = $('<textarea rows="5" cols="50" />').val(text);
-            var $save = $('<button />').text('Save');
-            var $cancel = $('<button />').text('Cancel');
-            var $dialog = Dialog.showDialog(Dialog, {
-                content: [
-                    'Type your comment below.',
-                    '<br />',
-                    $textarea,
-                    '<br />',
-                    $save,
-                    $cancel,
-                ]
-            });
-            $save.click(function () {
+            $teacher_comments_dialog.dialog('open');
+            $textarea.val(text).focus();
+        });
+    $teacher_comments_dialog.dialog({
+        autoOpen: false,
+        modal: true,
+        width: 'auto',
+        buttons: {
+            'Save': function () {
                 var text = $textarea.val();
                 $teacher_comments.data('comment', text)
                     .text(text || '(click to add comment)')
                     .css('color', text ? '' : '#aaa');
                 update(app.id, {'teacher_comment': text});
-                $dialog.close();
-            });
-            $cancel.click(function () {
-                $dialog.close();
-            });
-            $textarea.focus();
-        });
+                $(this).dialog('close');
+            },
+            'Cancel': function () {
+                $(this).dialog('close');
+            }
+        }
+    });
     return $teacher_comments;
 }
 
@@ -176,6 +176,11 @@ function make_admin_status_cell(app) {
 }
 
 function make_admin_comments_cell(app) {
+    var $textarea = $('<textarea rows="5" cols="50" />');
+    var $admin_comments_dialog = $('<div title="Comments"></div>').append(
+        '<p>Type your comment below.</p>',
+        $textarea
+    );
     var $admin_comments = $('<div></div>')
         .addClass('admin_comments')
         .data('comment', app.admin_comment || '')
@@ -183,32 +188,27 @@ function make_admin_comments_cell(app) {
         .css('color', app.admin_comment ? '' : '#aaa')
         .click(function () {
             var text = $admin_comments.data('comment');
-            var $textarea = $('<textarea rows="5" cols="50" />').val(text);
-            var $save = $('<button />').text('Save');
-            var $cancel = $('<button />').text('Cancel');
-            var $dialog = Dialog.showDialog(Dialog, {
-                content: [
-                    'Type your comment below.',
-                    '<br />',
-                    $textarea,
-                    '<br />',
-                    $save,
-                    $cancel,
-                ]
-            });
-            $save.click(function () {
+            $admin_comments_dialog.dialog('open');
+            $textarea.val(text).focus();
+        });
+    $admin_comments_dialog.dialog({
+        autoOpen: false,
+        modal: true,
+        width: 'auto',
+        buttons: {
+            'Save': function () {
                 var text = $textarea.val();
                 $admin_comments.data('comment', text)
                     .text(text || '(click to add comment)')
                     .css('color', text ? '' : '#aaa');
                 update(app.id, {'admin_comment': text});
-                $dialog.close();
-            });
-            $cancel.click(function () {
-                $dialog.close();
-            });
-            $textarea.focus();
-        });
+                $(this).dialog('close');
+            },
+            'Cancel': function () {
+                $(this).dialog('close');
+            }
+        }
+    });
     return $admin_comments;
 }
 
