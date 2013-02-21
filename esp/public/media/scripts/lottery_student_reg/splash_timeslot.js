@@ -114,7 +114,7 @@ var Timeslot = function(data){
 	    section = sections[section_id];
 
 	    //check grade in range or admin
-	    if(user_grade >= section['grade_min'] && user_grade <= section['grade_max'] || esp_user['cur_admin'] == 1){
+	    if(section['status'] > 0 && user_grade >= section['grade_min'] && user_grade <= section['grade_max'] || esp_user['cur_admin'] == 1){
 		if(open_class_registration && section['category'] == open_class_category){
 		    has_walkins = true;
 		    walkins_list.push(section);
