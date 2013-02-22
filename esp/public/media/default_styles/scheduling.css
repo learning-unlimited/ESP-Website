@@ -55,7 +55,7 @@ position: relative;
 font-family: Arial, Helvetica, sans-serif; font-size: 0.9em;
 border: 2px solid black;
 position: relative; top: 0; bottom: 0; right: 0; left: 0;
-height: 600px; width: 600px;
+height: 500px; width: 600px;
 }
 
 .matrix-header {
@@ -64,19 +64,19 @@ position: relative; top: 0px; left: 0px; right: 0px; height: 0px;
 }
 .matrix-corner-box {
 display: block; z-index: 100;
-position: relative; left: 0; width: 123px; top: 0; bottom: 0; height: 50px;
+position: relative; left: 0; width: 123px; top: 0; bottom: 0; height: 40px;
 border-right: 2px solid #000; background: #eee;
 }
 .matrix-column-header-box {
 display: block; overflow: hidden;
-position: relative; left: 0; right: 0; top: 0; height: 50px;
+position: relative; left: 0; right: 0; top: 0; height: 40px;
 background: #eee;
 }
       .matrix-column-header-box tbody {
 	  position: relative; display: block;
       }
       .matrix-column-header-box tr {
-	  height: 50px;
+	  height: 40px;
       }
       .matrix-column-header-box td {
 	  border-right: 1px solid #666; font-size: smaller;
@@ -84,13 +84,13 @@ background: #eee;
 
 .matrix-body {
 display: block;
-position: relative; top: 50px; left: 0px; right: 0px; bottom: 0px;
+position: relative; top: 40px; left: 0px; right: 0px; bottom: 0px;
 border-top: 2px solid #000;
-height: 550px; overflow: auto;
+height: 460px; overflow: auto;
 }
 .matrix-row-header-box {
 display: block;
-position: relative; left: 0; width: 121px; height: 50px; top: 0; bottom: 0;
+position: relative; left: 0; width: 121px; height: 40px; top: 0; bottom: 0;
 border-right: 2px solid #000; border-bottom: 2px solid #000; background: #eee;
 text-align: center;
 font-size: small;
@@ -106,7 +106,7 @@ position: relative; left: 125px; right: 0; top: 0; bottom: 0;
 }
 
 .matrix-body tr {
-height: 54px; vertical-align: middle;
+height: 40px; vertical-align: middle;
 }
 
 
@@ -149,12 +149,14 @@ opacity: .6;
  */
 .directory-table-wrapper {
 position: relative;
-top: 0px; left: 0px; right: 0px; bottom: 10px;
+top: -3px; /*left: 0px; right: 0px; bottom: 10px;*/
 border: 1px solid black;
+height: 500px;
+overflow-y: scroll;
 }
 
 .directory {
-position: relative; height:600px; width: 100%;
+position: relative; height:500px; width: 100%;
 border: 1px solid black;
 border-spacing: 0px; border-collapse: collapse;
 }
