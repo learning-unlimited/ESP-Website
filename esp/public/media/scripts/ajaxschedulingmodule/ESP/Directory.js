@@ -1,5 +1,9 @@
+    fixed_width = function(width){
+	return 'min-width:'+width.toString() + 'px;max-width:'+ width.toString()+'px;';
+    };
+
 ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
-        initialize : function(sections){
+    initialize : function(sections){
             var directory = this;
         
             this.entries = [];
@@ -59,7 +63,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    //css: 'width:100px;'
 	    /* Code to style unapproved classes differently */
             css: function(x){
-		var default_css = 'width:100px;';
+		var default_css = fixed_width(70);
 		var unapproved_css = "color:#ff0000; font-style:italic;";
 		// if we're just calling it for the general properties of the ID td
 		// or if it's approved, return the default css
@@ -93,15 +97,15 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 		}
 	    }
         },
-        'Category': {
+        /*'Category': {
             get: function(x){ return x.category; },
             sort: function(x,y){
                 return cmp(x.section.category, y.section.category);
             },
 	    // css: 'width:100px;'
-	    /* Code to style unapproved classes differently */
+	    // Code to style unapproved classes differently
             css: function(x){
-		var default_css = 'width:100px;';
+		var default_css = fixed-wideth(70);
 		var unapproved_css = "color:#ff0000; font-style:italic;";
 		// if we're just calling it for the general properties of the ID td
 		// or if it's approved, return the default css
@@ -113,7 +117,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 		    return default_css + unapproved_css;
 		}
 	    }
-        },
+        },*/
         'Teacher': {
             get: function(x) {
 		if (x.teachers) {
@@ -133,7 +137,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    // css: 'width:200px;'
 	    /* Code to style unapproved classes differently */
             css: function(x){
-		var default_css = 'width:200px;';
+		var default_css = fixed_width(200);
 		var unapproved_css = "color:#ff0000; font-style:italic;";
 		// if we're just calling it for the general properties of the ID td
 		// or if it's approved, return the default css
@@ -154,7 +158,8 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    // css: 'width:50px;'
 	    /* Code to style unapproved classes differently */
             css: function(x){
-		var default_css = 'width:50px;';
+		//TODO:  factor out the messy thing with min-width and max-width
+		var default_css = fixed_width(50);
 		var unapproved_css = "color:#ff0000; font-style:italic;";
 		// if we're just calling it for the general properties of the ID td
 		// or if it's approved, return the default css
@@ -237,7 +242,8 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
             this.directory = directory;
             this.section = section;
             this.el = $j('<tr/>').addClass('class-entry').data("controller",this);
-            this.el.addClass('CLS_category_' + section.category);
+            //this.el.addClass('CLS_category_' + section.category);
+	    //this.el.addClass('directory-category');
             this.el.addClass('CLS_id_' + section.id);
             this.el.addClass('CLS_length_' + section.length_hr + '_hrs');
             this.el.addClass('CLS_status_' + section.status);
@@ -253,6 +259,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
 
             this.tds = {};
             $j.each(this.directory.properties,function(index, prop){
+		console.log(prop.css(section));
                 var td = $j('<td style="' + (prop.css(section)||'') + '"></td>');
 		td.append(prop.get(section));
                 this.tds[index] = td;

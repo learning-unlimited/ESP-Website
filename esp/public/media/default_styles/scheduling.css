@@ -86,7 +86,7 @@ background: #eee;
 display: block;
 position: relative; top: 40px; left: 0px; right: 0px; bottom: 0px;
 border-top: 2px solid #000;
-height: 460px; overflow: auto;
+height: 458px; overflow: auto;
 }
 .matrix-row-header-box {
 display: block;
