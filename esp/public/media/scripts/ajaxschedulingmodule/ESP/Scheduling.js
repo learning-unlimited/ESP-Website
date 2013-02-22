@@ -31,10 +31,12 @@ ESP.Scheduling = function(){
             this.roomfilter = new ESP.Scheduling.Widgets.RoomFilter(this.matrix);
         else
             this.roomfilter.restore(this.matrix);
+	//add "drag here to unschedule" box to the matrix corner
         this.garbage   = new ESP.Scheduling.Widgets.GarbageBin();
+        $j('#matrix-corner-box').append(this.garbage.el);//.addClass('float-right'));
+
         $j('#directory-target').text('');
         $j('#directory-target').append(this.searchbox.el);
-        $j('#directory-target').append(this.garbage.el.addClass('float-right'));
         $j('#directory-target').append(this.directory.el);
     
         ESP.Utilities.evm.bind('drag_dropped', function(event, data){

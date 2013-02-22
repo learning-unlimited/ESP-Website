@@ -39,6 +39,11 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
         
             // refresh the representation
             this.filter();
+	    //setup resizing
+	    //does not appear to be working here )-:
+	    $j('.directory-table-wrapper').resizable({handles: "w, n"});
+	    $j('.directory-table-wrapper').css("max-width", window.innerWidth - 50);
+	    $j('.directory-table-wrapper').css("min-width", 50);
         },
         
         // table columns
@@ -269,10 +274,10 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
         initialize: function(directory) {
             this.directory = directory;
         
-            this.el = $j('<div/>').addClass('searchbox');
-            this.el.append($j('<span>filter: </span>'));
+            //this.el = $j('<div/>').addClass('searchbox');
+            //this.el.append($j('<span>filter: </span>'));
             this.textbox = $j('<input type="text"/>');
-            this.el.append(this.textbox);
+            //this.el.append(this.textbox);
         
             //this.textbox.bind('keyup',this.do_search.bind(this));
             this.textbox.bind('keypress',function(e){ if (e.which == 13) this.do_search(); }.bind(this));

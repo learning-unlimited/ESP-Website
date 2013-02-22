@@ -18,9 +18,9 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 	//bla bla bla make a table so we can have things side by side
         var header = $j('<div/>').addClass('matrix-header');
 	this.matrix.append(header);
-	var header_table = $j('<table/>').addClass('matrix-column-header-box')
+	var header_table = $j('<table/>').addClass('matrix-column-header-box');
 	header.append(header_table);
-	var hr = $j('<tr/>').addClass('matrix-row-boydy');
+	var hr = $j('<tr/>').addClass('matrix-row-body');
 	header_table.append(hr);
 	//add corner box
 	hr.append($j('<div/>').addClass('matrix-corner-box'));
@@ -45,7 +45,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             var tr = $j('<tr/>');
 	    body_table.append(tr);
 
-            var room = rooms[i];            
+            var room = rooms[i];
             var rc = new Matrix.RoomCell(room);
 
 	    tr.append(rc.td);
@@ -321,7 +321,7 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
                 e.stopPropagation();
             }).bind(this))
         );
-        $j('.matrix-corner-box').append(this.el);
+        //$j('.matrix-corner-box').append(this.el);
     },
         
     filter: function(){
@@ -475,6 +475,13 @@ ESP.declare('ESP.Scheduling.Widgets.GarbageBin', Class.create({
                 deactivate: function(e, ui) { target.removeClass(activeClass); }
             }, options || {});
             target.droppable(options);
+	    $j('.matrix-corner-box').append(this.el);
+	    //make this resizeable
+	    $j('.matrix').resizable({handles: "e"})
+	    $j('.matrix').css("max-width", window.innerWidth - 50);
+	    $j('.matrix').css("min-width", 50);
+
         }
-    }));
+   })
+);
 
