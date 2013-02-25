@@ -91,6 +91,8 @@ class AdmissionsDashboard(ProgramModuleObj):
             classapps = classapps.filter(subject__in=classes)
         if extra:
             classapps = classapps.filter(subject__id=extra)
+        if tl != 'manage':
+            classapps = classapps.filter(app__admin_status=StudentProgramApp.APPROVED)
 
         results = []
         for classapp in classapps:
