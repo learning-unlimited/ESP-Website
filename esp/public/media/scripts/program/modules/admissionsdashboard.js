@@ -56,8 +56,7 @@ function load_app(app_id) {
     $('#student-detail').empty();
     if (app_id !== '') {
         $.getJSON(program_base_url + '/app/' + app_id, function (data) {
-            var converter = Markdown.getSanitizingConverter();
-            var html = converter.makeHtml(data.app);
+            var html = data.app;
             $('#student-detail').html(html);
         });
     }
