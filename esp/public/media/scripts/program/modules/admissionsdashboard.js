@@ -120,7 +120,7 @@ function make_teacher_rating_cell(app, readonly) {
         .val(app.teacher_rating || '')
         .change(sort_table)
         .change(function () {
-            var val = parseInt($(this).val()) || null;
+            var val = parseInt($(this).val());
             update(app.id, {'teacher_rating': val});
         })
         .prop('disabled', !!readonly);
@@ -136,7 +136,7 @@ function make_teacher_ranking_cell(app, num_apps, readonly) {
     $teacher_ranking.val(app.teacher_ranking || '')
         .change(sort_table)
         .change(function () {
-            var val = parseInt($(this).val()) || null;
+            var val = parseInt($(this).val());
             update(app.id, {'teacher_ranking': val});
         })
         .prop('disabled', !!readonly);
@@ -200,7 +200,7 @@ function make_admin_status_cell(app) {
         )
         .val(app.admin_status)
         .change(function () {
-            var val = parseInt($(this).val()) || null;
+            var val = parseInt($(this).val());
             update(app.id, {'admin_status': val});
         });
     return $admin_status;
@@ -258,7 +258,7 @@ function make_admission_status_cell(app) {
         )
         .val(app.admission_status)
         .change(function () {
-            var val = parseInt($(this).val()) || null;
+            var val = parseInt($(this).val());
             update(app.id, {'admission_status': val});
         });
     return $admission_status;

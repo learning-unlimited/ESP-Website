@@ -29,7 +29,6 @@
   <input type="hidden" id="tl" value="{{ navbar_list.section }}" />
   <input type="hidden" id="program-base-url" value="{{ program.getUrlBase }}" />
   <datalist id="admin-status-choices">
-    <option></option>
     {% for val, text in admin_status_choices %}
     <option value="{{ val }}">{{ text }}</option>
     {% endfor %}
