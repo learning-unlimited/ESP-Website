@@ -147,17 +147,17 @@ class AdmissionsDashboard(ProgramModuleObj):
                 if not (request.user.isAdmin(prog) or classapp.subject in request.user.getTaughtClassesFromProgram(prog)):
                     continue
 
-                allowed_fields = set(['teacher_rating', 'teacher_ranking', 'teacher_comment'])
-                if request.user.isAdmin(prog):
-                    allowed_fields |= set(['admin_status', 'admin_comment', 'decision_action'])
-                for key in change:
-                    if key not in allowed_fields:
-                        del change[key]
-                classapp.__dict__.update(change)
+                classapp.teacher_rating = change.get('teacher_rating', classapp.teacher_rating)
+                classapp.teacher_ranking = change.get('teacher_ranking', classapp.teacher_ranking)
+                classapp.teacher_comment = change.get('teacher_comment', classapp.teacher_comment)
                 classapp.save()
 
-                if 'decision_action' in change:
-                    decision_action = change['decision_action']
+                if request.user.isAdmin(prog):
+                    app = classapp.app
+                    app.admin_status = change.get('admin_status', app.admin_status)
+                    app.admin_comment = change.get('admin_comment', app.admin_comment)
+                    app.save()
+                    decision_action = change.get('decision_action')
                     if decision_action == 'admit':
                         classapp.admit()
                     elif decision_action == 'unadmit':
