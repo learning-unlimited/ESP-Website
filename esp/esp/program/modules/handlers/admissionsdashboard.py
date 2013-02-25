@@ -69,14 +69,14 @@ class AdmissionsDashboard(ProgramModuleObj):
             classes = request.user.getTaughtClassesFromProgram(prog)
         admin_status_choices = StudentProgramApp._meta.get_field('admin_status').choices
         teacher_rating_choices = StudentClassApp._meta.get_field('teacher_rating').choices
-        admission_status_choices = StudentClassApp._meta.get_field('admission_status').choices
+        decision_action_choices = [('admit', 'Admit'), ('unadmit', 'Unadmit'), ('waitlist', 'Waitlist')]
         return render_to_response(self.baseDir() + 'admissions.html',
                                   request,
                                   (prog, tl),
                                   {'classes': classes,
                                    'admin_status_choices': admin_status_choices,
                                    'teacher_rating_choices': teacher_rating_choices,
-                                   'admission_status_choices': admission_status_choices})
+                                   'decision_action_choices': decision_action_choices})
 
     @aux_call
     @needs_teacher
@@ -106,7 +106,15 @@ class AdmissionsDashboard(ProgramModuleObj):
             if tl == 'manage' and request.user.isAdmin(prog):
                 result['admin_status'] = classapp.app.admin_status
                 result['admin_comment'] = classapp.app.admin_comment
-                result['admission_status'] = classapp.admission_status
+                decision_status_lines = []
+                cls = classapp.app.admitted_to_class()
+                if cls is not None:
+                    line = 'Admitted: {0}'.format(cls.title())
+                    decision_status_lines.append(line)
+                for cls in classapp.app.waitlisted_to_class():
+                    line = 'Waitlisted: {0}'.format(cls.title())
+                    decision_status_lines.append(line)
+                result['decision_status'] = '\n'.join(decision_status_lines)
             results.append(result)
         return {'apps': results}
 
@@ -141,22 +149,21 @@ class AdmissionsDashboard(ProgramModuleObj):
 
                 allowed_fields = set(['teacher_rating', 'teacher_ranking', 'teacher_comment'])
                 if request.user.isAdmin(prog):
-                    allowed_fields |= set(['admin_status', 'admin_comment', 'admission_status'])
+                    allowed_fields |= set(['admin_status', 'admin_comment', 'decision_action'])
                 for key in change:
                     if key not in allowed_fields:
                         del change[key]
                 classapp.__dict__.update(change)
                 classapp.save()
 
-                if request.user.isAdmin():
-                    if 'admission_status' in change:
-                        admission_status = int(change['admission_status'])
-                        if admission_status == StudentClassApp.ADMITTED:
-                            classapp.admit()
-                        elif admission_status == StudentClassApp.UNASSIGNED:
-                            classapp.unadmit()
-                        elif admission_status == StudentClassApp.WAITLIST:
-                            classapp.waitlist()
+                if 'decision_action' in change:
+                    decision_action = change['decision_action']
+                    if decision_action == 'admit':
+                        classapp.admit()
+                    elif decision_action == 'unadmit':
+                        classapp.unadmit()
+                    elif decision_action == 'waitlist':
+                        classapp.waitlist()
 
                 updated.append(app_id)
 
