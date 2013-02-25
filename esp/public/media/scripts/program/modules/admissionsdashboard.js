@@ -55,9 +55,8 @@ function load_class(class_id, prev) {
 function load_app(app_id) {
     $('#student-detail').empty();
     if (app_id !== '') {
-        $.getJSON(program_base_url + '/app/' + app_id, function (data) {
-            var html = data.app;
-            $('#student-detail').html(html);
+        $.get(program_base_url + '/app/' + app_id, function (data) {
+            $('#student-detail').html(data);
         });
     }
     return false;
@@ -101,7 +100,8 @@ function make_table_header_row() {
 }
 
 function make_name_cell(app) {
-    var $name = $('<a href="#!"></a>')
+    var $name = $('<a></a>')
+	.prop('href', program_base_url + '/app/' + app.id)
         .addClass('name')
         .text(app.user.name)
         .click(function () {

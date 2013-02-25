@@ -38,6 +38,7 @@ from esp.web.util        import render_to_response
 from esp.utils.decorators import json_response
 from esp.application.models import StudentProgramApp, StudentClassApp, FormstackStudentProgramApp
 
+from django.http import HttpResponse
 from django.utils import simplejson as json
 
 class AdmissionsDashboard(ProgramModuleObj):
@@ -120,7 +121,6 @@ class AdmissionsDashboard(ProgramModuleObj):
 
     @aux_call
     @needs_teacher
-    @json_response(None)
     def app(self, request, tl, one, two, module, extra, prog):
         try:
             classapp = StudentClassApp.objects.get(id=extra)
@@ -129,7 +129,7 @@ class AdmissionsDashboard(ProgramModuleObj):
         if not (request.user.isAdmin(prog) or classapp.subject in request.user.getTaughtClassesFromProgram(prog)):
             return
         content = classapp.get_teacher_view(prog)
-        return {'app': content}
+        return HttpResponse(content)
 
     @aux_call
     @needs_teacher
