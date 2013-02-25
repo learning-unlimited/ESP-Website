@@ -138,6 +138,13 @@ class AdmissionsDashboard(ProgramModuleObj):
                     continue
                 if not (request.user.isAdmin(prog) or classapp.subject in request.user.getTaughtClassesFromProgram(prog)):
                     continue
+
+                allowed_fields = set(['teacher_rating', 'teacher_ranking', 'teacher_comment'])
+                if request.user.isAdmin(prog):
+                    allowed_fields |= set(['admin_status', 'admin_comment', 'admission_status'])
+                for key in change:
+                    if key not in allowed_fields:
+                        del change[key]
                 classapp.__dict__.update(change)
                 classapp.save()
 
@@ -154,41 +161,3 @@ class AdmissionsDashboard(ProgramModuleObj):
                 updated.append(app_id)
 
             return {'success': 1, 'updated': updated}
-
-    @aux_call
-    @needs_teacher
-    @json_response(None)
-    def update_app(self, request, tl, one, two, module, extra, prog):
-        if request.method == 'POST':
-            try:
-                classapp = StudentClassApp.objects.get(id=extra)
-            except StudentClassApp.DoesNotExist:
-                return # XXX: more useful error here
-            if not (request.user.isAdmin(prog) or classapp.subject in request.user.getTaughtClassesFromProgram(prog)):
-                return
-            post = request.POST
-            if 'teacher_rating' in post:
-                classapp.teacher_rating = post['teacher_rating'] or None
-            if 'teacher_ranking' in post:
-                classapp.teacher_ranking = post['teacher_ranking'] or None
-            if 'teacher_comment' in post:
-                classapp.teacher_comment = post['teacher_comment']
-            classapp.save()
-
-            if request.user.isAdmin():
-                if 'admin_status' in post:
-                    classapp.app.admin_status = post['admin_status']
-                if 'admin_comment' in post:
-                    classapp.app.admin_comment = post['admin_comment']
-                classapp.app.save()
-
-                if 'admission_status' in post:
-                    admission_status = int(post['admission_status'])
-                    if admission_status == StudentClassApp.ADMITTED:
-                        classapp.admit()
-                    elif admission_status == StudentClassApp.UNASSIGNED:
-                        classapp.unadmit()
-                    elif admission_status == StudentClassApp.WAITLIST:
-                        classapp.waitlist()
-
-            return {'success': 1}
