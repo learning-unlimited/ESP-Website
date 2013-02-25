@@ -94,7 +94,8 @@ function make_table_header_row() {
             $('<th></th>').text('Teacher Rank'),
             $('<th></th>').text('Teacher Comments'),
             $('<th></th>').text('Student Preference'),
-            $('<th></th>').text('Decision')
+            $('<th></th>').text('Decision Status'),
+            $('<th></th>').text('Decision Action')
         );
     }
     return $row;
@@ -250,18 +251,26 @@ function make_student_preference_cell(app) {
     return $student_preference;
 }
 
-function make_admission_status_cell(app) {
-    var $admission_status = $('<select></select>')
-        .addClass('admission_status')
+function make_decision_status_cell(app) {
+    var $decision_status = $('<div></div>')
+        .addClass('decision_status');
+    app.decision_status.split('\n').forEach(function (line) {
+        $('<div></div>').text(line).appendTo($decision_status);
+    });
+    return $decision_status;
+}
+
+function make_decision_action_cell(app) {
+    var $decision_action = $('<select></select>')
+        .addClass('decision_action')
         .append(
-            $('#admission-status-choices').children('option').clone()
+            $('#decision-action-choices').children('option').clone()
         )
-        .val(app.admission_status)
         .change(function () {
-            var val = parseInt($(this).val());
-            update(app.id, {'admission_status': val});
+            var val = $(this).val();
+            update(app.id, {'decision_action': val});
         });
-    return $admission_status;
+    return $decision_action;
 }
 
 function make_table_row(app, num_apps) {
@@ -289,7 +298,8 @@ function make_table_row(app, num_apps) {
             make_teacher_ranking_cell(app, num_apps, true),
             make_teacher_comments_cell(app, true),
             make_student_preference_cell(app),
-            make_admission_status_cell(app)
+            make_decision_status_cell(app),
+            make_decision_action_cell(app)
         ];
         cells.forEach(function (cell) {
             $('<td></td>').append(cell).appendTo($row);
