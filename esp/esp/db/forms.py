@@ -82,7 +82,7 @@ $j("#id_%s").autocomplete({
                     return {
                         label: item.ajax_str,
                         value: item.ajax_str,
-                        id: item.id,
+                        id: item.id
                     };
                 });
                 response(output);
