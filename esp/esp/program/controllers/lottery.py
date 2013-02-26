@@ -180,6 +180,10 @@ class LotteryAssignmentController(object):
         #   Find section capacities (TODO: convert to single query)
         for sec in self.program.sections().filter(status__gt=0, registration_status=0):
             self.section_capacities[self.section_indices[sec.id]] = sec.capacity
+
+        # Populate section lengths (hours)
+        self.section_lengths = numpy.array([x.nonzero()[0].size for x in self.section_schedules])
+
     
     def fill_section(self, si, priority=False):
         """ Assigns students to the section with index si.
@@ -288,8 +292,10 @@ class LotteryAssignmentController(object):
             
         self.clear_assignments()
         
-        #   Assign priority students to all sections in random order
+        #   Assign priority students to all sections in random order, grouped by duration
+        #   so that longer sections aren't disadvantaged by scheduling conflicts
         random_section_indices = numpy.random.choice(self.num_sections, self.num_sections, replace=False)
+        random_section_indices = sorted(random_section_indices, key=lambda i : -self.section_lengths[i])
         if self.options['stats_display']: print '\n== Assigning priority students'
         for section_index in random_section_indices:
             self.fill_section(section_index, priority=True)
