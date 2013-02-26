@@ -327,22 +327,22 @@ class LotteryAssignmentController(object):
         for i in range(self.num_students):
             assert(numpy.sum(self.student_schedules[i, :] != numpy.sum(self.section_schedules[numpy.nonzero(self.student_sections[i, :])[0], :], 0)) == 0)
     
-    def compute_stats(self):
+    def compute_stats(self, display=True):
         """ Compute statistics to provide feedback to the user about how well the
             lottery assignment worked.  """
-            
+
         stats = {}
-        
+
         priority_matches = self.student_sections * self.priority
         priority_assigned = numpy.sum(priority_matches, 1)
         priority_requested = numpy.sum(self.priority, 1)
         priority_fractions = numpy.nan_to_num(priority_assigned.astype(numpy.float) / priority_requested)
-        
+
         interest_matches = self.student_sections * self.interest
         interest_assigned = numpy.sum(interest_matches, 1)
         interest_requested = numpy.sum(self.interest, 1)
         interest_fractions = numpy.nan_to_num(interest_assigned.astype(numpy.float) / interest_requested)
-        
+
         stats['priority_requested'] = priority_requested
         stats['priority_assigned'] = priority_assigned
         stats['interest_requested'] = interest_requested
@@ -357,7 +357,7 @@ class LotteryAssignmentController(object):
         stats['num_registrations'] = numpy.sum(self.student_sections)
         stats['num_full_classes'] = numpy.sum(self.section_capacities == numpy.sum(self.student_sections, 0))
         stats['total_spaces'] = numpy.sum(self.section_capacities)
-        
+
         #   Compute histograms of assigned vs. requested classes
         hist_priority = {}
         for i in range(self.num_students):
@@ -366,7 +366,7 @@ class LotteryAssignmentController(object):
                 hist_priority[key] = 0
             hist_priority[key] += 1
         stats['hist_priority'] = hist_priority
-        
+
         hist_interest = {}
         for i in range(self.num_students):
             key = (interest_assigned[i], interest_requested[i])
@@ -374,13 +374,40 @@ class LotteryAssignmentController(object):
                 hist_interest[key] = 0
             hist_interest[key] += 1
         stats['hist_interest'] = hist_interest
-        
-        if self.options['stats_display']:
-            print 'Summary statistics:'
-            print stats
-            
-        return stats
-    
+
+        if self.options['stats_display'] or display:
+            self.display_stats(stats)
+         return stats
+
+    def display_stats(self, stats):
+        print 'Lottery results for %s' % self.program.niceName()
+        print '--------------------------------------'
+
+        print 'Counts:'
+        print '%6d students applied to the lottery' % stats['num_lottery_students']
+        print '%6d students were enrolled in at least 1 class' % stats['num_enrolled_students']
+        print '%6d total enrollments' % stats['num_registrations']
+        print '%6d available sections' % stats['num_sections']
+        print '%6d sections were filled to capacity' % stats['num_full_classes']
+
+        print 'Ratios:'
+        print '%2.2f%% of priority classes were enrolled' % (stats['overall_priority_ratio'] * 100.0)
+        print '%2.2f%% of interested classes were enrolled' % (stats['overall_interest_ratio'] * 100.0)
+        """
+        print 'Example results:'
+        no_pri_indices = numpy.nonzero(stats['priority_assigned'] == 0)[0]
+        print '1) First %d students who got none of their priority classes:' % min(5, no_pri_indices.shape[0])
+        for i in range(min(5, no_pri_indices.shape[0])):
+            sid = stats['student_ids'][no_pri_indices[i]]
+            student = ESPUser.objects.get(id=sid)
+            print '   Student: %s (grade %s)' % (student.name(), student.getGrade())
+            cs_ids = self.section_ids[numpy.nonzero(self.priority[no_pri_indices[i], :])[0]]
+            print '   - Priority classes: %s' % ClassSection.objects.filter(id__in=list(cs_ids))
+            cs_ids = self.section_ids[numpy.nonzero(self.interest[no_pri_indices[i], :])[0]]
+            print '   - Interested classes: %s' % ClassSection.objects.filter(id__in=list(cs_ids))
+            """
+
+
     def get_computed_schedule(self, student_id, mode='assigned'):
         #   mode can be 'assigned', 'interested', or 'priority'
         if mode == 'assigned':
