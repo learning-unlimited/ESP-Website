@@ -85,11 +85,14 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def ajax_sections(self, request, tl, one, two, module, extra, prog):
-        return self.ajax_sections_cached(prog)
+        return self.ajax_sections_cached(prog, request.GET.get('accepted_only', False))
 
     @cache_function
-    def ajax_sections_cached(self, prog):
-        sections = prog.sections().select_related()
+    def ajax_sections_cached(self, prog, accepted_only=False):
+        if accepted_only:
+            sections = prog.sections().filter(status__gt=0, parent_class__status__gt=0).select_related() 
+        else:
+            sections = prog.sections().select_related()
 
         rrequests = ResourceRequest.objects.filter(target__in = sections)
 
