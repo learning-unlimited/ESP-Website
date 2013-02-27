@@ -19,13 +19,16 @@ class FormstackAppSettings(models.Model):
     # formstack settings
     form_id = models.IntegerField(null=True)
     api_key = models.CharField(max_length=80)
-    handshake_key = models.CharField(max_length=80, blank=True)
+    finaid_form_id = models.IntegerField(null=True)
     # end formstack settings
 
     username_field = models.IntegerField(null=True, blank=True)
     coreclass1_field = models.IntegerField(null=True, blank=True)
     coreclass2_field = models.IntegerField(null=True, blank=True)
     coreclass3_field = models.IntegerField(null=True, blank=True)
+
+    finaid_user_id_field = models.IntegerField(null=True, blank=True)
+    finaid_username_field = models.IntegerField(null=True, blank=True)
 
     teacher_view_template = models.TextField(blank=True, help_text="""\
 A template for what teachers see when they view an app, formatted in
@@ -43,6 +46,12 @@ Markdown. To include the content of a field, use {{field.12345}} where
     def form(self):
         if self.form_id is not None:
             return FormstackForm(self.form_id, self.formstack)
+        return None
+
+    @property
+    def finaid_form(self):
+        if self.finaid_form_id is not None:
+            return FormstackForm(self.finaid_form_id, self.formstack)
         return None
 
     def create_username_field(self):

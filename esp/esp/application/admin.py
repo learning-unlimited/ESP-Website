@@ -42,11 +42,13 @@ from esp.formstack.models import get_forms_for_api_key, get_form_by_id
 from esp.application.models import FormstackAppSettings, FormstackStudentProgramApp, FormstackStudentClassApp
 
 class FormstackAppSettingsAdmin(admin.ModelAdmin):
-    fields = ['module', 'api_key', 'forms_for_api_key', 'form_id',
-              'form_fields', 'username_field',
-              'coreclass1_field', 'coreclass2_field', 'coreclass3_field',
-              'teacher_view_template']
-    readonly_fields = ['module', 'forms_for_api_key', 'form_fields']
+    fields = ['module', 'api_key', 'forms_for_api_key',
+              'form_id', 'form_fields',
+              'username_field', 'coreclass1_field', 'coreclass2_field', 'coreclass3_field',
+              'teacher_view_template',
+              'finaid_form_id', 'finaid_form_fields',
+              'finaid_user_id_field', 'finaid_username_field']
+    readonly_fields = ['module', 'forms_for_api_key', 'form_fields', 'finaid_form_fields']
     list_display = ['module']
 
     def forms_for_api_key(self, fsas):
@@ -70,6 +72,18 @@ class FormstackAppSettingsAdmin(admin.ModelAdmin):
                 lines.append(line)
         return '<br />'.join(map(html.escape, lines))
     form_fields.allow_tags = True
+
+    def finaid_form_fields(self, fsas):
+        if fsas.api_key is None or fsas.finaid_form_id is None:
+            return ''
+        lines = []
+        form = get_form_by_id(fsas.finaid_form_id, fsas.api_key)
+        for field in form.field_info():
+            if field['label']:
+                line = '{0}: {1}'.format(field['id'], field['label'])
+                lines.append(line)
+        return '<br />'.join(map(html.escape, lines))
+    finaid_form_fields.allow_tags = True
 
 admin_site.register(FormstackAppSettings, FormstackAppSettingsAdmin)
 

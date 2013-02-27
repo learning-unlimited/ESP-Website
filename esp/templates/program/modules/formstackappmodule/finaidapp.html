@@ -1,17 +1,18 @@
 {% extends "main.html" %}
 
-{% block title %}{{program.niceName}} Student Application{% endblock %}
-{% block content_title %}Apply for {{program.niceName}}{% endblock %}
+{% block title %}{{program.niceName}} Financial Aid Application{% endblock %}
+{% block content_title %}{{program.niceName}} Financial Aid Application{% endblock %}
 
 {% block content %}
-<h1>{{ program.niceName }} Student Application</h1>
+<h1>{{ program.nicename }} Financial Aid Application</h1>
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:studentapp" %}
+{% render_inline_qsd program.anchor "learn:finaidapp" %}
 
 <form method="post" action="http://www.formstack.com/forms/index.php">
     <input type="hidden" name="form" value="{{form.id}}" />
     <input type="hidden" name="viewkey" value="{{form.info.viewkey}}" />
+    <input type="hidden" name="field{{user_id_field}}" value="{{user_id}}" />
     <input type="hidden" name="field{{username_field}}" value="{{username}}" />
     <input type="submit" value="Continue" />
 </form>
