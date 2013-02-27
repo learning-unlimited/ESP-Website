@@ -257,28 +257,21 @@ class FormstackStudentProgramAppManager(models.Manager):
     def fetch(self, program):
         """ Get apps for a particular program from the Formstack API. """
 
-        try:
-            # avoid infinite recursion
-            self.locked = True
+        # get submissions from the API
+        settings = program.getModuleExtension('FormstackAppSettings')
+        submissions = settings.form().submissions(use_cache=False)
 
-            # get submissions from the API
-            settings = program.getModuleExtension('FormstackAppSettings')
-            submissions = settings.form().submissions(use_cache=False)
-
-            # parse submitted data and make model instances
-            with transaction.commit_on_success():
-                apps = []
-                for submission in submissions:
-                    try:
-                        app = self.create_from_submission(submission, settings)
-                        apps.append(app)
-                    except Exception as e:
-                        # catch and print exceptions
-                        import traceback
-                        print traceback.format_exc()
-
-        finally:
-            self.locked = False
+        # parse submitted data and make model instances
+        with transaction.commit_on_success():
+            apps = []
+            for submission in submissions:
+                try:
+                    app = self.create_from_submission(submission, settings)
+                    apps.append(app)
+                except Exception as e:
+                    # catch and print exceptions
+                    import traceback
+                    print traceback.format_exc()
 
         return apps
 
