@@ -19,7 +19,7 @@ class FormstackAppSettings(models.Model):
     # formstack settings
     form_id = models.IntegerField(null=True)
     api_key = models.CharField(max_length=80)
-    finaid_form_id = models.IntegerField(null=True)
+    finaid_form_id = models.IntegerField(null=True, blank=True)
     # end formstack settings
 
     username_field = models.IntegerField(null=True, blank=True)
