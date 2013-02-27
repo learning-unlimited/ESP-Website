@@ -7,7 +7,7 @@ from esp.users.models import ESPUser
 from esp.program.models import Program, ClassSubject
 from esp.program.modules.base import ProgramModuleObj
 from esp.formstack.api import Formstack
-from esp.formstack.models import FormstackForm, FormstackSubmission
+from esp.formstack.objects import FormstackForm, FormstackSubmission
 from esp.formstack.signals import formstack_post_signal
 
 class FormstackAppSettings(models.Model):
