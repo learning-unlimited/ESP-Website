@@ -83,8 +83,6 @@ class AdmissionsDashboard(ProgramModuleObj):
     @needs_teacher
     @json_response(None)
     def apps(self, request, tl, one, two, module, extra, prog):
-        if prog.getModuleExtension('FormstackAppSettings'):
-            FormstackStudentProgramApp.objects.fetch(prog) # keep DB ~up to date
         classapps = StudentClassApp.objects.filter(app__program=prog)
         if not request.user.isAdmin(prog):
             classes = request.user.getTaughtClassesFromProgram(prog)
