@@ -1,12 +1,14 @@
 from django.db import models, transaction
 from django.db.models.loading import get_model
 from django.template import Template, Context
+from django.dispatch import receiver
 from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.program.models import Program, ClassSubject
 from esp.program.modules.base import ProgramModuleObj
 from esp.formstack.api import Formstack
 from esp.formstack.models import FormstackForm, FormstackSubmission
+from esp.formstack.signals import formstack_post_signal
 
 class FormstackAppSettings(models.Model):
     """
@@ -195,9 +197,64 @@ class StudentClassApp(models.Model):
         unique_together = (('app', 'student_preference'),)
 
 class FormstackStudentProgramAppManager(models.Manager):
-    locked = False
+    def create_from_submission(self, submission, settings):
+        """ Takes a FormstackSubmission and creates an app from it. """
+        program = settings.module.program
+        data_dict = { int(entry['field']): entry['value']
+                      for entry in submission.data() }
 
-    @cache_function
+        # link user
+        username = data_dict.get(settings.username_field)
+        try:
+            user = ESPUser.objects.get(username=username)
+        except ESPUser.DoesNotExist:
+            raise LookupError("no matching user {0}".format(username))
+
+        # define mapping from string to class subject
+        def get_subject(s):
+            if s is None: return None
+            val = s.split('|')[0]
+            try:
+                cls_id = int(val)
+                cls = program.classes().get(id=cls_id)
+                return cls
+            except ClassSubject.DoesNotExist:
+                return None
+            except ValueError:
+                cls_title = val.strip()
+                clses = program.classes().filter(anchor__friendly_name=cls_title)
+                if clses:
+                    return clses[0]
+                else:
+                    return None
+
+        # link class subjects
+        choices = {}
+        choices[1] = get_subject(data_dict.get(settings.coreclass1_field))
+        choices[2] = get_subject(data_dict.get(settings.coreclass2_field))
+        choices[3] = get_subject(data_dict.get(settings.coreclass3_field))
+
+        # update app object, or make one if it doesn't exist
+        try:
+            app = self.get(submission_id=submission.id)
+        except self.model.DoesNotExist:
+            app = self.model(submission_id=submission.id)
+        app.user = user
+        app.program = program
+        app.save()
+
+        # update class app objects
+        for preference, subject in choices.items():
+            if subject is not None:
+                try:
+                    classapp = FormstackStudentClassApp.objects.get(app=app, student_preference=preference)
+                except FormstackStudentClassApp.DoesNotExist:
+                    classapp = FormstackStudentClassApp(app=app, student_preference=preference)
+                classapp.subject = subject
+                classapp.save()
+
+        return app
+
     def fetch(self, program):
         """ Get apps for a particular program from the Formstack API. """
 
@@ -207,76 +264,33 @@ class FormstackStudentProgramAppManager(models.Manager):
 
             # get submissions from the API
             settings = program.getModuleExtension('FormstackAppSettings')
-            submissions = settings.form.submissions()
-
-            # define mapping from string to class subject
-            def get_subject(s):
-                if s is None: return None
-                val, _, _ = s.partition('|')
-                try:
-                    cls_id = int(val)
-                    cls = program.classes().get(id=cls_id)
-                    return cls
-                except ValueError, ClassSubject.DoesNotExist:
-                    cls_title = val.strip()
-                    clses = program.classes().filter(anchor__friendly_name=cls_title)
-                    if clses:
-                        return clses[0]
-                    else:
-                        return None
+            submissions = settings.form.submissions(use_cache=False)
 
             # parse submitted data and make model instances
             with transaction.commit_on_success():
                 apps = []
                 for submission in submissions:
-                    data_dict = { int(entry['field']): entry['value']
-                                  for entry in submission.data() }
-
-                    # link user
-                    username = data_dict.get(settings.username_field)
                     try:
-                        user = ESPUser.objects.get(username=username)
-                    except ESPUser.DoesNotExist:
-                        continue # no matching user, ignore
-
-                    # link class subjects
-                    choices = {}
-                    choices[1] = get_subject(data_dict.get(settings.coreclass1_field))
-                    choices[2] = get_subject(data_dict.get(settings.coreclass2_field))
-                    choices[3] = get_subject(data_dict.get(settings.coreclass3_field))
-
-                    # update app object, or make one if it doesn't exist
-                    try:
-                        app = self.get(submission_id=submission.id)
-                    except self.model.DoesNotExist:
-                        app = self.model(submission_id=submission.id)
-                    app.user = user
-                    app.program = program
-                    app.save()
-
-                    # update class app objects
-                    for preference, subject in choices.items():
-                        if subject is not None:
-                            try:
-                                classapp = FormstackStudentClassApp.objects.get(app=app, student_preference=preference)
-                            except FormstackStudentClassApp.DoesNotExist:
-                                classapp = FormstackStudentClassApp(app=app, student_preference=preference)
-                            classapp.subject = subject
-                            classapp.save()
-                    apps.append(app)
+                        app = self.create_from_submission(submission, settings)
+                        apps.append(app)
+                    except Exception as e:
+                        # catch and print exceptions
+                        import traceback
+                        print traceback.format_exc()
 
         finally:
             self.locked = False
 
         return apps
-    fetch.depend_on_cache(FormstackForm.submissions, lambda **kwargs: {})
-    fetch.depend_on_cache(FormstackSubmission.data, lambda **kwargs: {})
 
-    def get_query_set(self):
-        if not self.locked:
-            for program in Program.objects.filter(program_modules__handler='FormstackAppModule'):
-                self.fetch(program)
-        return super(FormstackStudentProgramAppManager, self).get_query_set().filter(app_type='Formstack')
+@receiver(formstack_post_signal)
+def create_app(sender, form_id, submission_id, fields, **kwargs):
+    data = [{'field': field, 'value': value}
+            for field, value in fields.items()]
+    for settings in FormstackAppSettings.objects.filter(form_id=form_id):
+        submission = FormstackSubmission(submission_id, settings.formstack)
+        submission.data.set([submission], data) # set data cache
+        FormstackStudentProgramApp.objects.create_from_submission(submission, settings)
 
 class FormstackStudentProgramApp(StudentProgramApp):
     """ A student's application through Formstack. """
