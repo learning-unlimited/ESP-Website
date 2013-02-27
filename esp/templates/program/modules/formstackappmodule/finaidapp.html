@@ -9,7 +9,7 @@
 {% load render_qsd %}
 {% render_inline_qsd program.anchor "learn:finaidapp" %}
 
-<form method="post" action="http://www.formstack.com/forms/index.php">
+<form method="post" action="{{form.info.url}}">
     <input type="hidden" name="form" value="{{form.id}}" />
     <input type="hidden" name="viewkey" value="{{form.info.viewkey}}" />
     <input type="hidden" name="field{{user_id_field}}" value="{{user_id}}" />
