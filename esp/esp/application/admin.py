@@ -52,7 +52,7 @@ class FormstackAppSettingsAdmin(admin.ModelAdmin):
     list_display = ['module']
 
     def forms_for_api_key(self, fsas):
-        if fsas.api_key is None:
+        if fsas.api_key == '':
             return ''
         lines = []
         for form in get_forms_for_api_key(fsas.api_key):
@@ -62,7 +62,7 @@ class FormstackAppSettingsAdmin(admin.ModelAdmin):
     forms_for_api_key.allow_tags = True
 
     def form_fields(self, fsas):
-        if fsas.api_key is None or fsas.form_id is None:
+        if fsas.api_key == '' or fsas.form_id is None:
             return ''
         lines = []
         form = get_form_by_id(fsas.form_id, fsas.api_key)
@@ -74,7 +74,7 @@ class FormstackAppSettingsAdmin(admin.ModelAdmin):
     form_fields.allow_tags = True
 
     def finaid_form_fields(self, fsas):
-        if fsas.api_key is None or fsas.finaid_form_id is None:
+        if fsas.api_key == '' or fsas.finaid_form_id is None:
             return ''
         lines = []
         form = get_form_by_id(fsas.finaid_form_id, fsas.api_key)
