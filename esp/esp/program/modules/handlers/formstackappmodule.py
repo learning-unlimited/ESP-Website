@@ -78,7 +78,7 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
     @needs_student
     def studentapp(self, request, tl, one, two, module, extra, prog):
         context = {}
-        context['form'] = self.form
+        context['form'] = self.form()
         context['username_field'] = self.username_field
         context['username'] = request.user.username
         context['app_is_open'] = self.app_is_open or request.user.isAdmin(prog)
@@ -88,13 +88,13 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
     @aux_call
     @needs_student
     def finaidapp(self, request, tl, one, two, module, extra, prog):
-        if not self.finaid_form:
+        if not self.finaid_form():
             return # no finaid form
         app = FormstackStudentProgramApp.objects.filter(user=request.user)
         if not app: # student has not applied for the program
             return # XXX: more useful error here
         context = {}
-        context['form'] = self.finaid_form
+        context['form'] = self.finaid_form()
         context['user_id_field'] = self.finaid_user_id_field
         context['user_id'] = request.user.id
         context['username_field'] = self.finaid_username_field

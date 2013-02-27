@@ -39,23 +39,20 @@ field id.""")
 
     app_is_open = models.BooleanField(default=False)
 
-    @property
     def formstack(self):
         """
         A reference to the Formstack client using the stored API key.
         """
         return Formstack(self.api_key)
 
-    @property
     def form(self):
         if self.form_id is not None:
-            return FormstackForm(self.form_id, self.formstack)
+            return FormstackForm(self.form_id, self.formstack())
         return None
 
-    @property
     def finaid_form(self):
         if self.finaid_form_id is not None:
-            return FormstackForm(self.finaid_form_id, self.formstack)
+            return FormstackForm(self.finaid_form_id, self.formstack())
         return None
 
     def create_username_field(self):
@@ -64,7 +61,7 @@ field id.""")
         and sets the username_field attribute on this object.
         """
         # create a new read-only field
-        api_response = self.formstack.create_field(self.form_id, {
+        api_response = self.formstack().create_field(self.form_id, {
                 'field_type': 'text',
                 'label': 'ESP Username',
                 'required': 1,
@@ -266,7 +263,7 @@ class FormstackStudentProgramAppManager(models.Manager):
 
             # get submissions from the API
             settings = program.getModuleExtension('FormstackAppSettings')
-            submissions = settings.form.submissions(use_cache=False)
+            submissions = settings.form().submissions(use_cache=False)
 
             # parse submitted data and make model instances
             with transaction.commit_on_success():
@@ -290,7 +287,7 @@ def create_app(sender, form_id, submission_id, fields, **kwargs):
     data = [{'field': field, 'value': value}
             for field, value in fields.items()]
     for settings in FormstackAppSettings.objects.filter(form_id=form_id):
-        submission = FormstackSubmission(submission_id, settings.formstack)
+        submission = FormstackSubmission(submission_id, settings.formstack())
         submission.data.set([submission], data) # set data cache
         FormstackStudentProgramApp.objects.create_from_submission(submission, settings)
 
@@ -303,21 +300,19 @@ class FormstackStudentProgramApp(StudentProgramApp):
         super(FormstackStudentProgramApp, self).__init__(*args, **kwargs)
         self.app_type = 'Formstack'
 
-    @property
     def program_settings(self):
         return self.program.getModuleExtension('FormstackAppSettings')
 
-    @property
     def submission(self):
-        return FormstackSubmission(self.submission_id, self.program_settings.formstack)
+        return FormstackSubmission(self.submission_id, self.program_settings().formstack())
 
     def get_responses(self, program=None):
         """ Returns a list of (question, response) tuples from submitted data. """
 
         if program and program == self.program:
             self.program = program # optimization: if we're calling this a lot, passing in the same program object lets us save results
-        data = self.submission.data()
-        field_info = self.program_settings.form.field_info()
+        data = self.submission().data()
+        field_info = self.program_settings().form().field_info()
         id_to_label = { field['id']: field['label'] for field in field_info }
         result = []
         for response in data:
@@ -330,11 +325,11 @@ class FormstackStudentProgramApp(StudentProgramApp):
 
         if program and program == self.program:
             self.program = program # optimization: if we're calling this a lot, passing in the same program object lets us save results
-        data = self.submission.data()
+        data = self.submission().data()
         data_dict = {}
         for response in data:
             data_dict[response['field']] = response['value']
-        template = Template(self.program_settings.teacher_view_template)
+        template = Template(self.program_settings().teacher_view_template)
         context = Context({'fields': data_dict})
         return template.render(context)
 
