@@ -78,15 +78,29 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
     @needs_student
     def studentapp(self, request, tl, one, two, module, extra, prog):
         # TODO: deadlines
-        args = {}
-        if self.username_field is not None:
-            # prepopulate username field
-            field_name = 'field{}'.format(self.username_field)
-            args[field_name] = request.user.username
         context = {}
         context['form'] = self.form
-        context['args'] = urlencode(args)
+        context['username_field'] = self.username_field
+        context['username'] = request.user.username
         return render_to_response(self.baseDir()+'studentapp.html',
+                                  request, (prog, tl), context)
+
+    @aux_call
+    @needs_student
+    def finaidapp(self, request, tl, one, two, module, extra, prog):
+        # TODO: deadlines
+        if not self.finaid_form:
+            return # no finaid form
+        app = FormstackStudentProgramApp.objects.filter(user=request.user)
+        if not app: # student has not applied for the program
+            return # XXX: more useful error here
+        context = {}
+        context['form'] = self.finaid_form
+        context['user_id_field'] = self.finaid_user_id_field
+        context['user_id'] = request.user.id
+        context['username_field'] = self.finaid_username_field
+        context['username'] = request.user.username
+        return render_to_response(self.baseDir()+'finaidapp.html',
                                   request, (prog, tl), context)
 
     class Meta:
