@@ -77,18 +77,17 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
     @main_call
     @needs_student
     def studentapp(self, request, tl, one, two, module, extra, prog):
-        # TODO: deadlines
         context = {}
         context['form'] = self.form
         context['username_field'] = self.username_field
         context['username'] = request.user.username
+        context['app_is_open'] = self.app_is_open or request.user.isAdmin(prog)
         return render_to_response(self.baseDir()+'studentapp.html',
                                   request, (prog, tl), context)
 
     @aux_call
     @needs_student
     def finaidapp(self, request, tl, one, two, module, extra, prog):
-        # TODO: deadlines
         if not self.finaid_form:
             return # no finaid form
         app = FormstackStudentProgramApp.objects.filter(user=request.user)
