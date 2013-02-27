@@ -277,6 +277,8 @@ class FormstackStudentProgramAppManager(models.Manager):
 
 @receiver(formstack_post_signal)
 def create_app(sender, form_id, submission_id, fields, **kwargs):
+    """ Called whenever a Formstack form is submitted. """
+
     data = [{'field': field, 'value': value}
             for field, value in fields.items()]
     for settings in FormstackAppSettings.objects.filter(form_id=form_id):
