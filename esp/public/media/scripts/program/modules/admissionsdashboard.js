@@ -103,11 +103,16 @@ function make_name_cell(app) {
     var $name = $('<a></a>')
 	.prop('href', program_base_url + '/app/' + app.id)
         .addClass('name')
-        .text(app.user.name)
-        .click(function () {
+        .text(app.user.name);
+    if (tl == 'manage') { // open in new window
+	$name.prop('target', '_blank');
+    }
+    else { // open in side pane
+        $name.click(function () {
             load_app(app.id);
             return false;
         });
+    }
     return $name;
 }
 

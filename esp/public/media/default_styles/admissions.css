@@ -25,10 +25,10 @@ body, input {
     width: 60%;
 }
 .tl-manage #students-list {
-    width: 60%;
+    width: 100%;
 }
 .tl-manage #student-detail {
-    width: 40%;
+    display: none;
 }
 #students-list table {
     width: 100%;
