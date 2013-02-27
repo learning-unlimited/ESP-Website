@@ -1,10 +1,6 @@
 """
 A somewhat higher-level interface to the Formstack API.
 
-FormstackForm and FormstackSubmission aren't real Django models, but
-in some sense the are models -- except that rather than living in our
-database they live in Formstack's database.
-
 Employs caching to avoid hitting Formstack's API more than necessary.
 """
 
