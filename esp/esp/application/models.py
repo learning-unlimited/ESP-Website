@@ -37,6 +37,8 @@ An HTML template for what teachers see when they view an app. To
 include the content of a field, use {{field.12345}} where 12345 is the
 field id.""")
 
+    app_is_open = models.BooleanField(default=False)
+
     @property
     def formstack(self):
         """
