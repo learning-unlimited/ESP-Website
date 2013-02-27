@@ -33,9 +33,9 @@ class FormstackAppSettings(models.Model):
     finaid_username_field = models.IntegerField(null=True, blank=True)
 
     teacher_view_template = models.TextField(blank=True, help_text="""\
-A template for what teachers see when they view an app, formatted in
-Markdown. To include the content of a field, use {{field.12345}} where
-12345 is the field id.""")
+An HTML template for what teachers see when they view an app. To
+include the content of a field, use {{field.12345}} where 12345 is the
+field id.""")
 
     @property
     def formstack(self):
