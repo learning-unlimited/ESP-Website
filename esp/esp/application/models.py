@@ -325,7 +325,7 @@ class FormstackStudentProgramApp(StudentProgramApp):
         for response in data:
             data_dict[response['field']] = response['value']
         template = Template(self.program_settings().teacher_view_template)
-        context = Context({'fields': data_dict})
+        context = Context({'field': data_dict})
         return template.render(context)
 
     class Meta:
