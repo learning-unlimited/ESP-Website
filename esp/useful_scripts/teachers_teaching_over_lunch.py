@@ -1,4 +1,5 @@
 from esp.program.models import *
+verbose = True
 
 def _getLunchByDay(prog):
     import numpy
@@ -22,14 +23,17 @@ def teachers_teaching_over_lunch(prog, lunch):
             for m in s.meeting_times.all():
                 meeting_times.append(m)
 
-        for lu in lunch:       
+        for lu in lunch:
+            if verbose: print lu
             if not (False in [b in meeting_times for b in lu]):
-                l.append(teacher)
+                if lu != []: l.append((teacher, lu, teacher.getTaughtClassesFromProgram(prog)))
         
     return l
 
 
-prog = Program.objects.get(id=85)
+prog = Program.objects.get(id=88)
+if verbose: print prog
 lunch = _getLunchByDay(prog)
 print lunch
-print teachers_teaching_over_lunch(prog, lunch)
+for item in teachers_teaching_over_lunch(prog, lunch):
+    print item

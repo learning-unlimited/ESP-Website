@@ -14,13 +14,12 @@ import re
 
 
 # CONFIGURATION
-PROGRAM_ID = 50708  # Splash! 2012
-#  the id of the program in the datatree
+PROGRAM_ID = 89  # Spring HSSP 2013
 PROGRAM_COST = 40
 
 
 # ITERATE & APPROVE REQUESTS
-reqs = FinancialAidRequest.objects.filter(program__anchor__id=PROGRAM_ID, approved=None)
+reqs = FinancialAidRequest.objects.filter(program__id=PROGRAM_ID, approved=None)
 
 print "New Approvals:"
 approved_any = False
