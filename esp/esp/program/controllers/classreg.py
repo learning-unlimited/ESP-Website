@@ -184,7 +184,7 @@ class ClassCreationController(object):
         self.add_teacher_to_program_mailinglist(user)
 
         cls.makeTeacher(user)
-        cls.makeAdmin(user, self.crmi.teacher_class_noedit)
+        cls.makeAdmin(user, self.crmi.teacher_class_noedit if self.crmi else None)
         cls.subscribe(user)
         self.program.teacherSubscribe(user)
 

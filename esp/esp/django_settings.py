@@ -223,6 +223,8 @@ INSTALLED_APPS = (
     'form_utils',
     'esp.seltests',
     'esp.dataviews',
+    'esp.formstack',
+    'esp.application',
     'django.contrib.redirects',
 )
 

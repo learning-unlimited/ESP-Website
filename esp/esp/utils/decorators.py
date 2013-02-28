@@ -93,12 +93,15 @@ def json_response(field_map={}):
             if isinstance(result, HttpResponse):
                 return result
             else:
-                new_result = {}
-                for key in result:
-                    new_list = []
-                    for item in result[key]:
-                        new_list.append(map_fields(item))
-                    new_result[key] = new_list
+                if field_map is None:
+                    new_result = result
+                else:
+                    new_result = {}
+                    for key in result:
+                        new_list = []
+                        for item in result[key]:
+                            new_list.append(map_fields(item))
+                        new_result[key] = new_list
                 resp = HttpResponse(mimetype='application/json')
                 simplejson.dump(new_result, resp)
                 return resp

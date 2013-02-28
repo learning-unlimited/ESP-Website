@@ -1,0 +1,39 @@
+{% extends "main.html" %}
+
+{% block title %}Quick Class Reg{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+    <link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
+{% endblock %}
+
+{% block xtrajs %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
+{% endblock %}
+
+{% block content %}
+<h1>Quick Class Registration</h1>
+
+<form action="{{ request.path }}" method="post">
+
+<div id="program_form">
+    <table width="550">
+      <tr>
+	<th align="center" colspan="2">Make A Class</th>
+      </tr>
+      {{ form.as_table }}
+      <tr><td align="center" colspan="2"><button class="button" type="submit" name="submit">Submit</button></td></tr>
+    </table>
+</div>
+</form>
+
+{% if status == 'success' %}
+<p style="color:#070">Success!</p>
+{% endif %}
+{% if status == 'error' %}
+<p style="color:#700">Please fill out all required fields.</p>
+{% endif %}
+
+{% endblock %}

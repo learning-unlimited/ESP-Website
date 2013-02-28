@@ -387,3 +387,5 @@ class CreditCardSettings(models.Model):
     post_url = models.CharField(max_length=255, default='')
     offer_donation = models.BooleanField(default=False)
     invoice_prefix = models.CharField(max_length=80, default=settings.INSTITUTION_NAME.lower())
+
+from esp.application.models import FormstackAppSettings
