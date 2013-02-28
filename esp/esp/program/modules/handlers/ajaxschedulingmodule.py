@@ -295,6 +295,18 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @aux_call
     @needs_admin
+    def ajax_schedule_assignments_csv(self, request, tl, one, two, module, extra, prog):
+        lst = []
+        for s in prog.sections():
+            if s.resourceassignment_set.all().count() > 0:
+                ra = s.resourceassignment_set.all().order_by('resource__event__id')[0]
+                lst.append((s.id, ra.resource.name, ra.resource.event.id))
+        
+
+        return HttpResponse('\n'.join([','.join(['"%s"' % v for v in x]) for x in lst]), mimetype='text/csv')
+
+    @aux_call
+    @needs_admin
     def ajax_schedule_class(self, request, tl, one, two, module, extra, prog):
         # DON'T CACHE this function!
         # It's supposed to have side effects, that's the whole point!
