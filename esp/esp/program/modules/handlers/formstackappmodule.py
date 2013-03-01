@@ -82,6 +82,16 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
         context['username_field'] = self.username_field
         context['username'] = request.user.username
         context['app_is_open'] = self.app_is_open or request.user.isAdmin(prog)
+        context['autopopulated'] = autopopulated = []
+        for line in self.autopopulated_fields.strip().split('\n'):
+            field, _, expr = line.partition(':')
+            try:
+                value = eval(expr, {'user': request.user})
+            except:
+                import traceback
+                traceback.print_exc()
+                continue
+            autopopulated.append((field, value))
         return render_to_response(self.baseDir()+'studentapp.html',
                                   request, (prog, tl), context)
 
@@ -90,7 +100,7 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
     def finaidapp(self, request, tl, one, two, module, extra, prog):
         if not self.finaid_form():
             return # no finaid form
-        app = FormstackStudentProgramApp.objects.filter(user=request.user)
+        app = FormstackStudentProgramApp.objects.filter(user=request.user, program=prog)
         if not app: # student has not applied for the program
             return # XXX: more useful error here
         context = {}
