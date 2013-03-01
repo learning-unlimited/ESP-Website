@@ -29,6 +29,13 @@ class FormstackAppSettings(models.Model):
     coreclass2_field = models.IntegerField(null=True, blank=True)
     coreclass3_field = models.IntegerField(null=True, blank=True)
 
+    autopopulated_fields = models.TextField(blank=True, help_text="""\
+To autopopulate fields on the form, type "[field id]: [Python
+expression that returns field value]", one field per line. The Python
+expression can use the variable 'user' to refer to request.user.
+
+Caution: expressions will be eval()'d by the server.""")
+
     finaid_user_id_field = models.IntegerField(null=True, blank=True)
     finaid_username_field = models.IntegerField(null=True, blank=True)
 
