@@ -82,6 +82,16 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
         context['username_field'] = self.username_field
         context['username'] = request.user.username
         context['app_is_open'] = self.app_is_open or request.user.isAdmin(prog)
+        context['autopopulated'] = autopopulated = []
+        for line in self.autopopulated_fields.strip().split('\n'):
+            field, _, expr = line.partition(':')
+            try:
+                value = eval(expr, {'user': request.user})
+            except:
+                import traceback
+                traceback.print_exc()
+                continue
+            autopopulated.append((field, value))
         return render_to_response(self.baseDir()+'studentapp.html',
                                   request, (prog, tl), context)
 
