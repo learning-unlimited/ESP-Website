@@ -85,11 +85,14 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def ajax_sections(self, request, tl, one, two, module, extra, prog):
-        return self.ajax_sections_cached(prog)
+        return self.ajax_sections_cached(prog, request.GET.get('accepted_only', False))
 
     @cache_function
-    def ajax_sections_cached(self, prog):
-        sections = prog.sections().select_related()
+    def ajax_sections_cached(self, prog, accepted_only=False):
+        if accepted_only:
+            sections = prog.sections().filter(status__gt=0, parent_class__status__gt=0).select_related() 
+        else:
+            sections = prog.sections().select_related()
 
         rrequests = ResourceRequest.objects.filter(target__in = sections)
 
@@ -292,6 +295,17 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return response
     ajax_schedule_assignments_cached.get_or_create_token(('prog',))
     ajax_schedule_assignments_cached.depend_on_model(lambda: ResourceAssignment)
+    
+    @aux_call
+    @needs_admin
+    def ajax_schedule_assignments_csv(self, request, tl, one, two, module, extra, prog):
+        lst = []
+        for s in prog.sections():
+            if s.resourceassignment_set.all().count() > 0:
+                ra = s.resourceassignment_set.all().order_by('resource__event__id')[0]
+                lst.append((s.id, ra.resource.name, ra.resource.event.id))
+
+        return HttpResponse('\n'.join([','.join(['"%s"' % v for v in x]) for x in lst]), mimetype='text/csv')
 
     @aux_call
     @needs_admin

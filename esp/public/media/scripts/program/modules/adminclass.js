@@ -67,19 +67,19 @@ function fill_class_popup(clsid, classes_data) {
         text: "Approve (all sections)",
         click: function() {
           approve_class($j(this).attr('clsid'));
-        },
+        }
       },
       {
         text: "Unreview",
         click: function() {
           unreview_class($j(this).attr('clsid'));
-        },
+        }
       },
       {
         text: "Reject (all sections)",
         click: function() {
           reject_class($j(this).attr('clsid'));
-        },
+        }
       }])
     .html('')
     .append("<p><b>Status:</b> " + status_string + "</p>")

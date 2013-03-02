@@ -555,7 +555,7 @@ def newprogram(request):
             
             manage_url = '/manage/' + new_prog.url() + '/resources'
 
-            if 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
+            if settings.USE_MAILMAN and 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
                 # While we're at it, create the program's mailing list
                 mailing_list_name = "%s_%s" % (new_prog.anchor.parent.name, new_prog.anchor.name)
                 teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")

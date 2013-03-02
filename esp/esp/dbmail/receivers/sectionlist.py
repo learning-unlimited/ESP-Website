@@ -44,6 +44,8 @@ class SectionList(BaseHandler):
             self.send = True
 
     def process_mailman(self, user, class_id, section_num, user_type):
+        if not (settings.USE_MAILMAN and 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys()):
+            return
         try:
             cls = ClassSubject.objects.get(id=int(class_id))
             section = filter(lambda s: s.index() == int(section_num), cls.sections.all())[0]

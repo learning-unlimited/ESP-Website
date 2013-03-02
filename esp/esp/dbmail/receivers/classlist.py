@@ -45,6 +45,8 @@ class ClassList(BaseHandler):
 
 
     def process_mailman(self, user, class_id, user_type):
+        if not (settings.USE_MAILMAN and 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys()):
+            return
         try:
             cls = ClassSubject.objects.get(id = class_id)
             sections = cls.sections.all()

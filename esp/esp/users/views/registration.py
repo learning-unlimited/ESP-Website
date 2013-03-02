@@ -15,7 +15,7 @@ from django.core.urlresolvers import reverse
 import hashlib
 import random
 import urllib
-from esp import settings
+from django.conf import settings
 from django.utils.datastructures import MultiValueDictKeyError
 
 __all__ = ['join_emaillist','user_registration_phase1', 'user_registration_phase2','resend_activation_view']

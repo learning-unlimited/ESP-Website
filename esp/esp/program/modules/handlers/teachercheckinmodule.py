@@ -91,7 +91,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             return '%s was not checked in for %s.' % (teacher.name(), prog.niceName())
     
     @main_call
-    @needs_admin
+    @needs_onsite
     def teachercheckin(self, request, tl, one, two, module, extra, prog):
         context = {}
         if 'when' in request.GET:
@@ -117,7 +117,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'teachercheckin.html', request, (prog, tl), context)
     
     @aux_call
-    @needs_admin
+    @needs_onsite
     def ajaxteachercheckin(self, request, tl, one, two, module, extra, prog):
         json_data = {}
         if 'teacher' in request.POST:
@@ -199,7 +199,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         return class_arr, teacher_dict
     
     @aux_call
-    @needs_admin
+    @needs_onsite
     def missingteachers(self, request, tl, one, two, module, extra, prog):
         if 'start' in request.GET:
             starttime = Event.objects.get(id=request.GET['start'])

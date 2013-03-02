@@ -41,6 +41,9 @@ from esp.utils.migration import missing_db_table
 from esp.program import models as program_models
 from esp.users import models as users_models
 
+from django.conf import settings
+import os.path
+
 have_already_installed = False
 
 def post_syncdb(sender, app, **kwargs):
@@ -61,7 +64,7 @@ def post_syncdb(sender, app, **kwargs):
 
             from django.db import connection
             cursor = connection.cursor()
-            f = open("datatree/sql/datatree.postgresql-multiline.sql")
+            f = open(os.path.join(settings.PROJECT_ROOT, "esp/datatree/sql/datatree.postgresql-multiline.sql"))
             cursor.execute(f.read())
             f.close()
         

@@ -230,8 +230,8 @@ add_classes_to_timeslot = function(timeslot, sections){
     // Adds all classes that start in this timeblock
         for(i in classes_list){
 	    if (typeof(classes_list[i]) == "function") continue;
-            $j("#"+ts_table_from_id(timeslot['id'])).append(get_class_checkbox_html(classes_list[i], timeslot['id']));
-            load_old_preferences(classes_list[i]);
+        $j("#"+ts_table_from_id(timeslot['id']) + "> tbody:last").append(get_class_checkbox_html(classes_list[i], timeslot['id']));
+        load_old_preferences(classes_list[i]);
         }
     }
     // Add carried over classes section

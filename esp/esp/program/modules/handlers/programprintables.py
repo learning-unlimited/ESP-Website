@@ -47,7 +47,7 @@ from esp.accounting_core.models import LineItem, LineItemType, Transaction
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
-from esp import settings
+from django.conf import settings
 from django.template.loader import select_template
 from django.utils.encoding import smart_str
 
@@ -658,6 +658,8 @@ class ProgramPrintables(ProgramModuleObj):
             # get list of valid classes
             classes = [ cls for cls in teacher.getTaughtSections()
                     if cls.parent_program == self.program
+                    and cls.meeting_times.all().exists()
+                    and cls.resourceassignment_set.all().exists()
                     and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()            

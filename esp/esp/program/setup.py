@@ -79,7 +79,7 @@ def prepare_program(program, data):
     
     #   Grant onsite bit (for all times) if an onsite user is available.
     if ESPUser.onsite_user():
-        userbits += [('V/Registration/Onsite', ESPUser.onsite_user(), None, None)]
+        userbits += [('V/Registration/OnSite', ESPUser.onsite_user(), None, None)]
     
     for director in data['admins']:
         userbits += [('V/Administer', ESPUser.objects.get(id=int(director)), None, None)]

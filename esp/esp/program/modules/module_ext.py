@@ -36,7 +36,7 @@ from django.db import models
 from esp.datatree.models import *
 from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
-from esp import settings
+from django.conf import settings
 from esp.users.models import ESPUser
 from esp.program.models import Program, RegistrationType
 
