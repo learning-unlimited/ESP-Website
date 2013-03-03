@@ -184,7 +184,7 @@ class LotteryAssignmentController(object):
             return None
         if checks=='--help':
             print 'Sanitize - a module used to clear up oddities in Student Registrations.'
-            print "Syntax: self.sanitize(['check1', 'check2', 'check3'], fake=False, csvlog=True, directory='" + self.home_directory + "')"
+            print "Syntax: self.sanitize(['check1', 'check2', 'check3'], fake=False, csvlog=True, directory='/home/shulinye')"
             print ''
             print '-------------Current Checks----------------'
             print 'antiwalk-in: Checks for Student Registrations made for walk-in classes. If fake=False, will remove them.'
