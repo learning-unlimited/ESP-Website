@@ -40,17 +40,21 @@ from datetime import date, datetime
 from esp.cal.models import Event
 from esp.users.models import ESPUser, StudentInfo
 from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, ClassSection
+from esp.program.models.class_ import ClassCategories
 from esp.mailman import add_list_member, remove_list_member, list_contents
 
 from django.conf import settings
+import os
 
 class LotteryAssignmentController(object):
 
+    home_directory = os.getenv("HOME")#Gets the home directory of the user running the lottery.
     default_options = {
         'Kp': 1.2,
         'Ki': 1.1,
         'check_grade': True,
         'stats_display': False,
+        'directory': home_directory
     }
     
     def __init__(self, program, **kwargs):
@@ -103,6 +107,108 @@ class LotteryAssignmentController(object):
         self.student_schedules = numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool)
         self.student_sections = numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool)
         self.student_weights = numpy.ones((self.num_students,))
+
+    def sanitize_walkin(self, fake=True, csvwriter=None, csvlog=False, directory=None, verbose=0):
+        """Checks for Student Registrations made for walk-in classes. If fake=False, will remove them."""
+        closeatend = False
+	category_walkin = ClassCategories.objects.get(category="Walk-in Activity")
+        if csvlog and not(fake): #If I'm actually doing things, and I want a log....
+            import csv
+            if csvwriter==None:
+                closeatend = True
+                if directory==None: directory = self.default_options['directory']
+                filefullname = directory +'/santitize_walkins_log.csv'
+                csvfile = open(filefullname, 'ab+')
+                csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(['Sanitizing Walkins'])
+            csvwriter.writerow(['Class Title', 'Scheduled at:', 'Student', 'Enrollment Type:'])
+        walkins=self.program.classes().filter(category=category_walkin)
+        report = []
+        for w in walkins:
+            for sec in w.get_sections():
+                srs = sec.getRegistrations()
+                report.append((sec, srs.count()))
+
+		for sr in srs:		
+			if not fake:	
+        	  	     if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__unicode__().encode('ascii', 'ignore')])
+               		sr.expire()
+        if verbose > 0: print report
+	if closeatend: csvfile.close()
+	print "Walkins checked"
+	if not fake: "Please re-run self.initalize() to update."
+        return report
+
+    def sanitize_lunch(self, csvlog=False, fake = True, csvwriter=None, directory=None, verbose=0):
+	"""Checks to see if any students have registrations for lunch. If fake=False, removes them."""
+	closeatend = False
+	if csvlog and not(fake): #If I'm actually doing things, and I want a log....
+            import csv
+            if csvwriter==None:
+                closeatend = True
+                if directory==None: directory = self.default_options['directory']
+                filefullname = directory +'/santitize_lunch_log.csv'
+                csvfile = open(filefullname, 'ab+')
+                csvwriter = csv.writer(csvfile)
+            csvwriter.writerow(['Sanitizing Lunch Blocks'])
+            csvwriter.writerow(['Lunch Block', 'Student', 'Enrollment Type:'])
+	
+	category_lunch = ClassCategories.objects.get(category="Lunch")
+	lunchblocks = self.program.classes().filter(category=category_lunch)
+	report = []
+	for l in lunchblocks:
+	    srs = l.getRegistrations()
+	    report.append((l, srs.count()))
+	    if not fake:
+		for sr in srs:
+  		    if csvlog: csvwriter.writerow([l.title().encode('ascii', 'ignore'), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__unicode__().encode('ascii', 'ignore')])
+		    sr.expire()
+	if verbose > 0: print report
+	if closeatend: csvfile.close()
+	print "Lunch checked."
+	if not fake: "Please re-run self.initalize() to update."
+	return report
+
+    def sanitize(self, checks=None, fake=True, csvlog=True, directory=None, verbose=0):
+        """Runs some checks on Student Registration. Enter in the checks you'd like to run as a list of strings.
+        Checks that currently exist:
+            -antiwalk-in: Checks for Student Registrations made for walk-in classes. Can remove them.
+	    -antilunch: Checks for Student Registrations made for lunch. Can remove them.
+        Example syntax: self.sanitize(['antiwalk-in'])
+        Run self.sanitize('--help') for more information
+        Set fake=False if you actually want something to happen.
+        Set csvlog=False if you don't want a log of what was done
+        Set directory to where you'd like the csvlog filed saved (if csvlog=False, does nothing)"""
+        if checks==None:
+            print "You didn't enter a check! Please enter the checks you'd like to run as a list of strings. Run self.sanitize('--help') for more information!"
+            return None
+        if checks=='--help':
+            print 'Sanitize - a module used to clear up oddities in Student Registrations.'
+            print "Syntax: self.sanitize(['check1', 'check2', 'check3'], fake=False, csvlog=True, directory='" + self.home_directory + "')"
+            print ''
+            print '-------------Current Checks----------------'
+            print 'antiwalk-in: Checks for Student Registrations made for walk-in classes. If fake=False, will remove them.'
+	    print 'antilunch: Checks for Student Registrations made for lunch. If fake=False, will remove them.'
+            print '-------------Known Bugs-----------------'
+            print "Guys, I'm not course 6 for a reason~shulinye"
+            return None
+        if type(checks) == str:
+            checks = [checks]
+        if csvlog:
+            import csv
+            if directory==None: directory = self.default_options['directory']
+            filefullname = directory + '/'+ datetime.datetime.now().strftime("%Y-%m-%d_") + 'santitize_log.csv'
+            csvfile = open(filefullname, 'ab+')
+            csvwriter = csv.writer(csvfile) 
+	self.reports = {}
+        for ck in checks:
+            if verbose > 3: print "Now running " + ck
+            if ck == 'antiwalk-in':
+                self.reports['walkin'] = self.sanitize_walkin(fake = fake, csvwriter = csvwriter if csvlog else None, csvlog=csvlog, verbose=verbose)
+	    if ck == 'antilunch':
+		self.reports['antilunch'] = self.sanitize_lunch(fake = fake, csvwriter = csvwriter if csvlog else None, csvlog=csvlog, verbose=verbose)
+        if csvlog: csvfile.close()
+        return self.reports
         
     def initialize(self):
         """ Gather all of the information needed to run the lottery assignment.
@@ -375,9 +481,40 @@ class LotteryAssignmentController(object):
             hist_interest[key] += 1
         stats['hist_interest'] = hist_interest
 
+        # Compute the overall utility of the current run.
+        # 1. Each student has a utility of sqrt(#hours of interested + 1.5 #hours of priority).
+        # This measures how happy the student will be with their classes
+        # 2. Each student gets a weight of sqrt(# classes regged for)
+        # This measures how much responsibility we take if the student gets a
+        # bad schedule (we care less if students regged for less classes).
+        # 3. We then sum weight*utility over all students and divide that
+        # by the sum of weights to get a weighted average utility.
+        #
+        # Also use the utility to get a list of screwed students,
+        # where the level of screwedness is defined by (1+utility)/(1+weight)
+        # So, people with low untilities and high weights (low screwedness scores)
+        # are considered screwed. This is pretty sketchy, so take it with a grain of salt.
+        weighted_overall_utility = 0.0
+        sum_of_weights=0.0
+        screwed_students=[]
+        for i in range(self.num_students):
+            utility = math.sqrt(self.student_utilities[i])
+            weight = math.sqrt((self.student_utility_weights[i]))
+            weighted_overall_utility += utility*weight
+            sum_of_weights += weight
+            screwed_students.append(((1+utility)/(1+weight), self.student_ids[i]))
+
+        overall_utility = weighted_overall_utility/sum_of_weights
+        screwed_students.sort()
+
+        stats['overall_utility'] = overall_utility
+        stats['students_by_screwedness'] = screwed_students
+
         if self.options['stats_display'] or display:
             self.display_stats(stats)
-         return stats
+
+        self.stats = stats
+        return stats
 
     def display_stats(self, stats):
         print 'Lottery results for %s' % self.program.niceName()
@@ -407,7 +544,6 @@ class LotteryAssignmentController(object):
             print '   - Interested classes: %s' % ClassSection.objects.filter(id__in=list(cs_ids))
             """
 
-
     def get_computed_schedule(self, student_id, mode='assigned'):
         #   mode can be 'assigned', 'interested', or 'priority'
         if mode == 'assigned':
@@ -420,6 +556,31 @@ class LotteryAssignmentController(object):
         for i in range(assignments.shape[0]):
             result.append(ClassSection.objects.get(id=self.section_ids[assignments[i]]))
         return result
+
+    def generate_screwed_csv(self, directory, n=None, stats=None):
+        """Generate a CSV file of the n most screwed students. Default: All of them.
+        Directory: string of what directory you like the information stored in.
+        This is also known as the script shulinye threw together while trying to run the Spark 2013 lottery.
+        You might want to crosscheck this file before accepting it."""
+        import csv
+
+        if stats == None: stats = self.compute_stats(display=False) #Calculate stats if I didn't get any
+        studentlist = stats['students_by_screwedness']
+        if n != None: studentlist = studentlist[:n]
+        tday = str(datetime.datetime.now())[:10]
+        
+        fullfilename = directory + '/screwed_csv_' + tday + '.csv'
+        
+        csvfile = open(fullfilename, 'wb')
+        csvwriter = csv.writer(csvfile)
+        
+        csvwriter.writerow["Student", "Student ID", "StudentScrewedScore", "#Classes"]
+
+        for s in studentlist:
+            csvwriter.writerow([ESPUser.objects.get(id=s[1]).name.encode('ascii', 'ignore'), s[1], s[0], len(self.get_computed_schedule(s[1]))])
+
+        csvfile.close()
+        print 'File can be found at: ' + fullfilename
     
     def save_assignments(self, debug_display=False, try_mailman=False):
         """ Store lottery assignments in the database once they have been computed.
