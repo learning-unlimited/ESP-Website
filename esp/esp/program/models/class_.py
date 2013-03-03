@@ -1510,7 +1510,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def fraction_full(self):
         try:
-            return self.num_students()/self.max_students()
+            return (self.num_students()*1.0)/self.max_students()
         except ZeroDivisionError:
             return 1.0
 
