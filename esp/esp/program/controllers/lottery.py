@@ -116,7 +116,7 @@ class LotteryAssignmentController(object):
             import csv
             if csvwriter==None:
                 closeatend = True
-                if directory==None: directory = self.default_options['directory']
+                if directory==None: directory = self.options['directory']
                 filefullname = directory +'/santitize_walkins_log.csv'
                 csvfile = open(filefullname, 'ab+')
                 csvwriter = csv.writer(csvfile)
@@ -146,7 +146,7 @@ class LotteryAssignmentController(object):
             import csv
             if csvwriter==None:
                 closeatend = True
-                if directory==None: directory = self.default_options['directory']
+                if directory==None: directory = self.options['directory']
                 filefullname = directory +'/santitize_lunch_log.csv'
                 csvfile = open(filefullname, 'ab+')
                 csvwriter = csv.writer(csvfile)
@@ -196,7 +196,7 @@ class LotteryAssignmentController(object):
             checks = [checks]
         if csvlog:
             import csv
-            if directory==None: directory = self.default_options['directory']
+            if directory==None: directory = self.options['directory']
             filefullname = directory + '/'+ datetime.datetime.now().strftime("%Y-%m-%d_") + 'santitize_log.csv'
             csvfile = open(filefullname, 'ab+')
             csvwriter = csv.writer(csvfile) 
@@ -557,12 +557,14 @@ class LotteryAssignmentController(object):
             result.append(ClassSection.objects.get(id=self.section_ids[assignments[i]]))
         return result
 
-    def generate_screwed_csv(self, directory, n=None, stats=None):
-        """Generate a CSV file of the n most screwed students. Default: All of them.
+	    def generate_screwed_csv(self, directory=None, n=None, stats=None):
+		    """Generate a CSV file of the n most screwed students. Default: All of them.
         Directory: string of what directory you like the information stored in.
         This is also known as the script shulinye threw together while trying to run the Spark 2013 lottery.
         You might want to crosscheck this file before accepting it."""
         import csv
+	
+	if directory == None: directory = self.options['directory']
 
         if stats == None: stats = self.compute_stats(display=False) #Calculate stats if I didn't get any
         studentlist = stats['students_by_screwedness']
