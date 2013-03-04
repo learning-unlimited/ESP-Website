@@ -54,7 +54,8 @@ class LotteryAssignmentController(object):
         'Ki': 1.1,
         'check_grade': True,
         'stats_display': False,
-        'directory': home_directory
+        'directory': home_directory,
+	'verbosity': 0
     }
     
     def __init__(self, program, **kwargs):
@@ -108,8 +109,9 @@ class LotteryAssignmentController(object):
         self.student_sections = numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool)
         self.student_weights = numpy.ones((self.num_students,))
 
-    def sanitize_walkin(self, fake=True, csvwriter=None, csvlog=False, directory=None, verbose=0):
+    def sanitize_walkin(self, fake=True, csvwriter=None, csvlog=False, directory=None, verbose=None):
         """Checks for Student Registrations made for walk-in classes. If fake=False, will remove them."""
+	if verbose == None: verbose = self.options['verbosity']
         closeatend = False
 	category_walkin = ClassCategories.objects.get(category="Walk-in Activity")
         if csvlog and not(fake): #If I'm actually doing things, and I want a log....
@@ -139,8 +141,9 @@ class LotteryAssignmentController(object):
 	if not fake: "Please re-run self.initalize() to update."
         return report
 
-    def sanitize_lunch(self, csvlog=False, fake = True, csvwriter=None, directory=None, verbose=0):
+    def sanitize_lunch(self, csvlog=False, fake = True, csvwriter=None, directory=None, verbose=None):
 	"""Checks to see if any students have registrations for lunch. If fake=False, removes them."""
+	if verbose == None: verbose = self.options['verbosity']
 	closeatend = False
 	if csvlog and not(fake): #If I'm actually doing things, and I want a log....
             import csv
@@ -169,7 +172,7 @@ class LotteryAssignmentController(object):
 	if not fake: "Please re-run self.initalize() to update."
 	return report
 
-    def sanitize(self, checks=None, fake=True, csvlog=True, directory=None, verbose=0):
+    def sanitize(self, checks=None, fake=True, csvlog=True, directory=None, verbose=None):
         """Runs some checks on Student Registration. Enter in the checks you'd like to run as a list of strings.
         Checks that currently exist:
             -antiwalk-in: Checks for Student Registrations made for walk-in classes. Can remove them.
@@ -179,12 +182,13 @@ class LotteryAssignmentController(object):
         Set fake=False if you actually want something to happen.
         Set csvlog=False if you don't want a log of what was done
         Set directory to where you'd like the csvlog filed saved (if csvlog=False, does nothing)"""
+	if verbose == None: verbose = self.options['verbosity']
         if checks==None:
             print "You didn't enter a check! Please enter the checks you'd like to run as a list of strings. Run self.sanitize('--help') for more information!"
             return None
         if checks=='--help':
             print 'Sanitize - a module used to clear up oddities in Student Registrations.'
-            print "Syntax: self.sanitize(['check1', 'check2', 'check3'], fake=False, csvlog=True, directory='/home/shulinye')"
+            print "Syntax: self.sanitize(['check1', 'check2', 'check3'], fake=False, csvlog=True, directory='" + self.options['directory'] + "')"
             print ''
             print '-------------Current Checks----------------'
             print 'antiwalk-in: Checks for Student Registrations made for walk-in classes. If fake=False, will remove them.'
