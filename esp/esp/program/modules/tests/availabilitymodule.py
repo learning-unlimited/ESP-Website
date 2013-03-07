@@ -46,7 +46,7 @@ class AvailabilityModuleTest(ProgramFrameworkTest):
         super(AvailabilityModuleTest, self).setUp(*args, **kwargs)
         
         # Get and remember the instance of AvailabilityModule
-        am = ProgramModule.objects.get(handler='AvailabilityModule')
+        am = ProgramModule.objects.get(handler='AvailabilityModule', module_type='teach')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, am)
         self.moduleobj.user = self.teachers[0]
         
