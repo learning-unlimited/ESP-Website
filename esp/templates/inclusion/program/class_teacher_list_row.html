@@ -17,11 +17,7 @@
   <td class="clsmiddle bordertop2">
     <form method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
       <input type="hidden" name="command" value="edit_class_{{cls.id}}">
-      {% if can_edit %}
-      <input class="button" type="submit" value="Edit">
-      {% else %}
-      <input class="button" type="submit" value="View">
-      {% endif %}
+      <input class="button" type="submit" value="View/Edit">
     </form>
   </td>
   <td class="clsmiddle bordertop2">

@@ -61,7 +61,7 @@ If you have any questions regarding the program, <br /> please email the
   {% endif %}
   {% load class_render_row %}
   {% for cls in clslist %}
-    {% render_class_teacher_list_row cls can_edit friendly_times_with_date %}
+    {% render_class_teacher_list_row cls %}
   {% endfor %}
 
    {% if can_create %}
