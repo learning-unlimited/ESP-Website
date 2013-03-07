@@ -319,10 +319,7 @@ class ProgramModuleObj(models.Model):
         if self.module.module_type != 'learn' and self.module.module_type != 'teach':
             return True
 
-        canView = False
-
-        if get_current_request().user.__dict__.has_key('onsite_local'):
-            canView = get_current_request().user.__dict__['onsite_local']
+        canView = get_current_request().user.isOnsite(self.program)
 
         if not canView:
             test_node = GetNode('V/Deadline/Registration/'+{'learn':'Student', 'teach':'Teacher'}[self.module.module_type]+extension)
