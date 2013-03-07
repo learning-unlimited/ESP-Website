@@ -322,7 +322,7 @@ class ProgramPrintables(ProgramModuleObj):
             template_file = 'sections_list.csv'
 
         if 'cancelled' in request.GET or (extra and 'cancelled' in extra):
-            sections = filter(lambda z: (z.isCancelled() and z.meeting_times.count() > 0), sections)
+            sections = filter(lambda z: z.isCancelled(), sections)
         else:
             sections = filter(lambda z: (z.isAccepted() and z.meeting_times.count() > 0), sections)
         sections = filter(filt_exp, sections)                  
