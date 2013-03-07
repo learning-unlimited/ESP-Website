@@ -377,7 +377,7 @@ class LotteryAssignmentController(object):
 
         if self.options['stats_display'] or display:
             self.display_stats(stats)
-         return stats
+        return stats
 
     def display_stats(self, stats):
         print 'Lottery results for %s' % self.program.niceName()
@@ -439,10 +439,11 @@ class LotteryAssignmentController(object):
         print "StudentRegistration enrollments all created to start at %s" % self.now
         if debug_display:
             print 'Created %d registrations' % student_ids.shape[0]
-        
-	#As mailman doesn't work, disable for now.
-        if try_mailman:self.update_mailman_lists()
-    
+
+        #   As mailman doesn't work, disable for now.
+        if try_mailman:
+            self.update_mailman_lists()
+
     def clear_saved_assignments(self, delete=False):
         """ Expire/delete all previous StudentRegistration enrollments associated with the program. """
         
