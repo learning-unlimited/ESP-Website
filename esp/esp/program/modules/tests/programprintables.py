@@ -75,7 +75,7 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
     def get_userlist_views(self):
         #   Hard-code some views that can be tested using simple teacher/student lists.
         #   Exclude those tested by specialized functions below.
-        teacher_views = ['teacherlist', 'teachersbytime', 'teacherinfo', 'teacherschedules']
+        teacher_views = ['teacherlist', 'teachersbytime', 'teacherschedules']
         student_views = ['studentsbyname', 'emergencycontacts', 'flatstudentschedules', 'studentchecklist', 'student_tickets']
         result = []
         for v in teacher_views:
