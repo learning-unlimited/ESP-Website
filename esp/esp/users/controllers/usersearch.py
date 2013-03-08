@@ -227,7 +227,7 @@ class UserSearchController(object):
             #   Get the user-specific part of the query (e.g. ID, name, school)
             q_extra = self.query_from_criteria(recipient_type, data)
          
-        return (q_extra & q_program)
+        return (q_extra & q_program & Q(is_active=True))
 
     def filter_from_postdata(self, program, data):
         """ Wraps the query_from_postdata function above to return a PersistentQueryFilter. """
