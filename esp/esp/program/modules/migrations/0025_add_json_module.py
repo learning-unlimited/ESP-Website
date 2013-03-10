@@ -5,11 +5,13 @@ from south.v2 import DataMigration
 from django.db import models
 from esp.program.models import Program, ProgramModule
 from esp.program.modules.base import ProgramModuleObj
+from esp.program.modules.models import install
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
         "forwards method: enable the JSON Data Module on all existing programs"
+        install()   # Install newest program modules
         json_module = ProgramModule.objects.get(handler=u'JSONDataModule')  # get the JSON Data Module
         # enable the JSON Data Module on all existing programs
         for program in Program.objects.all():
