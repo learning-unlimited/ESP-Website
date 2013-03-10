@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 
-from esp.resources.models import ResourceType, ResourceRequest, Resource
+from esp.resources.models import ResourceType, ResourceRequest, Resource, ResourceAssignment
 
 class ResourceTypeAdmin(admin.ModelAdmin):
     def rt_choices(self, obj):
@@ -49,6 +49,15 @@ class ResourceRequestAdmin(admin.ModelAdmin):
     list_display = ('target', 'res_type', 'desired_value')
     search_fields = ['target', 'res_type', 'desired_value']
 
+class ResourceAdmin(admin.ModelAdmin):
+    list_display = ('name', 'res_type', 'num_students', 'event', 'group_id')
+    search_fields = ('name', 'res_type', 'num_students', 'event', 'group_id')
+
+class ResourceAssignmentAdmin(admin.ModelAdmin):
+    list_display = ('id', 'resource', 'target')
+    search_fields = ('id', 'resource', 'target')
+
 admin_site.register(ResourceType, ResourceTypeAdmin)
 admin_site.register(ResourceRequest, ResourceRequestAdmin)
-admin_site.register(Resource)
+admin_site.register(Resource, ResourceAdmin)
+admin_site.register(ResourceAssignment, ResourceAssignmentAdmin)
