@@ -532,7 +532,7 @@ class LotteryAssignmentController(object):
             result.append(ClassSection.objects.get(id=self.section_ids[assignments[i]]))
         return result
     
-    def save_assignments(self, debug_display=False):
+    def save_assignments(self, debug_display=False, try_mailman=False):
         """ Store lottery assignments in the database once they have been computed.
             This is a fairly time consuming step compared to computing the assignments. """
             
@@ -550,9 +550,11 @@ class LotteryAssignmentController(object):
         print "StudentRegistration enrollments all created to start at %s" % self.now
         if debug_display:
             print 'Created %d registrations' % student_ids.shape[0]
-        
-        self.update_mailman_lists()
-    
+
+        #   As mailman doesn't work, disable for now.
+        if try_mailman:
+            self.update_mailman_lists()
+
     def clear_saved_assignments(self, delete=False):
         """ Expire/delete all previous StudentRegistration enrollments associated with the program. """
         
