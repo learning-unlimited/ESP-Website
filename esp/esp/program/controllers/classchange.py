@@ -234,11 +234,18 @@ class ClassChangeController(object):
             if ts_day not in dates:
                 dates.append(ts_day)
         lunch_by_day = [[] for x in dates]
+        ts_count = 0
         for ts in lunch_timeslots:
             d = date(ts.start.year, ts.start.month, ts.start.day)
             lunch_by_day[dates.index(d)].append(ts.id)
             self.lunch_schedule[self.timeslot_indices[ts.id]] = True
-        self.lunch_timeslots = numpy.array(lunch_by_day)
+
+        for i in range(len(lunch_by_day)):
+            if len(lunch_by_day[i]) > ts_count:
+                ts_count = len(lunch_by_day[i])
+        self.lunch_timeslots = numpy.zeros((len(lunch_by_day), ts_count), dtype=numpy.int32)
+        for i in range(len(lunch_by_day)):
+            self.lunch_timeslots[i, :len(lunch_by_day[i])] = numpy.array(lunch_by_day[i])
         
         #   Populate old enrollment matrix
         enroll_regs = StudentRegistration.objects.filter(self.Q_EN).values_list('user__id', 'section__id', 'section__meeting_times__id').distinct()
@@ -290,7 +297,7 @@ class ClassChangeController(object):
         
         #   Populate student grades; grade will be assumed to be 0 if not entered on profile
         self.student_grades = numpy.zeros((self.num_students,))
-        gradyear_pairs = numpy.array(RegistrationProfile.objects.filter(user__id__in=list(self.student_ids), most_recent_profile=True).values_list('user__id', 'student_info__graduation_year'), dtype=numpy.uint32)
+        gradyear_pairs = numpy.array(RegistrationProfile.objects.filter(user__id__in=list(self.student_ids), most_recent_profile=True, student_info__graduation_year__isnull=False).values_list('user__id', 'student_info__graduation_year'), dtype=numpy.uint32)
         self.student_grades[self.student_indices[gradyear_pairs[:, 0]]] = 12 + ESPUser.current_schoolyear() - gradyear_pairs[:, 1] + self.program.incrementGrade()
         
         #   Find section capacities (TODO: convert to single query)
@@ -329,7 +336,7 @@ class ClassChangeController(object):
         #   Check that this section does not cover all lunch timeslots on any given day
         lunch_overlap = self.lunch_schedule * self.section_schedules[si, :]
         for i in range(self.lunch_timeslots.shape[0]):
-            if self.lunch_timeslots[i].shape[0] != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i, :]]]) >= (self.lunch_timeslots.shape[1]):
+            if len(self.lunch_timeslots[i]) != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i]]]) >= (self.lunch_timeslots.shape[1]):
                 if self.options['stats_display']: print '   Section covered all lunch timeslots %s on day %d, aborting' % (self.lunch_timeslots[i, :], i)
                 return False
         
@@ -416,7 +423,7 @@ class ClassChangeController(object):
             
         self.clear_assignments()
         
-        #   Assign priority students to all sections in random order
+        #   Assign priority students to all sections, ordered by section_score
         self.sorted_section_indices = range(self.num_sections)
         self.sorted_section_indices.sort(key = lambda sec_ind: self.section_scores[sec_ind])
         for i in range(1,self.priority_limit+1) + [False,]:
