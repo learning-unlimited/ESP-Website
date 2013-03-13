@@ -1025,7 +1025,7 @@ class Program(models.Model, CustomFormsLinkModel):
     
     def priorityLimit(self):
         studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
-        if studentregmodule and studentregmodule.use_priority and studentregmodule.priority_limit > 0:
+        if studentregmodule and studentregmodule.priority_limit > 0:
             return studentregmodule.priority_limit
         else: 
             return 1
