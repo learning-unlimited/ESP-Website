@@ -423,7 +423,7 @@ class ClassChangeController(object):
             
         self.clear_assignments()
         
-        #   Assign priority students to all sections in random order
+        #   Assign priority students to all sections, ordered by section_score
         self.sorted_section_indices = range(self.num_sections)
         self.sorted_section_indices.sort(key = lambda sec_ind: self.section_scores[sec_ind])
         for i in range(1,self.priority_limit+1) + [False,]:
