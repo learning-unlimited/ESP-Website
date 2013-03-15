@@ -92,7 +92,7 @@ compare_timeslot_starts = function(a, b){
 get_walkin_header_html = function()
 {
     if (open_class_registration) {
-        return "<h3>"+open_class_category+"</h3>\
+        return "<h3>Walk-in Seminars</h3>\
         <div id='%TIMESLOT_WALKIN_DIV%' style='margin:1em 1em 1em 1em'></div>";
     }
     return "";
@@ -166,7 +166,7 @@ add_classes_to_timeslot = function(timeslot, sections){
 
 	// check grade in range or admin
 	if((user_grade >= section['grade_min'] && user_grade <= section['grade_max']) || esp_user['cur_admin'] == 1){
-            if(!open_class_registration || section['category'] != open_class_category){
+            if(!open_class_registration || section['category'] != open_class_category["symbol"]){
                 if (section['status'] > 0)
                 {
                     has_classes = true;
@@ -183,7 +183,7 @@ add_classes_to_timeslot = function(timeslot, sections){
 
 	//check grade in range or admin
 	if(section['status'] > 0 && user_grade >= section['grade_min'] && user_grade <= section['grade_max'] || esp_user['cur_admin'] == 1){
-            if(open_class_registration && section['category'] == open_class_category){
+            if(open_class_registration && section['category'] == open_class_category["symbol"]){
                 has_walkins = true;
                 walkins_list.push(section);
             }
