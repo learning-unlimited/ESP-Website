@@ -190,6 +190,8 @@ class SchedulingCheckRunner:
                self.all_sections = filter(lambda x: not x.category == open_class_category(), self.all_sections)
                #filter out non-approved classes
                self.all_sections = filter(lambda x: len(x.classrooms()) > 0, self.all_sections)
+               #filter out lunch
+               self.all_sections = filter(lambda x: not x.category.category == u'Lunch', self.all_sections)
                self.listed_sections = True
                return self.all_sections
 

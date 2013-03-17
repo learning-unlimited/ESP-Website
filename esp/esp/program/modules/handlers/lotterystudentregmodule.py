@@ -94,11 +94,19 @@ class LotteryStudentRegModule(ProgramModuleObj):
         it gets all of its content from AJAX callbacks.
         """
         from django.conf import settings
-        from esp.program.models.class_ import open_class_category
+        from esp.program.models.class_ import open_class_category as open_class_category_function
+        from django.utils import simplejson
+        from django.utils.safestring import mark_safe
 
         crmi = prog.getModuleExtension('ClassRegModuleInfo')
 
-        context = {'prog': prog, 'support': settings.DEFAULT_EMAIL_ADDRESSES['support'], 'open_class_registration': {False: 0, True: 1}[crmi.open_class_registration], 'open_class_category': open_class_category()}
+        open_class_category = open_class_category_function()
+        # Convert the open_class_category ClassCategory object into a dictionary, only including the attributes the lottery needs or might need
+        open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
+        # Convert this into a JSON string, and mark it safe so that the Django template system doesn't try escaping it
+        open_class_category = mark_safe(simplejson.dumps(open_class_category))
+
+        context = {'prog': prog, 'support': settings.DEFAULT_EMAIL_ADDRESSES['support'], 'open_class_registration': {False: 0, True: 1}[crmi.open_class_registration], 'open_class_category': open_class_category}
 
         ProgInfo = prog.getModuleExtension('StudentClassRegModuleInfo')
 
