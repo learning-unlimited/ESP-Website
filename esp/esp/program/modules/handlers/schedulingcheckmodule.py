@@ -210,7 +210,7 @@ class SchedulingCheckRunner:
 
      def incompletely_scheduled_classes(self):
           problem_classes = []
-          for s in self.p.sections():
+          for s in self._all_class_sections():
                mt =  s.get_meeting_times()
                rooms = s.getResources()
                if(len(rooms) != ceil(s.duration)):
