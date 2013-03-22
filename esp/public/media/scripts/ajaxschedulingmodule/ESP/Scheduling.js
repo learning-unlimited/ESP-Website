@@ -79,6 +79,9 @@ ESP.Scheduling = function(){
         }
     };
     
+    function update(data){
+    };
+
     // process data
     function process_data(data){
 	console.log("Processing raw data");
@@ -589,19 +592,29 @@ $j(function(){
     };
     json_fetch_data(json_components, json_data);
 
+    var update_data = {};
+    var json_update_components = ['ajax_change_log']
+    var json_fetch_update = function(json_update_components, update_data){
+	json_fetch(json_components, function(d) {
+	    alert("got update data!");
+	}, json_data);
+    }
+
     setInterval(function() {
         ESP.Scheduling.status('warning','Pinging server...');
         $j.getJSON('ajax_schedule_last_changed', function(d, status) {
             if (status == "success") {
                 ESP.Scheduling.status('success','Refreshed data from server.');
+		alert(d['val'])
                 if (d['val'] != ESP.version_uuid) {
                     ESP.version_uuid = d['val'];
                     json_data = {};
-		    json_fetch_data(json_components, json_data);
+		    json_fetch_update(json_components, json_data);
                 }
             } else {
                 ESP.Scheduling.status('error','Unable to refresh data from server.');
             }
         });
-    }, 300000);
+	//let's do this every 30 seconds
+    }, 3000);
 });
