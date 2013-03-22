@@ -50,6 +50,7 @@ from django.utils                import simplejson
 from collections                 import defaultdict
 from esp.cache                   import cache_function
 from uuid                        import uuid4 as get_uuid
+from esp.utils.decorators         import json_response
 
 class AJAXSchedulingModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
@@ -368,9 +369,26 @@ class AJAXSchedulingModule(ProgramModuleObj):
             times = [br['time_id'] for br in blockrooms]
             classrooms = [br['room_id'] for br in blockrooms]
 
+            #TODO:  add things to the change log here
+            #change log
+            change_log.append({'id': change_index})
+            change_index ++
             return self.ajax_schedule_assignreg(prog, cls, blockrooms, times, classrooms)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
+
+    #dict, keys are program ids, values are 
+    #TODO:  prune the change log sometimes!
+    change_index = 0
+    change_log = []
+
+    @aux_call
+    @needs_admin
+    @json_response()
+    def ajax_change_log(self, request, tl, one, two, module, extra, prog):
+        #TODO:  only return part of the change log
+        return change_log
+
     
     @aux_call
     @needs_admin
