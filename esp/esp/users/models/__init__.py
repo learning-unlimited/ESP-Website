@@ -437,7 +437,8 @@ class ESPUser(User, AnonymousUser):
         else:
             rounded_hours = lambda x: float( x )
         for s in user_sections:
-            if include_scheduled or (s.start_time() is None):
+            #   don't count cancelled or rejected classes -- Ted
+            if (include_scheduled or (s.start_time() is None)) and (s.parent_class.status >= 0):
                 total_time = total_time + timedelta(hours=rounded_hours(s.duration))
         return total_time
 
