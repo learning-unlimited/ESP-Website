@@ -595,9 +595,14 @@ $j(function(){
     var update_data = {};
     var json_update_components = ['ajax_change_log']
     var json_fetch_update = function(json_update_components, update_data){
-	json_fetch(json_components, function(d) {
-	    alert("got update data!");
+	//set program base url to manage (we'll reset it later to /json/) 
+	program_base_url = "/manage/" + base_url + "/"
+	json_fetch(json_update_components, function(d) {
+	    //alert("got update data!");
+	    console.log("fetched updates")
+	    console.log(d)
 	}, json_data);
+	program_base_url = "/json/" + base_url + "/"
     }
 
     setInterval(function() {
@@ -605,11 +610,10 @@ $j(function(){
         $j.getJSON('ajax_schedule_last_changed', function(d, status) {
             if (status == "success") {
                 ESP.Scheduling.status('success','Refreshed data from server.');
-		alert(d['val'])
                 if (d['val'] != ESP.version_uuid) {
                     ESP.version_uuid = d['val'];
                     json_data = {};
-		    json_fetch_update(json_components, json_data);
+		    json_fetch_update(json_update_components, json_data);
                 }
             } else {
                 ESP.Scheduling.status('error','Unable to refresh data from server.');
