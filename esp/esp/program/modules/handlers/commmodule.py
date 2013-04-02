@@ -162,18 +162,16 @@ class CommModule(ProgramModuleObj):
 
         newmsg_request.save()
 
-        foo = MessageRequest.objects.all()[0]
-
         # now we're going to process everything
         # nah, we'll do this later.
         #newmsg_request.process()
 
-        numusers = filterobj.getList(ESPUser).count()
+        numusers = filterobj.getList(ESPUser).distinct().count()
 
         from django.conf import settings
         if hasattr(settings, 'EMAILTIMEOUT') and \
                settings.EMAILTIMEOUT is not None:
-            est_time = settings.EMAILTIMEOUT * len(users)
+            est_time = settings.EMAILTIMEOUT * numusers
         else:
             est_time = 1.5 * numusers
             
