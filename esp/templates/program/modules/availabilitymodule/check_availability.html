@@ -10,6 +10,7 @@
 <h1>{{ teacher_name }}: availability in {{ program.niceName }}</h1>
 
 <p>All times listed below are times that the teacher has indicated availability for. Additionally, <font color="red">all timeslots colored red are times during which the teacher is scheduled to teach.</font></p>
+<p><a href="{{ edit_path }}">Click here to edit teacher availability.</a></p>
 
 <ul>
 {% for t in available %}
