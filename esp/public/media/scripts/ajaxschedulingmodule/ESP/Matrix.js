@@ -117,6 +117,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             }
         }.bind(this));
         ESP.Utilities.evm.bind('block_section_assignment_local', function(e, data) {
+	    console.log(data)
             //Some checking
             var block_status;
             for (var i = 0; i < data.blocks.length; i++) {

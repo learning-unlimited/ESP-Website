@@ -346,6 +346,19 @@ class AJAXSchedulingModule(ProgramModuleObj):
             
             return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
 
+    #dict, keys are program ids, values are 
+    #TODO:  prune the change log sometimes!
+    change_index = 0
+    change_log = []
+
+    @aux_call
+    @needs_admin
+    @json_response()
+    def ajax_change_log(self, request, tl, one, two, module, extra, prog):
+        #TODO:  only return part of the change log
+        return {"changelog":  self.change_log}
+
+
     @aux_call
     @needs_admin
     def ajax_schedule_class(self, request, tl, one, two, module, extra, prog):
@@ -371,23 +384,11 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
             #TODO:  add things to the change log here
             #change log
-            change_log.append({'id': change_index})
-            change_index ++
+            self.change_log.append({'id': self.change_index})
+            self.change_index = self.change_index + 1
             return self.ajax_schedule_assignreg(prog, cls, blockrooms, times, classrooms)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
-
-    #dict, keys are program ids, values are 
-    #TODO:  prune the change log sometimes!
-    change_index = 0
-    change_log = []
-
-    @aux_call
-    @needs_admin
-    @json_response()
-    def ajax_change_log(self, request, tl, one, two, module, extra, prog):
-        #TODO:  only return part of the change log
-        return change_log
 
     
     @aux_call
