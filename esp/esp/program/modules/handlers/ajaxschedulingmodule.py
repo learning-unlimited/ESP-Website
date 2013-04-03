@@ -55,6 +55,9 @@ from esp.utils.decorators         import json_response
 class AJAXSchedulingModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
 
+    change_log = {}
+    change_index = {}
+
     @classmethod
     def module_properties(cls):
         return {
@@ -346,19 +349,28 @@ class AJAXSchedulingModule(ProgramModuleObj):
             
             return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
 
-    #dict, keys are program ids, values are 
-    #TODO:  prune the change log sometimes!
-    change_index = 0
-    change_log = []
-
     @aux_call
     @needs_admin
     @json_response()
     def ajax_change_log(self, request, tl, one, two, module, extra, prog):
         #TODO:  only return part of the change log
-        return {"changelog":  self.change_log}
+        return {"changelog":  self.get_change_log(prog)}
 
+    def get_change_log(self, prog):
+        if not prog.id in self.change_log:
+            self.change_log[prog.id] = []
 
+        return self.change_log[prog.id]
+
+    def get_change_index(self, prog):
+        if not prog.id in self.change_index:
+            self.change_index[prog.id] = 0
+
+        return self.change_index[prog.id]
+
+    def increment_change_index(self, prog):
+        self.change_index[prog.id] = self.get_change_index(prog) + 1
+        
     @aux_call
     @needs_admin
     def ajax_schedule_class(self, request, tl, one, two, module, extra, prog):
@@ -382,10 +394,10 @@ class AJAXSchedulingModule(ProgramModuleObj):
             times = [br['time_id'] for br in blockrooms]
             classrooms = [br['room_id'] for br in blockrooms]
 
-            #TODO:  add things to the change log here
-            #change log
-            self.change_log.append({'id': self.change_index})
-            self.change_index = self.change_index + 1
+            #add things to the change log here
+            self.get_change_log(prog).append({'id': self.get_change_index(prog)})
+            self.increment_change_index(prog)
+
             return self.ajax_schedule_assignreg(prog, cls, blockrooms, times, classrooms)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
