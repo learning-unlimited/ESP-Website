@@ -51,12 +51,12 @@ from collections                 import defaultdict
 from esp.cache                   import cache_function
 from uuid                        import uuid4 as get_uuid
 from esp.utils.decorators         import json_response
+import calendar, time, datetime
 
 class AJAXSchedulingModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
 
     change_log = {}
-    change_index = {}
 
     @classmethod
     def module_properties(cls):
@@ -65,7 +65,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
             "module_type": "manage",
             "seq": 7
             }
-    
     def prepare(self, context={}):
         if context is None: context = {}
 
@@ -354,23 +353,13 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @json_response()
     def ajax_change_log(self, request, tl, one, two, module, extra, prog):
         #TODO:  only return part of the change log
-        return {"changelog":  self.get_change_log(prog)}
+        return {"changelog" : self.get_change_log(prog)}
 
     def get_change_log(self, prog):
         if not prog.id in self.change_log:
             self.change_log[prog.id] = []
-
         return self.change_log[prog.id]
 
-    def get_change_index(self, prog):
-        if not prog.id in self.change_index:
-            self.change_index[prog.id] = 0
-
-        return self.change_index[prog.id]
-
-    def increment_change_index(self, prog):
-        self.change_index[prog.id] = self.get_change_index(prog) + 1
-        
     @aux_call
     @needs_admin
     def ajax_schedule_class(self, request, tl, one, two, module, extra, prog):
@@ -380,7 +369,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
             raise ESPError(False), "This URL is intended to be used for client<->server communication; it's not for human-readable content."
 
         # Pull relevant data out of the JSON structure
-        cls = ClassSection.objects.get(id=request.POST['cls'])
+        cls_id = request.POST['cls']
+        cls = ClassSection.objects.get(id=cls_id)
         action = request.POST['action']
         
         if action == 'deletereg':
@@ -395,8 +385,14 @@ class AJAXSchedulingModule(ProgramModuleObj):
             classrooms = [br['room_id'] for br in blockrooms]
 
             #add things to the change log here
-            self.get_change_log(prog).append({'id': self.get_change_index(prog)})
-            self.increment_change_index(prog)
+            schedule_info = {
+                #use time as unique id.  Since this has microsecond resolution, I'm not worried about conflicts
+                'schedule_time': time.time(), 
+                'timeslots': [int(t) for t in times],
+                'room_name': classrooms[0], #only support having one classroom scheduled this way
+                'id': int(cls_id),
+            }
+            self.get_change_log(prog).append(schedule_info)
 
             return self.ajax_schedule_assignreg(prog, cls, blockrooms, times, classrooms)
         else:
