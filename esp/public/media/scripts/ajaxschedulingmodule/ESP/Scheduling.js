@@ -84,8 +84,6 @@ ESP.Scheduling = function(){
 
     // process data
     function process_data(data){
-	console.log("Processing raw data");
-	console.log(data);
         var processed_data = {
             times: [],
             rooms: [],
@@ -341,35 +339,39 @@ ESP.Scheduling = function(){
 	    });
 	}
 
-	console.log("Final processed data");
-	console.log(processed_data);
         return processed_data;
     };
     
     var apply_existing_classes = function(assignments, data) {
+	console.log("apply_existing_classes")
+	console.log(assignments)
+	console.log(data)
         var Resources = ESP.Scheduling.Resources;
         var rsrc_sec = {}
         var sa;
 
-        for (var i in data.schedule_assignments) {
+        for (var i in assignments) {
 	    // Handles prototype being angry
-	    if (typeof data.schedule_assignments[i] === 'function') {continue;}
-            sa = data.schedule_assignments[i];
+	    if (typeof assignments[i] === 'function') {continue;}
+            sa = assignments[i];
 
             if (!(rsrc_sec[sa.id])) {
                 rsrc_sec[sa.id] = [];
             }
 
+
 	    for (var j = 0; j < sa.timeslots.length; j++)
 	    {
 		rsrc_sec[sa.id].push(Resources.get('Block', [sa.timeslots[j],sa.room_name]));
 	    }
+	    //console.log("rsrc_sec")
+	    //console.log(rsrc_sec)
         }
 
         var Section;
         var sec_id;
-        for (var i = 0; i < data.sections.length; i++) {
-            sec_id = data.sections[i].uid;
+        for (var i = 0; i < ESP.Scheduling.data.sections.length; i++) {
+            sec_id = ESP.Scheduling.data.sections[i].uid;
             if (rsrc_sec[sec_id]) {
                 ESP.Utilities.evm.fire('block_section_assignment_request', { 
                     section: Resources.get('Section', sec_id), 
@@ -556,7 +558,9 @@ ESP.Scheduling = function(){
     var self = {
         init: init,
         validate_block_assignment: validate_block_assignment,
-        validate_start_time: validate_start_time
+        validate_start_time: validate_start_time,
+	apply_existing_classes: apply_existing_classes
+	//data: data
     };
     return self;
 }();
@@ -599,8 +603,7 @@ $j(function(){
 	program_base_url = "/manage/" + base_url + "/"
 	json_fetch(json_update_components, function(d) {
 	    //alert("got update data!");
-	    console.log("fetched updates")
-	    console.log(d)
+	    ESP.Scheduling.apply_existing_classes(d.changelog, this.data)
 	}, json_data);
 	program_base_url = "/json/" + base_url + "/"
     }
