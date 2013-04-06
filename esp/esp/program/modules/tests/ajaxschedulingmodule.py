@@ -33,11 +33,12 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.tests import ProgramFrameworkTest
+from django.utils import simplejson as json
+import time
 
 class AJAXSchedulingModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
-
         # Set up the program -- we want to be sure of these parameters
         kwargs.update({
             'num_rooms': 4,
@@ -54,6 +55,7 @@ class AJAXSchedulingModuleTest(ProgramFrameworkTest):
     def loginAdmin(self):
         """Log in an admin user."""
         self.failUnless(self.client.login(username=self.admins[0].username, password='password'), "Failed to log in admin user.")
+
     def emptySchedule(self):
         """Empty the schedule and teacher availability."""
         for s in self.program.sections():
@@ -166,52 +168,43 @@ class AJAXSchedulingModuleTest(ProgramFrameworkTest):
         self.failUnless(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Existing meeting times clobbered.")
         self.failUnless(set(s2.get_meeting_times()) == set(), "Failed to prevent teacher conflict.")
 
-
-    def test_concurrency_issues(self):
-        from threading import Thread
-        print "testing Concurrency Issues"
-
-        #Goal:  send multiple requests to schedule two classes at conflicting times.  
-        #We want one but not both classes to be scheduled every time.  
-        #Since this is nondeterministic, the fact that this test passes may not mean that everything is ok.
- 
-        """Schedule classes using the ajax_schedule_class view."""
-
+    def testChangeLog(self):
         self.emptySchedule()
         self.loginAdmin()
         self.client.post('/manage/%s/force_availability' % self.program.getUrlBase(), {'sure': 'True'})
 
-        # Get a vacant room
-        rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')[0].id
-        a1 = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
+        ajax_url_base = '/manage/%s/' % self.program.getUrlBase()
+        changelog_url = ajax_url_base + 'ajax_change_log'
+        
+        beforeSchedule = time.time()
 
         # Schedule one class.
-        ajax_url = '/manage/%s/ajax_schedule_class' % self.program.getUrlBase()
-        s1, s2 = self.program.sections()[:2]
+        t = self.teachers[0]
+        rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
+        a1 = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
+        ajax_url = ajax_url_base + 'ajax_schedule_class'
+        s1 = t.getTaughtSections(self.program)[0]
         timeslots = self.program.getTimeSlots().order_by('start')
+        response = self.client.post(ajax_url, {'action': 'assignreg', 'cls': s1.id, 'block_room_assignments': a1})
+        self.failUnless(response.status_code == 200, "Class not successfully scheduled.")
 
-        self.client.post(ajax_url, {'action': 'assignreg', 'cls': s1.id, 'block_room_assignments': rooms})
-        self.client.post(ajax_url, {'action': 'assignreg', 'cls': s2.id, 'block_room_assignments': rooms})
-
-
-        """class AjaxPoster(Thread):
-            def __init__(self, section_id, rooms, client):
-                super(AjaxPoster, self).__init__()
-                self.client = client
-                self.section_id = section_id
-                self.rooms = rooms
-
-            def run(self):
-                print "sending post for section id " + str(self.section_id)
-                self.client.post(ajax_url, {'action': 'assignreg', 'cls': self.section_id, 'block_room_assignments': rooms})
-                print "done with section_id " + str(self.section_id)
-                            
-        threads = []
-        for s in [s1, s2]:
-            threads.append(AjaxPoster(s.id, a1, self.client))
+        #fetch the changelog
+        changelog_response = self.client.get(changelog_url, {'last_fetched_time': beforeSchedule })
+        self.failUnless(changelog_response.status_code == 200, "Changelog not successfully retreieved")
+        changelog = json.loads(changelog_response.content)["changelog"]
+        self.failUnless(len(changelog) == 1, "Change log does not contain exactly one class.")
         
-        for t in threads:
-            t.start()
-            t.join()"""
+        #change log should truncate at last requested time
+        afterSchedule = time.time()
+        changelog_response = self.client.get(changelog_url, {'last_fetched_time': afterSchedule })
+        changelog = json.loads(changelog_response.content)["changelog"]
+        self.failUnless(len(changelog) == 0, "Change log contained content from before last_fetched_time")
+
+        #unschedule a class
+        self.client.post(ajax_url, {'action': 'deletereg', 'cls': s1.id})
+        #change log should include unscheduled classes 
+        changelog_response = self.client.get(changelog_url, {'last_fetched_time': afterSchedule })
+        changelog = json.loads(changelog_response.content)["changelog"]
+        self.failUnless(len(changelog) == 1, "Change log did not contain the unscheduled class.")
         
-        #some asserts about the state of the database after this happens
+        #change log should not include failed scheduling of classes
