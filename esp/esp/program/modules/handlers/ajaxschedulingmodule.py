@@ -374,7 +374,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         action = request.POST['action']
         
         if action == 'deletereg':
-            return self.ajax_schedule_deletereg(prog, cls)
+            times = []
+            classrooms = [ None ]
+            retval =  self.ajax_schedule_deletereg(prog, cls)
 
         elif action == 'assignreg':
             blockrooms = request.POST['block_room_assignments'].split("\n")
@@ -383,21 +385,23 @@ class AJAXSchedulingModule(ProgramModuleObj):
             
             times = [br['time_id'] for br in blockrooms]
             classrooms = [br['room_id'] for br in blockrooms]
-
-            #add things to the change log here
-            schedule_info = {
-                #use time as unique id.  Since this has microsecond resolution, I'm not worried about conflicts
-                'schedule_time': time.time(), 
-                'timeslots': [int(t) for t in times],
-                'room_name': classrooms[0], #only support having one classroom scheduled this way
-                'id': int(cls_id),
-            }
-            self.get_change_log(prog).append(schedule_info)
-
-            return self.ajax_schedule_assignreg(prog, cls, blockrooms, times, classrooms)
+            retval = self.ajax_schedule_assignreg(prog, cls, blockrooms, times, classrooms)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 
+        #TODO:  should this be in a different function in case there are errors?
+        #will this log the change even if there are errors?
+        #add things to the change log here
+        schedule_info = {
+            #use time as unique id.  Since this has microsecond resolution, I'm not worried about conflicts
+            'schedule_time': time.time(), 
+            'timeslots': [int(t) for t in times],
+            'room_name': classrooms[0], #only support having one classroom scheduled this way
+            'id': int(cls_id),
+        }
+        self.get_change_log(prog).append(schedule_info)
+
+        return retval
     
     @aux_call
     @needs_admin
