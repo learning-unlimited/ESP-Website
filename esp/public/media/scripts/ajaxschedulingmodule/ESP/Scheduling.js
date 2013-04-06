@@ -343,9 +343,6 @@ ESP.Scheduling = function(){
     };
     
     var apply_existing_classes = function(assignments, data) {
-	console.log("apply_existing_classes")
-	console.log(assignments)
-	console.log(data)
         var Resources = ESP.Scheduling.Resources;
         var rsrc_sec = {}
         var sa;
@@ -364,8 +361,6 @@ ESP.Scheduling = function(){
 	    {
 		rsrc_sec[sa.id].push(Resources.get('Block', [sa.timeslots[j],sa.room_name]));
 	    }
-	    //console.log("rsrc_sec")
-	    //console.log(rsrc_sec)
         }
 
         var Section;
@@ -373,14 +368,20 @@ ESP.Scheduling = function(){
         for (var i = 0; i < ESP.Scheduling.data.sections.length; i++) {
             sec_id = ESP.Scheduling.data.sections[i].uid;
             if (rsrc_sec[sec_id]) {
-                ESP.Utilities.evm.fire('block_section_assignment_request', { 
+		ESP.Utilities.evm.fire('block_section_assignment_request', { 
                     section: Resources.get('Section', sec_id), 
                     blocks: rsrc_sec[sec_id],
                     nowriteback: true /* Don't tell the server about this assignment */
-                });
+		});
             }
 	    else {
 		// TODO: Fire an AJAX reqeuest for class_info for all unscheduled classes
+		ESP.Utilities.evm.fire('block_section_unassignment_request', { 
+                    section: Resources.get('Section', sec_id),
+		    //TODO:  set blocks here
+                    blocks: [],
+                    nowriteback: true /* Don't tell the server about this assignment */
+		});
 	    }
         }
     }
