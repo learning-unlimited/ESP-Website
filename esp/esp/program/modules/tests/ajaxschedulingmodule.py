@@ -36,7 +36,7 @@ from esp.program.tests import ProgramFrameworkTest
 from django.utils import simplejson as json
 import time
 
-class AJAXSchedulingModuleTest(ProgramFrameworkTest):
+class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
         # Set up the program -- we want to be sure of these parameters
@@ -45,7 +45,7 @@ class AJAXSchedulingModuleTest(ProgramFrameworkTest):
             'num_timeslots': 4, 'timeslot_length': 50, 'timeslot_gap': 10,
             'num_teachers': 3, 'classes_per_teacher': 2, 'sections_per_class': 1
             })
-        super(AJAXSchedulingModuleTest, self).setUp(*args, **kwargs)
+        super(AJAXSchedulingModuleTestBase, self).setUp(*args, **kwargs)
 
         # Set the section durations to 1:50
         for sec in self.program.sections():
@@ -64,6 +64,29 @@ class AJAXSchedulingModuleTest(ProgramFrameworkTest):
         for t in self.teachers:
             t.clearAvailableTimes(self.program)
 
+    #schedule class, 
+    #NO guarantee that it's a class that hasn't been scheduled yet
+    #return a tuple (section, time, room)
+    def scheduleClass(self, section=None, teacher=None, timeslots=None, rooms=None):
+        if section == None:
+            if teacher == None:
+                teacher = self.teachers[0]
+            section = teacher.getTaughtSections(self.program)[0]
+
+        if rooms == None:
+            rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
+
+        if timeslots == None:
+            timeslots = self.program.getTimeSlots().order_by('start')       
+
+        ajax_url = '/manage/%s/' % self.program.getUrlBase() + 'ajax_schedule_class'     
+        a1 = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
+        response = self.client.post(ajax_url, {'action': 'assignreg', 'cls': section.id, 'block_room_assignments': a1})
+        self.failUnless(response.status_code == 200, "Class not successfully scheduled.")        
+        return (section, timeslots, rooms)
+
+
+class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
     def testModelAPI(self):
         """Schedule classes using the on-model methods."""
 
@@ -167,7 +190,7 @@ class AJAXSchedulingModuleTest(ProgramFrameworkTest):
         self.client.post(ajax_url, {'action': 'assignreg', 'cls': s2.id, 'block_room_assignments': a2})
         self.failUnless(set(s1.get_meeting_times()) == set(timeslots[0:2]), "Existing meeting times clobbered.")
         self.failUnless(set(s2.get_meeting_times()) == set(), "Failed to prevent teacher conflict.")
-
+    
     def testChangeLog(self):
         self.emptySchedule()
         self.loginAdmin()
@@ -179,14 +202,7 @@ class AJAXSchedulingModuleTest(ProgramFrameworkTest):
         beforeSchedule = time.time()
 
         # Schedule one class.
-        t = self.teachers[0]
-        rooms = self.rooms[0].identical_resources().filter(event__in=self.timeslots).order_by('event__start')
-        a1 = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
-        ajax_url = ajax_url_base + 'ajax_schedule_class'
-        s1 = t.getTaughtSections(self.program)[0]
-        timeslots = self.program.getTimeSlots().order_by('start')
-        response = self.client.post(ajax_url, {'action': 'assignreg', 'cls': s1.id, 'block_room_assignments': a1})
-        self.failUnless(response.status_code == 200, "Class not successfully scheduled.")
+        self.scheduleClass()
 
         #fetch the changelog
         changelog_response = self.client.get(changelog_url, {'last_fetched_time': beforeSchedule })
