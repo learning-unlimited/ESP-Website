@@ -187,12 +187,19 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         }.bind(this));
         ESP.Utilities.evm.bind('block_section_unassignment_local', function(e, data) {
             //Update the actual data
-            data.section.blocks = [];
-            for (var i = 0; i < data.blocks.length; i++) {
-                data.blocks[i].section = null;
+	    console.log('block_section_unassignment_local');
+	    // console.log(data.section.id);
+	    // console.log(data.section.blocks.length);
+
+	    var old_blocks = data.section.blocks// the blocks we're removing the class from
+	    //console.log(data.old_blocks);
+            for (var i = 0; i < old_blocks.length; i++) {
+                blocks[i].section = null;
             }
+
             //Update the CSS
-            var old_blocks = data.blocks;
+	    //TODO:  can we find old blocks in our existing data structures somewhere?
+	    console.log(old_blocks);
             for (var i = 0; i < old_blocks.length; i++) {
                 var block = old_blocks[i];
                 var cell = this.block_cells[block.room.uid][block.time.uid];
@@ -205,6 +212,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                     }
                 }
             }
+            data.section.blocks = [];
         }.bind(this));
     },
     
