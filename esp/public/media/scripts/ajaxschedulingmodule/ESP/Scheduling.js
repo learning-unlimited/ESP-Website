@@ -66,16 +66,19 @@ ESP.Scheduling = function(){
         });
         $j('#body').show()
 
-        console.log("Classes of each type in each timeblock:");
+	//last time we fetched updates
+	ESP.Scheduling.last_fetched_time = 0
+
+        //console.log("Classes of each type in each timeblock:");
         for (var time in ESP.Scheduling.classes_by_time_type) {
             for (var type in ESP.Scheduling.classes_by_time_type[time]) {
-                console.log("-- " + time + ",\t" + type + ":\t" + ESP.Scheduling.classes_by_time_type[time][type]);
+                //console.log("-- " + time + ",\t" + type + ":\t" + ESP.Scheduling.classes_by_time_type[time][type]);
             }
         }
     
-        console.log("Middle-School Classes of each type in each timeblock:");
+        //console.log("Middle-School Classes of each type in each timeblock:");
         for (var time in ESP.Scheduling.ms_classes_by_time) {
-            console.log("-- " + time + ":\t" + ESP.Scheduling.ms_classes_by_time[time]);
+            //console.log("-- " + time + ":\t" + ESP.Scheduling.ms_classes_by_time[time]);
         }
     };
     
@@ -341,7 +344,15 @@ ESP.Scheduling = function(){
 
         return processed_data;
     };
-    
+   
+    var fetch_updates = function()  {
+	$j.getJSON('ajax_change_log', {'last_fetched_time': this.last_fetched_time}, function(d, status) {
+	    apply_existing_classes(d.changelog, this.data)
+	});
+	//TODO:  use the time on the last item in the changelog
+	this.last_fetched_time = new Date().getTime()/1000
+    };
+
     var apply_existing_classes = function(assignments, data) {
         var Resources = ESP.Scheduling.Resources;
         var rsrc_sec = {}
@@ -356,7 +367,6 @@ ESP.Scheduling = function(){
                 rsrc_sec[sa.id] = [];
             }
 
-
 	    for (var j = 0; j < sa.timeslots.length; j++)
 	    {
 		rsrc_sec[sa.id].push(Resources.get('Block', [sa.timeslots[j],sa.room_name]));
@@ -367,22 +377,32 @@ ESP.Scheduling = function(){
         var sec_id;
         for (var i = 0; i < ESP.Scheduling.data.sections.length; i++) {
             sec_id = ESP.Scheduling.data.sections[i].uid;
+
             if (rsrc_sec[sec_id]) {
-		ESP.Utilities.evm.fire('block_section_assignment_request', { 
-                    section: Resources.get('Section', sec_id), 
-                    blocks: rsrc_sec[sec_id],
-                    nowriteback: true /* Don't tell the server about this assignment */
+		//unschedule
+		ESP.Utilities.evm.fire('block_section_unassignment_request', { 
+		    section: Resources.get('Section', sec_id),
+		    blocks: [],
+		    nowriteback: true /* Don't tell the server about this assignment */
 		});
+		//reschedule if we have no blocks
+		if (rsrc_sec[sec_id].length > 0){ 
+		    ESP.Utilities.evm.fire('block_section_assignment_request', { 
+			section: Resources.get('Section', sec_id), 
+			blocks: rsrc_sec[sec_id],
+			nowriteback: true /* Don't tell the server about this assignment */
+		    });
+		}
             }
-	    else {
+	    /*else {
 		// TODO: Fire an AJAX reqeuest for class_info for all unscheduled classes
 		ESP.Utilities.evm.fire('block_section_unassignment_request', { 
                     section: Resources.get('Section', sec_id),
 		    //TODO:  set blocks here
                     blocks: [],
                     nowriteback: true /* Don't tell the server about this assignment */
-		});
-	    }
+	/*	});
+	    }*/
         }
     }
 
@@ -436,7 +456,7 @@ ESP.Scheduling = function(){
                 for (var k = 0; k < other_section.blocks.length; k++) {
                     var other_block = other_section.blocks[k];
                     if (other_block.time == time) {
-                        console.log("Teacher '" + teacher.text + "' cannot teach classes '" + section.code + "' and '" + other_section.code + "' simultaneously ('" + time.text + "')");
+                        //console.log("Teacher '" + teacher.text + "' cannot teach classes '" + section.code + "' and '" + other_section.code + "' simultaneously ('" + time.text + "')");
                         return (str_err ? ("Teacher '" + teacher.text + "' cannot teach classes '" + section.code + "' and '" + other_section.code + "' simultaneously ('" + time.text + "')") : false);
                     }
                     if (other_block.seq == block || block.seq == other_block) {
@@ -444,7 +464,7 @@ ESP.Scheduling = function(){
                         if (other_class_bldg.length > 1 && other_class_bldg[0].length < 4) {
                             other_class_bldg = other_class_bldg[0];
                             if (other_class_bldg != class_bldg) {
-                                console.log("Teacher '" + teacher.text + "' running between bldg " + class_bldg + " (" + block.time.text + ") and bldg " + other_class_bldg + " (" + other_block.time.text + ")");
+                                //console.log("Teacher '" + teacher.text + "' running between bldg " + class_bldg + " (" + block.time.text + ") and bldg " + other_class_bldg + " (" + other_block.time.text + ")");
                                 return (str_err ? ("Teacher '" + teacher.text + "' running between bldg " + class_bldg + " (" + block.time.text + ") and bldg " + other_class_bldg + " (" + other_block.time.text + ")") : false);
                             }
                         }
@@ -472,7 +492,7 @@ ESP.Scheduling = function(){
                 }
             }
             if (!found_resource) {
-                console.log("Class '" + section.text + "' requested a resource ('" + section.resource_requests[j].text + "') not available in room '" + block.room.text + "' (note that the website's resource tracker is not fully functional at this time!)");
+                //console.log("Class '" + section.text + "' requested a resource ('" + section.resource_requests[j].text + "') not available in room '" + block.room.text + "' (note that the website's resource tracker is not fully functional at this time!)");
                 return (str_err ? "Class '" + section.text + "' requested a resource ('" + section.resource_requests[j].text + "') not available in room '" + block.room.text + "' (note that the website's resource tracker is not fully functional at this time!)" : true);
             }
         }
@@ -560,7 +580,7 @@ ESP.Scheduling = function(){
         init: init,
         validate_block_assignment: validate_block_assignment,
         validate_start_time: validate_start_time,
-	apply_existing_classes: apply_existing_classes
+	fetch_updates: fetch_updates,
 	//data: data
     };
     return self;
@@ -600,13 +620,7 @@ $j(function(){
     var update_data = {};
     var json_update_components = ['ajax_change_log']
     var json_fetch_update = function(json_update_components, update_data){
-	//set program base url to manage (we'll reset it later to /json/) 
-	program_base_url = "/manage/" + base_url + "/"
-	json_fetch(json_update_components, function(d) {
-	    //alert("got update data!");
-	    ESP.Scheduling.apply_existing_classes(d.changelog, this.data)
-	}, json_data);
-	program_base_url = "/json/" + base_url + "/"
+	ESP.Scheduling.fetch_updates()
     }
 
     setInterval(function() {
@@ -617,6 +631,7 @@ $j(function(){
                 if (d['val'] != ESP.version_uuid) {
                     ESP.version_uuid = d['val'];
                     json_data = {};
+
 		    json_fetch_update(json_update_components, json_data);
                 }
             } else {
