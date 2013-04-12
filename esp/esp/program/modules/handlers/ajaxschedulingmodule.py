@@ -311,15 +311,28 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_schedule_deletereg(self, prog, cls):
         cls.clearRooms()
         cls.clear_meeting_times()
+        schedule_info = {
+            #use time as unique id.  Since this has microsecond resolution, I'm not worried about conflicts
+            'schedule_time': time.time(), 
+            'timeslots': [],
+            'room_name': "", #only support having one classroom scheduled this way
+            'id': int(cls.id),
+        }
+        self.get_change_log(prog).append(schedule_info)
+
         return self.makeret(prog, ret=True, msg="Schedule removed for Class Section '%s'" % cls.emailcode())
 
     def ajax_schedule_assignreg(self, prog, cls, blockrooms, times, classrooms):
+        classroom_names = classrooms
+
         if len(times) < 1:
             return self.makeret(prog, ret=False, msg="No times specified!, can't assign to a timeblock")
 
         if len(classrooms) < 1:
             return self.makeret(prog, ret=False, msg="No classrooms specified!, can't assign to a timeblock")
 
+        #TODO:  this loom modifies classrooms from within the loop.  That seems like a bad idea.  
+        #we should figure out why
         basic_cls = classrooms[0]
         for c in classrooms:
             if c != basic_cls:
@@ -346,19 +359,44 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 cls.clear_meeting_times()
                 return self.makeret(prog, ret=False, msg=" | ".join(errors))
             
+            #add things to the change log here
+            schedule_info = {
+                #use time as unique id.  Since this has microsecond resolution, I'm not worried about conflicts
+                'schedule_time': time.time(), 
+                'timeslots': [int(t.id) for t in times],
+                'room_name': classroom_names[0], #only support having one classroom scheduled this way
+                'id': int(cls.id),
+                }
+            self.get_change_log(prog).append(schedule_info)
+
             return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
 
     @aux_call
     @needs_admin
     @json_response()
     def ajax_change_log(self, request, tl, one, two, module, extra, prog):
-        #TODO:  only return part of the change log
-        return {"changelog" : self.get_change_log(prog)}
+        last_fetched_time =  float(request.GET['last_fetched_time'])
+        #TODO:  can optimize this with the knowledge that the changelog is ordered
+        #and in particular, we're almost always just getting the last few items
+        return_log = [c for c in self.get_change_log(prog) if c['schedule_time'] > last_fetched_time]
+        return { "changelog" : return_log }
 
     def get_change_log(self, prog):
         if not prog.id in self.change_log:
             self.change_log[prog.id] = []
         return self.change_log[prog.id]
+
+    #I haven't decided if I want to do this yet
+    # def change_log_append(self, prog, class, times, classroom):
+    #     schedule_info = {
+    #         #use time as unique id.  Since this has microsecond resolution, I'm not worried about conflicts
+    #         'schedule_time': time.time(), 
+    #         'timeslots': [int(t) for t in times],
+    #         'room_name': classroom, #only support having one classroom scheduled this way
+    #         'id': int(cls.id),
+    #     }
+    #     self.get_change_log(prog).append(schedule_info)
+
 
     @aux_call
     @needs_admin
@@ -388,18 +426,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
             retval = self.ajax_schedule_assignreg(prog, cls, blockrooms, times, classrooms)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
-
-        #TODO:  should this be in a different function in case there are errors?
-        #will this log the change even if there are errors?
-        #add things to the change log here
-        schedule_info = {
-            #use time as unique id.  Since this has microsecond resolution, I'm not worried about conflicts
-            'schedule_time': time.time(), 
-            'timeslots': [int(t) for t in times],
-            'room_name': classrooms[0], #only support having one classroom scheduled this way
-            'id': int(cls_id),
-        }
-        self.get_change_log(prog).append(schedule_info)
 
         return retval
     
