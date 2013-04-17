@@ -268,10 +268,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def ajax_schedule_assignments(self, request, tl, one, two, module, extra, prog):
-        return self.ajax_schedule_assignments_cached(prog)
-
-    @cache_function
-    def ajax_schedule_assignments_cached(self, prog):
         resource_assignments = ResourceAssignment.objects.filter(target__parent_class__parent_program=prog, resource__res_type__name="Classroom").select_related('resource')
 
         resassign_dicts = [
@@ -285,8 +281,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
         response = HttpResponse(content_type="application/json")
         simplejson.dump(resassign_dicts, response)
         return response
-    ajax_schedule_assignments_cached.get_or_create_token(('prog',))
-    ajax_schedule_assignments_cached.depend_on_model(lambda: ResourceAssignment)
     
     @aux_call
     @needs_admin
