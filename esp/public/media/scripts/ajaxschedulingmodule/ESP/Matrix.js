@@ -3,6 +3,14 @@
  */
 ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
     initialize: function(times, rooms, blocks){
+	//set to false in production
+	this.debug_on = true;
+	this.debug = function(message){
+	    if (this.debug_on){
+		console.log(message);
+	    }
+	};
+
         this.matrix = $j("<div/>").addClass('matrix');
         this.el = this.matrix;
 
@@ -75,17 +83,10 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             }
         }
         
-        // set up scrolling
-	/* obsolete -- see commit b7e793b3106949794ae8e067f66af920981049b7
-        cell_body.scroll(function(evt){
-            row_header.css('top','-'+cell_body.scrollTop()+'px');
-            col_header.children('tbody').css('left','-'+cell_body.scrollLeft()+'px');
-        });
-	*/
-        
         var BlockStatus = ESP.Scheduling.Resources.BlockStatus;
         // listen for assignments
         ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
+	    this.debug('block_section_assignment');
             if (!(data.nowriteback)) {
                 if (data.blocks.length > 0) {
                     //Refresh the csrf token
@@ -117,6 +118,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             }
         }.bind(this));
         ESP.Utilities.evm.bind('block_section_assignment_local', function(e, data) {
+	    this.debug('block_section_assignment_local')
             //Some checking
             var block_status;
             for (var i = 0; i < data.blocks.length; i++) {
@@ -164,7 +166,9 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 
             ESP.Utilities.evm.fire('block_section_assignment_success', data);
         }.bind(this));
+
         ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
+	    this.debug('block_section_unassignment');
             if (!(data.nowriteback)) {
                 //Refresh the csrf token
                 refresh_csrf_cookie();
@@ -186,8 +190,8 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             }
         }.bind(this));
         ESP.Utilities.evm.bind('block_section_unassignment_local', function(e, data) {
-            //Update the actual data
-
+            this.debug('block_section_unassignment_local');
+	    
 	    /*
 	      This function is called in two situations:  when a class was just unassigned
 	      locally and when we get a class back from the changelog.  In the first case,
@@ -199,10 +203,14 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 	      until this function everywhere.  On the other hand, I can't figure out
 	     */
 
-	    var old_blocks = data.section.blocks// the blocks we're removing the class from
-	    if(old_blocks.length == 0){
+	    var old_blocks;
+	    if(data.blocks.length == 0){
+		old_blocks = data.section.blocks;// the blocks we're removing the class from
+	    }
+	    else{
 		old_blocks = data.blocks
 	    }
+
 
             for (var i = 0; i < old_blocks.length; i++) {
                 blocks[i].section = null;
