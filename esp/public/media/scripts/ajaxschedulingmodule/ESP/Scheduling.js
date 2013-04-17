@@ -67,7 +67,10 @@ ESP.Scheduling = function(){
         $j('#body').show()
 
 	//last time we fetched updates
-	ESP.Scheduling.last_fetched_time = 0
+	console.log("reset last_fetched_time to zero")
+	//set last_fetched_time to now
+	//TODO:  probably doesn't actually get correct behavior if a class is scheduled at exactly the right time
+	ESP.Scheduling.last_fetched_time = new Date().getTime()/1000
 
         //console.log("Classes of each type in each timeblock:");
         for (var time in ESP.Scheduling.classes_by_time_type) {
@@ -346,11 +349,15 @@ ESP.Scheduling = function(){
     };
    
     var fetch_updates = function()  {
-	$j.getJSON('ajax_change_log', {'last_fetched_time': this.last_fetched_time}, function(d, status) {
+	$j.getJSON('ajax_change_log', {'last_fetched_time': ESP.Scheduling.last_fetched_time}, function(d, status) {
 	    apply_existing_classes(d.changelog, this.data)
+	    //update last change time if we didn't get an empty changelog
+	    if (d.changelog.length > 0){
+		ESP.Scheduling.last_fetched_time = d.changelog[d.changelog.length-1].schedule_time
+	    }
 	});
 	//TODO:  use the time on the last item in the changelog
-	this.last_fetched_time = new Date().getTime()/1000
+	    //
     };
 
     var apply_existing_classes = function(assignments, data) {
