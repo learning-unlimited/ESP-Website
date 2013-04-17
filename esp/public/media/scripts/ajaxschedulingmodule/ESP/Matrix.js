@@ -187,19 +187,29 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         }.bind(this));
         ESP.Utilities.evm.bind('block_section_unassignment_local', function(e, data) {
             //Update the actual data
-	    console.log('block_section_unassignment_local');
-	    // console.log(data.section.id);
-	    // console.log(data.section.blocks.length);
+
+	    /*
+	      This function is called in two situations:  when a class was just unassigned
+	      locally and when we get a class back from the changelog.  In the first case,
+	      we've already changed the data locally, and passed the unassigned blocks to 
+	      this function.  In the other, the blocks need to be unassigned locally and 
+	      are still in the data.section datastructure.
+	      
+	      TODO:  probably the right answer here is to have the data not unassigned
+	      until this function everywhere.  On the other hand, I can't figure out
+	     */
 
 	    var old_blocks = data.section.blocks// the blocks we're removing the class from
-	    //console.log(data.old_blocks);
+	    if(old_blocks.length == 0){
+		old_blocks = data.blocks
+	    }
+
             for (var i = 0; i < old_blocks.length; i++) {
                 blocks[i].section = null;
             }
 
             //Update the CSS
 	    //TODO:  can we find old blocks in our existing data structures somewhere?
-	    console.log(old_blocks);
             for (var i = 0; i < old_blocks.length; i++) {
                 var block = old_blocks[i];
                 var cell = this.block_cells[block.room.uid][block.time.uid];
