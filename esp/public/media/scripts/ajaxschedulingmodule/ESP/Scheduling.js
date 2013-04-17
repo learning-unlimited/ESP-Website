@@ -394,15 +394,6 @@ ESP.Scheduling = function(){
 		    });
 		}
             }
-	    /*else {
-		// TODO: Fire an AJAX reqeuest for class_info for all unscheduled classes
-		ESP.Utilities.evm.fire('block_section_unassignment_request', { 
-                    section: Resources.get('Section', sec_id),
-		    //TODO:  set blocks here
-                    blocks: [],
-                    nowriteback: true /* Don't tell the server about this assignment */
-	/*	});
-	    }*/
         }
     }
 
