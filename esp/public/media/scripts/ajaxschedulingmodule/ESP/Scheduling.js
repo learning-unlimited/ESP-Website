@@ -91,9 +91,6 @@ ESP.Scheduling = function(){
         }
     };
     
-    function update(data){
-    };
-
     // process data
     function process_data(data){
         var processed_data = {
@@ -408,6 +405,8 @@ ESP.Scheduling = function(){
 		}
             }
         }
+	//update directory (sometimes this happens correctly without this call, and sometimes it doesn't
+	ESP.Scheduling.directory.filter()
     }
 
     var validate_block_assignment = function(block, section, str_err) {
