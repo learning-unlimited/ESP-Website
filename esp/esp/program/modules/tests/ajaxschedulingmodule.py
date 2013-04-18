@@ -73,11 +73,13 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
     def forceAvailability(self):
         self.client.post('/manage/%s/force_availability' % self.program.getUrlBase(), {'sure': 'True'})
 
-    #schedule class, 
-    #NO guarantee that it's a class that hasn't been scheduled yet
-    #return a tuple (section, times, rooms)
-    def scheduleClass(self, section=None, teacher=None, timeslots=None, rooms=None, shouldFail=False):
-        #choose section, times, and rooms
+    def clearScheduleAvailability(self):
+        self.emptySchedule()
+        self.loginAdmin()
+        self.forceAvailability()
+
+
+    def getClassToSchedule(self, section=None, teacher=None, timeslots=None, rooms=None):
         if section == None:
             if teacher == None:
                 teacher = self.teachers[0]
@@ -88,6 +90,15 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
 
         if timeslots == None:
             timeslots = self.program.getTimeSlots().order_by('start')       
+        
+        return (section, timeslots, rooms)
+
+    #schedule class, 
+    #NO guarantee that it's a class that hasn't been scheduled yet
+    #return a tuple (section, times, rooms)
+    def scheduleClass(self, section=None, teacher=None, timeslots=None, rooms=None, shouldFail=False):
+        #choose section, times, and rooms
+        (section, timeslots, rooms) = self.getClassToSchedule(section=section, teacher=teacher, timeslots=timeslots, rooms=rooms)
 
         #schedule the class
         blocks = '\n'.join(['%s,%s' % (r.event.id, r.name) for r in rooms[0:2]])
@@ -97,20 +108,18 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
         #make sure the scheduling had the expected result
         success = json.loads(response.content)['ret']
         if not shouldFail:
-            self.failUnless(success, "Class not successfully scheduled.")                
+            self.failUnless(success, "Class not successfully scheduled: " + response.content)                
         else:
             self.failIf(success, "Class successfully scheduled, which we didn't expect.") 
         
         #return information about the class we tried to schedule
         return (section, timeslots, rooms)
 
-
-class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
-    def clearScheduleAvailability(self):
-        self.emptySchedule()
-        self.loginAdmin()
-        self.forceAvailability()
+    def unschedule_class(self, section_id):
+        resp = self.client.post(self.schedule_class_url, {'action': 'deletereg', 'cls': section_id})
+        assert resp.status_code == 200 #successful deleting of class
         
+class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):        
 
     def testModelAPI(self):
         """Schedule classes using the on-model methods."""
@@ -249,8 +258,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         beforeUnschedule = time.time()
 
         #unschedule a class
-        resp = self.client.post(self.schedule_class_url, {'action': 'deletereg', 'cls': section.id})
-        assert resp.status_code == 200 #successful deleting of class
+        self.unschedule_class(section.id)
 
         #change log should include unscheduled classes 
         changelog_response = self.client.get(self.changelog_url, {'last_fetched_time': beforeUnschedule })
