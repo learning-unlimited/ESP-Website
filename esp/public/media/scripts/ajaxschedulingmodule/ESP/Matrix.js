@@ -3,14 +3,6 @@
  */
 ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
     initialize: function(times, rooms, blocks){
-	//set to false in production
-	this.debug_on = true;
-	this.debug = function(message){
-	    if (this.debug_on){
-		console.log(message);
-	    }
-	};
-
         this.matrix = $j("<div/>").addClass('matrix');
         this.el = this.matrix;
 
@@ -86,7 +78,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         var BlockStatus = ESP.Scheduling.Resources.BlockStatus;
         // listen for assignments
         ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
-	    this.debug('block_section_assignment');
+	    debug_log('block_section_assignment');
             if (!(data.nowriteback)) {
                 if (data.blocks.length > 0) {
                     //Refresh the csrf token
@@ -118,7 +110,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             }
         }.bind(this));
         ESP.Utilities.evm.bind('block_section_assignment_local', function(e, data) {
-	    this.debug('block_section_assignment_local')
+	    debug_log('block_section_assignment_local')
             //Some checking
             var block_status;
             for (var i = 0; i < data.blocks.length; i++) {
@@ -168,7 +160,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         }.bind(this));
 
         ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
-	    this.debug('block_section_unassignment');
+	    debug_log('block_section_unassignment');
             if (!(data.nowriteback)) {
                 //Refresh the csrf token
                 refresh_csrf_cookie();
@@ -190,7 +182,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             }
         }.bind(this));
         ESP.Utilities.evm.bind('block_section_unassignment_local', function(e, data) {
-            this.debug('block_section_unassignment_local');
+            debug_log('block_section_unassignment_local');
 	    
 	    /*
 	      This function is called in two situations:  when a class was just unassigned

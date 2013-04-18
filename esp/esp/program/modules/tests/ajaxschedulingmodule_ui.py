@@ -42,6 +42,22 @@ class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase):
         css_classes = el.get_attribute("class").split()
         return class_name in css_classes
 
+    def isScheduled(self, section_id):
+        elements = self.browser.find_elements_by_class_name('CLS_id_'+str(section_id))
+        for el in elements:
+            self.failIf(self.hasCSSClass(el, "class-entry"), "Scheduled class appears in directory")
+
+        self.failUnless(True in [self.hasCSSClass(el, "matrix-cell") for el in elements],
+            "Scheduled class does not appear in matrix")
+
+    def isNotScheduled(self, section_id):
+        elements = self.browser.find_elements_by_class_name('CLS_id_'+str(section_id))
+        for el in elements:
+            self.failIf(self.hasCSSClass(el, "matrix-cell"), "Unscheduled class appears in matrix")
+            
+        self.failUnless(True in [self.hasCSSClass(el, "class-entry") for el in elements], 
+                        "Unscheduled class does not appear in directory.")
+
     #mostly exists as sanity on testing framework
     def testAjaxLoads(self):
         self.loadAjax()
@@ -54,12 +70,7 @@ class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase):
 
         #section turns up in the browser after no more than 30 seconds
         time.sleep(30)
-        elements = self.browser.find_elements_by_class_name('CLS_id_'+str(section.id))
-        for el in elements:
-            self.failIf(self.hasCSSClass(el, "class-entry"), "Scheduled class appears in directory")
-
-        self.failUnless(True in [self.hasCSSClass(el, "matrix-cell") for el in elements],
-            "Scheduled class does not appear in matrix")
+        self.isScheduled(section.id)
 
     def testUpdateUnscheduledClass(self):
         self.loadAjax()
@@ -67,25 +78,34 @@ class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase):
 
         #schedule and unschedule a class
         (section, rooms, times) = self.scheduleClass()         
-        self.unschedule_class(section.id)
-        
-        #wait for changelog
+        #wait for class to appear
         time.sleep(30)
-    
-        #assert that the class is in the directory
-        elements = self.browser.find_elements_by_class_name('CLS_id_'+str(section.id))
-        print len(elements)
-        for el in elements:
-            self.failIf(self.hasCSSClass(el, "matrix-cell"), "Unscheduled class appears in matrix")
-            
-        self.failUnless(True in [self.hasCSSClass(el, "class-entry") for el in elements], 
-                        "Unscheduled class does not appear in directory.")
+        self.unschedule_class(section.id)
+        time.sleep(30)
+
+        self.isNotScheduled(section.id)
+
+    def testUpdateScheduleUnscheduleClass(self):
+        #if a class is scheduled and unscheduled in the same log, make sure it doesn't show up
+        self.loadAjax()
+        self.clearScheduleAvailability()
+
+        #schedule and unschedule a class
+        (section, rooms, times) = self.scheduleClass()         
+        self.unschedule_class(section.id)
+        time.sleep(30)
+
+        self.isNotScheduled(section.id)        
 
     def testScheduleClass(self):
         self.loadAjax()
         self.clearScheduleAvailability()
 
-        #section = 
+        (section, room, times) = self.getClassToSchedule()
+        source_el = self.browser.find_element_by_class_name('CLS_id_'+str(section.id))
+        #any matrix cell will work
+        target_el = self.browser.find_element_by_class_name('matrix-cell')
 
-        ac = ActionChains(driver)
-        source = self.browser.find_element_by_class_name('CLS_id_'+str(section.id))
+        ac = ActionChains(self.browser)
+        ac.drag_and_drop(source_el, target_el).perform()
+        self.isScheduled(section.id)
