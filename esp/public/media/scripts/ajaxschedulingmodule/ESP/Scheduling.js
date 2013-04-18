@@ -6,6 +6,14 @@ ESP.Scheduling = function(){
         $j('#body').hide()
         // ensure event manager is empty before we begin setting up
         ESP.Utilities.evm.unbind();
+
+	if (debug_on){
+	    $j('#body').append(
+		$j("<input/>")
+		    .attr({type: "button", value: "Fetch Updates"})
+		    .click(ESP.Scheduling.fetch_updates)
+	    );
+	}
     
         ESP.Scheduling.classes_by_time_type = null;
         ESP.Scheduling.ms_classes_by_time = null;
@@ -66,8 +74,6 @@ ESP.Scheduling = function(){
         });
         $j('#body').show()
 
-	//last time we fetched updates
-	console.log("reset last_fetched_time to zero")
 	//set last_fetched_time to now
 	//TODO:  probably doesn't actually get correct behavior if a class is scheduled at exactly the right time
 	ESP.Scheduling.last_fetched_time = new Date().getTime()/1000
@@ -368,12 +374,12 @@ ESP.Scheduling = function(){
         for (var i in assignments) {
 	    // Handles prototype being angry
 	    if (typeof assignments[i] === 'function') {continue;}
+
             sa = assignments[i];
+	    debug_log (sa);
 
-            if (!(rsrc_sec[sa.id])) {
-                rsrc_sec[sa.id] = [];
-            }
-
+	    //create a list or erase previous assignment
+            rsrc_sec[sa.id] = [];
 	    for (var j = 0; j < sa.timeslots.length; j++)
 	    {
 		rsrc_sec[sa.id].push(Resources.get('Block', [sa.timeslots[j],sa.room_name]));
@@ -613,29 +619,25 @@ $j(function(){
 	    ESP.Scheduling.init(data);
 	}, json_data);
     };
+
     json_fetch_data(json_components, json_data);
 
-    var update_data = {};
-    var json_update_components = ['ajax_change_log']
-    var json_fetch_update = function(json_update_components, update_data){
-	ESP.Scheduling.fetch_updates()
+    //if we're in debug mode, we can use the button at the top to get updates
+    if (!debug_on){
+	setInterval(function() {
+            ESP.Scheduling.status('warning','Pinging server...');
+            $j.getJSON('ajax_schedule_last_changed', function(d, status) {
+		if (status == "success") {
+                    ESP.Scheduling.status('success','Refreshed data from server.');
+                    if (d['val'] != ESP.version_uuid) {
+			ESP.version_uuid = d['val'];
+			ESP.Scheduling.fetch_updates();
+                    }
+		} else {
+                    ESP.Scheduling.status('error','Unable to refresh data from server.');
+		}
+            });
+	    //let's do this every 30 seconds
+	}, 3000);
     }
-
-    setInterval(function() {
-        ESP.Scheduling.status('warning','Pinging server...');
-        $j.getJSON('ajax_schedule_last_changed', function(d, status) {
-            if (status == "success") {
-                ESP.Scheduling.status('success','Refreshed data from server.');
-                if (d['val'] != ESP.version_uuid) {
-                    ESP.version_uuid = d['val'];
-                    json_data = {};
-
-		    json_fetch_update(json_update_components, json_data);
-                }
-            } else {
-                ESP.Scheduling.status('error','Unable to refresh data from server.');
-            }
-        });
-	//let's do this every 30 seconds
-    }, 3000);
 });
