@@ -1,3 +1,18 @@
+var load = function() {
+    json_data = {}
+    var data = {}
+    json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections', 'lunch_timeslots', 'resource_types'];
+    json_fetch(json_components, function(d) {
+	for (var i in d) {
+	    // Deal with prototype failing
+	    if (typeof d[i] === 'function') { continue; }
+	    data[i] = d[i];
+	}
+	
+	ESP.Scheduling.init(data);
+    }, json_data);
+};
+
 /*
  * the main application class
  */
@@ -13,6 +28,20 @@ ESP.Scheduling = function(){
 		    .attr({type: "button", value: "Fetch Updates"})
 		    .click(ESP.Scheduling.fetch_updates)
 	    );
+
+	    //for testing log clearing behavior
+	    $j('#body').append(
+		$j("<input/>")
+		    .attr({type: "button", value: "Clear update log"})
+		    .click(function(e) {
+			req = { csrfmiddlewaretoken: csrf_token() }
+
+			$j.post('ajax_clear_change_log', req).success(function(data, status){
+			    console.log("log cleared");
+			})
+		    })
+	    );
+
 	}
     
         ESP.Scheduling.classes_by_time_type = null;
@@ -353,14 +382,20 @@ ESP.Scheduling = function(){
    
     var fetch_updates = function()  {
 	$j.getJSON('ajax_change_log', {'last_fetched_time': ESP.Scheduling.last_fetched_time}, function(d, status) {
-	    apply_existing_classes(d.changelog, this.data)
-	    //update last change time if we didn't get an empty changelog
-	    if (d.changelog.length > 0){
-		ESP.Scheduling.last_fetched_time = d.changelog[d.changelog.length-1].schedule_time
+	    //if we need to reload
+	    if (d.other){
+		if (d.other == "reload"){
+		    load()
+		}
+	    }
+	    else{
+		apply_existing_classes(d.changelog, this.data)
+		//update last change time if we didn't get an empty changelog
+		if (d.changelog.length > 0){
+		    ESP.Scheduling.last_fetched_time = d.changelog[d.changelog.length-1].schedule_time
+		}
 	    }
 	});
-	//TODO:  use the time on the last item in the changelog
-	    //
     };
 
     var apply_existing_classes = function(assignments, data) {
@@ -405,6 +440,7 @@ ESP.Scheduling = function(){
 		}
             }
         }
+
 	//update directory (sometimes this happens correctly without this call, and sometimes it doesn't
 	ESP.Scheduling.directory.filter()
     }
@@ -602,24 +638,8 @@ $j(function(){
         }
     });
 
-    var data = {};
-    var json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections', 'lunch_timeslots', 'resource_types'];
-
-    var json_data = {};
-    // Fetch regular JSON components
-    var json_fetch_data = function(json_components, json_data) {
-	json_fetch(json_components, function(d) {
-	    for (var i in d) {
-		// Deal with prototype failing
-		if (typeof d[i] === 'function') { continue; }
-		data[i] = d[i];
-	    }
-	    
-	    ESP.Scheduling.init(data);
-	}, json_data);
-    };
-
-    json_fetch_data(json_components, json_data);
+    //json_fetch_data(json_components, json_data);
+    load()
 
     //if we're in debug mode, we can use the button at the top to get updates
     if (!debug_on){

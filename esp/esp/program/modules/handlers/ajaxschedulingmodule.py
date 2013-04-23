@@ -45,7 +45,7 @@ from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
 from esp.datatree.models         import DataTree
-from datetime                    import timedelta
+from datetime                    import timedelta, time
 from django.utils                import simplejson
 from collections                 import defaultdict
 from esp.cache                   import cache_function
@@ -81,9 +81,29 @@ class AJAXSchedulingModule(ProgramModuleObj):
         it gets all of its content from AJAX callbacks.
         """
 
+        #trim the log here.  
+        #Nothing special about right here, but putting it here makes sure it's done regularly, without 
+        #doing it really really often, and without having an extra thread just for that.
+        self.prune_log(prog)
+
+        #actually return the page
         context = {}
         
         return render_to_response(self.baseDir()+'ajax_scheduling.html', request, context)
+
+    def prune_log(self, prog):
+        cl = self.get_change_log(prog)
+        now = datetime.time()
+        max_log_age = timedelta(hours=12)
+        index = -1
+        for i in range(1, len(cl), 1):
+            change = cl[i]
+            if change['schedule_time'] > now - max_log_age:
+                print 
+                index = i
+                break
+        self.change_log[prog.id] = [{"schedule_time" : cl[index]['schedule_time'] }] + cl[index:]
+
 
     @aux_call
     @needs_admin
@@ -369,28 +389,34 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @needs_admin
     @json_response()
     def ajax_change_log(self, request, tl, one, two, module, extra, prog):
+        cl = self.get_change_log(prog)
         last_fetched_time =  float(request.GET['last_fetched_time'])
+        
+        #check whether we have a log entry at least as old as the last fetched time
+        #if not, we return a command to reload instead of the log
+
+        if len(cl) > 0 and cl[0]['schedule_time'] > last_fetched_time:
+            return { "other" : [ { 'command' : "reload"} ] }
+
         #TODO:  can optimize this with the knowledge that the changelog is ordered
         #and in particular, we're almost always just getting the last few items
-        return_log = [c for c in self.get_change_log(prog) if c['schedule_time'] > last_fetched_time]
+        return_log = [c for c in cl[1:] if c['schedule_time'] > last_fetched_time]
         return { "changelog" : return_log }
+
+    @aux_call
+    @needs_admin
+    def ajax_clear_change_log(self, request, tl, one, two, module, extra, prog):
+        """ This call exists for debugging and testing purposes.  It's not a disaster if it's 
+        called in production, but it is annoying.  
+        Clears the change log for this program. """
+
+        self.change_log[prog.id] = [{"schedule_time": time.time()}]
+        return HttpResponse('')
 
     def get_change_log(self, prog):
         if not prog.id in self.change_log:
-            self.change_log[prog.id] = []
+            self.change_log[prog.id] = [{"schedule_time" : time.time()}]
         return self.change_log[prog.id]
-
-    #I haven't decided if I want to do this yet
-    # def change_log_append(self, prog, class, times, classroom):
-    #     schedule_info = {
-    #         #use time as unique id.  Since this has microsecond resolution, I'm not worried about conflicts
-    #         'schedule_time': time.time(), 
-    #         'timeslots': [int(t) for t in times],
-    #         'room_name': classroom, #only support having one classroom scheduled this way
-    #         'id': int(cls.id),
-    #     }
-    #     self.get_change_log(prog).append(schedule_info)
-
 
     @aux_call
     @needs_admin
