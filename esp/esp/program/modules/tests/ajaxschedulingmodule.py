@@ -227,6 +227,10 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
     def testChangeLog(self):
         self.clearScheduleAvailability()
 
+        #make sure that the change log is at least 
+        (section, rooms, times) = self.scheduleClass()
+        self.unschedule_class(section.id)
+
         beforeSchedule = time.time()
         # Schedule one class.
         self.scheduleClass()
@@ -289,3 +293,16 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         changelog = json.loads(changelog_response.content)["changelog"]
         self.failUnless(len(changelog) == 0, "Change log shows unsuccessfully scheduled class: " + str(changelog))
  
+    def testTooOldChangeLog(self):
+        self.clearScheduleAvailability()
+        # Schedule class
+        (s1, times, rooms) = self.scheduleClass()
+        #time before the changelog was deleted
+        beforeDelete = time.time()
+        # delete change log
+        self.client.post('/manage/%s/ajax_clear_change_log' % self.program.getUrlBase(), {})
+        #request change log
+        response = self.client.get(self.changelog_url, {'last_fetched_time': beforeDelete })
+        response = json.loads(response.content)
+        self.failUnless(response["other"] == [{"command" : "reload"}], "Was not asked to reload after the change log was destroyed: " +
+                        str(response["other"]))
