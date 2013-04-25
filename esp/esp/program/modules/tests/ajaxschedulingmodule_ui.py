@@ -31,6 +31,13 @@ class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase):
              lambda driver:    self.browser.find_element_by_id(submit_el_id))
         e.click()
 
+    #we usually want to make sure the log exists before ajax is loaded so that ajax knows it has
+    #all log entries
+    def startLog(self):
+        (section, rooms, times) = self.scheduleClass()         
+        self.unschedule_class(section.id)
+
+
     def loadAjax(self):
         self.loginAdminBrowser(self.admins[0].username, "password")
         url = self.live_server_url + self.ajax_url_base + "ajax_scheduling"
@@ -89,6 +96,7 @@ class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase):
         #if a class is scheduled and unscheduled in the same log, make sure it doesn't show up
         self.loadAjax()
         self.clearScheduleAvailability()
+        self.startLog()
 
         #schedule and unschedule a class
         (section, rooms, times) = self.scheduleClass()         
@@ -108,4 +116,5 @@ class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase):
 
         ac = ActionChains(self.browser)
         ac.drag_and_drop(source_el, target_el).perform()
+        time.sleep(5)
         self.isScheduled(section.id)
