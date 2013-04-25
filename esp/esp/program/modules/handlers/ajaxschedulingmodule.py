@@ -53,6 +53,27 @@ from uuid                        import uuid4 as get_uuid
 from esp.utils.decorators         import json_response
 import calendar, time, datetime
 
+#TODO:  a class for log entries?
+class AJAXChangeLog: 
+    max_log_age =  timedelta(hours=12).total_seconds()
+    def __init__(self):
+        self.entries = []
+        self.age = time.time()
+        
+    def prune(self):
+        now = time.time()
+        #could be optimized.  Not super concerned with this.
+        self.entries = [s for s in self.entries if s['schedule_time'] > now - max_log_age]
+
+    def append(self, entry):
+        self.entries.append(entry)
+
+    def get_log(self, timestamp):
+        return [c for c in self.entries if c['schedule_time'] > timestamp]        
+    
+    def get_log_age(self):
+        return self.age
+
 class AJAXSchedulingModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
 
@@ -84,26 +105,13 @@ class AJAXSchedulingModule(ProgramModuleObj):
         #trim the log here.  
         #Nothing special about right here, but putting it here makes sure it's done regularly, without 
         #doing it really really often, and without having an extra thread just for that.
-        self.prune_log(prog)
+    
+        self.get_change_log(prog).prune()
 
         #actually return the page
         context = {}
         
         return render_to_response(self.baseDir()+'ajax_scheduling.html', request, context)
-
-    def prune_log(self, prog):
-        cl = self.get_change_log(prog)
-        now = datetime.time()
-        max_log_age = timedelta(hours=12)
-        index = -1
-        for i in range(1, len(cl), 1):
-            change = cl[i]
-            if change['schedule_time'] > now - max_log_age:
-                print 
-                index = i
-                break
-        self.change_log[prog.id] = [{"schedule_time" : cl[index]['schedule_time'] }] + cl[index:]
-
 
     @aux_call
     @needs_admin
@@ -392,16 +400,16 @@ class AJAXSchedulingModule(ProgramModuleObj):
         cl = self.get_change_log(prog)
         last_fetched_time =  float(request.GET['last_fetched_time'])
         
+        #print "schedule_time", cl[0]['schedule_time']
+        #print "last fetched time", last_fetched_time
+        #print "len(cl)", len(cl)
+
         #check whether we have a log entry at least as old as the last fetched time
         #if not, we return a command to reload instead of the log
-
-        if len(cl) > 0 and cl[0]['schedule_time'] > last_fetched_time:
+        if cl.get_log_age() > last_fetched_time:
             return { "other" : [ { 'command' : "reload"} ] }
 
-        #TODO:  can optimize this with the knowledge that the changelog is ordered
-        #and in particular, we're almost always just getting the last few items
-        return_log = [c for c in cl[1:] if c['schedule_time'] > last_fetched_time]
-        return { "changelog" : return_log }
+        return { "changelog" : cl.get_log(last_fetched_time) }
 
     @aux_call
     @needs_admin
@@ -410,12 +418,12 @@ class AJAXSchedulingModule(ProgramModuleObj):
         called in production, but it is annoying.  
         Clears the change log for this program. """
 
-        self.change_log[prog.id] = [{"schedule_time": time.time()}]
+        self.change_log[prog.id] = AJAXChangeLog()
         return HttpResponse('')
 
     def get_change_log(self, prog):
         if not prog.id in self.change_log:
-            self.change_log[prog.id] = [{"schedule_time" : time.time()}]
+            self.change_log[prog.id] = AJAXChangeLog()
         return self.change_log[prog.id]
 
     @aux_call
