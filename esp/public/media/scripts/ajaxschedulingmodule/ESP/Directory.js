@@ -266,29 +266,55 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 		    $j("#directory-table-wrapper").height(directory_start_height-10-$j("#searchbox").height());
 		}
 	    });
-            this.el.append($j('<span>filter: </span>'));
+
+	    var filter_names  = ["ID"  , "Title"]//, "Teacher"]
+	    var filter_fields = ["code", "text" ]//, "teacher"]
+	    this.filters = []
+	    for (var i = 0; i < filter_fields.length; i++){
+		input = $j('<input type="text"/>');
+		this.filters.push(this.get_search_function(filter_fields[i], input))
+
+		filter = $j('<p/>');
+		filter.append($j('<span>'+ filter_names[i] +'</span>'));
+		filter.append(input);
+		this.el.append(filter);
+	    }        
+	    input.bind('keypress', this.do_searches.bind(this));
 	    
-            this.teacher = $j('<input type="text" label="Teacher"/>');
-            this.el.append(this.teacher);
-        
-            //this.textbox.bind('keyup',this.do_search.bind(this));
-            this.teacher.bind('keypress',function(e){ if (e.which == 13) this.do_search(); }.bind(this));
         },
-        do_search: function(){
-            this.directory.filter(this.search_function(this.textbox.val()));
+        do_searches: function(e){
+	    if(e.which != 13){
+		return;
+	    }
+	    console.log(this.filters)
+	    for (var i=0; i < this.filters.length; i ++){
+		console.log(this.filters[i])
+		this.filters[i]()
+	    }
         },
-        search_function: function(text){
+
+        get_search_function: function(field, textbox){
+	    console.log(textbox)
+	    return function(){
+		console.log(textbox)
+		this.directory.filter(this.search_function(field, textbox.val()));
+	    }.bind(this)
+        },
+        search_function: function(field, text){
+	    console.log(field)
+	    console.log(text)
             var regex = new RegExp(text,'i'); // case insensitive
-            var fields = ['id','category','text', 'code'];
-            var pfields = ['Teacher'];
-            return function(x){
-                for (var i = 0; i < fields.length; i++) {
-                    if (String(x[fields[i]]).search(regex) != -1) return true;
-                }
-                for (var i = 0; i < pfields.length; i++) {
-                    if (this.directory.properties[pfields[i]].get(x).search(regex) != -1) return true;
-                }
-                return false;
-            }.bind(this);
+            return function(x){	
+		console.log(x)
+                if (String(x[field]).search(regex) != -1) return true;
+                else return false;
+            }.bind(this);	    
         }
     }));
+
+/*                for (var i = 0; i < pfields.length; i++) {
+                    if (this.directory.properties[pfields[i]].get(x).search(regex) != -1) return true;
+
+
+
+                }*/
