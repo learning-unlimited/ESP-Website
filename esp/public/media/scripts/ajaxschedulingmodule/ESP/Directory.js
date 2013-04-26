@@ -13,7 +13,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
         
             // set up display
             this.table = $j("<table/>").addClass('directory');
-            this.el = $j("<div/>").addClass('directory-table-wrapper');
+            this.el = $j("<div id='directory-table-wrapper'/>").addClass('directory-table-wrapper');
             this.el.append(this.table);
         
             // create header
@@ -97,27 +97,6 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 		}
 	    }
         },
-        /*'Category': {
-            get: function(x){ return x.category; },
-            sort: function(x,y){
-                return cmp(x.section.category, y.section.category);
-            },
-	    // css: 'width:100px;'
-	    // Code to style unapproved classes differently
-            css: function(x){
-		var default_css = fixed-wideth(70);
-		var unapproved_css = "color:#ff0000; font-style:italic;";
-		// if we're just calling it for the general properties of the ID td
-		// or if it's approved, return the default css
-		if (!x || x.status == 10) {
-		    return default_css;
-		}
-		// if the class is not approved, apply the unapproved styling to it
-		else {
-		    return default_css + unapproved_css;
-		}
-	    }
-        },*/
         'Teacher': {
             get: function(x) {
 		if (x.teachers) {
@@ -281,13 +260,19 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
         initialize: function(directory) {
             this.directory = directory;
         
-            //this.el = $j('<div/>').addClass('searchbox');
-            //this.el.append($j('<span>filter: </span>'));
-            this.textbox = $j('<input type="text"/>');
-            //this.el.append(this.textbox);
+            this.el = $j('<div id="searchbox"/>').addClass('searchbox').addClass('ui-resizable');
+	    this.el.resizable({
+		resize: function(e) {
+		    $j("#directory-table-wrapper").height(directory_start_height-10-$j("#searchbox").height());
+		}
+	    });
+            this.el.append($j('<span>filter: </span>'));
+	    
+            this.teacher = $j('<input type="text" label="Teacher"/>');
+            this.el.append(this.teacher);
         
             //this.textbox.bind('keyup',this.do_search.bind(this));
-            this.textbox.bind('keypress',function(e){ if (e.which == 13) this.do_search(); }.bind(this));
+            this.teacher.bind('keypress',function(e){ if (e.which == 13) this.do_search(); }.bind(this));
         },
         do_search: function(){
             this.directory.filter(this.search_function(this.textbox.val()));

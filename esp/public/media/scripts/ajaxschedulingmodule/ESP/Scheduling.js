@@ -22,17 +22,19 @@ ESP.Scheduling = function(){
         // ensure event manager is empty before we begin setting up
         ESP.Utilities.evm.unbind();
 
+	//Add debug features
+	//TODO:  make sure these aren't added a second time when the interface reloads
 	if (debug_on){
 	    $j('#body').append(
 		$j("<input/>")
-		    .attr({type: "button", value: "Fetch Updates"})
+		    .attr({type: "button", value: "Fetch Updates", id: "fetch_updates"})
 		    .click(ESP.Scheduling.fetch_updates)
 	    );
 
 	    //for testing log clearing behavior
 	    $j('#body').append(
 		$j("<input/>")
-		    .attr({type: "button", value: "Clear update log"})
+		    .attr({type: "button", value: "Clear update log", id: "clear_log"})
 		    .click(function(e) {
 			req = { csrfmiddlewaretoken: csrf_token() }
 
@@ -58,16 +60,14 @@ ESP.Scheduling = function(){
             this.status('success','Welcome to the scheduling app!');
         }
         
-        if(this.roomfilter)
-            this.roomfilter.save();
+        /*if(this.roomfilter)
+            this.roomfilter.save();*/
         
         this.matrix = new ESP.Scheduling.Widgets.Matrix(pd.times, pd.rooms, pd.blocks);
         $j('#matrix-target').text('');
         $j('#matrix-target').append(this.matrix.el);
-        if(!this.roomfilter)
-            this.roomfilter = new ESP.Scheduling.Widgets.RoomFilter(this.matrix);
-        else
-            this.roomfilter.restore(this.matrix);
+        
+        this.roomfilter = new ESP.Scheduling.Widgets.RoomFilter(this.matrix);
 	//add "drag here to unschedule" box to the matrix corner
         this.garbage   = new ESP.Scheduling.Widgets.GarbageBin();
         $j('#matrix-corner-box').append(this.garbage.el);//.addClass('float-right'));
@@ -75,7 +75,7 @@ ESP.Scheduling = function(){
         $j('#directory-target').text('');
         $j('#directory-target').append(this.searchbox.el);
         $j('#directory-target').append(this.directory.el);
-    
+
         ESP.Utilities.evm.bind('drag_dropped', function(event, data){
             var extra = {
                 blocks:data.blocks, section:data.section
@@ -102,6 +102,7 @@ ESP.Scheduling = function(){
             dir.filter();
         });
         $j('#body').show()
+	directory_start_height = $j('#directory-target').height()
 
 	//set last_fetched_time to now
 	//TODO:  probably doesn't actually get correct behavior if a class is scheduled at exactly the right time
@@ -383,8 +384,12 @@ ESP.Scheduling = function(){
     var fetch_updates = function()  {
 	$j.getJSON('ajax_change_log', {'last_fetched_time': ESP.Scheduling.last_fetched_time}, function(d, status) {
 	    //if we need to reload
-	    if (d.other){
-		if (d.other == "reload"){
+	    if (d['other']){
+		console.log("other")
+		console.log(d['other'][0])
+		console.log(d['other'][0]['command'])
+		if (d['other'][0]['command'] == "reload"){
+		    console.log("reloading")
 		    load()
 		}
 	    }
