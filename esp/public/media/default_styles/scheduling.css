@@ -35,11 +35,14 @@ top: 50px; bottom: 10px; right: 10px; left: 10px;
 }
 
 #matrix-target {
+vertical-align:top;
 height: 62%; max-height: 62%; /*overflow: auto;*/
 padding-bottom: 5px; /*border: 1px solid black;*/
 position: relative;
 }
 #directory-target {
+overflow: hidden;
+vertical-align:top;
 height: 50%; max-height: 38%; /*overflow: auto;*/
 width: 100%;
 /*
@@ -149,15 +152,17 @@ opacity: .6;
  */
 .directory-table-wrapper {
 position: relative;
-top: -3px; /*left: 0px; right: 0px; bottom: 10px;*/
-border: 1px solid black;
-height: 500px;
+left: 0px;
+border-left: 2px solid black;
+border-right: 2px solid black;
+border-bottom: 2px solid black;
+height: 90%;
+width: 100%;
 overflow-y: scroll;
 }
 
 .directory {
-position: relative; height:500px; width: 100%;
-border: 1px solid black;
+position: relative; height:100%; width: 100%;
 border-spacing: 0px; border-collapse: collapse;
 }
 .directory .header td { height: auto; }
@@ -194,9 +199,13 @@ top: 41px; bottom: 0; left: 0; right: 0;
 }
 
 .searchbox {
+border: 2px solid black;
 position: relative;
-left: 10px; top: 20px;
-right: 10px; height: 20px;
+left: 0px;
+height: 15%
+/*right: 10px; height: 20px;*/
+min-width: 100%;
+/*padding-bottom: 30px;*/
 }
 
 .searchbox input {
