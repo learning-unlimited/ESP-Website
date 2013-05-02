@@ -257,63 +257,79 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
     }));
 
 ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
-        initialize: function(directory) {
-            this.directory = directory;
-        
-            this.el = $j('<div id="searchbox"/>').addClass('searchbox').addClass('ui-resizable');
-	    this.el.resizable({
-		resize: function(e) {
-		    $j("#directory-table-wrapper").height(directory_start_height-10-$j("#searchbox").height());
-		}
-	    });
+    initialize: function(directory) {
+        this.directory = directory;
 
-	    this.filters = []
-	    table = $j('<table/>')
-
-	    var filter_names  = ["Title", "ID"]
-	    var filter_fields = ["text", "code"]
-	    for (var i = 0; i < filter_fields.length; i++){
-		tr = $j('<tr>')
-		input = $j('<td><input type="text"/></td>');
-		input.bind('keypress', this.do_search.bind(this));
-
-		this.filters.push(this.get_filter(filter_fields[i], input))
-
-		tr.append($j('<td valign="center" style="width: 50px">'+ filter_names[i] +'</td>')).append(input);
-		table.append(tr);
-	    }      
-	    this.el.append(table)
-        },
-
-        all_filters: function(x){
-	    for (var i=0; i < this.filters.length; i ++){
-		if(!this.filters[i](x)){
-		    return false
-		}
+        this.el = $j('<div id="searchbox"/>').addClass('searchbox').addClass('ui-resizable');
+	//set up resizing so that the directory resizes in the reverse direction
+	this.el.resizable({
+	    handles: 's',
+	    resize: function(e) {
+		$j("#directory-table-wrapper").height(directory_start_height-10-$j("#searchbox").height());
 	    }
-	    return true
-        },
+	});
 
-        do_search: function(e){
-	    if(e.which != 13){
-		return;
+	//add filters to filter box
+	this.filters = []
+	table = $j('<table/>')
+	//title and id
+	var filter_names  = ["Title", "ID"]
+	var filter_fields = ["text", "code"]
+	for (var i = 0; i < filter_fields.length; i++){
+	    tr = this.add_input(filter_names[i], table)
+	    this.filters.push(this.get_filter(filter_fields[i], input))
+	}      
+	//teachers
+	input = this.add_input("Teacher", table)
+	this.filters.push(this.get_teacher_filter(input))
+
+	this.el.append(table)
+    },
+
+    add_input: function(label, table){
+	tr = $j('<tr>')
+	input = $j('<input type="text" id="filter_'+label+'"/>');
+	input.bind('keypress', this.do_search.bind(this));
+	td = $j('<td/>').append(input)
+	tr.append($j('<td valign="center" style="width: 70px">'+ label +'</td>')).append(input);
+	table.append(tr)
+	return input
+    },
+
+    all_filters: function(x){
+	for (var i=0; i < this.filters.length; i ++){
+	    console.log(x)
+	    if(!this.filters[i](x)){
+		return false
 	    }
+	}
+	return true
+    },
 
-	    this.directory.filter(this.all_filters.bind(this))
-        },
+    do_search: function(e){
+	if(e.which != 13){
+	    return;
+	}
 
-        get_filter: function(field, textbox){
-            return function(x){	
-		var regex = new RegExp(textbox.val(),'i'); // case insensitive
-                if (String(x[field]).search(regex) != -1) return true;
-                else return false;
-            }.bind(this);	    
-        }
-    }));
+	this.directory.filter(this.all_filters.bind(this))
+    },
 
-/*                for (var i = 0; i < pfields.length; i++) {
-                    if (this.directory.properties[pfields[i]].get(x).search(regex) != -1) return true;
+    get_filter: function(field, textbox){
+        return function(x){	
+	    var regex = new RegExp(textbox.val(),'i'); // case insensitive
+            if (String(x[field]).search(regex) != -1) return true;
+            else return false;
+        }.bind(this);	    
+    },
 
-
-
-                }*/
+    get_teacher_filter: function(textbox){
+        return function(x){	
+	    var regex = new RegExp(textbox.val(),'i'); // case insensitive
+	    teachers = x["teachers"];
+	    for (var i = 0; i < teachers.length; i++){
+                if (String(teachers[i]["text"]).search(regex) != -1) return true;
+	    }
+            return false;
+        }.bind(this);	    	    
+    }
+}));
