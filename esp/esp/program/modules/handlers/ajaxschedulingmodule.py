@@ -63,7 +63,7 @@ class AJAXChangeLog:
     def prune(self):
         now = time.time()
         #could be optimized.  Not super concerned with this.
-        self.entries = [s for s in self.entries if s['schedule_time'] > now - max_log_age]
+        self.entries = [s for s in self.entries if s['schedule_time'] > now - self.max_log_age]
 
     def append(self, entry):
         self.entries.append(entry)
