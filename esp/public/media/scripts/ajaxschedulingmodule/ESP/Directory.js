@@ -267,45 +267,41 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 		}
 	    });
 
-	    var filter_names  = ["ID"  , "Title"]//, "Teacher"]
-	    var filter_fields = ["code", "text" ]//, "teacher"]
+	    var filter_names  = ["Title", "ID"]//, "Teacher"]
+	    var filter_fields = ["text", "code"]//, "teacher"]
 	    this.filters = []
 	    for (var i = 0; i < filter_fields.length; i++){
 		input = $j('<input type="text"/>');
-		this.filters.push(this.get_search_function(filter_fields[i], input))
+		this.filters.push(this.get_filter(filter_fields[i], input))
 
 		filter = $j('<p/>');
 		filter.append($j('<span>'+ filter_names[i] +'</span>'));
 		filter.append(input);
 		this.el.append(filter);
-	    }        
-	    input.bind('keypress', this.do_searches.bind(this));
-	    
+		input.bind('keypress', this.do_search.bind(this));
+	    }       
         },
-        do_searches: function(e){
+
+        all_filters: function(x){
+	    for (var i=0; i < this.filters.length; i ++){
+		if(!this.filters[i](x)){
+		    return false
+		}
+	    }
+	    return true
+        },
+
+        do_search: function(e){
 	    if(e.which != 13){
 		return;
 	    }
-	    console.log(this.filters)
-	    for (var i=0; i < this.filters.length; i ++){
-		console.log(this.filters[i])
-		this.filters[i]()
-	    }
+
+	    this.directory.filter(this.all_filters.bind(this))
         },
 
-        get_search_function: function(field, textbox){
-	    console.log(textbox)
-	    return function(){
-		console.log(textbox)
-		this.directory.filter(this.search_function(field, textbox.val()));
-	    }.bind(this)
-        },
-        search_function: function(field, text){
-	    console.log(field)
-	    console.log(text)
-            var regex = new RegExp(text,'i'); // case insensitive
+        get_filter: function(field, textbox){
             return function(x){	
-		console.log(x)
+		var regex = new RegExp(textbox.val(),'i'); // case insensitive
                 if (String(x[field]).search(regex) != -1) return true;
                 else return false;
             }.bind(this);	    
