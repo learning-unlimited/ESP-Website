@@ -267,19 +267,22 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 		}
 	    });
 
-	    var filter_names  = ["Title", "ID"]//, "Teacher"]
-	    var filter_fields = ["text", "code"]//, "teacher"]
 	    this.filters = []
+	    table = $j('<table/>')
+
+	    var filter_names  = ["Title", "ID"]
+	    var filter_fields = ["text", "code"]
 	    for (var i = 0; i < filter_fields.length; i++){
-		input = $j('<input type="text"/>');
+		tr = $j('<tr>')
+		input = $j('<td><input type="text"/></td>');
+		input.bind('keypress', this.do_search.bind(this));
+
 		this.filters.push(this.get_filter(filter_fields[i], input))
 
-		filter = $j('<p/>');
-		filter.append($j('<span>'+ filter_names[i] +'</span>'));
-		filter.append(input);
-		this.el.append(filter);
-		input.bind('keypress', this.do_search.bind(this));
-	    }       
+		tr.append($j('<td valign="center" style="width: 50px">'+ filter_names[i] +'</td>')).append(input);
+		table.append(tr);
+	    }      
+	    this.el.append(table)
         },
 
         all_filters: function(x){
