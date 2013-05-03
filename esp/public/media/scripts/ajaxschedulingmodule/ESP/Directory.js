@@ -195,14 +195,10 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 		}
 
                 $j.each(entry, function(i,x){
-                    //if (x.status == 10){ // skip non-Approved classes
-                        this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, x));
-                    //}
+                    this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, x));
                 }.bind(this));
             } else {
-                //if (entry.status == 10) { // skip non-Approved classes
-                    this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, entry));
-                //}
+                this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, entry));
             }
             if (update) this.filter();
         },
@@ -226,7 +222,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
             this.el.addClass('CLS_id_' + section.id);
             this.el.addClass('CLS_length_' + section.length_hr + '_hrs');
             this.el.addClass('CLS_status_' + section.status);
-            this.el.addClass('CLS_grade_min_' + section.gradpe_min);
+            this.el.addClass('CLS_grade_min_' + section.grade_min);
             this.el.addClass('CLS_grade_max_' + section.grade_max);
 	    /*
             for (var i = 0; i < section.resource_requests.length; i++) {
@@ -273,27 +269,53 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 	this.filters = []
 	table = $j('<table/>')
 	//title and id
-	var filter_names  = ["Title", "ID"]
-	var filter_fields = ["text", "code"]
+	var filter_names  = ["Title" , "ID"   ]
+	var filter_fields = ["text"  , "code" ]
 	for (var i = 0; i < filter_fields.length; i++){
 	    tr = this.add_input(filter_names[i], table)
-	    this.filters.push(this.get_filter(filter_fields[i], input))
+	    this.filters.push(this.get_filter(filter_fields[i], input, "text"))
 	}      
 	//teachers
-	input = this.add_input("Teacher", table)
+	input = this.add_input("Teacher", table, "text")
 	this.filters.push(this.get_teacher_filter(input))
+	//length and class size
+	this.add_two_inputs("Min length", "Max length", table, "length_hr")
+	this.add_two_inputs("Min size", "Max size", table, "class_size_max")
+	//status
+	input = this.add_input("Show unapproved classes", table, "checkbox")
+	this.filters.push(this.get_status_filter(input))
+	input.bind('change', this.do_search.bind(this))
+
+	//TODO:  modify the length of the table cell here
 
 	this.el.append(table)
     },
 
-    add_input: function(label, table){
+    add_input: function(label, table, type, f){
 	tr = $j('<tr>')
-	input = $j('<input type="text" id="filter_'+label+'"/>');
+	input = $j('<input type="' + type + '" id="filter_'+label.replace(" ", "-")+'"/>');
 	input.bind('keypress', this.do_search.bind(this));
 	td = $j('<td/>').append(input)
-	tr.append($j('<td valign="center" style="width: 70px">'+ label +'</td>')).append(input);
+	tr.append($j('<td valign="center" style="width: 70px">'+ label +'</td>')).append(td);
 	table.append(tr)
 	return input
+    },
+
+    //make more specific to min/max?
+    add_two_inputs: function(label1, label2, table, attr){
+	tr = $j('<tr>')
+	input1 = $j('<input type="text" id="filter_'+label1.replace(" ", "-")+'"/>');
+	input2 = $j('<input type="text" id="filter_'+label2.replace(" ", "-")+'"/>');
+	input1.bind('keypress', this.do_search.bind(this));
+	input2.bind('keypress', this.do_search.bind(this));
+	td1 = $j('<td/>').append(input1)
+	td2 = $j('<td/>').append(input2)
+	l1 = $j('<td valign="center" style="width: 10%">'+ label1 +'</td>')
+	l2 = $j('<td valign="center" style="width: 10%">'+ label2 +'</td>')
+	tr.append(l1, td1, l2, td2)
+	table.append(tr)
+	this.filters.push(this.get_min_max_filter(input1, input2, attr))
+	return tr
     },
 
     all_filters: function(x){
@@ -307,7 +329,7 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
     },
 
     do_search: function(e){
-	if(e.which != 13){
+	if(e.type == "keypress" && e.which !=13){
 	    return;
 	}
 
@@ -331,5 +353,37 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 	    }
             return false;
         }.bind(this);	    	    
+    },
+
+    get_status_filter: function(checkbox){
+        return function(x){	
+	    console.log(checkbox)
+            if (checkbox[0].checked) return true;
+            else return x.status == "10";
+        }.bind(this);	    	    	
+    },
+
+    get_length_filter: function(textbox){
+        return function(x){
+	    if (textbox.val() != "") {
+		if (x["length_hr"] == textbox.val())
+		    return true;
+		else return false;
+	    }
+	    return true
+        }.bind(this);	    
+    },
+
+    get_min_max_filter: function(textbox1, textbox2, attr){
+	return function(x){
+	    var min = textbox1.val()
+	    if (min == "") min = 0
+	    var max = textbox2.val()
+	    if (max == "") max = Number.MAX_VALUE
+	    if (x[attr] >= min && x[attr] <= max)
+		    return true;
+	    else return false;
+        }.bind(this);	    
+    
     }
 }));

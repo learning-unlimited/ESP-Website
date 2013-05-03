@@ -3,6 +3,7 @@ var load = function() {
     var data = {}
     json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections', 'lunch_timeslots', 'resource_types'];
     json_fetch(json_components, function(d) {
+	debug_log(d)
 	for (var i in d) {
 	    // Deal with prototype failing
 	    if (typeof d[i] === 'function') { continue; }
@@ -345,6 +346,7 @@ ESP.Scheduling = function(){
             class_info: false,
             class_size_info: false,
             class_admin_info: false,
+	    class_size_max: c.class_size_max,
             block_contents: ESP.Utilities.genPopup("s-" + c.id, c.emailcode, {}, onHoverHandler, null, false),
             category: c.category,
             length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
