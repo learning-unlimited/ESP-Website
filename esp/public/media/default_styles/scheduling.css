@@ -158,6 +158,7 @@ border-right: 2px solid black;
 border-bottom: 2px solid black;
 height: 90%;
 overflow-y: scroll;
+overflow-x: hidden;
 }
 
 .directory {
@@ -176,7 +177,7 @@ border-bottom: 1px solid #999;
 
 .directory td {
 text-align: center; vertical-align: top;
-font-size: 12pt;
+font-size: 11pt;
 padding: 10px;
 }
 
