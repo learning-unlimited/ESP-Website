@@ -176,7 +176,8 @@ border-bottom: 1px solid #999;
 
 .directory td {
 text-align: center; vertical-align: top;
-padding: 10px; height: 40px;
+font-size: 12pt;
+padding: 10px;
 }
 
 .directory td + td { border-left: 1px dotted #666; }
