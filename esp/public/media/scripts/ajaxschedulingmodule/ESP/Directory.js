@@ -48,6 +48,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    $j('.directory-table-wrapper').resizable({handles: "w, n"});
 	    $j('.directory-table-wrapper').css("max-width", window.innerWidth - 50);
 	    $j('.directory-table-wrapper').css("min-width", 50);
+	$j('.directory-table-wrapper').css()
         },
         
         // table columns
@@ -261,7 +262,7 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 	this.el.resizable({
 	    handles: 's',
 	    resize: function(e) {
-		$j("#directory-table-wrapper").height(directory_start_height-10-$j("#searchbox").height());
+		$j("#directory-table-wrapper").height(window_height-2-$j("#searchbox").height());
 	    }
 	});
 

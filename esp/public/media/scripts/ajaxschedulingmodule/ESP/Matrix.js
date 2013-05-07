@@ -494,11 +494,6 @@ ESP.declare('ESP.Scheduling.Widgets.GarbageBin', Class.create({
             }, options || {});
             target.droppable(options);
 	    $j('.matrix-corner-box').append(this.el);
-	    //make this resizeable
-	    $j('.matrix').resizable({handles: "e"})
-	    $j('.matrix').css("max-width", window.innerWidth - 50);
-	    $j('.matrix').css("min-width", 50);
-
         }
    })
 );
