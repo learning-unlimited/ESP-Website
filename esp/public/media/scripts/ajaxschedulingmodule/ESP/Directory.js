@@ -101,7 +101,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
         'Teacher': {
             get: function(x) {
 		if (x.teachers) {
-		    var ret_node = $j("<ul>");
+		    var ret_node = $j("");
 		    $j.each(x.teachers.map(function(x){return x.block_contents.clone(true)}), function(index, value){
 			ret_node.append($j("<li>").append(value));
 		    });
