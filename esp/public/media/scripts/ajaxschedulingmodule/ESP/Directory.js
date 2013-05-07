@@ -48,7 +48,6 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    $j('.directory-table-wrapper').resizable({handles: "w, n"});
 	    $j('.directory-table-wrapper').css("max-width", window.innerWidth - 50);
 	    $j('.directory-table-wrapper').css("min-width", 50);
-	$j('.directory-table-wrapper').css()
         },
         
         // table columns
