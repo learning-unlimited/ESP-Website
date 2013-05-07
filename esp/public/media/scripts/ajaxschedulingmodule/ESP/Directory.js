@@ -102,9 +102,14 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             get: function(x) {
 		if (x.teachers) {
 		    var ret_node = $j("");
-		    $j.each(x.teachers.map(function(x){return x.block_contents.clone(true)}), function(index, value){
-			ret_node.append($j("<li>").append(value));
-		    });
+		    $j.each(x.teachers.map(
+			    function(x){
+				return x.block_contents.clone(true)
+			    }), 
+			    function(index, value){
+				ret_node = ret_node.add(value);
+				ret_node = ret_node.add($j("<br>"))
+			    });
 		    return ret_node;
 		}
 		else {
@@ -117,7 +122,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 	    // css: 'width:200px;'
 	    /* Code to style unapproved classes differently */
             css: function(x){
-		var default_css = fixed_width(200);
+		var default_css = fixed_width(150);
 		var unapproved_css = "color:#ff0000; font-style:italic;";
 		// if we're just calling it for the general properties of the ID td
 		// or if it's approved, return the default css
