@@ -103,7 +103,22 @@ ESP.Scheduling = function(){
             dir.filter();
         });
         $j('#body').show()
-	directory_start_height = $j('#directory-target').height()
+	
+	//size some things
+	window_height = window.innerHeight - $j('#statusbar-wrapper').height() - 60;
+	$j('#directory-target').height(window_height);
+	searchbox_start_height = $j("#searchbox").height();
+	$j("#directory-table-wrapper").height(window_height - searchbox_start_height - 2);
+	$j("#searchbox").height(searchbox_start_height);
+	$j("#directory-target").css("max-width", window.innerWidth-$j('.matrix').width() - 60);
+	$j("#directory-target").css("min-width", 50);
+
+	//make matrixx resizeable
+	$j('.matrix').resizable({handles: "e"})
+	$j('.matrix').css("max-width", window.innerWidth - 50);
+	$j('.matrix').css("min-width", 50);
+	$j('.matrix').height(window_height);
+	$j('.matrix-body').height($j('.matrix').height()-$j('.matrix-column-header-box').height()-2);
 
 	//set last_fetched_time to now
 	//TODO:  probably doesn't actually get correct behavior if a class is scheduled at exactly the right time

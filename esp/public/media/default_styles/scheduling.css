@@ -157,12 +157,11 @@ border-left: 2px solid black;
 border-right: 2px solid black;
 border-bottom: 2px solid black;
 height: 90%;
-width: 100%;
 overflow-y: scroll;
 }
 
 .directory {
-position: relative; height:100%; width: 100%;
+position: relative; height:85%; width: 100%;
 border-spacing: 0px; border-collapse: collapse;
 }
 .directory .header td { height: auto; }
@@ -202,10 +201,9 @@ top: 41px; bottom: 0; left: 0; right: 0;
 border: 2px solid black;
 position: relative;
 left: 0px;
-height: 15%
-/*right: 10px; height: 20px;*/
-min-width: 100%;
-/*padding-bottom: 30px;*/
+height: 15%;
+overflow: hidden;
+
 }
 
 .searchbox input {
