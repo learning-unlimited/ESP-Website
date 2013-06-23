@@ -42,6 +42,10 @@ from esp.tagdict.models  import Tag
 from django.db.models.query       import Q
 from django.shortcuts import redirect
 from esp.middleware.threadlocalrequest import get_current_request
+from django.contrib.auth import authenticate
+from django.core.exceptions import PermissionDenied
+from django.http import Http404, HttpResponse
+import json
 
 # hackish solution for Splash 2012
 class FormstackMedliabModule(ProgramModuleObj):
@@ -154,6 +158,41 @@ class FormstackMedliabModule(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'medicalbypass.html',
                                   request, (prog, tl), context)
+
+    @aux_call
+    def medicalsyncapi(self, request, tl, one, two, module, extra, prog):
+        """
+        API for the medical form download script to get a list of students
+        who *should* have turned in a medical form, to cross-check with the
+        list of medical forms we actually have.
+
+        POST:
+          username
+          password
+          program (string to parse, or ID)
+        """
+        username = request.REQUEST['username']
+        password = request.REQUEST['password']
+        
+        # Authenticate
+        user = authenticate(username=username, password=password)
+        if user is None or not ESPUser(user).isAdministrator():
+            raise PermissionDenied()
+        
+        # Collect Results
+        students = prog.students()
+        response = { 'submitted': dict(), 'bypass': dict() }
+        for student in students['studentmedliab']:
+            sid = student.id
+            sname = student.last_name.capitalize() + ', ' + student.first_name.capitalize() + \
+                ' (' + student.username + ' / ' + str(student.id) + ')'
+            response['submitted'][sid] = sname
+        for student in students['studentmedbypass']:
+            sid = student.id
+            sname = student.last_name.capitalize() + ', ' + student.first_name.capitalize() + \
+                ' (' + student.username + ' / '+ str(student.id) + ')'
+            response['bypass'][sid] = sname
+        return HttpResponse(json.dumps(response), content_type='application/json')
 
     class Meta:
         abstract = True
