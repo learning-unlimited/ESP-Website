@@ -78,6 +78,8 @@ class ClassList(BaseHandler):
 
         add_list_member(list_name, [cls.parent_program.director_email])
         add_list_member(list_name, [x.email for x in cls.teachers()])
+        if 'archive' in settings.DEFAULT_EMAIL_ADDRESSES:
+            add_list_member(list_name, settings.DEFAULT_EMAIL_ADDRESSES['archive'])
 
         self.recipients = ["%s@%s" % (list_name, Site.objects.get_current().domain)]
 
