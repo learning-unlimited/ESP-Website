@@ -83,6 +83,6 @@ class SectionList(BaseHandler):
             add_list_member(list_name, settings.DEFAULT_EMAIL_ADDRESSES['archive'])
         if DEBUG: print "Members added"
 
-        self.recipients = ["%s@esp.mit.edu" % list_name]
+        self.recipients = ["%s@%s" % (list_name, Site.objects.get_current().domain)]
         self.send = True
 

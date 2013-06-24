@@ -69,8 +69,8 @@ class ClassList(BaseHandler):
             send_mail("[ESP] Activated class mailing list: %s@%s" % (list_name, Site.objects.get_current().domain),
                       render_to_string("mailman/new_list_intro_teachers.txt", 
                                        { 'classname': str(cls),
-                                         'mod_password': set_list_moderator_password(list_name) }), 
-                      "esp@mit.edu", ["%s-teachers@%s" % (cls.emailcode(), Site.objects.get_current().domain), ])
+                                         'mod_password': set_list_moderator_password(list_name) }),
+                      settings.DEFAULT_EMAIL_ADDRESSES['default'], ["%s-teachers@%s" % (cls.emailcode(), Site.objects.get_current().domain), ])
         else:
             apply_list_settings(list_name, {'default_member_moderation': False})
             apply_list_settings(list_name, {'generic_nonmember_action': 0})
