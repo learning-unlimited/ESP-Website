@@ -63,7 +63,7 @@ class ClassList(BaseHandler):
 
         if user_type != "teachers":
             for section in sections:
-                add_list_member(list_name, [x.email for x in section.students()])
+                add_list_member(list_name, ["%s %s <%s>" % (x.first_name, x.last_name, x.email, ) for x in section.students()])
 
             apply_list_settings(list_name, {'moderator': [settings.DEFAULT_EMAIL_ADDRESSES['mailman_moderator'], '%s-teachers@%s' % (cls.emailcode(), Site.objects.get_current().domain)]})
             send_mail("[ESP] Activated class mailing list: %s@%s" % (list_name, Site.objects.get_current().domain),
