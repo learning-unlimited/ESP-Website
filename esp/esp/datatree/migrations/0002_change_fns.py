@@ -1,18 +1,18 @@
 # encoding: utf-8
 import datetime
+import os.path
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 from esp.datatree.models import install as datatree_install
-
 from django.conf import settings
-import os.path
+
 
 class Migration(SchemaMigration):
 
     depends_on = (
         ("program", "0001_initial"),
-        ("users", "0001_initial"),
+        ("users", "0010_auto__add_field_contactinfo_receive_txt_message"),
     )
     
     #   Added IF EXISTS in case the initial data fixture was deferred and hasn't been loaded yet.
