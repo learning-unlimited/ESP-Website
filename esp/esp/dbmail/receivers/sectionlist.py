@@ -74,7 +74,7 @@ class SectionList(BaseHandler):
         else:
             apply_list_settings(list_name, {'default_member_moderation': False})
             apply_list_settings(list_name, {'generic_nonmember_action': 0})
-            apply_list_settings(list_name, {'acceptable_aliases': "%s.*-students-.*@%s" % (cls.emailcode(), Site.objects.get_current().domain)})
+            apply_list_settings(list_name, {'acceptable_aliases': "%s.*-(students|class)-.*@%s" % (cls.emailcode(), Site.objects.get_current().domain)})
 
         if DEBUG: print "Settings applied still..."
         add_list_member(list_name, [cls.parent_program.director_email])
@@ -83,6 +83,6 @@ class SectionList(BaseHandler):
             add_list_member(list_name, settings.DEFAULT_EMAIL_ADDRESSES['archive'])
         if DEBUG: print "Members added"
 
-        self.recipients = ["%s@esp.mit.edu" % list_name]
+        self.recipients = ["%s@%s" % (list_name, Site.objects.get_current().domain)]
         self.send = True
 
