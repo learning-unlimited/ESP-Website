@@ -165,11 +165,9 @@ class FormstackMedliabModule(ProgramModuleObj):
         API for the medical form download script to get a list of students
         who *should* have turned in a medical form, to cross-check with the
         list of medical forms we actually have.
-
-        POST:
-          username
-          password
-          program (string to parse, or ID)
+        
+        Authentication is performed by username and password via the request
+        parameters of those names. Access is restricted to Admins.
         """
         username = request.REQUEST['username']
         password = request.REQUEST['password']
