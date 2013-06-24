@@ -5,6 +5,7 @@ from esp.mailman import create_list, load_list_settings, add_list_member, set_li
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
+from django.contrib.sites.models import Site
 DEBUG=True
 DEBUG=False
 
