@@ -593,6 +593,26 @@ class Program(models.Model, CustomFormsLinkModel):
     def classes_node(self):
         return DataTree.objects.get(parent = self.anchor, name = 'Classes')
 
+    @property
+    def open_class_category(self):
+        """Return the name of the open class category, as determined by the program tag.
+
+        This assumes you've already created the Category manually.
+
+        Returns:
+          A ClassCategories object if one was found, or None.
+        """
+        pk = Tag.getProgramTag('open_class_category', self, default=None)
+        if pk is not None:
+            try:
+                pk = int(pk)
+            except ValueError as e:
+                return None
+            cc = ClassCategories.objects.get(pk=pk)
+            return cc
+        else:
+            return None
+
     @cache_function
     def getScheduleConstraints(self):
         return ScheduleConstraint.objects.filter(program=self).select_related()

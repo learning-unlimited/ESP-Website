@@ -37,7 +37,6 @@ from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
 from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType
-from esp.program.models.class_ import open_class_category
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.datatree.models import *
 from esp.tagdict.models          import Tag
@@ -92,7 +91,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = (Tag.getProgramTag(key='friendly_times_with_date',program=self.program,default=False) == "True")
         context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='true').lower()
-        context['open_class_category'] = Tag.getProgramTag('open_class_category', default="walk-in activity")
+        context['open_class_category'] = self.program.open_class_category.category
         return context
 
 
@@ -600,7 +599,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
 
-        if cls.category.category == open_class_category().category:
+        if cls.category.category == self.program.open_class_category.category:
             action = 'editopenclass'
         else:
             action = 'edit'
@@ -632,7 +631,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         cls = classes[0]
 
         # Select the correct action
-        if cls.category.category == open_class_category().category:
+        if cls.category.category == self.program.open_class_category.category:
             action = 'editopenclass'
         else:
             action = 'edit'
@@ -835,7 +834,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         context['classes'] = {
             0: {'type': 'class', 'link': 'makeaclass'}, 
-            1: {'type': Tag.getProgramTag('open_class_category', default='walk-in activity'), 'link': 'makeopenclass'}
+            1: {'type': self.program.open_class_category.category, 'link': 'makeopenclass'}
         }
         if action == 'create' or action == 'edit':
             context['isopenclass'] = 0

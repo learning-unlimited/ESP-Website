@@ -37,7 +37,6 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.program.models import ClassSubject, ClassSection, Program, ClassCategories
-from esp.program.models.class_ import open_class_category
 from esp.users.models import UserBit, ESPUser, shirt_sizes, shirt_types
 from django.contrib.auth.models import User
 from django.core.cache import cache

@@ -40,7 +40,6 @@ import re
 from esp.datatree.models import DataTree, GetNode
 from esp.users.models import UserBit
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
-from esp.program.models.class_ import open_class_category as open_class_category_function
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
@@ -302,7 +301,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
                 field.initial = default
                 
         super(TeacherOpenClassRegForm, self).__init__(module, *args, **kwargs)
-        open_class_category = open_class_category_function()
+        open_class_category = module.program.open_class_category
         self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
 
         # Re-enable the requested special resources field as a space needs .
