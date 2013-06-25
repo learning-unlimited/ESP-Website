@@ -581,11 +581,11 @@ class Program(models.Model, CustomFormsLinkModel):
             try:
                 pk = int(pk)
             except ValueError as e:
-                return None
+                return ClassCategories.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
             cc = ClassCategories.objects.get(pk=pk)
             return cc
         else:
-            return None
+            return ClassCategories.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
 
     @cache_function
     def getScheduleConstraints(self):
