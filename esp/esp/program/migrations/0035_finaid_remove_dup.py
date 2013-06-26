@@ -8,6 +8,10 @@ from esp.program.models import FinancialAidRequest
 
 class Migration(SchemaMigration):
 
+    depends_on = (
+        ("accounting", "0001_initial"),
+    )
+    
     def forwards(self, orm):
         #   Remove duplicate FinancialAidRequests
         from django.db import connection, transaction
