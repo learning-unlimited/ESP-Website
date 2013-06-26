@@ -603,15 +603,16 @@ class Program(models.Model, CustomFormsLinkModel):
           A ClassCategories object if one was found, or None.
         """
         pk = Tag.getProgramTag('open_class_category', self, default=None)
+        cc = None
         if pk is not None:
             try:
                 pk = int(pk)
-            except ValueError as e:
-                return ClassCategories.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
-            cc = ClassCategories.objects.get(pk=pk)
-            return cc
-        else:
-            return ClassCategories.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
+                cc = ClassCategories.objects.get(pk=pk)
+            except (ValueError, TypeError, ClassCategories.DoesNotExist) as e:
+                pass
+        if cc is None:
+            cc = ClassCategories.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
+        return cc
 
     @cache_function
     def getScheduleConstraints(self):
