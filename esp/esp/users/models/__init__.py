@@ -339,16 +339,16 @@ class ESPUser(User, AnonymousUser):
         taught_programs = taught_programs.distinct()
         return taught_programs
 
-    def getTaughtClasses(self, program = None):
+    def getTaughtClasses(self, program = None, include_rejected = False):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
         if program is None:
-            return self.getTaughtClassesAll()
+            return self.getTaughtClassesAll(include_rejected = include_rejected)
         else:
-            return self.getTaughtClassesFromProgram(program)
+            return self.getTaughtClassesFromProgram(program, include_rejected = include_rejected)
 
     @cache_function
-    def getTaughtClassesFromProgram(self, program):
+    def getTaughtClassesFromProgram(self, program, include_rejected = False):
         from esp.program.models import ClassSubject, Program # Need the Class object.
         
         #   Why is it that we had a find_by_anchor_perms function again?
@@ -364,7 +364,10 @@ class ESPUser(User, AnonymousUser):
         if type(program) != Program: # if we did not receive a program
             error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
         else:
-            return all_classes.filter(parent_program = program)
+            if include_rejected: 
+                return all_classes.filter(parent_program = program)
+            else:
+                return all_classes.filter(parent_program = program).exclude(status=-10)
     getTaughtClassesFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
                                                               lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
                                                                           bit.qsc.parent.name == 'Classes' and
@@ -372,18 +375,24 @@ class ESPUser(User, AnonymousUser):
     getTaughtClassesFromProgram.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
     @cache_function
-    def getTaughtClassesAll(self):
+    def getTaughtClassesAll(self, include_rejected = False):
         from esp.program.models import ClassSubject # Need the Class object.
         
         #   Why is it that we had a find_by_anchor_perms function again?
         tr_node = GetNode('V/Flags/Registration/Teacher')
         when = datetime.now()
-        return ClassSubject.objects.filter(
+        if include_rejected: return ClassSubject.objects.filter(
             anchor__userbit_qsc__verb__id=tr_node.id,
             anchor__userbit_qsc__user=self,
             anchor__userbit_qsc__startdate__lte=when,
             anchor__userbit_qsc__enddate__gte=when,
         ).distinct()
+        else: return ClassSubject.objects.filter(
+            anchor__userbit_qsc__verb__id=tr_node.id,
+            anchor__userbit_qsc__user=self,
+            anchor__userbit_qsc__startdate__lte=when,
+            anchor__userbit_qsc__enddate__gte=when,
+        ).distinct().exclude(status=-10)
     getTaughtClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
                                                       lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
                                                                   bit.qsc.parent.name == 'Classes' and
@@ -401,35 +410,41 @@ class ESPUser(User, AnonymousUser):
     getFullClasses_pretty.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
 
 
-    def getTaughtSections(self, program = None):
+    def getTaughtSections(self, program = None, include_rejected = False):
         if program is None:
-            return self.getTaughtSectionsAll()
+            return self.getTaughtSectionsAll(include_rejected = include_rejected)
         else:
-            return self.getTaughtSectionsFromProgram(program)
+            return self.getTaughtSectionsFromProgram(program, include_rejected = include_rejected)
 
     @cache_function
-    def getTaughtSectionsAll(self):
+    def getTaughtSectionsAll(self, include_rejected = False):
         from esp.program.models import ClassSection
-        classes = list(self.getTaughtClassesAll())
-        return ClassSection.objects.filter(parent_class__in=classes)
+        classes = list(self.getTaughtClassesAll(include_rejected = include_rejected))
+        if include_rejected:
+            return ClassSection.objects.filter(parent_class__in=classes)
+        else:
+            return ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
     getTaughtSectionsAll.depend_on_model(lambda:ClassSection)
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
     @cache_function
-    def getTaughtSectionsFromProgram(self, program):
+    def getTaughtSectionsFromProgram(self, program, include_rejected = False):
         from esp.program.models import ClassSection
-        classes = list(self.getTaughtClasses(program))
-        return ClassSection.objects.filter(parent_class__in=classes)
+        classes = list(self.getTaughtClasses(program, include_rejected = include_rejected))
+        if include_rejected:
+            return ClassSection.objects.filter(parent_class__in=classes)
+        else:
+            return ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
     getTaughtSectionsFromProgram.depend_on_row(lambda:ClassSection, lambda instance: {'program': instance.parent_program})
     getTaughtSectionsFromProgram.depend_on_cache(getTaughtClassesFromProgram, lambda self=wildcard, program=wildcard, **kwargs:
                                                                               {'self':self, 'program':program})
 
-    def getTaughtTime(self, program = None, include_scheduled = True, round_to = 0.0):
+    def getTaughtTime(self, program = None, include_scheduled = True, round_to = 0.0, include_rejected = False):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
             If include_scheduled is given as False, we don't count time for already-scheduled classes.
             Rounds to the nearest round_to (if zero, doesn't round at all). """
-        user_sections = self.getTaughtSections(program)
+        user_sections = self.getTaughtSections(program, include_rejected = include_rejected)
         total_time = timedelta()
         round_to = float( round_to )
         if round_to:
