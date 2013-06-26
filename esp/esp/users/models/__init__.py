@@ -343,7 +343,7 @@ class ESPUser(User, AnonymousUser):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset."""
 
-        if type(status) == str:
+        if type(status) = str:
             status_dic = {"Accepted": [10], "Unreviewed": [0], "Rejected": [-10], "Canceled": [-20], "All": [-20,-10,0,10]}
             if status in status_dic.keys():
                 status = status_dic[status]
@@ -358,7 +358,7 @@ class ESPUser(User, AnonymousUser):
     def getTaughtClassesFromProgram(self, program, status = [0,10]): #Default: Accepted or Unreviewed.
         from esp.program.models import ClassSubject, Program # Need the Class object.
 
-        if type(status) == str:
+        if type(status) = str:
             status_dic = {"Accepted": [10], "Unreviewed": [0], "Rejected": [-10], "Canceled": [-20], "All": [-20,-10,0,10]}
             if status in status_dic.keys():
                 status = status_dic[status]
@@ -393,7 +393,7 @@ class ESPUser(User, AnonymousUser):
         """Get the classes a user has taught, for all programs."""
         from esp.program.models import ClassSubject # Need the Class object.
 
-        if type(status) == str:
+        if type(status) = str:
             status_dic = {"Accepted": [10], "Unreviewed": [0], "Rejected": [-10], "Canceled": [-20], "All": [-20,-10,0,10]}
             if status in status_dic.keys():
                 status = status_dic[status]
@@ -432,7 +432,7 @@ class ESPUser(User, AnonymousUser):
 
     def getTaughtSections(self, program = None, status = "All"):
 
-        if type(status) == str:
+        if type(status) = str:
             status_dic = {"Accepted": [10], "Unreviewed": [0], "Rejected": [-10], "Canceled": [-20], "All": [-20,-10,0,10]}
             if status in status_dic.keys():
                 status = status_dic[status]
@@ -447,7 +447,7 @@ class ESPUser(User, AnonymousUser):
     @cache_function
     def getTaughtSectionsAll(self, status = "All"):
         """Get all sections a user has taught."""
-        if type(status) == str:
+        if type(status) = str:
             status_dic = {"Accepted": [10], "Unreviewed": [0], "Rejected": [-10], "Canceled": [-20], "All": [-20,-10,0,10]}
             if status in status_dic.keys():
                 status = status_dic[status]
@@ -466,13 +466,6 @@ class ESPUser(User, AnonymousUser):
     @cache_function
     def getTaughtSectionsFromProgram(self, program, status="All"):
         """Get all sections a user has taught for a specific program"""
-        if type(status) == str:
-            status_dic = {"Accepted": [10], "Unreviewed": [0], "Rejected": [-10], "Canceled": [-20], "All": [-20,-10,0,10]}
-            if status in status_dic.keys():
-                status = status_dic[status]
-            else:
-                raise ESPError("Invalid Status: %s is not a valid status", status)
-
         from esp.program.models import ClassSection
         classes = list(self.getTaughtClasses(program, status=status))
         clsecs =  ClassSection.objects.filter(parent_class__in=classes)
@@ -488,13 +481,6 @@ class ESPUser(User, AnonymousUser):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
             If include_scheduled is given as False, we don't count time for already-scheduled classes.
             Rounds to the nearest round_to (if zero, doesn't round at all). """
-        if type(status) == str:
-            status_dic = {"Accepted": [10], "Unreviewed": [0], "Rejected": [-10], "Canceled": [-20], "All": [-20,-10,0,10]}
-            if status in status_dic.keys():
-                status = status_dic[status]
-            else:
-                raise ESPError("Invalid Status: %s is not a valid status", status)
-
         user_sections = self.getTaughtSections(program, status=status)
         total_time = timedelta()
         round_to = float( round_to )
