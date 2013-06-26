@@ -339,7 +339,7 @@ class ESPUser(User, AnonymousUser):
         taught_programs = taught_programs.distinct()
         return taught_programs
 
-    def getTaughtClasses(self, program = None, include_rejected = True):
+    def getTaughtClasses(self, program = None, include_rejected = False):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
         if program is None:
@@ -348,7 +348,7 @@ class ESPUser(User, AnonymousUser):
             return self.getTaughtClassesFromProgram(program, include_rejected = include_rejected)
 
     @cache_function
-    def getTaughtClassesFromProgram(self, program, include_rejected = True):
+    def getTaughtClassesFromProgram(self, program, include_rejected = False):
         from esp.program.models import ClassSubject, Program # Need the Class object.
         
         #   Why is it that we had a find_by_anchor_perms function again?
@@ -375,7 +375,7 @@ class ESPUser(User, AnonymousUser):
     getTaughtClassesFromProgram.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
     @cache_function
-    def getTaughtClassesAll(self, include_rejected = True):
+    def getTaughtClassesAll(self, include_rejected = False):
         from esp.program.models import ClassSubject # Need the Class object.
         
         #   Why is it that we had a find_by_anchor_perms function again?
@@ -410,14 +410,14 @@ class ESPUser(User, AnonymousUser):
     getFullClasses_pretty.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
 
 
-    def getTaughtSections(self, program = None, include_rejected = True):
+    def getTaughtSections(self, program = None, include_rejected = False):
         if program is None:
             return self.getTaughtSectionsAll(include_rejected = include_rejected)
         else:
             return self.getTaughtSectionsFromProgram(program, include_rejected = include_rejected)
 
     @cache_function
-    def getTaughtSectionsAll(self, include_rejected = True):
+    def getTaughtSectionsAll(self, include_rejected = False):
         from esp.program.models import ClassSection
         classes = list(self.getTaughtClassesAll(include_rejected = include_rejected))
         if include_rejected:
@@ -428,7 +428,7 @@ class ESPUser(User, AnonymousUser):
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
     @cache_function
-    def getTaughtSectionsFromProgram(self, program, include_rejected = True):
+    def getTaughtSectionsFromProgram(self, program, include_rejected = False):
         from esp.program.models import ClassSection
         classes = list(self.getTaughtClasses(program, include_rejected = include_rejected))
         if include_rejected:
