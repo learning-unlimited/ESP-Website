@@ -9,6 +9,15 @@
 
 {% block subsection %}{% autoescape off %}{{ title|subsection }}{% endautoescape %}{% endblock %}
 
+{% block xtrajs %}
+<script type="text/javascript">
+  if (window.location.hash == '#refresh') {
+    window.location.hash = '';
+    window.location.reload(true);
+  }
+</script>
+{% endblock %}
+
 {% block content %}
 
 {% load render_qsd %}

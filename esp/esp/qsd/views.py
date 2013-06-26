@@ -264,7 +264,7 @@ def qsd(request, branch, name, section, action):
             'qsd'          : True,
             'missing_files': m.BrokenLinks(),
             'target_url'   : base_url.split("/")[-1] + ".edit.html",
-            'return_to_view': base_url.split("/")[-1] + ".html?v=" + str(qsd_rec.id) }, # pass a "unique" query parameter to bypass browser cache
+            'return_to_view': base_url.split("/")[-1] + ".html#refresh" },
                                   use_request_context=False)
 
     
