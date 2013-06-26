@@ -160,18 +160,6 @@ class Migration(DataMigration):
             'volunteer': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'volunteer_times': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'related_name': "'teacher_volunteer_set'", 'blank': 'True', 'to': "orm['cal.Event']"})
         },
-        'modules.satprepteachermoduleinfo': {
-            'Meta': {'unique_together': "(('user', 'program'),)", 'object_name': 'SATPrepTeacherModuleInfo'},
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'mitid': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']", 'null': 'True', 'blank': 'True'}),
-            'sat_math': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'sat_verb': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'sat_writ': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'section': ('django.db.models.fields.CharField', [], {'max_length': '5'}),
-            'subject': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
-        },
         'modules.studentclassregmoduleinfo': {
             'Meta': {'object_name': 'StudentClassRegModuleInfo'},
             'cancel_button_dereg': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
