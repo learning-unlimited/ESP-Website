@@ -837,10 +837,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             context['grade_range_popup'] = False
             context['classroom_form_advisories'] += '__open_class'
         context['classtype'] = context['classes'][context['isopenclass']]['type']
-        if (context['isopenclass']):
-            context['qsd_tag'] = "teach:makeopenclassqsd"
-        else:
-            context['qsd_tag'] = "teach:makeaclassqsd"
         context['otherclass'] = context['classes'][1 - context['isopenclass']]
         
         context['manage'] = False
