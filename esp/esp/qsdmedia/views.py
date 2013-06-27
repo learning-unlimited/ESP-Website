@@ -38,6 +38,7 @@ from esp.users.models import UserBit
 from esp.datatree.models import *
 from django.core.exceptions import MultipleObjectsReturned
 from django.conf import settings
+import os.path
 
 def qsdmedia(request, branch, section, url_name, url_verb, base_url):
     """ Return a redirect to a media file """
@@ -76,7 +77,8 @@ def qsdmedia2(request, url):
     # aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Flags/Public on this node
     have_view = request.user.isAdministrator() or UserBit.UserHasPerms( request.user, media_rec.anchor, GetNode('V/Flags/Public') )
     if have_view:
-        f = open(settings.MEDIA_ROOT + ".." + media_rec.target_file.url)
+        file_name = os.path.join(settings.MEDIA_ROOT, ".." + media_rec.target_file.url)
+        f = open(file_name, 'rb')
         response = HttpResponse(f.read(), content_type=media_rec.mime_type)
         response['Content-Disposition'] = 'attachment; filename="' + media_rec.file_name + '"'
         return response
