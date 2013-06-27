@@ -17,14 +17,14 @@ class Migration(SchemaMigration):
         for media in medias:
             full_path = os.path.join(settings.MEDIA_ROOT, '..' + media.target_file.url)
             if os.path.exists(full_path):
-                url_old = media.target_file.url
-                file_name = os.path.basename(url_old)
-                media.file_name = file_name
+                file_name = os.path.basename(media.target_file.url)
                 media.hashed_name = media.safe_filename(file_name)
-                file = open(full_path, 'rb')
-                media.target_file.save(media.hashed_name, File(file))
+                full_path_new = os.path.join(os.path.dirname(full_path), media.hashed_name)
+                os.rename(full_path, full_path_new)
+                media.file_name = file_name
+                media.target_file.name = os.path.dirname(media.target_file.name) + '/' + media.hashed_name
                 media.save()
-                print 'Converted %s to %s' % (url_old, media.target_file.url)
+                print 'Converted %s to %s' % (full_path, media.target_file.url)
                 num_converted += 1
             else:
                 print 'Skipped %s, file not present on system' % full_path
@@ -36,13 +36,13 @@ class Migration(SchemaMigration):
         for media in medias:
             full_path = os.path.join(settings.MEDIA_ROOT, '..' + media.target_file.url)
             if os.path.exists(full_path):
-                url_old = media.target_file.url
-                file = open(full_path, 'rb')
-                media.target_file.save(media.file_name, File(file))
-                media.hashed_name = None
+                full_path_new = os.path.join(os.path.dirname(full_path), media.file_name)
+                media.target_file.name = os.path.dirname(media.target_file.name) + '/' + media.file_name
+                os.rename(full_path, full_path_new)
                 media.file_name = None
+                media.hashed_name = None
                 media.save()
-                print 'Converted %s to %s' % (url_old, media.target_file.url)
+                print 'Converted %s to %s' % (full_path, media.target_file.url)
                 num_converted += 1
             else:
                 print 'Skipped %s, file not present on system' % full_path
