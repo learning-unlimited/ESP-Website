@@ -41,6 +41,7 @@ from esp.utils.widgets import DateTimeWidget
 from esp.users.models import ESPUser
 from django.db.models import Q
 from django import forms
+from django.core import validators
 from form_utils.forms import BetterModelForm
 
 
@@ -73,6 +74,10 @@ class ProgramCreationForm(BetterModelForm):
         self.fields['admins'].choices = make_id_tuple(ESPUser.objects.filter(id__in=[u.user_id for u in ub_list]).distinct().order_by('username'))
         self.fields['anchor'].queryset = DataTree.objects.filter(Q(child_set__program__isnull=False) | Q(parent=GetNode("Q/Programs"))).exclude(parent__name="Subprograms").distinct()
         self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
+
+        #   Enable validation on other fields
+        self.fields['program_size_max'].required = True
+        self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
 
         #self.fields.keyOrder = ['term','term_friendly','grade_min','grade_max','class_size_min','class_size_max','director_email','program_modules']
     def load_program(self, program):

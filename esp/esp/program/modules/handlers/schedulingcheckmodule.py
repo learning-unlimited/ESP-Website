@@ -190,6 +190,8 @@ class SchedulingCheckRunner:
                self.all_sections = filter(lambda x: not x.category == open_class_category(), self.all_sections)
                #filter out non-approved classes
                self.all_sections = filter(lambda x: len(x.classrooms()) > 0, self.all_sections)
+               #filter out lunch
+               self.all_sections = filter(lambda x: not x.category.category == u'Lunch', self.all_sections)
                self.listed_sections = True
                return self.all_sections
 
@@ -208,7 +210,7 @@ class SchedulingCheckRunner:
 
      def incompletely_scheduled_classes(self):
           problem_classes = []
-          for s in self.p.sections():
+          for s in self._all_class_sections():
                mt =  s.get_meeting_times()
                rooms = s.getResources()
                if(len(rooms) != ceil(s.duration)):
@@ -325,7 +327,7 @@ class SchedulingCheckRunner:
           if len(self.d_grades) > 0:
              return self.d_grades
 
-          self.grades = range(7, 13, 1)
+          self.grades = self.p.getModuleExtension('ClassRegModuleInfo').getClassGrades()
           grades_d = {}
           for grade in self.grades:
                grades_d[grade] = 0

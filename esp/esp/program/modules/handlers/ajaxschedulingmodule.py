@@ -85,7 +85,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def ajax_sections(self, request, tl, one, two, module, extra, prog):
-        return self.ajax_sections_cached(prog, request.GET.get('accepted_only', False))
+        return self.ajax_sections_cached(prog, request.GET.has_key('accepted_only'))
 
     @cache_function
     def ajax_sections_cached(self, prog, accepted_only=False):

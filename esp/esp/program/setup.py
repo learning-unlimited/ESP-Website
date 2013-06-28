@@ -84,6 +84,13 @@ def prepare_program(program, data):
     for director in data['admins']:
         userbits += [('V/Administer', ESPUser.objects.get(id=int(director)), None, None)]
         
+    json_module = ProgramModule.objects.get(handler=u'JSONDataModule')  # get the JSON Data Module
+    # If the JSON Data Module isn't already in the list of selected
+    # program modules, add it. The JSON Data Module is a dependency for
+    # many commonly-used modules, so it is important that it be enbabled
+    # by default for all new programs.
+    if json_module.id not in data['program_modules']:
+        data['program_modules'].append(json_module.id)
     modules += [(str(ProgramModule.objects.get(id=i)), i) for i in data['program_modules']]
        
     return datatrees, userbits, modules

@@ -36,8 +36,9 @@ class TemplateOverride(models.Model):
         #   (our own template loader will be reset through the caching API)
         from django.template.loader import template_source_loaders
         from django.template.loaders.cached import Loader as cached_loader
-        for tloader in filter(lambda x: isinstance(x, cached_loader), template_source_loaders):
-            tloader.reset()
+        if isinstance(template_source_loaders, list):
+            for tloader in filter(lambda x: isinstance(x, cached_loader), template_source_loaders):
+                tloader.reset()
 
         super(TemplateOverride, self).save(*args, **kwargs)
 

@@ -141,8 +141,10 @@ class AvailabilityModule(ProgramModuleObj):
         if tl == "manage":
         	# They probably want to be check someone's availability instead-
         	return HttpResponseRedirect( '/manage/%s/%s/check_availability' % (one, two) )
-        
-        teacher = ESPUser(request.user)
+        else:
+            return self.availabilityForm(request, tl, one, two, prog, ESPUser(request.user), False)
+
+    def availabilityForm(self, request, tl, one, two, prog, teacher, isAdmin):
         time_options = self.program.getTimeSlots()
         #   Group contiguous blocks
         if Tag.getTag('availability_group_timeslots', default=True) == 'False':
@@ -175,8 +177,12 @@ class AvailabilityModule(ProgramModuleObj):
                 ccc = ClassCreationController(self.program)
                 ccc.send_availability_email(teacher)
                 
-                #   Return to the main registration page
-                return self.goToCore(tl)
+                if isAdmin:
+                    #   Return to the relevant check_availability page
+                    return HttpResponseRedirect( '/manage/%s/%s/check_availability?user=%s' % (one, two, teacher.username) )
+                else:
+                    #   Return to the main registration page
+                    return self.goToCore(tl)
         
         #   Show new form
         available_slots = teacher.getAvailableTimes(self.program, True)
@@ -205,9 +211,10 @@ class AvailabilityModule(ProgramModuleObj):
         context = {'groups': [{'selections': [{'checked': (t in available_slots), 'taken': (t in taken_slots), 'slot': t} for t in group]} for group in time_groups]}
         context['num_groups'] = len(context['groups'])
         context['prog'] = self.program
-        context['is_overbooked'] = (not self.isCompleted() and (request.user.getTaughtTime(self.program) > timedelta(0)))
+        context['is_overbooked'] = (not self.isCompleted() and (teacher.getTaughtTime(self.program) > timedelta(0)))
         context['submitted_blank'] = blank
         context['conflict_found'] = conflict_found
+        context['teacher_user'] = teacher
         
         return render_to_response(self.baseDir()+'availability_form.html', request, (prog, tl), context)
 
@@ -218,12 +225,18 @@ class AvailabilityModule(ProgramModuleObj):
         Check availability of the specified user.
         """
         
-        if not request.GET.has_key('user'):
+        target_username = None
+        
+        if request.GET.has_key('user'):
+            target_username = request.GET['user']
+        elif request.POST.has_key('user'):
+            target_username = request.POST['user']
+        else:
             context = {}
             return render_to_response(self.baseDir()+'searchform.html', request, (prog, tl), context)
         
         try:
-            teacher = ESPUser.objects.get(username=request.GET['user'])
+            teacher = ESPUser.objects.get(username=target_username)
         except:
             raise ESPError(False), "That username does not appear to exist!"
 
@@ -252,8 +265,32 @@ class AvailabilityModule(ProgramModuleObj):
             else:
                 available.append((resource.event.start, resource.event.end, False))
 
-        context = {'available': available, 'teacher_name': teacher.first_name + ' ' + teacher.last_name}
+        context = {'available': available, 'teacher_name': teacher.first_name + ' ' + teacher.last_name, 'edit_path': '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.username) }
         return render_to_response(self.baseDir()+'check_availability.html', request, (prog, tl), context)
+
+    @aux_call
+    @needs_admin
+    def edit_availability(self, request, tl, one, two, module, extra, prog):
+        """
+        Admins edits availability of the specified user.
+        """
+        
+        target_username = None
+        
+        if request.GET.has_key('user'):
+            target_username = request.GET['user']
+        elif request.POST.has_key('user'):
+            target_username = request.POST['user']
+        else:
+            context = {}
+            return render_to_response(self.baseDir()+'searchform.html', request, (prog, tl), context)
+        
+        try:
+            teacher = ESPUser.objects.get(username=target_username)
+        except:
+            raise ESPError(False), "That username does not appear to exist!"
+
+        return self.availabilityForm(request, tl, one, two, prog, teacher, True)
 
     class Meta:
         abstract = True

@@ -1888,10 +1888,10 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         self.status = -10
         self.save()
 
-    def cancel(self, email_students=True, include_lottery_students=False, explanation=None):
+    def cancel(self, email_students=True, include_lottery_students=False, explanation=None, unschedule=False):
         """ Cancel this class by cancelling all of its sections. """
         for sec in self.sections.all():
-            sec.cancel(email_students, include_lottery_students, explanation)
+            sec.cancel(email_students, include_lottery_students, explanation, unschedule)
         self.status = -20
         self.save()
         
