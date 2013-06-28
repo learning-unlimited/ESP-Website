@@ -48,14 +48,12 @@ import os
 
 class LotteryAssignmentController(object):
 
-    home_directory = os.getenv("HOME")#Gets the home directory of the user running the lottery.
     default_options = {
         'Kp': 1.2,
         'Ki': 1.1,
         'check_grade': True,
         'stats_display': False,
-        'directory': home_directory,
-	'verbosity': 0
+        'directory': os.getenv("HOME"),
     }
     
     def __init__(self, program, **kwargs):
@@ -109,111 +107,6 @@ class LotteryAssignmentController(object):
         self.student_sections = numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool)
         self.student_weights = numpy.ones((self.num_students,))
 
-    def sanitize_walkin(self, fake=True, csvwriter=None, csvlog=False, directory=None, verbose=None):
-        """Checks for Student Registrations made for walk-in classes. If fake=False, will remove them."""
-	if verbose == None: verbose = self.options['verbosity']
-        closeatend = False
-	category_walkin = ClassCategories.objects.get(category="Walk-in Activity")
-        if csvlog and not(fake): #If I'm actually doing things, and I want a log....
-            import csv
-            if csvwriter==None:
-                closeatend = True
-                if directory==None: directory = self.options['directory']
-                filefullname = directory +'/santitize_walkins_log.csv'
-                csvfile = open(filefullname, 'ab+')
-                csvwriter = csv.writer(csvfile)
-            csvwriter.writerow(['Sanitizing Walkins'])
-            csvwriter.writerow(['Class Title', 'Scheduled at:', 'Student', 'Enrollment Type:'])
-        walkins=self.program.classes().filter(category=category_walkin)
-        report = []
-        for w in walkins:
-            for sec in w.get_sections():
-                srs = sec.getRegistrations()
-                report.append((sec, srs.count()))
-
-		for sr in srs:		
-			if not fake:	
-        	  	     if csvlog: csvwriter.writerow([w.title().encode('ascii', 'ignore'), ', '.join(sec.friendly_times()), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__unicode__().encode('ascii', 'ignore')])
-               		sr.expire()
-        if verbose > 0: print report
-	if closeatend: csvfile.close()
-	print "Walkins checked"
-	if not fake: "Please re-run self.initalize() to update."
-        return report
-
-    def sanitize_lunch(self, csvlog=False, fake = True, csvwriter=None, directory=None, verbose=None):
-	"""Checks to see if any students have registrations for lunch. If fake=False, removes them."""
-	if verbose == None: verbose = self.options['verbosity']
-	closeatend = False
-	if csvlog and not(fake): #If I'm actually doing things, and I want a log....
-            import csv
-            if csvwriter==None:
-                closeatend = True
-                if directory==None: directory = self.options['directory']
-                filefullname = directory +'/santitize_lunch_log.csv'
-                csvfile = open(filefullname, 'ab+')
-                csvwriter = csv.writer(csvfile)
-            csvwriter.writerow(['Sanitizing Lunch Blocks'])
-            csvwriter.writerow(['Lunch Block', 'Student', 'Enrollment Type:'])
-	
-	category_lunch = ClassCategories.objects.get(category="Lunch")
-	lunchblocks = self.program.classes().filter(category=category_lunch)
-	report = []
-	for l in lunchblocks:
-	    srs = l.getRegistrations()
-	    report.append((l, srs.count()))
-	    if not fake:
-		for sr in srs:
-  		    if csvlog: csvwriter.writerow([l.title().encode('ascii', 'ignore'), sr.user.name().encode('ascii', 'ignore'), sr.relationship.__unicode__().encode('ascii', 'ignore')])
-		    sr.expire()
-	if verbose > 0: print report
-	if closeatend: csvfile.close()
-	print "Lunch checked."
-	if not fake: "Please re-run self.initalize() to update."
-	return report
-
-    def sanitize(self, checks=None, fake=True, csvlog=True, directory=None, verbose=None):
-        """Runs some checks on Student Registration. Enter in the checks you'd like to run as a list of strings.
-        Checks that currently exist:
-            -antiwalk-in: Checks for Student Registrations made for walk-in classes. Can remove them.
-	    -antilunch: Checks for Student Registrations made for lunch. Can remove them.
-        Example syntax: self.sanitize(['antiwalk-in'])
-        Run self.sanitize('--help') for more information
-        Set fake=False if you actually want something to happen.
-        Set csvlog=False if you don't want a log of what was done
-        Set directory to where you'd like the csvlog filed saved (if csvlog=False, does nothing)"""
-	if verbose == None: verbose = self.options['verbosity']
-        if checks==None:
-            print "You didn't enter a check! Please enter the checks you'd like to run as a list of strings. Run self.sanitize('--help') for more information!"
-            return None
-        if checks=='--help':
-            print 'Sanitize - a module used to clear up oddities in Student Registrations.'
-            print "Syntax: self.sanitize(['check1', 'check2', 'check3'], fake=False, csvlog=True, directory='" + self.options['directory'] + "')"
-            print ''
-            print '-------------Current Checks----------------'
-            print 'antiwalk-in: Checks for Student Registrations made for walk-in classes. If fake=False, will remove them.'
-	    print 'antilunch: Checks for Student Registrations made for lunch. If fake=False, will remove them.'
-            print '-------------Known Bugs-----------------'
-            print "Guys, I'm not course 6 for a reason~shulinye"
-            return None
-        if type(checks) == str:
-            checks = [checks]
-        if csvlog:
-            import csv
-            if directory==None: directory = self.options['directory']
-            filefullname = directory + '/'+ datetime.datetime.now().strftime("%Y-%m-%d_") + 'santitize_log.csv'
-            csvfile = open(filefullname, 'ab+')
-            csvwriter = csv.writer(csvfile) 
-	self.reports = {}
-        for ck in checks:
-            if verbose > 3: print "Now running " + ck
-            if ck == 'antiwalk-in':
-                self.reports['walkin'] = self.sanitize_walkin(fake = fake, csvwriter = csvwriter if csvlog else None, csvlog=csvlog, verbose=verbose)
-	    if ck == 'antilunch':
-		self.reports['antilunch'] = self.sanitize_lunch(fake = fake, csvwriter = csvwriter if csvlog else None, csvlog=csvlog, verbose=verbose)
-        if csvlog: csvfile.close()
-        return self.reports
-        
     def initialize(self):
         """ Gather all of the information needed to run the lottery assignment.
             This includes:
