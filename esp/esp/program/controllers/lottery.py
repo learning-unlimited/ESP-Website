@@ -124,6 +124,12 @@ class LotteryAssignmentController(object):
         self.section_capacities = numpy.zeros((self.num_sections,), dtype=numpy.uint32)
         self.section_overlap = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool)
         
+        # One array to keep track of the utility of each student
+        # (defined as hours of interested class + 1.5*hours of priority classes)
+        # and the other arrary to keep track of student weigths (defined as # of classes signed up for)
+        self.student_utility_weights = numpy.zeros((self.num_students, ), dtype=numpy.float)
+        self.student_utilities = numpy.zeros((self.num_students, ), dtype=numpy.float)
+
         #   Get student, section, timeslot IDs and prepare lookup table
         (self.student_ids, self.student_indices) = self.get_ids_and_indices(self.program.students()['lotteried_students'])
         (self.section_ids, self.section_indices) = self.get_ids_and_indices(self.program.sections().filter(status__gt=0, registration_status=0))
@@ -164,6 +170,10 @@ class LotteryAssignmentController(object):
         pra = numpy.array(priority_regs, dtype=numpy.uint32)
         self.priority[self.student_indices[pra[:, 0]], self.section_indices[pra[:, 1]]] = True
         
+        #   Set student utility weights. Counts number of classes that students selected. Used only for computing the overall_utility stat
+        #   NOTE: Uses fixed (interest + priority) formula, needs attention when multiple priority levels are merged.
+        self.student_utility_weights = numpy.sum(self.interest.astype(float), 1) + numpy.sum(self.priority.astype(float), 1)
+
         #   Populate section schedule
         section_times = numpy.array(self.program.sections().filter(status__gt=0, registration_status=0).filter(meeting_times__id__isnull=False).distinct().values_list('id', 'meeting_times__id'))
         self.section_schedules[self.section_indices[section_times[:, 0]], self.timeslot_indices[section_times[:, 1]]] = True
@@ -283,6 +293,12 @@ class LotteryAssignmentController(object):
         for i in range(timeslots.shape[0]):
             assert(numpy.sum(self.student_schedules[selected_students, timeslots[i]]) == 0)
             self.student_schedules[selected_students, timeslots[i]] = True
+
+            #   Update student utilies
+            if priority:
+                self.student_utilities[selected_students] += 1.5
+            else:
+                self.student_utilities[selected_students] += 1
         
         #   Update student weights
         self.student_weights[selected_students] /= weight_factor
@@ -398,9 +414,9 @@ class LotteryAssignmentController(object):
         sum_of_weights=0.0
         screwed_students=[]
         for i in range(self.num_students):
-            utility = math.sqrt(self.student_utilities[i])
-            weight = math.sqrt((self.student_utility_weights[i]))
-            weighted_overall_utility += utility*weight
+            utility = numpy.sqrt(self.student_utilities[i])
+            weight = numpy.sqrt((self.student_utility_weights[i]))
+            weighted_overall_utility += utility * weight
             sum_of_weights += weight
             screwed_students.append(((1+utility)/(1+weight), self.student_ids[i]))
 
