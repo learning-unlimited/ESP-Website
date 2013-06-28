@@ -473,29 +473,32 @@ class LotteryAssignmentController(object):
             result.append(ClassSection.objects.get(id=self.section_ids[assignments[i]]))
         return result
 
-	    def generate_screwed_csv(self, directory=None, n=None, stats=None):
-		    """Generate a CSV file of the n most screwed students. Default: All of them.
+    def generate_screwed_csv(self, directory=None, n=None, stats=None):
+        """Generate a CSV file of the n most screwed students. Default: All of them.
         Directory: string of what directory you like the information stored in.
         This is also known as the script shulinye threw together while trying to run the Spark 2013 lottery.
         You might want to crosscheck this file before accepting it."""
         import csv
-	
-	if directory == None: directory = self.options['directory']
 
-        if stats == None: stats = self.compute_stats(display=False) #Calculate stats if I didn't get any
+        if directory == None:
+            directory = self.options['directory']
+
+        if stats == None:
+            stats = self.compute_stats(display=False) #Calculate stats if I didn't get any
+
         studentlist = stats['students_by_screwedness']
         if n != None: studentlist = studentlist[:n]
-        tday = str(datetime.datetime.now())[:10]
+        tday = str(datetime.now())[:10]
         
         fullfilename = directory + '/screwed_csv_' + tday + '.csv'
         
         csvfile = open(fullfilename, 'wb')
         csvwriter = csv.writer(csvfile)
         
-        csvwriter.writerow["Student", "Student ID", "StudentScrewedScore", "#Classes"]
+        csvwriter.writerow(["Student", "Student ID", "StudentScrewedScore", "#Classes"])
 
         for s in studentlist:
-            csvwriter.writerow([ESPUser.objects.get(id=s[1]).name.encode('ascii', 'ignore'), s[1], s[0], len(self.get_computed_schedule(s[1]))])
+            csvwriter.writerow([ESPUser.objects.get(id=s[1]).name().encode('ascii', 'ignore'), s[1], s[0], len(self.get_computed_schedule(s[1]))])
 
         csvfile.close()
         print 'File can be found at: ' + fullfilename
@@ -519,8 +522,9 @@ class LotteryAssignmentController(object):
         if debug_display:
             print 'Created %d registrations' % student_ids.shape[0]
         
-	#As mailman doesn't work, disable for now.
-        if try_mailman:self.update_mailman_lists()
+        #As mailman doesn't work, disable for now.
+        if try_mailman:
+            self.update_mailman_lists()
     
     def clear_saved_assignments(self, delete=False):
         """ Expire/delete all previous StudentRegistration enrollments associated with the program. """
