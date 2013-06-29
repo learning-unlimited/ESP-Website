@@ -1,7 +1,14 @@
-from django.http import HttpResponse, Http404
+from django.contrib.auth import authenticate
+from django.http import HttpResponse, Http404, HttpResponseServerError, \
+    HttpResponseForbidden, HttpResponseNotFound
 from django.dispatch import receiver
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
 from esp.formstack.signals import formstack_post_signal
+from esp.program.models import Program
+from esp.users.models import ESPUser
+import json
 
 @csrf_exempt
 def formstack_webhook(request):
@@ -15,3 +22,61 @@ def formstack_webhook(request):
         return HttpResponse()
     else:
         raise Http404
+
+@csrf_exempt
+@never_cache
+@require_POST
+def medicalsyncapi(request):
+    """
+    API for the medical form download script to get a list of students
+    who *should* have turned in a medical form, to cross-check with the
+    list of medical forms we actually have.
+
+    The program name is specified by a string in the 'program' parameter.
+    It should be formatted as "Spring HSSP 2013","Spark 2014", etc.
+
+    Authentication is performed by username and password via the request
+    parameters of those names. Access is restricted to Admins.
+    """
+    #if not request.is_secure():
+    #    return HttpResponseServerError("HTTPS is required when accessing this view")
+   
+    # Authenticate
+    username = request.POST['username']
+    password = request.POST['password']
+
+    user = authenticate(username=username, password=password)
+    if user is None or not ESPUser(user).isAdministrator():
+        return HttpResponseForbidden("Authentication failed")
+
+    # Find Program
+    chunks = request.POST['program'].split(' ')
+    if len(chunks) == 2:
+        a = chunks[0]
+        b = chunks[1]
+    elif len(chunks) == 3:
+        a = chunks[1]
+        b = chunks[0] + ' ' + chunks[2]
+    else:
+        return HttpResponseNotFound("Program could not be parsed")
+    
+    results = Program.objects.filter(anchor__friendly_name__icontains=b,
+                                     anchor__parent__friendly_name__icontains=a)
+    if len(results) != 1:
+        return HttpResponseNotFound("No/multiple programs match criteria")
+    prog = results[0]
+
+    # Collect Results
+    students = prog.students()
+    response = { 'submitted': dict(), 'bypass': dict() }
+    for student in students['studentmedliab']:
+        sid = student.id
+        sname = student.last_name.capitalize() + ', ' + student.first_name.capitalize() + \
+            ' (' + student.username + ' / ' + str(student.id) + ')'
+        response['submitted'][sid] = sname
+    for student in students['studentmedbypass']:
+        sid = student.id
+        sname = student.last_name.capitalize() + ', ' + student.first_name.capitalize() + \
+            ' (' + student.username + ' / '+ str(student.id) + ')'
+        response['bypass'][sid] = sname
+    return HttpResponse(json.dumps(response), content_type='application/json')
