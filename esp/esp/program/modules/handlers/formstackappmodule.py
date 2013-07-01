@@ -102,7 +102,7 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
         if not self.finaid_form():
             return # no finaid form
         app = FormstackStudentProgramApp.objects.filter(user=request.user, program=prog)
-        if not app: # student has not applied for the program
+        if not (app or request.user.isAdmin(prog)): # student has not applied for the program
             return # XXX: more useful error here
         context = {}
         context['form'] = self.finaid_form()
