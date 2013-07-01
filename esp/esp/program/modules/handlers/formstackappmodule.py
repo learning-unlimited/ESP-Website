@@ -33,6 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+from django.db.models.query import Q
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
@@ -60,8 +61,8 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
     def students(self, QObject = False):
         result = {}
 
-        apps = FormstackStudentProgramApp.objects.fetch(self.program)
-        result['applied'] = set(app.user for app in apps)
+        Q_applied = Q(studentprogramapp__program=self.program)
+        result['applied'] = Q_applied if QObject else ESPUser.objects.filter(Q_applied)
 
         return result
 
