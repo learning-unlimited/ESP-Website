@@ -42,6 +42,7 @@ from esp.tagdict.models  import Tag
 from django.db.models.query       import Q
 from django.shortcuts import redirect
 from esp.middleware.threadlocalrequest import get_current_request
+import json
 
 # hackish solution for Splash 2012
 class FormstackMedliabModule(ProgramModuleObj):
@@ -157,4 +158,3 @@ class FormstackMedliabModule(ProgramModuleObj):
 
     class Meta:
         abstract = True
-
