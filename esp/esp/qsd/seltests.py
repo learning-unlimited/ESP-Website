@@ -1,21 +1,19 @@
-from django.utils.unittest.case import skipUnless
-from django_selenium.testcases import SeleniumTestCase
+from esp.datatree.models import GetNode
+from esp.qsd.models import QuasiStaticData
+from esp.seltests.util import try_normal_login, logout, noActiveAjaxJQuery
+from esp.tagdict.models import Tag
 from esp.users.views.make_admin import make_user_admin
 from esp.users.models import ESPUser
 from esp.users.models import UserBit
-# Can't do "from django.conf import settings", because this uses
-# the settings from django_selenium
-from django.conf import settings
-import django_selenium.settings as selenium_settings
-from django.contrib.sites.models import Site
-from esp.datatree.models import GetNode
-from esp.seltests import try_normal_login, logout, noActiveAjaxJQuery
-from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory
-from esp.tagdict.models import Tag
+
+from django.conf import settings
+from django.contrib.sites.models import Site
+from django.utils.unittest.case import skipUnless
+from django_selenium.testcases import SeleniumTestCase
+from selenium import selenium
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
-from selenium import selenium
 from sys import stdout, stderr, exc_info
 
 class TestQsdCachePurging(SeleniumTestCase):

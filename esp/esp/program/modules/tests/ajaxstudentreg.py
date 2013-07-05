@@ -35,8 +35,8 @@ Learning Unlimited, Inc.
 from esp.middleware.esperrormiddleware import AjaxErrorMiddleware
 from esp.program.models.class_ import ClassSection
 from esp.program.tests import ProgramFrameworkTest
-from esp.seltests.test_case import SeleniumTestCase
 
+from django_selenium.testcases import SeleniumTestCase
 import random
 import simplejson as json
 

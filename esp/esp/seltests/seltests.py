@@ -1,8 +1,7 @@
 from django_selenium.testcases import SeleniumTestCase
-from esp.seltests import try_ajax_login, try_normal_login, logout
-
-from esp.utils.models import TemplateOverride
+from esp.seltests.util import try_ajax_login, try_normal_login, logout
 from esp.users.models import ESPUser
+from esp.utils.models import TemplateOverride
 
 class CsrfTestCase(SeleniumTestCase):
     def setUp(self):
