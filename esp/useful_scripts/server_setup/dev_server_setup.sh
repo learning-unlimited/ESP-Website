@@ -273,13 +273,13 @@ echo -n "above, then press enter to continue or Ctrl-C to quit."
 read THROWAWAY
 
 # Update package repositories
-apt-get update
+sudo apt-get update
 
 # Git repository setup
 # To manually reset: Back up .espsettings file in [sitename].old directory, then remove site directory
 if [[ "$MODE_GIT" || "$MODE_ALL" ]]
 then
-    apt-get install -y git-core
+    sudo apt-get install -y git-core
 
     if [[ -e $BASEDIR/esp ]]
     then
@@ -318,7 +318,7 @@ then
     cd $DEPDIR
 
     #    Get what we can using Ubuntu's package manager
-    apt-get install -y build-essential texlive texlive-latex-extra imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-pip python-dns postgresql-9.1 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large ipython wget memcached libmemcached6 libmemcached-dev python-pylibmc libpq-dev
+    sudo apt-get install -y $(< $BASEDIR/packages.txt)
 
     #    Fetch and extract files
     if [[ ! -d selenium-server-standalone-2.9.0 ]]
@@ -326,15 +326,6 @@ then
         mkdir selenium-server-standalone-2.9.0
         cd selenium-server-standalone-2.9.0
         wget http://selenium.googlecode.com/files/selenium-server-standalone-2.9.0.jar
-        cd $DEPDIR
-    fi
-        if [[ ! -d andrewgodwin-south-21a635231327 ]]
-    then
-        wget https://bitbucket.org/andrewgodwin/south/get/21a635231327.tar.gz
-        tar -xvf 21a635231327.tar.gz
-        cd andrewgodwin-south-21a635231327/
-        ./setup.py build
-        sudo ./setup.py install
         cd $DEPDIR
     fi
     while [[ ! -d dropbox ]]
@@ -351,23 +342,9 @@ then
     done
 
     #    Install python libraries
-    python -m easy_install iCalendar
-    python -m easy_install django==1.4
-    python -m easy_install repoze.profile
-    python -m easy_install xlwt
-    python -m easy_install simplejson
-    python -m easy_install twill
-    python -m easy_install django-form-utils
-    python -m easy_install django-reversion==1.6
-    python -m easy_install selenium
-    python -m easy_install django-selenium==0.3
-    python -m easy_install django-selenium-test-runner
-    python -m easy_install django-extensions
-
-    #   This is special for Ubuntu 11.10; if you install python-psycopg2 using apt-get
-    #   you get psycopg2 version 2.4.2, which is too new for the current version of
-    #   Django.  So we manually install version 2.4.1.
-    pip install psycopg2==2.4.1
+    virtualenv $BASEDIR/env
+    source $BASEDIR/env/bin/activate
+    pip install -r $BASEDIR/requirements.txt
 
     cd $CURDIR
 
@@ -466,7 +443,7 @@ SELENIUM_DRIVERS = 'Firefox'
 
 EOF
 
-    /etc/init.d/memcached restart
+    sudo /etc/init.d/memcached restart
 
     echo "Generated Django settings overrides, saved to:"
     echo "  $BASEDIR/esp/esp/local_settings.py"
@@ -642,7 +619,10 @@ if [[ "$MODE_APACHE" || "$MODE_ALL" ]]
 then
     APACHE_CONF_DIR=/etc/apache2/conf.d
 
-    cat >$BASEDIR/esp.wsgi <<EOF
+    sudo tee $BASEDIR/esp.wsgi <<EOF
+activate_this = '$BASEDIR/env/bin/activate_this.py'
+execfile(activate_this, dict(__file__=activate_this))
+
 import os
 import sys
 
@@ -669,11 +649,11 @@ else:
 
 EOF
 
-    cat >$APACHE_CONF_DIR/enable_vhosts <<EOF
+    sudo tee $APACHE_CONF_DIR/enable_vhosts <<EOF
 NameVirtualHost *:80
 EOF
 
-    cat >$APACHE_CONF_DIR/esp_$SITENAME <<EOF
+    sudo tee $APACHE_CONF_DIR/esp_$SITENAME <<EOF
 #   $INSTITUTION $GROUPNAME (automatically generated)
 WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 <VirtualHost *:80>
@@ -693,7 +673,7 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 </VirtualHost>
 
 EOF
-    /etc/init.d/apache2 reload
+    sudo /etc/init.d/apache2 reload
     echo "Added VirtualHost to Apache configuration $APACHE_CONF_FILE"
 
     echo "Apache has been set up.  Please check them by looking over the"
