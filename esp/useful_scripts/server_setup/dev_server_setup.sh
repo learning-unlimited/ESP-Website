@@ -364,8 +364,7 @@ then
 	python -m easy_install django-form-utils
 	python -m easy_install django-reversion==1.6
 	python -m easy_install selenium
-	python -m easy_install django-selenium==0.3
-	python -m easy_install django-selenium-test-runner
+	python -m easy_install django-selenium
 	python -m easy_install django-extensions
 	
 	#   This is special for Ubuntu 11.10; if you install python-psycopg2 using apt-get

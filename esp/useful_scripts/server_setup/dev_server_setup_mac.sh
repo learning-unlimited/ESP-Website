@@ -481,8 +481,7 @@ then
     python -m easy_install twill
     python -m easy_install django-form-utils
     python -m easy_install selenium
-    python -m easy_install django-selenium==0.3
-    python -m easy_install django-selenium-test-runner
+    python -m easy_install django-selenium
     python -m easy_install django-extensions
 
     cd $DEPDIR
