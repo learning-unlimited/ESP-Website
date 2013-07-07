@@ -65,7 +65,7 @@ Options:
     --db:       Set up a PostgreSQL database
     --settings: Write settings files
     --apache:   Set up Apache to serve the site using mod_wsgi
-    
+
 For more detailed documentation, see: 
     http://wiki.learningu.org/Dev_server_setup_script
 "
@@ -314,63 +314,63 @@ fi
 if [[ "$MODE_DEPS" || "$MODE_ALL" ]]
 then
 
-	mkdir -p $DEPDIR
-	cd $DEPDIR
-	
-	#	Get what we can using Ubuntu's package manager
-	apt-get install -y build-essential texlive texlive-latex-extra imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-pip python-dns postgresql-9.1 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large ipython wget memcached libmemcached6 libmemcached-dev python-pylibmc libpq-dev
+    mkdir -p $DEPDIR
+    cd $DEPDIR
 
-	#	Fetch and extract files
-	if [[ ! -d selenium-server-standalone-2.9.0 ]]
-	then
-		mkdir selenium-server-standalone-2.9.0
-		cd selenium-server-standalone-2.9.0
-		wget http://selenium.googlecode.com/files/selenium-server-standalone-2.9.0.jar
-		cd $DEPDIR
-	fi
+    #    Get what we can using Ubuntu's package manager
+    apt-get install -y build-essential texlive texlive-latex-extra imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-pip python-dns postgresql-9.1 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large ipython wget memcached libmemcached6 libmemcached-dev python-pylibmc libpq-dev
+
+    #    Fetch and extract files
+    if [[ ! -d selenium-server-standalone-2.9.0 ]]
+    then
+        mkdir selenium-server-standalone-2.9.0
+        cd selenium-server-standalone-2.9.0
+        wget http://selenium.googlecode.com/files/selenium-server-standalone-2.9.0.jar
+        cd $DEPDIR
+    fi
         if [[ ! -d andrewgodwin-south-21a635231327 ]]
-	then
-		wget https://bitbucket.org/andrewgodwin/south/get/21a635231327.tar.gz
-		tar -xvf 21a635231327.tar.gz
-		cd andrewgodwin-south-21a635231327/
-		./setup.py build
-		sudo ./setup.py install
-		cd $DEPDIR
-	fi
-	while [[ ! -d dropbox ]]
-	do
+    then
+        wget https://bitbucket.org/andrewgodwin/south/get/21a635231327.tar.gz
+        tar -xvf 21a635231327.tar.gz
+        cd andrewgodwin-south-21a635231327/
+        ./setup.py build
+        sudo ./setup.py install
+        cd $DEPDIR
+    fi
+    while [[ ! -d dropbox ]]
+    do
         rm -f dropbox.tar.gz
-		if [[ `uname -a | grep "_64" | wc -l` != "0" ]]
-		then
-			wget -O dropbox.tar.gz http://www.dropbox.com/download/?plat=lnx.x86_64
-		else
-			wget -O dropbox.tar.gz http://www.dropbox.com/download/?plat=lnx.x86
-		fi
-		tar -xzf dropbox.tar.gz
-		mv .dropbox-dist dropbox
-	done
+        if [[ `uname -a | grep "_64" | wc -l` != "0" ]]
+        then
+            wget -O dropbox.tar.gz http://www.dropbox.com/download/?plat=lnx.x86_64
+        else
+            wget -O dropbox.tar.gz http://www.dropbox.com/download/?plat=lnx.x86
+        fi
+        tar -xzf dropbox.tar.gz
+        mv .dropbox-dist dropbox
+    done
 
-	#	Install python libraries
-	python -m easy_install iCalendar
-	python -m easy_install django==1.4
-	python -m easy_install repoze.profile
-	python -m easy_install xlwt
-	python -m easy_install simplejson
-	python -m easy_install twill
-	python -m easy_install django-form-utils
-	python -m easy_install django-reversion==1.6
-	python -m easy_install selenium
-	python -m easy_install django-selenium==0.3
-	python -m easy_install django-selenium-test-runner
-	python -m easy_install django-extensions
-	
-	#   This is special for Ubuntu 11.10; if you install python-psycopg2 using apt-get
-	#   you get psycopg2 version 2.4.2, which is too new for the current version of
-	#   Django.  So we manually install version 2.4.1.
-	pip install psycopg2==2.4.1
+    #    Install python libraries
+    python -m easy_install iCalendar
+    python -m easy_install django==1.4
+    python -m easy_install repoze.profile
+    python -m easy_install xlwt
+    python -m easy_install simplejson
+    python -m easy_install twill
+    python -m easy_install django-form-utils
+    python -m easy_install django-reversion==1.6
+    python -m easy_install selenium
+    python -m easy_install django-selenium==0.3
+    python -m easy_install django-selenium-test-runner
+    python -m easy_install django-extensions
+
+    #   This is special for Ubuntu 11.10; if you install python-psycopg2 using apt-get
+    #   you get psycopg2 version 2.4.2, which is too new for the current version of
+    #   Django.  So we manually install version 2.4.1.
+    pip install psycopg2==2.4.1
 
     cd $CURDIR
-    
+
     echo "Dependencies have been installed.  Please check this by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
@@ -383,7 +383,7 @@ fi
 if [[ "$MODE_SETTINGS" || "$MODE_ALL" ]]
 then
     mkdir -p ${BASEDIR}/esp/esp
-    
+
     cat >${BASEDIR}/esp/esp/database_settings.py <<EOF
 DATABASE_USER = '$DBUSER'
 DATABASE_PASSWORD = '$DBPASS'
@@ -494,25 +494,25 @@ then
     echo "information for your chapter's Web site Dropbox when prompted."
     echo "Answer no if you are not mirroring a production site or you would like"
     echo "to skip the Dropbox setup."
-	echo -n "  Mirror an existing Dropbox for media files (y/N)? --> "
-	read DROPBOX_MIRROR
-	DROPBOX_MIRROR=${DROPBOX_MIRROR:-N}
-	
-	MEDIADIR=$BASEDIR/esp/public/media
-	DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
-	
+    echo -n "  Mirror an existing Dropbox for media files (y/N)? --> "
+    read DROPBOX_MIRROR
+    DROPBOX_MIRROR=${DROPBOX_MIRROR:-N}
+
+    MEDIADIR=$BASEDIR/esp/public/media
+    DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
+
     if [[ "$DROPBOX_MIRROR" == "y" ]]
-	then
-	    #   Set up Dropbox
-	    
-	    if [[ ! -e ${DROPBOX_PATH}/dropbox ]]
-	    then
-		    echo "Dropbox executable could not be found."
-		    echo "Expected path was: ${DROPBOX_PATH}/dropbox"
-		    echo "Please install dependencies using the --deps option."
-		    exit 1
-	    fi
-	
+    then
+        #   Set up Dropbox
+
+        if [[ ! -e ${DROPBOX_PATH}/dropbox ]]
+        then
+            echo "Dropbox executable could not be found."
+            echo "Expected path was: ${DROPBOX_PATH}/dropbox"
+            echo "Please install dependencies using the --deps option."
+            exit 1
+        fi
+
         echo "A Dropbox instance will now be created for this site's media."
         echo "You may be prompted to link this machine to a Dropbox account."
         echo -n "Once this is complete, type 'ok' and hit enter"
@@ -547,7 +547,7 @@ then
         mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/images
         mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/styles
         mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/uploaded
-        
+
         ln -sf ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media $BASEDIR/esp/public/custom_media
         ln -sf $BASEDIR/esp/public/custom_media/images $BASEDIR/esp/public/media/images
         ln -sf $BASEDIR/esp/public/custom_media/styles $BASEDIR/esp/public/media/styles
@@ -561,7 +561,7 @@ then
 
     mkdir -p $MEDIADIR/uploaded/bio_pictures
     chmod -R 777 $MEDIADIR
-    
+
     echo "Media directories have been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
@@ -575,61 +575,61 @@ then
     sudo -u postgres psql template1 -c "CREATE LANGUAGE plpgsql;"
     sudo -u postgres psql -c "DROP DATABASE $DBNAME;"
     sudo -u postgres psql -c "DROP ROLE IF EXISTS $DBUSER;"
-	sudo -u postgres psql -c "CREATE USER $DBUSER CREATEDB;"
-	sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
-	sudo -u postgres psql -c "CREATE DATABASE $DBNAME OWNER ${DBUSER};"
-	
-	echo "Created a PostgreSQL login role and empty database."
-	echo
+    sudo -u postgres psql -c "CREATE USER $DBUSER CREATEDB;"
+    sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
+    sudo -u postgres psql -c "CREATE DATABASE $DBNAME OWNER ${DBUSER};"
 
-	echo "You may load an existing database dump file (.sql.gz) if you have one."
-	echo "Otherwise we will populate the empty database."
-	echo -n "Would you like to load a database dump file? (y/N) --> "
-	read USE_DB_DUMP
-	USE_DB_DUMP=${USE_DB_DUMP:-N}
+    echo "Created a PostgreSQL login role and empty database."
+    echo
 
-	if [[ "$USE_DB_DUMP" == "y" ]]
-	then
-		#	Instantiate database dump
-		cd $CURDIR
-		while [[ ! -e $DUMPFILE ]]
-		do
-			echo "Enter the path (absolute or relative from $CURDIR)"
-			echo "to your database dump file.  It should be in gzipped ASCII SQL format."
-			echo -n " --> "
-			read DUMPFILE
-		done
-		gunzip $DUMPFILE
-		RAWDUMP=${DUMPFILE%.*}
+    echo "You may load an existing database dump file (.sql.gz) if you have one."
+    echo "Otherwise we will populate the empty database."
+    echo -n "Would you like to load a database dump file? (y/N) --> "
+    read USE_DB_DUMP
+    USE_DB_DUMP=${USE_DB_DUMP:-N}
 
-		#	Rename the role temporarily so that permissions are right
-		DBOWNER=`grep "ALTER TABLE public.program_class OWNER TO" $RAWDUMP | head -n 1 | cut -d' ' -f 6 | sed "s/;//"`
+    if [[ "$USE_DB_DUMP" == "y" ]]
+    then
+        #    Instantiate database dump
+        cd $CURDIR
+        while [[ ! -e $DUMPFILE ]]
+        do
+            echo "Enter the path (absolute or relative from $CURDIR)"
+            echo "to your database dump file.  It should be in gzipped ASCII SQL format."
+            echo -n " --> "
+            read DUMPFILE
+        done
+        gunzip $DUMPFILE
+        RAWDUMP=${DUMPFILE%.*}
 
-		sudo -u postgres psql -c "ALTER ROLE $DBUSER RENAME TO $DBOWNER;"
-		sudo -u postgres psql $DBNAME -f $RAWDUMP
-		sudo -u postgres psql -c "ALTER ROLE $DBOWNER RENAME TO $DBUSER;"
-		sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
+        #    Rename the role temporarily so that permissions are right
+        DBOWNER=`grep "ALTER TABLE public.program_class OWNER TO" $RAWDUMP | head -n 1 | cut -d' ' -f 6 | sed "s/;//"`
 
-		cd $BASEDIR/esp/esp
-		./manage.py migrate --delete-ghost-migrations
-		cd $CURDIR
+        sudo -u postgres psql -c "ALTER ROLE $DBUSER RENAME TO $DBOWNER;"
+        sudo -u postgres psql $DBNAME -f $RAWDUMP
+        sudo -u postgres psql -c "ALTER ROLE $DBOWNER RENAME TO $DBUSER;"
+        sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
 
-	else
-		#	Set up blank database
-		echo "Django's manage.py scripts will now be used to initialize the"
-		echo "$DBNAME database.  Please follow their directions."
+        cd $BASEDIR/esp/esp
+        ./manage.py migrate --delete-ghost-migrations
+        cd $CURDIR
 
-		cd $BASEDIR/esp/esp
-		./manage.py syncdb
-		./manage.py migrate
-		
-		#   Set initial Site (used in password recovery e-mail)
-		sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
+    else
+        #    Set up blank database
+        echo "Django's manage.py scripts will now be used to initialize the"
+        echo "$DBNAME database.  Please follow their directions."
 
-		cd $CURDIR
+        cd $BASEDIR/esp/esp
+        ./manage.py syncdb
+        ./manage.py migrate
 
-	fi
-    
+        #   Set initial Site (used in password recovery e-mail)
+        sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
+
+        cd $CURDIR
+
+    fi
+
     echo "Database has been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
@@ -640,7 +640,7 @@ fi
 
 if [[ "$MODE_APACHE" || "$MODE_ALL" ]]
 then
-	APACHE_CONF_DIR=/etc/apache2/conf.d
+    APACHE_CONF_DIR=/etc/apache2/conf.d
 
     cat >$BASEDIR/esp.wsgi <<EOF
 import os
@@ -669,7 +669,7 @@ else:
 
 EOF
 
-	cat >$APACHE_CONF_DIR/enable_vhosts <<EOF
+    cat >$APACHE_CONF_DIR/enable_vhosts <<EOF
 NameVirtualHost *:80
 EOF
 
@@ -695,7 +695,7 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 EOF
     /etc/init.d/apache2 reload
     echo "Added VirtualHost to Apache configuration $APACHE_CONF_FILE"
-    
+
     echo "Apache has been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
