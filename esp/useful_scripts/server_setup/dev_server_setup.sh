@@ -318,7 +318,7 @@ then
     cd $DEPDIR
 
     #    Get what we can using Ubuntu's package manager
-    sudo apt-get install -y $(< $BASEDIR/packages.txt)
+    sudo apt-get install -y $(< $BASEDIR/esp/packages.txt)
 
     #    Fetch and extract files
     if [[ ! -d selenium-server-standalone-2.9.0 ]]
@@ -344,7 +344,7 @@ then
     #    Install python libraries
     virtualenv $BASEDIR/env
     source $BASEDIR/env/bin/activate
-    pip install -r $BASEDIR/requirements.txt
+    pip install -r $BASEDIR/esp/requirements.txt
 
     cd $CURDIR
 
