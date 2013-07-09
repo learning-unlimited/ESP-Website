@@ -6,6 +6,12 @@ from esp.datatree.models import *
 
 class Migration:
     
+    #   Dependency for fetching Datatree verb needed for default in ORM
+    depends_on = (
+        ("datatree", "0001_initial"),
+        ("program", "0001_initial"),
+    )
+
     def forwards(self, orm):
         
         # Adding model 'StudentClassRegModuleInfo'

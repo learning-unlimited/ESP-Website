@@ -1,22 +1,72 @@
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 import datetime
 from south.db import db
-from south.v2 import DataMigration
+from south.v2 import SchemaMigration
 from django.db import models
-from esp.program.models import RegistrationProfile
-from esp.users.models import ContactInfo
 
-class Migration(DataMigration):
 
-    depends_on = (
-        ("users", "0010_auto__add_field_contactinfo_receive_txt_message"),
-    )
+class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        ContactInfo.objects.filter(as_user__old_text_reminder=True).update(receive_txt_message=True)
+        # Deleting model 'BusSchedule'
+        db.delete_table('program_busschedule')
+
+        # Deleting model 'TeacherParticipationProfile'
+        db.delete_table('program_teacherparticipationprofile')
+
+        # Removing M2M table for field bus_schedule on 'TeacherParticipationProfile'
+        db.delete_table('program_teacherparticipationprofile_bus_schedule')
+
+        # Deleting model 'SATPrepRegInfo'
+        db.delete_table('program_satprepreginfo')
+
 
     def backwards(self, orm):
-        RegistrationProfile.objects.filter(contact_user__receive_txt_message=True).update(old_text_reminder=True)
+        # Adding model 'BusSchedule'
+        db.create_table('program_busschedule', (
+            ('arrives', self.gf('django.db.models.fields.DateTimeField')()),
+            ('src_dst', self.gf('django.db.models.fields.CharField')(max_length=128)),
+            ('departs', self.gf('django.db.models.fields.DateTimeField')()),
+            ('program', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['program.Program'])),
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+        ))
+        db.send_create_signal('program', ['BusSchedule'])
+
+        # Adding model 'TeacherParticipationProfile'
+        db.create_table('program_teacherparticipationprofile', (
+            ('teacher', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
+            ('program', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['program.Program'])),
+            ('can_help', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+        ))
+        db.send_create_signal('program', ['TeacherParticipationProfile'])
+
+        # Adding M2M table for field bus_schedule on 'TeacherParticipationProfile'
+        db.create_table('program_teacherparticipationprofile_bus_schedule', (
+            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
+            ('teacherparticipationprofile', models.ForeignKey(orm['program.teacherparticipationprofile'], null=False)),
+            ('busschedule', models.ForeignKey(orm['program.busschedule'], null=False))
+        ))
+        db.create_unique('program_teacherparticipationprofile_bus_schedule', ['teacherparticipationprofile_id', 'busschedule_id'])
+
+        # Adding model 'SATPrepRegInfo'
+        db.create_table('program_satprepreginfo', (
+            ('program', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['program.Program'])),
+            ('prac_verb_score', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
+            ('old_writ_score', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
+            ('prac_math_score', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
+            ('old_math_score', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
+            ('heard_by', self.gf('django.db.models.fields.CharField')(max_length=128, null=True, blank=True)),
+            ('user', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
+            ('diag_verb_score', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('old_verb_score', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
+            ('diag_writ_score', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
+            ('prac_writ_score', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
+            ('diag_math_score', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
+        ))
+        db.send_create_signal('program', ['SATPrepRegInfo'])
+
 
     models = {
         'auth.group': {
@@ -26,7 +76,7 @@ class Migration(DataMigration):
             'permissions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Permission']", 'symmetrical': 'False', 'blank': 'True'})
         },
         'auth.permission': {
-            'Meta': {'unique_together': "(('content_type', 'codename'),)", 'object_name': 'Permission'},
+            'Meta': {'ordering': "('content_type__app_label', 'content_type__model', 'codename')", 'unique_together': "(('content_type', 'codename'),)", 'object_name': 'Permission'},
             'codename': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'content_type': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['contenttypes.ContentType']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
@@ -39,9 +89,9 @@ class Migration(DataMigration):
             'first_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'groups': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.Group']", 'symmetrical': 'False', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
-            'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'is_active': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
+            'is_staff': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'is_superuser': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'last_login': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'last_name': ('django.db.models.fields.CharField', [], {'max_length': '30', 'blank': 'True'}),
             'password': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
@@ -65,7 +115,7 @@ class Migration(DataMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
         },
         'contenttypes.contenttype': {
-            'Meta': {'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
+            'Meta': {'ordering': "('name',)", 'unique_together': "(('app_label', 'model'),)", 'object_name': 'ContentType', 'db_table': "'django_content_type'"},
             'app_label': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'model': ('django.db.models.fields.CharField', [], {'max_length': '100'}),
@@ -78,11 +128,11 @@ class Migration(DataMigration):
             'lock_table': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'parent': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'child_set'", 'null': 'True', 'to': "orm['datatree.DataTree']"}),
-            'range_correct': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
+            'range_correct': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'rangeend': ('django.db.models.fields.IntegerField', [], {}),
             'rangestart': ('django.db.models.fields.IntegerField', [], {}),
             'uri': ('django.db.models.fields.CharField', [], {'max_length': '1024'}),
-            'uri_correct': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'})
+            'uri_correct': ('django.db.models.fields.BooleanField', [], {'default': 'False'})
         },
         'program.archiveclass': {
             'Meta': {'object_name': 'ArchiveClass'},
@@ -111,14 +161,6 @@ class Migration(DataMigration):
             'seq': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'text': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'})
         },
-        'program.busschedule': {
-            'Meta': {'object_name': 'BusSchedule'},
-            'arrives': ('django.db.models.fields.DateTimeField', [], {}),
-            'departs': ('django.db.models.fields.DateTimeField', [], {}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']"}),
-            'src_dst': ('django.db.models.fields.CharField', [], {'max_length': '128'})
-        },
         'program.classcategories': {
             'Meta': {'object_name': 'ClassCategories'},
             'category': ('django.db.models.fields.TextField', [], {}),
@@ -129,43 +171,55 @@ class Migration(DataMigration):
         'program.classimplication': {
             'Meta': {'object_name': 'ClassImplication', 'db_table': "'program_classimplications'"},
             'cls': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.ClassSubject']", 'null': 'True'}),
-            'enforce': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
+            'enforce': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'is_prereq': ('django.db.models.fields.BooleanField', [], {'default': 'True', 'blank': 'True'}),
+            'is_prereq': ('django.db.models.fields.BooleanField', [], {'default': 'True'}),
             'member_ids': ('django.db.models.fields.CommaSeparatedIntegerField', [], {'max_length': '100', 'blank': 'True'}),
             'operation': ('django.db.models.fields.CharField', [], {'max_length': '4'}),
             'parent': ('django.db.models.fields.related.ForeignKey', [], {'default': 'None', 'to': "orm['program.ClassImplication']", 'null': 'True'})
         },
         'program.classsection': {
-            'Meta': {'object_name': 'ClassSection'},
+            'Meta': {'ordering': "['anchor__name']", 'object_name': 'ClassSection'},
             'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
             'checklist_progress': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ProgramCheckItem']", 'symmetrical': 'False', 'blank': 'True'}),
             'duration': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '5', 'decimal_places': '2', 'blank': 'True'}),
+            'enrolled_students': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'max_class_capacity': ('django.db.models.fields.IntegerField', [], {'null': 'True'}),
+            'max_class_capacity': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
             'meeting_times': ('django.db.models.fields.related.ManyToManyField', [], {'symmetrical': 'False', 'related_name': "'meeting_times'", 'blank': 'True', 'to': "orm['cal.Event']"}),
             'parent_class': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'sections'", 'to': "orm['program.ClassSubject']"}),
             'registration_status': ('django.db.models.fields.IntegerField', [], {'default': '0'}),
+            'registrations': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['auth.User']", 'through': "orm['program.StudentRegistration']", 'symmetrical': 'False'}),
             'status': ('django.db.models.fields.IntegerField', [], {'default': '0'})
+        },
+        'program.classsizerange': {
+            'Meta': {'object_name': 'ClassSizeRange'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']", 'null': 'True', 'blank': 'True'}),
+            'range_max': ('django.db.models.fields.IntegerField', [], {}),
+            'range_min': ('django.db.models.fields.IntegerField', [], {})
         },
         'program.classsubject': {
             'Meta': {'object_name': 'ClassSubject', 'db_table': "'program_class'"},
-            'allow_lateness': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'allow_lateness': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'allowable_class_size_ranges': ('django.db.models.fields.related.ManyToManyField', [], {'blank': 'True', 'related_name': "'classsubject_allowedsizes'", 'null': 'True', 'symmetrical': 'False', 'to': "orm['program.ClassSizeRange']"}),
             'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
             'category': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'cls'", 'to': "orm['program.ClassCategories']"}),
             'checklist_progress': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ProgramCheckItem']", 'symmetrical': 'False', 'blank': 'True'}),
             'class_info': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
-            'class_size_max': ('django.db.models.fields.IntegerField', [], {}),
+            'class_size_max': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
             'class_size_min': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
             'class_size_optimal': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
+            'custom_form_data': ('esp.utils.fields.JSONField', [], {'null': 'True', 'blank': 'True'}),
             'directors_notes': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'duration': ('django.db.models.fields.DecimalField', [], {'null': 'True', 'max_digits': '5', 'decimal_places': '2', 'blank': 'True'}),
             'grade_max': ('django.db.models.fields.IntegerField', [], {}),
             'grade_min': ('django.db.models.fields.IntegerField', [], {}),
-            'hardness_rating': ('django.db.models.fields.TextField', [], {}),
+            'hardness_rating': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'meeting_times': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['cal.Event']", 'symmetrical': 'False', 'blank': 'True'}),
             'message_for_directors': ('django.db.models.fields.TextField', [], {'blank': 'True'}),
+            'optimal_class_size_range': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.ClassSizeRange']", 'null': 'True', 'blank': 'True'}),
             'parent_program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']"}),
             'prereqs': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'purchase_requests': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
@@ -180,32 +234,30 @@ class Migration(DataMigration):
             'amount_needed': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
             'amount_received': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
             'approved': ('django.db.models.fields.DateTimeField', [], {'null': 'True', 'blank': 'True'}),
-            'done': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'done': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'extra_explaination': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'household_income': ('django.db.models.fields.CharField', [], {'max_length': '12', 'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']"}),
-            'reduced_lunch': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'reviewed': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'student_prepare': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'reduced_lunch': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'reviewed': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'student_prepare': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
         },
         'program.program': {
             'Meta': {'object_name': 'Program'},
-            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
+            'anchor': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']", 'unique': 'True'}),
             'class_categories': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ClassCategories']", 'symmetrical': 'False'}),
-            'class_size_max': ('django.db.models.fields.IntegerField', [], {}),
-            'class_size_min': ('django.db.models.fields.IntegerField', [], {}),
             'director_email': ('django.db.models.fields.EmailField', [], {'max_length': '75'}),
             'grade_max': ('django.db.models.fields.IntegerField', [], {}),
             'grade_min': ('django.db.models.fields.IntegerField', [], {}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'program_allow_waitlist': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'program_allow_waitlist': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'program_modules': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.ProgramModule']", 'symmetrical': 'False'}),
             'program_size_max': ('django.db.models.fields.IntegerField', [], {'null': 'True'})
         },
         'program.programcheckitem': {
-            'Meta': {'object_name': 'ProgramCheckItem'},
+            'Meta': {'ordering': "('seq',)", 'object_name': 'ProgramCheckItem'},
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'program': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'checkitems'", 'to': "orm['program.Program']"}),
             'seq': ('django.db.models.fields.PositiveIntegerField', [], {'blank': 'True'}),
@@ -214,49 +266,39 @@ class Migration(DataMigration):
         'program.programmodule': {
             'Meta': {'object_name': 'ProgramModule'},
             'admin_title': ('django.db.models.fields.CharField', [], {'max_length': '128'}),
-            'aux_calls': ('django.db.models.fields.CharField', [], {'max_length': '1024', 'null': 'True', 'blank': 'True'}),
             'handler': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'inline_template': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True', 'blank': 'True'}),
             'link_title': ('django.db.models.fields.CharField', [], {'max_length': '64', 'null': 'True', 'blank': 'True'}),
-            'main_call': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True', 'blank': 'True'}),
             'module_type': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
-            'required': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'seq': ('django.db.models.fields.IntegerField', [], {}),
-            'summary_calls': ('django.db.models.fields.CharField', [], {'max_length': '512', 'null': 'True', 'blank': 'True'})
+            'required': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'seq': ('django.db.models.fields.IntegerField', [], {})
         },
         'program.registrationprofile': {
             'Meta': {'object_name': 'RegistrationProfile'},
-            '_old_text_reminder': ('django.db.models.fields.NullBooleanField', [], {'null': 'True', 'db_column': "'text_reminder'", 'blank': 'True'}),
             'contact_emergency': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'as_emergency'", 'null': 'True', 'to': "orm['users.ContactInfo']"}),
             'contact_guardian': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'as_guardian'", 'null': 'True', 'to': "orm['users.ContactInfo']"}),
             'contact_user': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'as_user'", 'null': 'True', 'to': "orm['users.ContactInfo']"}),
             'educator_info': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'as_educator'", 'null': 'True', 'to': "orm['users.EducatorInfo']"}),
-            'email_verified': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'email_verified': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'emailverifycode': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'guardian_info': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'as_guardian'", 'null': 'True', 'to': "orm['users.GuardianInfo']"}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'last_ts': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2010, 8, 18, 17, 48, 45, 750496)'}),
-            'most_recent_profile': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']", 'null': 'True'}),
+            'last_ts': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 6, 26, 0, 0)'}),
+            'most_recent_profile': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'old_text_reminder': ('django.db.models.fields.NullBooleanField', [], {'null': 'True', 'db_column': "'text_reminder'", 'blank': 'True'}),
+            'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']", 'null': 'True', 'blank': 'True'}),
             'student_info': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'as_student'", 'null': 'True', 'to': "orm['users.StudentInfo']"}),
             'teacher_info': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'as_teacher'", 'null': 'True', 'to': "orm['users.TeacherInfo']"}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
         },
-        'program.satprepreginfo': {
-            'Meta': {'object_name': 'SATPrepRegInfo'},
-            'diag_math_score': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'diag_verb_score': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'diag_writ_score': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'heard_by': ('django.db.models.fields.CharField', [], {'max_length': '128', 'null': 'True', 'blank': 'True'}),
+        'program.registrationtype': {
+            'Meta': {'unique_together': "(('name', 'category'),)", 'object_name': 'RegistrationType'},
+            'category': ('django.db.models.fields.CharField', [], {'max_length': '32'}),
+            'description': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'displayName': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'old_math_score': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'old_verb_score': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'old_writ_score': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'prac_math_score': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'prac_verb_score': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'prac_writ_score': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']"}),
-            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '32'})
         },
         'program.scheduleconstraint': {
             'Meta': {'object_name': 'ScheduleConstraint'},
@@ -299,11 +341,11 @@ class Migration(DataMigration):
         'program.studentapplication': {
             'Meta': {'object_name': 'StudentApplication', 'db_table': "'program_junctionstudentapp'"},
             'director_score': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'done': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'done': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']"}),
             'questions': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.StudentAppQuestion']", 'symmetrical': 'False'}),
-            'rejected': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'rejected': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'responses': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.StudentAppResponse']", 'symmetrical': 'False'}),
             'reviews': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.StudentAppReview']", 'symmetrical': 'False'}),
             'teacher_score': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'}),
@@ -319,7 +361,7 @@ class Migration(DataMigration):
         },
         'program.studentappresponse': {
             'Meta': {'object_name': 'StudentAppResponse'},
-            'complete': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'complete': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'question': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.StudentAppQuestion']"}),
             'response': ('django.db.models.fields.TextField', [], {'default': "''"})
@@ -329,9 +371,18 @@ class Migration(DataMigration):
             'comments': ('django.db.models.fields.TextField', [], {}),
             'date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'reject': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'reject': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'reviewer': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"}),
             'score': ('django.db.models.fields.PositiveIntegerField', [], {'null': 'True', 'blank': 'True'})
+        },
+        'program.studentregistration': {
+            'Meta': {'object_name': 'StudentRegistration'},
+            'end_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(9999, 1, 1, 0, 0)'}),
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'relationship': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.RegistrationType']"}),
+            'section': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.ClassSection']"}),
+            'start_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime.now'}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
         },
         'program.teacherbio': {
             'Meta': {'object_name': 'TeacherBio'},
@@ -341,17 +392,29 @@ class Migration(DataMigration):
             'picture': ('django.db.models.fields.files.ImageField', [], {'max_length': '100', 'null': 'True', 'blank': 'True'}),
             'picture_height': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
             'picture_width': ('django.db.models.fields.IntegerField', [], {'null': 'True', 'blank': 'True'}),
-            'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']"}),
+            'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']", 'null': 'True', 'blank': 'True'}),
             'slugbio': ('django.db.models.fields.CharField', [], {'max_length': '50', 'null': 'True', 'blank': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
         },
-        'program.teacherparticipationprofile': {
-            'Meta': {'object_name': 'TeacherParticipationProfile'},
-            'bus_schedule': ('django.db.models.fields.related.ManyToManyField', [], {'to': "orm['program.BusSchedule']", 'symmetrical': 'False'}),
-            'can_help': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+        'program.volunteeroffer': {
+            'Meta': {'object_name': 'VolunteerOffer'},
+            'comments': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'confirmed': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'email': ('django.db.models.fields.EmailField', [], {'max_length': '75', 'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'name': ('django.db.models.fields.CharField', [], {'max_length': '80', 'null': 'True', 'blank': 'True'}),
+            'phone': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'request': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.VolunteerRequest']"}),
+            'shirt_size': ('django.db.models.fields.CharField', [], {'max_length': '5', 'null': 'True', 'blank': 'True'}),
+            'shirt_type': ('django.db.models.fields.CharField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
+            'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
+        },
+        'program.volunteerrequest': {
+            'Meta': {'object_name': 'VolunteerRequest'},
+            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
+            'num_volunteers': ('django.db.models.fields.PositiveIntegerField', [], {}),
             'program': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['program.Program']"}),
-            'teacher': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']"})
+            'timeslot': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['cal.Event']"})
         },
         'users.contactinfo': {
             'Meta': {'object_name': 'ContactInfo'},
@@ -367,8 +430,8 @@ class Migration(DataMigration):
             'phone_cell': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
             'phone_day': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
             'phone_even': ('django.contrib.localflavor.us.models.PhoneNumberField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'receive_txt_message': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
-            'undeliverable': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'receive_txt_message': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
+            'undeliverable': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
         },
         'users.educatorinfo': {
@@ -406,13 +469,16 @@ class Migration(DataMigration):
             'heard_about': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'k12school': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['users.K12School']", 'null': 'True', 'blank': 'True'}),
-            'post_hs': ('django.db.models.fields.TextField', [], {'default': "''"}),
+            'medical_needs': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
+            'post_hs': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
             'school': ('django.db.models.fields.CharField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
+            'schoolsystem_id': ('django.db.models.fields.CharField', [], {'max_length': '32', 'null': 'True', 'blank': 'True'}),
+            'schoolsystem_optout': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'shirt_size': ('django.db.models.fields.CharField', [], {'max_length': '5', 'null': 'True', 'blank': 'True'}),
             'shirt_type': ('django.db.models.fields.CharField', [], {'max_length': '20', 'null': 'True', 'blank': 'True'}),
-            'studentrep': ('django.db.models.fields.BooleanField', [], {'default': 'False', 'blank': 'True'}),
+            'studentrep': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'studentrep_expl': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'transportation': ('django.db.models.fields.TextField', [], {'default': "''"}),
+            'transportation': ('django.db.models.fields.TextField', [], {'default': "''", 'blank': 'True'}),
             'user': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['auth.User']", 'null': 'True', 'blank': 'True'})
         },
         'users.teacherinfo': {

@@ -1,27 +1,46 @@
-# encoding: utf-8
+# -*- coding: utf-8 -*-
 import datetime
 from south.db import db
-from south.v2 import DataMigration
+from south.v2 import SchemaMigration
 from django.db import models
 
-class Migration(DataMigration):
 
-    depends_on = (
-        ("qsd", "0001_initial"),
-    )
+class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        "Rename Q/Web/class_schedule_header_text to Q/Web/contact_header_text"
-        for q in orm['qsd.QuasiStaticData'].objects.filter(name='class_schedule_header_text', path__uri='Q/Web'):
-            q.name = 'contact_header_text'
-            q.save()
+        # Adding model 'QuasiStaticData'
+        db.create_table('qsd_quasistaticdata', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('path', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['datatree.DataTree'])),
+            ('name', self.gf('django.db.models.fields.SlugField')(max_length=50)),
+            ('title', self.gf('django.db.models.fields.CharField')(max_length=256)),
+            ('content', self.gf('django.db.models.fields.TextField')()),
+            ('nav_category', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['web.NavBarCategory'])),
+            ('create_date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime.now)),
+            ('author', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.User'])),
+            ('disabled', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('keywords', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+            ('description', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
+        ))
+        db.send_create_signal('qsd', ['QuasiStaticData'])
+
+        # Adding model 'ESPQuotations'
+        db.create_table('qsd_espquotations', (
+            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
+            ('content', self.gf('django.db.models.fields.TextField')()),
+            ('display', self.gf('django.db.models.fields.BooleanField')(default=False)),
+            ('author', self.gf('django.db.models.fields.CharField')(max_length=64)),
+            ('create_date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2013, 6, 23, 0, 0))),
+        ))
+        db.send_create_signal('qsd', ['ESPQuotations'])
 
 
     def backwards(self, orm):
-        "Rename contact_header_text to class_schedule_header_text"
-        for q in orm['qsd.QuasiStaticData'].objects.filter(name='contact_header_text', path__uri='Q/Web'):
-            q.name = 'class_schedule_header_text'
-            q.save()
+        # Deleting model 'QuasiStaticData'
+        db.delete_table('qsd_quasistaticdata')
+
+        # Deleting model 'ESPQuotations'
+        db.delete_table('qsd_espquotations')
 
 
     models = {
@@ -78,7 +97,7 @@ class Migration(DataMigration):
             'Meta': {'object_name': 'ESPQuotations'},
             'author': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'content': ('django.db.models.fields.TextField', [], {}),
-            'create_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2011, 7, 9, 0, 3, 26, 112012)'}),
+            'create_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 6, 23, 0, 0)'}),
             'display': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
         },
@@ -91,13 +110,10 @@ class Migration(DataMigration):
             'disabled': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'keywords': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
-            'name': ('django.db.models.fields.SlugField', [], {'max_length': '50', 'db_index': 'True'}),
+            'name': ('django.db.models.fields.SlugField', [], {'max_length': '50'}),
             'nav_category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['web.NavBarCategory']"}),
             'path': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '256'})
-        },
-        'users.espuser': {
-            'Meta': {'object_name': 'ESPUser', 'db_table': "'auth_user'", '_ormbases': ['auth.User'], 'proxy': 'True'}
         },
         'web.navbarcategory': {
             'Meta': {'object_name': 'NavBarCategory'},
@@ -106,17 +122,7 @@ class Migration(DataMigration):
             'include_auto_links': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'long_explanation': ('django.db.models.fields.TextField', [], {}),
             'name': ('django.db.models.fields.CharField', [], {'max_length': '64'})
-        },
-        'web.navbarentry': {
-            'Meta': {'object_name': 'NavBarEntry'},
-            'category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['web.NavBarCategory']"}),
-            'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
-            'indent': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
-            'link': ('django.db.models.fields.CharField', [], {'max_length': '256', 'null': 'True', 'blank': 'True'}),
-            'path': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'navbar'", 'null': 'True', 'to': "orm['datatree.DataTree']"}),
-            'sort_rank': ('django.db.models.fields.IntegerField', [], {}),
-            'text': ('django.db.models.fields.CharField', [], {'max_length': '64'})
         }
     }
 
-    complete_apps = ['qsd', 'web']
+    complete_apps = ['qsd']

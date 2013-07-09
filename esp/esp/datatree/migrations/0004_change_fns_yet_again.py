@@ -1,11 +1,11 @@
 # encoding: utf-8
 import datetime
+import os.path
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
-
 from django.conf import settings
-import os.path
+
 
 class Migration(SchemaMigration):
 
