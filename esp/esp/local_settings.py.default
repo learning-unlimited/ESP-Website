@@ -63,7 +63,6 @@ LOG_FILE = '/path/to/website/log'
 ###################
 USE_MAILMAN = False
 MAILMAN_PATH = '/usr/lib/mailman/bin/'
-SOUTH_TESTS_MIGRATE = False
 CLOSURE_COMPILER_PATH = '/usr/lib/closure/bin'
 
 ###################
