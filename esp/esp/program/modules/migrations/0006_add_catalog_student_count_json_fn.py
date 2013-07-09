@@ -8,6 +8,10 @@ from esp.program.modules import models as modules
 
 class Migration(DataMigration):
 
+    depends_on = (
+        ("program", "0028_registrationtype_displayname"),
+    )
+
     def forwards(self, orm):
         "Write your forwards methods here."
         

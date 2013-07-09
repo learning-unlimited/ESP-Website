@@ -11,7 +11,7 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         #   These are the 6 modules that have been removed
-        module_name_list = ['SATPrepOnSiteRegister', 'SATPrepAdminSchedule', 'SATPrepTeacherInput', 'SATPrepTeacherModule', 'SATPrepModule', 'RemoteTeacherProfile']
+        module_name_list = ['SATPrepOnSiteRegister', 'SATPrepAdminSchedule', 'SATPrepTeacherInput', 'SATPrepTeacherModule', 'SATPrepModule', 'RemoteTeacherProfile', 'SATPrepAdminInfo']
     
         #   Remove program module objects pertaining to SAT Prep modules
         ProgramModuleObj.objects.filter(module__handler__in=module_name_list)
@@ -19,10 +19,18 @@ class Migration(SchemaMigration):
         #   Remove program modules pertaining to SAT Prep
         ProgramModule.objects.filter(handler__in=module_name_list).delete()
 
+        #   Delete database tables
+        db.delete_table('modules_satprepadminmoduleinfo')
 
     def backwards(self, orm):
-        #   This data migration cannot be reversed.
-        pass
+        # Adding model 'SATPrepAdminModuleInfo'
+        db.create_table('modules_satprepadminmoduleinfo', (
+            ('id', orm['modules.SATPrepAdminModuleInfo:id']),
+            ('module', orm['modules.SATPrepAdminModuleInfo:module']),
+            ('num_divisions', orm['modules.SATPrepAdminModuleInfo:num_divisions']),
+        ))
+        db.send_create_signal('modules', ['SATPrepAdminModuleInfo'])
+
 
     models = {
         'auth.group': {

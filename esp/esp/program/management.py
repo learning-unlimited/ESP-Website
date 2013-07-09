@@ -39,6 +39,7 @@ from esp.program import models as program
 from esp.users import models as users
 from esp.program.models import class_ as class_models
 from esp.utils.custom_cache import custom_cache
+from esp.utils.migration import db_has_column
 from esp.utils.migration import missing_db_table
 
 have_already_installed = False
@@ -48,7 +49,8 @@ def post_syncdb(sender, app, **kwargs):
     if app == program and not have_already_installed:
         with custom_cache():
             #   Check that required tables exist.
-            if missing_db_table(program.Program) or missing_db_table(users.ContactInfo):
+            if (missing_db_table(program.Program) or missing_db_table(users.ContactInfo)
+                or not db_has_column("program_program_class_categories", "seq")):
                 return
             #   Run installation
             have_already_installed = True

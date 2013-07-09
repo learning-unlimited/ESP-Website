@@ -262,8 +262,6 @@ DEFAULT_REDIRECT = '/myesp/redirect'
 USE_MAILMAN = False
 MAILMAN_PATH = '/usr/lib/mailman/bin/'
 
-TEST_RUNNER = 'esp.utils.custom_test_runner.CustomSeleniumTestRunner'
-
 SELENIUM_PATH = os.path.join(os.path.dirname(__file__), '../../../dependencies/selenium-server-standalone-2.9.0/selenium-server-standalone-2.9.0.jar')
 
 if False:

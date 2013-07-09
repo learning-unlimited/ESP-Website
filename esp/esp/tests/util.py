@@ -1,10 +1,12 @@
-import pickle
-from esp.web.util.structures import cross_set
-from django.test.testcases import TestCase
-from django.core.cache import cache
 from esp.cache.registry import dump_all_caches
+from esp.web.util.structures import cross_set
+
+from django.core.cache import cache
+from django.test.testcases import TestCase
+import pickle
 import string
 import random
+
 
 class CacheFlushTestCase(TestCase):
     """ Flush the cache at the start and end of this test case """

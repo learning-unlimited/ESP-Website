@@ -34,6 +34,8 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+import os
+
 from django.db.models import signals
 from esp.datatree import models as datatree
 from esp.utils.custom_cache import custom_cache

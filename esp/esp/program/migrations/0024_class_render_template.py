@@ -29,6 +29,10 @@ def update_template_overrides(source_re, replacement):
 
 class Migration(DataMigration):
 
+    depends_on = (
+        ("utils", "0001_initial"),
+    )
+
     def forwards(self, orm):
         "Write your forwards methods here."
         
