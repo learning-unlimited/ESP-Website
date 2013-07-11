@@ -462,34 +462,10 @@ then
         cd $DEPDIR
     fi
 
-        #       Install python libraries
-    python -m easy_install --find-links http://www.pythonware.com/products/pil/ Imaging
-    python -m easy_install flup
-    python -m easy_install pydns
-    python -m easy_install psycopg2
-    python -m easy_install ipython
-    python -m easy_install iCalendar
-    python -m easy_install django==1.4
-    python -m easy_install south
-    python -m easy_install repoze.profile
-    python -m easy_install xlwt
-    python -m easy_install simplejson
-    python -m easy_install twill
-    python -m easy_install django-form-utils
-    python -m easy_install selenium
-    python -m easy_install django-selenium==0.3
-    python -m easy_install django-selenium-test-runner
-    python -m easy_install django-extensions
-
-    cd $DEPDIR
-    wget -O pylibmc.tar.gz http://pypi.python.org/packages/source/p/pylibmc/pylibmc-1.1.1.tar.gz#md5=e43c54e285f8d937a3f1a916256ecc85
-    tar -xzf pylibmc.tar.gz
-    cd pylibmc-1.1.1
-    if [ "$MACOSX_VERSION" == "10.6" ]; then
-        CFLAGS="-arch x86_64" LDFLAGS="-arch x86_64" python setup.py install --with-libmemcached=/opt/local
-    else
-        python setup.py install --with-libmemcached=/opt/local
-    fi
+    #    Install python libraries
+    virtualenv $BASEDIR/env
+    source $BASEDIR/env/bin/activate
+    pip install -r $BASEDIR/esp/requirements.txt
 
     cd $CURDIR
 
