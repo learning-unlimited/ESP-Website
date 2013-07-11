@@ -35,17 +35,17 @@ function die() {
 function install_dmg_pkg() {
     local DMG="$1"
     if which wget; then  ## Macs don't ship with wget; we install it ourselves after installing MacPorts
-	wget -c "$DMG" -O /tmp/disk_image.dmg || die "Error downloading disk image: [$DMG]"
+        wget -c "$DMG" -O /tmp/disk_image.dmg || die "Error downloading disk image: [$DMG]"
     else
-	curl "$DMG" > /tmp/disk_image.dmg || die "Error downloading disk image: [$DMG]"
+        curl "$DMG" > /tmp/disk_image.dmg || die "Error downloading disk image: [$DMG]"
     fi
     mkdir -p "/tmp/mountpoint"
     hdiutil attach -mountpoint "/tmp/mountpoint" "/tmp/disk_image.dmg"
     if [ -n "`ls /tmp/mountpoint | grep "pkg$"`" ]; then
-	installer -verbose -pkg "/tmp/mountpoint/`ls /tmp/mountpoint | grep "pkg$"`" -target / || die "Error installing from disk image [$DMG]"
+        installer -verbose -pkg "/tmp/mountpoint/`ls /tmp/mountpoint | grep "pkg$"`" -target / || die "Error installing from disk image [$DMG]"
     else
-	echo "Installer is a standalone application; will now launch..."
-	open /tmp/mountpoint/*.app
+        echo "Installer is a standalone application; will now launch..."
+        open /tmp/mountpoint/*.app
     fi
     hdiutil detach "/tmp/mountpoint" && rm /tmp/disk_image.dmg
     rmdir /tmp/mountpoint
@@ -54,19 +54,19 @@ function install_dmg_pkg() {
 function install_zip_pkg() {
     local ZIP="$1"
     if which wget; then
-	wget -c "$ZIP" -O /tmp/pkg/zip || die "Error downloading zip file [$ZIP]"
+        wget -c "$ZIP" -O /tmp/pkg/zip || die "Error downloading zip file [$ZIP]"
     else
-	curl "$ZIP" > /tmp/pkg.zip || die "Error downloading zip file [$ZIP]"
+        curl "$ZIP" > /tmp/pkg.zip || die "Error downloading zip file [$ZIP]"
     fi
     pushd .
     cd /tmp/
     mkdir -p pkg
     unzip pkg.zip -d pkg
     if [ -n "`ls /tmp/pkg | grep "pkg$"`" ]; then
-	installer -verbose -pkg "/tmp/pkg/`ls /tmp/pkg | grep "pkg$"`" -target / || die "Error installing from zip file [$ZIP]"
+        installer -verbose -pkg "/tmp/pkg/`ls /tmp/pkg | grep "pkg$"`" -target / || die "Error installing from zip file [$ZIP]"
     else
-	echo "Installer is a standalone application; will now launch..."
-	open /tmp/pkg/*.app
+        echo "Installer is a standalone application; will now launch..."
+        open /tmp/pkg/*.app
     fi
     rm -rf pkg pkg.zip
     popd
@@ -75,38 +75,38 @@ function install_zip_pkg() {
 ## Required dependencies
 if [ -z "`which port`" ]; then
     echo "WARNING: This installer requires MacPorts!"
-    
-    if [ -z "$SYS_VERSION" ]; then
-	echo "We can't seem to figure out your MacOS X version; though the following may help:"
-	system_profiler SPSoftwareDataType
-	echo "You can (probably) download and install MacPorts for this version by"
-	echo "following the instructions at <http://www.macports.org/install.php>."
 
-	exit 0
+    if [ -z "$SYS_VERSION" ]; then
+        echo "We can't seem to figure out your MacOS X version; though the following may help:"
+        system_profiler SPSoftwareDataType
+        echo "You can (probably) download and install MacPorts for this version by"
+        echo "following the instructions at <http://www.macports.org/install.php>."
+
+        exit 0
     else
-	echo "You appear to be using MacOS X $MACOSX_VERSION \"$MACOSX_CODENAME\"."
+        echo "You appear to be using MacOS X $MACOSX_VERSION \"$MACOSX_CODENAME\"."
     fi
 
     if [ ! -d "/Developer" ]; then
-	echo
-	echo "MacPorts requires Apple's Developer Tools, which appear to be missing too."
-	echo "You can install them from the CD's that came with your computer, or download"
-	echo "the installer from <http://developer.apple.com/xcode/> (free registration required)."
-	echo "Please install the Developer tools before proceeding."
+        echo
+        echo "MacPorts requires Apple's Developer Tools, which appear to be missing too."
+        echo "You can install them from the CD's that came with your computer, or download"
+        echo "the installer from <http://developer.apple.com/xcode/> (free registration required)."
+        echo "Please install the Developer tools before proceeding."
 
-	exit 0
+        exit 0
     fi
 
     case "$MACOSX_VERSION" in
-	10.0) echo "Error: Unsupported MacOS X version (too old).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
-	10.1) echo "Error: Unsupported MacOS X version (too old).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
-	10.2) echo "Error: Unsupported MacOS X version (too old).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
-	10.3) echo "Error: Unsupported MacOS X version (too old).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
-	10.4) install_dmg_pkg "https://distfiles.macports.org/MacPorts/MacPorts-2.0.3-10.4-Tiger.dmg";;
-	10.5) install_dmg_pkg "https://distfiles.macports.org/MacPorts/MacPorts-2.0.3-10.5-Leopard.dmg";;
-	10.6) install_dmg_pkg "https://distfiles.macports.org/MacPorts/MacPorts-2.0.3-10.6-SnowLeopard.dmg";;
-	10.7) install_dmg_pkg "https://distfiles.macports.org/MacPorts/MacPorts-2.0.3-10.7-Lion.dmg";;
-	*) echo "Error: Unsupported MacOS X version (too new or otherwise unrecognized).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
+        10.0) echo "Error: Unsupported MacOS X version (too old).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
+        10.1) echo "Error: Unsupported MacOS X version (too old).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
+        10.2) echo "Error: Unsupported MacOS X version (too old).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
+        10.3) echo "Error: Unsupported MacOS X version (too old).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
+        10.4) install_dmg_pkg "https://distfiles.macports.org/MacPorts/MacPorts-2.0.3-10.4-Tiger.dmg";;
+        10.5) install_dmg_pkg "https://distfiles.macports.org/MacPorts/MacPorts-2.0.3-10.5-Leopard.dmg";;
+        10.6) install_dmg_pkg "https://distfiles.macports.org/MacPorts/MacPorts-2.0.3-10.6-SnowLeopard.dmg";;
+        10.7) install_dmg_pkg "https://distfiles.macports.org/MacPorts/MacPorts-2.0.3-10.7-Lion.dmg";;
+        *) echo "Error: Unsupported MacOS X version (too new or otherwise unrecognized).  You may be able to install MacPorts on your own from macports.org.";exit 0;;
     esac
 
     echo "MacPorts should now be installed.  You may need to log out and log back in again to use it."
@@ -120,10 +120,6 @@ fi
 # Stuff for random password generation
 MATRIX="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 LENGTH="8"
-
-# TODO
-# Dependency installation
-# Database dump loading
 
 #CURDIR=`dirname $0`
 CURDIR=`pwd`
@@ -175,8 +171,8 @@ Options:
     --db:       Set up a PostgreSQL database
     --settings: Write settings files
     --apache:   Set up Apache to serve the site using mod_wsgi
-    
-For more detailed documentation, see: 
+
+For more detailed documentation, see:
     http://wiki.learningu.org/Dev_server_setup_script
 "
     exit 0
@@ -232,8 +228,8 @@ echo "#!/bin/bash" > $BASEDIR/.espsettings
 
 # Collect settings
 # To manually reset: Remove '.espsettings' file in site directory
-while [[ ! -n $SITENAME ]]; do 
-    echo 
+while [[ ! -n $SITENAME ]]; do
+    echo
     echo "Enter a label for this site"
     echo -n "  (default = $(basename $BASEDIR)) --> "
     read SITENAME
@@ -242,9 +238,9 @@ done
 echo "SITENAME=\"$SITENAME\"" >> $BASEDIR/.espsettings
 echo "Using site label: $SITENAME"
 
-while [[ ! -n $DEPDIR ]]; do 
-    echo 
-    echo "Enter the directory to use for dependencies"
+while [[ ! -n $DEPDIR ]]; do
+    echo
+    echo "Enter the temp directory to use for dependencies"
     echo -n "  (default = `dirname $BASEDIR`/dependencies) --> "
     read DEPDIR
     DEPDIR=${DEPDIR:-`dirname $BASEDIR`/dependencies}
@@ -252,7 +248,7 @@ done
 echo "Using dependencies temp directory: $DEPDIR"
 echo "DEPDIR=\"$DEPDIR\"" >> $BASEDIR/.espsettings
 
-while [[ ! -n $ESPHOSTNAME ]]; do 
+while [[ ! -n $ESPHOSTNAME ]]; do
     echo
     echo -n "Enter your site's hostname (without the http://) --> "
     read ESPHOSTNAME
@@ -268,25 +264,25 @@ done
 echo "Contact forms on the site will direct mail to $GROUPEMAIL."
 echo "GROUPEMAIL=\"$GROUPEMAIL\"" >> $BASEDIR/.espsettings
 
+while [[ ! -n $INSTITUTION ]]; do
+    echo
+    echo -n "Enter your institution (e.g. 'UCLA') --> "
+    read INSTITUTION
+done
+echo "INSTITUTION=\"$INSTITUTION\"" >> $BASEDIR/.espsettings
+
 while [[ ! -n $GROUPNAME ]]; do
     echo
     echo -n "Enter your group's short name (e.g. 'ESP', 'Splash') --> "
     read GROUPNAME
 done
 echo "GROUPNAME=\"$GROUPNAME\"" >> $BASEDIR/.espsettings
-
-while [[ ! -n $INSTITUTION ]]; do
-    echo
-    echo -n "Enter your institution (e.g. 'UCLA') --> "
-    read INSTITUTION
-done
 echo "In printed materials and e-mails your group will be referred to as"
 echo "$INSTITUTION $GROUPNAME.  To substitute a more defailted name in"
 echo "some printed materials, set the 'full_group_name' Tag."
-echo "INSTITUTION=\"$INSTITUTION\"" >> $BASEDIR/.espsettings
 
 while [[ ! -n $EMAILHOST ]]; do
-    echo 
+    echo
     echo "Enter the hostname you will be using for e-mail"
     echo -n "  (default = $ESPHOSTNAME) --> "
     read EMAILHOST
@@ -296,7 +292,7 @@ echo "Selected e-mail host: $EMAILHOST"
 echo "EMAILHOST=\"$EMAILHOST\"" >> $BASEDIR/.espsettings
 
 while [[ ! -n $ADMINEMAIL ]]; do
-    echo 
+    echo
     echo -n "Please enter your e-mail address --> "
     read ADMINEMAIL
 done
@@ -304,7 +300,7 @@ echo "Selected admin e-mail: $ADMINEMAIL"
 echo "ADMINEMAIL=\"$ADMINEMAIL\"" >> $BASEDIR/.espsettings
 
 while [[ ! -n $LOGDIR ]]; do
-    echo 
+    echo
     echo "Please enter a directory path reserved for logs."
     echo "  (default = `dirname $BASEDIR`/logs). Log files from this site "
     echo "  will be given names starting with $SITENAME within that directory. "
@@ -318,7 +314,7 @@ mkdir -p $LOGDIR
 
 TIMEZONE_DEFAULT="America/New_York"
 while [[ ! -n $TIMEZONE ]]; do
-    echo 
+    echo
     echo "Please enter your group's time zone"
     echo -n "  (default $TIMEZONE_DEFAULT) --> "
     read TIMEZONE
@@ -372,15 +368,15 @@ then
     export PATH="$PATH:/usr/local/git/bin/"
 
     if which git; then
-	echo "git already installed; not downloading"
+        echo "git already installed; not downloading"
     else
-	echo "Downloading git"
-	case "$MACOSX_VERSION" in
-	    10.5) which git || if [ -n "`uname -m | grep ppc`" ]; then install_dmg_pkg "http://git-osx-installer.googlecode.com/files/git-1.6.5.1-UNIVERSALbinary-leopard.dmg"; else install_dmg_pkg "http://git-osx-installer.googlecode.com/files/git-1.7.4.4-i386-leopard.dmg"; fi;;
-	    10.6) which git || install_dmg_pkg "http://git-osx-installer.googlecode.com/files/git-1.7.7-intel-universal-snow-leopard.dmg";;
-	    10.7) which git || install_dmg_pkg "http://git-osx-installer.googlecode.com/files/git-1.7.7-intel-universal-snow-leopard.dmg";;  ## Lion's Xcode ships with git; may be installed already
-	    *) echo "Warning:  No binary git package available for this platform.  Installing from source; this may take a while...";port install git-core +universal;;
-	esac
+        echo "Downloading git"
+        case "$MACOSX_VERSION" in
+            10.5) which git || if [ -n "`uname -m | grep ppc`" ]; then install_dmg_pkg "http://git-osx-installer.googlecode.com/files/git-1.6.5.1-UNIVERSALbinary-leopard.dmg"; else install_dmg_pkg "http://git-osx-installer.googlecode.com/files/git-1.7.4.4-i386-leopard.dmg"; fi;;
+            10.6) which git || install_dmg_pkg "http://git-osx-installer.googlecode.com/files/git-1.7.7-intel-universal-snow-leopard.dmg";;
+            10.7) which git || install_dmg_pkg "http://git-osx-installer.googlecode.com/files/git-1.7.7-intel-universal-snow-leopard.dmg";;  ## Lion's Xcode ships with git; may be installed already
+            *) echo "Warning:  No binary git package available for this platform.  Installing from source; this may take a while...";port install git-core +universal;;
+        esac
     fi
 
     if [[ -e $BASEDIR/esp ]]
@@ -418,39 +414,39 @@ then
 
     mkdir -p $DEPDIR
     cd $DEPDIR
-	
+
     export PATH="$PATH:/usr/local/texlive/2011/bin/universal-darwin/"
     if which latex; then
-	echo "LaTeX already installed; not downloading/installing"
+        echo "LaTeX already installed; not downloading/installing"
     else
-	echo "Downloading texlive"
-	case "$MACOSX_VERSION" in
-	    10.3) install_zip_pkg "http://ftp.tug.org/historic/systems/mactex/mactex2010-final-20110528.zip";;
-	    10.4) install_zip_pkg "http://ftp.tug.org/historic/systems/mactex/mactex2010-final-20110528.zip";;
-	    10.5) install_zip_pkg "http://mirror.hmc.edu/ctan/systems/mac/mactex/MacTeX.mpkg.zip";;
-	    10.6) install_zip_pkg "http://mirror.hmc.edu/ctan/systems/mac/mactex/MacTeX.mpkg.zip";;
-	    10.7) install_zip_pkg "http://mirror.hmc.edu/ctan/systems/mac/mactex/MacTeX.mpkg.zip";;
-	    *) echo "Warning:  No binary texlive package available for this platform.  Installing from source; this may take a while...";port install texlive +universal;;
-	esac
+        echo "Downloading texlive"
+        case "$MACOSX_VERSION" in
+            10.3) install_zip_pkg "http://ftp.tug.org/historic/systems/mactex/mactex2010-final-20110528.zip";;
+            10.4) install_zip_pkg "http://ftp.tug.org/historic/systems/mactex/mactex2010-final-20110528.zip";;
+            10.5) install_zip_pkg "http://mirror.hmc.edu/ctan/systems/mac/mactex/MacTeX.mpkg.zip";;
+            10.6) install_zip_pkg "http://mirror.hmc.edu/ctan/systems/mac/mactex/MacTeX.mpkg.zip";;
+            10.7) install_zip_pkg "http://mirror.hmc.edu/ctan/systems/mac/mactex/MacTeX.mpkg.zip";;
+            *) echo "Warning:  No binary texlive package available for this platform.  Installing from source; this may take a while...";port install texlive +universal;;
+        esac
     fi
 
     if which postgres; then
-	echo "PostgreSQL already installed; not downloading/installing.  Please make sure that the 'postgres' user is a PostgreSQL superuser on this system."
+        echo "PostgreSQL already installed; not downloading/installing.  Please make sure that the 'postgres' user is a PostgreSQL superuser on this system."
     else
-	echo "Downloading PostgreSQL"
-	case "$MACOSX_VERSION" in
-	    10.4) install_dmg_pkg "http://get.enterprisedb.com/postgresql/postgresql-9.1.1-1-osx.dmg";;
-	    10.5) install_dmg_pkg "http://get.enterprisedb.com/postgresql/postgresql-9.1.1-1-osx.dmg";;
-	    10.6) install_dmg_pkg "http://get.enterprisedb.com/postgresql/postgresql-9.1.1-1-osx.dmg";;
-	    10.7) install_dmg_pkg "http://get.enterprisedb.com/postgresql/postgresql-9.1.1-1-osx.dmg";;
-	    *) echo "Warning:  No binary texlive package available for this platform.  Installing from source; this may take a while...";port install postgresql91 +universal;;
-	esac
+        echo "Downloading PostgreSQL"
+        case "$MACOSX_VERSION" in
+            10.4) install_dmg_pkg "http://get.enterprisedb.com/postgresql/postgresql-9.1.1-1-osx.dmg";;
+            10.5) install_dmg_pkg "http://get.enterprisedb.com/postgresql/postgresql-9.1.1-1-osx.dmg";;
+            10.6) install_dmg_pkg "http://get.enterprisedb.com/postgresql/postgresql-9.1.1-1-osx.dmg";;
+            10.7) install_dmg_pkg "http://get.enterprisedb.com/postgresql/postgresql-9.1.1-1-osx.dmg";;
+            *) echo "Warning:  No binary texlive package available for this platform.  Installing from source; this may take a while...";port install postgresql91 +universal;;
+        esac
         echo "PostgreSQL requires a reboot after installation, for some boot-time-only kernel parameters to take effect."
-	echo "Please reboot, re-run the PostgreSQL installer (which will be on your desktop), and re-run this installer."
-	mv /tmp/disk_image.dmg ~/Desktop/PostgreSQL_Installer.dmg
+        echo "Please reboot, re-run the PostgreSQL installer (which will be on your desktop), and re-run this installer."
+        mv /tmp/disk_image.dmg ~/Desktop/PostgreSQL_Installer.dmg
     fi
 
-    #	Get what we can using MacPorts (and what we can't get via any binary package)
+    #   Get what we can using MacPorts (and what we can't get via any binary package)
     port install ImageMagick +universal
     port install inkscape +universal  ## There is a Snow Leopard inkscape binary, but it doesn't install the CLI tools into $PATH
     port install dvipng +universal
@@ -460,13 +456,13 @@ then
 
     if [[ ! -d selenium-server-standalone-2.8.0 ]]
     then
-	mkdir selenium-server-standalone-2.8.0
-	cd selenium-server-standalone-2.8.0
-	wget http://selenium.googlecode.com/files/selenium-server-standalone-2.8.0.jar
-	cd $DEPDIR
+        mkdir selenium-server-standalone-2.8.0
+        cd selenium-server-standalone-2.8.0
+        wget http://selenium.googlecode.com/files/selenium-server-standalone-2.8.0.jar
+        cd $DEPDIR
     fi
 
-	#	Install python libraries
+        #       Install python libraries
     python -m easy_install --find-links http://www.pythonware.com/products/pil/ Imaging
     python -m easy_install flup
     python -m easy_install pydns
@@ -490,13 +486,13 @@ then
     tar -xzf pylibmc.tar.gz
     cd pylibmc-1.1.1
     if [ "$MACOSX_VERSION" == "10.6" ]; then
-	CFLAGS="-arch x86_64" LDFLAGS="-arch x86_64" python setup.py install --with-libmemcached=/opt/local
+        CFLAGS="-arch x86_64" LDFLAGS="-arch x86_64" python setup.py install --with-libmemcached=/opt/local
     else
-	python setup.py install --with-libmemcached=/opt/local
+        python setup.py install --with-libmemcached=/opt/local
     fi
 
     cd $CURDIR
-    
+
     echo "Dependencies have been installed.  Please check this by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
@@ -509,7 +505,7 @@ fi
 if [[ "$MODE_SETTINGS" || "$MODE_ALL" ]]
 then
     mkdir -p ${BASEDIR}/esp/esp
-    
+
     cat >${BASEDIR}/esp/esp/database_settings.py <<EOF
 DATABASE_USER = '$DBUSER'
 DATABASE_PASSWORD = '$DBPASS'
@@ -581,7 +577,7 @@ email_choices = (
     ('general', 'General Inquiries'),
     ('web',     'Web Site Problems'),
     )
-# Corresponding email addresses                                                                                                                                 
+# Corresponding email addresses
 email_addresses = {
     'general': '$GROUPEMAIL',
     'web':     '$SITENAME-websupport@lists.learningu.org',
@@ -592,7 +588,7 @@ SELENIUM_DRIVERS = 'Firefox'
 
 EOF
 
-    killall memcached ## launchd is shiny and respawns stuff, and I'm lazy
+    sudo killall memcached ## launchd is shiny and respawns stuff, and I'm lazy
 
     echo "Generated Django settings overrides, saved to:"
     echo "  $BASEDIR/esp/esp/local_settings.py"
@@ -611,62 +607,62 @@ if [[ "$MODE_DB" || "$MODE_ALL" ]]
 then
     sudo -u postgres psql template1 -c "CREATE LANGUAGE plpgsql;"
     sudo -u postgres psql -c "DROP ROLE IF EXISTS $DBUSER;"
-	sudo -u postgres psql -c "CREATE USER $DBUSER CREATEDB;"
-	sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
-	sudo -u postgres psql -c "DROP DATABASE $DBNAME;"
-	sudo -u postgres psql -c "CREATE DATABASE $DBNAME OWNER ${DBUSER};"
-	
-	echo "Created a PostgreSQL login role and empty database."
-	echo
+    sudo -u postgres psql -c "CREATE USER $DBUSER CREATEDB;"
+    sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
+    sudo -u postgres psql -c "DROP DATABASE $DBNAME;"
+    sudo -u postgres psql -c "CREATE DATABASE $DBNAME OWNER ${DBUSER};"
 
-	echo "You may load an existing database dump file (.sql.gz) if you have one."
-	echo "Otherwise we will populate the empty database."
-	echo -n "Would you like to load a database dump file? (y/N) --> "
-	read USE_DB_DUMP
-	USE_DB_DUMP=${USE_DB_DUMP:-N}
+    echo "Created a PostgreSQL login role and empty database."
+    echo
 
-	if [[ "$USE_DB_DUMP" == "y" ]]
-	then
-		#	Instantiate database dump
-		cd $CURDIR
-		while [[ ! -e $DUMPFILE ]]
-		do
-			echo "Enter the path (absolute or relative from $CURDIR)"
-			echo "to your database dump file.  It should be in gzipped ASCII SQL format."
-			echo -n " --> "
-			read DUMPFILE
-		done
-		gunzip $DUMPFILE
-		RAWDUMP=${DUMPFILE%.*}
+    echo "You may load an existing database dump file (.sql.gz) if you have one."
+    echo "Otherwise we will populate the empty database."
+    echo -n "Would you like to load a database dump file? (y/N) --> "
+    read USE_DB_DUMP
+    USE_DB_DUMP=${USE_DB_DUMP:-N}
 
-		#	Rename the role temporarily so that permissions are right
-		DBOWNER=`grep "ALTER TABLE public.program_class OWNER TO" $RAWDUMP | head -n 1 | cut -d' ' -f 6 | sed "s/;//"`
+    if [[ "$USE_DB_DUMP" == "y" ]]
+    then
+        #       Instantiate database dump
+        cd $CURDIR
+        while [[ ! -e $DUMPFILE ]]
+        do
+            echo "Enter the path (absolute or relative from $CURDIR)"
+            echo "to your database dump file.  It should be in gzipped ASCII SQL format."
+            echo -n " --> "
+            read DUMPFILE
+        done
+        gunzip $DUMPFILE
+        RAWDUMP=${DUMPFILE%.*}
 
-		sudo -u postgres psql -c "ALTER ROLE $DBUSER RENAME TO $DBOWNER;"
-		sudo -u postgres psql $DBNAME -f $RAWDUMP
-		sudo -u postgres psql -c "ALTER ROLE $DBOWNER RENAME TO $DBUSER;"
-		sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
+        #       Rename the role temporarily so that permissions are right
+        DBOWNER=`grep "ALTER TABLE public.program_class OWNER TO" $RAWDUMP | head -n 1 | cut -d' ' -f 6 | sed "s/;//"`
 
-		cd $BASEDIR/esp/esp
-		./manage.py migrate
-		cd $CURDIR
+        sudo -u postgres psql -c "ALTER ROLE $DBUSER RENAME TO $DBOWNER;"
+        sudo -u postgres psql $DBNAME -f $RAWDUMP
+        sudo -u postgres psql -c "ALTER ROLE $DBOWNER RENAME TO $DBUSER;"
+        sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
 
-	else
-		#	Set up blank database
-		echo "Django's manage.py scripts will now be used to initialize the"
-		echo "$DBNAME database.  Please follow their directions."
+        cd $BASEDIR/esp/esp
+        ./manage.py migrate
+        cd $CURDIR
 
-		cd $BASEDIR/esp/esp
-		./manage.py syncdb
-		./manage.py migrate
-		
-		#   Set initial Site (used in password recovery e-mail)
-		sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
+    else
+        #       Set up blank database
+        echo "Django's manage.py scripts will now be used to initialize the"
+        echo "$DBNAME database.  Please follow their directions."
 
-		cd $CURDIR
+        cd $BASEDIR/esp/esp
+        ./manage.py syncdb
+        ./manage.py migrate
 
-	fi
-    
+        #   Set initial Site (used in password recovery e-mail)
+        sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
+
+        cd $CURDIR
+
+    fi
+
     echo "Database has been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
@@ -677,9 +673,9 @@ fi
 
 if [[ "$MODE_APACHE" || "$MODE_ALL" ]]
 then
-	APACHE_CONF_DIR=/etc/apache2/extra
+    APACHE_CONF_DIR=/etc/apache2/extra
 
-    cat >$BASEDIR/esp.wsgi <<EOF
+    tee $BASEDIR/esp.wsgi <<EOF
 import os
 import sys
 
@@ -706,11 +702,11 @@ else:
 
 EOF
 
-	cat >$APACHE_CONF_DIR/enable_vhosts <<EOF
+    sudo tee $APACHE_CONF_DIR/enable_vhosts <<EOF
 NameVirtualHost *:80
 EOF
 
-    cat >$APACHE_CONF_DIR/esp_$SITENAME <<EOF
+    sudo tee $APACHE_CONF_DIR/esp_$SITENAME <<EOF
 #   $INSTITUTION $GROUPNAME (automatically generated)
 WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 <VirtualHost *:80>
@@ -730,9 +726,9 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 </VirtualHost>
 
 EOF
-    apachectl restart
+    sudo apachectl restart
     echo "Added VirtualHost to Apache configuration $APACHE_CONF_FILE"
-    
+
     echo "Apache has been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
@@ -741,7 +737,7 @@ fi
 # Done!
 echo "=== Site setup complete: $ESPHOSTNAME ==="
 echo "To use, cd to $BASEDIR/esp/esp and try:"
-echo "  sudo ./manage.py runserver - runs server on localhost:8000" 
+echo "  sudo ./manage.py runserver - runs server on localhost:8000"
 echo "  ./manage.py shell - Python shell where you can import and use models"
 echo "You may also use Apache to access the dev site through"
 echo "$ESPHOSTNAME; if you don't have DNS set up for this, you"
