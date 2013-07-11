@@ -1,10 +1,14 @@
 #!/usr/bin/env python
 
-import os.path
-project = os.path.dirname(os.path.realpath(__file__))
-root = os.path.dirname(project)
-activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
-execfile(activate_this, dict(__file__=activate_this))
+try:
+    # activate virtualenv
+    import os.path
+    project = os.path.dirname(os.path.realpath(__file__))
+    root = os.path.dirname(project)
+    activate_this = os.path.join(root, 'env', 'bin', 'activate_this.py')
+    execfile(activate_this, dict(__file__=activate_this))
+except IOError:
+    pass
 
 import os, sys
 

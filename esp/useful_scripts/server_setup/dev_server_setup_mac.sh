@@ -652,6 +652,13 @@ then
     APACHE_CONF_DIR=/etc/apache2/extra
 
     tee $BASEDIR/esp.wsgi <<EOF
+try:
+    # activate virtualenv
+    activate_this = '$BASEDIR/env/bin/activate_this.py'
+    execfile(activate_this, dict(__file__=activate_this))
+except IOError:
+    pass
+
 import os
 import sys
 
