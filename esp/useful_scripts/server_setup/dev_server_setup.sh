@@ -620,9 +620,6 @@ then
     APACHE_CONF_DIR=/etc/apache2/conf.d
 
     sudo tee $BASEDIR/esp.wsgi <<EOF
-activate_this = '$BASEDIR/env/bin/activate_this.py'
-execfile(activate_this, dict(__file__=activate_this))
-
 import os
 import sys
 
