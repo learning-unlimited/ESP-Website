@@ -2,7 +2,6 @@ build-essential
 texlive
 texlive-latex-extra
 imagemagick
-subversion
 dvipng
 python
 python-setuptools
@@ -19,3 +18,4 @@ memcached
 libmemcached6
 libmemcached-dev
 libpq-dev
+libcurl4-openssl-dev

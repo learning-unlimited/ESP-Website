@@ -11,6 +11,7 @@ flup==1.0.2
 icalendar==3.5
 ipython==0.13.2
 psycopg2==2.4.1
+pycurl==7.19.0
 pydns==2.3.6
 pylibmc==1.2.3
 pyprof2calltree==1.1.0
