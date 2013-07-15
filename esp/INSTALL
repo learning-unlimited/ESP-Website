@@ -85,17 +85,7 @@ Come up with a database name, typically including part of your
 organization's name as well as 'django'  (e.g. 'stanford_django'). 
 Then add this database using psql or pgadmin3:
 
-CREATE DATABASE [dbname] OWNER [username] WITH ENCODING 'utf8';
-
-You will also need to add the plpgsql language to your database.
-This language is used by some of our stored procedures.  To do this,
-from the psql prompt, first connect to the new database:
-
-\c [dbname]
-
-Then add the plpgsql language:
-
-CREATE LANGUAGE plpgsql;
+CREATE DATABASE [dbname] OWNER [username];
 
 
 3) Configure Django.
@@ -155,8 +145,8 @@ $ ln -s default_styles styles
 
 4) Explore your site
 
-At this point you should be able to restart your Web server and access the 
-site you've set up in a Web browser.  You can now:
+At this point you should be able to run your Web server (./manage.py runserver)
+and access the site you've set up in a Web browser.  You can now:
 - edit the site's data (go to http://[hostname]/admin)
 - create static pages (start by typing in the desired URL)
 - change the styles and graphics (edit the files in /templates and /public/media)
