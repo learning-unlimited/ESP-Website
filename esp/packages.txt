@@ -15,7 +15,7 @@ inkscape
 wamerican-large
 wget
 memcached
-libmemcached6
+libmemcached10
 libmemcached-dev
 libpq-dev
 libcurl4-openssl-dev
