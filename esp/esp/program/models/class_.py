@@ -959,15 +959,23 @@ class ClassSection(models.Model):
     #   something will need to be changed.
     @cache_function
     def students_dict(self):
+        """
+        Returns a dict of RegistrationType objects to a list of Student objects associated with
+        this class and that registration type.  e.g.:
+        {RegistrationType(name='Enrolled'): [student1, student2, student3],
+         ...
+        }
+        """
         from esp.program.models import RegistrationType
         now = datetime.datetime.now()
         
         rmap = RegistrationType.get_map()
         result = {}
         for key in rmap:
-            result[key] = list(self.registrations.filter(studentregistration__relationship=rmap[key], studentregistration__start_date__lte=now, studentregistration__end_date__gte=now).distinct())
-            if len(result[key]) == 0:
-                del result[key]
+            result_key = rmap[key] #the RegistrationType object, not the name field
+            result[result_key] = list(self.registrations.filter(studentregistration__relationship=rmap[key], studentregistration__start_date__lte=now, studentregistration__end_date__gte=now).distinct())
+            if len(result[result_key]) == 0:
+                del result[result_key]
         return result
     students_dict.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
     
