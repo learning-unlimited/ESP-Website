@@ -79,7 +79,7 @@ SHOW_TEMPLATE_ERRORS = DEBUG
 ################
 
 # Set DB name for this site
-DATABASES['default']['NAME'] = 'mysite_django'
+DATABASE_NAME = 'mysite_django'
 
 # Import db username and password
 from database_settings import *
