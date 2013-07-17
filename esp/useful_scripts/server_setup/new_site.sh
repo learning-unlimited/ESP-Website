@@ -136,22 +136,22 @@ done
 echo "Contact forms on the site will direct mail to $GROUPEMAIL."
 echo "GROUPEMAIL=\"$GROUPEMAIL\"" >> $BASEDIR/.espsettings
 
+while [[ ! -n $INSTITUTION ]]; do
+    echo
+    echo -n "Enter your institution (e.g. 'UCLA') --> "
+    read INSTITUTION
+done
+echo "INSTITUTION=\"$INSTITUTION\"" >> $BASEDIR/.espsettings
+
 while [[ ! -n $GROUPNAME ]]; do
     echo
     echo -n "Enter your group's short name (e.g. 'ESP', 'Splash') --> "
     read GROUPNAME
 done
 echo "GROUPNAME=\"$GROUPNAME\"" >> $BASEDIR/.espsettings
-
-while [[ ! -n $INSTITUTION ]]; do
-    echo
-    echo -n "Enter your institution (e.g. 'UCLA') --> "
-    read INSTITUTION
-done
 echo "In printed materials and e-mails your group will be referred to as"
 echo "$INSTITUTION $GROUPNAME.  To substitute a more defailted name in"
 echo "some printed materials, set the 'full_group_name' Tag."
-echo "INSTITUTION=\"$INSTITUTION\"" >> $BASEDIR/.espsettings
 
 while [[ ! -n $EMAILHOST ]]; do
     echo 

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+while [[ ! -n $BASEDIR ]]; do
+    echo -n "Enter the root directory path of this site install (it should include a .git file) --> "
+    read BASEDIR
+done
+FULLPATH=`mkdir -p $BASEDIR; cd $BASEDIR; pwd`
+BASEDIR=`echo "$FULLPATH" | sed -e "s/\/*$//"`
+
+virtualenv $BASEDIR/env
+source $BASEDIR/env/bin/activate
+pip install -r $BASEDIR/esp/requirements.txt
+
+cat >/tmp/esp.wsgi <<EOF
+try:
+    # activate virtualenv
+    activate_this = '$BASEDIR/env/bin/activate_this.py'
+    execfile(activate_this, dict(__file__=activate_this))
+except IOError:
+    pass
+
+EOF
+
+cat $BASEDIR/esp.wsgi >/tmp/esp.wsgi
+mv /tmp/esp.wsgi $BASEDIR/esp.wsgi
