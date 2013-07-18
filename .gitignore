@@ -12,4 +12,5 @@ esp/file_cache/*
 esp/file_db/*
 esp/esp/database_settings.py.chicago
 esp/esp/database_settings.py.mit
+env
 useful_logs
