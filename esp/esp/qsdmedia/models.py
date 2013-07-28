@@ -67,10 +67,12 @@ class Media(models.Model):
     target_url = property(get_target_file_url)
 
     def safe_filename(self, filename):
+        """ Compute the MD5 hash of the original filename. 
+            The data is saved under this hashed filename to reduce
+            security risk.  """
         m = hashlib.md5()
         m.update(filename)
-        digest = m.digest()
-        return "".join([hex(ord(c))[2:].zfill(2) for c in digest])
+        return m.hexdigest()
 
     def handle_file(self, file, filename):
         """ Saves a file from request.FILES. """
