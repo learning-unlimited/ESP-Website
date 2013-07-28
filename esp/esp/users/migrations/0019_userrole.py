@@ -9,7 +9,13 @@ from django.contrib.auth.models import Group
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        role_bits = UserBit.objects.filter(verb__parent__uri="V/Flags/UserRole", qsc__uri="Q").filter(UserBit.not_expired())
+        # First, create a Group for every verb name
+        role_verbs = orm['datatree.DataTree'].objects.filter(parent__uri="V/Flags/UserRole")
+        for role in role_verbs:
+            g = Group.objects.get_or_create(name=role.name)
+
+        # Now, for all user roles applied to users, add those users to the appropriate Group
+        role_bits = UserBit.objects.filter(verb__parent__uri="V/Flags/UserRole", qsc__uri="Q").exclude(user=None).filter(UserBit.not_expired())
         for bit in role_bits:
             g,c = Group.objects.get_or_create(name=bit.verb.name)
             bit.user.groups.add(g)

@@ -37,16 +37,6 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('cal', ['Event'])
 
-        # Adding model 'EmailReminder'
-        db.create_table('cal_emailreminder', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('event', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['cal.Event'])),
-            ('email', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['dbmail.MessageRequest'])),
-            ('date_to_send', self.gf('django.db.models.fields.DateTimeField')()),
-            ('sent', self.gf('django.db.models.fields.BooleanField')(default=True)),
-        ))
-        db.send_create_signal('cal', ['EmailReminder'])
-
     def backwards(self, orm):
         
         # Deleting model 'EventType'
@@ -57,9 +47,6 @@ class Migration(SchemaMigration):
 
         # Deleting model 'Event'
         db.delete_table('cal_event')
-
-        # Deleting model 'EmailReminder'
-        db.delete_table('cal_emailreminder')
 
     models = {
         'auth.group': {

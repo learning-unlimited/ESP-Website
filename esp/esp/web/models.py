@@ -42,6 +42,7 @@ class NavBarCategory(models.Model):
     anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     include_auto_links = models.BooleanField()
     name = models.CharField(max_length=64)
+    path = models.CharField(max_length=64, default='')
     long_explanation = models.TextField()
 
     def get_navbars(self):

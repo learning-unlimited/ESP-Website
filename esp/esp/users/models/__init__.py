@@ -769,24 +769,21 @@ class ESPUser(User, AnonymousUser):
         Creates the methods such as isTeacher that determines whether
         or not the user is a member of that user class.
         """
-        user_classes = ('Teacher','Guardian','Educator','Officer','Student','Volunteer','StudentRep')
-        overrides = {'Officer': 'Administrator'}
-        for user_class in user_classes:
-            method_name = 'is%s' % user_class
-            role_name=overrides.get(user_class, user_class)
-            property_name = '_userclass_%s' % user_class
-            def method_gen(role_name, property_name):
-                def _new_method(user):
-                    if not hasattr(user, property_name):
-                        setattr(user,property_name, user.groups.filter(name=role_name).exists())
-                    return getattr(user, property_name)
+        def _new_method(user):
+            return user.is_user_type(user_class)
+        _new_method.__name__    = 'is%s' % user_class
+        _new_method.__doc__     = "Returns ``True`` if the user is a %s and False otherwise." % user_class
+        return _new_method
 
-                _new_method.__name__ = method_name
-                _new_method.__doc__ = "Returns ``True`` if the user is a %s and False otherwise." % user_class
-
-                return _new_method
-
-            setattr(cls, method_name, method_gen(role_name, property_name))
+    def is_user_type(self, user_class):
+        """
+        Determines whether the user is a member of user_class.
+        """
+        property_name = '_userclass_%s' % user_class
+        if not hasattr(self, property_name):
+            role_name = {'Officer': 'Administrator'}.get(user_class, user_class)
+            setattr(self, property_name, self.groups.filter(name=role_name).exists())
+        return getattr(self, property_name)
 
     @classmethod
     def get_unused_username(cls, first_name, last_name):
