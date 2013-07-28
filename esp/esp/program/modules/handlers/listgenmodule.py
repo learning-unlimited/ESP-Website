@@ -50,7 +50,7 @@ class UserAttributeGetter(object):
                     '04_lastname': 'Last Name',
                     '05_firstname': 'First Name',
                     '06_username': 'Username',
-		    '07_email': 'E-mail',
+                    '07_email': 'E-mail',
                     '08_accountdate': 'Created Date',
                     '09_first_regdate': 'Initial Registration Date',
                     '10_last_regdate': 'Most Recent Registration Date',
@@ -118,8 +118,8 @@ class UserAttributeGetter(object):
         return self.user.first_name
 
     def get_username(self):
-	return self.user.username
-        
+        return self.user.username
+
     def get_email(self):
         return self.user.email
         
