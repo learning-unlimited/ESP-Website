@@ -321,7 +321,9 @@ def contact(request, section='esp'):
 
             to_email = []
             usernames = []
-
+            logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
+            user_agent_str = request.META.get('HTTP_USER_AGENT', "(not specified)")
+            
             if len(form.cleaned_data['sender'].strip()) == 0:
                 email = 'esp@mit.edu'
             else:
@@ -351,7 +353,14 @@ def contact(request, section='esp'):
             if ok_to_send:
                 t = loader.get_template('email/comment')
 
-                msgtext = t.render(Context({'form': form, 'domain': domain, 'usernames': usernames}))
+                context = {
+                    'form': form, 
+                    'domain': domain, 
+                    'usernames': usernames, 
+                    'logged_in_as': logged_in_as, 
+                    'user_agent_str': user_agent_str
+                }
+                msgtext = t.render(Context(context))
 
                 send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
                     msgtext,
