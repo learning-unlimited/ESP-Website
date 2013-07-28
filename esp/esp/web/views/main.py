@@ -303,80 +303,74 @@ def archives(request, selection, category = None, options = None):
 	return render_to_response('users/construction', request, GetNode('Q/Web'), {})
 
 def contact(request, section='esp'):
-	"""
-	This view should take an email and post to those people.
-	"""
-	from django.core.mail import send_mail
+    """
+    This view should take an email and post to those people.
+    """
+    from django.core.mail import send_mail
 
-	if request.GET.has_key('success'):
-		return render_to_response('contact_success.html', request, GetNode('Q/Web/about'), {})
-	
-		
-	
-	if request.method == 'POST':
-		form = ContactForm(request.POST)
-		SUBJECT_PREPEND = '[webform]'
-                domain = Site.objects.get_current().domain
-		ok_to_send = True
+    if request.GET.has_key('success'):
+        return render_to_response('contact_success.html', request, GetNode('Q/Web/about'), {})
 
-		if form.is_valid():
-			
-			to_email = []
-			usernames = []
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        SUBJECT_PREPEND = '[webform]'
+        domain = Site.objects.get_current().domain
+        ok_to_send = True
 
-			if len(form.cleaned_data['sender'].strip()) == 0:
-				email = 'esp@mit.edu'
-			else:
-				email = form.cleaned_data['sender']
-				usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
+        if form.is_valid():
 
-			if usernames and not form.cleaned_data['decline_password_recovery']:
-				m = 'password|account|log( ?)in'
-				if re.search(m, form.cleaned_data['message'].lower()) or re.search(m, form.cleaned_data['subject'].lower()):
-					# Ask if they want a password recovery before sending.
-					ok_to_send = False
-					# If they submit again, don't ask a second time.
-					form.data = MultiValueDict(form.data)
-					form.data['decline_password_recovery'] = True
-                
-			if form.cleaned_data['cc_myself']:
-				to_email.append(email)
+            to_email = []
+            usernames = []
 
+            if len(form.cleaned_data['sender'].strip()) == 0:
+                email = 'esp@mit.edu'
+            else:
+                email = form.cleaned_data['sender']
+                usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
 
-			try:
-				to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
-			except KeyError:
-				to_email.append(fallback_address)
+            if usernames and not form.cleaned_data['decline_password_recovery']:
+                m = 'password|account|log( ?)in'
+                if re.search(m, form.cleaned_data['message'].lower()) or re.search(m, form.cleaned_data['subject'].lower()):
+                    # Ask if they want a password recovery before sending.
+                    ok_to_send = False
+                    # If they submit again, don't ask a second time.
+                    form.data = MultiValueDict(form.data)
+                    form.data['decline_password_recovery'] = True
 
-			if len(form.cleaned_data['name'].strip()) > 0:
-				email = '%s <%s>' % (form.cleaned_data['name'], email)
+            if form.cleaned_data['cc_myself']:
+                to_email.append(email)
 
+            try:
+                to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
+            except KeyError:
+                to_email.append(fallback_address)
 
-			if ok_to_send:
-				t = loader.get_template('email/comment')
+            if len(form.cleaned_data['name'].strip()) > 0:
+                email = '%s <%s>' % (form.cleaned_data['name'], email)
 
-				msgtext = t.render(Context({'form': form, 'domain': domain, 'usernames': usernames}))
+            if ok_to_send:
+                t = loader.get_template('email/comment')
 
-				send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
-					  msgtext,
-					  email, to_email, fail_silently = True)
+                msgtext = t.render(Context({'form': form, 'domain': domain, 'usernames': usernames}))
 
-				return HttpResponseRedirect(request.path + '?success')
+                send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
+                    msgtext,
+                    email, to_email, fail_silently = True)
 
-        
-	else:
-		initial = {}
-		if request.user.is_authenticated():
-			initial['sender'] = request.user.email
-			initial['name']   = request.user.first_name + ' '+request.user.last_name
-		
-		if section != '':
-			initial['topic'] = section.lower()
+                return HttpResponseRedirect(request.path + '?success')
 
-		form = ContactForm(initial = initial)
-			
-	return render_to_response('contact.html', request, GetNode('Q/Web/about'),
-						 {'contact_form': form})
+    else:
+        initial = {}
+        if request.user.is_authenticated():
+            initial['sender'] = request.user.email
+            initial['name']   = request.user.first_name + ' '+request.user.last_name
+
+        if section != '':
+            initial['topic'] = section.lower()
+
+        form = ContactForm(initial = initial)
+
+    return render_to_response('contact.html', request, GetNode('Q/Web/about'), {'contact_form': form})
 
 
 def registration_redirect(request):
