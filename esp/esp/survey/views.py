@@ -352,7 +352,7 @@ def survey_review_single(request, tl, program, instance):
         section_ct=ContentType.objects.get(app_label="program",model="classsection")
         class_ids = [x["id"] for x in user.getTaughtClasses().values('id')]
         section_ids = [x["id"] for x in user.getTaughtSections().values('id')]
-        answers = survey_response.answers.filter(content_type__in=[subject_ct, section_ct], object_id__in=(class_ids+section_ids).order_by('content_type','object_id', 'question')
+        answers = survey_response.answers.filter(content_type__in=[subject_ct, section_ct], object_id__in=(class_ids+section_ids).order_by('content_type','object_id', 'question'))
         classes_only = True
         other_responses = SurveyResponse.objects.filter(answers__content_type=subject_ct, answers__object_id__in=class_ids).order_by('id').distinct()
     else:
