@@ -1138,7 +1138,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             sections_priority = student.getSections(self.program, verbs=['Priority/1'])
             sections_enrolled = student.getSections(self.program, verbs=['Enrolled'])
 
-            sections_interested_and_enrolled = list(set(sections_interested) & set(sections_enrolled))
+            sections_interested_and_enrolled = list((set(sections_interested) - set(sections_priority)) & set(sections_enrolled))
             sections_priority_and_enrolled = list(set(sections_priority) & set(sections_enrolled))
 
             hours_interested = numpy.sum([len(sec.get_meeting_times()) for sec in sections_interested_and_enrolled])
