@@ -1117,6 +1117,9 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                 self.failUnless(cls.cannotAdd(student) or cls.isFull())
 
     def testStats(self):
+        """ Verify that the values returned by compute_stats() are correct
+            after running the lottery.  """
+
         #   Run the lottery!
         lotteryController = LotteryAssignmentController(self.program)
         lotteryController.compute_assignments()
