@@ -488,7 +488,7 @@ class LotteryAssignmentController(object):
 
         studentlist = stats['students_by_screwedness']
         if n != None: studentlist = studentlist[:n]
-        tday = str(datetime.now())[:10]
+        tday = datetime.today().strftime('%Y-%m-%d')
         
         fullfilename = directory + '/screwed_csv_' + tday + '.csv'
         
