@@ -67,6 +67,7 @@ class UserAttributeGetter(object):
                     '19_post_hs': 'Post-HS plans',
                     '20_schoolsystem_id': 'School system ID',
                     '21_tshirt_size': 'T-Shirt Size',
+                    '22_gender': 'Gender',
                  }
 
         last_label_index = len(labels)
@@ -93,7 +94,7 @@ class UserAttributeGetter(object):
         #if attr = 'classapplication':
             
         result = getattr(self, 'get_' + attr)()
-        if result is None:
+        if result is None or result == '':
             return 'N/A'
         else:
             if result is True:
@@ -190,6 +191,10 @@ class UserAttributeGetter(object):
     def get_schoolsystem_id(self):
         if self.profile.student_info:
             return self.profile.student_info.schoolsystem_id
+
+    def get_gender(self):
+        if self.profile.student_info:
+            return self.profile.student_info.gender
 
     #Replace this with something based on presence and number of application questions for a particular program 
     def get_max_applications(self):
