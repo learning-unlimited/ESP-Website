@@ -45,6 +45,16 @@ detailed explanation of our age and grade level policy, please click
  </td>
 </tr>
 
+{% if form.gender %}
+<tr>
+ <td><label for="id_dob">Gender:</label></td>
+ <td>{{ form.gender }} {% if form.gender.errors %}
+   <br /><span class="form_error">{{ form.gender.errors|join:", " }}</span>
+   {% endif %}
+ </td>
+</tr>
+{% endif %}
+
 <tr>
  <td><label for="id_k12school">School:</label>
  <br /><span style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school when it comes up.)</span></td>
