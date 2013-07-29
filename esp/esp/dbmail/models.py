@@ -152,17 +152,7 @@ class MessageRequest(models.Model):
         newtext = ''
         template = Template(text)
 
-        #   Save the current context processors - we will disable them for rendering e-mail
-        old_context_processors = settings.TEMPLATE_CONTEXT_PROCESSORS
-        settings.TEMPLATE_CONTEXT_PROCESSORS = []
-
-        #   Render the e-mail using the unaltered context
-        result = template.render(context)
-
-        #   Restore context processors for future template rendering
-        settings.TEMPLATE_CONTEXT_PROCESSORS = old_context_processors
-
-        return result
+        return template.render(context)
 
     def process(self, processoverride = False):
         """ Process this request...if it's an email, create all the necessary email requests. """
