@@ -246,15 +246,16 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
 
         for cls in classes:
             c = ClassSubject.objects.get(id=cls['id'])
+            class_teachers = c.get_teachers()
             cls['length'] = float(c.duration)
             cls['sections'] = [s.id for s in c.sections.all()]
-            cls['teachers'] = [t.id for t in c.teachers()]
-            for t in c.teachers():
+            cls['teachers'] = [t.id for t in class_teachers]
+            for t in teachers:
                 if teacher_dict.has_key(t.id):
                     continue
                 teacher_dict[t.id] = True
                 # Build up teacher availability
-                availabilities = UserAvailability.objects.filter(user__in=c.teachers()).filter(QTree(event__anchor__below = prog.anchor)).values('user_id', 'event_id')
+                availabilities = UserAvailability.objects.filter(user__in=class_teachers).filter(event__program=prog).values('user_id', 'event_id')
                 avail_for_user = defaultdict(list)
                 for avail in availabilities:
                     avail_for_user[avail['user_id']].append(avail['event_id'])
