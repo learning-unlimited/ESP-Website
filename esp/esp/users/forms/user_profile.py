@@ -209,6 +209,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
     from esp.users.models import ESPUser
     from esp.users.models import shirt_sizes, shirt_types, food_choices
 
+    gender = forms.ChoiceField(choices=[('', ''), ('M', 'Male'), ('F', 'Female')], required=False)
     graduation_year = forms.ChoiceField(choices=[('', '')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in range(7,13)])
     k12school = AjaxForeignKeyNewformField(key_type=K12School, field_name='k12school', shadow_field_name='school', required=False, label='School')
     unmatched_school = forms.BooleanField(required=False)
@@ -265,6 +266,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             if grade_tup not in self.fields['graduation_year'].choices:
                 self.fields['graduation_year'].choices.insert(0, grade_tup)
 
+        #   Honor several possible Tags for customizing the fields that are displayed.
         if Tag.getTag('show_student_graduation_years_not_grades'):            
             current_grad_year = self.ESPUser.current_schoolyear()
             new_choices = []
@@ -274,6 +276,9 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                 else:
                     new_choices.append(x)
             self.fields['graduation_year'].choices = new_choices
+
+        if not Tag.getBooleanTag('student_profile_gender_field'):
+            del self.fields['gender']
 
         if not Tag.getTag('ask_student_about_post_hs_plans'):
             del self.fields['post_hs']
