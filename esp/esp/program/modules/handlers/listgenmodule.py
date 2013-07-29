@@ -34,8 +34,9 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.web.util        import render_to_response
-from esp.users.models   import ESPUser
-from esp.datatree.models import *
+from esp.users.models   import ESPUser, PersistentQueryFilter
+from esp.users.controllers.usersearch import UserSearchController
+from esp.middleware import ESPError
 from django.db.models.query      import Q
 from django import forms
 
@@ -230,36 +231,34 @@ class ListGenModule(ProgramModuleObj):
             "seq": 500
             }
 
-    @main_call
+    @aux_call
     @needs_admin
-    def selectList(self, request, tl, one, two, module, extra, prog):
-        """ Select the type of list that is requested. """
-        from esp.users.views     import get_user_list
-        from esp.users.models import PersistentQueryFilter
-
-        if not request.GET.has_key('filterid'):
-            filterObj, found = get_user_list(request, self.program.getLists(True))
-        else:
-            filterid  = request.GET['filterid']
-            filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
-            found     = True
-        if not found:
-            return filterObj
+    def generateList(self, request, tl, one, two, module, extra, prog, filterObj=None):
+        """ Generate an HTML or CSV format user list using a query filter
+            specified in request.GET or a separate argument. """
 
         if request.method == 'POST' and 'fields' in request.POST:
+            #   If list information was submitted, continue to prepare a list
+            if filterObj is None:
+                if 'filterid' in request.GET:
+                    filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+                else:
+                    raise ESPError(False)('Could not determine the query filter ID.')
+
+            #   Parse the contents of the form
             form = ListGenForm(request.POST)
             if form.is_valid():
                 lists = []
                 lists_indices = {}
                 split_by = form.cleaned_data['split_by']
-                
+
                 labels_dict = UserAttributeGetter.getFunctions()
                 fields = [labels_dict[f] for f in form.cleaned_data['fields']]
                 #   If a split field is specified, make sure we fetch its data
                 if split_by and labels_dict[split_by] not in fields:
                     fields.append(labels_dict[split_by])
                 output_type = form.cleaned_data['output_type']
-            
+
                 users = list(ESPUser.objects.filter(filterObj.get_Q()).filter(is_active=True).distinct())
                 users.sort()
                 for u in users:
@@ -295,11 +294,74 @@ class ListGenModule(ProgramModuleObj):
                     mimetype=mimetype,
                 )
             else:
-                return render_to_response(self.baseDir()+'options.html', request, {'form': form, 'filterid': filterObj.id})
+                context = {
+                    'form': form, 
+                    'filterid': filterObj.id, 
+                    'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+                }
+                return render_to_response(self.baseDir()+'options.html', request, context)
         else:
+            #   Otherwise, show a blank form
+            context = {
+                'form': form, 
+                'filterid': filterObj.id, 
+                'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            }
             form = ListGenForm()
-            return render_to_response(self.baseDir()+'options.html', request, {'form': form, 'filterid': filterObj.id})
+            return render_to_response(self.baseDir()+'options.html', request, context)
 
+    @main_call
+    @needs_admin
+    def selectList(self, request, tl, one, two, module, extra, prog):
+        """ Select a group of users and generate a list of information
+            about them using the generateList view above. """
+        usc = UserSearchController()
+    
+        context = {}
+        context['program'] = prog
+        
+        #   If list information was submitted, generate a query filter and
+        #   show options for generating a user list
+        if request.method == 'POST':
+            #   Turn multi-valued QueryDict into standard dictionary
+            data = {}
+            for key in request.POST:
+                data[key] = request.POST[key]
+            filterObj = usc.filter_from_postdata(prog, data)
+
+            #   Display list generation options
+            form = ListGenForm()
+            context.update({
+                'form': form, 
+                'filterid': filterObj.id,
+                'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            })
+            return render_to_response(self.baseDir()+'options.html', request, context)
+
+        #   Otherwise, render a page that shows the list selection options
+        context.update(usc.prepare_context(prog, target_path='/manage/%s/selectList' % prog.url))
+        return render_to_response(self.baseDir()+'search.html', request, context)
+
+    @main_call
+    @needs_admin
+    def selectList_old(self, request, tl, one, two, module, extra, prog):
+        """ Allow use of the "old style" user selector if that is desired for
+            generating a list of users.     """
+
+        from esp.users.views     import get_user_list
+        from esp.users.models    import User
+        from esp.users.models import PersistentQueryFilter
+
+        if not request.GET.has_key('filterid'):
+            filterObj, found = get_user_list(request, self.program.getLists(True))
+        else:
+            filterid  = request.GET['filterid']
+            filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+            found     = True
+        if not found:
+            return filterObj
+
+        return self.generateList(request, tl, one, two, module, extra, prog, filterObj=filterObj)
 
     class Meta:
         abstract = True
