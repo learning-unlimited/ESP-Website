@@ -53,4 +53,9 @@ The teacher has specified that they will provide their own space for this class.
 
 {% endifequal %}{{ message_for_directors }}
 
+---------------------------------
+{% if admin %}If you have reviewed all of this information and would like to approve the class, click here: 
+    <http://{{ DEFAULT_HOST }}{% url esp.web.views.main.program 'manage' one two 'approveclass' id %}>
+{% endif %}
+
 {% endautoescape %}
