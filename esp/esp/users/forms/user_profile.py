@@ -12,45 +12,7 @@ import re
 import simplejson as json
 from django.contrib.localflavor.us.forms import USPhoneNumberField
 
-# SRC: esp/program/manipulators.py
-
-_phone_re = re.compile(r'^\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*$')
-_localphone_re = re.compile(r'^\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*(\d)\D*$')
 _states = ['AL' , 'AK' , 'AR', 'AZ' , 'CA' , 'CO' , 'CT' , 'DC' , 'DE' , 'FL' , 'GA' , 'GU' , 'HI' , 'IA' , 'ID'  ,'IL','IN'  ,'KS'  ,'KY'  ,'LA'  ,'MA' ,'MD'  ,'ME'  ,'MI'  ,'MN'  ,'MO' ,'MS'  ,'MT'  ,'NC'  ,'ND' ,'NE'  ,'NH'  ,'NJ'  ,'NM' ,'NV'  ,'NY' ,'OH'  , 'OK' ,'OR'  ,'PA'  ,'PR' ,'RI'  ,'SC'  ,'SD'  ,'TN' ,'TX'  ,'UT'  ,'VA'  ,'VI'  ,'VT'  ,'WA'  ,'WI'  ,'WV' ,'WY' ,'Canada', 'UK']
-
-
-class PhoneNumberField(forms.CharField):
-    """ Field for phone number. If area code not given, local_areacode is used instead. """
-    def __init__(self, length=12, max_length=14, local_areacode = None, *args, **kwargs):
-        forms.CharField.__init__(self, max_length=max_length, *args, **kwargs)
-        self.widget.attrs['size'] = length
-        if local_areacode:
-            self.areacode = local_areacode
-        else:
-            self.areacode = None
-
-    def clean(self, value):
-        if value is None or value == '':
-            return ''
-        m = _phone_re.match(value)
-        if m:
-            numbers = m.groups()
-            value = "".join(numbers[:3]) + '-' + "".join(numbers[3:6]) + '-' + "".join(numbers[6:])
-            return value
-
-        #   Check for a Tag containing the default area code.
-        if self.areacode is None:
-            tag_areacode = Tag.getTag('local_areacode')
-            if tag_areacode:
-                self.areacode = tag_areacode
-
-        if self.areacode is not None:
-            m = _localphone_re.match(value)
-            if m:
-                numbers = m.groups()
-                value = self.areacode + '-' + "".join(numbers[:3]) + '-' + "".join(numbers[3:])
-                return value
-        raise forms.ValidationError('Phone numbers must be a valid US number. "%s" is invalid.' % value)
 
 class DropdownOtherWidget(forms.MultiWidget):
     """
