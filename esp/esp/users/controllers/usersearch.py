@@ -284,7 +284,7 @@ class UserSearchController(object):
         """
         
         if template is None:
-            template = 'program/modules/commmodule/usersearch_default.html'
+            template = 'users/usersearch/usersearch_default.html'
         
         if request.method == 'POST':
             #   Turn multi-valued QueryDict into standard dictionary
