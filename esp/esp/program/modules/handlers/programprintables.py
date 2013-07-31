@@ -247,16 +247,31 @@ class ProgramPrintables(ProgramModuleObj):
         if request.GET.has_key('open'):
             classes = [cls for cls in classes if not cls.isFull()]
 
-        if request.GET.has_key('sort_name_list'):
-            sort_name_list = request.GET['sort_name_list'].split(',')
-            first_sort = sort_name_list[0] or 'category'
+        if request.GET.has_key('sort_name_list') and len(request.GET['sort_name_list']) != 0:
+            sort_order = request.GET['sort_name_list'].split(',')
         else:
-            first_sort = "category"
+            sort_order = Tag.getProgramTag('catalog_sort_fields', prog, default='category').split(',')
+
+        #   There is a first_sort option which can be set to 'category' or 'timeblock'.
+        first_sort = request.GET.get('first_sort', 'category')
+
+        #   Perform sorting based on specified order rules
+        classes = classes.order_by(*sort_order)
 
         #   Filter out classes that are not scheduled
         classes = [cls for cls in classes
                    if cls.isAccepted() and cls.sections.all().filter(meeting_times__isnull=False).exists() ]
 
+        #   Filter out duplicate classes in case sort order causes extra results
+        unique_classes = []
+        ids_existing = []
+        for cls in classes:
+            if cls.id not in ids_existing:
+                unique_classes.append(cls)
+                ids_existing.append(cls.id)
+        classes = unique_classes
+
+        #   Reorder classes if an ordering was specified by request.GET['clsids']
         if request.GET.has_key('clsids'):
             clsids = request.GET['clsids'].split(',')
             cls_dict = {}
