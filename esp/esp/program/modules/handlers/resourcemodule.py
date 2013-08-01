@@ -186,9 +186,7 @@ class ResourceModule(ProgramModuleObj):
             else:
                 past_program = import_form.cleaned_data['program']
                 start_date = import_form.cleaned_data['start_date']
-                
-                print 'Mapping timeslots from %s to %s' % (past_program, start_date)
-                
+
                 #   Figure out timeslot dates
                 new_timeslots = []
                 prev_timeslots = past_program.getTimeSlots().order_by('start')
