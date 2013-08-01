@@ -46,7 +46,7 @@ from esp.middleware import ESPError
 from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl, main_call, aux_call
 from esp.program.modules import module_ext
 
-from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, EquipmentForm, ClassroomImportForm
+from esp.program.modules.forms.resources import ClassroomForm, TimeslotForm, ResourceTypeForm, EquipmentForm, ClassroomImportForm, TimeslotImportForm
 
 class ResourceModule(ProgramModuleObj):
     doc = """ Manage the resources used by a program.  This includes classrooms and LCD equipment.
@@ -64,7 +64,7 @@ class ResourceModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def resources(self, request, tl, one, two, module, extra, prog):
-	context = {}
+        context = {}
         
         #   Process commands.  I know the code is mostly copied between the three options, and
         #   I will try to condense it intelligently when  I get the chance.
@@ -175,6 +175,49 @@ class ResourceModule(ProgramModuleObj):
                     else:
                         context['classroom_form'] = form
 
+        elif extra == 'timeslot_import':
+            import_mode = 'preview'
+            if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
+                import_mode = 'save'
+                
+            import_form = TimeslotImportForm(request.POST)
+            if not import_form.is_valid():
+                context['import_timeslot_form'] = import_form
+            else:
+                past_program = import_form.cleaned_data['program']
+                start_date = import_form.cleaned_data['start_date']
+                
+                print 'Mapping timeslots from %s to %s' % (past_program, start_date)
+                
+                #   Figure out timeslot dates
+                new_timeslots = []
+                prev_timeslots = past_program.getTimeSlots().order_by('start')
+                time_delta = start_date - prev_timeslots[0].start.date()
+                for orig_timeslot in prev_timeslots:
+                    new_timeslot = Event(
+                        anchor = self.program.anchor,
+                        event_type = orig_timeslot.event_type,
+                        short_description = orig_timeslot.short_description,
+                        description = orig_timeslot.description,
+                        priority = orig_timeslot.priority,
+                        start = orig_timeslot.start + time_delta,
+                        end   = orig_timeslot.end + time_delta,
+                    )
+                    #   Save the new timeslot only if it doesn't duplicate an existing one
+                    if import_mode == 'save' and not Event.objects.filter(anchor=new_timeslot.anchor, start=new_timeslot.start, end=new_timeslot.end).exists():
+                        new_timeslot.save()
+                    new_timeslots.append(new_timeslot)
+                
+                #   Render a preview page showing the resources for the previous program if desired
+                context['past_program'] = past_program
+                context['start_date'] = start_date.strftime('%m/%d/%Y')
+                context['new_timeslots'] = new_timeslots
+                if import_mode == 'preview':
+                    context['prog'] = self.program
+                    return render_to_response(self.baseDir()+'timeslot_import.html', request, (prog, tl), context)
+                else:
+                    extra = 'timeslot'
+
         elif extra == 'classroom_import':
             import_mode = 'preview'
             if 'import_confirm' in request.POST and request.POST['import_confirm'] == 'yes':
@@ -279,7 +322,10 @@ class ResourceModule(ProgramModuleObj):
         
         if 'import_form' not in context:
             context['import_form'] = ClassroomImportForm()
-        
+
+        if 'import_timeslot_form' not in context:
+            context['import_timeslot_form'] = TimeslotImportForm()
+
         context['open_section'] = extra
         context['prog'] = self.program
         context['module'] = self
