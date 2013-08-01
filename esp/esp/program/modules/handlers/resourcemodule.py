@@ -225,34 +225,53 @@ class ResourceModule(ProgramModuleObj):
             if not import_form.is_valid():
                 context['import_form'] = import_form
             else:
-                #   Attempt to match timeslots for the programs
                 past_program = import_form.cleaned_data['program']
-                ts_old = past_program.getTimeSlots().filter(event_type__description__icontains='class').order_by('start')
-                ts_new = self.program.getTimeSlots().filter(event_type__description__icontains='class').order_by('start')
-                ts_map = {}
-                for i in range(min(len(ts_old), len(ts_new))):
-                    ts_map[ts_old[i].id] = ts_new[i]
-                
+                complete_availability = import_form.cleaned_data['complete_availability']
+
                 resource_list = []
-                #   Iterate over the resources in the previous program
-                for res in past_program.getClassrooms():
-                    #   If we know what timeslot to put it in, make a copy
-                    if res.event.id in ts_map:
-                        new_res = Resource()
-                        new_res.name = res.name
-                        new_res.res_type = res.res_type
-                        new_res.num_students = res.num_students
-                        new_res.is_unique = res.is_unique
-                        new_res.user = res.user
-                        new_res.event = ts_map[res.event.id]
-                        #   Check to avoid duplicating rooms (so the process is idempotent)
-                        if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
-                            new_res.save()
-                        #   Note: furnishings are messed up, so don't bother copying those yet.
-                        resource_list.append(new_res)
+                if complete_availability:
+                    #   Make classrooms available at all of the new program's timeslots
+                    for resource in past_program.groupedClassrooms():
+                        for timeslot in self.program.getTimeSlots():
+                            new_res = Resource(
+                                name = resource.name,
+                                res_type = resource.res_type,
+                                num_students = resource.num_students,
+                                is_unique = resource.is_unique,
+                                user = resource.user,
+                                event = timeslot
+                            )
+                            if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
+                                new_res.save()
+                            resource_list.append(new_res)
+                else:
+                    #   Attempt to match timeslots for the programs
+                    ts_old = past_program.getTimeSlots().filter(event_type__description__icontains='class').order_by('start')
+                    ts_new = self.program.getTimeSlots().filter(event_type__description__icontains='class').order_by('start')
+                    ts_map = {}
+                    for i in range(min(len(ts_old), len(ts_new))):
+                        ts_map[ts_old[i].id] = ts_new[i]
+
+                    #   Iterate over the resources in the previous program
+                    for res in past_program.getClassrooms():
+                        #   If we know what timeslot to put it in, make a copy
+                        if res.event.id in ts_map:
+                            new_res = Resource()
+                            new_res.name = res.name
+                            new_res.res_type = res.res_type
+                            new_res.num_students = res.num_students
+                            new_res.is_unique = res.is_unique
+                            new_res.user = res.user
+                            new_res.event = ts_map[res.event.id]
+                            #   Check to avoid duplicating rooms (so the process is idempotent)
+                            if import_mode == 'save' and not Resource.objects.filter(name=new_res.name, event=new_res.event).exists():
+                                new_res.save()
+                            #   Note: furnishings are messed up, so don't bother copying those yet.
+                            resource_list.append(new_res)
                 
                 #   Render a preview page showing the resources for the previous program if desired
                 context['past_program'] = past_program
+                context['complete_availability'] = complete_availability
                 if import_mode == 'preview':
                     context['prog'] = self.program
                     result = self.program.collapsed_dict(resource_list)
