@@ -2,11 +2,11 @@
 {% autoescape off %}
 
 {% for cls in classlist %}
-\textbf{ {{cls.emailcode}}: {{ cls.title|texescape }} } - {{cls.parent_class.getTeacherNames|join:", "|texescape }}  ~\\
+\noindent \textbf{ {{cls.emailcode}}: {{ cls.title|texescape }} } - {{cls.parent_class.getTeacherNames|join:", "|texescape }}  ~\\
 
-{{ cls.parent_class.class_info|texescape }} ~\\
+\noindent {{ cls.parent_class.class_info|texescape }} ~\\
 
-\textit{Open to students in grades {{ cls.parent_class.grade_min }} through {{ cls.parent_class.grade_max }} } ~\\
+\noindent \textit{Open to students in grades {{ cls.parent_class.grade_min }} through {{ cls.parent_class.grade_max }} } ~\\
 \textit{Maximum size: {{cls.parent_class.class_size_max }} } ~\\
 \textit{Meeting times: {{ cls.friendly_times|join:"\\" }} } ~\\
 \rule{7in}{0.25pt} ~\\

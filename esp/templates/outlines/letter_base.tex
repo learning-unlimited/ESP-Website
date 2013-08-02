@@ -1,7 +1,7 @@
 \documentclass[10pt]{article}  % standard LaTeX, 12 point type
 \usepackage{amsfonts,latexsym}
 \usepackage{amsthm, amssymb, amsmath}
-\usepackage[left=0in,right=0in,top=.5cm, bottom=.5in,nohead,nofoot]{geometry}
+\usepackage[left=0.75in,right=0.75in,top=1in, bottom=.5in,nohead,nofoot]{geometry}
 \usepackage{lastpage}
 \usepackage{graphicx}
 \usepackage[utf8]{inputenc}
@@ -15,7 +15,8 @@
 \begin{document}
 
 \begin{center}
-  \includegraphics{% templatetag openbrace %}{{ MEDIA_ROOT }}latex_media/letterhead.eps}
+  \vspace*{-0.8in}
+  \makebox[\textwidth][c]{\includegraphics{% templatetag openbrace %}{{ MEDIA_ROOT }}latex_media/letterhead.eps}}
 \end{center}
 
 \vspace{.1in}
