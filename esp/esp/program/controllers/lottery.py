@@ -40,9 +40,11 @@ from datetime import date, datetime
 from esp.cal.models import Event
 from esp.users.models import ESPUser, StudentInfo
 from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, ClassSection
+from esp.program.models.class_ import ClassCategories
 from esp.mailman import add_list_member, remove_list_member, list_contents
 
 from django.conf import settings
+import os
 
 class LotteryAssignmentController(object):
 
@@ -51,11 +53,15 @@ class LotteryAssignmentController(object):
         'Ki': 1.1,
         'check_grade': True,
         'stats_display': False,
+        'directory': os.getenv("HOME"),
     }
     
     def __init__(self, program, **kwargs):
         """ Set constant parameters for a lottery assignment. """
         
+        if 'lotteried_students' not in program.students():
+            raise Exception('Cannot retrive lottery preferences for program, please ensure that it has the lottery module.')
+
         self.program = program
         self.num_timeslots = len(self.program.getTimeSlots())
         self.num_students = self.program.students()['lotteried_students'].count()
@@ -103,7 +109,7 @@ class LotteryAssignmentController(object):
         self.student_schedules = numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool)
         self.student_sections = numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool)
         self.student_weights = numpy.ones((self.num_students,))
-        
+
     def initialize(self):
         """ Gather all of the information needed to run the lottery assignment.
             This includes:
@@ -118,6 +124,12 @@ class LotteryAssignmentController(object):
         self.section_capacities = numpy.zeros((self.num_sections,), dtype=numpy.uint32)
         self.section_overlap = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool)
         
+        # One array to keep track of the utility of each student
+        # (defined as hours of interested class + 1.5*hours of priority classes)
+        # and the other arrary to keep track of student weigths (defined as # of classes signed up for)
+        self.student_utility_weights = numpy.zeros((self.num_students, ), dtype=numpy.float)
+        self.student_utilities = numpy.zeros((self.num_students, ), dtype=numpy.float)
+
         #   Get student, section, timeslot IDs and prepare lookup table
         (self.student_ids, self.student_indices) = self.get_ids_and_indices(self.program.students()['lotteried_students'])
         (self.section_ids, self.section_indices) = self.get_ids_and_indices(self.program.sections().filter(status__gt=0, registration_status=0))
@@ -158,6 +170,10 @@ class LotteryAssignmentController(object):
         pra = numpy.array(priority_regs, dtype=numpy.uint32)
         self.priority[self.student_indices[pra[:, 0]], self.section_indices[pra[:, 1]]] = True
         
+        #   Set student utility weights. Counts number of classes that students selected. Used only for computing the overall_utility stat
+        #   NOTE: Uses fixed (interest + priority) formula, needs attention when multiple priority levels are merged.
+        self.student_utility_weights = numpy.sum(self.interest.astype(float), 1) + numpy.sum(self.priority.astype(float), 1)
+
         #   Populate section schedule
         section_times = numpy.array(self.program.sections().filter(status__gt=0, registration_status=0).filter(meeting_times__id__isnull=False).distinct().values_list('id', 'meeting_times__id'))
         self.section_schedules[self.section_indices[section_times[:, 0]], self.timeslot_indices[section_times[:, 1]]] = True
@@ -277,6 +293,12 @@ class LotteryAssignmentController(object):
         for i in range(timeslots.shape[0]):
             assert(numpy.sum(self.student_schedules[selected_students, timeslots[i]]) == 0)
             self.student_schedules[selected_students, timeslots[i]] = True
+
+            #   Update student utilies
+            if priority:
+                self.student_utilities[selected_students] += 1.5
+            else:
+                self.student_utilities[selected_students] += 1
         
         #   Update student weights
         self.student_weights[selected_students] /= weight_factor
@@ -375,8 +397,39 @@ class LotteryAssignmentController(object):
             hist_interest[key] += 1
         stats['hist_interest'] = hist_interest
 
+        # Compute the overall utility of the current run.
+        # 1. Each student has a utility of sqrt(#hours of interested + 1.5 #hours of priority).
+        # This measures how happy the student will be with their classes
+        # 2. Each student gets a weight of sqrt(# classes regged for)
+        # This measures how much responsibility we take if the student gets a
+        # bad schedule (we care less if students regged for less classes).
+        # 3. We then sum weight*utility over all students and divide that
+        # by the sum of weights to get a weighted average utility.
+        #
+        # Also use the utility to get a list of screwed students,
+        # where the level of screwedness is defined by (1+utility)/(1+weight)
+        # So, people with low untilities and high weights (low screwedness scores)
+        # are considered screwed. This is pretty sketchy, so take it with a grain of salt.
+        weighted_overall_utility = 0.0
+        sum_of_weights=0.0
+        screwed_students=[]
+        for i in range(self.num_students):
+            utility = numpy.sqrt(self.student_utilities[i])
+            weight = numpy.sqrt((self.student_utility_weights[i]))
+            weighted_overall_utility += utility * weight
+            sum_of_weights += weight
+            screwed_students.append(((1+utility)/(1+weight), self.student_ids[i]))
+
+        overall_utility = weighted_overall_utility/sum_of_weights
+        screwed_students.sort()
+
+        stats['overall_utility'] = overall_utility
+        stats['students_by_screwedness'] = screwed_students
+
         if self.options['stats_display'] or display:
             self.display_stats(stats)
+
+        self.stats = stats
         return stats
 
     def display_stats(self, stats):
@@ -407,7 +460,6 @@ class LotteryAssignmentController(object):
             print '   - Interested classes: %s' % ClassSection.objects.filter(id__in=list(cs_ids))
             """
 
-
     def get_computed_schedule(self, student_id, mode='assigned'):
         #   mode can be 'assigned', 'interested', or 'priority'
         if mode == 'assigned':
@@ -420,6 +472,36 @@ class LotteryAssignmentController(object):
         for i in range(assignments.shape[0]):
             result.append(ClassSection.objects.get(id=self.section_ids[assignments[i]]))
         return result
+
+    def generate_screwed_csv(self, directory=None, n=None, stats=None):
+        """Generate a CSV file of the n most screwed students. Default: All of them.
+        Directory: string of what directory you like the information stored in.
+        This is also known as the script shulinye threw together while trying to run the Spark 2013 lottery.
+        You might want to crosscheck this file before accepting it."""
+        import csv
+
+        if directory == None:
+            directory = self.options['directory']
+
+        if stats == None:
+            stats = self.compute_stats(display=False) #Calculate stats if I didn't get any
+
+        studentlist = stats['students_by_screwedness']
+        if n != None: studentlist = studentlist[:n]
+        tday = datetime.today().strftime('%Y-%m-%d')
+        
+        fullfilename = directory + '/screwed_csv_' + tday + '.csv'
+        
+        csvfile = open(fullfilename, 'wb')
+        csvwriter = csv.writer(csvfile)
+        
+        csvwriter.writerow(["Student", "Student ID", "StudentScrewedScore", "#Classes"])
+
+        for s in studentlist:
+            csvwriter.writerow([ESPUser.objects.get(id=s[1]).name().encode('ascii', 'ignore'), s[1], s[0], len(self.get_computed_schedule(s[1]))])
+
+        csvfile.close()
+        print 'File can be found at: ' + fullfilename
     
     def save_assignments(self, debug_display=False, try_mailman=False):
         """ Store lottery assignments in the database once they have been computed.
@@ -439,11 +521,11 @@ class LotteryAssignmentController(object):
         print "StudentRegistration enrollments all created to start at %s" % self.now
         if debug_display:
             print 'Created %d registrations' % student_ids.shape[0]
-
-        #   As mailman doesn't work, disable for now.
+        
+        #As mailman doesn't work, disable for now.
         if try_mailman:
             self.update_mailman_lists()
-
+    
     def clear_saved_assignments(self, delete=False):
         """ Expire/delete all previous StudentRegistration enrollments associated with the program. """
         
