@@ -36,6 +36,7 @@ Learning Unlimited, Inc.
 
 import os.path
 import os
+import subprocess
 from random import random
 import hashlib
 import tempfile
@@ -100,41 +101,43 @@ def gen_latex(texcode, type='pdf', landscape=False):
     from django.conf import settings
     import shutil
     
+    #   Set latex options
+    latex_options = ['-interaction', 'nonstopmode', '-halt-on-error']
     #   Set dvips options
-    dvips_options = '-t letter'
+    dvips_options = ['-t', 'letter']
     if landscape:
-        dvips_options = ' -t letter,landscape'
+        dvips_options = ['-t', 'letter,landscape']
 
     if type=='pdf':
         mime = 'application/pdf'
-        os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips %s %s.dvi' % (TEX_TEMP, dvips_options, file_base))
-        os.system('cd %s; ps2pdf %s.ps' % (TEX_TEMP, file_base))
+        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
+        subprocess.check_call(['dvips'] + dvips_options + ['%s.dvi' % file_base], cwd=TEX_TEMP)
+        subprocess.check_call(['ps2pdf', '%s.ps' % file_base], cwd=TEX_TEMP)
         if remove_files:
             os.remove('%s.dvi' % file_base)
             os.remove('%s.ps' % file_base)
             
     elif type=='dvi':
         mime = 'application/x-dvi'
-        os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
+        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
         
     elif type=='ps':
         mime = 'application/postscript'
-        os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips %s -t letter -o %s.ps' % (TEX_TEMP, file_base, file_base))
+        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
+        subprocess.check_call(['dvips'] + dvips_options + [file_base, '-o', '%s.ps' % file_base], cwd=TEX_TEMP)
         if remove_files:
             os.remove('%s.dvi' % file_base)
         
     elif type=='log':
         mime = 'text/plain'
-        os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
+        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
 
     elif type=='svg':
         mime = 'image/svg+xml'
-        os.system('cd %s; pwd; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips -t letter %s.dvi' % (TEX_TEMP, file_base))
-        os.system('cd %s; ps2pdf %s.ps' % (TEX_TEMP, file_base))
-        os.system('cd %s; inkscape %s.pdf -l %s.svg' % (TEX_TEMP, file_base, file_base))
+        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
+        subprocess.check_call(['dvips'] + dvips_options + ['%s.dvi' % file_base], cwd=TEX_TEMP)
+        subprocess.check_call(['ps2pdf', '%s.ps' % file_base], cwd=TEX_TEMP)
+        subprocess.check_call(['inkscape', '%s.pdf' % file_base, '-l', '%s.svg' % file_base], cwd=TEX_TEMP)
         if remove_files:
             os.remove('%s.dvi' % file_base)
             os.remove('%s.ps' % file_base)
@@ -142,9 +145,9 @@ def gen_latex(texcode, type='pdf', landscape=False):
         
     elif type=='png':
         mime = 'image/png'
-        os.system('cd %s; latex %s.tex' % (TEX_TEMP, file_base))
-        os.system('cd %s; dvips %s %s.dvi' % (TEX_TEMP, dvips_options, file_base))
-        os.system('cd %s; convert -density 96 %s.ps %s.png' % (TEX_TEMP, file_base, file_base))
+        subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
+        subprocess.check_call(['dvips'] + dvips_options + ['%s.dvi' % file_base], cwd=TEX_TEMP)
+        subprocess.check_call(['convert', '-density', '96', '%s.ps' % file_base, '%s.png' % file_base], cwd=TEX_TEMP)
         if remove_files:
             os.remove('%s.dvi' % file_base)
             os.remove('%s.ps' % file_base)
