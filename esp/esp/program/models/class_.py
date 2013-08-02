@@ -501,6 +501,7 @@ class ClassSection(models.Model):
     
     def resourceassignments(self):
         """   Get all assignments pertaining to floating resources like projectors. """
+
         from esp.resources.models import ResourceType
         cls_restype = ResourceType.get_or_create('Classroom')
         ta_restype = ResourceType.get_or_create('Teacher Availability')
@@ -1156,11 +1157,15 @@ class ClassSection(models.Model):
     def isRegClosed(self): return self.registration_status == 10
     def isFullOrClosed(self): return self.isFull() or self.isRegClosed()
 
-    def getRegistrations(self, user):
+    def getRegistrations(self, user = None):
+        """Gets all StudentRegistrations for this section and a particular user. If no user given, gets all StudentRegistrations for this section"""
         from esp.program.models import StudentRegistration
         now = datetime.datetime.now()
-        return StudentRegistration.objects.filter(section=self, user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
-    
+        if user == None:
+            return StudentRegistration.objects.filter(section=self, start_date__lte=now, end_date__gte=now).order_by('start_date')
+        else:
+            return StudentRegistration.objects.filter(section=self, user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
+
     def getRegVerbs(self, user, allowed_verbs=False):
         """ Get the list of verbs that a student has within this class's anchor. """
         if not allowed_verbs:
@@ -1919,11 +1924,15 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             tmpnode = tmpnode.parent
         return "/".join(urllist)
 
-    def getRegistrations(self, user):
+    def getRegistrations(self, user=None):
+        """Gets all non-expired StudentRegistrations associated with this class. If user is given, will also filter to that particular user only."""
         from esp.program.models import StudentRegistration
         now = datetime.datetime.now()
-        return StudentRegistration.objects.filter(section__in=self.sections.all(), user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
-    
+        if user == None:
+            return StudentRegistration.objects.filter(section__in=self.sections.all(), start_date__lte=now, end_date__gte=now).order_by('start_date')
+        else:
+            return StudentRegistration.objects.filter(section__in=self.sections.all(), user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
+
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """
         return self.getRegistrations(user).values_list('relationship__name', flat=True)
