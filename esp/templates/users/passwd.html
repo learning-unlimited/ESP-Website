@@ -26,36 +26,32 @@ Your password has been successfully changed. Please try not to forget it!
 <input type='hidden' name='op' value='register'>
 <table width='65%' cellpadding='2' align='center' border='0'>
 <tr>
- <td><label for="username"><strong>Username:</strong></td>
+ <td><label for="username"><strong>Username:</strong></label></td>
  <td>{{ request.user.username }}
-  </td>
  </td>
 </tr>
 
 <tr>
- <td><label for="password"><strong>Current Password:</strong></td>
+ <td><label for="password"><strong>Current Password:</strong></label></td>
  <td>{{ form.password }} {% if form.password.errors %}
    <br /><span class="form_error">{{ form.password.errors|join:", " }}</span>
    {% endif %}
-  </td>
  </td>
 </tr>
 
 <tr>
- <td><label for="newpasswd"><strong>New Password:</strong></td>
+ <td><label for="newpasswd"><strong>New Password:</strong></label></td>
  <td>{{ form.newpasswd }} {% if form.newpasswd.errors %}
    <br /><span class="form_error">{{ form.newpasswd.errors|join:", " }}</span>
    {% endif %}
-  </td>
  </td>
 </tr>
 
 <tr>
- <td><label for="newpasswdconfirm"><strong>New password confirm:</strong></td>
+ <td><label for="newpasswdconfirm"><strong>New password confirm:</strong></label></td>
  <td>{{ form.newpasswdconfirm }} {% if form.newpasswdconfirm.errors %}
    <br /><span class="form_error">{{ form.newpasswdconfirm.errors|join:", " }}</span>
    {% endif %}
-  </td>
  </td>
 </tr>
 
