@@ -34,9 +34,11 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.web.util        import render_to_response
-from esp.users.models   import ESPUser, User, UserBit
+from esp.users.models   import ESPUser, User, UserBit, PersistentQueryFilter
+from esp.users.controllers.usersearch import UserSearchController
 from esp.datatree.models import *
 from esp.datatree.sql.query_utils import QTree
+from esp.middleware import ESPError
 from django.db.models.query      import Q
 from django import forms
 
@@ -50,7 +52,7 @@ class UserAttributeGetter(object):
                     '04_lastname': 'Last Name',
                     '05_firstname': 'First Name',
                     '06_username': 'Username',
-		    '07_email': 'E-mail',
+                    '07_email': 'E-mail',
                     '08_accountdate': 'Created Date',
                     '09_first_regdate': 'Initial Registration Date',
                     '10_last_regdate': 'Most Recent Registration Date',
@@ -65,6 +67,7 @@ class UserAttributeGetter(object):
                     '19_post_hs': 'Post-HS plans',
                     '20_schoolsystem_id': 'School system ID',
                     '21_tshirt_size': 'T-Shirt Size',
+                    '22_gender': 'Gender',
                  }
 
         last_label_index = len(labels)
@@ -91,7 +94,7 @@ class UserAttributeGetter(object):
         #if attr = 'classapplication':
             
         result = getattr(self, 'get_' + attr)()
-        if result is None:
+        if result is None or result == '':
             return 'N/A'
         else:
             if result is True:
@@ -118,8 +121,8 @@ class UserAttributeGetter(object):
         return self.user.first_name
 
     def get_username(self):
-	return self.user.username
-        
+        return self.user.username
+
     def get_email(self):
         return self.user.email
         
@@ -189,6 +192,10 @@ class UserAttributeGetter(object):
         if self.profile.student_info:
             return self.profile.student_info.schoolsystem_id
 
+    def get_gender(self):
+        if self.profile.student_info:
+            return self.profile.student_info.gender
+
     #Replace this with something based on presence and number of application questions for a particular program 
     def get_max_applications(self):
         return 3
@@ -233,37 +240,34 @@ class ListGenModule(ProgramModuleObj):
             "seq": 500
             }
 
-    @main_call
+    @aux_call
     @needs_admin
-    def selectList(self, request, tl, one, two, module, extra, prog):
-        """ Select the type of list that is requested. """
-        from esp.users.views     import get_user_list
-        from esp.users.models    import User
-        from esp.users.models import PersistentQueryFilter
-
-        if not request.GET.has_key('filterid'):
-            filterObj, found = get_user_list(request, self.program.getLists(True))
-        else:
-            filterid  = request.GET['filterid']
-            filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
-            found     = True
-        if not found:
-            return filterObj
+    def generateList(self, request, tl, one, two, module, extra, prog, filterObj=None):
+        """ Generate an HTML or CSV format user list using a query filter
+            specified in request.GET or a separate argument. """
 
         if request.method == 'POST' and 'fields' in request.POST:
+            #   If list information was submitted, continue to prepare a list
+            if filterObj is None:
+                if 'filterid' in request.GET:
+                    filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+                else:
+                    raise ESPError(False)('Could not determine the query filter ID.')
+
+            #   Parse the contents of the form
             form = ListGenForm(request.POST)
             if form.is_valid():
                 lists = []
                 lists_indices = {}
                 split_by = form.cleaned_data['split_by']
-                
+
                 labels_dict = UserAttributeGetter.getFunctions()
                 fields = [labels_dict[f] for f in form.cleaned_data['fields']]
                 #   If a split field is specified, make sure we fetch its data
                 if split_by and labels_dict[split_by] not in fields:
                     fields.append(labels_dict[split_by])
                 output_type = form.cleaned_data['output_type']
-            
+
                 users = list(ESPUser.objects.filter(filterObj.get_Q()).filter(is_active=True).distinct())
                 users.sort()
                 for u in users:
@@ -300,11 +304,74 @@ class ListGenModule(ProgramModuleObj):
                     mimetype=mimetype,
                 )
             else:
-                return render_to_response(self.baseDir()+'options.html', request, (prog, tl), {'form': form, 'filterid': filterObj.id})
+                context = {
+                    'form': form, 
+                    'filterid': filterObj.id, 
+                    'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+                }
+                return render_to_response(self.baseDir()+'options.html', request, (prog, tl), context)
         else:
+            #   Otherwise, show a blank form
+            context = {
+                'form': form, 
+                'filterid': filterObj.id, 
+                'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            }
             form = ListGenForm()
-            return render_to_response(self.baseDir()+'options.html', request, (prog, tl), {'form': form, 'filterid': filterObj.id})
+            return render_to_response(self.baseDir()+'options.html', request, (prog, tl), context)
 
+    @main_call
+    @needs_admin
+    def selectList(self, request, tl, one, two, module, extra, prog):
+        """ Select a group of users and generate a list of information
+            about them using the generateList view above. """
+        usc = UserSearchController()
+    
+        context = {}
+        context['program'] = prog
+        
+        #   If list information was submitted, generate a query filter and
+        #   show options for generating a user list
+        if request.method == 'POST':
+            #   Turn multi-valued QueryDict into standard dictionary
+            data = {}
+            for key in request.POST:
+                data[key] = request.POST[key]
+            filterObj = usc.filter_from_postdata(prog, data)
+
+            #   Display list generation options
+            form = ListGenForm()
+            context.update({
+                'form': form, 
+                'filterid': filterObj.id,
+                'num_users': ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            })
+            return render_to_response(self.baseDir()+'options.html', request, (prog, tl), context)
+
+        #   Otherwise, render a page that shows the list selection options
+        context.update(usc.prepare_context(prog, target_path='/manage/%s/selectList' % prog.getUrlBase()))
+        return render_to_response(self.baseDir()+'search.html', request, (prog, tl), context)
+
+    @main_call
+    @needs_admin
+    def selectList_old(self, request, tl, one, two, module, extra, prog):
+        """ Allow use of the "old style" user selector if that is desired for
+            generating a list of users.     """
+
+        from esp.users.views     import get_user_list
+        from esp.users.models    import User
+        from esp.users.models import PersistentQueryFilter
+
+        if not request.GET.has_key('filterid'):
+            filterObj, found = get_user_list(request, self.program.getLists(True))
+        else:
+            filterid  = request.GET['filterid']
+            filterObj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
+            found     = True
+        if not found:
+            return filterObj
+
+        return self.generateList(request, tl, one, two, module, extra, prog, filterObj=filterObj)
 
     class Meta:
         abstract = True

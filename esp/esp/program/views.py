@@ -425,42 +425,6 @@ def userview(request):
         'change_grade_form': change_grade_form,
     }
     return render_to_response("users/userview.html", request, GetNode("Q/Web"), context )
-    
-def programTemplateEditor(request):
-    """ Generate and display a listing of all QSD pages in the Programs template
-    (QSD pages that are created automatically when a new program is created) """
-    qsd_pages = []
-
-    template_node = GetNode('Q/Programs/Template')
-
-    for qsd in template_node.quasistaticdata_set.all():
-        qsd_pages.append( { 'edit_url': qsd.name + ".edit.html",
-                            'view_url': qsd.name + ".html",
-                            'page': qsd } )
-
-    have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Administer/Edit'))
-
-    return render_to_response('display/qsd_listing.html', request, GetNode('Q/Web'), {'qsd_pages': qsd_pages, 'have_create': have_create })
-
-def classTemplateEditor(request, program, session):
-    """ Generate and display a listing of all QSD pages in the Class template within the specified program
-    (QSD pages that are created automatically when a new class is created) """
-    qsd_pages = []
-
-    try:
-        template_node = GetNodeOrNoBits('Q/Programs/' + program + '/' + session + '/Template', request.user)
-    except DataTree.NoSuchNodeException:
-        raise Http404
-
-    for qsd in template_node.quasistaticdata_set.all():
-        qsd_pages.append( { 'edit_url': qsd.name + ".edit.html",
-                            'view_url': qsd.name + ".html",
-                            'page': qsd } )
-
-    have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Administer/Edit'))
-
-    return render_to_response('display/qsd_listing.html', request, program, {'qsd_pages': qsd_pages,
-                                                            'have_create': have_create })
 
 @admin_required
 def manage_programs(request):

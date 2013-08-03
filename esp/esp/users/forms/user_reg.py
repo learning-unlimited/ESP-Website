@@ -5,7 +5,7 @@ from django.db.models.query import Q
 
 from esp.users.models import ESPUser
 from esp.utils.forms import CaptchaForm, StrippedCharField
-from esp.users.forms.user_profile import PhoneNumberField
+from django.contrib.localflavor.us.forms import USPhoneNumberField
 
 class ValidHostEmailField(forms.EmailField):
     """ An EmailField that runs a DNS query to make sure the host is valid. """
@@ -129,7 +129,7 @@ class EmailPrefForm(forms.Form):
     confirm_email = ValidHostEmailField(label = "Confirm email", help_text = "<i>Please type your email address again.</i>")
     first_name = StrippedCharField(label='First Name', length=30, max_length=64, required=True)
     last_name = StrippedCharField(label='Last Name', length=30, max_length=64, required=True)
-    sms_number = PhoneNumberField(label='Cell Phone', required = False,
+    sms_number = USPhoneNumberField(label='Cell Phone', required = False,
                                   help_text='Optional: If you provide us your cell phone number, we can send you SMS text notifications')
 #    sms_opt_in = forms.BooleanField(label='Send Me Text Updates', initial = True, required = False)
     

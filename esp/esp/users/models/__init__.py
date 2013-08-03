@@ -1028,6 +1028,7 @@ class StudentInfo(models.Model):
     k12school = AjaxForeignKey('K12School', help_text='Begin to type your school name and select your school if it comes up.', blank=True, null=True)
     school = models.CharField(max_length=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
+    gender = models.CharField(max_length=32,blank=True,null=True)
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     heard_about = models.TextField(blank=True, null=True)
@@ -1088,6 +1089,7 @@ class StudentInfo(models.Model):
             form_dict['k12school']   = self.school
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
+        form_dict['gender']          = self.gender
         if Tag.getTag('studentinfo_shirt_options'):
             form_dict['shirt_size']      = self.shirt_size
             form_dict['shirt_type']      = self.shirt_type
@@ -1136,6 +1138,7 @@ class StudentInfo(models.Model):
             
         studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
         studentInfo.dob             = new_data['dob']
+        studentInfo.gender          = new_data['gender']
         
         studentInfo.heard_about      = new_data.get('heard_about', '')
 
