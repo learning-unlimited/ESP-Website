@@ -8,7 +8,7 @@ from django.contrib.auth.models import Group
 
 class Migration(SchemaMigration):
 
-    depends_on = ( ("cal", "0002_datatree_removal_1"), )
+    depends_on = ( ("cal", "0003_datatree_removal"), )
 
     def forwards(self, orm):
         ua_map = {}
