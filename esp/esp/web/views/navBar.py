@@ -47,6 +47,40 @@ from django.db.models.query import Q
 
 EDIT_VERB_STRING = 'V/Administer/Edit/QSD'
 
+class LazyNavBar(object):
+    """ Class which lazily evaluates the context for rendering a nav bar. """
+    def __init__(self, user, node, section, category):
+        self.user = user
+        self.node = node
+        self.section = section
+        self.category = category
+
+    def _value(self):
+        user = ESPUser(self.user)
+        node = self.node
+
+        if not self.category:
+            self.category = nav_category(node, section)
+
+        if user:
+            has_edit_bits = user.isAdministrator()
+        else:
+            has_edit_bits = False
+
+        navbars = list(self.category.get_navbars().order_by('sort_rank'))
+        navbar_context = [{'entry': x, 'has_bits': has_edit_bits} for x in navbars]
+        print "==============", navbar_context
+        context = { 'node': node,
+                    'has_edit_bits': has_edit_bits,
+                    'entries': navbar_context,
+                    'section': section
+                    }
+
+        return context
+
+    value = property(_value)
+
+
 def nav_category(node, section=''):
     """ A function to guess the appropriate navigation category when one
         is not provided in the context. """
@@ -125,39 +159,6 @@ def makeNavBar(user, node, section='', category=None):
     """ Retrive the appropriate nav bar entries for display based on the provided
     context.  Ideally a category will be provided, which fully determines which
     nav bar entries are shown. """
-
-    class LazyNavBar(object):
-        def __init__(self, user, node, section, category):
-            self.user = user
-            self.node = node
-            self.section = section
-            self.category = category
-
-        def _value(self):
-            user = ESPUser(self.user)
-            node = self.node
-            
-
-            if not self.category:
-                self.category = nav_category(node, section)
-                
-            if user:
-                has_edit_bits = user.isAdministrator()
-            else:
-                has_edit_bits = False
-                
-            navbars = list(self.category.get_navbars().order_by('sort_rank'))
-            navbar_context = [{'entry': x, 'has_bits': has_edit_bits} for x in navbars]
-            print "==============", navbar_context
-            context = { 'node': node,
-                    'has_edit_bits': has_edit_bits,
-                    'entries': navbar_context,
-                    'section': section
-                        }
-
-            return context
-
-        value = property(_value)
 
     return LazyNavBar(user, node, section, category)
 
