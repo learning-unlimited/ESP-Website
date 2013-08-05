@@ -24,13 +24,8 @@ MIT Educational Studies Program \end{minipage}
 
 {% block additionalcontent %}
 \clearpage
-\begin{center}
-\begin{minipage}{7in}
-\vspace*{1in}
-{\bf \underline{ {{ prog.niceName }} courses taken by {{ user.first_name }} {{ user.last_name }} } } \\
+\noindent {\bf \underline{ {{ prog.niceName }} courses taken by {{ user.first_name }} {{ user.last_name }} } } \\
 \hspace{0.5in}
 {{ descriptions }}
-\end{minipage}
-\end{center}
 {% endblock %}
 
