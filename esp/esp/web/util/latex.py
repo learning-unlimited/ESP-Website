@@ -167,7 +167,7 @@ def gen_latex(texcode, type='pdf', landscape=False):
 
     if type != 'log':
         try:
-            new_file     = open(file_base+'.'+type)
+            new_file     = open(file_base+'.'+type, 'rb')
             new_contents = new_file.read()
             new_file.close()
             if remove_files:
