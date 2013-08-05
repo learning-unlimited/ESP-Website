@@ -7,6 +7,10 @@ from esp.program.models import Program
 
 class Migration(SchemaMigration):
 
+    depends_on = (
+        ('program', '0001_initial'),
+    )
+
     def forwards(self, orm):
         
         # Adding field 'Event.name'

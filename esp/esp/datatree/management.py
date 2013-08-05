@@ -54,12 +54,14 @@ def post_syncdb(sender, app, **kwargs):
        with custom_cache():
             have_already_installed = True
 
-            #   Check that required tables exist.
+            #   Skip installing data if the initial program migration hasn't occurred
             if missing_db_table(program_models.ClassSubject, check_fields=False):
-                raise Exception('DataTree post_syncdb missing table %s' % 'program_models.ClassSubject')
+                print 'DataTree post_syncdb missing table %s, skipping.' % 'program_models.ClassSubject'
+                return
                 
             if missing_db_table(users_models.UserBit, check_fields=False):
-                raise Exception('Warning: DataTree post_syncdb missing table %s' % 'users_models.UserBit')
+                print 'DataTree post_syncdb missing table %s, skipping.' % 'users_models.UserBit'
+                return
 
             print "Installing esp.datatree initial data..."
             datatree.install()
