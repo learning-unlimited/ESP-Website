@@ -460,7 +460,7 @@ class LotteryAssignmentController(object):
         
     def update_mailman_lists(self, delete=True):
         if hasattr(settings, 'USE_MAILMAN') and settings.USE_MAILMAN:
-            self.clear_mailman_list("%s_%s-students" % (self.program.anchor.parent.name, self.program.anchor.name))
+            self.clear_mailman_list("%s_%s-students" % (self.program.program_type, self.program.program_instance))
             for i in range(self.num_sections):
                 section = ClassSection.objects.get(id=self.section_ids[i])
                 list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
@@ -470,5 +470,5 @@ class LotteryAssignmentController(object):
                     student = ESPUser.objects.get(id=self.student_ids[i])
                     for list_name in list_names:
                         add_list_member(list_name, student.email)
-                    add_list_member("%s_%s-students" % (self.program.anchor.parent.name, self.program.anchor.name), student.email)
+                    add_list_member("%s_%s-students" % (self.program.program_type, self.program.program_instance), student.email)
         
