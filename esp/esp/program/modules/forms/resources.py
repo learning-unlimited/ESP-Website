@@ -30,7 +30,7 @@ class TimeslotForm(forms.Form):
         slot.start = self.cleaned_data['start']
         slot.end = slot.start + timedelta(hours=self.cleaned_data['hours'], minutes=self.cleaned_data['minutes'])
         slot.event_type = EventType.objects.all()[0]    # default event type for now
-        slot.anchor = program.anchor
+        slot.program = program
         slot.save()
        
 

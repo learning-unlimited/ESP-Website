@@ -35,7 +35,7 @@ class TimeslotForm(forms.Form):
         while str(counter) in children_names:
             counter += 1
 
-        slot.anchor = GetNode(anchor.uri + "/" + str(counter))
+        slot.program = program
         slot.short_description = slot.start.strftime('%A, %B %d %Y %I:%M %p') + " to " + slot.end.strftime('%I:%M %p')
         slot.description = slot.short_description
         
