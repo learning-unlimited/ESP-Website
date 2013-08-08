@@ -344,6 +344,10 @@ class Program(models.Model, CustomFormsLinkModel):
     def program_type(self):
         return self.url.split('/')[0]
 
+    @property
+    def program_instance(self):
+        return '/'.join(self.url.split('/')[1:])
+
     def getUrlBase(self):
         """ gets the base url of this class """
         return self.url
