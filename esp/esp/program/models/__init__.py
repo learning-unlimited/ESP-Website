@@ -340,6 +340,10 @@ class Program(models.Model, CustomFormsLinkModel):
     def niceSubName(self):
         return self.name
 
+    @property
+    def program_type(self):
+        return self.url.split('/')[0]
+
     def getUrlBase(self):
         """ gets the base url of this class """
         return self.url
