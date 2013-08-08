@@ -176,7 +176,7 @@ class ClassCreationController(object):
     def send_availability_email(self, teacher, note=None):
         timeslots = teacher.getAvailableTimes(self.program, ignore_classes=True)
         email_title = 'Availability for %s: %s' % (self.program.niceName(), teacher.name())
-        email_from = '%s Registration System <server@%s>' % (self.program.anchor.parent.name, settings.EMAIL_HOST_SENDER)
+        email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
         email_context = {'teacher': teacher,
                          'timeslots': timeslots,
                          'program': self.program,
@@ -195,7 +195,7 @@ class ClassCreationController(object):
             raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
 
     def add_teacher_to_program_mailinglist(self, user):
-        add_list_member("%s_%s-teachers" % (self.program.anchor.parent.name, self.program.anchor.name), user)
+        add_list_member("%s_%s-teachers" % (self.program.program_type, self.program.program_instance), user)
 
     def add_rsrc_requests_to_class(self, cls, resource_formset, restype_formset):
         for sec in cls.get_sections():
@@ -243,8 +243,8 @@ class ClassCreationController(object):
         mail_ctxt = dict(new_data.iteritems())
         
         mail_ctxt['title'] = cls.title
-        mail_ctxt['one'] = cls.parent_program.anchor.parent.name
-        mail_ctxt['two'] = cls.parent_program.anchor.name
+        mail_ctxt['one'] = cls.parent_program.program_type
+        mail_ctxt['two'] = cls.parent_program.program_instance
         mail_ctxt['DEFAULT_HOST'] = settings.DEFAULT_HOST
         
         # Make some of the fields in new_data nicer for viewing.
@@ -289,12 +289,12 @@ class ClassCreationController(object):
         if recipients:
             send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title, \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
-                      ('%s Class Registration <%s>' % (self.program.anchor.parent.name, self.program.director_email)), \
+                      ('%s Class Registration <%s>' % (self.program.program_type, self.program.director_email)), \
                       recipients, False)
 
         if self.program.director_email:
             mail_ctxt['admin'] = True
             send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title, \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
-                      ('%s Class Registration <%s>' % (self.program.anchor.parent.name, self.program.director_email)), \
+                      ('%s Class Registration <%s>' % (self.program.program_type, self.program.director_email)), \
                       [self.program.director_email], False)
