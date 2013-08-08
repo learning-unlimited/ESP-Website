@@ -102,7 +102,6 @@ class ClassCreationController(object):
         return reg_form, resource_formset, restype_formset
     
     def make_class_happen(self, cls, user, reg_form, resource_formset, restype_formset, editing=False):
-        teachers = cls.teachers()
         anchor_modified = self.set_class_data(cls, reg_form)
         self.update_class_sections(cls, int(reg_form.cleaned_data['num_sections']))
 
