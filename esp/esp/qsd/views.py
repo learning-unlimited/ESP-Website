@@ -157,7 +157,7 @@ def qsd(request, url):
 
             if (action == 'read'):
                 edit_link = '/' + base_url + '.edit.html'
-                return render_to_response('qsd/nopage_edit.html', request, None, {'edit_link': edit_link}, use_request_context=False)
+                return render_to_response('qsd/nopage_create.html', request, None, {'edit_link': edit_link}, use_request_context=False)
         else:
             if action == 'read':
                 raise Http404, 'This page does not exist.'
