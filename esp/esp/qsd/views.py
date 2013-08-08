@@ -46,7 +46,6 @@ from os.path import basename, dirname
 from datetime import datetime
 from django.core.cache import cache
 from django.template.defaultfilters import urlencode
-from esp.datatree.decorators import branch_find
 from esp.middleware import ESPError, Http403
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
@@ -109,17 +108,24 @@ def handle_ajax_mover(method):
 
 
 @handle_ajax_mover
-@branch_find
 #@vary_on_cookie
 #@cache_control(max_age=180)    NOTE: patch_cache_control() below inserts cache header for view mode only
 @disable_csrf_cookie_update
-def qsd(request, url, action):
+def qsd(request, url):
 
-    if action == 'read':
-        base_url = request.path[:-5]
+    #   Extract the 'action' from the supplied URL if there is one
+    url_parts = url.split('/')
+    page_name = url_parts[-1]
+    page_name_parts = page_name.split('.')
+    if len(page_name_parts) > 1:
+        action = page_name_parts[-1]
+        page_name_base = '.'.join(page_name_parts[:-1])
     else:
-        base_url = request.path[:(-len(action)-6)]
-
+        action = 'read'
+        page_name_base = page_name
+    base_url = '/'.join(url_parts[:-1] + [page_name_base])
+    print 'QSD action = %s base url: %s' % (action, base_url)
+    
     # Detect edit authorizations
     have_read = True
     
@@ -128,19 +134,19 @@ def qsd(request, url, action):
 
     # Fetch the QSD object
     try:
-        qsd_rec = QuasiStaticData.objects.get_by_url(url)
+        qsd_rec = QuasiStaticData.objects.get_by_url(base_url)
         if qsd_rec == None:
             raise QuasiStaticData.DoesNotExist
         if qsd_rec.disabled:
             raise QuasiStaticData.DoesNotExist
 
     except QuasiStaticData.DoesNotExist:
-        have_edit = Permission.user_can_edit_qsd(request.user, url)
+        have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if have_edit:
             if action in ('edit','create',):
                 qsd_rec = QuasiStaticData()
-                qsd_rec.url = url
+                qsd_rec.url = base_url
                 qsd_rec.nav_category = NavBarCategory.default()
                 qsd_rec.title = 'New Page'
                 qsd_rec.content = 'Please insert your text here'
@@ -150,7 +156,7 @@ def qsd(request, url, action):
                 action = 'edit'
 
             if (action == 'read'):
-                edit_link = base_url+'.edit.html'
+                edit_link = '/' + base_url + '.edit.html'
                 return render_to_response('qsd/nopage_edit.html', request, None, {'edit_link': edit_link}, use_request_context=False)
         else:
             if action == 'read':
@@ -187,7 +193,7 @@ def qsd(request, url, action):
             
     # Detect POST
     if request.POST.has_key('post_edit'):
-        have_edit = Permission.user_can_edit_qsd(request.user, url)
+        have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if not have_edit:
             raise Http403, "Sorry, you do not have permission to edit this page."
@@ -196,7 +202,7 @@ def qsd(request, url, action):
         # method, and then update it. Doing it this way saves a DB call
         # (and requires me to make fewer changes).
         qsd_rec_new = QuasiStaticData()
-        qsd_rec_new.url = url
+        qsd_rec_new.url = base_url
         qsd_rec_new.author = request.user
         qsd_rec_new.nav_category = NavBarCategory.objects.get(id=request.POST['nav_category'])
         qsd_rec_new.content = request.POST['content']
@@ -236,7 +242,7 @@ def qsd(request, url, action):
 
     # Detect the edit verb
     if action == 'edit':
-        have_edit = Permission.user_can_edit_qsd(request.user, url)
+        have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
