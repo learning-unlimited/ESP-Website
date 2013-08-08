@@ -11,7 +11,6 @@ register = template.Library()
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html')
 def render_qsd(qsd):
-    has_edit = False
     return {'qsdrec': qsd}
 render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
 
