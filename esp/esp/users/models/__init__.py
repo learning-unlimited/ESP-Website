@@ -907,8 +907,6 @@ are a teacher of the class"""
             section = ClassSection.objects.get(id=section)
         return getRankInClass(student, section.parent_class, default)
 
-ESPUser.create_membership_methods()
-
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
 shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))

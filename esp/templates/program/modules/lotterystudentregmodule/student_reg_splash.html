@@ -17,7 +17,6 @@
 <script type="text/javascript">    var program_base_url = "/json/"+base_url+"/";
 var support = "{{ support }}";
 var open_class_registration = {{ open_class_registration }};
-var open_class_category = "{{ open_class_category }}";
 </script>
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/splash_timeslot.js"></script>
 <script type="text/javascript" src="/media/scripts/lottery_student_reg/student_reg.js"></script>
@@ -45,12 +44,12 @@ var open_class_category = "{{ open_class_category }}";
 
 
 {% block content %} 
-    {% inline_qsd_block prog.anchor "lsr_title" request.user %}Class Lottery for {{prog.niceName}}{% end_inline_qsd_block %}
+    {% inline_program_qsd_block prog "lsr_title" request.user %}Class Lottery for {{prog.niceName}}{% end_inline_program_qsd_block %}
 
     <div id="lsr_content">
         <h3 class="header"><a href="#">Instructions</a></h3>
         <div id="instructions">
-            {% inline_qsd_block prog.anchor "lsr_instructions" request.user %}Write instructions here!{% end_inline_qsd_block %}
+            {% inline_program_qsd_block prog "lsr_instructions" request.user %}Write instructions here!{% end_inline_program_qsd_block %}
 	</div>
 
 	<br/>
