@@ -28,9 +28,9 @@ You may request groups of volunteers for your program here.  At the <a href="/vo
 <table style="border: 1px solid #cccccc;">
 <tr>
 <th colspan="3" align="center">Current Volunteer Shifts and Offers</th>
-</tr
+</tr>
 {% if requests|length_is:0 %}
-    <td colspan="3">No requests at this time.  Please add some using the form below.</td>
+    <tr><td colspan="3">No requests at this time.  Please add some using the form below.</td></tr>
 {% else %}
     {% for vr in requests %}
     <tr>
