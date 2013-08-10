@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -45,6 +44,7 @@ from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, 
 from esp.datatree.models import *
 from esp.dbmail.models import MessageRequest
 from esp.tagdict.models import Tag
+from esp.middleware import ESPError
 
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
