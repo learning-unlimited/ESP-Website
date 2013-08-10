@@ -66,6 +66,7 @@
     {% include "program/modules/progressbar.html" %}
 {% endifequal %}
 
+    </div> <!-- div#catalog -->
 {% endif %}
 
 {% load render_qsd %}
@@ -80,7 +81,6 @@
 {% include module.getTemplate %}
 {% endif %}
 {% endfor %}
-</div>
 <br />
 
 {% if not request.user.onsite_local and not isConfirmed and coremodule.deadline_met %}
