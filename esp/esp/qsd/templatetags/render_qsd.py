@@ -40,23 +40,25 @@ render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'u
     
 
 class InlineQSDNode(template.Node):
-    def __init__(self, nodelist, url, user_variable, program_variable=None):
+    def __init__(self, nodelist, url, user_variable, program_variable):
         self.nodelist = nodelist
         self.url = url
-        self.user_variable = template.Variable(user_variable)
-        self.program_variable = template.Variable(program_variable)
+        self.user_variable = template.Variable(user_variable) if user_variable is not None else None
+        self.program_variable = template.Variable(program_variable) if program_variable is not None else None
         
     def render(self, context):
         try:
-            user = self.user_variable.resolve(context)
+            user = self.user_variable.resolve(context) if self.user_variable is not None else None
         except template.VariableDoesNotExist:
             user = None
         try:
-            program = self.program_variable.resolve(context)
+            program = self.program_variable.resolve(context) if self.program_variable is not None else None
         except template.VariableDoesNotExist:
             program = None
         if program is not None:
             url = QuasiStaticData.prog_qsd_url(program,self.url)
+        else:
+            url = self.url
         #probably should have an error message if variable was not None and prog was
 
         edit_bits = Permission.user_can_edit_qsd(user, url)
@@ -81,7 +83,7 @@ def inline_qsd_block(parser, token):
     tokens = token.split_contents()
     if len(tokens) == 2:
         iqb, url = tokens
-        user_variable = ""
+        user_variable = None
     elif len(tokens) == 3:
         iqb, url, user_variable = tokens
     else:
@@ -90,7 +92,7 @@ def inline_qsd_block(parser, token):
     nodelist = parser.parse(("end_inline_qsd_block",))
     parser.delete_first_token()
     
-    return InlineQSDNode(nodelist, url, user_variable)
+    return InlineQSDNode(nodelist, url, user_variable, None)
 
 
 @register.tag
@@ -98,7 +100,7 @@ def inline_program_qsd_block(parser, token):
     tokens = token.split_contents()
     if len(tokens) == 3:
         iqb, program, url = tokens
-        user_variable = ""
+        user_variable = None
     elif len(tokens) == 4:
         iqb, program, url, user_variable = tokens
     else:
