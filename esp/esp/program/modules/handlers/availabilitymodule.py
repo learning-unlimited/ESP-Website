@@ -154,12 +154,34 @@ class AvailabilityModule(ProgramModuleObj):
 
         blank = False
 
+        available_slots = teacher.getAvailableTimes(self.program, True)
+        # must set the ignore_classes=True parameter above, otherwise when a teacher tries to edit their
+        # availability, it will show their scheduled times as unavailable.
+
+        #   Fetch the timeslots the teacher is scheduled in and grey them out.
+        #   If we found a timeslot that they are scheduled in but is not available, show a warning.
+        taken_slots = []
+        avail_and_teaching = []
+        user_sections = teacher.getTaughtSections(self.program)
+        conflict_found = False
+        for section in user_sections:
+            for timeslot in section.get_meeting_times():
+                taken_slots.append(timeslot)
+                if timeslot not in available_slots:
+                    conflict_found = True
+                else:
+                    avail_and_teaching.append(timeslot)
+
         if request.method == 'POST':
             #   Process form
             post_vars = request.POST
             
             #   Reset teacher's availability
             teacher.clearAvailableTimes(self.program)
+            #   But add back in the times they're teaching
+            #   because those aren't submitted with the form
+            for timeslot in avail_and_teaching:
+                teacher.addAvailableTime(self.program, timeslot)
             
             #   Add in resources for the checked available times.
             timeslot_ids = map(int, post_vars.getlist('timeslots'))
@@ -185,20 +207,6 @@ class AvailabilityModule(ProgramModuleObj):
                     return self.goToCore(tl)
         
         #   Show new form
-        available_slots = teacher.getAvailableTimes(self.program, True)
-        # must set the ignore_classes=True parameter above, otherwise when a teacher tries to edit their
-        # availability, it will show their scheduled times as unavailable.
-
-        #   Fetch the timeslots the teacher is scheduled in and grey them out.
-        #   If we found a timeslot that they are scheduled in but is not available, show a warning.
-        taken_slots = []
-        user_sections = teacher.getTaughtSections(self.program)
-        conflict_found = False
-        for section in user_sections:
-            for timeslot in section.get_meeting_times():
-                taken_slots.append(timeslot)
-                if timeslot not in available_slots:
-                    conflict_found = True
 
         if not (len(available_slots) or blank): # I'm not sure whether or not we want the "or blank"
             #   If they didn't enter anything, make everything checked by default.
