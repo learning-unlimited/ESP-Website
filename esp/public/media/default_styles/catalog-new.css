@@ -1,0 +1,52 @@
+#catalog-new {
+    font-size: 13px;
+}
+#catalog-new .catalog-entry {
+    border: 2px solid #9BF;
+}
+#catalog-new .catalog-entry-header {
+    padding: 0.5em;
+    background-color: #CDF;
+}
+#catalog-new .catalog-entry-title {
+    font-size: 1.15em;
+    display: inline-block;
+}
+#catalog-new .catalog-entry-teachers {
+    font-style: italic;
+    display: inline-block;
+    margin-left: 1em;
+}
+#catalog-new .catalog-entry-body {
+    padding: 0.5em;
+    font-family: serif;
+}
+#catalog-new .catalog-entry-description {
+    margin: 0.5em 0;
+}
+#catalog-new .catalog-entry dl {
+    display: table;
+    margin: 0.5em 0;
+}
+#catalog-new .catalog-entry dl > dt {
+    clear: left;
+    float: left;
+    margin: 0;
+    padding: 0 0.4em 0.4em 0;
+    font-weight: bold;
+}
+#catalog-new .catalog-entry dl > dt:after {
+    content: ": ";
+}
+#catalog-new .catalog-entry dl > dd {
+    float: left;
+    margin: 0;
+    padding: 0 0.4em 0.4em 0;
+}
+#catalog-new .catalog-entry table {
+    margin: 0.5em 0;
+}
+#catalog-new .catalog-entry th, #catalog-new .catalog-entry td {
+    text-align: center;
+    padding: 0 1em;
+}

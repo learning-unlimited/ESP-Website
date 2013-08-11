@@ -483,6 +483,10 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 raise AjaxError(ec[1])
 
     @aux_call
+    def studentreg_1(self, request, tl, one, two, module, extra, prog):
+        return render_to_response(self.baseDir() + 'studentregphase1.html', request, (prog, tl), {})
+
+    @aux_call
     @needs_student
     @meets_deadline('/Classes/OneClass')    
     def fillslot(self, request, tl, one, two, module, extra, prog):
