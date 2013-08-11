@@ -147,7 +147,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         form = FormClass(curUser, request.POST)
 
         # Don't suddenly demand an explanation from people who are already student reps
-        if curUser.isStudentRep():
+        if curUser.groups.filter(name="StudentRep").exists():
             if hasattr(form, 'repress_studentrep_expl_error'):
                 form.repress_studentrep_expl_error()
 
@@ -212,7 +212,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
             regProf = RegistrationProfile.getLastProfile(curUser)
         new_data = {}
         if curUser.isStudent():
-            new_data['studentrep'] = curUser.isStudentRep()
+            new_data['studentrep'] = curUser.groups.filter(name="StudentRep").exists()
         new_data['first_name'] = curUser.first_name
         new_data['last_name']  = curUser.last_name
         new_data['e_mail']     = curUser.email
