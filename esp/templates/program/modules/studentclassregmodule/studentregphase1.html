@@ -24,7 +24,9 @@
 
 <hr>
 
-<div id="catalog-new" data-bind="foreach: classesArray">
+<div id="catalog-new">
+  <span data-bind="visible: loading">Loading classes...</span>
+  <!-- ko foreach: classesArray -->
   <div class="catalog-entry">
     <div class="catalog-entry-header">
       <h2 class="catalog-entry-title">
@@ -61,6 +63,7 @@
       </table>
     </div>
   </div>
+  <!-- /ko -->
 </div>
 
 {% endblock %}

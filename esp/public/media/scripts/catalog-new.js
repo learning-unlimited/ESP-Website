@@ -70,6 +70,7 @@ var Teacher = function (data, vm) {
 // Catalog view model constructor
 var CatalogViewModel = function () {
     var self = this;
+    self.loading = ko.observable(true);
     self.classes = ko.observable({});
     self.sections = ko.observable({});
     self.teachers = ko.observable({});
@@ -82,6 +83,7 @@ var CatalogViewModel = function () {
         return ret;
     });
     json_fetch(['class_subjects'], function (data) {
+	self.loading(false);
         // update classes
         for (var key in data.classes) {
             data.classes[key] = new ClassSubject(data.classes[key], self);
