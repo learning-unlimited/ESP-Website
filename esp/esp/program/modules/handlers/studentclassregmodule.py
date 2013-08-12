@@ -483,7 +483,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 raise AjaxError(ec[1])
 
     @aux_call
+    @needs_student
     def studentreg_1(self, request, tl, one, two, module, extra, prog):
+        # TODO: create a new program module and move this there
         return render_to_response(self.baseDir() + 'studentregphase1.html', request, (prog, tl), {})
 
     @aux_call

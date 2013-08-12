@@ -3,7 +3,14 @@
 {% block title %}{{program.niceName}}{% endblock %}
 
 {% block xtrajs %}
-<script type="text/javascript"></script>
+<script type="text/javascript">
+  var program_base_url = "/json/{{ program.getUrlBase }}/";
+</script>
+
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/knockout/2.3.0/knockout-min.js"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.3.5/knockout.mapping.js"></script>
+<script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
+<script type="text/javascript" src="/media/scripts/catalog-new.js"></script>
 {% endblock %}
 
 {% block stylesheets %}
@@ -17,22 +24,23 @@
 
 <hr>
 
-<div id="catalog-new">
+<div id="catalog-new" data-bind="foreach: classesArray">
   <div class="catalog-entry">
     <div class="catalog-entry-header">
-      <h2 class="catalog-entry-title"><span>XNNNN</span>: <span>Some Cool Class</span></h2>
-      <div class="catalog-entry-teachers">
-	<a href="/teach/teachers/bitdiddle/bio.html" title="The biography of Ben Bitdiddle">Ben Bitdiddle</a>
+      <h2 class="catalog-entry-title">
+	<span data-bind="text: emailcode"></span>: <span data-bind="text: title"></span>
+      </h2>
+      <div class="catalog-entry-teachers" data-bind="foreach: teachers">
+	<!-- placeholder until teacher data is ready -->
+	<a href="/teach/teachers/bitdiddle/bio.html" title="The biography of Ben Bitdiddle" data-bind="text: name"></a>
       </div>
     </div>
     <div class="catalog-entry-body">
-      <div class="catalog-entry-description">
-	Want to blablabla? How about blablabla? I'm a generic class description with the typical gimmicks that we think make us look super cool.
-      </div>
+      <div class="catalog-entry-description" data-bind="text: class_info"></div>
       <dl>
-	<dt>Difficulty</dt> <dd>**</dd>
-	<dt>Grades</dt> <dd>9 - 12</dd>
-	<dt>Prerequisites</dt> <dd>Something really intense meant to drive away the faint of heart.</dd>
+	<dt>Grades</dt> <dd data-bind="text: grade_range"></dd>
+	<dt>Difficulty</dt> <dd data-bind="text: difficulty"></dd>
+	<dt>Prerequisites</dt> <dd data-bind="text: prereqs"></dd>
       </dl>
       <table>
 	<thead>
@@ -44,6 +52,7 @@
 	</thead>
 	<tbody>
 	  <tr>
+	    <!-- placeholder until sections view is ready -->
 	    <td>Section 1</td>
 	    <td>9am Saturday</td>
 	    <td>25/50</td>
