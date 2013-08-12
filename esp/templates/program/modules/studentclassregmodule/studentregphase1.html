@@ -52,10 +52,9 @@
 	    <th>Enrollment</th>
 	  </tr>
 	</thead>
-	<tbody>
+	<tbody data-bind="foreach: sections">
 	  <tr>
-	    <!-- placeholder until sections view is ready -->
-	    <td>Section 1</td>
+	    <td>Section <span data-bind="text: index"></span></td>
 	    <td>9am Saturday</td>
 	    <td>25/50</td>
 	  </tr>
