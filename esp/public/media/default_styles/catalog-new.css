@@ -3,6 +3,8 @@
 }
 #catalog-new .catalog-entry {
     border: 2px solid #9BF;
+    margin: 1em 0;
+    overflow: hidden;
 }
 #catalog-new .catalog-entry-header {
     padding: 0.5em;
@@ -22,6 +24,7 @@
     font-family: serif;
 }
 #catalog-new .catalog-entry-description {
+    white-space: pre-wrap;
     margin: 0.5em 0;
 }
 #catalog-new .catalog-entry dl {
