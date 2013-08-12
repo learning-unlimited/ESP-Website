@@ -29,12 +29,11 @@
   <!-- ko foreach: classesArray -->
   <div class="catalog-entry">
     <div class="catalog-entry-header">
-      <h2 class="catalog-entry-title">
-	<span data-bind="text: emailcode"></span>: <span data-bind="text: title"></span>
-      </h2>
+      <h2 class="catalog-entry-title" data-bind="text: fulltitle"></h2>
       <div class="catalog-entry-teachers" data-bind="foreach: teachers">
 	<!-- placeholder until teacher data is ready -->
-	<a href="/teach/teachers/bitdiddle/bio.html" title="The biography of Ben Bitdiddle" data-bind="text: name"></a>
+	<a href="/teach/teachers/bitdiddle/bio.html" title="The biography of Ben Bitdiddle" data-bind="text: name">
+	</a><!-- ko if: $index() != $parent.teachers().length - 1 -->, <!-- /ko -->
       </div>
     </div>
     <div class="catalog-entry-body">
@@ -54,7 +53,7 @@
 	</thead>
 	<tbody data-bind="foreach: sections">
 	  <tr>
-	    <td>Section <span data-bind="text: index"></span></td>
+	    <td data-bind="text: name"></td>
 	    <td>9am Saturday</td>
 	    <td>25/50</td>
 	  </tr>

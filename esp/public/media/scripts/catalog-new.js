@@ -21,6 +21,10 @@ var ClassSubject = function (data, vm) {
     self.prereqs     = ko.observable("Loading...");
     self.section_ids = ko.observableArray();
 
+    self.fulltitle = ko.computed(function () {
+	return self.emailcode() + ": " + self.title();
+    });
+
     // teacher objs for the teacher ids
     self.teachers = ko.computed(function () {
         var teachersIndex = vm.teachers();
@@ -71,6 +75,10 @@ var ClassSubject = function (data, vm) {
 var ClassSection = function (data, vm) {
     var self = this;
     self.index = ko.observable("");
+
+    self.name = ko.computed(function () {
+	return "Section " + self.index();
+    });
 
     simpleFromJS(data, self);
 };
