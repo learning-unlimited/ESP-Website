@@ -39,7 +39,6 @@ from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherO
 from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType
 from esp.program.models.class_ import open_class_category
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
-from esp.datatree.models import *
 from esp.tagdict.models          import Tag
 from esp.tagdict.decorators      import require_tag
 from esp.web.util                import render_to_response
@@ -110,18 +109,20 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 val = possible_values[i]
                 label = 'teacher_res_%d_%d' % (res_type.id, i)
                 full_description = 'Teachers who requested "%s" for their %s' % (val, res_type.name)
-                query = Q(userbit__qsc__classsubject__sections__resourcerequest__res_type=res_type, userbit__qsc__classsubject__sections__resourcerequest__desired_value=val, userbit__qsc__classsubject__sections__parent_class__parent_program=self.program)
+                query = Q(classsubject__sections__resourcerequest__res_type=res_type, classsubject__sections__resourcerequest__desired_value=val, classsubject__sections__parent_class__parent_program=self.program)
                 items.append((label, full_description, query))
         return items
 
     def teachers(self, QObject = False):
         #   New approach: Pile the class datatree anchor IDs into the appropriate lists.
 
-        Q_isteacher = Q(userbit__verb = GetNode('V/Flags/Registration/Teacher'))
         fields_to_defer = [x.name for x in ClassSubject._meta.fields if isinstance(x, models.TextField)]
-        Q_rejected_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().defer(*fields_to_defer).filter(status__lt=0)) & Q_isteacher
-        Q_approved_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().defer(*fields_to_defer).filter(status__gt=0)) & Q_isteacher
-        Q_proposed_teacher = Q(userbit__qsc__classsubject__in=self.program.classes().defer(*fields_to_defer).filter(status=0)) & Q_isteacher
+        classes_qs = self.program.classes().defer(*fields_to_defer)
+
+        Q_isteacher = Q(classsubject__in=classes_qs)
+        Q_rejected_teacher = Q(classsubject__in=classes_qs.filter(status__lt=0)) & Q_isteacher
+        Q_approved_teacher = Q(classsubject__in=classes_qs.filter(status__gt=0)) & Q_isteacher
+        Q_proposed_teacher = Q(classsubject__in=classes_qs.filter(status=0)) & Q_isteacher
 
         ## is_nearly_full() means at least one section is more than float(ClassSubject.get_capacity_factor()) full
         ## isFull() means that all *scheduled* sections are full
@@ -129,12 +130,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         ## better cached than other simpler queries that we might use.
         classes = ClassSubject.objects.catalog(self.program)
         capacity_factor = ClassSubject.get_capacity_factor()
-        nearly_full_classes = [x.anchor for x in classes if x.is_nearly_full(capacity_factor)]
-        Q_nearly_full_teacher = Q(userbit__qsc__in=nearly_full_classes) & Q_isteacher
-        full_classes = [x.anchor for x in classes if x.isFull()]
-        Q_full_teacher = Q(userbit__qsc__in=full_classes) & Q_isteacher
+        nearly_full_classes = [x for x in classes if x.is_nearly_full(capacity_factor)]
+        Q_nearly_full_teacher = Q(classsubject__in=nearly_full_classes) & Q_isteacher
+        full_classes = [x for x in classes if x.isFull()]
+        Q_full_teacher = Q(classsubject__in=full_classes) & Q_isteacher
 
-        Q_taught_before = Q_isteacher & Q(userbit__qsc__classsubject__status=10, userbit__qsc__classsubject__parent_program__in=Program.objects.exclude(pk=self.program.pk))
+        Q_taught_before = Q_isteacher & Q(classsubject__status=10, classsubject__parent_program__in=Program.objects.exclude(pk=self.program.pk))
 
         #   Add dynamic queries for checking for teachers with particular resource requests
         additional_qs = {}
