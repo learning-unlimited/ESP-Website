@@ -33,7 +33,8 @@ class Migration(SchemaMigration):
                 e.name=e.anchor.uri
             else:
                 e.name="".join(e.anchor.uri.split(p.anchor.uri+"/",1))
-                #the part of the uri after the program
+
+            e.save()
 
         # Deleting field 'Event.event_type'
         db.delete_column('cal_event', 'anchor_id')
