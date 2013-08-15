@@ -70,7 +70,7 @@ class ProgramPrintables(ProgramModuleObj):
         pac = ProgramAccountingController(prog)
         lineitemtypes = pac.get_lineitemtypes(optional_only=True)
         context = { 'lineitemtypes': lineitemtypes }
-        return render_to_response(self.baseDir()+'paid_list_filter.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'paid_list_filter.html', request, context)
 
     @aux_call
     @needs_admin
@@ -108,7 +108,7 @@ class ProgramPrintables(ProgramModuleObj):
                     'prog': prog,
                     'single_select': single_select }
 
-        return render_to_response(self.baseDir()+'paid_list.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'paid_list.html', request, context)
 
     @main_call
     @needs_admin
@@ -116,7 +116,7 @@ class ProgramPrintables(ProgramModuleObj):
         """ Display a teacher eg page """
         context = {'module': self, 'li_types': prog.getLineItemTypes(required=False)}
 
-        return render_to_response(self.baseDir()+'options.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'options.html', request, context)
 
     @aux_call
     @needs_admin
@@ -212,7 +212,6 @@ class ProgramPrintables(ProgramModuleObj):
             clsids = ','.join(clsids)
             return render_to_response(self.baseDir()+'catalog_order.html',
                                       request,
-                                      (self.program, tl),
                                       {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories })
 
         if request.GET.has_key("only_nonfull"):
@@ -227,7 +226,6 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'catalog_order.html',
                                   request,
-                                  (self.program, tl),
                                   {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories  })
         
 
@@ -312,7 +310,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'classes': classes, 'program': self.program}
 
-        return render_to_response(self.baseDir()+'classes_list.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'classes_list.html', request, context)
 
     @needs_admin
     def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file='sections_list.html'):
@@ -344,7 +342,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'sections': sections, 'program': self.program}
 
-        return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
+        return render_to_response(self.baseDir()+template_file, request, context)
 
     @aux_call
     @needs_admin
@@ -433,7 +431,7 @@ class ProgramPrintables(ProgramModuleObj):
                 cls.implications.append(imp_info)
         
         context = { 'classes': classes, 'program': self.program }
-        return render_to_response(self.baseDir()+'classprereqs.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'classprereqs.html', request, context)
 
     @needs_admin
     def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'teacherlist.html', extra_func = lambda x: {}):
@@ -506,7 +504,7 @@ class ProgramPrintables(ProgramModuleObj):
         context['res_types'] = resource_types
         context['scheditems'] = scheditems
 
-        return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
+        return render_to_response(self.baseDir()+template_file, request, context)
 
     @aux_call
     @needs_admin
@@ -561,7 +559,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'rooms': rooms, 'program': self.program}
 
-        return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
+        return render_to_response(self.baseDir()+template_file, request, context)
 
     @aux_call
     @needs_admin
@@ -592,7 +590,7 @@ class ProgramPrintables(ProgramModuleObj):
         students.sort(sort_exp)
         context['students'] = students
         
-        return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
+        return render_to_response(self.baseDir()+template_file, request, context)
 
     @aux_call
     @needs_admin
@@ -670,7 +668,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         context['scheditems'] = scheditems
 
-        return render_to_response(self.baseDir()+'teacherschedule.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
 
     def get_msg_vars(self, user, key):
         user = ESPUser(user)
@@ -820,7 +818,7 @@ Volunteer schedule for %s:
                                                'title': '________________________________________',
                                                'getTeacherNames': [' ']} for i in prog.getTimeSlots()]}]
                     }
-        return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'studentschedule.html', request, context)
 
     @aux_call
     @needs_admin
@@ -944,7 +942,7 @@ Volunteer schedule for %s:
     
         basedir = 'program/modules/programprintables/'
         if file_type == 'html':
-            return render_to_response(basedir+'studentschedule.html', request, (prog, tl), context)
+            return render_to_response(basedir+'studentschedule.html', request, context)
         else:  # elif format == 'pdf':
             from esp.web.util.latex import render_to_latex
             schedule_template = select_template([basedir+'program_custom_schedules/%s_studentschedule.tex' %(prog.id), basedir+'studentschedule.tex'])
@@ -983,7 +981,7 @@ Volunteer schedule for %s:
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT.rstrip('/') + '/'
         
-        return render_to_response(self.baseDir()+'flatstudentschedule.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'flatstudentschedule.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1020,7 +1018,7 @@ Volunteer schedule for %s:
         context['group_name'] = Tag.getTag('full_group_name')
         context['phone_number'] = Tag.getTag('group_phone_number')
 
-        return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
+        return render_to_response(self.baseDir()+'roomrosters.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1087,7 +1085,7 @@ Volunteer schedule for %s:
 
         context['pages'] = pages
 
-        return render_to_response(self.baseDir()+'student_tickets.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'student_tickets.html', request, context)
     
     @aux_call
     @needs_admin
@@ -1119,7 +1117,7 @@ Volunteer schedule for %s:
         else:
             tpl = 'classrosters.html'
         
-        return render_to_response(self.baseDir()+tpl, request, (prog, tl), context)
+        return render_to_response(self.baseDir()+tpl, request, context)
         
     @aux_call
     @needs_admin
@@ -1129,7 +1127,7 @@ Volunteer schedule for %s:
         teachers.sort()
         context['teachers'] = teachers
         context['settings'] = settings
-        return render_to_response(self.baseDir()+'teacherlabels.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'teacherlabels.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1163,7 +1161,7 @@ Volunteer schedule for %s:
 
         context['students'] = students
         context['studentList'] = studentList
-        return render_to_response(self.baseDir()+'studentchecklist.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'studentchecklist.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1196,7 +1194,7 @@ Volunteer schedule for %s:
 
         context['class_list'] = class_list
         
-        return render_to_response(self.baseDir()+'classchecklists.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'classchecklists.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1225,7 +1223,7 @@ Volunteer schedule for %s:
                                        'class'  : cls})
 
             context['scheditems'] = scheditems
-            return render_to_response(self.baseDir()+'adminteachers.html', request, (prog, tl), context)
+            return render_to_response(self.baseDir()+'adminteachers.html', request, context)
 
 
         
@@ -1241,7 +1239,7 @@ Volunteer schedule for %s:
                     scheditems.append({'teacher': teacher,
                                       'class'  : cls})
             context['scheditems'] = scheditems                    
-            return render_to_response(self.baseDir()+'adminclassid.html', request, (prog, tl), context)
+            return render_to_response(self.baseDir()+'adminclassid.html', request, context)
 
 
         if extra == 'timeblock':
@@ -1257,7 +1255,7 @@ Volunteer schedule for %s:
                                       'cls'  : cls})
 
             context['scheditems'] = scheditems
-            return render_to_response(self.baseDir()+'adminclasstime.html', request, (prog, tl), context)        
+            return render_to_response(self.baseDir()+'adminclasstime.html', request, context)
 
     @aux_call
     @needs_admin

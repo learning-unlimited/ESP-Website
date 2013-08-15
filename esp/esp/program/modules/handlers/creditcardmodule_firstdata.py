@@ -123,7 +123,7 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
 
         #   Don't redirect to receipt just yet, in case they haven't finished all steps of registration
         #   return HttpResponseRedirect("http://%s/learn/%s/%s/confirmreg" % (request.META['HTTP_HOST'], one, two))
-        return render_to_response(self.baseDir() + 'success.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir() + 'success.html', request, context)
         
     @aux_call
     def payment_failure(self, request, tl, one, two, module, extra, prog):
@@ -132,7 +132,7 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
             context['postdata'] = request.POST.copy()
         context['prog'] = prog
         context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
-        return render_to_response(self.baseDir() + 'failure.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir() + 'failure.html', request, context)
 
     @main_call
     @meets_deadline('/Payment')
@@ -168,7 +168,7 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         context['storename'] = self.store_id
         context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
         
-        return render_to_response(self.baseDir() + 'cardpay.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
     class Meta:
         abstract = True

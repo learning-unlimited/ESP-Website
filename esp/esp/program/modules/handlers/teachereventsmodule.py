@@ -169,7 +169,7 @@ class TeacherEventsModule(ProgramModuleObj):
             if bits['training'].count() > 0:
                 data['training'] = bits['training'][0].qsc.id
             form = TeacherEventSignupForm(self, initial=data)
-        return render_to_response( self.baseDir()+'event_signup.html', request, (prog, tl), {'prog':prog, 'form': form} )
+        return render_to_response( self.baseDir()+'event_signup.html', request, {'prog':prog, 'form': form} )
     
     @main_call
     @needs_admin
@@ -213,7 +213,7 @@ class TeacherEventsModule(ProgramModuleObj):
         context['interview_times'] = interview_times
         context['training_times'] = training_times
         
-        return render_to_response( self.baseDir()+'teacher_events.html', request, (prog, tl), context )
+        return render_to_response( self.baseDir()+'teacher_events.html', request, context )
 
 
 

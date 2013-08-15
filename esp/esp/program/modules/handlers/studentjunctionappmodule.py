@@ -131,7 +131,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
         else:
             forms = app.get_forms()
 
-        return render_to_response(self.baseDir()+'application.html', request, (self.program, tl), {'forms': forms, 'app': app})
+        return render_to_response(self.baseDir()+'application.html', request, {'forms': forms, 'app': app})
     
 
     class Meta:

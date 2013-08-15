@@ -127,7 +127,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         else:
             already_on_list = True
 
-        return render_to_response(self.baseDir()+'waitlist.html', request, (prog, tl), { 'already_on_list': already_on_list })
+        return render_to_response(self.baseDir()+'waitlist.html', request, { 'already_on_list': already_on_list })
         
     @aux_call
     @needs_student
@@ -198,10 +198,10 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         except DBReceipt.DoesNotExist:
             try:
                 receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
-                return render_to_response(receipt, request, (prog, tl), context)
+                return render_to_response(receipt, request, context)
             except:
                 receipt = 'program/receipts/default.html'
-                return render_to_response(receipt, request, (prog, tl), context)
+                return render_to_response(receipt, request, context)
 
     @aux_call
     @needs_student
@@ -284,7 +284,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         else:
             context['no_confirm'] = False
         
-        return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'mainpage.html', request, context)
 
     def isStep(self):
         return False

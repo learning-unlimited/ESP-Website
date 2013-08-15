@@ -24,7 +24,7 @@ class SchedulingCheckModule(ProgramModuleObj):
          s = SchedulingCheckRunner(prog)
          results = s.run_diagnostics()
          context = {'checks': results}
-         return render_to_response(self.baseDir()+'output.html', request, (prog, tl), context)
+         return render_to_response(self.baseDir()+'output.html', request, context)
 
     class Meta:
         abstract = True

@@ -80,7 +80,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         context = {}
         
-        return render_to_response(self.baseDir()+'ajax_scheduling.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'ajax_scheduling.html', request, context)
 
     @aux_call
     @needs_admin
@@ -426,7 +426,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         context = { 'events': events_ctxt }
 
-        return render_to_response(self.baseDir()+'securityschedule.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'securityschedule.html', request, context)
             
     @aux_call
     @needs_admin

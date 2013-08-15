@@ -138,7 +138,7 @@ class SchedulingModule(ProgramModuleObj):
         context['num_finished_classes'] = len(filter(lambda x: x.temp_status == 'Happy', sec_list))
 
         #   So far, this page shows you the same stuff no matter what you do.
-        return render_to_response(self.baseDir()+'main.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'main.html', request, context)
 
     @aux_call
     @needs_admin
@@ -168,7 +168,7 @@ class SchedulingModule(ProgramModuleObj):
         context['total_teacher_num'] = ESPUser.objects.filter(teacher_dict['class_approved']).distinct().count()
         context['bad_teacher_num'] = unavailable_teachers.count()
 
-        return render_to_response(self.baseDir()+'force_prompt.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'force_prompt.html', request, context)
 
     @aux_call
     @needs_admin
@@ -192,7 +192,7 @@ class SchedulingModule(ProgramModuleObj):
             response['Content-Disposition'] = 'attachment; filename=requests.csv'
             return response
         else:
-            return render_to_response(self.baseDir()+'requests.html', request, (prog, tl), context)
+            return render_to_response(self.baseDir()+'requests.html', request, context)
 
     @aux_call
     @needs_admin
@@ -203,7 +203,7 @@ class SchedulingModule(ProgramModuleObj):
 
         context = { 'events': events_ctxt }
 
-        return render_to_response(self.baseDir()+'securityschedule.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'securityschedule.html', request, context)
             
         
 

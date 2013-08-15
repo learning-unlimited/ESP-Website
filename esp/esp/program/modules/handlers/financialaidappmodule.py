@@ -93,8 +93,6 @@ class FinancialAidAppModule(ProgramModuleObj):
         """
         if Tag.getTag('finaid_directions_step'):
             return render_to_response(self.baseDir()+'aid_direct.html',
-                                      request,
-                                      (self.program, tl),
                                       {})
         else:
             return self.finaid_app(request, tl, one, two, module, extra, prog)
@@ -193,7 +191,6 @@ This request can be (re)viewed at:
             
         return render_to_response(self.baseDir()+'application.html',
                                   request,
-                                  (self.program, tl),
                                   {'form': form, 'app': app})
 
 

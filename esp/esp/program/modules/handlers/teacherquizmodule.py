@@ -151,7 +151,7 @@ class TeacherQuizModule(ProgramModuleObj):
         else:
             form = form_wizard.get_form(0)
             
-        return render_to_response(self.baseDir()+'quiz.html', request, (prog, tl), {'prog':prog, 'form': form})
+        return render_to_response(self.baseDir()+'quiz.html', request, {'prog':prog, 'form': form})
 
     class Meta:
         abstract = True

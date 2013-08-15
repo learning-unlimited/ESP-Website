@@ -79,7 +79,7 @@ class ResourceModule(ProgramModuleObj):
                 #   show delete confirmation page
                 context['prog'] = self.program
                 context['timeslot'] = Event.objects.get(id=request.GET['id'])
-                return render_to_response(self.baseDir()+'timeslot_delete.html', request, (prog, tl), context)
+                return render_to_response(self.baseDir()+'timeslot_delete.html', request, context)
             
             if request.method == 'POST':
                 data = request.POST
@@ -113,7 +113,7 @@ class ResourceModule(ProgramModuleObj):
                 #   show delete confirmation page
                 context['prog'] = self.program
                 context['restype'] = ResourceType.objects.get(id=request.GET['id'])
-                return render_to_response(self.baseDir()+'restype_delete.html', request, (prog, tl), context)
+                return render_to_response(self.baseDir()+'restype_delete.html', request, context)
                 
             if request.method == 'POST':
                 data = request.POST
@@ -153,7 +153,7 @@ class ResourceModule(ProgramModuleObj):
                 sections = ClassSection.objects.filter(resourceassignment__resource__id__in=resources.values_list('id', flat=True)).distinct()
                 
                 context['sections'] = sections
-                return render_to_response(self.baseDir()+'classroom_delete.html', request, (prog, tl), context)
+                return render_to_response(self.baseDir()+'classroom_delete.html', request, context)
                 
             if request.method == 'POST':
                 data = request.POST
@@ -218,7 +218,7 @@ class ResourceModule(ProgramModuleObj):
                     key_list = result.keys()
                     key_list.sort()
                     context['new_rooms'] = [result[key] for key in key_list]
-                    return render_to_response(self.baseDir()+'classroom_import.html', request, (prog, tl), context)
+                    return render_to_response(self.baseDir()+'classroom_import.html', request, context)
                 else:
                     extra = 'classroom'
 
@@ -233,7 +233,7 @@ class ResourceModule(ProgramModuleObj):
                 #   show delete confirmation page
                 context['prog'] = self.program
                 context['equipment'] = Resource.objects.get(id=request.GET['id'])
-                return render_to_response(self.baseDir()+'equipment_delete.html', request, (prog, tl), context)
+                return render_to_response(self.baseDir()+'equipment_delete.html', request, context)
                 
             if request.method == 'POST':
                 data = request.POST
@@ -285,7 +285,7 @@ class ResourceModule(ProgramModuleObj):
         context['module'] = self
 
         #   Display default form
-        return render_to_response(self.baseDir()+'resource_main.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'resource_main.html', request, context)
     
 
     class Meta:

@@ -39,5 +39,5 @@ from esp.web.util.main import render_to_response
 def summary(request):
     context = {}
     context['accounts'] = Account.objects.all().order_by('id')
-    return render_to_response('accounting/summary.html', context)
+    return render_to_response('accounting/summary.html', request, context)
 

@@ -68,7 +68,7 @@ def survey_view(request, tl, program, instance):
         raise ESPError(False), 'You need to be a program participant (i.e. student or teacher, not parent or educator) to participate in this survey.  Please contact the directors directly if you have additional feedback.'
 
     if request.GET.has_key('done'):
-        return render_to_response('survey/completed_survey.html', request, prog, {'prog': prog})
+        return render_to_response('survey/completed_survey.html', request, {'prog': prog})
     
     if tl == 'learn':
         event = "student_survey"
@@ -92,7 +92,7 @@ def survey_view(request, tl, program, instance):
         raise ESPError(False), "Sorry, no such survey exists for this program!"
 
     if len(surveys) > 1:
-        return render_to_response('survey/choose_survey.html', request, prog, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
+        return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
 
     survey = surveys[0]
 
@@ -135,7 +135,7 @@ def survey_view(request, tl, program, instance):
             'timeslots': timeslots,
         }
 
-        return render_to_response('survey/survey.html', request, prog, context)
+        return render_to_response('survey/survey.html', request, context)
 
 def get_survey_info(request, tl, program, instance):
     try:
@@ -217,7 +217,7 @@ def display_survey(user, prog, surveys, request, tl, format):
     
     #   Choose+use appropriate output format
     if format == 'html':
-        return render_to_response('survey/review.html', request, prog, context)
+        return render_to_response('survey/review.html', request, context)
     elif format == 'tex':
         return render_to_latex('survey/review.tex', context, 'pdf')
 
@@ -360,7 +360,7 @@ def survey_review_single(request, tl, program, instance):
     
     context = {'user': user, 'program': prog, 'response': survey_response, 'answers': answers, 'classes_only': classes_only, 'other_responses': other_responses }
     
-    return render_to_response('survey/review_single.html', request, prog, context)
+    return render_to_response('survey/review_single.html', request, context)
 
 # To be replaced with something more useful, eventually.
 @login_required
@@ -388,7 +388,7 @@ def top_classes(request, tl, program, instance):
         raise ESPError(False), 'Sorry, no such survey exists for this program!'
 
     if len(surveys) > 1:
-        return render_to_response('survey/choose_survey.html', request, prog, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
+        return render_to_response('survey/choose_survey.html', request, { 'surveys': surveys, 'error': request.POST }) # if request.POST, then we shouldn't have more than one survey any more...
     
     survey = surveys[0]
     
@@ -440,4 +440,4 @@ def top_classes(request, tl, program, instance):
             perclass_data.append(c)
     context = { 'survey': survey, 'program': prog, 'perclass_data': perclass_data, 'rating_cut': rating_cut, 'num_cut': num_cut, 'categories': categories }
     
-    return render_to_response('survey/top_classes.html', request, prog, context)
+    return render_to_response('survey/top_classes.html', request, context)

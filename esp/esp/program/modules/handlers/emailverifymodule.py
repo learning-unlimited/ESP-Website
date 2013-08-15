@@ -114,9 +114,9 @@ class EmailVerifyModule(ProgramModuleObj):
             
             newmsg_request.save()
             
-            return render_to_response(self.baseDir() + 'emailsent.html', request, (prog, tl), {})
+            return render_to_response(self.baseDir() + 'emailsent.html', request, {})
 
-        return render_to_response(self.baseDir() + 'sendemail.html', request, (prog, tl), {})
+        return render_to_response(self.baseDir() + 'sendemail.html', request, {})
     
 
 

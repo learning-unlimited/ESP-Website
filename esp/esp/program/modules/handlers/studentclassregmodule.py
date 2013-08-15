@@ -532,12 +532,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         for cls in classes:
             categories[cls.category_id] = {'id':cls.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.category.category}
 
-        return render_to_response(self.baseDir()+'fillslot.html', request, (prog, tl), {'classes':    classes,
-                                                                                        'one':        one,
-                                                                                        'two':        two,
-                                                                                        'categories': categories.values(),
-                                                                                        'timeslot':   ts,
-                                                                                        'prereg_url': prereg_url})
+        return render_to_response(self.baseDir()+'fillslot.html', request, {'classes':    classes,
+                                                                            'one':        one,
+                                                                            'two':        two,
+                                                                            'categories': categories.values(),
+                                                                            'timeslot':   ts,
+                                                                            'prereg_url': prereg_url})
        
 
     # we can also ``changeslot'', with only minor modifications to the above code...
@@ -591,13 +591,13 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         for cls in classes:
             categories[cls.parent_category.category_id] = {'id':cls.parent_class.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.parent_class.category.category}
         
-        return render_to_response(self.baseDir()+'changeslot.html', request, (prog, tl), {'classes':    classes,
-                                                                                        'oldclass':   oldclass,
-                                                                                        'one':        one,
-                                                                                        'two':        two,
-                                                                                        'categories': categories.values(),
-                                                                                        'timeslot':   ts,
-                                                                                        'prereg_url': prereg_url})
+        return render_to_response(self.baseDir()+'changeslot.html', request, {'classes':    classes,
+                                                                              'oldclass':   oldclass,
+                                                                              'one':        one,
+                                                                              'two':        two,
+                                                                              'categories': categories.values(),
+                                                                              'timeslot':   ts,
+                                                                              'prereg_url': prereg_url})
 
     # This function actually renders the catalog
     def catalog_render(self, request, tl, one, two, module, extra, prog, timeslot=None):
@@ -641,11 +641,11 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             class_blobs.append('<br />')
         context['class_descs'] = ''.join(class_blobs)
 
-        return render_to_response(self.baseDir()+'catalog.html', request, (prog, tl), context, use_request_context=False)
+        return render_to_response(self.baseDir()+'catalog.html', request, context, use_request_context=False)
 
 #def render_class_core_helper(cls, prog=None, scrmi=None, colorstring=None, collapse_full_classes=None):
     def catalog_javascript(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        return render_to_response(self.baseDir()+'catalog_javascript.html', request, (prog, tl), {
+        return render_to_response(self.baseDir()+'catalog_javascript.html', request, {
                 'one':        one,
                 'two':        two,
                 })
@@ -747,7 +747,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         context = {'cls': target_class, 'module': self}
         
-        return render_to_response(self.baseDir()+'class_docs.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'class_docs.html', request, context)
 
 
     def clearslot_logic(self, request, tl, one, two, module, extra, prog):

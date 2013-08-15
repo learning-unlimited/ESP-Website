@@ -75,7 +75,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
     @meets_deadline('/Payment')
     @usercheck_usetl
     def startpay_cybersource(self, request, tl, one, two, module, extra, prog):
-        return render_to_response(self.baseDir() + 'cardstart.html', request, (prog, tl), {})
+        return render_to_response(self.baseDir() + 'cardstart.html', request, {})
 
     @aux_call
     @meets_deadline('/Payment')
@@ -104,7 +104,7 @@ class CreditCardModule_Cybersource(ProgramModuleObj):
         context['sibling_discount'] = iac.amount_siblingdiscount()
         context['amount_paid'] = iac.amount_paid()
 
-        return render_to_response(self.baseDir() + 'cardpay.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
     class Meta:
         abstract = True

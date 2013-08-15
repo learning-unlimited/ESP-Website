@@ -88,7 +88,7 @@ def home(request):
     #   Get navbars corresponding to the 'home' category
     nav_category, created = NavBarCategory.objects.get_or_create(name='home')
     context = {'navbar_list': makeNavBar(None, GetNode('Q/Web'), '', nav_category)}
-    return render_to_response('index.html', request, GetNode('Q/Web'), context)
+    return render_to_response('index.html', request, context)
 
 @vary_on_headers('Cookie')
 def myesp(request, module):
@@ -96,7 +96,7 @@ def myesp(request, module):
 	if myesp_handlers.has_key(module):
 		return myesp_handlers[module](request, module)
 
-	return render_to_response('users/construction', request, GetNode('Q/Web/myesp'), {})
+	return render_to_response('users/construction', request, {})
 
 
 @vary_on_headers('Cookie')
@@ -209,7 +209,7 @@ def classchangerequest(request, tl, one, two):
         allowed_student_types = Tag.getTag("allowed_student_types", prog, default='')
         matching_user_types = any(x in request.user.groups.all().values_list("name",flat=True) for x in allowed_student_types.split(","))
         if not matching_user_types:
-            return render_to_response('errors/program/notastudent.html', request, (prog, 'learn'), {})
+            return render_to_response('errors/program/notastudent.html', request, {})
     
     errorpage = 'errors/program/wronggrade.html'
     
@@ -217,7 +217,7 @@ def classchangerequest(request, tl, one, two):
     cur_grade = request.user.getGrade(prog)
     if (not UserBit.UserHasPerms(user = request.user, qsc  = prog.anchor_id, verb = verb_override)) and (cur_grade != 0 and (cur_grade < prog.grade_min or \
                            cur_grade > prog.grade_max)):
-        return render_to_response(errorpage, request, (prog, tl), {})
+        return render_to_response(errorpage, request, {})
 
     setattr(request, "program", prog)
     setattr(request, "tl", tl)
@@ -283,7 +283,7 @@ def classchangerequest(request, tl, one, two):
                 
             return HttpResponseRedirect(request.path.rstrip('/')+'/?success')
     else: 
-        return render_to_response('program/classchangerequest.html', request, (prog, tl), context)
+        return render_to_response('program/classchangerequest.html', request, context)
 
 
 def archives(request, selection, category = None, options = None):
@@ -300,7 +300,7 @@ def archives(request, selection, category = None, options = None):
 	if archive_handlers.has_key(selection):
 		return archive_handlers[selection](request, category, options, sortparams)
 	
-	return render_to_response('users/construction', request, GetNode('Q/Web'), {})
+	return render_to_response('users/construction', request, {})
 
 def contact(request, section='esp'):
 	"""
@@ -309,7 +309,7 @@ def contact(request, section='esp'):
 	from django.core.mail import send_mail
 
 	if request.GET.has_key('success'):
-		return render_to_response('contact_success.html', request, GetNode('Q/Web/about'), {})
+		return render_to_response('contact_success.html', request, {})
 	
 		
 	
@@ -375,7 +375,7 @@ def contact(request, section='esp'):
 
 		form = ContactForm(initial = initial)
 			
-	return render_to_response('contact.html', request, GetNode('Q/Web/about'),
+	return render_to_response('contact.html', request,
 						 {'contact_form': form})
 
 
@@ -436,7 +436,7 @@ def registration_redirect(request):
             progs.sort(key=lambda x: -x.id)
             ctxt['progs'] = progs
             ctxt['prog'] = progs[0]
-        return render_to_response('users/profile_complete.html', request, GetNode('Q/Web'), ctxt)		    
+        return render_to_response('users/profile_complete.html', request, ctxt)		    
 
 
 ## QUIRKS

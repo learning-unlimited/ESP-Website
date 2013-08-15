@@ -47,7 +47,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             context['form'] = teacheracknowledgementform_factory(prog)({'acknowledgement': True})
         else:
             context['form'] = teacheracknowledgementform_factory(prog)()
-        return render_to_response(self.baseDir()+'acknowledgement.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'acknowledgement.html', request, context)
     
     def teachers(self, QObject = False):
         """ Returns a list of teachers who have submitted the acknowledgement. """

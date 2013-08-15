@@ -67,7 +67,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
         context['one'] = one
         context['two'] = two
         context['extra_steps'] = "teach:extra_steps"
-        return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'mainpage.html', request, context)
 
     def isStep(self):
         return False

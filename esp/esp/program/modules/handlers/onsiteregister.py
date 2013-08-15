@@ -150,7 +150,7 @@ class OnSiteRegister(ProgramModuleObj):
 
                 new_user.recoverPassword()
                 
-                return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {
+                return render_to_response(self.baseDir()+'reg_success.html', request, {
                     'student': new_user, 
                     'retUrl': '/onsite/%s/classchange_grid?student_id=%s' % (self.program.getUrlBase(), new_user.id)
                     })
@@ -158,7 +158,7 @@ class OnSiteRegister(ProgramModuleObj):
         else:
             form = OnSiteRegForm()
 
-	return render_to_response(self.baseDir()+'reg_info.html', request, (prog, tl), {'form':form, 'current_year':ESPUser.current_schoolyear()})
+	return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form, 'current_year':ESPUser.current_schoolyear()})
 
     class Meta:
         abstract = True

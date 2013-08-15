@@ -56,7 +56,7 @@ def createevent(request):
     else:
         f = EventForm()
     
-	return render_to_response('events/create_update', request, GetNode('Q/Web'), {'form': f } )
+    return render_to_response('events/create_update', request, {'form': f } )
 
 
 def updateevent(request, id=None):

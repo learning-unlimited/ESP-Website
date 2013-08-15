@@ -521,13 +521,13 @@ def usercheck_usetl(method):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
             
         if tl == 'learn' and not request.user.isStudent():
-            return render_to_response(errorpage, request, moduleObj.program, {})
+            return render_to_response(errorpage, request, {})
         
         if tl == 'teach' and not request.user.isTeacher():
-            return render_to_response(errorpage, request, moduleObj.program, {})
+            return render_to_response(errorpage, request, {})
         
         if tl == 'manage' and not request.user.isAdmin(moduleObj.program):
-            return render_to_response(errorpage, request, moduleObj.program, {})
+            return render_to_response(errorpage, request, {})
 
         return method(moduleObj, request, tl, *args, **kwargs)
 
@@ -542,7 +542,7 @@ def needs_teacher(method):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
             
         if not request.user.isTeacher() and not request.user.isAdmin(moduleObj.program) and not (set(request.user.getUserTypes()) & set(allowed_teacher_types)):
-            return render_to_response('errors/program/notateacher.html', request, (moduleObj.program, 'teach'), {})
+            return render_to_response('errors/program/notateacher.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
     _checkTeacher.call_tl = 'teach'
     _checkTeacher.method = method
@@ -560,7 +560,7 @@ def needs_admin(method):
 
         if not (request.user.isAdmin(moduleObj.program) or (morpheduser and morpheduser.isAdmin(moduleObj.program))):
             if not ( hasattr(request.user, 'other_user') and request.user.other_user and request.user.other_user.isAdmin(moduleObj.program) ):
-                return render_to_response('errors/program/notanadmin.html', request, (moduleObj.program, 'manage'), {})
+                return render_to_response('errors/program/notanadmin.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'manage'
     _checkAdmin.method = method
@@ -577,7 +577,7 @@ def needs_onsite(method):
             user.updateOnsite(request)
             ouser = user.get_old(request)
             if not user.other_user or (not ouser.isOnsite(moduleObj.program) and not ouser.isAdmin(moduleObj.program)):
-                return render_to_response('errors/program/notonsite.html', request, (moduleObj.program, 'onsite'), {})
+                return render_to_response('errors/program/notonsite.html', request, {})
             user.switch_back(request)
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
@@ -595,7 +595,7 @@ def needs_onsite_no_switchback(method):
             user.updateOnsite(request)
             ouser = user.get_old(request)
             if not user.other_user or (not ouser.isOnsite(moduleObj.program) and not ouser.isAdmin(moduleObj.program)):
-                return render_to_response('errors/program/notonsite.html', request, (moduleObj.program, 'onsite'), {})
+                return render_to_response('errors/program/notonsite.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
     _checkAdmin.method = method
@@ -610,7 +610,7 @@ def needs_student(method):
             allowed_student_types = Tag.getTag("allowed_student_types", moduleObj.program, default='')
             matching_user_types = any(x in request.user.groups.all().values_list("name",flat=True) for x in allowed_student_types.split(","))
             if not matching_user_types:
-                return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
+                return render_to_response('errors/program/notastudent.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
     _checkStudent.call_tl = 'learn'
     _checkStudent.method = method
@@ -645,7 +645,7 @@ def meets_grade(method):
         cur_grade = request.user.getGrade(moduleObj.program)
         if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
                                cur_grade > moduleObj.program.grade_max):
-            return render_to_response(errorpage, request, (moduleObj.program, tl), {})
+            return render_to_response(errorpage, request, {})
 
         return method(moduleObj, request, tl, *args, **kwargs)
     
@@ -698,7 +698,7 @@ def meets_deadline(extension=''):
                 if response:
                     return response
                 else:
-                    return render_to_response(errorpage, request, (moduleObj.program, tl), {'extension': list_extensions(tl,[extension]), 'moduleObj': moduleObj})
+                    return render_to_response(errorpage, request, {'extension': list_extensions(tl,[extension]), 'moduleObj': moduleObj})
         return _checkDeadline
     return meets_deadline
 
@@ -716,7 +716,7 @@ def meets_any_deadline(extensions=[]):
             if response:
                 return response
             else:
-                return render_to_response(errorpage, request, (moduleObj.program, tl), {'extension': list_extensions(tl,extensions,'and') , 'moduleObj': moduleObj})
+                return render_to_response(errorpage, request, {'extension': list_extensions(tl,extensions,'and') , 'moduleObj': moduleObj})
         return _checkDeadline
     return meets_deadline
 
@@ -731,7 +731,7 @@ def meets_all_deadlines(extensions=[]):
                     if response:
                         return response
                     else:
-                        return render_to_response(errorpage, request, (moduleObj.program, tl), {'extension': list_extensions(tl,extensions,'or') , 'moduleObj': moduleObj})
+                        return render_to_response(errorpage, request, {'extension': list_extensions(tl,extensions,'or') , 'moduleObj': moduleObj})
             return method(moduleObj, request, tl, *args, **kwargs)
         return _checkDeadline
     return meets_deadline

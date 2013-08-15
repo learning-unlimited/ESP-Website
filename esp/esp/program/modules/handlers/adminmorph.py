@@ -60,7 +60,7 @@ class AdminMorph(ProgramModuleObj):
         #   If there's no 'extra' component to the URL, return the options page.
         if extra is None or extra == '':
             context = {'module': self}
-            return render_to_response(self.baseDir()+'options.html', request, (prog, tl), context)
+            return render_to_response(self.baseDir()+'options.html', request, context)
 
         #   Default query is to get program participants
         query = self.program.students_union(True) | self.program.teachers_union(True) | self.program.volunteers_union(True)

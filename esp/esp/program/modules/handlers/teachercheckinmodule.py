@@ -114,7 +114,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         else:
             context['now'] = None
         
-        return render_to_response(self.baseDir()+'teachercheckin.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'teachercheckin.html', request, context)
     
     @aux_call
     @needs_onsite
@@ -217,7 +217,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         context['sections'], teachers = self.getMissingTeachers(prog, starttime, when)
         context['arrived'] = [teacher for teacher in teachers.values() if teacher['arrived']]
         context['start_time'] = starttime
-        return render_to_response(self.baseDir()+'missingteachers.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'missingteachers.html', request, context)
     
     class Meta:
         abstract = True

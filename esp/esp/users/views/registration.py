@@ -28,7 +28,7 @@ def join_emaillist(request):
 
     if request.user.is_authenticated():
         return render_to_response('registration/already_logged_in.html',
-                                  request, request.get_node('Q/Web/myesp'), {})
+                                  request, {})
 
 
     if request.method == 'POST':
@@ -49,7 +49,7 @@ def join_emaillist(request):
         form = EmailUserRegForm()    
 
     return render_to_response('registration/emailuser.html',
-                              request, request.get_node('Q/Web/myesp'), {'form':form})
+                              request, {'form':form})
 
 
 def user_registration_validate(request):    
@@ -102,11 +102,10 @@ This function is overloaded to handle either one or two phase reg"""
         else:
             send_activation_email(user,userkey)
             return render_to_response('registration/account_created_activation_required.html',
-                                      request, request.get_node('Q/Web/myesp'),
                                       {'user': user, 'site': Site.objects.get_current()})
     else:
         return render_to_response('registration/newuser.html',
-                                  request, request.get_node('Q/Web/myesp'),{'form':form})
+                                  request, {'form':form})
 
 def user_registration_checkemail(request):
     """Method to handle the first phase of registration when submitted as a form.
@@ -127,7 +126,7 @@ When there are already accounts with this email address (depending on some tags)
                 #if they want to try to log in
                 return render_to_response(
                     'registration/newuser_phase1.html',
-                    request, request.get_node('Q/Web/myesp'),
+                    request,
                     { 'accounts': existing_accounts,'awaitings':awaiting_activation_accounts, 'email':form.cleaned_data['email'], 'site': Site.objects.get_current(), 'form': form })    
 
         #form is valid, and not caring about multiple accounts
@@ -135,14 +134,14 @@ When there are already accounts with this email address (depending on some tags)
         return HttpResponseRedirect(reverse('users.views.user_registration_phase2')+'?email='+email)
     else: #form is not valid
         return render_to_response('registration/newuser_phase1.html',
-                                  request, request.get_node('Q/Web/myesp'),
+                                  request,
                                   {'form':form, 'site': Site.objects.get_current()})
 
 def user_registration_phase1(request):
     """Displays phase 1, and receives and passes off phase 1 submissions."""
     if request.user.is_authenticated():
         return render_to_response('registration/already_logged_in.html',
-                                  request, request.get_node('Q/Web/myesp'), {})
+                                  request, {})
 
     #depending on a tag, we'll either have registration all in one page,
     #or in two separate ones
@@ -152,7 +151,7 @@ def user_registration_phase1(request):
 
         form=SinglePhaseUserRegForm()
         return render_to_response('registration/newuser.html',
-                                  request, request.get_node('Q/Web/myesp'),
+                                  request,
                                   {'form':form, 'site': Site.objects.get_current()})
 
     #we do want to ask about duplicate accounts
@@ -161,7 +160,7 @@ def user_registration_phase1(request):
     
     form=EmailUserRegForm()
     return render_to_response('registration/newuser_phase1.html',
-                              request, request.get_node('Q/Web/myesp'),
+                              request,
                               {'form':form, 'site': Site.objects.get_current()})
 
 def user_registration_phase2(request):
@@ -178,7 +177,7 @@ def user_registration_phase2(request):
         return HttpResponseRedirect(reverse("users.views.user_registration_phase1"))
     form = UserRegForm(initial={'email':email,'confirm_email':email})
     return render_to_response('registration/newuser.html',
-                              request, request.get_node('Q/Web/myesp'),{'form':form, 'email':email})
+                              request, {'form':form, 'email':email})
 
 
 def activate_account(request):
@@ -208,22 +207,19 @@ def send_activation_email(user,userkey):
 def resend_activation_view(request):
     if request.user.is_authenticated():
         return render_to_response('registration/already_logged_in.html',
-                                  request, request.get_node('Q/Web/myesp'), {})
+                                  request, {})
 
     if request.method == 'POST':
         form=AwaitingActivationEmailForm(request.POST)
         if not form.is_valid():
             return render_to_response('registration/resend.html',request,
-                                      request.get_node('Q/Web/myesp'),
                                       {'form':form, 'site': Site.objects.get_current()})
         user=ESPUser.objects.get(username=form.cleaned_data['username'])
         userkey=user.password[user.password.rfind("_")+1:]
         send_activation_email(user,userkey)
         return render_to_response('registration/resend_done.html',request,
-                                  request.get_node('Q/Web/myesp'),
                                   {'form':form, 'site': Site.objects.get_current()})
     else: 
         form=AwaitingActivationEmailForm()
         return render_to_response('registration/resend.html',request,
-                                  request.get_node('Q/Web/myesp'),
                                   {'form':form, 'site': Site.objects.get_current()})

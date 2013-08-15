@@ -101,7 +101,7 @@ class AdminMaterials(ProgramModuleObj):
         
         classes = ClassSubject.objects.filter(parent_program = prog)
     
-        return render_to_response(self.baseDir()+'listmaterials.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'listmaterials.html', request, context)
     
 
 

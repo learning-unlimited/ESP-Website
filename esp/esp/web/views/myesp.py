@@ -63,11 +63,11 @@ def myesp_passwd(request, module):
                         user.set_password(new_data['newpasswd'])
                         user.save()
                         login(request, user)
-                        return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Success': True})
+                        return render_to_response('users/passwd.html', request, {'Success': True})
         else:
                 form = UserPasswdForm(user=request.user)
                 
-        return render_to_response('users/passwd.html', request, GetNode('Q/Web/myesp'), {'Problem': False,
+        return render_to_response('users/passwd.html', request, {'Problem': False,
                                                     'form': form,
                                                     'Success': False})
 
@@ -235,7 +235,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
     context['request'] = request
     context['form'] = form
-    return render_to_response('users/profile.html', request, navnode, context)
+    return render_to_response('users/profile.html', request, context)
 
 @login_required
 def myesp_onsite(request, module):
@@ -256,7 +256,7 @@ def myesp_onsite(request, module):
 		return HttpResponseRedirect('/onsite/%s/main' % progs[0].getUrlBase())
 	else:
 		navnode = GetNode('Q/Web/myesp')
-		return render_to_response('program/pickonsite.html', request, navnode, {'progs': progs})
+		return render_to_response('program/pickonsite.html', request, {'progs': progs})
 
 myesp_handlers = {
 		   'switchback': myesp_switchback,

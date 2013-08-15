@@ -72,7 +72,7 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
         else:
             context['core_admin'] = False
 
-        return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'mainpage.html', request, context)
 
     def isStep(self):
         return False

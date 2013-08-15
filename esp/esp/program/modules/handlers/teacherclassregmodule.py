@@ -205,7 +205,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         if section.count() != 1:
             raise ESPError(False), 'Could not find that class section; please contact the webmasters.'
 
-        return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'section': section[0], 'cls': section[0]})
+        return render_to_response(self.baseDir()+'class_students.html', request, {'section': section[0], 'cls': section[0]})
 
     @aux_call
     @needs_teacher
@@ -216,7 +216,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         if cls.count() != 1:
             raise ESPError(False), 'Could not find that class subject; please contact the webmasters.'
 
-        return render_to_response(self.baseDir()+'class_students.html', request, (prog, tl), {'cls': cls[0]})
+        return render_to_response(self.baseDir()+'class_students.html', request, {'cls': cls[0]})
         
         
     @aux_call
@@ -296,7 +296,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             if isinstance(module, StudentJunctionAppModule):
                 has_app_module = True
 
-        return render_to_response(self.baseDir()+'select_students.html', request, (prog, tl), {'has_app_module': has_app_module, 'prog': prog, 'sec': sec, 'students_list': students_list})
+        return render_to_response(self.baseDir()+'select_students.html', request, {'has_app_module': has_app_module, 'prog': prog, 'sec': sec, 'students_list': students_list})
         
     @aux_call
     @needs_teacher
@@ -304,10 +304,10 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     def deleteclass(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(id = extra)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
+                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
         if cls.num_students() > 0:
-            return render_to_response(self.baseDir()+'toomanystudents.html', request, (prog, tl), {})
+            return render_to_response(self.baseDir()+'toomanystudents.html', request, {})
         
         cls.delete()
         return self.goToCore(tl)
@@ -324,12 +324,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
+                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
         context = {'cls': cls, 'module': self,}
 
-        return render_to_response(self.baseDir()+'class_status.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'class_status.html', request, context)
 
     @aux_call
     @needs_teacher
@@ -346,7 +346,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
+                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         
         target_class = classes[0]
         context_form = FileUploadForm()
@@ -374,7 +374,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         
         context = {'cls': target_class, 'uploadform': context_form, 'module': self}
     
-        return render_to_response(self.baseDir()+'class_docs.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'class_docs.html', request, context)
 
     @aux_call
     @needs_teacher
@@ -390,7 +390,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             
         classes = ClassSubject.objects.filter(id = request.POST['clsid'])
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-            return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         cls = classes[0]
 
@@ -429,13 +429,13 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 error = 'Error - You already added this teacher as a coteacher!'
 
             if error:
-                return render_to_response(self.baseDir()+'coteachers.html', request, (prog, tl),{'class':cls,
-                                                                                                 'ajax':ajax,
-                                                                                                 'txtTeachers': txtTeachers,
-                                                                                                 'coteachers':  coteachers,
-                                                                                                 'error': error,
-                                                                                                 'conflicts': []})
-            
+                return render_to_response(self.baseDir()+'coteachers.html', request, {'class':cls,
+                                                                                     'ajax':ajax,
+                                                                                     'txtTeachers': txtTeachers,
+                                                                                     'coteachers':  coteachers,
+                                                                                     'error': error,
+                                                                                     'conflicts': []})
+
             # add schedule conflict checking here...
             teacher = ESPUser.objects.get(id = request.POST['teacher_selected'])
 
@@ -484,11 +484,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 ccc.send_class_mail_to_directors(cls)
                 return self.goToCore(tl)
 
-        return render_to_response(self.baseDir()+'coteachers.html', request, (prog, tl),{'class':cls,
-                                                                                         'ajax':ajax,
-                                                                                         'txtTeachers': txtTeachers,
-                                                                                         'coteachers':  coteachers,
-                                                                                         'conflicts':   conflictingusers})
+        return render_to_response(self.baseDir()+'coteachers.html', request, {'class':cls,
+                                                                             'ajax':ajax,
+                                                                             'txtTeachers': txtTeachers,
+                                                                             'coteachers':  coteachers,
+                                                                             'conflicts':   conflictingusers})
 
     @needs_teacher
     def ajax_requests(self, request, tl, one, two, module, extra, prog):
@@ -594,7 +594,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             raise ESPError(False), "No class found matching this ID!"
 
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-            return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
         if cls.category.category == open_class_category().category:
@@ -644,7 +644,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['all_class_list'] = request.user.getTaughtClasses()
         context['noclasses'] = (len(context['all_class_list']) == 0)
         context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='true').lower()
-        return render_to_response(self.baseDir()+'listcopyclasses.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'listcopyclasses.html', request, context)
 
     @aux_call
     @meets_deadline('/Classes/Create')
@@ -848,7 +848,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             (request.method == "GET" and request.GET.has_key('manage') and request.GET['manage'] == 'manage')) and request.user.isAdministrator():
             context['manage'] = True
         
-        return render_to_response(self.baseDir() + 'classedit.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir() + 'classedit.html', request, context)
 
 
     @aux_call

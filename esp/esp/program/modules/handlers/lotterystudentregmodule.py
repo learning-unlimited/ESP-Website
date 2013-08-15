@@ -116,9 +116,9 @@ class LotteryStudentRegModule(ProgramModuleObj):
         print ProgInfo.priority_limit
         #HSSP-style lottery
         if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:
-            return render_to_response('program/modules/lotterystudentregmodule/student_reg_old.html', request, (prog, tl), context)
+            return render_to_response('program/modules/lotterystudentregmodule/student_reg_old.html', request, context)
         #Splark/Spash style lottery
-        return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, (prog, tl), context)
+        return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, context)
 
     @aux_call
     @meets_deadline('/Classes/Lottery')
@@ -179,7 +179,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
             context['iempty'] = True
         else: context['iempty'] = False
 
-        return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, context)
     
     class Meta:
         abstract = True

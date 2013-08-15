@@ -175,7 +175,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         
         context['module'] = self
         context['form'] = form
-        return render_to_response(self.baseDir()+'ajaxcheckin.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'ajaxcheckin.html', request, context)
         
     @aux_call
     @needs_onsite
@@ -215,7 +215,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         context['module'] = self
         context['form'] = form
         context['results'] = results
-        return render_to_response(self.baseDir()+'barcodecheckin.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'barcodecheckin.html', request, context)
         
 
 
@@ -238,7 +238,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
             return self.goToCore(tl)
 
-        return render_to_response(self.baseDir()+'checkin.html', request, (prog, tl), {'module': self})
+        return render_to_response(self.baseDir()+'checkin.html', request, {'module': self})
 
 
     class Meta:

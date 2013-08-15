@@ -14,11 +14,11 @@ def make_admin(request):
         if form.is_valid():
             target_user = form.cleaned_data['target_user']
             make_user_admin(target_user)
-            return render_to_response('users/make_admin_success.html', request, request.get_node('Q/Programs/'), {'target_user': target_user})
+            return render_to_response('users/make_admin_success.html', request, {'target_user': target_user})
     else:
         form = MakeAdminForm()
 
-    return render_to_response('users/make_admin.html', request, request.get_node('Q/Programs/'), {'form': form})
+    return render_to_response('users/make_admin.html', request, {'form': form})
 
 def make_user_admin(target_user):
     # Set the flags for Django's auth system

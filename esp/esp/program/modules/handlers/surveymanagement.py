@@ -70,20 +70,20 @@ class SurveyManagement(ProgramModuleObj):
        
         context = {'program': prog}
         
-        return render_to_response('program/modules/surveymanagement/create.html', request, prog.anchor, context)
+        return render_to_response('program/modules/surveymanagement/create.html', request, context)
     
     @needs_admin
     def survey_edit(self, request, tl, one, two, module, extra, prog):
 
         context = {'program': prog}
         
-        return render_to_response('program/modules/surveymanagement/edit.html', request, prog.anchor, context)
+        return render_to_response('program/modules/surveymanagement/edit.html', request, context)
 
     @main_call
     @needs_admin
     def surveys(self, request, tl, one, two, module, extra, prog):
         if extra is None or extra == '':
-            return render_to_response('program/modules/surveymanagement/main.html', request, prog.anchor, {'program': prog, 'surveys': prog.getSurveys()})
+            return render_to_response('program/modules/surveymanagement/main.html', request, {'program': prog, 'surveys': prog.getSurveys()})
         elif extra == 'edit':
             return self.survey_edit(request, tl, one, two, module, extra, prog)
         elif extra == 'create':

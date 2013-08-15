@@ -70,7 +70,7 @@ class TeacherPreviewModule(ProgramModuleObj):
                         scheditems.append({'name': teacher.name(), 'teacher': teacher, 'cls': section})
             scheditems.sort()
             context['scheditems'] = scheditems
-            return render_to_response(pmo.baseDir()+template_file, request, (prog, tl), context)
+            return render_to_response(pmo.baseDir()+template_file, request, context)
         else:
             raise ESPError(False), 'No printables module resolved, so this document cannot be generated.  Consult the webmasters.' 
 
@@ -92,7 +92,7 @@ class TeacherPreviewModule(ProgramModuleObj):
         except (ValueError, IndexError):
             raise Http404('The requested class could not be found.')
         cls = ClassSubject.objects.catalog(cls.parent_program, force_all=True, initial_queryset=qs)[0]
-        return render_to_response(self.baseDir()+'catalogpreview.html', request, (prog, tl), {'class': cls})
+        return render_to_response(self.baseDir()+'catalogpreview.html', request, {'class': cls})
     
     def get_handouts(self):
         sections = get_current_request().user.getTaughtSections(self.program)

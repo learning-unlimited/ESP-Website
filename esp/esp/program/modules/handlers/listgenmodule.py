@@ -292,15 +292,14 @@ class ListGenModule(ProgramModuleObj):
                 return render_to_response(
                     self.baseDir()+('list_%s.html' % output_type),
                     request,
-                    (prog, tl),
                     {'users': users, 'lists': lists, 'fields': fields, 'listdesc': filterObj.useful_name},
                     mimetype=mimetype,
                 )
             else:
-                return render_to_response(self.baseDir()+'options.html', request, (prog, tl), {'form': form, 'filterid': filterObj.id})
+                return render_to_response(self.baseDir()+'options.html', request, {'form': form, 'filterid': filterObj.id})
         else:
             form = ListGenForm()
-            return render_to_response(self.baseDir()+'options.html', request, (prog, tl), {'form': form, 'filterid': filterObj.id})
+            return render_to_response(self.baseDir()+'options.html', request, {'form': form, 'filterid': filterObj.id})
 
 
     class Meta:

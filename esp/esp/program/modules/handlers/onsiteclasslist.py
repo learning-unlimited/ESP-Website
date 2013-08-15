@@ -278,7 +278,7 @@ LIMIT 1
         context['printers'] = Printer.objects.all().values_list('name', flat=True)
         context['program'] = prog
         context['initial_student'] = request.GET.get('student_id', '')
-        return render_to_response(self.baseDir()+'ajax_status.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'ajax_status.html', request, context)
 
     @aux_call
     @needs_onsite
@@ -360,7 +360,7 @@ LIMIT 1
                 item['sections'].append(sect)
             timeslots.append(item)
         context['timeslots'] = timeslots
-        response = render_to_response(self.baseDir()+'status.html', request, (prog, tl), context)
+        response = render_to_response(self.baseDir()+'status.html', request, context)
         return response
 
     @aux_call
@@ -415,7 +415,7 @@ LIMIT 1
         else:
             context['use_categories'] = True
         
-        return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'classlist.html', request, context)
 
     @main_call
     @needs_onsite
@@ -434,7 +434,7 @@ LIMIT 1
 
         printers = [ x.name for x in Printer.objects.all() ]
         
-        return render_to_response(self.baseDir()+'allclasslist.html', request, (prog, tl), 
+        return render_to_response(self.baseDir()+'allclasslist.html', request,
             {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
 
 

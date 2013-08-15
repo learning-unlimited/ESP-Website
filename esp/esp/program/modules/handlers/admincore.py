@@ -85,7 +85,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         for (tl, view_name) in prog.getModuleViews():
             context['%s_%s' % (tl, view_name)] = True
 
-        return render_to_response(self.baseDir()+'directory.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'directory.html', request, context)
 
     @main_call
     @needs_admin
@@ -101,8 +101,9 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['modules'] = modules
         context['one'] = one
         context['two'] = two
+        context['program'] = prog
 
-        return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'mainpage.html', request, context)
     
     @aux_call
     @needs_admin
@@ -128,7 +129,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         
         display_names = list(RTC.getVisibleRegistrationTypeNames(prog, for_VRT_form=True))
         context['form'] = VRTF(data={'display_names': display_names})
-        return render_to_response(self.baseDir()+'registrationtype_management.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'registrationtype_management.html', request, context)
     
     @aux_call
     @needs_admin
@@ -146,7 +147,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         else:
             form = LunchConstraintsForm(prog)
         context['form'] = form
-        return render_to_response(self.baseDir()+'lunch_constraints.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'lunch_constraints.html', request, context)
     
     @aux_call
     @needs_admin
@@ -242,7 +243,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['perms'] = perms
         context['create_form'] = NewPermissionForm()
         
-        return render_to_response(self.baseDir()+'deadlines.html', request, (prog, tl), context) 
+        return render_to_response(self.baseDir()+'deadlines.html', request, context) 
         
     #   Alias for deadline management
     deadlines = deadline_management

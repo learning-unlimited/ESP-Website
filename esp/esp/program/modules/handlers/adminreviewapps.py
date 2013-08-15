@@ -116,7 +116,6 @@ class AdminReviewApps(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'roster.html',
                                   request,
-                                  (prog, tl),
                                   {'class': cls,
                                    'students':students})
 
@@ -184,7 +183,7 @@ class AdminReviewApps(ProgramModuleObj):
             assert False, student.studentapplication_set.all()[0].__dict__
             raise ESPError(False), 'Error: Student did not apply. Student is automatically rejected.'
         
-        return render_to_response(self.baseDir()+'app_popup.html', request, (prog, tl), {'class': cls, 'student': student})
+        return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student})
 
     def prepare(self, context):
         """ Sets the 'classes' template variable to contain the list of classes that the current user is teaching """

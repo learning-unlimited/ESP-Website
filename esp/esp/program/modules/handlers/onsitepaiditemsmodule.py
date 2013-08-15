@@ -77,7 +77,7 @@ class OnsitePaidItemsModule(ProgramModuleObj):
         context['amount_finaid'] = iac.amount_finaid()
         context['amount_due'] = iac.amount_due()
         
-        return render_to_response(self.baseDir()+'paiditems.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'paiditems.html', request, context)
 
 
     class Meta:

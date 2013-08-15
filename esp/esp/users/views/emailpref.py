@@ -51,7 +51,7 @@ def emailpref(request, success = None):
     if success:
         return render_to_response('users/emailpref_success.html',
                                   request,
-                                  request.get_node('Q/Web/myesp'), {})
+                                  {})
 
     if request.method == 'POST':
         form = EmailPrefForm(request.POST)
@@ -60,7 +60,7 @@ def emailpref(request, success = None):
             ep, created = EmailPref.objects.get_or_create(email = form.cleaned_data['email'])
 
             ep.email_opt_in = True
-	    ep.first_name = form.cleaned_data['first_name']
+            ep.first_name = form.cleaned_data['first_name']
             ep.last_name = form.cleaned_data['last_name']
             ep.sms_number = form.cleaned_data['sms_number']
             ep.sms_opt_in = True if ep.sms_number else False
@@ -71,6 +71,5 @@ def emailpref(request, success = None):
 
     return render_to_response('users/emailpref.html',
                               request,
-                              request.get_node('Q/Web/myesp'),
                               {'form': form})
 

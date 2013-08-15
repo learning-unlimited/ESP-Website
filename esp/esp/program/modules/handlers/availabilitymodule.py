@@ -210,7 +210,7 @@ class AvailabilityModule(ProgramModuleObj):
         context['conflict_found'] = conflict_found
         context['teacher_user'] = teacher
         
-        return render_to_response(self.baseDir()+'availability_form.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'availability_form.html', request, context)
 
     @aux_call
     @needs_admin
@@ -227,7 +227,7 @@ class AvailabilityModule(ProgramModuleObj):
             target_username = request.POST['user']
         else:
             context = {}
-            return render_to_response(self.baseDir()+'searchform.html', request, (prog, tl), context)
+            return render_to_response(self.baseDir()+'searchform.html', request, context)
         
         try:
             teacher = ESPUser.objects.get(username=target_username)
@@ -260,7 +260,7 @@ class AvailabilityModule(ProgramModuleObj):
                 available.append((resource.event.start, resource.event.end, False))
 
         context = {'available': available, 'teacher_name': teacher.first_name + ' ' + teacher.last_name, 'edit_path': '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.username) }
-        return render_to_response(self.baseDir()+'check_availability.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'check_availability.html', request, context)
 
     @aux_call
     @needs_admin
@@ -277,7 +277,7 @@ class AvailabilityModule(ProgramModuleObj):
             target_username = request.POST['user']
         else:
             context = {}
-            return render_to_response(self.baseDir()+'searchform.html', request, (prog, tl), context)
+            return render_to_response(self.baseDir()+'searchform.html', request, context)
         
         try:
             teacher = ESPUser.objects.get(username=target_username)

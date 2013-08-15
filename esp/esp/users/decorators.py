@@ -42,7 +42,6 @@ def anonymous_only(message="Sorry, you don't need this page -- you're logged in.
             if request.user.is_authenticated():
                 return render_to_response('errors/anonymous_only.html',
                                           request,
-                                          request.get_node('Q/Web/about'),
                                           {})
 
             return method(request, *args, **kwargs)

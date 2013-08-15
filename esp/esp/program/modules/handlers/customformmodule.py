@@ -119,7 +119,7 @@ class CustomFormModule(ProgramModuleObj):
             
             form = form_wizard.get_form(0)
             
-        return render_to_response(self.baseDir()+'custom_form.html', request, (prog, tl), {'prog':prog, 'form': form, 'tl':tl})
+        return render_to_response(self.baseDir()+'custom_form.html', request, {'prog':prog, 'form': form, 'tl':tl})
     
     class Meta:
         abstract = True

@@ -91,7 +91,7 @@ def lottery_student_reg(request, program = None):
 
     context = {}
     
-    return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, None, {})
+    return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, {})
 
 @login_required
 def lottery_student_reg_simple(request, program = None):
@@ -108,7 +108,7 @@ def lottery_student_reg_simple(request, program = None):
 
     context = {}
     
-    return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, None, {})
+    return render_to_response('program/modules/lotterystudentregmodule/student_reg_simple.html', request, {})
 
 
 #@transaction.commit_manually
@@ -386,7 +386,7 @@ def usersearch(request):
         raise ESPError(False), "No user found by that name!"
 
     if isiterable(found_users):
-        return render_to_response('users/userview_search.html', request, GetNode("Q/Web"), { 'found_users': found_users })
+        return render_to_response('users/userview_search.html', request, { 'found_users': found_users })
     else:
         from urllib import urlencode
         return HttpResponseRedirect('/manage/userview?%s' % urlencode({'username': found_users.username}))
@@ -425,7 +425,7 @@ def userview(request):
         'domain': settings.SITE_INFO[1],
         'change_grade_form': change_grade_form,
     }
-    return render_to_response("users/userview.html", request, GetNode("Q/Web"), context )
+    return render_to_response("users/userview.html", request, context )
     
 def programTemplateEditor(request):
     """ Generate and display a listing of all QSD pages in the Programs template
@@ -441,7 +441,7 @@ def programTemplateEditor(request):
 
     have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Administer/Edit'))
 
-    return render_to_response('display/qsd_listing.html', request, GetNode('Q/Web'), {'qsd_pages': qsd_pages, 'have_create': have_create })
+    return render_to_response('display/qsd_listing.html', request, {'qsd_pages': qsd_pages, 'have_create': have_create })
 
 def classTemplateEditor(request, program, session):
     """ Generate and display a listing of all QSD pages in the Class template within the specified program
@@ -460,7 +460,7 @@ def classTemplateEditor(request, program, session):
 
     have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Administer/Edit'))
 
-    return render_to_response('display/qsd_listing.html', request, program, {'qsd_pages': qsd_pages,
+    return render_to_response('display/qsd_listing.html', request, {'qsd_pages': qsd_pages,
                                                             'have_create': have_create })
 
 @admin_required
@@ -469,7 +469,7 @@ def manage_programs(request):
     admPrograms = Program.objects.all()
     context = {'admPrograms': admPrograms,
                'user': request.user}
-    return render_to_response('program/manage_programs.html', request, GetNode('Q/Web/myesp'), context)
+    return render_to_response('program/manage_programs.html', request, context)
 
 @admin_required
 def newprogram(request):
@@ -595,7 +595,7 @@ def newprogram(request):
             context_pickled = pickle.dumps({'prog_form_raw': form.data, 'datatrees': datatrees, 'userbits': userbits, "perms": perms, 'modules': modules, 'costs': ( form.cleaned_data['base_cost'], form.cleaned_data['finaid_cost'] )})
             request.session['context_str'] = context_pickled
             
-            return render_to_response('program/newprogram_review.html', request, GetNode('Q/Programs/'), {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'perms':perms, 'modules': modules})
+            return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'perms':perms, 'modules': modules})
         
     else:
         #   Otherwise, the default view is a blank form.
@@ -604,7 +604,7 @@ def newprogram(request):
         else:
             form = ProgramCreationForm()
 
-    return render_to_response('program/newprogram.html', request, GetNode('Q/Programs/'), {'form': form, 'programs': Program.objects.all().order_by('-id'),'template_prog_id':template_prog_id})
+    return render_to_response('program/newprogram.html', request, {'form': form, 'programs': Program.objects.all().order_by('-id'),'template_prog_id':template_prog_id})
 
 @csrf_exempt
 @login_required
@@ -644,7 +644,7 @@ def submit_transaction(request):
 
         return HttpResponseRedirect("http://%s/learn/%s/%s/confirmreg" % (request.META['HTTP_HOST'], one, two))
 
-    return render_to_response( 'accounting_docs/credit_rejected.html', request, GetNode('Q/Accounting'), {} )
+    return render_to_response( 'accounting_docs/credit_rejected.html', request, {} )
 
 # This really should go in qsd
 @admin_required
@@ -669,7 +669,7 @@ def manage_pages(request):
                 qsd_list = QuasiStaticData.objects.filter(id__in=qsd_id_list)
                 anchor = form.load_data(qsd_list)
                 if anchor:
-                    return render_to_response('qsd/bulk_move.html', request, DataTree.get_by_uri('Q/Web'), {'common_anchor': anchor, 'qsd_list': qsd_list, 'form': form})
+                    return render_to_response('qsd/bulk_move.html', request, {'common_anchor': anchor, 'qsd_list': qsd_list, 'form': form})
         
         qsd = QuasiStaticData.objects.get(id=request.GET['id'])
         if request.GET['cmd'] == 'move':
@@ -678,7 +678,7 @@ def manage_pages(request):
             if form.is_valid():
                 form.save_data()
             else:
-                return render_to_response('qsd/move.html', request, DataTree.get_by_uri('Q/Web'), {'qsd': qsd, 'form': form})
+                return render_to_response('qsd/move.html', request, {'qsd': qsd, 'form': form})
         elif request.GET['cmd'] == 'delete':
             #   Mark as inactive all QSD pages matching the one with ID request.GET['id']
             if data['sure'] == 'True':
@@ -692,7 +692,7 @@ def manage_pages(request):
         qsd = QuasiStaticData.objects.get(id=request.GET['id'])
         if request.GET['cmd'] == 'delete':
             #   Show confirmation of deletion
-            return render_to_response('qsd/delete_confirm.html', request, DataTree.get_by_uri('Q/Web'), {'qsd': qsd})
+            return render_to_response('qsd/delete_confirm.html', request, {'qsd': qsd})
         elif request.GET['cmd'] == 'undelete':
             #   Make all the QSDs enabled and return to viewing the list
             all_qsds = QuasiStaticData.objects.filter(path=qsd.path, name=qsd.name)
@@ -703,7 +703,7 @@ def manage_pages(request):
             #   Show move form
             form = QSDMoveForm()
             form.load_data(qsd)
-            return render_to_response('qsd/move.html', request, DataTree.get_by_uri('Q/Web'), {'qsd': qsd, 'form': form})
+            return render_to_response('qsd/move.html', request, {'qsd': qsd, 'form': form})
             
     #   Show QSD listing 
     qsd_ids = []
@@ -716,7 +716,7 @@ def manage_pages(request):
             seen_keys.add(key)
     qsd_list = list(QuasiStaticData.objects.filter(id__in=qsd_ids))
     qsd_list.sort(key=lambda q: q.url())
-    return render_to_response('qsd/list.html', request, DataTree.get_by_uri('Q/Web'), {'qsd_list': qsd_list})
+    return render_to_response('qsd/list.html', request, {'qsd_list': qsd_list})
     
 @admin_required
 def flushcache(request):
@@ -736,7 +736,7 @@ def flushcache(request):
         else:
             context['error'] = "Sorry, that doesn't count as a reason."
 
-    return render_to_response('admin/cache_flush.html', request, DataTree.get_by_uri('Q/Web'), context)
+    return render_to_response('admin/cache_flush.html', request, context)
                          
 
 @admin_required
@@ -844,7 +844,7 @@ def statistics(request, program=None):
                 result['script'] = render_to_string('program/statistics/script.js', context)
                 return HttpResponse(json.dumps(result), mimetype='application/json')
             else:
-                return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
+                return render_to_response('program/statistics.html', request, context)
         else:
             #   Form was submitted but there are problems with it
             form.hide_unwanted_fields()
@@ -854,7 +854,7 @@ def statistics(request, program=None):
             if request.is_ajax():
                 return HttpResponse(json.dumps(result), mimetype='application/json')
             else:
-                return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
+                return render_to_response('program/statistics.html', request, context)
 
     #   First request, form not yet submitted
     form = StatisticsQueryForm(program=program)
@@ -866,7 +866,7 @@ def statistics(request, program=None):
     if request.is_ajax():
         return HttpResponse(json.dumps(context), mimetype='application/json')
     else:
-        return render_to_response('program/statistics.html', request, DataTree.get_by_uri('Q/Web'), context)
+        return render_to_response('program/statistics.html', request, context)
 
 @admin_required
 def template_preview(request):
@@ -878,5 +878,5 @@ def template_preview(request):
         
     context = {}
 
-    return render_to_response(template, request, DataTree.get_by_uri('Q/Web'), context)
+    return render_to_response(template, request, context)
     
