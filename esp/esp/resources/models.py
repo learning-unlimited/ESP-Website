@@ -309,17 +309,14 @@ class Resource(models.Model):
     def is_conflicted(self):
         return (self.assignments().count() > 1)
     
-    def available_any_time(self, anchor=None):
-        return (len(self.available_times(anchor)) > 0)
+    def available_any_time(self):
+        return (len(self.available_times()) > 0)
     
-    def available_times_html(self, anchor=None):
-        return '<br /> '.join([unicode(e) for e in Event.collapse(self.available_times(anchor))])
+    def available_times_html(self):
+        return '<br /> '.join([unicode(e) for e in Event.collapse(self.available_times())])
 
-    def available_times(self, anchor=None):
-        if anchor:
-            event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times().filter(anchor=anchor)))
-        else:
-            event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times()))
+    def available_times(self):
+        event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times()))
         return event_list
     
     def matching_times(self):
