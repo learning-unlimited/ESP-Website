@@ -490,7 +490,7 @@ class ESPUser(User, AnonymousUser):
         #   Because the timeslot has an anchor, the program is unnecessary.
         #   Default to teacher mode
         if role is None:
-            role = GetNode('V/Flags/UserRole/Teacher')
+            role = Group.objects.get(name='Teacher')
         new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot, role=role)
         new_availability.save()
         
