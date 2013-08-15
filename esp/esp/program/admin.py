@@ -93,7 +93,7 @@ class FinancialAidGrantInline(admin.TabularInline):
 
 class FinancialAidRequestAdmin(admin.ModelAdmin):
     list_display = ('user', 'approved', 'reduced_lunch', 'program', 'household_income', 'extra_explaination')
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'id', 'program__anchor__parent__friendly_name', 'program__anchor__friendly_name']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'id', 'program__url']
     list_filter = ['program']
     inlines = [FinancialAidGrantInline,]
 admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
@@ -167,7 +167,7 @@ def expire_student_registrations(modeladmin, request, queryset):
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__anchor__name']
+    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
 def sec_classrooms(obj):
