@@ -1794,7 +1794,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
                   (self.title, self.parent_program.getUrlBase(), self.id)
         if user is None:
             user = AnonymousUser()
-        Entry.post(user, self.anchor.tree_create(['TeacherEmail']), subject, content, True)       
         return True
 
     def propose(self):
