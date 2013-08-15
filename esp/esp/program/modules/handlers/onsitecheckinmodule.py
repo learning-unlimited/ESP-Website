@@ -91,8 +91,9 @@ class OnSiteCheckinModule(ProgramModuleObj):
         return Record.user_completed(self.student, "attended",self.program)
 
     def hasPaid(self):
+        iac = IndividualAccountingController(self.program, self.user)
         return Record.user_completed(self.student, "paid", self.program) or \
-            self.student.has_paid(self.program_anchor_cached())
+            iac.has_paid(in_full=True)
     
     def hasMedical(self):
         return Record.user_completed(self.student, "med", self.program)
@@ -162,7 +163,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 if student.isStudent() and student not in self.program.teachers()['class_approved']:
                     recs = Record.objects.filter(user=student, event="attended", program=prog)
                     if not recs.exists():
-                        rec, created = Record.get_or_create(user=student, event="attended", program=prog)
+                        rec, created = Record.objects.get_or_create(user=student, event="attended", program=prog)
                     context['message'] = '%s %s marked as attended.' % (student.first_name, student.last_name)
                     if request.is_ajax():
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
@@ -174,6 +175,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
             form = OnSiteRapidCheckinForm()
         
         context['module'] = self
+        context['program'] = prog
         context['form'] = form
         return render_to_response(self.baseDir()+'ajaxcheckin.html', request, context)
         
@@ -181,8 +183,6 @@ class OnSiteCheckinModule(ProgramModuleObj):
     @needs_onsite
     def barcodecheckin(self, request, tl, one, two, module, extra, prog):
         context = {}
-        attended_verb=GetNode('V/Flags/Registration/Attended')
-        prog_anchor=prog.anchor
         if request.method == 'POST':
             results = {'not_found': [], 'existing': [], 'new': [], 'not_student': []}
             form = OnsiteBarcodeCheckinForm(request.POST)
@@ -200,11 +200,11 @@ class OnSiteCheckinModule(ProgramModuleObj):
                     else:
                         student=result[0]
                         if student.isStudent():
-                            existing = UserBit.valid_objects().filter(user=student, qsc=prog_anchor, verb=attended_verb)
+                            existing = Record.user_completed(student, 'attended', prog)
                             if existing:
                                 results['existing'].append(code)
                             else:
-                                new = UserBit(user=student, qsc=prog_anchor, verb=attended_verb)
+                                new = Record(user=student, program=prog, event='attended')
                                 new.save()
                                 results['new'].append(code)
                         else:
@@ -213,6 +213,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
             results = {}
             form=OnsiteBarcodeCheckinForm()
         context['module'] = self
+        context['program'] = prog
         context['form'] = form
         context['results'] = results
         return render_to_response(self.baseDir()+'barcodecheckin.html', request, context)
@@ -238,7 +239,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
             return self.goToCore(tl)
 
-        return render_to_response(self.baseDir()+'checkin.html', request, {'module': self})
+        return render_to_response(self.baseDir()+'checkin.html', request, {'module': self, 'program': prog})
 
 
     class Meta:

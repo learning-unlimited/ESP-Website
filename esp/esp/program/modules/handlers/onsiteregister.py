@@ -37,7 +37,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
-from esp.users.models    import ESPUser, UserBit, User, ContactInfo, StudentInfo, K12School
+from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from esp.program.models import RegistrationProfile
@@ -57,8 +57,8 @@ class OnSiteRegister(ProgramModuleObj):
     def updatePaid(self, paid=True):
         """ Create an invoice for the student and, if paid is True, create a receipt showing
         that they have paid all of the money they owe for the program. """
-        if not self.hasPaid():
-            iac = IndividualAccountingController(self.program, self.user)
+        iac = IndividualAccountingController(self.program, self.student)
+        if not iac.has_paid():
             iac.add_required_transfers()
             if paid:
                 iac.submit_payment(iac.amount_due())
@@ -67,20 +67,15 @@ class OnSiteRegister(ProgramModuleObj):
         if extension == 'Paid':
             self.updatePaid(True)
             
-        verb = GetNode('V/Flags/Registration/'+extension)
-        ub = UserBit.objects.filter(user = self.student,
-                                    verb = verb,
-                                    qsc  = self.program_anchor_cached())
-        if len(ub) > 0:
+        if Record.user_completed(self.student, extension.lower(), self.program):
             return False
-
-        ub = UserBit()
-        ub.verb = verb
-        ub.qsc  = self.program_anchor_cached()
-        ub.user = self.student
-        ub.recursive = False
-        ub.save()
-        return True
+        else:
+            Record.objects.create(
+                user = self.student,
+                event = extension.lower(),
+                program = self.program
+            )
+            return True
 
     @main_call
     @needs_onsite
@@ -130,7 +125,7 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.save()
                 
                 if new_data['paid']:
-                    self.createBit('Paid')
+                    self.createBit('paid')
                     self.updatePaid(True)
                 else:
                     self.updatePaid(False)
@@ -138,10 +133,10 @@ class OnSiteRegister(ProgramModuleObj):
                 self.createBit('Attended')
 
                 if new_data['medical']:
-                    self.createBit('MedicalFiled')
+                    self.createBit('Med')
 
                 if new_data['liability']:
-                    self.createBit('LiabilityFiled')
+                    self.createBit('Liab')
 
                 self.createBit('OnSite')
 

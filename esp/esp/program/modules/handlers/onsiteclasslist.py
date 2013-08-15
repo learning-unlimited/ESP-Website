@@ -138,7 +138,7 @@ LIMIT 1
     @needs_onsite
     def checkin_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-        data = ESPUser.objects.filter(record__event="attended",program=prog).distinct().values_list('id')
+        data = ESPUser.objects.filter(record__event="attended", record__program=prog).distinct().values_list('id')
         simplejson.dump(list(data), resp)
         return resp
         
