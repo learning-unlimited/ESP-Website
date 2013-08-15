@@ -332,18 +332,18 @@ class ClassSection(models.Model):
             if len(title.strip()) > 0:
                 query_set = query_set.filter(parent_class__title__istartswith = title.strip())
 
-        values_set = query_set.order_by('parent_class__category__symbol','id').select_related()#.values('anchor__name', 'parent_class__anchor__friendly_name', 'id')
+        values_set = query_set.order_by('parent_class__category__symbol','id').select_related()
         values = []
         for v in values_set:
             index = str(v.index())
             if (not sec_index) or (sec_index == index):
-                values.append({'parent_class__anchor__name': v.parent_class.emailcode(),
-                               'parent_class__anchor__friendly_name': v.parent_class.title,
+                values.append({'parent_class__emailcode': v.parent_class.emailcode(),
+                               'parent_class__title': v.parent_class.title,
                                'secnum': index,
                                'id': str(v.id)})
 
         for value in values:
-            value['ajax_str'] = '%ss%s: %s' % (value['parent_class__anchor__name'], value['secnum'], value['parent_class__anchor__friendly_name'])
+            value['ajax_str'] = '%ss%s: %s' % (value['parent_class__emailcode'], value['secnum'], value['parent_class__title'])
         return values
     
     @classmethod
