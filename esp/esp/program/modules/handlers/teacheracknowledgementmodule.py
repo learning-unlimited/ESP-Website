@@ -10,7 +10,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 def teacheracknowledgementform_factory(prog):
     name = "TeacherAcknowledgementForm"
     bases = (forms.Form,)
-    label = u"I have read the above, and commit to teaching my %s class on %s." % (prog.anchor.parent.friendly_name, prog.date_range())
+    label = u"I have read the above, and commit to teaching my %s class on %s." % (prog.program_type, prog.date_range())
     d = dict(acknowledgement=forms.BooleanField(required=True, label=label))
     return type(name, bases, d)
 
