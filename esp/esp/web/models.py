@@ -65,10 +65,7 @@ class NavBarCategory(models.Model):
 
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
-    
-    #   ONLY the program related nav bars (i.e. "Splash Registration pages") should be anchored.
-    #   This is to allow automatically generated links to appear.
-    program = models.ForeignKey(Program, blank=True, null=True)
+
     path = AjaxForeignKey(DataTree, related_name = 'navbar', blank=True, null=True)
     
     sort_rank = models.IntegerField()
@@ -95,35 +92,6 @@ class NavBarEntry(models.Model):
     
     class Meta:
         verbose_name_plural = 'Nav Bar Entries'
-
-    def save(self, *args, **kwargs):
-        from django.core.cache import cache
-
-        super(NavBarEntry, self).save(*args, **kwargs)
-        
-        cache.delete('LEFTBAR')
-
-    
-    @staticmethod
-    def find_by_url_parts(parts):
-        """ Fetch a QuerySet of NavBarEntry objects by the url parts """
-        # Get the Q_Web root
-        Q_Web = GetNode('Q/Web')
-        
-        # Remove the last component
-        parts.pop()
-        
-        # Find the branch
-        try:
-            branch = Q_Web.tree_decode( parts )
-        except DataTree.NoSuchNodeException, ex:
-            branch = ex.anchor
-            if branch is None:
-                raise NavBarEntry.DoesNotExist
-            
-        # Find the valid entries
-        return NavBarEntry.objects.filter(QTree(path__above =branch)).order_by('sort_rank')
-
 
 def install():
     # Add a default nav bar category, to let QSD editing work.
