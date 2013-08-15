@@ -1905,7 +1905,7 @@ class Record(models.Model):
         ("extra_form_done","Filled out Custom Form"),
         ("waitlist","Waitlisted for a program"),
         ("interview","Teacher-interviewed for a program"),
-        ("teacher_training","Attended/signed up for teacher-training for a program"),
+        ("teacher_training","Attended teacher-training for a program"),
         ("teacher_checked_in", "Teacher checked in for teaching on the day of the program"),
     )
         
