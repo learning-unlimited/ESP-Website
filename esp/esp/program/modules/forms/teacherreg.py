@@ -330,30 +330,23 @@ class TeacherEventSignupForm(FormWithRequiredCss):
     interview = forms.ChoiceField( label='Interview', choices=[], required=False, widget=BlankSelectWidget(blank_choice=('', 'Pick an interview timeslot...')) )
     training  = forms.ChoiceField( label='Teacher Training', choices=[], required=False, widget=BlankSelectWidget(blank_choice=('', 'Pick a teacher training session...')) )
     
-    def _slot_is_taken(self, anchor):
+    def _slot_is_taken(self, event):
         """ Determine whether an interview slot is taken. """
-        return self.module.bitsBySlot(anchor).count() > 0
+        return self.module.entriesBySlot(event).count() > 0
 
-    def _slot_is_mine(self, anchor):
+    def _slot_is_mine(self, event):
         """ Determine whether an interview slot is taken by you. """
-        return self.module.bitsBySlot(anchor).filter(user=self.user).count() > 0
+        return self.module.entriesBySlot(event).filter(user=self.user).count() > 0
 
-    def _slot_too_late(self, anchor):
+    def _slot_too_late(self, event):
         """ Determine whether it is too late to register for a time slot. """
         # Don't allow signing up for a spot insuficiently far in advance
-        return Event.objects.get(anchor=anchor).start - datetime.now() < timedelta(days=0)
+        return event.start - datetime.now() < timedelta(days=0)
 
-    def _slot_is_available(self, anchor):
+    def _slot_is_available(self, event):
         """ Determine whether a time slot is available. """
-        return self._slot_is_mine(anchor) or (not self._slot_is_taken(anchor) and not self._slot_too_late(anchor))
-    
-    def _get_datatree(self, id):
-        """ Given an ID, get the datatree node with that ID. """
-        try:
-            return DataTree.objects.get(id=id)
-        except (DoesNotExist, ValueError):
-            raise forms.ValidationError('The time you selected seems not to exist. Please try a different one.')
-    
+        return self._slot_is_mine(event) or (not self._slot_is_taken(event) and not self._slot_too_late(event))
+
     def __init__(self, module, *args, **kwargs):
         super(TeacherEventSignupForm, self).__init__(*args, **kwargs)
         self.module = module
@@ -361,30 +354,23 @@ class TeacherEventSignupForm(FormWithRequiredCss):
         
         interview_times = module.getTimes('interview')
         if interview_times.count() > 0:
-            self.fields['interview'].choices = [ (x.anchor.id, x.description) for x in interview_times if self._slot_is_available(x.anchor) ]
+            self.fields['interview'].choices = [ (x.id, x.description) for x in interview_times if self._slot_is_available(x) ]
         else:
             self.fields['interview'].widget = forms.HiddenInput()
         
         training_times = module.getTimes('training')
         if training_times.count() > 0:
-            self.fields['training'].choices = [ (x.anchor.id, x.description) for x in training_times if not self._slot_too_late(x.anchor) ]
+            self.fields['training'].choices = [ (x.id, x.description) for x in training_times if not self._slot_too_late(x) ]
         else:
             self.fields['training'].widget = forms.HiddenInput()
     
     def clean_interview(self):
-        data = self.cleaned_data['interview']
+        data = Event.objects.get(id=self.cleaned_data['interview'])
         if not data:
             return data
-        data = self._get_datatree( data )
         if not self._slot_is_available(data):
             raise forms.ValidationError('That time is taken; please select a different one.')
         return data
-    
+
     def clean_training(self):
-        data = self.cleaned_data['training']
-        if not data:
-            return data
-        return self._get_datatree( data )
-
-
-
+        return Event.objects.get(id=self.cleaned_data['training'])

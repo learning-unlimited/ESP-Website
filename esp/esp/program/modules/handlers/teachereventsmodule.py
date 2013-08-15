@@ -41,31 +41,26 @@ from esp.dbmail.models import send_mail
 from django.db.models.query import Q
 from esp.miniblog.models import Entry
 from esp.datatree.models import GetNode
-from esp.cal.models import Event
-from esp.users.models import ESPUser, UserBit, User
+from esp.cal.models import Event, EventType
+from esp.users.models import ESPUser, UserAvailability, User
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.modules.forms.teacherevents import TimeslotForm
 from datetime import datetime
+from django.contrib.auth.models import Group
 
 class TeacherEventsModule(ProgramModuleObj):
     # Initialization
     def __init__(self, *args, **kwargs):
         super(TeacherEventsModule, self).__init__(*args, **kwargs)
-
-    @property
-    def qscs(self):
-        if not hasattr(self, '_qscs'):
-            self._qscs = {
-                'interview': GetNode( self.program_anchor_cached().get_uri() + '/TeacherEvents/Interview' ),
-                'training': GetNode( self.program_anchor_cached().get_uri() + '/TeacherEvents/Training' )
-            }
-        return self._qscs
     
-    @property
-    def reg_verb(self):
-        if not hasattr(self, '_reg_verb'):
-            self._reg_verb = GetNode('V/Flags/Registration/Teacher')
-        return self._reg_verb
+    def event_types(self):
+        return {
+            'interview': EventType.objects.get(description='Teacher Interview'),
+            'training': EventType.objects.get(description='Teacher Training'),
+        }
+        
+    def availability_role(self):
+        return Group.objects.get(name='Teacher')
     
     # General Info functions
     @classmethod
@@ -85,16 +80,15 @@ class TeacherEventsModule(ProgramModuleObj):
     
     def teachers(self, QObject = False):
         """ Returns lists of teachers who've signed up for interviews and for teacher training. """
-        
         if QObject is True:
             return {
-                'interview': self.getQForUser(Q( userbit__qsc__parent = self.qscs['interview'] )),
-                'training': self.getQForUser(Q( userbit__qsc__parent = self.qscs['training'] ))
+                'interview': self.getQForUser(Q( useravailability__event__event_type=self.event_types()['interview'], useravailability__event__program=self.program )),
+                'training': self.getQForUser(Q( useravailability__event__event_type=self.event_types()['training'], useravailability__event__program=self.program ))
             }
         else:
             return {
-                'interview': ESPUser.objects.filter( userbit__qsc__parent = self.qscs['interview'] ).distinct(),
-                'training': ESPUser.objects.filter( userbit__qsc__parent = self.qscs['training'] ).distinct()
+                'interview': ESPUser.objects.filter( useravailability__event__event_type=self.event_types()['interview'], useravailability__event__program=self.program ).distinct(),
+                'training': ESPUser.objects.filter( useravailability__event__event_type=self.event_types()['training'], useravailability__event__program=self.program ).distinct()
             }
 
     def teacherDesc(self):
@@ -106,16 +100,16 @@ class TeacherEventsModule(ProgramModuleObj):
     # Helper functions
     def getTimes(self, type):
         """ Get events of the program's teacher interview/training slots. """
-        return Event.objects.filter( anchor__parent=self.qscs[type] ).order_by('start')
+        return Event.objects.filter( program=self.program, event_type=self.event_types()[type] ).order_by('start')
     
-    def bitsBySlot(self, anchor):
-        return UserBit.objects.filter( UserBit.not_expired(), verb=self.reg_verb, qsc=anchor )
-    
-    def bitsByTeacher(self, user):
+    def entriesByTeacher(self, user):
         return {
-            'interview': UserBit.objects.filter( UserBit.not_expired(), verb=self.reg_verb, qsc__parent=self.qscs['interview'], user=user ),
-            'training': UserBit.objects.filter( UserBit.not_expired(), verb=self.reg_verb, qsc__parent=self.qscs['training'], user=user ),
+            'interview': UserAvailability.objects.filter( event__event_type=self.event_types()['interview'], user=user, event__program=self.program ),
+            'training': UserAvailability.objects.filter( event__event_type=self.event_types()['training'], user=user, event__program=self.program ),
         }
+    
+    def entriesBySlot(self, event):
+        return UserAvailability.objects.filter(event=event)
     
     # Per-user info
     def isCompleted(self):
@@ -124,8 +118,8 @@ class TeacherEventsModule(ProgramModuleObj):
         If there are teacher training timeslots, requires signing up for them.
         If there are teacher interview timeslots, requires those too.
         """
-        bits = self.bitsByTeacher(get_current_request().user)
-        return (self.getTimes('interview').count() == 0 or bits['interview'].count() > 0) and (self.getTimes('training').count() == 0 or bits['training'].count() > 0)
+        entries = self.entriesByTeacher(get_current_request().user)
+        return (self.getTimes('interview').count() == 0 or entries['interview'].count() > 0) and (self.getTimes('training').count() == 0 or entries['training'].count() > 0)
     
     # Views
     @main_call
@@ -137,37 +131,30 @@ class TeacherEventsModule(ProgramModuleObj):
             if form.is_valid():
                 data = form.cleaned_data
                 # Remove old bits
-                [ ub.expire() for ub in UserBit.objects.filter(
-                    Q(qsc__parent=self.qscs['interview']) | Q(qsc__parent=self.qscs['training']), UserBit.not_expired(),
-                    user=request.user, verb=self.reg_verb ) ]
+                UserAvailability.objects.filter(user=request.user, event__event_type__in=self.event_types().values()).delete()
                 # Register for interview
                 if data['interview']:
-                    ub, created = UserBit.objects.get_or_create( user=request.user, qsc=data['interview'], verb=self.reg_verb, defaults={'recursive':False} )
+                    ua, created = UserAvailability.objects.get_or_create( user=request.user, event=data['interview'], role=self.availability_role())
                     # Send the directors an e-mail
-                    if self.program.director_email and (created or ub.enddate < datetime.now() ):
-                        event_names = ' '.join([x.description for x in data['interview'].event_set.all()])
-                        send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_names, \
+                    if self.program.director_email and created:
+                        event_name = data['interview'].description
+                        send_mail('['+self.program.niceName()+'] Teacher Interview for ' + request.user.first_name + ' ' + request.user.last_name + ': ' + event_name, \
                               """Teacher Interview Registration Notification\n--------------------------------- \n\nTeacher: %s %s\n\nTime: %s\n\n""" % \
-                              (request.user.first_name, request.user.last_name, event_names) , \
+                              (request.user.first_name, request.user.last_name, event_name) , \
                               ('%s <%s>' % (request.user.first_name + ' ' + request.user.last_name, request.user.email,)), \
                               [self.program.director_email], True)
-                    if not created:
-                        ub.enddate = datetime(9999,1,1) # Approximately infinity; see default value of UserBit.enddate
-                        ub.save()
+
                 # Register for training
                 if data['training']:
-                    ub, created = UserBit.objects.get_or_create( user=request.user, qsc=data['training'], verb=self.reg_verb, defaults={'recursive':False} )
-                    if not created:
-                        ub.enddate = datetime(9999,1,1) # Approximately infinity
-                        ub.save()
+                    ua, created = UserAvailability.objects.get_or_create( user=request.user, event=data['training'], role=self.availability_role())
                 return self.goToCore(tl)
         else:
             data = {}
-            bits = self.bitsByTeacher(request.user)
-            if bits['interview'].count() > 0:
-                data['interview'] = bits['interview'][0].qsc.id
-            if bits['training'].count() > 0:
-                data['training'] = bits['training'][0].qsc.id
+            entries = self.entriesByTeacher(request.user)
+            if entries['interview'].count() > 0:
+                data['interview'] = entries['interview'][0].event.id
+            if entries['training'].count() > 0:
+                data['training'] = entries['training'][0].event.id
             form = TeacherEventSignupForm(self, initial=data)
         return render_to_response( self.baseDir()+'event_signup.html', request, {'prog':prog, 'form': form} )
     
@@ -196,27 +183,24 @@ class TeacherEventsModule(ProgramModuleObj):
                     if data.has_key('submit') and data['submit'] == "Add Interview":
                         type = "interview"
                     
-                    form.save_timeslot(self.program, new_timeslot, type, self.qscs[type])
+                    form.save_timeslot(self.program, new_timeslot, type)
                 else:
                     context['timeslot_form'] = form
         
         if 'timeslot_form' not in context:
             context['timeslot_form'] = TimeslotForm()
         
-        interview_times = self.getTimes('interview').select_related('anchor__userbit_qsc__user')
-        training_times = self.getTimes('training').select_related('anchor__userbit_qsc__user')
+        interview_times = self.getTimes('interview')
+        training_times = self.getTimes('training')
         
         for ts in list( interview_times ) + list( training_times ):
-            ts.teachers = [ x.user.first_name + ' ' + x.user.last_name + ' <' + x.user.email + '>' for x in self.bitsBySlot( ts.anchor ) ]
+            ts.teachers = [ x.user.first_name + ' ' + x.user.last_name + ' <' + x.user.email + '>' for x in self.entriesBySlot( ts ) ]
         
         context['prog'] = prog
         context['interview_times'] = interview_times
         context['training_times'] = training_times
         
         return render_to_response( self.baseDir()+'teacher_events.html', request, context )
-
-
-
 
     class Meta:
         abstract = True
