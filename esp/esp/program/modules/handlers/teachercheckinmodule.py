@@ -39,7 +39,7 @@ from esp.program.modules import module_ext
 from esp.program.models.class_ import ClassSubject
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser, UserBit, User, ContactInfo
+from esp.users.models    import ESPUser, Record, ContactInfo
 from esp.cal.models import Event
 from esp.datatree.models import *
 from django              import forms
@@ -60,17 +60,13 @@ class TeacherCheckinModule(ProgramModuleObj):
             "module_type": "onsite",
             "seq": 10
             }
-
     
     def checkIn(self, teacher, prog):
         """Check teacher into program for the rest of the day"""
         if teacher.isTeacher() and teacher.getTaughtClassesFromProgram(prog).exists():
             now = datetime.now()
             endtime = datetime(now.year, now.month, now.day) + timedelta(days=1, seconds=-1)
-            new_bit, created = UserBit.objects.get_or_create(user=teacher,
-                                                                qsc=prog.anchor,
-                                                                verb=GetNode('V/Flags/Registration/Teacher/Arrived'),
-                                                                enddate=endtime)
+            (record, created) = Record.objects.get_or_create(user=teacher, event='teacher_checked_in', program=prog)
             if created:
                 return '%s is checked in until %s.' % (teacher.name(), str(endtime))
             else:
@@ -80,12 +76,9 @@ class TeacherCheckinModule(ProgramModuleObj):
     
     def undoCheckIn(self, teacher, prog):
         """Undo what checkIn does"""
-        userbits = UserBit.valid_objects().filter(user=teacher,
-                                                qsc=prog.anchor,
-                                                verb=GetNode('V/Flags/Registration/Teacher/Arrived'))
-        if userbits:
-            userbits.update(enddate=datetime.now())
-            UserBit.updateCache(teacher.id)
+        records = Record.objects.filter(user=teacher, event='teacher_checked_in', program=prog)
+        if records:
+            records.delete()
             return '%s is no longer checked in.' % teacher.name()
         else:
             return '%s was not checked in for %s.' % (teacher.name(), prog.niceName())
@@ -105,6 +98,7 @@ class TeacherCheckinModule(ProgramModuleObj):
             form = TeacherCheckinForm()
         
         context['module'] = self
+        context['program'] = self.program
         context['form'] = form
         
         context['time_slots'] = prog.getTimeSlots()
@@ -138,21 +132,15 @@ class TeacherCheckinModule(ProgramModuleObj):
                                   .filter(status=10, parent_class__status=10, begin_time__isnull=False)
         if starttime is not None:
             sections = sections.filter(begin_time=starttime.start)
-        teachers = ESPUser.objects.filter(userbit__in=UserBit.valid_objects(when),
-                                          userbit__qsc__classsubject__sections__in=sections,
-                                          userbit__verb=GetNode('V/Flags/Registration/Teacher'))
-        arrived = teachers.filter(userbit__in=UserBit.valid_objects(when),
-                                  userbit__qsc=prog.anchor,
-                                  userbit__verb=GetNode('V/Flags/Registration/Teacher/Arrived'))
+        teachers = ESPUser.objects.filter(classsubject__sections__in=sections)
+        arrived = teachers.filter(record__program=prog,
+                                  record__event='teacher_checked_in')
         missing = teachers.exclude(id__in=arrived)
-        missing_sections = sections.filter(parent_class__anchor__userbit_qsc__in=UserBit.valid_objects(when),
-                                           parent_class__anchor__userbit_qsc__user__in=missing,
-                                           parent_class__anchor__userbit_qsc__verb=GetNode('V/Flags/Registration/Teacher'))
-        userbits = UserBit.valid_objects(when).filter(qsc__classsubject__sections__in=missing_sections,
-                                                  verb=GetNode('V/Flags/Registration/Teacher')) \
+        missing_sections = sections.filter(parent_class__teachers__in=missing,)
+        teacher_tuples = ESPUser.objects.filter(classsubject__sections__in=missing_sections) \
                                           .distinct() \
-                                          .values_list('user', 'qsc__classsubject', 'qsc__friendly_name') \
-                                          .order_by('user__last_name', 'user__first_name')
+                                          .values_list('id', 'classsubject__id', 'classsubject__title') \
+                                          .order_by('last_name', 'first_name')
         
         teacher_dict = {}
         for teacher in list(arrived) + list(missing):
@@ -169,7 +157,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         
         class_dict = {}
         class_arr = []
-        for teacher_id, class_id, class_name in userbits:
+        for teacher_id, class_id, class_name in teacher_tuples:
             if class_id not in class_dict:
                 class_dict[class_id] = {'id': ClassSubject.objects.get(id=class_id).emailcode(),
                                         'name': class_name,
@@ -217,6 +205,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         context['sections'], teachers = self.getMissingTeachers(prog, starttime, when)
         context['arrived'] = [teacher for teacher in teachers.values() if teacher['arrived']]
         context['start_time'] = starttime
+        context['program'] = self.program
         return render_to_response(self.baseDir()+'missingteachers.html', request, context)
     
     class Meta:
