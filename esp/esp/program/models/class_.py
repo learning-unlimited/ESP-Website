@@ -302,7 +302,7 @@ class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
     
-    anchor = AjaxForeignKey(DataTree)
+    anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     status = models.IntegerField(default=0)                 #   -10 = rejected, 0 = unreviewed, 10 = accepted
     registration_status = models.IntegerField(default=0)    #   0 = open, 10 = closed
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
@@ -1285,7 +1285,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     from esp.program.models import Program
     
-    anchor = AjaxForeignKey(DataTree)
+    anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     title = models.TextField()
     parent_program = models.ForeignKey(Program)
     category = models.ForeignKey('ClassCategories',related_name = 'cls')
