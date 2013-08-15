@@ -274,7 +274,7 @@ class ClassManager(ProcedureManager):
             c._sections = sections_by_parent_id[c.id]
             for s in c._sections:
                 s.parent_class = c
-            c._sections.sort(cmp=lambda s1, s2: cmp(s1.anchor.name, s2.anchor.name))
+            c._sections.sort(cmp=lambda s1, s2: cmp(s1.id, s2.id))
             c.parent_program = p # So that if we set attributes on one instance of the program,
                                  # they show up for all instances.
             
