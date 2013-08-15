@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
 from esp.web.util        import render_to_response
-from esp.users.models   import ESPUser, User, UserBit
+from esp.users.models   import ESPUser
 from esp.datatree.models import *
 from esp.datatree.sql.query_utils import QTree
 from django.db.models.query      import Q
@@ -50,7 +50,7 @@ class UserAttributeGetter(object):
                     '04_lastname': 'Last Name',
                     '05_firstname': 'First Name',
                     '06_username': 'Username',
-		    '07_email': 'E-mail',
+                    '07_email': 'E-mail',
                     '08_accountdate': 'Created Date',
                     '09_first_regdate': 'Initial Registration Date',
                     '10_last_regdate': 'Most Recent Registration Date',
@@ -118,26 +118,24 @@ class UserAttributeGetter(object):
         return self.user.first_name
 
     def get_username(self):
-	return self.user.username
-        
+        return self.user.username
+
     def get_email(self):
         return self.user.email
         
     def get_accountdate(self):
         return self.user.date_joined.strftime("%m/%d/%Y")
         
-    def get_regdate(self, ordering='startdate'):
-        reg_verb = GetNode('V/Flags/Registration/Enrolled')
-        reg_node_parent = self.program.anchor['Classes']
-        bits = UserBit.valid_objects().filter(user=self.user, verb=reg_verb).filter(QTree(qsc__below=reg_node_parent))
-        if bits.exists():
-            return bits.order_by(ordering).values_list('startdate', flat=True)[0].strftime("%Y-%m-%d %H:%M:%S")
+    def get_regdate(self, ordering='start_date'):
+        regs = StudentRegistration.valid_objects().filter(user=self.user, section__parent_class__parent_program=self.program, relationship__name='Enrolled')
+        if regs.exists():
+            return regs.order_by(ordering).values_list('start_date', flat=True)[0].strftime("%Y-%m-%d %H:%M:%S")
 
     def get_first_regdate(self):
-        return self.get_regdate(ordering='startdate')
+        return self.get_regdate(ordering='start_date')
         
     def get_last_regdate(self):
-        return self.get_regdate(ordering='-startdate')
+        return self.get_regdate(ordering='-start_date')
 
     def get_cellphone(self):
         if self.profile.contact_user:
@@ -238,7 +236,6 @@ class ListGenModule(ProgramModuleObj):
     def selectList(self, request, tl, one, two, module, extra, prog):
         """ Select the type of list that is requested. """
         from esp.users.views     import get_user_list
-        from esp.users.models    import User
         from esp.users.models import PersistentQueryFilter
 
         if not request.GET.has_key('filterid'):
