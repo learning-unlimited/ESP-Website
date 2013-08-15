@@ -86,7 +86,7 @@ def class_options_row(cls):
     context['cls'] = cls
     context['cls_high_school_only'] = (cls.grade_min >= 9)
     context['cls_id'] = cls.id
-    context['cls_title'] = cls.anchor.friendly_name
+    context['cls_title'] = cls.title
     context['cls_code'] = cls.emailcode()
     context['cls_requests'] = [r.res_type.name for r in cls.default_section().getResourceRequests()]
     context['cls_teachers'] = [{'first_name': t.first_name, 'last_name': t.last_name, 'available_times': [e.short_time() for e in t.getAvailableTimes(cls.parent_program)]} for t in cls.get_teachers()]
