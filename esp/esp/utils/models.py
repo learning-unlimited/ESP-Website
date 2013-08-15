@@ -38,6 +38,7 @@ from django.template.loader import find_template
 import reversion
 
 from esp.users.models import ESPUser
+from esp.db.fields import AjaxForeignKey
 
 ## aseering 11/29/2011
 ## HACK to generate a warning on deferred field evaluation
@@ -81,10 +82,13 @@ class Printer(models.Model):
     name = models.CharField(max_length=255, help_text='Name to display in onsite interface')
     printer_type = models.CharField(max_length=255, blank=True)
     notes = models.TextField(blank=True)
+    
+    def __unicode__(self):
+        return self.name
 
 class PrintRequest(models.Model):
     printer = models.ForeignKey(Printer, blank=True, null=True)     #   Leave blank to allow any printer to be used.
-    user = models.ForeignKey(ESPUser)
+    user = AjaxForeignKey(ESPUser)
     time_requested = models.DateTimeField(auto_now_add=True)
     time_executed = models.DateTimeField(blank=True, null=True)
 
