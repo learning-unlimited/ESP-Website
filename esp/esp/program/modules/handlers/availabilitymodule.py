@@ -55,12 +55,6 @@ from esp.middleware.threadlocalrequest import get_current_request
 class AvailabilityModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
 
-    @property
-    def teacher_role_node(self):
-        if not hasattr(self, '_teacher_role_node'):
-            self._teacher_role_node = GetNode('V/Flags/UserRole/Teacher')
-        return self._teacher_role_node
-
     @classmethod
     def module_properties(cls):
         return [ {
@@ -108,7 +102,7 @@ class AvailabilityModule(ProgramModuleObj):
     def teachers(self, QObject = False):
         """ Returns a list of teachers who have indicated at least one segment of teaching availability for this program. """
         
-        qf = Q(useravailability__event__program=self.program, useravailability__role=self.teacher_role_node)
+        qf = Q(useravailability__event__program=self.program, useravailability__role__name='Teacher')
         if QObject is True:
             return {'availability': self.getQForUser(qf)}
         
@@ -241,8 +235,8 @@ class AvailabilityModule(ProgramModuleObj):
             raise ESPError(False), "That username does not appear to exist!"
 
         # Get the times that the teacher marked they were available
-        resources = UserAvailability.objects.filter(user=teacher).filter(QTree(event__anchor__below = prog.anchor))
-        
+        resources = UserAvailability.objects.filter(user=teacher, event__program=prog)
+
         # Now get times that teacher is teaching
         classes = [cls for cls in teacher.getTaughtClasses() if cls.parent_program.id == prog.id ]
         times = set()
