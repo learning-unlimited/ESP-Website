@@ -259,7 +259,7 @@ def _get_type_url(type):
         else:
             self._type_url = {}
 
-        self._type_url[type] = '/%s/%s/' % (type, '/'.join(self.anchor.tree_encode()[-2:]))
+        self._type_url[type] = '/%s/%s/' % (type, self.url)
 
         return self._type_url[type]
 
@@ -335,9 +335,6 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def __unicode__(self):
         return self.niceName()
-
-    def parent(self):
-        return self.anchor.parent
 
     def niceName(self):
         return self.name
@@ -620,7 +617,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 result[c.name].timeslots = [c.event]
                 result[c.name].furnishings = c.associated_resources()
                 result[c.name].sequence = c.schedule_sequence(self)
-                result[c.name].prog_available_times = c.available_times_html(self.anchor)
+                result[c.name].prog_available_times = c.available_times_html(self)
             else:
                 result[c.name].timeslots.append(c.event)
             
@@ -939,7 +936,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return options.visible_enrollments
         
     def getVolunteerRequests(self):
-        return VolunteerRequest.objects.filter(timeslot__anchor=self.anchor).order_by('timeslot__start')
+        return VolunteerRequest.objects.filter(timeslot__program=self).order_by('timeslot__start')
     
     @cache_function
     def getShirtInfo(self):
@@ -991,7 +988,7 @@ class Program(models.Model, CustomFormsLinkModel):
     
     @cache_function
     def by_prog_inst(cls, program, instance):
-        prog_inst = Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
+        prog_inst = Program.objects.select_related().get(url='%s/%s' % (program, instance))
         return prog_inst
     by_prog_inst.depend_on_row(lambda: Program, lambda prog: {'program': prog})
     def program_selector(node):
