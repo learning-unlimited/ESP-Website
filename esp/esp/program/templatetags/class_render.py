@@ -40,7 +40,7 @@ render_class_core.cached_function.depend_on_row(ClassSection, lambda sec: {'cls'
 render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lambda self=wildcard, **kwargs: {'cls': self.parent_class})
 render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_row(StudentAppQuestion, lambda ques: {'cls': ques.subject})
-render_class_core.cached_function.depend_on_row(QSDMedia, lambda media: {'cls': media.anchor.classsubject_set.get()}, lambda media: media.anchor.classsubject_set.count() == 1)
+render_class_core.cached_function.depend_on_row(QSDMedia, lambda media: {'cls': media.owner}, lambda media: isinstance(media.owner, ClassSubject))
 render_class_core.cached_function.depend_on_model(lambda: StudentClassRegModuleInfo)
 render_class_core.cached_function.depend_on_model(lambda: ClassRegModuleInfo)
 render_class_core.cached_function.depend_on_model(lambda: Tag)

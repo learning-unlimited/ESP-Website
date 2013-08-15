@@ -54,6 +54,9 @@ from django.conf import settings
 from collections import defaultdict
 import simplejson as json
 from decimal import Decimal
+from esp.qsdmedia.models import Media
+
+from django.contrib.contenttypes import generic
 
 from esp.customforms.linkfields import CustomFormsLinkModel
 
@@ -282,6 +285,8 @@ class Program(models.Model, CustomFormsLinkModel):
     program_modules = models.ManyToManyField(ProgramModule)
     class_categories = models.ManyToManyField('ClassCategories')
     
+    documents = generic.GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
+
     class Meta:
         app_label = 'program'
         db_table = 'program_program'
@@ -351,6 +356,9 @@ class Program(models.Model, CustomFormsLinkModel):
     def getUrlBase(self):
         """ gets the base url of this class """
         return self.url
+
+    def getDocuments(self):
+        return self.documents.all()
 
     def teacherSubscribe(self, user):
         v = GetNode('V/Subscribe')

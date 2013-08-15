@@ -355,12 +355,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 docid = request.POST['docid']
                 media = Media.objects.get(id = docid)
                 media.delete()
-            	
             elif request.POST['command'] == 'add':
                 form = FileUploadForm(request.POST, request.FILES)
 
                 if form.is_valid():
-                    media = Media(friendly_name = form.cleaned_data['title'], anchor = target_class.anchor)
+                    media = Media(friendly_name = form.cleaned_data['title'], owner = target_class)
                     ufile = form.cleaned_data['uploadedfile']
                     
                     #	Append the class code on the filename

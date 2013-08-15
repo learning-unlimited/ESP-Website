@@ -45,6 +45,7 @@ from django.core.cache import cache
 from django.utils.datastructures import SortedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
+from django.contrib.contenttypes import generic
 
 # ESP Util
 from esp.db.models.prepared import ProcedureManager
@@ -62,7 +63,7 @@ from esp.miniblog.models import Entry
 from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
-from esp.qsdmedia.models import Media as QSDMedia
+from esp.qsdmedia.models import Media
 from esp.users.models import ESPUser, UserBit, UserAvailability
 from esp.middleware              import ESPError
 from esp.program.models          import Program, StudentRegistration, RegistrationType
@@ -281,7 +282,7 @@ class ClassManager(ProcedureManager):
         return classes
     catalog_cached.depend_on_model(lambda: ClassSubject)
     catalog_cached.depend_on_model(lambda: ClassSection)
-    catalog_cached.depend_on_model(lambda: QSDMedia)
+    catalog_cached.depend_on_model(lambda: Media)
     catalog_cached.depend_on_model(lambda: Tag)
     #catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
     #                             lambda bit: bit.applies_to_verb('V/Flags/Registration/Enrolled')) # This will expire a *lot*, and the value that it saves can be gotten from cache (with effort) instead of from SQL.  Should go do that.
@@ -1308,6 +1309,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     purchase_requests = models.TextField(blank=True, null=True)
     custom_form_data = JSONField(blank=True, null=True)
     
+    documents = generic.GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
+    
     objects = ClassManager()
 
     #   Backwards compatibility with Class database format.
@@ -1326,6 +1329,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             self._sections = self.sections.all()
 
         return self._sections
+        
+    def getDocuments(self):
+        return self.documents.all()
         
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -1543,8 +1549,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return "%s: (none)" % self.id
 
     def delete(self, adminoverride = False):
-        from esp.qsdmedia.models import Media
-        
         anchor = self.anchor
         # SQL's cascading delete thing is sketchy --- if the anchor's corrupt,
         # we want webmin manual intervention
@@ -1815,8 +1819,8 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     def docs_summary(self):
         """ Return the first three documents associated
         with a class, for previewing. """
-        return self.anchor.media_set.all()[:3]
-    docs_summary.depend_on_model(lambda: QSDMedia)
+        return self.documents.all()[:3]
+    docs_summary.depend_on_model(lambda: Media)
 
     def getUrlBase(self):
         """ Gets the base url of this class """

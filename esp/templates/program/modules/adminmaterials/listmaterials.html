@@ -41,7 +41,7 @@ From this page, you can view documents related to the program (in the first sect
 		Program documents for {{ prog.niceName }}
 		</th>
 	</tr>
-	{% if prog.anchor.media_set.count %}
+	{% if prog.documents.exists %}
 	<tr>
 		<td class="clsmiddle" style="text-indent: 20px"><b>Document</b></td>
 		<td class="clsmiddle"><b>Options</b></td>
@@ -51,7 +51,7 @@ From this page, you can view documents related to the program (in the first sect
 		<td colspan="2">There are no documents associated with this program.  You may add some below!</td>
 	</tr>
 	{% endif %}
-	{% for doc in prog.anchor.media_set.all %}
+	{% for doc in prog.getDocuments %}
 	<tr>
             <td class="class_stuff"><a href="{{ doc.target_file.url }}">{{ doc.friendly_name }}</a></td>
 		<td class="clsmiddle">
@@ -71,13 +71,13 @@ From this page, you can view documents related to the program (in the first sect
 	</tr>
 	{% for cls in prog.classes %}
 
-		{% if cls.anchor.media_set.count %}
+		{% if cls.documents.exists %}
 		<tr>
 			<td colspan="2" class="clshead">
 			{{ cls.emailcode }}&mdash;{{ cls.title }}
 			</td>
 		</tr>
-			{% for doc in cls.anchor.media_set.all %}
+			{% for doc in cls.getDocuments %}
 			<tr>
 				<td class="class_stuff"><a href="{{ doc.target_file.url }}">{{ doc.friendly_name }}</a></td>
 				<td class="clsmiddle">

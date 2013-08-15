@@ -40,6 +40,9 @@ from django.conf import settings
 from esp.db.fields import AjaxForeignKey
 from time import strftime
 
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import generic
+from django.db.models import Q
 
 # Create your models here.
 
@@ -55,6 +58,12 @@ class Media(models.Model):
     format = models.TextField(blank=True, null=True)  # Format string; should be human-readable (string format is currently unspecified)
     mime_type = models.CharField(blank=True, null=True, max_length=256, editable=False)
     file_extension = models.TextField(blank=True, null=True, max_length=16, editable=False) # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
+    
+    #   Generic Foreign Key to object this media is associated with.
+    #   Currently limited to be either a ClassSubject or Program.
+    owner_type = models.ForeignKey(ContentType, blank=True, null=True, limit_choices_to=Q(name__in=['ClassSubject', 'Program']))
+    owner_id = models.PositiveIntegerField(blank=True, null=True)
+    owner = generic.GenericForeignKey(ct_field='owner_type', fk_field='owner_id')
 
     #def get_target_file_relative_url(self):a
     #    return str(self.target_file)[ len(root_file_path): ]

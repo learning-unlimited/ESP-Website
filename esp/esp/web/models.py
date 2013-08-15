@@ -37,6 +37,7 @@ from django.db.models.query import Q
 from esp.datatree.models import *
 from esp.lib.markdown import markdown
 from esp.db.fields import AjaxForeignKey  
+from esp.program.models import Program
         
 class NavBarCategory(models.Model):
     anchor = AjaxForeignKey(DataTree, blank=True, null=True)
@@ -67,6 +68,7 @@ class NavBarEntry(models.Model):
     
     #   ONLY the program related nav bars (i.e. "Splash Registration pages") should be anchored.
     #   This is to allow automatically generated links to appear.
+    program = models.ForeignKey(Program, blank=True, null=True)
     path = AjaxForeignKey(DataTree, related_name = 'navbar', blank=True, null=True)
     
     sort_rank = models.IntegerField()
