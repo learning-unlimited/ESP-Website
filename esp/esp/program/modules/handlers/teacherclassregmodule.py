@@ -326,9 +326,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
         cls = classes[0]
 
-        context = {'cls': cls, 'module': self,
-                   'blogposts': Entry.find_posts_by_perms(request.user,GetNode('V/Subscribe'),cls.anchor)
-                  }
+        context = {'cls': cls, 'module': self,}
 
         return render_to_response(self.baseDir()+'class_status.html', request, (prog, tl), context)
 

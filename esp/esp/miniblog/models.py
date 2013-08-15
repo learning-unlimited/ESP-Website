@@ -45,7 +45,6 @@ import datetime
 # Create your models here.
 
 class AnnouncementLink(models.Model):
-    anchor = AjaxForeignKey(DataTree)
     title = models.CharField(max_length=256) 
     category = models.CharField(max_length=32) # Plaintext
     timestamp = models.DateTimeField(default=datetime.datetime.now, editable=False)
@@ -67,20 +66,11 @@ class AnnouncementLink(models.Model):
     def content(self):
         return '<a href="%s">Click Here</a> for details' % self.href
 
-    @staticmethod
-    def find_posts_by_perms(user, verb, qsc=None):
-        """ Fetch a list of relevant posts for a given user and verb """
-        if qsc==None:
-            return UserBit.find_by_anchor_perms(AnnouncementLink,user,verb)
-        else:
-            return UserBit.find_by_anchor_perms(AnnouncementLink,user,verb,qsc=qsc)
-
     def html(self):
         return '<p><a href="%s">%s</a></p>' % (self.href, self.title)
 
 class Entry(models.Model):
     """ A Markdown-encoded miniblog entry """
-    anchor = AjaxForeignKey(DataTree)
     title = models.CharField(max_length=256) # Plaintext; shouldn't contain HTML, for security reasons, though HTML will probably be passed through intact
     slug    = models.SlugField(default="General",
                                help_text="(will determine the URL)")
@@ -100,9 +90,9 @@ class Entry(models.Model):
 
     def __unicode__(self):
         if self.slug:
-            return "%s (%s)" % (self.slug, self.anchor.uri)
+            return "%s" % (self.slug,)
         else:
-            return "%s (%s)" % (self.title, self.anchor.uri)
+            return "%s" % (self.title,)
 
     def html(self):
         return markdown(self.content)
@@ -110,74 +100,9 @@ class Entry(models.Model):
     def makeTitle(self):
         return self.title
 
-    """ Disabling makeUrl since we don't display entries as separate pages any more. """
-    def makeUrl(self):
-        return None
-        #   return "/blog/"+str(self.id)+"/"
-    
-    @staticmethod
-    def find_posts_by_perms(user, verb, qsc=None):
-        """ Fetch a list of relevant posts for a given user and verb """
-        if qsc==None:
-            return UserBit.find_by_anchor_perms(Entry,user,verb)
-        else:
-            return UserBit.find_by_anchor_perms(Entry,user,verb,qsc=qsc)
-
-    @staticmethod
-    def post( user_from, anchor, subject, content, email=False, user_email = ''):
-        newentry = Entry()
-        newentry.content = content
-        newentry.title = subject
-        newentry.anchor = anchor
-        newentry.email  = email
-        newentry.sent  = False
-        newentry.fromuser = user_from
-        newentry.fromemail = user_email
-        newentry.save()
-
-        return newentry
-
-    def subscribe_user(self, user):
-        verb = GetNode('V/Subscribe')
-        from esp.users.models import ESPUser, User
-        if type(user) != User and type(user) != ESPUser:
-            assert False, 'EXPECTED USER, received %s' \
-                     % str(type(user))
-        ub = UserBit.objects.filter(verb = verb,
-                        qsc  = self.anchor,
-                        user = user)
-
-        if ub.count() > 0:
-            return False
-
-        ub = UserBit(verb = verb,
-                 qsc  = self.anchor,
-                 user = user
-                 )
-        ub.save()
-        return True
-
-    def get_absolute_url(self):
-        if hasattr(self, '_url'):
-            return self._url
-        
-        directory = ('/'+'/'.join(self.anchor.get_uri().split('/')[2:])).strip('/')
-
-        self._url = '%s/%s.blog' % (directory, self.slug)
-
-        return self._url
-
-
-    def save(self, *args, **kwargs):
-        cache.delete('BLOG_DISPLAY__%s' % self.id)
-        super(Entry, self).save(*args, **kwargs)
-    
     class Meta:
-        unique_together = (('slug','anchor',),)
         verbose_name_plural = 'Entries'
         ordering = ['-timestamp']
-
-
 
 class Comment(models.Model):
 

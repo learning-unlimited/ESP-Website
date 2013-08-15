@@ -48,25 +48,6 @@ We appreciate your interest!  If you have any questions, please <a href="mailto:
 {% endifequal %}
 <br />
 
-{% if progposts|length_is:0 %}
-<!-- No announcements for this program -->
-{% else %}
-<h2>Announcements</h2>
-{% for blogentry in progposts %}
-<div class="blogentry">
-  <p class="heading">
-    <span class="date">{{ blogentry.timestamp|date:"N d, Y @ f a" }}</span>
-    <span class="title">{{ blogentry.title }}</span>
-  </p>
-  <p class="contents">{% autoescape off %}
-    {{ blogentry.html }}
-    {% endautoescape %}
-  </p>
-</div>
-
-{% endfor %}
-{% endif %}
-
 </div>
 
 {% for module in modules %}
