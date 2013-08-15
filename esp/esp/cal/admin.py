@@ -34,14 +34,12 @@ Learning Unlimited, Inc.
 """
 from django.contrib import admin
 from esp.admin import admin_site
-from esp.cal.models import EventType, Event, Series, EmailReminder
+from esp.cal.models import EventType, Event, EmailReminder
 
 admin_site.register(EventType)
 
-admin_site.register(Series)
-
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'title', 'short_description')
+    list_display = ('id', 'program', 'name', 'title', 'short_description')
     list_filter = ('start', 'end')
 
 admin_site.register(Event, EventAdmin)
