@@ -119,9 +119,7 @@ class UserAvailability(models.Model):
         #   Careful with this; the result may differ for users with multiple types.
         #   (With this alphabetical ordering, you get roles in the order: teacher, student, guardian, educator, administrator)
         if (not hasattr(self, 'role')) or self.role is None:
-            queryset = self.user.userbit_set.filter(QTree(verb__below=GetNode('V/Flags/UserRole'))).order_by('-verb__name')
-            if queryset.count() > 0:
-                self.role = queryset[0].verb
+            self.role = self.user.getUserTypes()[0]
         return super(UserAvailability, self).save(*args, **kwargs)
 
 
