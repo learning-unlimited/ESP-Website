@@ -1903,12 +1903,15 @@ class Record(models.Model):
         ("paid","Paid for program"),
         ("med","Submitted medical form"),
         ("liab","Submitted liability form"),
+        ("onsite","Registered for program on-site"),
+        ("schedule_printed","Printed student schedule on-site"),
         ("teacheracknowledgement","Did teacher acknowledgement"),
         ("lunch_selected","Selected a lunch block"),
         ("extra_form_done","Filled out Custom Form"),
         ("waitlist","Waitlisted for a program"),
         ("interview","Teacher-interviewed for a program"),
         ("teacher_training","Attended/signed up for teacher-training for a program"),
+        ("teacher_checked_in", "Teacher checked in for teaching on the day of the program"),
     )
         
     event = models.CharField(max_length=80,choices=EVENT_CHOICES)
