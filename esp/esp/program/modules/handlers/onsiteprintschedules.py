@@ -42,6 +42,7 @@ from datetime         import datetime
 from esp.web.util     import render_to_response
 from esp.datatree.models import *
 from esp.users.models import UserBit
+from esp.utils.models import Printer, PrintRequest
 from datetime         import datetime
 from django.db.models.query   import Q
 from django.template.loader import select_template
@@ -61,7 +62,7 @@ class OnsitePrintSchedules(ProgramModuleObj):
     def printschedules(self, request, tl, one, two, module, extra, prog):
         " A link to print a schedule. "
         if not request.GET.has_key('sure') and not request.GET.has_key('gen_img'):
-            printers = [ x.name for x in GetNode('V/Publish/Print').children() ]
+            printers = Printer.objects.all().values_list('name', flat=True)
 
             return render_to_response(self.baseDir()+'instructions.html',
                                     request, (prog, tl), {'printers': printers})
@@ -70,24 +71,16 @@ class OnsitePrintSchedules(ProgramModuleObj):
             return render_to_response(self.baseDir()+'studentschedulesrenderer.html',
                             request, (prog, tl), {})
 
-        verb_path = 'V/Publish/Print'
-        if extra and extra != '':
-            verb_path = "%s/%s" % (verb_path, extra)
+        requests = PrintRequest.objects.filter(time_executed__isnull=True)
+        if extra and Printer.objects.filter(name=extra).exists():
+            requests = requests.filter(printer__name=extra)
 
-        verb  = GetNode(verb_path)
-        qsc   = self.program_anchor_cached().tree_create(['Schedule'])
-
-        Q_qsc  = Q(qsc  = qsc.id)
-        Q_verb = Q(verb__in = [ verb.id ] + list( verb.children() ) )
-        
-        ubits = UserBit.valid_objects().filter(Q_qsc & Q_verb).order_by('startdate')[:1]
-        
-        for ubit in ubits:
-            ubit.enddate = datetime.now()
-            ubit.save()
+        for req in requests:
+            req.time_executed = datetime.now()
+            req.save()
 
         # get students
-        old_students = set([ ESPUser(ubit.user) for ubit in ubits ])
+        old_students = set([ ESPUser(req.user) for req in requests ])
 
         if len(old_students) > 0:
             response = ProgramPrintables.get_student_schedules(request, list(old_students), prog, onsite=True)       

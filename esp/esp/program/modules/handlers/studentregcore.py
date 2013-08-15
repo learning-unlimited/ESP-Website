@@ -39,6 +39,7 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.web.util        import render_to_response
 from esp.users.models    import ESPUser, User
 from esp.datatree.models import *
+from esp.utils.models import Printer
 from esp.accounting.controllers import IndividualAccountingController
 from django.db.models.query import Q
 from esp.middleware   import ESPError
@@ -239,8 +240,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     @cache_function
     def printer_names(self):
-        return GetNode('V/Publish/Print').children().values_list('name', flat=True)
-    printer_names.depend_on_row(lambda: DataTree, lambda node: {}, lambda node: node.get_uri(save=False).startswith('V/Publish/Print'))
+        return Printer.objects.all().values_list('name', flat=True)
+    printer_names.depend_on_model(lambda: Printer)
 
     @main_call
     @needs_student

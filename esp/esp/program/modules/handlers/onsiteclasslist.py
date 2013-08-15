@@ -39,9 +39,10 @@ from esp.program.models import ClassSubject, ClassSection, StudentRegistration, 
 from esp.web.util import render_to_response
 from esp.cal.models import Event
 from esp.cache import cache_function
-from esp.users.models import ESPUser, UserBit
+from esp.users.models import ESPUser, Record
 from esp.resources.models import ResourceAssignment
 from esp.datatree.models import *
+from esp.utils.models import Printer, PrintRequest
 from django.db.models import Min
 from django.db.models.query import Q
 from django.http import HttpResponse
@@ -253,12 +254,7 @@ LIMIT 1
     @needs_onsite
     def printschedule_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-         
-        verb = GetNode('V/Publish/Print')
-        if extra and extra != "":
-            verb = verb[extra]
-        
-        qsc = self.program_anchor_cached().tree_create(['Schedule'])
+
         result = {}
 
         try:
@@ -268,12 +264,9 @@ LIMIT 1
             
         if user:
             user_obj = ESPUser.objects.get(id=user)
-            if not UserBit.objects.filter(user__id=user, verb=verb, qsc=qsc).exclude(enddate__lte=datetime.now()).exists():
-                newbit = UserBit.objects.create(user=user_obj, verb=verb, qsc=qsc, recursive=False, enddate=datetime.now() + timedelta(days=1))
-                result['message'] = "Submitted %s's schedule for printing." % (user_obj.name())
-            else:
-                result['message'] = "A schedule is already waiting to be printed for %s." % (user_obj.name())
-            
+            PrintRequest.objects.create(user=user_obj, printer=request.GET.get('printer', None))
+            result['message'] = "Submitted %s's schedule for printing." % (user_obj.name())
+
         simplejson.dump(result, resp)
         return resp
 
@@ -282,7 +275,7 @@ LIMIT 1
     def classchange_grid(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['timeslots'] = prog.getTimeSlots()
-        context['printers'] = GetNode('V/Publish/Print').children().values_list('name', flat=True)
+        context['printers'] = Printer.objects.all().values_list('name', flat=True)
         context['program'] = prog
         context['initial_student'] = request.GET.get('student_id', '')
         return render_to_response(self.baseDir()+'ajax_status.html', request, (prog, tl), context)
@@ -439,7 +432,7 @@ LIMIT 1
         for cls in classes:
             categories[cls.category_id] = {'id': cls.category_id, 'category': cls.category.category}
 
-        printers = [ x.name for x in GetNode('V/Publish/Print').children() ]
+        printers = [ x.name for x in Printer.objects.all() ]
         
         return render_to_response(self.baseDir()+'allclasslist.html', request, (prog, tl), 
             {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
