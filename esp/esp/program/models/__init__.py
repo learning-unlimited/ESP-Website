@@ -360,22 +360,6 @@ class Program(models.Model, CustomFormsLinkModel):
     def getDocuments(self):
         return self.documents.all()
 
-    def teacherSubscribe(self, user):
-        v = GetNode('V/Subscribe')
-        qsc = self.anchor.tree_create(['Announcements',
-                           'Teachers'])
-        
-        if UserBit.objects.filter(user = user,
-                      qsc = qsc,
-                      verb = v).count() > 0:
-            return False
-
-        ub, created = UserBit.objects.get_or_create(user = user,
-                                qsc = qsc,
-                                verb = v)
-        return True
-
-
     def get_msg_vars(self, user, key):
         modules = self.getModules(user)
         for module in modules:

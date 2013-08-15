@@ -161,9 +161,7 @@ class ClassCreationController(object):
 
     def associate_teacher_with_class(self, cls, user):
         self.add_teacher_to_program_mailinglist(user)
-
         cls.makeTeacher(user)
-        self.program.teacherSubscribe(user)
 
     def force_availability(self, user):
         if len(user.getAvailableTimes(self.program)) == 0:
