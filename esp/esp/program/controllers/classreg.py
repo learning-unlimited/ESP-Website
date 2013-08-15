@@ -163,7 +163,6 @@ class ClassCreationController(object):
         self.add_teacher_to_program_mailinglist(user)
 
         cls.makeTeacher(user)
-        cls.subscribe(user)
         self.program.teacherSubscribe(user)
 
     def force_availability(self, user):

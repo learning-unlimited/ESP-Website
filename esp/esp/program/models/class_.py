@@ -1698,15 +1698,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def removeTeacher(self, user):
         self.teachers.remove(user)
         return True
-
-    def subscribe(self, user):
-        v = GetNode('V/Subscribe')
-
-        ub, created = UserBit.objects.get_or_create(user = user,
-                                qsc = self.anchor,
-                                verb = v)
-
-        return True
     
     def getResourceRequests(self): # get all resource requests associated with this ClassSubject
         from esp.resources.models import ResourceRequest
