@@ -309,8 +309,8 @@ class Resource(models.Model):
     def is_conflicted(self):
         return (self.assignments().count() > 1)
     
-    def available_any_time(self):
-        return (len(self.available_times()) > 0)
+    def available_any_time(self, program=None):
+        return (len(self.available_times(program)) > 0)
     
     def available_times_html(self, program=None):
         return '<br /> '.join([unicode(e) for e in Event.collapse(self.available_times(program))])
