@@ -25,12 +25,8 @@ class Migration(SchemaMigration):
         db.add_column('users_useravailability', 'role', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.Group'],default=orm['auth.Group'].objects.all()[0].id), keep_default=False)
 
         for a in UserAvailability.objects.all():
-
-            a.role = Group.objects.get(name=ua_map[a.id])
+            (a.role, created) = Group.objects.get_or_create(name=ua_map[a.id])
             a.save()
-            pass
-        print "updated??"
-        #raise RuntimeError
 
     def backwards(self, orm):
         
