@@ -1433,7 +1433,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         new_section = ClassSection()
         new_section.parent_class = self
         new_section.duration = '%.4f' % duration
-        new_section.anchor = DataTree.get_by_uri(self.anchor.get_uri() + '/Section' + str(section_index), create=True)
         new_section.status = status
         new_section.save()
         self.sections.add(new_section)
@@ -1565,7 +1564,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             sec.delete()
         
         #   Remove indirect dependencies
-        Media.objects.filter(QTree(anchor__below=self.anchor)).delete()
+        self.documents.delete()
         UserBit.objects.filter(QTree(qsc__below=self.anchor)).delete()
         
         self.checklist_progress.clear()
@@ -1871,8 +1870,8 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             return result[0]
         
         result = ArchiveClass()
-        date_dir = self.parent_program.anchor.name.split('_')
-        result.program = self.parent_program.anchor.parent.name
+        date_dir = self.parent_program.program_instance.split('_')
+        result.program = self.parent_program.program_type
         result.year = date_dir[0][:4]
         if len(date_dir) > 1:
             result.date = date_dir[1]
@@ -1978,7 +1977,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             for t in teachers:
                 if ESPUser(t).getTaughtClasses(self.parent_program).filter(status__gte=10).count() == 0:
                     from esp.mailman import remove_list_member
-                    mailing_list_name = "%s_%s" % (self.parent_program.anchor.parent.name, self.parent_program.anchor.name)
+                    mailing_list_name = "%s_%s" % (self.parent_program.program_type, self.parent_program.program_instance)
                     teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
                     remove_list_member(teachers_list_name, t.email)
 
