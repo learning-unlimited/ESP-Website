@@ -1029,14 +1029,14 @@ class ClassSection(models.Model):
             #   Send e-mail to each student
             for student in self.students(student_verbs):
                 to_email = ['%s <%s>' % (student.name(), student.email)]
-                from_email = '%s at %s <%s>' % (self.parent_program.anchor.parent.friendly_name, settings.INSTITUTION_NAME, self.parent_program.director_email)
+                from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
                 msgtext = template.render(Context({'user': student}))
                 send_mail(email_title, msgtext, from_email, to_email)
 
         #   Send e-mail to administrators as well
         email_content = render_to_string('email/class_cancellation_admin.txt', context)
         to_email = ['Directors <%s>' % (self.parent_program.director_email)]
-        from_email = '%s Web Site <%s>' % (self.parent_program.anchor.parent.friendly_name, self.parent_program.director_email)
+        from_email = '%s Web Site <%s>' % (self.parent_program.program_type, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
 
         self.clearStudents()
@@ -1253,7 +1253,7 @@ class ClassSection(models.Model):
             list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
             for list_name in list_names:
                 add_list_member(list_name, user.email)
-            add_list_member("%s_%s-students" % (self.parent_program.anchor.parent.name, self.parent_program.anchor.name), user.email)
+            add_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user.email)
 
             return True
         else:
