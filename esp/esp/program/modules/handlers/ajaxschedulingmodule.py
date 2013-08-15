@@ -99,13 +99,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
         rrequest_dict = defaultdict(list)
         for r in rrequests:
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
-
-
-        teacher_bits = UserBit.valid_objects().filter(verb=GetNode('V/Flags/Registration/Teacher'), qsc__in = (s.parent_class.anchor_id for s in sections), user__isnull=False).values("qsc_id", "user_id").distinct()
-
-        teacher_dict = defaultdict(list)
-        for b in teacher_bits:
-            teacher_dict[b["qsc_id"]].append(b["user_id"])
         
         sections_dicts = [
             {   'id': s.id,
@@ -114,7 +107,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'text': s.title(),
                 'category': s.category.category,
                 'length': float(s.duration),
-                'teachers': teacher_dict[s.parent_class.anchor_id],
+                'teachers': list(s.parent_class.get_teachers().values_list('id', flat=True)),
                 'resource_requests': rrequest_dict[s.id],
                 'max_class_capacity': s.max_class_capacity,
                 'capacity': s.capacity,
