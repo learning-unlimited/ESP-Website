@@ -49,6 +49,8 @@ from esp.tagdict.models import Tag
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 
+from esp.middleware import ESPError
+
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
@@ -174,9 +176,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response({
-            'parent_class__anchor__friendly_name': 'title',
+            'emailcode': 'emailcode',
+            'parent_class__title': 'title',
             'parent_class__id': 'parent_class',
-            'parent_class__anchor__name': 'emailcode',
             'parent_class__category__symbol': 'category',
             'parent_class__grade_max': 'grade_max',
             'parent_class__grade_min': 'grade_min',
@@ -188,17 +190,15 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         sections = list(prog.sections().values(
                 'id',
                 'status',
-                'parent_class__anchor__friendly_name',
                 'parent_class__id',
                 'parent_class__category__symbol',
-                'parent_class__anchor__name',
                 'parent_class__grade_max',
                 'parent_class__grade_min',
                 'enrolled_students'))
         for section in sections:
             s = ClassSection.objects.get(id=section['id'])
             section['index'] = s.index()
-            section['parent_class__anchor__name'] += "s" + str(section['index'])
+            section['emailcode'] = s.emailcode()
             section['length'] = float(s.duration)
             section['teachers'] = [t.id for t in s.parent_class.get_teachers()]
             for t in s.parent_class.get_teachers():
@@ -225,11 +225,11 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     @json_response({
             'id': 'id',
             'status': 'status',
-            'anchor__friendly_name': 'title',
             'category__symbol': 'category',
             'grade_max': 'grade_max',
             'grade_min': 'grade_min',
-            'anchor__name': 'emailcode',
+            'emailcode': 'emailcode',
+            'title': 'title',
             })
     @cached_module_view
     def class_subjects(prog):
@@ -238,15 +238,15 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         classes = list(prog.classes().values(
                 'id',
                 'status',
-                'anchor__friendly_name',
+                'title',
                 'category__symbol',
-                'anchor__name',
                 'grade_max',
                 'grade_min'))
 
         for cls in classes:
             c = ClassSubject.objects.get(id=cls['id'])
             class_teachers = c.get_teachers()
+            cls['emailcode'] = c.emailcode()
             cls['length'] = float(c.duration)
             cls['sections'] = [s.id for s in c.sections.all()]
             cls['teachers'] = [t.id for t in class_teachers]
@@ -422,7 +422,6 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         for r in rrequests:
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
 
-        cls = section.parent_class
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
             'resource_requests': rrequest_dict,
@@ -464,8 +463,6 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", len(classes.filter(status=-20))))
         vitals['classnum'] = class_num_list
 
-        proganchor = prog.anchor
-        
         #   Display pretty labels for teacher and student numbers
         teacher_labels_dict = {}
         for module in prog.getModules():
