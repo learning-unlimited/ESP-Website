@@ -53,6 +53,8 @@ from django.db.models.query import Q
 from django.core.cache import cache
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
+
+from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
 from os.path import exists
@@ -71,16 +73,6 @@ class ProgramModuleObj(models.Model):
     seq      = models.IntegerField()
     required = models.BooleanField()
     required_label = models.CharField(max_length=80, blank=True, null=True)
-        
-    def program_anchor_cached(self):
-        """ We reference "self.program.anchor" quite often.  Getting it requires two DB lookups.  So, cache it. """
-        CACHE_KEY = "PROGRAMMODULEOBJ__PROGRAM__ANCHOR__CACHE__0,%d" % (self.id,)
-        val = cache.get(CACHE_KEY)
-        if val == None:
-            val = self.program.anchor
-            cache.set(CACHE_KEY, val, 60)
-
-        return val
 
     def docs(self):
         if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':
@@ -304,33 +296,26 @@ class ProgramModuleObj(models.Model):
             self.module = old_module
 
     def deadline_met(self, extension=''):
-    
-        from esp.users.models import UserBit
-        from esp.datatree.models import GetNode, DataTree
+        request = get_current_request()
 
-        if not get_current_request().user or not self.program:
+        if request is None or not request.user or not self.program:
             raise ESPError(False), "There is no user or program object!"
 
-
-            
         if self.module.module_type != 'learn' and self.module.module_type != 'teach':
             return True
-
-        canView = get_current_request().user.isOnsite(self.program)
+            
+        canView = request.user.isOnsite(self.program)
 
         if not canView:
             deadline = {'learn':'Student', 'teach':'Teacher'}[self.module.module_type]+extension
-            canView = Permission.user_has_perm(get_current_request().user, deadline, program=self.program)
+            canView = Permission.user_has_perm(request.user, deadline, program=self.program)
 
         return canView
 
     # important functions for hooks...
     @cache_function
     def get_full_path(self, tl=None):
-        str_array = self.program.anchor.tree_encode()
-        url = '/'+self.module.module_type \
-              +'/'+'/'.join(str_array[-2:])+'/'+self.get_main_view(tl)
-        return url
+        return '/' + self.module.module_type + '/' + self.program.url + '/' + self.get_main_view(tl)
     get_full_path.depend_on_row(lambda: ProgramModuleObj, 'self')
 
     @classmethod
@@ -628,15 +613,10 @@ def needs_account(method):
 def meets_grade(method):
     def _checkGrade(moduleObj, request, tl, *args, **kwargs):
         errorpage = 'errors/program/wronggrade.html'
-        from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
         from esp.users.models import UserBit
 
-        verb_override = GetNode('V/Flags/Registration/GradeOverride')
-
         # if there's grade override we can just skip everything
-        if UserBit.UserHasPerms(user = request.user,
-                                  qsc  = moduleObj.program.anchor_id,
-                                  verb = verb_override):
+        if Permission.user_has_perm(request.user, 'GradeOverride', moduleObj.program):
             return method(moduleObj, request, tl, *args, **kwargs)
         
         # now we have to use the grade..
@@ -657,7 +637,6 @@ def meets_grade(method):
 # meets_all_deadlines functions below).  -Michael P, 6/23/2009
 def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs):
     from esp.users.models import UserBit
-    from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
     if tl != 'learn' and tl != 'teach':
         return (True, None)
     response = None
