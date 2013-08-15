@@ -222,10 +222,6 @@ def qsd(request, url):
 
             # Strip "media/" from FILE, and strip the file name; just return the path
             path = dirname(name[9:])
-            if path == '':
-                m.anchor = qsd_rec.path
-            else:
-                m.anchor = GetNode('Q/' + dirname(name))
                 
             # Do we want a better/manual mechanism for setting friendly_name?
             m.friendly_name = basename(name)
