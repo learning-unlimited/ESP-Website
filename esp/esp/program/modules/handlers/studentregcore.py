@@ -72,7 +72,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
     def students(self, QObject = False):
         now = datetime.now()
         
-        q_confirmed = self.getQForUser(Q(record__event = "reg_confirmed", record__program__anchor=self.program))
+        q_confirmed = self.getQForUser(Q(record__event = "reg_confirmed", record__program=self.program))
         q_attended = self.getQForUser(Q(record__event= "attended", record__program=self.program))
         q_studentrep = self.getQForUser(Q(groups__name="StudentRep"))
 
