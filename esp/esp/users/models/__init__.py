@@ -340,10 +340,7 @@ class ESPUser(User, AnonymousUser):
                 return self.classsubject_set.filter(parent_program = program)
             else:
                 return self.classsubject_set.filter(parent_program = program).exclude(status=-10)
-    getTaughtClassesFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
-                                                              lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
-                                                                          bit.qsc.parent.name == 'Classes' and
-                                                                          bit.qsc.parent.parent.program_set.count() > 0 )
+    getTaughtClassesFromProgram.depend_on_m2m(lambda:ClassSubject, 'teachers', lambda cls, teacher: {'self': teacher})
     getTaughtClassesFromProgram.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
     @cache_function
