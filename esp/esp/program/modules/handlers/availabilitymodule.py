@@ -41,7 +41,7 @@ from esp.datatree.models import *
 from esp.web.util                import render_to_response
 from django.http import HttpResponse, HttpResponseRedirect
 from django                      import forms
-from esp.cal.models              import Event
+from esp.cal.models              import Event, EventType
 from esp.tagdict.models          import Tag
 from django.db.models.query      import Q
 from esp.users.models            import User, ESPUser, UserAvailability
@@ -69,6 +69,10 @@ class AvailabilityModule(ProgramModuleObj):
             "module_type": "manage",
             "seq": 0
             } ]
+    
+    def event_type(self):
+        et, created = EventType.objects.get_or_create(description='Class Time Block')
+        return et
     
     def prepare(self, context={}):
         """ prepare returns the context for the main availability page. 
@@ -123,7 +127,7 @@ class AvailabilityModule(ProgramModuleObj):
     
     def getTimes(self):
         #   Get a list of tuples with the id and name of each of the program's timeslots
-        times = self.program.getTimeSlots()
+        times = self.program.getTimeSlots().filter(event_type=self.event_type())
         return [(str(t.id), t.short_description) for t in times]
 
     @main_call
@@ -139,7 +143,7 @@ class AvailabilityModule(ProgramModuleObj):
             return self.availabilityForm(request, tl, one, two, prog, ESPUser(request.user), False)
 
     def availabilityForm(self, request, tl, one, two, prog, teacher, isAdmin):
-        time_options = self.program.getTimeSlots()
+        time_options = self.program.getTimeSlots().filter(event_type=self.event_type())
         #   Group contiguous blocks
         if Tag.getTag('availability_group_timeslots', default=True) == 'False':
             time_groups = [list(time_options)]
@@ -196,7 +200,7 @@ class AvailabilityModule(ProgramModuleObj):
 
         if not (len(available_slots) or blank): # I'm not sure whether or not we want the "or blank"
             #   If they didn't enter anything, make everything checked by default.
-            available_slots = self.program.getTimeSlots()
+            available_slots = self.program.getTimeSlots().filter(event_type=self.event_type())
             #   The following 2 lines mark the teacher as always available.  This
             #   is sometimes helpful, but not usually the desired behavior.
             #   for a in available_slots:
