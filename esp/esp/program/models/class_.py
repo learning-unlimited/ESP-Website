@@ -46,6 +46,7 @@ from django.utils.datastructures import SortedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
 from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.models import ContentType
 
 # ESP Util
 from esp.db.models.prepared import ProcedureManager
@@ -179,8 +180,7 @@ class ClassManager(ProcedureManager):
         if not force_all:
             classes = classes.filter(self.approved(return_q_obj=True))
         
-        classes = classes.select_related('anchor',
-                                         'category')
+        classes = classes.select_related('category')
         
         if program != None:
             classes = classes.filter(parent_program = program)
@@ -188,21 +188,25 @@ class ClassManager(ProcedureManager):
         if ts is not None:
             classes = classes.filter(sections__meeting_times=ts)
         
+        #   Retrieve the content type for finding class documents (generic relation)
+        content_type_id = ContentType.objects.get_for_model(ClassSubject).id
+        
         select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration", "program_classsection" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND "program_classsection"."parent_class_id" = "program_class"."id" AND "program_studentregistration"."start_date" <= %s AND "program_studentregistration"."end_date" >= %s)'),
                              ('teacher_ids', 'SELECT list(DISTINCT espuser_id) FROM program_class_teachers Where program_class_teachers.classsubject_id=program_class.id'),
-                             ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'),
+                             ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."owner_id" = "program_class"."id") AND ("qsdmedia_media"."owner_type_id" = %s)'),
                              ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."name" = \'learn:index\' AND "qsd_quasistaticdata"."url" LIKE %s AND "qsd_quasistaticdata"."url" SIMILAR TO %s || "program_class"."id" || %s)'),
                              ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
                              
         select_params = [ enrolled_type.id,
                           now,
                           now,
+                          content_type_id,
                           '%/Classes/%',
                           '%[A-Z]',
                           '/%',
                          ]
         classes = classes.extra(select=select, select_params=select_params)
-        
+
         #   Allow customized orderings for the catalog.
         #   These are the default ordering fields in descending order of priority.
         if order_args_override:
@@ -245,8 +249,6 @@ class ClassManager(ProcedureManager):
         # Now to get the sections corresponding to these classes...
 
         sections = ClassSection.objects.filter(parent_class__in=class_ids)
-        
-        sections = sections.select_related('anchor')
 
         sections = ClassSection.prefetch_catalog_data(sections.distinct())
 
@@ -267,7 +269,7 @@ class ClassManager(ProcedureManager):
         # Now, to combine all of the above
 
         if len(classes) >= 1:
-            p = Program.objects.select_related('anchor').get(id=classes[0].parent_program_id)
+            p = Program.objects.get(id=classes[0].parent_program_id)
             
         for c in classes:
             c._teachers = [teachers_by_id[int(x)] for x in c.teacher_ids.split(',')] if c.teacher_ids != '' else []
