@@ -33,27 +33,6 @@ def excel_survey_responses(request):
     response = HttpResponse(build_workbook().getvalue(), mimetype='application/vnd.ms-excel')
     response['Content-Disposition'] = 'attachment; filename=esp-survey-results-all.xls'
     return response
-class VolunteerRegistrationForm(EmailModelForm):
-    class Meta:
-        model = VolunteerRegistration
-
-def volunteer_signup(request):
-    volunteer_anchor = GetNode('Q/Web/getinvolved')
-    if request.POST:
-        response = VolunteerRegistrationForm(request.POST)
-        if response.is_valid():
-            data = response.save(from_addr='Splash! Chicago <server@uchicago-splash.mit.edu>', destination_addrs=['Race Wright <rwright@uchicago.edu>'])
-            return render_to_response("shortterm/volunteer_signup/complete.html", request, context={'anchor': volunteer_anchor})
-    else:
-        response = VolunteerRegistrationForm()
-
-    return render_to_response("shortterm/volunteer_signup/form.html", request, context={'form': response, 'anchor': volunteer_anchor})
-
-@admin_required
-def excel_survey_responses(request):
-    response = HttpResponse(build_workbook().getvalue(), mimetype='application/vnd.ms-excel')
-    response['Content-Disposition'] = 'attachment; filename=esp-survey-results-all.xls'
-    return response
 
 @login_required
 def logistics_quiz_start(request):
