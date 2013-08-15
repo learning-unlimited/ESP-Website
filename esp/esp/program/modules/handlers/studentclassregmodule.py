@@ -63,7 +63,6 @@ def json_encode(obj):
     if isinstance(obj, ClassSubject):
         return { 'id': obj.id,
                  'title': obj.title,
-                 'anchor': obj.anchor_id,
                  'parent_program': obj.parent_program_id,
                  'category': obj.category,
                  'class_info': obj.class_info,
@@ -85,7 +84,6 @@ def json_encode(obj):
                  }
     elif isinstance(obj, ClassSection):
         return { 'id': obj.id,
-                 'anchor': obj.anchor_id,
                  'status': obj.status,
                  'duration': obj.duration,
                  'get_meeting_times': obj._events,
@@ -99,7 +97,7 @@ def json_encode(obj):
                  }
     elif isinstance(obj, Event):
         return { 'id': obj.id,
-                 'anchor': obj.anchor_id,
+                 'program': obj.program_id,
                  'start': obj.start,
                  'end': obj.end,
                  'short_description': obj.description,
