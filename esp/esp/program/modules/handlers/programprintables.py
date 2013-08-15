@@ -364,7 +364,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def classesbytitle(self, request, tl, one, two, module, extra, prog):
         def cmp_title(one, other):
-            cmp0 = cmp(one.anchor.friendly_name.upper().lstrip().strip('"\',.<![($'), other.anchor.friendly_name.upper().lstrip().strip('"\',.<![($'))
+            cmp0 = cmp(one.title.lstrip().strip('"\',.<![($'), other.title.lstrip().strip('"\',.<![($'))
 
             if cmp0 != 0:
                 return cmp0
@@ -566,11 +566,11 @@ class ProgramPrintables(ProgramModuleObj):
     def roomsbytime(self, request, tl, one, two, module, extra, prog):
         #   List of open classrooms, sorted by the first time they are available
         def filt(one):
-            return one.available_any_time(self.program.anchor)
+            return one.available_any_time(self.program)
         
         def cmpsort(one, other):
             #   Find when available
-            return cmp(one.available_times(self.program.anchor)[0], other.available_times(self.program.anchor)[0])
+            return cmp(one.available_times(self.program)[0], other.available_times(self.program)[0])
 
         return self.roomsbyFOO(request, tl, one, two, module, extra, prog, cmpsort, filt)
         
@@ -812,7 +812,7 @@ Volunteer schedule for %s:
 
         # Hack together a pseudocontext:
         context = { 'onsiteregform': True,
-                    'students': [{'classes': [{'friendly_times': [i.anchor.friendly_name],
+                    'students': [{'classes': [{'friendly_times': [prog.name],
                                                'classrooms': [''],
                                                'prettyrooms': ['______'],
                                                'title': '________________________________________',
