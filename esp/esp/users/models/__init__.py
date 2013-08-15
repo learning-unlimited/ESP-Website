@@ -226,9 +226,6 @@ class ESPUser(User, AnonymousUser):
     def is_authenticated(self):
         return self.getOld().is_authenticated()
 
-    def getVisible(self, objType):
-        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Flags/Public'))
-
     def getLastProfile(self):
         # caching is handled in RegistrationProfile.getLastProfile
         # for coherence w.r.t clearing and more caching
