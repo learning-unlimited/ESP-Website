@@ -27,11 +27,11 @@
   </td>
 
   <td class="clsright bordertop2">
-    {% if cls.pageExists %}
-    <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.html"
+    {% if cls.got_index_qsd %}
+    <a class="abutton" href="/learn/{{ cls.url }}/index.html"
        title="{{ cls }}...">Visit web page</a>
     {% else %}
-    <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.edit.html"
+    <a class="abutton" href="/learn/{{ cls.url }}/index.edit.html"
        title="Create `{{ cls }}'...">Create web page</a>
     {% endif %}
   </td>

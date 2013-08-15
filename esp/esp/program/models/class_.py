@@ -1260,10 +1260,6 @@ class ClassSection(models.Model):
             #    Pre-registration failed because the class is full.
             return False
 
-    def pageExists(self):
-        from esp.qsd.models import QuasiStaticData
-        return len(self.anchor.quasistaticdata_set.filter(name='learn:index').values('id')[:1]) > 0
-
     def prettyDuration(self):
         if self.duration is None:
             return 'N/A'
@@ -1531,21 +1527,15 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def got_qsd(self):
         """ Returns if this class has any associated QSD. """
-        if QuasiStaticData.objects.filter(path = self.anchor)[:1]:
-            return True
-        else:
-            return False
+        return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url()).exists()
 
     def got_index_qsd(self):
         """ Returns if this class has an associated index.html QSD. """
         if hasattr(self, "_index_qsd"):
             return (self._index_qsd != '')
         
-        if QuasiStaticData.objects.filter(path = self.anchor, name = "learn:index")[:1]:
-            return True
-        else:
-            return False
-        
+        return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url() + '/index').exists()
+
     def __unicode__(self):
         if self.title != "":
             return "%s: %s" % (self.id, self.title)
