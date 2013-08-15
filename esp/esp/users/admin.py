@@ -5,7 +5,8 @@ from django.db import models
 from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
 from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record, Permission
-from django.contrib.auth.admin import UserAdmin
+from django.contrib.auth.models import Group
+from django.contrib.auth.admin import UserAdmin, GroupAdmin
 import datetime
 
 class UserBitAdmin(admin.ModelAdmin):
@@ -107,3 +108,7 @@ class K12SchoolAdmin(admin.ModelAdmin):
     contact_name.short_description = 'Contact name'
 
 admin_site.register(K12School, K12SchoolAdmin)
+
+#   Include admin pages for Django group
+admin_site.register(Group, GroupAdmin)
+
