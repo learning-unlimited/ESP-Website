@@ -31,20 +31,6 @@ The program you are trying to create is: <b>{{ prog.anchor.name }} {{ datatrees.
 <div id="catalog">
 <table align="center">
 <tr>
-<th colspan="2">The following data trees will be created:</th>
-</tr>
-<tr><th class="materials">URI</th><th class="materials">Friendly Name</th></tr>
-{% for item in datatrees %}
-    <tr><td>{{ item.0 }}</td><td>{{ item.1 }}</td></tr>
-{% endfor %}
-</table>
-</div>
-</p>
-
-<p>
-<div id="catalog">
-<table align="center">
-<tr>
 <th colspan="4">The following permissions will be created:</th>
 </tr>
 <tr><th class="materials">Type</th><th class="materials">User ID</th><th class="materials">Start Date</th><th class="materials">End Date</th></tr>

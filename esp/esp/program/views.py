@@ -39,7 +39,7 @@ from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect, Http404
 from django.core.mail import send_mail
-from esp.users.models import ESPUser, UserBit, GetNodeOrNoBits, admin_required, ZipCode
+from esp.users.models import ESPUser, Permission, GetNodeOrNoBits, admin_required, ZipCode
 
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -490,22 +490,13 @@ def newprogram(request):
         template_prog["term"] = tprogram.anchor.name
         template_prog["term_friendly"] = tprogram.anchor.friendly_name
         '''
-        template_prog["anchor"] = tprogram.anchor.parent.id
         
         template_prog["admins"] = ESPUser.objects.filter(permission__permission_type="Administer",permission__program=tprogram).values_list("id", flat=True)
 
         # aseering 5/18/2008 -- More aggressively list everyone who was an Admin
         #template_prog["admins"] = [ x.id for x in UserBit.objects.bits_get_users(verb=GetNode("V/Administer"), qsc=tprogram.anchor, user_objs=True) ]
-        
-        program_visible_bits = list(UserBit.objects.bits_get_users(verb=GetNode("V/Flags/Public"), qsc=tprogram.anchor).filter(user__isnull=True).order_by("-startdate"))
-        if len(program_visible_bits) > 0:
-            newest_bit = program_visible_bits[0]
-            oldest_bit = program_visible_bits[-1]
 
-            template_prog["publish_start"] = oldest_bit.startdate
-            template_prog["publish_end"] = newest_bit.enddate
-
-        student_reg_bits = list(UserBit.objects.bits_get_users(verb=GetNode("V/Deadline/Registration/Student"), qsc=tprogram.anchor).filter(user__isnull=True).order_by("-startdate"))
+        student_reg_bits = list(Permission.objects.filter(permission_type__startswith='Student', program=template_prog_id).order_by('-startdate'))
         if len(student_reg_bits) > 0:
             newest_bit = student_reg_bits[0]
             oldest_bit = student_reg_bits[-1]
@@ -513,7 +504,7 @@ def newprogram(request):
             template_prog["student_reg_start"] = oldest_bit.startdate
             template_prog["student_reg_end"] = newest_bit.enddate
 
-        teacher_reg_bits = list(UserBit.objects.bits_get_users(verb=GetNode("V/Deadline/Registration/Teacher"), qsc=tprogram.anchor).filter(user__isnull=True).order_by("-startdate"))
+        teacher_reg_bits = list(Permission.objects.filter(permission_type__startswith='Teacher', program=template_prog_id).order_by('-startdate'))
         if len(teacher_reg_bits) > 0:
             newest_bit = teacher_reg_bits[0]
             oldest_bit = teacher_reg_bits[-1]
@@ -532,19 +523,14 @@ def newprogram(request):
         context = pickle.loads(request.session['context_str'])
         pcf = ProgramCreationForm(context['prog_form_raw'])
         if pcf.is_valid():
-            # Fix the anchor friendly name right away, otherwise in-memory caches cause (mild) issues later on
-            anchor = GetNode(pcf.cleaned_data['anchor'].get_uri() + "/" + pcf.cleaned_data["term"])
-            anchor.friendly_name = pcf.cleaned_data['term_friendly']
-            anchor.save()
 
             new_prog = pcf.save(commit = False) # don't save, we need to fix it up:
-            new_prog.anchor = anchor
-            new_prog.url = pcf.cleaned_data['anchor'].name+"/"+pcf.cleaned_data['term']
-            new_prog.name = pcf.cleaned_data['anchor'].friendly_name+" "+pcf.cleaned_data['term_friendly']
+            new_prog.url = pcf.cleaned_data['program_type'] + "/" + pcf.cleaned_data['term']
+            new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
             new_prog.save()
             pcf.save_m2m()
             
-            commit_program(new_prog, context['datatrees'], context['userbits'], context['perms'], context['modules'], context['costs'])
+            commit_program(new_prog, context['perms'], context['modules'], context['cost'])
 
             # Create the default resource types now
             default_restypes = Tag.getProgramTag('default_restypes', program=new_prog)
@@ -588,14 +574,14 @@ def newprogram(request):
 
         if form.is_valid():
             temp_prog = form.save(commit=False)
-            datatrees, userbits, perms, modules = prepare_program(temp_prog, form.cleaned_data)
+            perms, modules = prepare_program(temp_prog, form.cleaned_data)
             #   Save the form's raw data instead of the form itself, or its clean data.
             #   Unpacking of the data happens at the next step.
 
-            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'datatrees': datatrees, 'userbits': userbits, "perms": perms, 'modules': modules, 'costs': ( form.cleaned_data['base_cost'], form.cleaned_data['finaid_cost'] )})
+            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost']})
             request.session['context_str'] = context_pickled
             
-            return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'datatrees': datatrees, 'userbits': userbits, 'perms':perms, 'modules': modules})
+            return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'perms':perms, 'modules': modules})
         
     else:
         #   Otherwise, the default view is a blank form.
