@@ -753,7 +753,7 @@ class ESPUser(User, AnonymousUser):
 
     def getUserTypes(self):
         """ Return the set of types for this user """
-        return self.groups.all().values_list("name",flat=True)
+        return self.groups.all().order_by('name').values_list("name",flat=True)
         
     @staticmethod
     def create_membership_method(user_class):
