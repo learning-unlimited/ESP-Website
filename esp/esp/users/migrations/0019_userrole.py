@@ -14,8 +14,12 @@ class Migration(DataMigration):
         for role in role_verbs:
             g = Group.objects.get_or_create(name=role.name)
 
+        #   Ensure that a minimal set of Groups are present
+        for role in ['Student', 'Teacher', 'Administrator']:
+            Group.objects.get_or_create(name=role)
+
         # Now, for all user roles applied to users, add those users to the appropriate Group
-        role_bits = UserBit.objects.filter(verb__parent__uri="V/Flags/UserRole", qsc__uri="Q").exclude(user=None).filter(UserBit.not_expired())
+        role_bits = UserBit.objects.filter(verb__parent__uri="V/Flags/UserRole", qsc__uri="Q").exclude(user=None).filter(enddate__gte=datetime.datetime.now())
         for bit in role_bits:
             g,c = Group.objects.get_or_create(name=bit.verb.name)
             bit.user.groups.add(g)

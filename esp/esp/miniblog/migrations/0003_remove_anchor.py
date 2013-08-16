@@ -4,7 +4,7 @@ from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
-from esp.datatree.models import GetNode
+from esp.datatree.models import DataTree, GetNode
 
 class Migration(SchemaMigration):
 
@@ -15,7 +15,11 @@ class Migration(SchemaMigration):
 
         # Delete all announcements/entries that were not anchored on Q/Web
         # since those anchor points now have no meaning
-        web_node_id = GetNode('Q/Web').id
+        try:
+            web_node_id = GetNode('Q/Web').id
+        except DataTree.DoesNotExist:
+            #   If there is no DataTree, delete everything.
+            web_node_id = -1
         db.execute('DELETE FROM "miniblog_announcementlink" WHERE "anchor_id" != %s', [web_node_id,])
         db.execute('DELETE FROM "miniblog_entry" WHERE "anchor_id" != %s', [web_node_id,])
 
