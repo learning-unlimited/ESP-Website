@@ -16,10 +16,7 @@ class Migration(DataMigration):
 
         #survey model
         for s in Survey.objects.all():
-            try:
-                p=Program.objects.get(anchor=s.anchor)
-            except:
-                p=None
+            p=Program.objects.get(anchor=s.anchor)
             s.program=p
             s.save()
 
