@@ -655,8 +655,8 @@ class ESPUser(User, AnonymousUser):
     def isEnrolledInClass(self, clsObj, request=None):
         return clsObj.students().filter(id=self.id).exists()
 
-    def canRegToFullProgram(self, nodeObj):
-        return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Flags/RegAllowed/ProgramFull'))
+    def canRegToFullProgram(self, program):
+        return Permission.user_has_perm(self, 'Student/OverrideFull', program)
 
     #   This is needed for cache dependencies on financial aid functions
     def get_finaid_model():
@@ -1946,6 +1946,7 @@ class Permission(models.Model):
         ("GradeOverride","Ignore grade ranges for studentreg"),
         ("Student Deadlines", (
                 ("Student", "Basic student access"),
+                ("Student/OverrideFull", "Register for a full program"),
                 ("Student/All", "All student deadlines"),
                 ("Student/Applications","Apply for classes"),
                 ("Student/Catalog","View the catalog"),
