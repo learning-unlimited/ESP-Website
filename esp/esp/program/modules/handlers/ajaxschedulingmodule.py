@@ -169,8 +169,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @cache_function
     def ajax_teachers_cached(self, prog):
-        teachers = ESPUser.objects.filter(userbit__verb=GetNode('V/Flags/Registration/Teacher')).filter(userbit__qsc__classsubject__isnull=False, userbit__qsc__parent__parent__program=prog).distinct()
-
+        teachers = ESPUser.objects.filter(classsubject__parent_program=prog).distinct()
         resources = UserAvailability.objects.filter(user__in=teachers).filter(event__program = prog).values('user_id', 'event_id')
         resources_for_user = defaultdict(list)
 
@@ -187,10 +186,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         simplejson.dump(teacher_dicts, response)
         return response
     ajax_teachers_cached.get_or_create_token(('prog',))
-    ajax_teachers_cached.depend_on_model(UserBit)
     ajax_teachers_cached.depend_on_model(UserAvailability)
+    ajax_teachers_cached.depend_on_m2m(ClassSubject, 'teachers', lambda sub, teacher: {'prog': sub.parent_program})
     
-
     @aux_call
     @needs_admin
     def ajax_times(self, request, tl, one, two, module, extra, prog):
