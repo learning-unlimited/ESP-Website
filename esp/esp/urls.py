@@ -128,16 +128,6 @@ urlpatterns += patterns('esp.web.views.json',
 # aseering 8/14/2007: This ought to be able to be written in a simpler way...
 urlpatterns += patterns('esp.web.views.main',
 
-    # Possibly overspecific, possibly too general.
-    (r'^(?P<subsection>(learn|teach|program|help))/(?P<url>.*)/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
-        { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia', 'section_prefix_keys': section_prefix_keys }),
-    (r'^(?P<subsection>(learn|teach|program|help))/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
-        { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia', 'section_prefix_keys': section_prefix_keys, 'url': ''}),
-    (r'^(?P<url>.*)/qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
-        { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia' }),
-    (r'^qsdmedia/(?P<filename>[^/]+\.[^/]{1,4})$', 'redirect',
-        { 'section_redirect_keys': section_redirect_keys, 'renderer': 'esp.qsdmedia.views.qsdmedia', 'url': '' }),
-
     # aseering - Is it worth consolidating these?  Two entries for the single "contact us! widget
     # Contact Us! pages
     (r'^contact/contact/?$', 'contact'),

@@ -38,25 +38,3 @@ from esp.users.models import UserBit
 from esp.datatree.models import *
 from django.core.exceptions import MultipleObjectsReturned
 
-def qsdmedia(request, branch, section, url_name, url_verb, base_url):
-    """ Return a redirect to a media file """
-    filename = url_name + '.' + url_verb
-
-    if filename[:6] == 'learn:' or filename[:6] == 'teach:':
-        filename = filename[6:]
-
-    try:
-        media_rec = Media.objects.get(anchor=branch, friendly_name=filename)
-    except Media.DoesNotExist:
-        raise Http404
-    except MultipleObjectsReturned: # If there exist multiple Media entries, we want the first one
-        media_rec = Media.objects.filter(anchor=branch, friendly_name=filename).latest('id')
-
-    
-    # aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Flags/Public on this node
-    have_view = UserBit.UserHasPerms( request.user, media_rec.anchor, GetNode('V/Flags/Public') )
-    if have_view:
-        return HttpResponseRedirect(media_rec.target_file.url)
-    else:
-        raise Http404
-

@@ -101,26 +101,6 @@ class Media(models.Model):
     def __unicode__(self):
         return unicode(self.friendly_name)
 
-    @staticmethod
-    def find_by_url_parts(parts, filename):
-        """ Fetch a QSD record by its url parts """
-        # Get the Q_Web root
-        Q_Web = GetNode('Q/Web')
-
-        # Find the branch
-        try:
-            branch = Q_Web.tree_decode( parts )
-        except DataTree.NoSuchNodeException:
-            raise Media.DoesNotExist
-
-        # Find the record
-        media = Media.objects.filter( anchor = branch, friendly_name = filename )
-        if len(media) < 1:
-            raise Media.DoesNotExist
-        
-        # Operation Complete!
-        return media[0]
-
 class Video(models.Model):
     """ Video media object
     
