@@ -408,7 +408,7 @@ class ProgramPrintables(ProgramModuleObj):
         classes = [cls for cls in classes
                    if cls.isAccepted()   ]
         
-        sort_exp = lambda x,y: ((x.title() != y.title()) and cmp(x.title().upper().lstrip().strip('"\',.<![($'), y.title().upper().lstrip().strip('"\',.<![($'))) or cmp(x.id, y.id)
+        sort_exp = lambda x,y: ((x.title != y.title) and cmp(x.title.upper().lstrip().strip('"\',.<![($'), y.title.upper().lstrip().strip('"\',.<![($'))) or cmp(x.id, y.id)
         
         if request.GET.has_key('clsids'):
             clsids = request.GET['clsids'].split(',')
@@ -1291,7 +1291,7 @@ Volunteer schedule for %s:
             write_cvs.writerow(
                 (cls.id,
                  ", ".join([smart_str(t.name()) for t in cls.get_teachers()]),
-                 smart_str(cls.title()),
+                 smart_str(cls.title),
                  cls.prettyDuration(),
                  cls.grade_min,
                  cls.grade_max,

@@ -95,8 +95,8 @@ class StudentRegTest(ProgramFrameworkTest):
                 
                 #   Check title
                 title = cls_info['title'].strip()
-                expected_title = '%s: %s' % (cls.emailcode(), cls.title())
-                self.assertTrue(title == expected_title, 'Incorrect class title in catalog: got %s, expected %s' % (title, expected_title))
+                expected_title = '%s: %s' % (cls.emailcode(), cls.title)
+                self.assertTrue(title == expected_title, 'Incorrect class title in catalog: got "%s", expected "%s"' % (title, expected_title))
 
                 #   Check description
                 description = cls_info['description'].replace('<br />', '').strip()
@@ -116,9 +116,8 @@ class StudentRegTest(ProgramFrameworkTest):
 
         #   Change a class title and check
         cls = random.choice(program.classes())
-        a = cls.anchor
-        a.friendly_name = 'New %s' % cls.title()
-        a.save()
+        cls.title = 'New %s' % cls.title
+        cls.save()
         verify_catalog_correctness()
 
         #   Change a class description and check

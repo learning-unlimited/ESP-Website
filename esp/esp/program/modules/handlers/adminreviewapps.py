@@ -224,7 +224,7 @@ Student schedule for %s:
                 
             schedule += """
 %s|%s|%s""" % (",".join(cls.friendly_times()).ljust(20),
-               cls.title().ljust(25),
+               cls.title.ljust(25),
                rooms)
                
         return schedule

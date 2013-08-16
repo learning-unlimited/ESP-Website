@@ -348,7 +348,7 @@ class ESPUser(User, AnonymousUser):
     @cache_function
     def getFullClasses_pretty(self, program):
         full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
-        return "\n".join([cls.emailcode()+": "+cls.title() for cls in full_classes])
+        return "\n".join([cls.emailcode()+": "+cls.title for cls in full_classes])
     getFullClasses_pretty.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
 
 
