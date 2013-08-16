@@ -1312,7 +1312,6 @@ class FinancialAidRequest(models.Model):
 
     def __unicode__(self):
         """ Represent this as a string. """
-        accepted_verb = GetNode('V/Flags/Registration/Accepted')
         if self.reduced_lunch:
             reducedlunch = "(Free Lunch)"
         else:
