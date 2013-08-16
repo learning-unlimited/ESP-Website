@@ -88,17 +88,8 @@ def render_to_response(template, request, context, prog=None, auto_per_program_t
         category = None
         if context.has_key('nav_category'):
             category = context['nav_category']
-        if prog is None:
-            context['navbar_list'] = []
-        elif type(prog) == Program:
-            context['navbar_list'] = makeNavBar(AnonymousUser(), prog.anchor, section, category)
-        else:
-            context['navbar_list'] = makeNavBar(AnonymousUser(), prog, section, category)
+        context['navbar_list'] = makeNavBar(section, category)
 
-    #   Force comprehension of navbar list
-    if hasattr(context['navbar_list'], 'value'):
-        context['navbar_list'] = context['navbar_list'].value
-    
     if not use_request_context:
         context['request'] = request
         response = django.shortcuts.render_to_response(template, context, mimetype=mimetype)
