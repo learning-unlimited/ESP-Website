@@ -300,4 +300,4 @@ class UserSearchController(object):
         if target_path is None:
             target_path = request.path
         
-        return (render_to_response(template, request, (program, 'manage'), self.prepare_context(program, target_path)), False)
+        return (render_to_response(template, request, self.prepare_context(program, target_path)), False)
