@@ -408,7 +408,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             coteachers = [ x for x in coteachers if x != '' ]
             coteachers = [ ESPUser(User.objects.get(id=userid))
                            for userid in coteachers                ]
-            add_list_member("%s_%s-teachers" % (prog.anchor.parent.name, prog.anchor.name), coteachers)
+            add_list_member("%s_%s-teachers" % (prog.program_type, prog.program_instance), coteachers)
 
         op = ''
         if request.POST.has_key('op'):
