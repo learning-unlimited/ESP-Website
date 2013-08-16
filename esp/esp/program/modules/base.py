@@ -589,7 +589,6 @@ def needs_student(method):
     def _checkStudent(moduleObj, request, *args, **kwargs):
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-
         if not request.user.isStudent() and not request.user.isAdmin(moduleObj.program):
             allowed_student_types = Tag.getTag("allowed_student_types", moduleObj.program, default='')
             matching_user_types = any(x in request.user.groups.all().values_list("name",flat=True) for x in allowed_student_types.split(","))
@@ -645,9 +644,14 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
     else:
         canView = request.user.updateOnsite(request)
         if not canView:
+            perm_name = {'learn':'Student','teach':'Teacher'}[tl]+extension
             canView = Permission.user_has_perm(request.user, 
-                                               {'learn':'Student','teach':'Teacher'}[tl]+extension,
+                                               perm_name,
                                                program=request.program)
+            #   For now, allow an exception if the user is of the wrong type
+            #   This is because we are used to UserBits having a null user affecting everyone, regardless of user type.
+            if not canView and Permission.objects.filter(permission_type=perm_name, program=request.program, user__isnull=True).exists():
+                canView = True
 
     return (canView, response)
 
