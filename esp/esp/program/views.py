@@ -545,7 +545,7 @@ def newprogram(request):
 
             if settings.USE_MAILMAN and 'mailman_moderator' in settings.DEFAULT_EMAIL_ADDRESSES.keys():
                 # While we're at it, create the program's mailing list
-                mailing_list_name = "%s_%s" % (new_prog.anchor.parent.name, new_prog.anchor.name)
+                mailing_list_name = "%s_%s" % (new_prog.program_type, new_prog.program_instance)
                 teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
                 students_list_name = "%s-%s" % (mailing_list_name, "students")
 
@@ -653,9 +653,9 @@ def manage_pages(request):
             if len(qsd_id_list) > 0:
                 form = QSDBulkMoveForm()
                 qsd_list = QuasiStaticData.objects.filter(id__in=qsd_id_list)
-                anchor = form.load_data(qsd_list)
-                if anchor:
-                    return render_to_response('qsd/bulk_move.html', request, {'common_anchor': anchor, 'qsd_list': qsd_list, 'form': form})
+                common_path = form.load_data(qsd_list)
+                if common_path:
+                    return render_to_response('qsd/bulk_move.html', request, {'common_path': common_path, 'qsd_list': qsd_list, 'form': form})
         
         qsd = QuasiStaticData.objects.get(id=request.GET['id'])
         if request.GET['cmd'] == 'move':
@@ -693,7 +693,7 @@ def manage_pages(request):
             
     #   Show QSD listing 
     qsd_ids = []
-    qsds = QuasiStaticData.objects.all().order_by('-create_date').values_list('id', 'path', 'name')
+    qsds = QuasiStaticData.objects.all().order_by('-create_date').values_list('id', 'url', 'name')
     seen_keys = set()
     for id, path, name in qsds:
         key = path, name
@@ -701,7 +701,7 @@ def manage_pages(request):
             qsd_ids.append(id)
             seen_keys.add(key)
     qsd_list = list(QuasiStaticData.objects.filter(id__in=qsd_ids))
-    qsd_list.sort(key=lambda q: q.url())
+    qsd_list.sort(key=lambda q: q.url)
     return render_to_response('qsd/list.html', request, {'qsd_list': qsd_list})
     
 @admin_required
