@@ -143,7 +143,7 @@ class StatisticsQueryForm(forms.Form):
     @staticmethod
     def get_program_type_choices():
         programs = Program.objects.all()
-        names_url = [x.program_type for x in programs]
+        names_url = list(set([x.program_type for x in programs]))
         names_url.sort()
         result = zip(names_url, names_url)
         return result
@@ -151,7 +151,7 @@ class StatisticsQueryForm(forms.Form):
     @staticmethod
     def get_program_instance_choices(program_name):
         programs = Program.objects.all()
-        names_url = [x.program_instance for x in programs]
+        names_url = [x.url for x in programs]
         names_friendly = [x.name for x in programs]
         result = sorted(zip(names_url, names_friendly), key=lambda pair: pair[0])
         result = filter(lambda x: len(x[1]) > 0, result)

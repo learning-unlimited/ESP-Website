@@ -174,26 +174,21 @@ def startreg(form, programs, students, profiles, result_dict={}):
     for program in programs:
         reg_dict[program] = {}
         confirm_dict[program] = {}
-        
-    reg_verb = GetNode('V/Flags/Registration')
-    confirm_verb = GetNode('V/Flags/Public')
-    
+
     for student in students:
         for program in programs:
-            reg_node = GetNode(program.anchor.uri + '/Classes')
-            confirm_node = GetNode(program.anchor.uri + '/Confirmation')
-            
-            reg_bits = UserBit.objects.filter(user=student).filter(QTree(verb__below=reg_verb)).filter(QTree(qsc__below=reg_node)).order_by('startdate')
+
+            reg_bits = StudentRegistration.objects.filter(user=student).order_by('startdate')
             if reg_bits.exists():
-                if reg_bits[0].startdate.date() not in reg_dict[program]:
-                    reg_dict[program][reg_bits[0].startdate.date()] = 0
-                reg_dict[program][reg_bits[0].startdate.date()] += 1
+                if reg_bits[0].start_date.date() not in reg_dict[program]:
+                    reg_dict[program][reg_bits[0].start_date.date()] = 0
+                reg_dict[program][reg_bits[0].start_date.date()] += 1
                 
-            confirm_bits = UserBit.valid_objects().filter(user=student, verb=confirm_verb, qsc=confirm_node).order_by('-startdate')
+            confirm_bits = Record.objects.filter(user=student, event='reg_confirmed', program=program).order_by('-date')
             if confirm_bits.exists():
-                if confirm_bits[0].startdate.date() not in confirm_dict[program]:
-                    confirm_dict[program][confirm_bits[0].startdate.date()] = 0
-                confirm_dict[program][confirm_bits[0].startdate.date()] += 1
+                if confirm_bits[0].date.date() not in confirm_dict[program]:
+                    confirm_dict[program][confirm_bits[0].date.date()] = 0
+                confirm_dict[program][confirm_bits[0].date.date()] += 1
     
     #   Compile and render
     startreg_list = []
@@ -214,18 +209,15 @@ def startreg(form, programs, students, profiles, result_dict={}):
 
 def repeats(form, programs, students, profiles, result_dict={}):
 
-    confirm_verb = GetNode('V/Flags/Public')
-    
     #   For each student, find out what other programs they registered for and bin by quantity in each program type
     repeat_count = {}
     for student in students:
-        bits = UserBit.valid_objects().filter(user=student, verb=confirm_verb, qsc__name='Confirmation')
-        anchors = DataTree.objects.filter(id__in=bits.values_list('qsc__parent', flat=True))
+        programs = Program.objects.filter(record__user=student, record__event='reg_confirmed')
         indiv_count = {}
-        for anchor in anchors:
-            if anchor.parent.name not in indiv_count:
-                indiv_count[anchor.parent.name] = 0
-            indiv_count[anchor.parent.name] += 1
+        for program in programs:
+            if program.program_type not in indiv_count:
+                indiv_count[program.program_type] = 0
+            indiv_count[program.program_type] += 1
         program_types = indiv_count.keys()
         program_types.sort()
         id_pair = tuple([tuple([program_type, indiv_count[program_type]]) for program_type in program_types])

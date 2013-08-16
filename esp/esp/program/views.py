@@ -772,9 +772,9 @@ def statistics(request, program=None):
             #   Get list of programs the query applies to
             programs = Program.objects.all()
             if not form.cleaned_data['program_type_all']:
-                programs = programs.filter(anchor__parent__name=form.cleaned_data['program_type'])
+                programs = programs.filter(url__startswith=form.cleaned_data['program_type'])
             if not form.cleaned_data['program_instance_all']:
-                programs = programs.filter(anchor__name__in=form.cleaned_data['program_instances'])
+                programs = programs.filter(url__in=form.cleaned_data['program_instances'])
             result_dict['programs'] = programs
             
             #   Get list of students the query applies to
