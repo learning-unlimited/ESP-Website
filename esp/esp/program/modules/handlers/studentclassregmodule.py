@@ -230,10 +230,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         schedule = []
         timeslot_dict = {}
         for sec in classList:
-            #   TODO: Fix this bit (it was broken, and may need additional queries
-            #   or a parameter added to ClassRegModuleInfo).
-            show_changeslot = False
-            
             #   Get the verbs all the time in order for the schedule to show
             #   the student's detailed enrollment status.  (Performance hit, I know.)
             #   - Michael P, 6/23/2009
@@ -254,7 +250,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             first_meeting_time = True
 
             for mt in sec.get_meeting_times().order_by('start'):
-                section_dict = {'section': sec, 'changeable': show_changeslot, 'first_meeting_time': first_meeting_time}
+                section_dict = {'section': sec, 'first_meeting_time': first_meeting_time}
                 first_meeting_time = False
                 if mt.id in timeslot_dict:
                     timeslot_dict[mt.id].append(section_dict)
@@ -536,66 +532,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                                                                             'categories': categories.values(),
                                                                             'timeslot':   ts,
                                                                             'prereg_url': prereg_url})
-       
-
-    # we can also ``changeslot'', with only minor modifications to the above code...
-    @aux_call
-    @needs_student
-    @meets_deadline('/Classes/OneClass')    
-    def changeslot(self, request, tl, one, two, module, extra, prog):
-        """ Display the page to swap a class. Options have either the same name or same timeslot. """
-        from esp.cal.models import Event
-        
-        user = ESPUser(request.user) 
-        prereg_url = self.program.get_learn_url() + 'swapclass/' + extra
-        user_grade = user.getGrade(self.program)
-        is_onsite = user.isOnsite(self.program)
-
-        try:
-            extra = int(extra)
-        except:
-            raise ESPError(False), 'Please use the link at the main registration page.'       
-        ts = Event.objects.filter(id=extra)
-        if len(ts) < 1:
-            raise Http404()
-
-        ts = ts[0]
-                        
-        # Determining the old class, if any.
-        v_registered = request.get_node('V/Flags/Registration/Preliminary')
-        oldclasses = ClassSubject.objects.filter(parent_program = self.program,
-                             anchor__userbit_qsc__verb = v_registered,
-                             anchor__userbit_qsc__user = request.user).distinct()
-        oldclasses = filter(lambda x: ts in x.all_meeting_times, oldclasses)
-        # If there isn't a class to replace, let's silently switch over to regular adding of classes.
-        if len(oldclasses) < 1:
-            return self.fillslot(request, tl, one, two, module, extra, prog)
-        # If there's more than one to replace, we don't know how to handle that.
-        if len(oldclasses) > 1:
-            raise ESPError(False), 'Sorry, our website doesn\'t know which class in that time slot you want to change! You\'ll have to go back and do it yourself by clearing the time slot first.'
-        # Still here? Okay, continue...
-        oldclass = oldclasses[0]
-        
-        # .objects.catalog() uses .extra() to select all the category text simultaneously
-        # The "friendly_name bit" is to test for classes with the same title without having to call c.title()
-
-        class_qset = ClassSubject.objects.catalog(self.program).filter( DjangoQ(meeting_times = ts) | DjangoQ(anchor__friendly_name = oldclass.title()) ) # same time or same title
-
-        class_qset = class_qset.filter(grade_min__lte=user_grade, grade_max__gte=user_grade) # filter within grade limits
-        classes = [c for c in class_qset if (not c.isFull()) or is_onsite] # show only viable classes
-
-        categories = {}
-
-        for cls in classes:
-            categories[cls.parent_category.category_id] = {'id':cls.parent_class.category_id, 'category':cls.category_txt if hasattr(cls, 'category_txt') else cls.parent_class.category.category}
-        
-        return render_to_response(self.baseDir()+'changeslot.html', request, {'classes':    classes,
-                                                                              'oldclass':   oldclass,
-                                                                              'one':        one,
-                                                                              'two':        two,
-                                                                              'categories': categories.values(),
-                                                                              'timeslot':   ts,
-                                                                              'prereg_url': prereg_url})
 
     # This function actually renders the catalog
     def catalog_render(self, request, tl, one, two, module, extra, prog, timeslot=None):
