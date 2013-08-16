@@ -100,7 +100,7 @@ This function is overloaded to handle either one or two phase reg"""
             return HttpResponseRedirect('/myesp/profile/')
         else:
             send_activation_email(user,userkey)
-            return render_to_response('registration/account_created_activation_required.html',
+            return render_to_response('registration/account_created_activation_required.html', request,
                                       {'user': user, 'site': Site.objects.get_current()})
     else:
         return render_to_response('registration/newuser.html',
