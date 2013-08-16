@@ -426,9 +426,7 @@ class ESPUser(User, AnonymousUser):
         if strType not in ESPUser.getTypes():
             raise ESPError(), "Invalid type to find all of."
 
-        Q_useroftype      = Q(userbit__verb = GetNode('V/Flags/UserRole/'+strType)) &\
-                            Q(userbit__qsc = GetNode('Q'))                          &\
-                            UserBit.not_expired('userbit')
+        Q_useroftype      = Q(groups__name=strType)
 
         if QObject:
             return Q_useroftype
@@ -728,7 +726,6 @@ class ESPUser(User, AnonymousUser):
         is_admin_role = self.groups.filter(name="Administrator").exists()
         if is_admin_role: return True
         if program is None:
-            #return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
             return Permission.user_has_perm(self, "Administer")
 
         return Permission.user_has_perm(self, "Administer",program=program)
@@ -807,12 +804,6 @@ A user can edit a class if they can administrate the program or if they
 are a teacher of the class"""
         if self in cls.get_teachers(): return True
         return self.isAdmin(cls.parent_program)
-
-    def getMiniBlogEntries(self):
-        """Return all miniblog posts this person has V/Subscribe bits for"""
-        # Axiak 12/17
-        from esp.miniblog.models import Entry
-        return UserBit.find_by_anchor_perms(Entry, self, GetNode('V/Subscribe')).order_by('-timestamp')
 
     def getVolunteerOffers(self, program):
         return self.volunteeroffer_set.filter(request__program=program)
@@ -946,8 +937,6 @@ class StudentInfo(models.Model):
         return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.school, self.graduation_year)
 
     def updateForm(self, form_dict):
-        STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
-        STUDREP_QSC  = GetNode('Q')
         form_dict['graduation_year'] = self.graduation_year
         #   Display data from school field in the k12school box if there's no k12school data.
         if self.k12school:
@@ -963,9 +952,7 @@ class StudentInfo(models.Model):
             form_dict['food_preference'] = self.food_preference
         form_dict['heard_about']      = self.heard_about
         form_dict['studentrep_expl'] = self.studentrep_expl
-        form_dict['studentrep']      = UserBit.UserHasPerms(user = self.user,
-                                                            qsc  = STUDREP_QSC,
-                                                            verb = STUDREP_VERB)
+        form_dict['studentrep']      = self.user.hasRole('StudentRep')
         form_dict['schoolsystem_id'] = self.schoolsystem_id
         form_dict['medical_needs'] = self.medical_needs
         form_dict['schoolsystem_optout'] = self.schoolsystem_optout
@@ -976,8 +963,6 @@ class StudentInfo(models.Model):
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a StudentInfo record """
-        STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
-        STUDREP_QSC  = GetNode('Q')
 
         if regProfile.student_info is None:
             studentInfo = StudentInfo()
@@ -1035,14 +1020,9 @@ class StudentInfo(models.Model):
 
             #   Add the user bit representing a student rep request.
             #   The membership coordinator has to make the 'real' student rep bit.
-            UserBit.objects.get_or_create(user = curUser,
-                                          verb = STUDREP_VERB,
-                                          qsc  = STUDREP_QSC,
-                                          recursive = False)
+            curUser.makeRole("StudentRep")
         else:
-            UserBit.objects.filter(user = curUser,
-                                   verb = STUDREP_VERB,
-                                   qsc  = STUDREP_QSC).delete()
+            curUser.removeRole("StudentRep")
         return studentInfo
 
     def getSchool(self):
