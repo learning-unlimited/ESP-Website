@@ -724,7 +724,7 @@ class ESPUser(User, AnonymousUser):
         #this method is in an intermediate state
         #the underlying permission system changed, but not that actual calls
         #to this
-        if self.is_anonymous(): return False
+        if self.is_anonymous() or self.id is None: return False
         is_admin_role = self.groups.filter(name="Administrator").exists()
         if is_admin_role: return True
         if program is None:
