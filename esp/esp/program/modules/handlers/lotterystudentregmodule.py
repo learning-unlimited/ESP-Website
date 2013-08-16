@@ -153,7 +153,6 @@ class LotteryStudentRegModule(ProgramModuleObj):
     def viewlotteryprefs(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['student'] = request.user
-        context['program'] = prog
 
         priority_classids = set()
         uniquified_flags = []

@@ -276,7 +276,6 @@ LIMIT 1
         context = {}
         context['timeslots'] = prog.getTimeSlots()
         context['printers'] = Printer.objects.all().values_list('name', flat=True)
-        context['program'] = prog
         context['initial_student'] = request.GET.get('student_id', '')
         return render_to_response(self.baseDir()+'ajax_status.html', request, context)
 

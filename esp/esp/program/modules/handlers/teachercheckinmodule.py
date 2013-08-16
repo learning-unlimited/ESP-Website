@@ -98,7 +98,6 @@ class TeacherCheckinModule(ProgramModuleObj):
             form = TeacherCheckinForm()
         
         context['module'] = self
-        context['program'] = self.program
         context['form'] = form
         
         context['time_slots'] = prog.getTimeSlots()
@@ -205,7 +204,6 @@ class TeacherCheckinModule(ProgramModuleObj):
         context['sections'], teachers = self.getMissingTeachers(prog, starttime, when)
         context['arrived'] = [teacher for teacher in teachers.values() if teacher['arrived']]
         context['start_time'] = starttime
-        context['program'] = self.program
         return render_to_response(self.baseDir()+'missingteachers.html', request, context)
     
     class Meta:

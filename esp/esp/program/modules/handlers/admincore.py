@@ -79,8 +79,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['modules'] = modules
         context['one'] = one
         context['two'] = two
-        context['program'] = prog
-        
+
         #   Populate context with variables to show which program module views are available
         for (tl, view_name) in prog.getModuleViews():
             context['%s_%s' % (tl, view_name)] = True
@@ -101,7 +100,6 @@ class AdminCore(ProgramModuleObj, CoreModule):
         context['modules'] = modules
         context['one'] = one
         context['two'] = two
-        context['program'] = prog
 
         return render_to_response(self.baseDir()+'mainpage.html', request, context)
     

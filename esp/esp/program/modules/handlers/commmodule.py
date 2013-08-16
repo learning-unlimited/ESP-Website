@@ -208,7 +208,6 @@ class CommModule(ProgramModuleObj):
         usc = UserSearchController()
     
         context = {}
-        context['program'] = prog
 
         #   If list information was submitted, continue to prepare a message
         if request.method == 'POST':

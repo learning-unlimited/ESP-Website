@@ -404,7 +404,6 @@ class AdminClass(ProgramModuleObj):
         context['sec_forms'] = sec_forms
         context['cls_cancel_form'] = cls_cancel_form
         context['sec_cancel_forms'] = sec_cancel_forms
-        context['program'] = self.program
         context['module'] = self
         
         return render_to_response(self.baseDir()+'manageclass.html', request, context)

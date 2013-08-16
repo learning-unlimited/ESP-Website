@@ -64,7 +64,6 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
 
                     
         context['modules'] = modules
-        context['program'] = prog
         context['one'] = one
         context['two'] = two
 

@@ -925,8 +925,7 @@ Volunteer schedule for %s:
             student.classes = classes
             
         context['students'] = students
-        context['program'] = prog
-        
+
         if extra:
             file_type = extra.strip()
         elif 'img_format' in request.GET:

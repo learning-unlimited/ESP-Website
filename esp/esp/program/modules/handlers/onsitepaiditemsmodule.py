@@ -70,7 +70,6 @@ class OnsitePaidItemsModule(ProgramModuleObj):
         iac = IndividualAccountingController(prog, user)
         context = {}
         context['student'] = user
-        context['program'] = prog
         context['requireditems'] = iac.get_transfers(required_only=True)
         context['reserveditems'] = iac.get_transfers(optional_only=True)
         context['amount_requested'] = iac.amount_requested()

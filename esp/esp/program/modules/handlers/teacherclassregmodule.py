@@ -533,7 +533,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         
         #   Render an HTML fragment with the new formset
         context = {}
-        context['program'] = prog
         context['formset'] = new_formset
         context['ajax_request'] = True
         formset_str = render_to_string(self.baseDir()+'requests_form_fragment.html', context)
@@ -573,7 +572,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         
         #   Render an HTML fragment with the new formset
         context = {}
-        context['program'] = prog
         context['formset'] = new_formset
         context['ajax_request'] = True
         formset_str = render_to_string(self.baseDir()+'restype_form_fragment.html', context)
@@ -819,7 +817,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         context['static_resource_requests'] = static_resource_requests
         context['resource_types'] = self.program.getResourceTypes(include_classroom=True)
         context['classroom_form_advisories'] = 'classroom_form_advisories'
-        context['program'] = self.program
         if self.program.grade_max - self.program.grade_min >= 4:
             context['grade_range_popup'] = (Tag.getProgramTag('grade_range_popup', self.program) != "False")
         else:

@@ -144,8 +144,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
             context['students'] = None
         
         context['module'] = self
-        context['program'] = prog
-       
+
         json_data = {'checkin_status_html': render_to_string(self.baseDir()+'checkinstatus.html', context)}
         return HttpResponse(json.dumps(json_data))
 
@@ -175,7 +174,6 @@ class OnSiteCheckinModule(ProgramModuleObj):
             form = OnSiteRapidCheckinForm()
         
         context['module'] = self
-        context['program'] = prog
         context['form'] = form
         return render_to_response(self.baseDir()+'ajaxcheckin.html', request, context)
         
@@ -213,7 +211,6 @@ class OnSiteCheckinModule(ProgramModuleObj):
             results = {}
             form=OnsiteBarcodeCheckinForm()
         context['module'] = self
-        context['program'] = prog
         context['form'] = form
         context['results'] = results
         return render_to_response(self.baseDir()+'barcodecheckin.html', request, context)
