@@ -240,7 +240,7 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
                 ws=wb.add_sheet(s.name)
             ws.write(0,0,'Response ID')
             ws.write(0,1,'Timestamp')
-            qs=list(s.questions.filter(anchor=prog.anchor).order_by('seq','id'))
+            qs=list(s.questions.filter(per_class=False).order_by('seq','id'))
             srs=list(s.surveyresponse_set.all().order_by('id'))
             i=2
             q_dict={}
@@ -266,7 +266,7 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
             ws_perclass.write(0,1,"Timestamp")
             ws_perclass.write(0,2,"Class Code")
             ws_perclass.write(0,3,"Class Title")
-            qs_perclass=list(s.questions.filter(anchor__parent=prog.anchor).order_by('seq','id'))
+            qs_perclass=list(s.questions.filter(per_class=True).order_by('seq','id'))
             i=4
             q_dict_perclass={}
             for q in qs_perclass:
@@ -275,7 +275,7 @@ def dump_survey_xlwt(user, prog, surveys, request, tl):
                 i+=1
             i=1
             src_dict_perclass={}
-            for a in Answer.objects.filter(question__in=qs_perclass).order_by('id').select_related('anchor','survey_response').prefetch_related('anchor__classsection_set','anchor__classsection_set__parent_class'):
+            for a in Answer.objects.filter(question__in=qs_perclass).order_by('id').select_related('survey_response'):
                 sr=a.survey_response
                 cs=a.anchor.classsection_set.all()
                 if cs:
@@ -352,7 +352,7 @@ def survey_review_single(request, tl, program, instance):
         section_ct=ContentType.objects.get(app_label="program",model="classsection")
         class_ids = [x["id"] for x in user.getTaughtClasses().values('id')]
         section_ids = [x["id"] for x in user.getTaughtSections().values('id')]
-        answers = survey_response.answers.filter(content_type__in=[subject_ct, section_ct], object_id__in=(class_ids+section_ids).order_by('content_type','object_id', 'question'))
+        answers = survey_response.answers.filter(content_type__in=[subject_ct, section_ct], object_id__in=(class_ids+section_ids)).order_by('content_type','object_id', 'question')
         classes_only = True
         other_responses = SurveyResponse.objects.filter(answers__content_type=subject_ct, answers__object_id__in=class_ids).order_by('id').distinct()
     else:
