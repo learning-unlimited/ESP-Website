@@ -773,11 +773,8 @@ class ClassSection(models.Model):
     #   - the target section and its meeting times
     viable_times.depend_on_model(lambda:UserAvailability)   #   To do: Make this more specific (so the cache doesn't get flushed so often)
     viable_times.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    viable_times.depend_on_m2m(lambda:ClassSubject, 'teachers', lambda subj, teacher: [{'self': sec} for sec in subj.get_sections()])
     viable_times.depend_on_row(lambda:ClassSection, lambda sec: {'self': sec})
-    @staticmethod
-    def key_set_from_subject(subject):
-        return [{'self': sec} for sec in subject.sections]
-    viable_times.depend_on_cache(lambda: ClassSubject.get_teachers, lambda subj:key_set_from_subject(subj))
 
     @cache_function
     def viable_rooms(self):
