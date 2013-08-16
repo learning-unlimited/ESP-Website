@@ -574,6 +574,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             class_blobs.append(render_class_direct(cls))
             class_blobs.append('<br />')
         context['class_descs'] = ''.join(class_blobs)
+        #   Include the program explicitly; this is a cached page, without RequestContext
+        context['program'] = self.program
 
         return render_to_response(self.baseDir()+'catalog.html', request, context, use_request_context=False)
 
