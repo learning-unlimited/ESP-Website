@@ -87,7 +87,7 @@ def my_import(name):
 def home(request):
     #   Get navbars corresponding to the 'home' category
     nav_category, created = NavBarCategory.objects.get_or_create(name='home')
-    context = {'navbar_list': makeNavBar(None, GetNode('Q/Web'), '', nav_category)}
+    context = {'navbar_list': makeNavBar('', nav_category)}
     return render_to_response('index.html', request, context)
 
 @vary_on_headers('Cookie')
