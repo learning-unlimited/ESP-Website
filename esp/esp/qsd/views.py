@@ -124,7 +124,6 @@ def qsd(request, url):
         action = 'read'
         page_name_base = page_name
     base_url = '/'.join(url_parts[:-1] + [page_name_base])
-    print 'QSD action = %s base url: %s' % (action, base_url)
     
     # Detect edit authorizations
     have_read = True
@@ -173,7 +172,7 @@ def qsd(request, url):
             raise Http403, 'You do not have permission to read this page.'
 
         # Render response
-        response = render_to_response('qsd/qsd.html', request, 5, {
+        response = render_to_response('qsd/qsd.html', request, {
             'title': qsd_rec.title,
             'nav_category': qsd_rec.nav_category, 
             'content': qsd_rec.html(),
