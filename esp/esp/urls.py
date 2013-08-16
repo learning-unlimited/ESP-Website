@@ -40,8 +40,6 @@ from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.generic.base import RedirectView
 
-from esp.section_data import section_redirect_keys, section_prefix_keys
-
 autodiscover(admin_site)
 
 # Override error pages
@@ -150,10 +148,6 @@ urlpatterns += patterns('esp.web.views.main',
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'myesp'),
 
-    # DB-generated QSD pages: HTML or plaintext
-    #                        (r'^(?P<url>.*)\.html$', 'redirect', { 'section_redirect_keys': section_redirect_keys , 'renderer': qsd} ),
-                        )
-    
     # Event-generation
     # Needs to get fixed (axiak)
     #(r'^events/create/$', 'esp.cal.views.createevent'),
