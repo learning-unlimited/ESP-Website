@@ -1090,12 +1090,12 @@ class SplashInfo(models.Model):
 
         if self.lunchsat == 'no':
             iac.set_preference('Saturday Lunch', 0)
-        else:
+        elif 'lunchsat' in cost_info:
             iac.set_preference('Saturday Lunch', 1, cost_info['lunchsat'][self.lunchsat])
 
         if self.lunchsun == 'no':
             iac.set_preference('Sunday Lunch', 0)
-        else:
+        elif 'lunchsun' in cost_info:
             iac.set_preference('Sunday Lunch', 1, cost_info['lunchsun'][self.lunchsun])
         
         super(SplashInfo, self).save()
