@@ -39,7 +39,7 @@ from esp.qsd.forms import QSDMoveForm, QSDBulkMoveForm
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect, Http404
 from django.core.mail import send_mail
-from esp.users.models import ESPUser, Permission, GetNodeOrNoBits, admin_required, ZipCode
+from esp.users.models import ESPUser, Permission, admin_required, ZipCode
 
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -428,42 +428,6 @@ def userview(request):
         'change_grade_form': change_grade_form,
     }
     return render_to_response("users/userview.html", request, context )
-    
-def programTemplateEditor(request):
-    """ Generate and display a listing of all QSD pages in the Programs template
-    (QSD pages that are created automatically when a new program is created) """
-    qsd_pages = []
-
-    template_node = GetNode('Q/Programs/Template')
-
-    for qsd in template_node.quasistaticdata_set.all():
-        qsd_pages.append( { 'edit_url': qsd.name + ".edit.html",
-                            'view_url': qsd.name + ".html",
-                            'page': qsd } )
-
-    have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Administer/Edit'))
-
-    return render_to_response('display/qsd_listing.html', request, {'qsd_pages': qsd_pages, 'have_create': have_create })
-
-def classTemplateEditor(request, program, session):
-    """ Generate and display a listing of all QSD pages in the Class template within the specified program
-    (QSD pages that are created automatically when a new class is created) """
-    qsd_pages = []
-
-    try:
-        template_node = GetNodeOrNoBits('Q/Programs/' + program + '/' + session + '/Template', request.user)
-    except DataTree.NoSuchNodeException:
-        raise Http404
-
-    for qsd in template_node.quasistaticdata_set.all():
-        qsd_pages.append( { 'edit_url': qsd.name + ".edit.html",
-                            'view_url': qsd.name + ".html",
-                            'page': qsd } )
-
-    have_create = UserBit.UserHasPerms(request.user, template_node, GetNode('V/Administer/Edit'))
-
-    return render_to_response('display/qsd_listing.html', request, {'qsd_pages': qsd_pages,
-                                                            'have_create': have_create })
 
 @admin_required
 def manage_programs(request):

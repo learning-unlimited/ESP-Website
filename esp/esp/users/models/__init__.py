@@ -1589,37 +1589,6 @@ class K12School(models.Model):
         return lst
 
 
-def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):
-    """ Get the specified node.  Create it only if the specified user has create bits on it """
-
-    DEFAULT_VERB = 'V/Administer/Edit'
-
-    # get a node, if it exists, return it.
-    try:
-        node = DataTree.get_by_uri(nodename)
-        return node
-    except:
-        pass
-
-
-    # if we weren't given a verb, use the default one
-    if verb == None:
-        verb = GetNode(DEFAULT_VERB)
-
-    # get the lowest parent that exists
-    lowest_parent = get_lowest_parent(nodename)
-
-    if UserBit.UserHasPerms(user, lowest_parent, verb, recursive_required = True):
-        if create:
-            # we can now create it
-            return GetNode(nodename)
-        else:
-            raise DataTree.NoSuchNodeException(lowest_parent, [nodename])
-    else:
-        # person not allowed to
-        raise PermissionDenied
-
-
 class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
         to pass the query along to multiple pages and retrival (et al). """

@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.qsd.models import QuasiStaticData
 from django.contrib.auth.models import User
-from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits, Permission
+from esp.users.models import ContactInfo, Permission
 from esp.datatree.models import *
 from esp.web.views.navBar import makeNavBar
 from esp.web.models import NavBarEntry, NavBarCategory
@@ -59,55 +59,6 @@ EDIT_PERM = 'V/Administer/Edit'
 # spacing between separate nav bar entries
 DEFAULT_SPACING = 5
 
-def handle_ajax_mover(method):
-    """
-    Takes a view and wraps it in such a way that a user can
-    submit AJAX requests for changing the order of navbar entries.
-    """
-
-    def ajax_mover(request, *args, **kwargs):
-        if not request.GET.has_key('ajax_movepage') or \
-           not request.GET.has_key('seq'):
-            return method(request, *args, **kwargs)
-
-        START = 'nav_entry__'
-
-        entries = request.GET['seq'].strip(',').split(',')
-        try:
-            entries = [x[len(START):] for x in entries]
-        except:
-            return method(request, *args, **kwargs)
-
-        # using some good magic we get a list of tree_node common
-        # ancestors
-        tree_nodes = DataTree.get_only_parents(DataTree.objects.filter(navbar__in = entries))
-
-        edit_verb = GetNode(EDIT_PERM)
-        for node in tree_nodes:
-            if not UserBit.UserHasPerms(request.user,
-                            node,
-                            edit_verb):
-                return method(request, *args, **kwargs)
-
-        # now we've properly assessed the person knows what
-        # they're doing. We actually do the stuff we wanted.
-        rank = 0
-        for entry in entries:
-            try:
-                navbar = NavBarEntry.objects.get(pk = entry)
-                navbar.sort_rank = rank
-                navbar.save()
-                rank += DEFAULT_SPACING
-            except:
-                pass
-
-        return HttpResponse('Success')
-
-    return ajax_mover
-
-
-
-@handle_ajax_mover
 #@vary_on_cookie
 #@cache_control(max_age=180)    NOTE: patch_cache_control() below inserts cache header for view mode only
 @disable_csrf_cookie_update
