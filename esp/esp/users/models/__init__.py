@@ -793,7 +793,13 @@ class ESPUser(User, AnonymousUser):
 
     def makeRole(self, role_name):
         self.groups.add(Group.objects.get(name=role_name))
-        
+
+    def removeRole(self, role_name):
+        self.groups.remove(Group.objects.get(name=role_name))
+
+    def hasRole(self, role_name):
+        return self.groups.filter(name=role_name).exists()
+
     def canEdit(self, cls):
         """Returns if the user can edit the class
 
