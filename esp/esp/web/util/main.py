@@ -81,20 +81,8 @@ def render_to_response(template, request, context, prog=None, auto_per_program_t
     if isinstance(prog, (list, tuple)) and auto_per_program_templates:
         template = [_per_program_template_name(prog[0], t) for t in template] + template
 
-    section = ''
+    section = request.path.split('/')[1]
 
-    if type(prog) == tuple:
-        section = prog[1]
-        prog = prog[0]
-        
-    #   Add e-mail addresses
-    context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
-    context['EMAIL_HOST'] = settings.EMAIL_HOST
-
-    if not context.has_key('program'):
-        if type(prog) == Program:
-            context['program'] = prog
-            
     # create nav bar list
     if not context.has_key('navbar_list'):
         category = None
