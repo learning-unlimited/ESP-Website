@@ -6,7 +6,6 @@ from esp.resources.models import ResourceType, Resource, ResourceAssignment
 from esp.cal.models import EventType, Event
 from esp.program.models import Program
 from esp.utils.widgets import DateTimeWidget
-from esp.datatree.models import GetNode
 
 class TimeslotForm(forms.Form):
     start = forms.DateTimeField(label='Start Time', help_text='Format: MM/DD/YYYY HH:MM:SS <br />Example: 10/14/2007 14:00:00', widget=DateTimeWidget)

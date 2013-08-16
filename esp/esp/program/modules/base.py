@@ -41,7 +41,6 @@ from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
 from esp.users.models import ESPUser, UserBit, Permission
-from esp.datatree.models import GetNode
 from esp.web.util import render_to_response
 from esp.cache import cache_function
 from esp.tagdict.models import Tag

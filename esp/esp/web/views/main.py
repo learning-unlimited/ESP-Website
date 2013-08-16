@@ -37,8 +37,7 @@ from django.core.exceptions import PermissionDenied
 from django.contrib.sites.models import Site
 from esp.program.modules.base import LOGIN_URL
 from django.contrib.auth import REDIRECT_FIELD_NAME
-from esp.datatree.models import GetNode
-from esp.users.models import GetNodeOrNoBits, ESPUser, UserBit, Permission
+from esp.users.models import ESPUser, Permission
 from django.http import Http404, HttpResponseRedirect, HttpResponse, MultiValueDict
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context

@@ -1,7 +1,6 @@
 from esp.users.models import User, UserBit, ESPUser_Profile, ESPUser
 from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm
 from esp.web.util.main import render_to_response
-from esp.datatree.models import GetNode
 from esp.mailman import add_list_member
 from esp.middleware.esperrormiddleware import ESPError
 from esp.tagdict.models import Tag

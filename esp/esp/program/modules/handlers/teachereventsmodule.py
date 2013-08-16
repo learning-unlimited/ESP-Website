@@ -40,7 +40,6 @@ from django.contrib.auth.decorators import login_required
 from esp.dbmail.models import send_mail
 from django.db.models.query import Q
 from esp.miniblog.models import Entry
-from esp.datatree.models import GetNode
 from esp.cal.models import Event, EventType
 from esp.users.models import ESPUser, UserAvailability, User
 from esp.middleware.threadlocalrequest import get_current_request
