@@ -13,6 +13,9 @@ class Migration(SchemaMigration):
     )
 
     def forwards(self, orm):
+        # Deleting field 'FinancialAidRequest.reviewed'
+        db.delete_column('program_financialaidrequest', 'reviewed')
+
         #   Remove duplicate FinancialAidRequests
         from django.db import connection, transaction
         cursor = connection.cursor()
@@ -24,7 +27,8 @@ class Migration(SchemaMigration):
                 item.delete()
 
     def backwards(self, orm):
-        pass
+        # Adding field 'FinancialAidRequest.reviewed'
+        db.add_column('program_financialaidrequest', 'reviewed', self.gf('django.db.models.fields.BooleanField')(default=False), keep_default=False)
 
     models = {
         'auth.group': {
