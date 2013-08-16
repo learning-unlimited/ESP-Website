@@ -475,7 +475,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 # remove some old coteachers
                 for teacher in to_be_deleted:
                     cls.removeTeacher(teacher)
-                    cls.removeAdmin(teacher)
 
                 # add bits for all new coteachers
                 ccc = ClassCreationController(self.program)

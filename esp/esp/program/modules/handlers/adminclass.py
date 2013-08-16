@@ -594,7 +594,6 @@ class AdminClass(ProgramModuleObj):
             if len(conflictingusers) == 0:
                 for teacher in cls.get_teachers():
                     cls.removeTeacher(teacher)
-                    cls.removeAdmin(teacher)
 
                 # add bits for all new (and old) coteachers
                 ccc = ClassCreationController(self.program)
