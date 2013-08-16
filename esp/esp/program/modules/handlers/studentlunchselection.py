@@ -32,7 +32,7 @@ Email: web@esp.mit.edu
 from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.datatree.models         import *
-from esp.users.models            import UserBit
+from esp.users.models            import Record
 from esp.cal.models              import Event
 
 from esp.middleware.threadlocalrequest import get_current_request
