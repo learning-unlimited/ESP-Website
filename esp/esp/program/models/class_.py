@@ -1555,17 +1555,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         if self.num_students() > 0 and not adminoverride:
             return False
-        
-        for teacher in self.get_teachers():
-            self.removeAdmin(teacher)
 
         for sec in self.sections.all():
             sec.delete()
         
         #   Remove indirect dependencies
-        self.documents.delete()
-        UserBit.objects.filter(QTree(qsc__below=self.anchor)).delete()
-        
+        self.documents.clear()
         self.checklist_progress.clear()
         
         super(ClassSubject, self).delete()
