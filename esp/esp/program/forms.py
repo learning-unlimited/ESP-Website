@@ -60,7 +60,7 @@ class ProgramCreationForm(BetterModelForm):
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
-    program_type      = forms.SlugField(label = "Program Type")
+    program_type      = forms.CharField(label = "Program Type")
     program_modules   = forms.MultipleChoiceField(choices = [], label = 'Program Modules')
 
     def __init__(self, *args, **kwargs):

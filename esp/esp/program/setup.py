@@ -51,6 +51,7 @@ def prepare_program(program, data):
 
     perms += [('Student/All', None, data['student_reg_start'], data['student_reg_end'])] #it is recursive
     perms += [('Student/Catalog', None, data['student_reg_start'], None)]
+    perms += [('Student/Profile', None, data['student_reg_start'], None)]
     perms += [('Teacher/All', None, data['teacher_reg_start'], data['teacher_reg_end'])]
     perms += [('Teacher/Classes/View', None, data['teacher_reg_start'], None)]
     perms += [('Teacher/MainPage', None, data['teacher_reg_start'], None)]
@@ -107,6 +108,7 @@ def commit_program(prog, perms, modules, cost=0):
         gen_perm(perm_tup)
 
     pac = ProgramAccountingController(prog)
+    pac.setup_accounts()
     pac.setup_lineitemtypes(cost)
 
     return prog
