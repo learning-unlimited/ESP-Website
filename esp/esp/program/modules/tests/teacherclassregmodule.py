@@ -264,8 +264,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.create_past_program()
 
         # Create a class for the teacher
-        class_dummy_anchor = GetNode('Q/DummyClass')
-        new_class, created = ClassSubject.objects.get_or_create(anchor=class_dummy_anchor, category=self.categories[0], grade_min=7, grade_max=12, parent_program=self.new_prog, class_size_max=30, class_info='Previous class!')
+        new_class, created = ClassSubject.objects.get_or_create(category=self.categories[0], grade_min=7, grade_max=12, parent_program=self.new_prog, class_size_max=30, class_info='Previous class!')
         new_class.makeTeacher(self.teacher)
         new_class.add_section(duration=50.0/60.0)
         new_class.accept()
@@ -278,11 +277,11 @@ class TeacherClassRegTest(ProgramFrameworkTest):
     @transaction.commit_manually
     def test_deadline_met(self):
         self.failUnless(self.moduleobj.deadline_met())
-        self.moduleobj.user = self.students[0]
+        self.moduleobj.user = self.teachers[0]
         self.failUnless(self.moduleobj.deadline_met())
-        ubs = UserBit.objects.filter(verb = GetNode('V/Deadline/Registration/Teacher'), qsc = self.program.anchor_id)
-        for ub in ubs:
-            ub.expire()
+
+        Permission.objects.filter(permission_type='Teacher', program=self.moduleobj.program).delete()
+
         self.failUnless(not self.moduleobj.deadline_met())
         self.moduleobj.user = self.teacher
         self.failUnless(not self.moduleobj.deadline_met())

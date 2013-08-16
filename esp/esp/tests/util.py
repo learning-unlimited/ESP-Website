@@ -80,4 +80,4 @@ def build_posts(test_user_params = {}, test_user_joins = {}):
 def user_role_setup(names=['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']):
     from django.contrib.auth.models import Group
     for x in names:
-        Group.objects.create(name=x)
+        Group.objects.get_or_create(name=x)

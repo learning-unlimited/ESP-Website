@@ -52,7 +52,7 @@ import esp.twilltests.tests
 # Define a new AllFilesTest subclass
 class WebTest(esp.twilltests.tests.AllFilesTest):
     # This class will test all .twill files in the 'web' Django app
-    test_module = 'web'
+    test_module = 'esp/web'
 
 # Make sure that we can actually download the homepage
 class PageTest(TestCase):

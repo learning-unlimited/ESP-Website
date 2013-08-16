@@ -147,7 +147,7 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         form = FormClass(curUser, request.POST)
 
         # Don't suddenly demand an explanation from people who are already student reps
-        if curUser.groups.filter(name="StudentRep").exists():
+        if curUser.hasRole("StudentRep"):
             if hasattr(form, 'repress_studentrep_expl_error'):
                 form.repress_studentrep_expl_error()
 

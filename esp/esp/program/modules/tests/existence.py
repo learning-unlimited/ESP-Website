@@ -73,7 +73,7 @@ class ModuleExistenceTest(ProgramFrameworkTest):
         pat2 = r'<a href="#module-(?P<moduleid>[0-9]+)" title="(?P<linktitle>.*?)">(.*?)</a>'
         re_links_inline = re.findall(pat2, page_content, re.DOTALL)
         inline_ids = [int(x[0]) for x in re_links_inline]
-        
+
         for mod in prog_modules:
             if (mod.module.link_title in link_titles) or (mod.id in inline_ids):
                 modules_found.append(mod)
@@ -83,9 +83,10 @@ class ModuleExistenceTest(ProgramFrameworkTest):
     def check_reg_modules(self, core_url, tl):
         """ Check that the modules linked from the requested core registration page
             are consistent with those associated with the program. """
-            
+        
         #   Fetch the registration page and the lists of desired/actual modules
         response = self.client.get('/%s/%s/%s' % (tl, self.program.getUrlBase(), core_url))
+        self.assertEqual(response.status_code, 200)
         actual_modules = self.observed_module_list(tl, response.content)
         target_modules = self.target_module_list(tl)
 
