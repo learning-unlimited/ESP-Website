@@ -939,7 +939,7 @@ class ClassSection(models.Model):
         """
         if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
             # This set of error messages deserves a better home
-            for t in self.get_teachers():
+            for t in self.teachers:
                 available = t.getAvailableTimes(self.parent_program, ignore_classes=False)
                 for e in meeting_times:
                     if e not in available:
