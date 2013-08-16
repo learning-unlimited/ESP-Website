@@ -153,6 +153,7 @@ urlpatterns += patterns('esp.web.views.main',
     #(r'^events/create/$', 'esp.cal.views.createevent'),
     #(r'^events/edit/$', 'esp.cal.views.updateevent'),
     #(r'^events/edit/(?P<id>\d+)/$', 'esp.cal.views.updateevent'),
+)
 
 urlpatterns += patterns('',
 (r'^(?P<subsection>onsite|manage|teach|learn|volunteer)/(?P<program>[-A-Za-z0-9_ ]+)/?$', RedirectView.as_view(url='/%(subsection)s/%(program)s/index.html')),)
