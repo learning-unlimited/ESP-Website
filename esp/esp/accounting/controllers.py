@@ -416,7 +416,7 @@ class IndividualAccountingController(ProgramAccountingController):
                     print '   Aid updated to %s' % aid_amount
                 else:
                     aid_amount = amount_requested - amount_siblingdiscount
-                    print '   Aid updated to %s (equal to amount due)'
+                    print '   Aid updated to %s (equal to amount due)' % aid_amount
 
             if latest_grant.percent is not None:
                 print '-- Discount percentage: %s%%' % latest_grant.percent
