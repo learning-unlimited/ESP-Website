@@ -40,7 +40,7 @@ from esp.program.models  import ClassSubject, ClassSection, ClassCategories, Reg
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLog
-from esp.users.models    import ESPUser, UserBit, User, Permission
+from esp.users.models    import ESPUser, Permission, Record
 from esp.tagdict.models  import Tag
 from esp.cache           import cache_function
 from django.db.models.query import Q
@@ -442,9 +442,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         
         #   Desired priority level is 1 above current max
         if section.preregister_student(request.user, request.user.onsite_local, priority, prereg_verb = prereg_verb):
-            regs = Record.objects.filter(user=request.user, program=prog, permission_type="reg_confirmed")
-            if bits.count() == 0 and Tag.getTag('confirm_on_addclass'):
-                r = Record.objects.create(user=request.user, program=prog, permission_type="reg_confirmed")
+            regs = Record.objects.filter(user=request.user, program=prog, event="reg_confirmed")
+            if regs.count() == 0 and Tag.getTag('confirm_on_addclass'):
+                r = Record.objects.create(user=request.user, program=prog, event="reg_confirmed")
             return True
         else:
             raise ESPError(False), 'According to our latest information, this class is full. Please go back and choose another class.'    

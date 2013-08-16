@@ -65,7 +65,7 @@ from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
 from esp.qsdmedia.models import Media
-from esp.users.models import ESPUser, UserBit, UserAvailability
+from esp.users.models import ESPUser, Permission, UserAvailability
 from esp.middleware              import ESPError
 from esp.program.models          import Program, StudentRegistration, RegistrationType
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -1661,7 +1661,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if not Tag.getTag("allowed_student_types", target=self.parent_program):
             if user.getGrade(self.parent_program) < self.grade_min or \
                    user.getGrade(self.parent_program) > self.grade_max:
-                if not Permission.user_has_perms(user = user, program = self, permission_type="GradeOverride"):
+                if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
                     return 'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
