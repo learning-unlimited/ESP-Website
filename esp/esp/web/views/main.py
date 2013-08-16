@@ -234,80 +234,84 @@ def archives(request, selection, category = None, options = None):
 	return render_to_response('users/construction', request, {})
 
 def contact(request, section='esp'):
-	"""
-	This view should take an email and post to those people.
-	"""
-	from django.core.mail import send_mail
+    """
+    This view should take an email and post to those people.
+    """
+    from django.core.mail import send_mail
 
 	if request.GET.has_key('success'):
 		return render_to_response('contact_success.html', request, {})
-	
-		
-	
-	if request.method == 'POST':
-		form = ContactForm(request.POST)
-		SUBJECT_PREPEND = '[webform]'
-                domain = Site.objects.get_current().domain
-		ok_to_send = True
-
-		if form.is_valid():
-			
-			to_email = []
-			usernames = []
-
-			if len(form.cleaned_data['sender'].strip()) == 0:
-				email = 'esp@mit.edu'
-			else:
-				email = form.cleaned_data['sender']
-				usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
-
-			if usernames and not form.cleaned_data['decline_password_recovery']:
-				m = 'password|account|log( ?)in'
-				if re.search(m, form.cleaned_data['message'].lower()) or re.search(m, form.cleaned_data['subject'].lower()):
-					# Ask if they want a password recovery before sending.
-					ok_to_send = False
-					# If they submit again, don't ask a second time.
-					form.data = MultiValueDict(form.data)
-					form.data['decline_password_recovery'] = True
-                
-			if form.cleaned_data['cc_myself']:
-				to_email.append(email)
 
 
-			try:
-				to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
-			except KeyError:
-				to_email.append(fallback_address)
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        SUBJECT_PREPEND = '[webform]'
+        domain = Site.objects.get_current().domain
+        ok_to_send = True
 
-			if len(form.cleaned_data['name'].strip()) > 0:
-				email = '%s <%s>' % (form.cleaned_data['name'], email)
+        if form.is_valid():
 
+            to_email = []
+            usernames = []
+            logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
+            user_agent_str = request.META.get('HTTP_USER_AGENT', "(not specified)")
+            
+            if len(form.cleaned_data['sender'].strip()) == 0:
+                email = 'esp@mit.edu'
+            else:
+                email = form.cleaned_data['sender']
+                usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
 
-			if ok_to_send:
-				t = loader.get_template('email/comment')
+            if usernames and not form.cleaned_data['decline_password_recovery']:
+                m = 'password|account|log( ?)in'
+                if re.search(m, form.cleaned_data['message'].lower()) or re.search(m, form.cleaned_data['subject'].lower()):
+                    # Ask if they want a password recovery before sending.
+                    ok_to_send = False
+                    # If they submit again, don't ask a second time.
+                    form.data = MultiValueDict(form.data)
+                    form.data['decline_password_recovery'] = True
 
-				msgtext = t.render(Context({'form': form, 'domain': domain, 'usernames': usernames}))
+            if form.cleaned_data['cc_myself']:
+                to_email.append(email)
 
-				send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
-					  msgtext,
-					  email, to_email, fail_silently = True)
+            try:
+                to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
+            except KeyError:
+                to_email.append(fallback_address)
 
-				return HttpResponseRedirect(request.path + '?success')
+            if len(form.cleaned_data['name'].strip()) > 0:
+                email = '%s <%s>' % (form.cleaned_data['name'], email)
 
-        
-	else:
-		initial = {}
-		if request.user.is_authenticated():
-			initial['sender'] = request.user.email
-			initial['name']   = request.user.first_name + ' '+request.user.last_name
-		
-		if section != '':
-			initial['topic'] = section.lower()
+            if ok_to_send:
+                t = loader.get_template('email/comment')
 
-		form = ContactForm(initial = initial)
-			
-	return render_to_response('contact.html', request,
-						 {'contact_form': form})
+                context = {
+                    'form': form, 
+                    'domain': domain, 
+                    'usernames': usernames, 
+                    'logged_in_as': logged_in_as, 
+                    'user_agent_str': user_agent_str
+                }
+                msgtext = t.render(Context(context))
+
+                send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
+                    msgtext,
+                    email, to_email, fail_silently = True)
+
+                return HttpResponseRedirect(request.path + '?success')
+
+    else:
+        initial = {}
+        if request.user.is_authenticated():
+            initial['sender'] = request.user.email
+            initial['name']   = request.user.first_name + ' '+request.user.last_name
+
+        if section != '':
+            initial['topic'] = section.lower()
+
+        form = ContactForm(initial = initial)
+
+    return render_to_response('contact.html', request, {'contact_form': form})
 
 
 def registration_redirect(request):
