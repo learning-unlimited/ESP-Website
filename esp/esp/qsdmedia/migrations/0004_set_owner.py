@@ -5,16 +5,15 @@ from south.v2 import SchemaMigration
 from django.db import models
 
 from esp.program.models import Program, ClassSubject
-from esp.qsdmedia.models import Media
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
         #   For each Media, determine if the anchor comes from a Program or ClassSubject'
-        count_total = Media.objects.all().count()
+        count_total = orm['qsdmedia.Media'].objects.all().count()
         count_program = 0
         count_class = 0
-        for media in Media.objects.all():
+        for media in orm['qsdmedia.Media'].objects.all():
             if Program.objects.filter(anchor=media.anchor).count() == 1:
                 media.owner = Program.objects.filter(anchor=media.anchor)[0]
                 media.save()
