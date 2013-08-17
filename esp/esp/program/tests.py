@@ -505,11 +505,7 @@ class ProgramFrameworkTest(TestCase):
         from esp.qsd.models import QuasiStaticData
         from esp.web.models import NavBarCategory
         from datetime import datetime, timedelta
-        
-        #   Force Datatree to not use transactions
-        import esp.datatree.sql.set_isolation_level
-        esp.datatree.sql.set_isolation_level.DISABLE_TRANSACTIONS = True
-        
+
         user_role_setup()
 
         #   Default parameters
