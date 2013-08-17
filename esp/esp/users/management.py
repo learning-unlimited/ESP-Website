@@ -41,6 +41,11 @@ from esp.utils.custom_cache import custom_cache
 from esp.utils.migration import missing_db_table
 from esp.utils.migration import db_table_exists
 
+from django.db import connection
+from django.conf import settings
+
+import os.path
+
 have_already_installed = False
 
 def post_syncdb(sender, app, **kwargs):
@@ -55,6 +60,10 @@ def post_syncdb(sender, app, **kwargs):
             have_already_installed = True
             print "Installing esp.users initial data..."
             UsersModel.install()
+            print 'Adding PostgreSQL extensions...'
+            with open(os.path.join(settings.PROJECT_ROOT, "esp/users/sql-extensions.sql")) as f:
+                cursor = connection.cursor()
+                cursor.execute(f.read())
 
 signals.post_syncdb.connect(post_syncdb)
 
