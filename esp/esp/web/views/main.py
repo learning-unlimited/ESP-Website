@@ -145,7 +145,7 @@ def classchangerequest(request, tl, one, two):
     errorpage = 'errors/program/wronggrade.html'
     
     cur_grade = request.user.getGrade(prog)
-    if (not Permission.user_has_perm(request.user, 'GradeOverride', program=prog) and (cur_grade != 0 and (cur_grade < prog.grade_min or cur_grade > prog.grade_max)):
+    if (not Permission.user_has_perm(request.user, 'GradeOverride', program=prog) and (cur_grade != 0 and (cur_grade < prog.grade_min or cur_grade > prog.grade_max))):
         return render_to_response(errorpage, request, {})
 
     setattr(request, "program", prog)
