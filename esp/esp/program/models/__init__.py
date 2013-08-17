@@ -39,7 +39,7 @@ from django.db.models import Count
 from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
 from esp.datatree.models import *
-from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types, Record
+from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types, Record
 from datetime import datetime, timedelta, date
 from django.core.cache import cache
 from django.db.models import Q

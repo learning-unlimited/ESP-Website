@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.users.models import ESPUser, UserBit, StudentInfo, K12School
+from esp.users.models import ESPUser, StudentInfo, K12School
 from esp.datatree.models import *
 from esp.program.models import Program, ProgramModule
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class

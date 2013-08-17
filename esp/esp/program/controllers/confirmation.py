@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.models import Program, ClassSection, ClassSubject
-from esp.users.models import ESPUser, UserBit, Record
+from esp.users.models import ESPUser, Record
 from esp.program.modules.module_ext import DBReceipt
 
 from django.template import Template, Context

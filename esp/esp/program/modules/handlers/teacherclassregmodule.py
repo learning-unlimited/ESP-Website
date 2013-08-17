@@ -223,7 +223,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     @needs_teacher
     @meets_deadline("/Classes/SelectStudents")
     def select_students(self, request, tl, one, two, module, extra, prog):
-        from esp.users.models import UserBit
         #   Get preregistered and enrolled students
         try:
             sec = ClassSection.objects.filter(id=extra)[0]
@@ -861,7 +860,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     def teacherlookup_logic(request, tl, one, two, module, extra, prog, newclass = None):
         limit = 10
         from esp.web.views.json import JsonResponse
-        from esp.users.models import UserBit
 
         Q_teacher = Q(groups__name="Teacher")
 

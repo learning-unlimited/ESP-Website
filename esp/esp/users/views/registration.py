@@ -1,4 +1,4 @@
-from esp.users.models import User, UserBit, ESPUser_Profile, ESPUser
+from esp.users.models import ESPUser_Profile, ESPUser
 from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm
 from esp.web.util.main import render_to_response
 from esp.mailman import add_list_member
@@ -37,7 +37,7 @@ def join_emaillist(request):
         if form.is_valid():
             # create a user, which will be used if the email address
             # is used for a real account
-            User.objects.get_or_create(email    = form.cleaned_data['email'],
+            ESPUser.objects.get_or_create(email    = form.cleaned_data['email'],
                                        username = form.cleaned_data['email'],
                                        password = 'emailuser')
 
@@ -66,14 +66,14 @@ This function is overloaded to handle either one or two phase reg"""
             #there is an email-only account with that email address to upgrade
             user = ESPUser.objects.get(email=form.cleaned_data['email'],
                                        password = 'emailuser')
-        except User.DoesNotExist:
+        except ESPUser.DoesNotExist:
             try:
                 #there is an inactive account with that username
                 user = ESPUser.objects.filter(
                     username = form.cleaned_data['username'],
                     is_active = False).latest('date_joined')
 
-            except User.DoesNotExist:
+            except ESPUser.DoesNotExist:
                 user = ESPUser(email = form.cleaned_data['email'])
 
         user.username   = form.cleaned_data['username']

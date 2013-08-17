@@ -48,8 +48,6 @@ def post_syncdb(sender, app, **kwargs):
     
     if (not have_already_installed) and app == UsersModel:
         #   Check that required tables exist.
-        if missing_db_table(UsersModel.UserBit):
-            return
         if not db_table_exists('program_program'):
             return
         #   Run installation

@@ -427,7 +427,7 @@ class ProgramHappenTest(TestCase):
             self.assertTrue(set(user_obj.getTaughtClasses()) == set(target_classes), 'Could not delete class; expected to have %s, got %s' % (target_classes, user_obj.getTaughtClasses()))
     
     def studentreg(self):
-        from esp.users.models import ContactInfo, StudentInfo, UserBit
+        from esp.users.models import ContactInfo, StudentInfo
         from esp.program.models import RegistrationProfile, StudentRegistration
         from datetime import datetime, timedelta
 

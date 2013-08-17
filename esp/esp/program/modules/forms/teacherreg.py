@@ -37,7 +37,6 @@ from django import forms
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
-from esp.users.models import UserBit
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
 from esp.program.models.class_ import open_class_category as open_class_category_function
 from esp.cal.models import Event

@@ -41,7 +41,7 @@ from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
 from django.template.loader      import render_to_string
 from esp.cal.models              import Event
-from esp.users.models            import User, ESPUser, UserBit, UserAvailability
+from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
 from esp.datatree.models         import DataTree
@@ -130,8 +130,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
     ajax_sections_cached.depend_on_model(lambda: ClassSection)
     ajax_sections_cached.depend_on_model(lambda: ClassSizeRange)
     ajax_sections_cached.depend_on_model(lambda: ResourceRequest)
-    ajax_sections_cached.depend_on_model(lambda: UserBit)
-        
 
     @aux_call
     @needs_admin
@@ -393,7 +391,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
     ajax_schedule_last_changed_cached.depend_on_model(lambda: Resource)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: ResourceRequest)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: Event)
-    ajax_schedule_last_changed_cached.depend_on_model(lambda: UserBit)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: ClassSection)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: ClassSubject)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: UserAvailability)

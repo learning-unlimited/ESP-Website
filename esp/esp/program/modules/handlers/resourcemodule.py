@@ -40,7 +40,7 @@ from esp.web.util        import render_to_response
 from esp.cal.models import Event
 from esp.resources.models import ResourceType, Resource, ResourceAssignment
 from esp.program.models import ClassSubject, ClassSection, Program
-from esp.users.models import UserBit, ESPUser
+from esp.users.models import ESPUser
 from esp.middleware import ESPError
 
 from esp.program.modules.base import ProgramModuleObj, needs_admin, usercheck_usetl, main_call, aux_call

@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
-from esp.users.models import ContactInfo, UserBit, ESPUser
+from esp.users.models import ContactInfo, ESPUser
 from esp.datatree.models import *
 from esp.program.models import ArchiveClass, ClassSubject, ClassCategories
 from esp.web.util.main import render_to_response

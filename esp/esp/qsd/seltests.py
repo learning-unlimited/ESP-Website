@@ -4,7 +4,6 @@ from esp.seltests.util import try_normal_login, logout, noActiveAjaxJQuery
 from esp.tagdict.models import Tag
 from esp.users.views.make_admin import make_user_admin
 from esp.users.models import ESPUser
-from esp.users.models import UserBit
 from esp.web.models import NavBarCategory
 
 from django.conf import settings
@@ -39,16 +38,12 @@ class TestQsdCachePurging(SeleniumTestCase):
     def setUp(self):
         SeleniumTestCase.setUp(self)
 
-        # Make Q/Web public
-        UserBit.objects.create(verb = GetNode('V/Flags/Public'), qsc = GetNode('Q/Web'))
-
         # Make our users
         self.admin_user, created = ESPUser.objects.get_or_create(username='admin', first_name='Harry', last_name='Alborez')
         self.admin_user.set_password(self.PASSWORD_STRING)
         make_user_admin(self.admin_user)
         self.qsd_user, created = ESPUser.objects.get_or_create(username='qsd', first_name='Aylik', last_name='Kewesd')
         self.qsd_user.set_password(self.PASSWORD_STRING)
-        self.qsd_user.userbit_set.add(UserBit(verb = GetNode('V/Administer/Edit'), qsc = GetNode('Q'), recursive = True))
         self.qsd_user.save()
 
         # Check that a NavBarCategory exists
@@ -59,7 +54,7 @@ class TestQsdCachePurging(SeleniumTestCase):
 
         # Make our test page
         qsd_rec_new = QuasiStaticData()
-        qsd_rec_new.path = GetNode('Q/Web')
+        qsd_rec_new.url = 'test'
         qsd_rec_new.name = 'test'
         qsd_rec_new.author = self.admin_user
         qsd_rec_new.nav_category = NavBarCategory.default()

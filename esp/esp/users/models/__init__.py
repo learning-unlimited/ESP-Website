@@ -87,9 +87,6 @@ def user_get_key(user):
     else:
         return str(user.id)
 
-def userBitCacheTime():
-    return 300
-
 def admin_required(func):
     def wrapped(request, *args, **kwargs):
         if not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator():

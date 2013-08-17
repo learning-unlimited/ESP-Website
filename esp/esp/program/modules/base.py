@@ -40,7 +40,7 @@ from django.db import models
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
-from esp.users.models import ESPUser, UserBit, Permission
+from esp.users.models import ESPUser, Permission
 from esp.web.util import render_to_response
 from esp.cache import cache_function
 from esp.tagdict.models import Tag
@@ -611,7 +611,6 @@ def needs_account(method):
 def meets_grade(method):
     def _checkGrade(moduleObj, request, tl, *args, **kwargs):
         errorpage = 'errors/program/wronggrade.html'
-        from esp.users.models import UserBit
 
         # if there's grade override we can just skip everything
         if Permission.user_has_perm(request.user, 'GradeOverride', moduleObj.program):
@@ -634,7 +633,6 @@ def meets_grade(method):
 # Just broke out this function to allow combined deadlines (see meets_any_deadline,
 # meets_all_deadlines functions below).  -Michael P, 6/23/2009
 def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs):
-    from esp.users.models import UserBit
     if tl != 'learn' and tl != 'teach':
         return (True, None)
     response = None

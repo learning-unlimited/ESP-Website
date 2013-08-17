@@ -36,7 +36,7 @@ from esp.datatree.models import *
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
-from esp.users.models    import ESPUser, UserBit, User
+from esp.users.models    import ESPUser
 from django.db.models.query import Q
 from django.utils.safestring import mark_safe
 from django.template.loader import get_template

@@ -144,10 +144,8 @@ def classchangerequest(request, tl, one, two):
     
     errorpage = 'errors/program/wronggrade.html'
     
-    verb_override = GetNode('V/Flags/Registration/GradeOverride')
     cur_grade = request.user.getGrade(prog)
-    if (not UserBit.UserHasPerms(user = request.user, qsc  = prog.anchor_id, verb = verb_override)) and (cur_grade != 0 and (cur_grade < prog.grade_min or \
-                           cur_grade > prog.grade_max)):
+    if (not Permission.user_has_perm(request.user, 'GradeOverride', program=prog) and (cur_grade != 0 and (cur_grade < prog.grade_min or cur_grade > prog.grade_max)):
         return render_to_response(errorpage, request, {})
 
     setattr(request, "program", prog)

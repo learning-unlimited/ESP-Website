@@ -36,7 +36,6 @@ import time
 
 from esp.cal.models import Event
 from esp.dbmail.models import MessageRequest, EmailRequest, send_mail, TextOfEmail
-from esp.users.models import UserBit
 from esp.datatree.models import *
 from datetime import datetime, timedelta
 from django.db.models.query import Q

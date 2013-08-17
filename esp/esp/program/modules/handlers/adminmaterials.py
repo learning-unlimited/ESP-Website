@@ -37,7 +37,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.program.models import ClassSubject, Program
-from esp.users.models import UserBit, ESPUser
+from esp.users.models import ESPUser
 
 class AdminMaterials(ProgramModuleObj):
     doc = """ This allows you to view the submitted documents for all classes

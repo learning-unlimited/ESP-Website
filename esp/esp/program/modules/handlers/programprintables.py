@@ -36,7 +36,7 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser, UserBit, User
+from esp.users.models    import ESPUser
 from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, SplashInfo, FinancialAidRequest
 from esp.users.views     import search_for_user

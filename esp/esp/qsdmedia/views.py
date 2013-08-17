@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 from esp.qsdmedia.models import Media
 from django.http import HttpResponseRedirect, Http404
-from esp.users.models import UserBit
 from esp.datatree.models import *
 from django.core.exceptions import MultipleObjectsReturned
 

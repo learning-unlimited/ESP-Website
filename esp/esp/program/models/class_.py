@@ -1898,6 +1898,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     def archive(self, delete=False):
         """ Archive a class to reduce the size of the database. """
         from esp.resources.models import ResourceRequest, ResourceAssignment
+        from esp.users.models.userbits import UserBit
         
         #   Ensure that the class has been saved in the archive.
         archived_class = self.getArchiveClass()
