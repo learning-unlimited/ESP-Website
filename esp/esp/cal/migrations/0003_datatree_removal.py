@@ -12,7 +12,10 @@ class Migration(SchemaMigration):
     )
 
     def forwards(self, orm):
-        
+
+        # Avoiding "pending trigger events" error - Taylor made use of this in users:0022
+        db.execute("SET CONSTRAINTS ALL IMMEDIATE")
+
         # Adding field 'Event.name'
         db.add_column('cal_event', 'name', self.gf('django.db.models.fields.CharField')(default='', max_length=80), keep_default=False)
 
