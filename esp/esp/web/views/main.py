@@ -239,9 +239,8 @@ def contact(request, section='esp'):
     """
     from django.core.mail import send_mail
 
-	if request.GET.has_key('success'):
-		return render_to_response('contact_success.html', request, {})
-
+    if request.GET.has_key('success'):
+        return render_to_response('contact_success.html', request, {})
 
     if request.method == 'POST':
         form = ContactForm(request.POST)
