@@ -218,6 +218,7 @@ INSTALLED_APPS = (
     'esp.cache_loader',
     'esp.tagdict',
     'django_extensions',
+    'django_extensions.tests',
     'reversion',
     'south',
     'form_utils',

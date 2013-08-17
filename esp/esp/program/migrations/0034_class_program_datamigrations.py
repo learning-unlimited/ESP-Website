@@ -19,7 +19,7 @@ class Migration(DataMigration):
             else:
                 prog.name=str(prog.anchor.friendly_name)
  
-            prog.url = '/'.join(prog.anchor.tree_encode()[-2:])
+            prog.url = '/'.join(prog.anchor.uri.split('/')[2:])
             prog.save()
 
     def backwards(self, orm):

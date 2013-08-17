@@ -6,14 +6,13 @@ from django.db import models
 from esp.users.models import UserBit, Permission, ESPUser
 from esp.program.models import Program
 from django.contrib.auth.models import Group
-from datetime import datetime
 
 class Migration(DataMigration):
 
     def forwards(self, orm):
         def end(bit):
             date = bit.enddate
-            if date > datetime(3000,1,1):
+            if date > datetime.datetime(3000,1,1):
                 return None
             return date
 

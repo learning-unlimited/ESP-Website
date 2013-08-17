@@ -1,12 +1,11 @@
 # encoding: utf-8
-import datetime
 from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 from esp.program.models import Program
 from esp.users.models import UserBit, Record, ESPUser
 
-from datetime import datetime
+import datetime
 
 class Migration(DataMigration):
 
@@ -32,19 +31,19 @@ class Migration(DataMigration):
                  "V/Flags/Registration/Confirmed":"reg_confirmed",#this one is out-of-date but there might be some leftover
                  }
         for verb, event in verbs.items():
-            bits = UserBit.objects.filter(verb__uri=verb, qsc__in=program_anchors).filter(enddate__gte=datetime.now())
+            bits = UserBit.objects.filter(verb__uri=verb, qsc__in=program_anchors).filter(enddate__gte=datetime.datetime.now())
             for bit in bits:
                 Record.objects.create(user=bit.user, event=event,
                                       program=program_map[bit.qsc.id],
                                       time=bit.startdate)
 
         #Reg confirmed
-        for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Confirmation", qsc__parent__in=program_anchors).filter(enddate__gte=datetime.now()).select_related('qsc__parent'):
+        for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Confirmation", qsc__parent__in=program_anchors).filter(enddate__gte=datetime.datetime.now()).select_related('qsc__parent'):
             Record.objects.create(user=bit.user,event="reg_confirmed",
                                   program=program_map[bit.qsc.parent.id], time=bit.startdate)
 
         #Waitlisted
-        for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Waitlist", qsc__parent__in=program_anchors).filter(enddate__gte=datetime.now()).select_related('qsc__parent'):
+        for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Waitlist", qsc__parent__in=program_anchors).filter(enddate__gte=datetime.datetime.now()).select_related('qsc__parent'):
             Record.objects.create(user=bit.user,event="waitlist",
                                   program=program_map[bit.qsc.parent.id], time=bit.startdate)
 
