@@ -135,7 +135,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         full_classes = [x for x in classes if x.isFull()]
         Q_full_teacher = Q(classsubject__in=full_classes) & Q_isteacher
 
-        Q_taught_before = Q_isteacher & Q(classsubject__status=10, classsubject__parent_program__in=Program.objects.exclude(pk=self.program.pk))
+        #   With the new schema it is impossible to make a single Q object for
+        #   teachers who have taught for a previous program and teachers
+        #   who are teaching for the current program.  You have to chain calls
+        #   to .filter().
+        Q_taught_before = Q(classsubject__status=10, classsubject__parent_program__in=Program.objects.exclude(pk=self.program.pk))
 
         #   Add dynamic queries for checking for teachers with particular resource requests
         additional_qs = {}
@@ -149,7 +153,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_rejected': self.getQForUser(Q_rejected_teacher),
                 'class_nearly_full': self.getQForUser(Q_nearly_full_teacher),
                 'class_full': self.getQForUser(Q_full_teacher),
-                'taught_before': self.getQForUser(Q_taught_before),
+                'taught_before': self.getQForUser(Q_taught_before),     #   not exactly correct, see above
             }
             for key in additional_qs:
                 result[key] = self.getQForUser(additional_qs[key])
@@ -160,7 +164,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct(),
                 'class_nearly_full': ESPUser.objects.filter(Q_nearly_full_teacher).distinct(),
                 'class_full': ESPUser.objects.filter(Q_full_teacher).distinct(),
-                'taught_before': ESPUser.objects.filter(Q_taught_before).distinct(),
+                'taught_before': ESPUser.objects.filter(Q_isteacher).filter(Q_taught_before).distinct(),
             }
             for key in additional_qs:
                 result[key] = ESPUser.objects.filter(additional_qs[key]).distinct()
