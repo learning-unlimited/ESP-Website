@@ -117,14 +117,6 @@ class AvailabilityModule(ProgramModuleObj):
     def teacherDesc(self):
         return {'availability': """Teachers who have indicated their scheduled availability for the program."""}
 
-    def deadline_met(self):
-        if get_current_request().user.isAdmin(self.program):
-            return True
-        
-        tmpModule = ProgramModuleObj()
-        tmpModule.__dict__ = self.__dict__
-        return tmpModule.deadline_met()
-    
     def getTimes(self):
         #   Get a list of tuples with the id and name of each of the program's timeslots
         times = self.program.getTimeSlots().filter(event_type=self.event_type())

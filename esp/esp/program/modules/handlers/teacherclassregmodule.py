@@ -186,16 +186,12 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return result
     
     def deadline_met(self, extension=''):
-        if get_current_request().user.isAdmin(self.program):
-            return True
-        
+        tmpModule = super(TeacherClassRegModule, self)
         if len(extension) > 0:
-            return super(TeacherClassRegModule, self).deadline_met(extension)
+            return tmpModule.deadline_met(extension)
+        else:
+            return tmpModule.deadline_met('/Classes/Create') or tmpModule.deadline_met('/Classes/Edit')
 
-        tmpModule = ProgramModuleObj()
-        tmpModule.__dict__ = self.__dict__
-        return tmpModule.deadline_met('/Classes/Create') or tmpModule.deadline_met('/Classes/Edit')
-    
     def clslist(self, user):
         return [cls for cls in user.getTaughtClasses()
                 if cls.parent_program.id == self.program.id ]

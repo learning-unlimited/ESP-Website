@@ -295,19 +295,26 @@ class ProgramModuleObj(models.Model):
             self.module = old_module
 
     def deadline_met(self, extension=''):
-        request = get_current_request()
+    
+        #   Short-circuit the request middleware during testing, when we call
+        #   this function without an actual request.
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            request = get_current_request()
+            user = request.user
 
-        if request is None or not request.user or not self.program:
+        if not user or not self.program:
             raise ESPError(False), "There is no user or program object!"
 
         if self.module.module_type != 'learn' and self.module.module_type != 'teach':
             return True
             
-        canView = request.user.isOnsite(self.program)
+        canView = user.isOnsite(self.program) or user.isAdministrator(self.program)
 
         if not canView:
             deadline = {'learn':'Student', 'teach':'Teacher'}[self.module.module_type]+extension
-            canView = Permission.user_has_perm(request.user, deadline, program=self.program)
+            canView = Permission.user_has_perm(user, deadline, program=self.program)
 
         return canView
 
