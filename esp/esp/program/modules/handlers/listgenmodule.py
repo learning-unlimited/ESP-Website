@@ -36,7 +36,6 @@ from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, a
 from esp.web.util        import render_to_response
 from esp.users.models   import ESPUser
 from esp.datatree.models import *
-from esp.datatree.sql.query_utils import QTree
 from django.db.models.query      import Q
 from django import forms
 

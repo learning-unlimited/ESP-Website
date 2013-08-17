@@ -52,7 +52,6 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django import forms
 
-from esp.datatree.sql.query_utils import QTree
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program

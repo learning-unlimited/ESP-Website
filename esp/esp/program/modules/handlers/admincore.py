@@ -45,7 +45,6 @@ from django.forms.formsets import formset_factory
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.utils.widgets import DateTimeWidget
 from esp.middleware import ESPError
-from esp.datatree.forms import AjaxTreeField
 
 from datetime import datetime
 

@@ -39,7 +39,6 @@ from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, UserBit, User
 from django.db.models.query import Q
 from django.utils.safestring import mark_safe
-from esp.datatree.sql.query_utils import QTree
 from django.template.loader import get_template
 from esp.program.models  import StudentApplication
 from django              import forms

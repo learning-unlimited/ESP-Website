@@ -2,7 +2,6 @@ from esp.program.models import *
 from esp.users.models import * 
 from esp.cal.models import * 
 from esp.survey.models import *
-from esp.datatree.models import DataTree
 from django.db.models import Model
 from django.db.models.related import RelatedObject
 from django.db.models.fields.related import RelatedField, ForeignKey, ManyToManyField
