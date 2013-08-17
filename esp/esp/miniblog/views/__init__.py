@@ -38,7 +38,6 @@ from datetime import datetime
 from django.contrib.auth.models import User, AnonymousUser
 from django.db.models.query import Q
 
-from esp.miniblog.views.blogs import *
 from esp.miniblog.models import Entry, AnnouncementLink
 
 from esp.cache import cache_function
