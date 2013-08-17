@@ -351,6 +351,7 @@ class ESPUser(User, AnonymousUser):
         from esp.program.models import ClassSubject # Need the Class object.
         
         return self.classsubject_set.all()
+    getTaughtClassesAll.depend_on_row(lambda:ClassSubject, lambda cls: {'self': cls})
     getTaughtClassesAll.depend_on_m2m(lambda:ClassSubject, 'teachers', lambda cls, teacher: {'self': teacher})
 
     @cache_function
