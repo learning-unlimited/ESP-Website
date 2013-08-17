@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from django.db import transaction
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, Permission
 from esp.datatree.models import GetNode
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
@@ -276,14 +276,16 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
     @transaction.commit_manually
     def test_deadline_met(self):
+
         self.failUnless(self.moduleobj.deadline_met())
         self.moduleobj.user = self.teachers[0]
         self.failUnless(self.moduleobj.deadline_met())
 
-        Permission.objects.filter(permission_type='Teacher', program=self.moduleobj.program).delete()
+        Permission.objects.filter(permission_type__startswith='Teacher', program=self.moduleobj.program).delete()
 
         self.failUnless(not self.moduleobj.deadline_met())
         self.moduleobj.user = self.teacher
         self.failUnless(not self.moduleobj.deadline_met())
         
         transaction.rollback()
+
