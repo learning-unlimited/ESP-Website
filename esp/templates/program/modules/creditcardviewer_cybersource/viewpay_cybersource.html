@@ -52,7 +52,7 @@ Payments:
 <ul>
 {% for transfer in payment.1 %}
 <li>${{ transfer.amount|floatformat:2 }} - {{ transfer.line_item.text }}
-</li>
+</div></li> <!-- div.( doc.getDoctypeStr ) -->
 {% endfor %}
 </ul>
 </td>

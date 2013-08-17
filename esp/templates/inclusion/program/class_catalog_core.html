@@ -59,7 +59,7 @@
            {% if not class.parent_program.incrementGrade %}
            {{ class.grade_min }}</span> -
            {% else %}
-           Rising {{ class.grade_min }}<sup>th</sup> graders to <br />
+           Rising {{ class.grade_min }}<sup>th</sup> graders</span> to <br />
            {% endif %}
            <span class="gradelisting grademax" id="class_{{ class.id }}_grade_max">
            {% if not class.parent_program.incrementGrade %}
@@ -70,8 +70,9 @@
 	       {% else %}
 	       rising {{ class.grade_max }}<sup>th</sup> graders
 	       {% endif %}
+	       </span>
            {% endif %}
-           </span><br />
+           <br />
          {% if show_enrollment %} 
          <strong>Enrollment</strong><br />
            {% for sec in class.get_sections %}

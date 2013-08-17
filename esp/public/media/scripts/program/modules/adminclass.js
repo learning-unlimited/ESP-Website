@@ -243,7 +243,7 @@ function createClassRow(clsObj)
  \
  \
     <td class='clsmiddle'> \
-       <form method='post' action='/manage/{{ program.getUrlBase }}/deleteclass/{{ cls.id }}' onsubmit=;return deleteClass();'> \
+       <form method='post' action='/manage/{{ program.getUrlBase }}/deleteclass/{{ cls.id }}' onsubmit='return deleteClass();'> \
          <input class='button' type='submit' value='Delete' /> \
        </form> \
     </td> \

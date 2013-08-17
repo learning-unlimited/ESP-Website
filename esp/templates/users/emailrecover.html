@@ -26,29 +26,26 @@ password you would like to use.
 <input type="hidden" name="code" value="{{code}}" />
 <table width='65%' cellpadding='2' align='center' border='0'>
 <tr>
- <td><label for="username"><strong>Username: *</strong></td>
+ <td><label for="username"><strong>Username: *</strong></label></td>
  <td>{{ form.username }} {% if form.username.errors %}
    <br /><span class="form_error">{{ form.username.errors|join:", " }}</span>
    {% endif %}
-  </td>
  </td>
 </tr>
 
 <tr>
- <td><label for="newpasswd"><strong>New Password: *</strong></td>
+ <td><label for="newpasswd"><strong>New Password: *</strong></label></td>
  <td>{{ form.newpasswd }} {% if form.newpasswd.errors %}
    <br /><span class="form_error">{{ form.newpasswd.errors|join:", " }}</span>
    {% endif %}
-  </td>
  </td>
 </tr>
 
 <tr>
- <td><label for="newpasswdconfirm"><strong>New Password Confirm: *</strong></td>
+ <td><label for="newpasswdconfirm"><strong>New Password Confirm: *</strong></label></td>
  <td>{{ form.newpasswdconfirm }} {% if form.newpasswdconfirm.errors %}
    <br /><span class="form_error">{{ form.newpasswdconfirm.errors|join:", " }}</span>
    {% endif %}
-  </td>
  </td>
 </tr>
 

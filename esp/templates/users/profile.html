@@ -39,7 +39,7 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 {% end_inline_qsd_block %}
 
 {% if form.errors %}
-<h4 style="color:red">Please fix the following error{{ form.errors|pluralize }} in the form.</h3>
+<h4 style="color:red">Please fix the following error{{ form.errors|pluralize }} in the form.</h4>
 <ul>
 {% for error in form.errors.items %}
 {% if error.0 %}{% if error.0 == "__all__" %}General{% else %}{{ error.0 }}{% endif %}: {% endif %}{{ error.1 }}

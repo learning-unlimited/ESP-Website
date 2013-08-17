@@ -201,13 +201,13 @@ class ProgramModuleObj(models.Model):
     @staticmethod
     def findModule(request, tl, one, two, call_txt, extra, prog):
         moduleobj = ProgramModuleObj.findModuleObject(tl, call_txt, prog)
-        scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
 
         #   If a "core" module has been found:
         #   Put the user through a sequence of all required modules in the same category.
         #   Only do so if we've not blocked this behavior, though
-        if scrmi.force_show_required_modules:
-            if tl != "manage" and isinstance(moduleobj, CoreModule):
+        if tl != "manage" and tl != "json" and isinstance(moduleobj, CoreModule):
+            scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
+            if scrmi.force_show_required_modules:
                 if not_logged_in(request):
                     return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
                 other_modules = moduleobj.findCategoryModules(False)
