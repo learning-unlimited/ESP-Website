@@ -15,8 +15,8 @@ class Migration(DataMigration):
     def forwards(self, orm):
 
         #survey model
-        for s in Survey.objects.all():
-            p=Program.objects.get(anchor=s.anchor)
+        for s in orm.Survey.objects.all():
+            p=orm['program.Program'].objects.get(anchor=s.anchor)
             s.program=p
             s.save()
 
