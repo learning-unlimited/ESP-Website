@@ -113,7 +113,6 @@ urlpatterns += patterns('esp.qsd.views',
 
 # other apps
 urlpatterns += patterns('',
-                        (r'^',  include('esp.miniblog.urls')),
                         (r'^',  include('esp.survey.urls')),
                         )
 
