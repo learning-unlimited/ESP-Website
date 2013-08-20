@@ -298,7 +298,9 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def __init__(self, *args, **kwargs):
         super(Program, self).__init__(*args, **kwargs)
+        self.setup_user_filters()
 
+    def setup_user_filters(self):
         # Setup for the ProgramModule user filters
         if not hasattr(Program, Program.USER_TYPE_LIST_FUNCS[0]):
             for i, user_type in enumerate(Program.USER_TYPE_LIST_FUNCS):
