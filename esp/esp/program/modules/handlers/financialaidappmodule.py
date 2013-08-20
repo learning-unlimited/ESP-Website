@@ -41,6 +41,7 @@ from esp.users.models    import ESPUser, User
 from django.db.models.query       import Q
 from django.template.loader import get_template
 from esp.program.models  import FinancialAidRequest
+from esp.accounting.controllers import IndividualAccountingController
 from esp.tagdict.models import Tag
 from django.conf import settings
 from esp.middleware.threadlocalrequest import get_current_request
@@ -130,19 +131,16 @@ class FinancialAidAppModule(ProgramModuleObj):
                     raise ESPError(), "Our server lost track of whether or not you were finished filling out this form.  Please go back and click 'Complete' or 'Mark as Incomplete'."
                 
                 app.save()
-    
-                # Automatically accept apps for people with subsidized lunches
-                if app.reduced_lunch:
-                    app.approved = datetime.now()
-                    # This probably really wants a template.  Oh well.
-                    app.save()
 
-                if app.approved:
-                    date_str = str(app.approved)
+                # Automatically accept apps for people with subsidized lunches
+                # Send an e-mail announcing the application either way
+                date_str = str(datetime.now())
+                iac = IndividualAccountingController(self.program, request.user)
+                if app.reduced_lunch:
+                    iac.grant_full_financial_aid()
                     subj_str = '%s %s received Financial Aid for %s' % (request.user.first_name, request.user.last_name, prog.niceName())
                     msg_str = "\n%s %s received Financial Aid for %s on %s, for stating that they receive a free or reduced-price lunch."
                 else:
-                    date_str = str(datetime.now())
                     subj_str = '%s %s applied for Financial Aid for %s' % (request.user.first_name, request.user.last_name, prog.niceName())
                     msg_str = "\n%s %s applied for Financial Aid for %s on %s, but did not state that they receive a free or reduced-price lunch."
                 send_mail(subj_str, (msg_str +
