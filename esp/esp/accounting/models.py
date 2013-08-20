@@ -129,7 +129,14 @@ class FinancialAidGrant(models.Model):
         return transfer
         
     def __unicode__(self):
-        return u'Grant %s (max $%s, %d%% discount) at %s' % (self.user, self.amount_max_dec, self.percent, self.program)
+        if self.percent and self.amount_max_dec:
+            return u'Grant %s (max $%s, %d%% discount) at %s' % (self.user, self.amount_max_dec, self.percent, self.program)
+        elif self.percent:
+            return u'Grant %s (%d%% discount) at %s' % (self.user, self.percent, self.program)
+        elif self.amount_max_dec:
+            return u'Grant %s (max $%s) at %s' % (self.user, self.amount_max_dec, self.program)
+        else:
+            return u'Grant %s (no aid specified) at %s' % (self.user, self.program)
 
     class Meta:
         unique_together = ('request',)
