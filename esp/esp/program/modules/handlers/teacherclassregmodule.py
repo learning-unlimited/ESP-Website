@@ -148,6 +148,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
 
         if QObject:
             result = {
+                'class_submitted': self.getQForUser(Q_isteacher),
                 'class_approved': self.getQForUser(Q_approved_teacher),
                 'class_proposed': self.getQForUser(Q_proposed_teacher),
                 'class_rejected': self.getQForUser(Q_rejected_teacher),
@@ -159,6 +160,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 result[key] = self.getQForUser(additional_qs[key])
         else:
             result = {
+                'class_submitted': ESPUser.objects.filter(Q_isteacher).distinct(),
                 'class_approved': ESPUser.objects.filter(Q_approved_teacher).distinct(),
                 'class_proposed': ESPUser.objects.filter(Q_proposed_teacher).distinct(),
                 'class_rejected': ESPUser.objects.filter(Q_rejected_teacher).distinct(),
@@ -174,6 +176,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     def teacherDesc(self):
         capacity_factor = ClassSubject.get_capacity_factor()
         result = {
+            'class_submitted': """Teachers who have submitted at least one class""",
             'class_approved': """Teachers teaching an approved class""",
             'class_proposed': """Teachers teaching an unreviewed class""",
             'class_rejected': """Teachers teaching a rejected class""",
