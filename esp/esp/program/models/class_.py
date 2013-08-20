@@ -478,9 +478,7 @@ class ClassSection(models.Model):
         self.getResourceAssignments().delete()
         self.meeting_times.clear()
         self.checklist_progress.clear()
-        if self.anchor:
-            self.anchor.delete(True)
-        
+
         super(ClassSection, self).delete()
 
     @cache_function
@@ -1552,12 +1550,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return "%s: (none)" % self.id
 
     def delete(self, adminoverride = False):
-        anchor = self.anchor
-        # SQL's cascading delete thing is sketchy --- if the anchor's corrupt,
-        # we want webmin manual intervention
-        if anchor and not anchor.name.endswith(str(self.id)):
-            raise ESPError(), "Tried to delete class %d with corrupt anchor." % self.id
-
         if self.num_students() > 0 and not adminoverride:
             return False
 
@@ -1569,10 +1561,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         self.checklist_progress.clear()
         
         super(ClassSubject, self).delete()
-        
-        if anchor:
-            anchor.delete(True)
-                
+
     def numStudentAppQuestions(self):
         # This field may be prepopulated by .objects.catalog()
         if not hasattr(self, "_studentapps_count"):
