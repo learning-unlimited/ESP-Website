@@ -194,6 +194,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'parent_class__category__symbol',
                 'parent_class__grade_max',
                 'parent_class__grade_min',
+                'parent_class__title',
                 'enrolled_students'))
         for section in sections:
             s = ClassSection.objects.get(id=section['id'])
