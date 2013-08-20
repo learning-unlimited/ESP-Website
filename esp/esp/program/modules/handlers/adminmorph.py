@@ -41,6 +41,8 @@ from esp.web.util import render_to_response
 from django.contrib.auth.models import User
 from esp.users.models import ESPUser
 
+import operator
+
 class AdminMorph(ProgramModuleObj):
     doc = """ User morphing allows the program director to morph into a constituent of their program. """
     @classmethod
@@ -62,20 +64,26 @@ class AdminMorph(ProgramModuleObj):
             context = {'module': self}
             return render_to_response(self.baseDir()+'options.html', request, context)
 
-        #   Default query is to get program participants
-        query = self.program.students_union(True) | self.program.teachers_union(True) | self.program.volunteers_union(True)
+        #   Prepare Q objects for common student, teacher, and volunteer searches.
+        #   This used to use Program.students_union() et al, but those are way too complicated queries.
+        search_keys = {
+            'student': ['profile', 'enrolled', 'lotteried_students', 'confirmed'],
+            'teacher': ['profile', 'class_submitted'],
+            'volunteer': ['volunteer_all'],
+        }
+        saved_queries = {}
+        self.program.setup_user_filters()
+        for key in search_keys:
+            user_list = getattr(self.program, key + 's')(QObjects=True)
+            saved_queries[key] = reduce(operator.or_, [user_list[user_type] for user_type in search_keys[key] if user_type in user_list])
+        saved_queries['program'] = reduce(operator.or_, saved_queries.values())
+        saved_queries['all'] = Q()
         
-        #   List all of the useful queries we can think of.  If we had some autosave (pickle type)
-        #   feature, that could be really cool.
-        saved_queries = {   'student': self.program.students_union(True),
-                            'teacher': self.program.teachers_union(True),
-                            'volunteer': self.program.volunteers_union(True),
-                            'program': self.program.students_union(True) | self.program.teachers_union(True) | self.program.volunteers_union(True),
-                            'all': Q()
-                        }
-                        
+        #   Default to using all program participants, if no query type is specified
         if extra in saved_queries:
             query = saved_queries[extra]
+        else:
+            query = saved_queries['program']
         
         user, found = search_for_user(request, ESPUser.objects.filter(query))
 
