@@ -431,7 +431,7 @@ def userview(request):
 @admin_required
 def manage_programs(request):
     #as admin required implies can administrate all programs now,
-    admPrograms = Program.objects.all()
+    admPrograms = Program.objects.all().order_by('-id')
     context = {'admPrograms': admPrograms,
                'user': request.user}
     return render_to_response('program/manage_programs.html', request, context)
