@@ -114,8 +114,6 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return items
 
     def teachers(self, QObject = False):
-        #   New approach: Pile the class datatree anchor IDs into the appropriate lists.
-
         fields_to_defer = [x.name for x in ClassSubject._meta.fields if isinstance(x, models.TextField)]
         classes_qs = self.program.classes().defer(*fields_to_defer)
 
@@ -753,8 +751,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 current_data['category'] = newclass.category.id
                 current_data['num_sections'] = newclass.sections.count()
                 current_data['allow_lateness'] = newclass.allow_lateness
-                current_data['title'] = newclass.anchor.friendly_name
-                current_data['url']   = newclass.anchor.name
+                current_data['title'] = newclass.title
+                current_data['url']   = newclass.emailcode()
                 for field_name in get_custom_fields():
                     if field_name in newclass.custom_form_data:
                         current_data[field_name] = newclass.custom_form_data[field_name]
