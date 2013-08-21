@@ -216,5 +216,5 @@ def install():
         Teacher Interview -- for TeacherEventsModule
         Teacher Training -- for TeacherEventsModule
     """
-    for x in [ 'Class Time Block', 'Teacher Interview', 'Teacher Training' ]:
+    for x in [ 'Class Time Block', 'Teacher Interview', 'Teacher Training', 'Compulsory', 'Volunteer' ]:
         EventType.objects.get_or_create(description=x)

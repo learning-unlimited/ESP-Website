@@ -672,13 +672,21 @@ class Program(models.Model, CustomFormsLinkModel):
     def sections(self):
         return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
 
-    def getTimeSlots(self, exclude_types=['Compulsory','Volunteer']):
+    def getTimeSlots(self, types=None, exclude_types=None):
         """ Get the time slots for a program. 
             A flag, exclude_types, allows you to restrict which types of timeslots
-            are grabbed.  The default excludes 'compulsory' events, which are
-            not intended to be used for classes (they're for lunch, photos, etc.)
+            are grabbed.  You can also provide a list of timeslot types to include.
+            The default behavior is to include only class time slots.  See the
+            install() function in esp/esp/cal/models.py for a list of time slot types.
         """
-        return Event.objects.filter(program=self).exclude(event_type__description__in=exclude_types).select_related('event_type').order_by('start')
+        qs = Event.objects.filter(program=self)
+        if exclude_types is not None:
+            qs = qs.exclude(event_type__description__in=exclude_types)
+        elif types is not None:
+            qs = qs.filter(event_type__description__in=types)
+        else:
+            qs = qs.filter(event_type__description='Class Time Block')
+        return qs.select_related('event_type').order_by('start')
 
     def num_timeslots(self):
         return len(self.getTimeSlots())
@@ -686,11 +694,11 @@ class Program(models.Model, CustomFormsLinkModel):
     #   In situations where you just want a list of all time slots in the program,
     #   that can be cached.
     @cache_function
-    def getTimeSlotList(self, exclude_compulsory=True):
-        if exclude_compulsory:
-            return list(self.getTimeSlots(exclude_types=['Compulsory','Volunteer']))
-        else:
+    def getTimeSlotList(self, include_all=False):
+        if include_all:
             return list(self.getTimeSlots(exclude_types=[]))
+        else:
+            return list(self.getTimeSlots())
     getTimeSlotList.depend_on_model(lambda: Event)
 
     def total_duration(self):
@@ -1491,7 +1499,7 @@ class ScheduleMap:
 
     def populate(self):
         result = {}
-        for t in self.program.getTimeSlotList(exclude_compulsory=True):
+        for t in self.program.getTimeSlotList():
             result[t.id] = []
         sl = self.user.getEnrolledSectionsFromProgram(self.program)
         for s in sl:

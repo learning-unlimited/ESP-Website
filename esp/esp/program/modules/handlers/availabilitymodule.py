@@ -119,7 +119,7 @@ class AvailabilityModule(ProgramModuleObj):
 
     def getTimes(self):
         #   Get a list of tuples with the id and name of each of the program's timeslots
-        times = self.program.getTimeSlots().filter(event_type=self.event_type())
+        times = self.program.getTimeSlots(types=[self.event_type()])
         return [(str(t.id), t.short_description) for t in times]
 
     @main_call
@@ -135,7 +135,7 @@ class AvailabilityModule(ProgramModuleObj):
             return self.availabilityForm(request, tl, one, two, prog, ESPUser(request.user), False)
 
     def availabilityForm(self, request, tl, one, two, prog, teacher, isAdmin):
-        time_options = self.program.getTimeSlots().filter(event_type=self.event_type())
+        time_options = self.program.getTimeSlots(types=[self.event_type()])
         #   Group contiguous blocks
         if Tag.getTag('availability_group_timeslots', default=True) == 'False':
             time_groups = [list(time_options)]
@@ -192,7 +192,7 @@ class AvailabilityModule(ProgramModuleObj):
 
         if not (len(available_slots) or blank): # I'm not sure whether or not we want the "or blank"
             #   If they didn't enter anything, make everything checked by default.
-            available_slots = self.program.getTimeSlots().filter(event_type=self.event_type())
+            available_slots = self.program.getTimeSlots(types=[self.event_type()])
             #   The following 2 lines mark the teacher as always available.  This
             #   is sometimes helpful, but not usually the desired behavior.
             #   for a in available_slots:
