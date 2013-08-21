@@ -614,7 +614,7 @@ class ProgramFrameworkTest(TestCase):
         self.program = new_prog
 
         #   Create timeblocks and resources
-        self.event_type, created = EventType.objects.get_or_create(description='Default Event Type')
+        self.event_type, created = EventType.objects.get_or_create(description='Class Time Block')
         for i in range(settings['num_timeslots']):
             start_time = settings['start_time'] + timedelta(minutes=i * (settings['timeslot_length'] + settings['timeslot_gap']))
             end_time = start_time + timedelta(minutes=settings['timeslot_length'])
