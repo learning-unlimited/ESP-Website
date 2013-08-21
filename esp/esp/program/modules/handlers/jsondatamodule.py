@@ -265,6 +265,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     
         return {'classes': classes, 'teachers': teachers}
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
+    class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
 
     @aux_call
     @json_response()
