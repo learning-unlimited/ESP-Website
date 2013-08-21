@@ -343,8 +343,7 @@ def registration_redirect(request):
         userrole['base'] = 'learn'
         userrole['reg'] = 'studentreg'
     ctxt['userrole'] = userrole
-    ctxt['navnode'] = GetNode('Q/Web/myesp')
-    
+
     if regperm:
         progs_deadline = list(Permission.program_by_perm(user,regperm))
     else:
@@ -360,7 +359,6 @@ def registration_redirect(request):
     #   Most chapters will want this, but it can be disabled by a Tag.
     if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect', default=True):
         ctxt['prog'] = progs[0]
-        ctxt['navnode'] = progs[0].anchor
         return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
     else:
         if len(progs) > 0:

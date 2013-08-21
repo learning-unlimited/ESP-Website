@@ -112,10 +112,8 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
     
     if prog_input is None:
         prog = None
-        navnode = GetNode('Q/Web/myesp')
     else:
         prog = prog_input
-        navnode = prog.anchor
 
     curUser = request.user
     context = {'logged_in': request.user.is_authenticated() }
