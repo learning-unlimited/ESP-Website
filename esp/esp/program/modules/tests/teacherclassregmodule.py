@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 
 from django.db import transaction
 from esp.users.models import ESPUser, Permission
-from esp.datatree.models import GetNode
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.models import ClassSubject, RegistrationType

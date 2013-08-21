@@ -4,7 +4,6 @@ from esp.middleware import ESPError
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm
 from esp.resources.forms import ResourceRequestFormSet, ResourceTypeFormSet
 from esp.resources.models import ResourceType, ResourceRequest
-from esp.datatree.models import GetNode
 from esp.tagdict.models import Tag
 
 from esp.dbmail.models import send_mail

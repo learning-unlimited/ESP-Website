@@ -4,7 +4,7 @@ from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
-from esp.datatree.models import DataTree, GetNode
+from esp.datatree.models import DataTree
 from esp.utils.models import Printer
 
 class Migration(SchemaMigration):
