@@ -2086,7 +2086,7 @@ class Permission(models.Model):
         import re
         m = re.match("^([^/]*)/([^/]*)/([^/]*)/(.*)",url)
         if m:
-            section, prog1, prog2, rest = m.groups()
+            (section, prog1, prog2, rest) = m.groups()
             prog_url = prog1 + "/" + prog2
             try:
                 prog = Program.objects.get(url=prog_url)
@@ -2096,13 +2096,13 @@ class Permission(models.Model):
             if user.isAdmin(prog): return True
             m2 = re.match("Classes/(.)(\d+)/(.*)", rest)
             if m2:
-                code, cls_id = m2.groups()
+                (code, cls_id, basename) = m2.groups()
                 try:
-                    cls = ClassSubject.objects.get(category__category=code,
+                    cls = ClassSubject.objects.get(category__symbol=code,
                                                    id=cls_id)
                 except ClassSubject.DoesNotExist:
                     return False
-                if user in cls.teachers: return True
+                if user in cls.get_teachers(): return True
 
         return False
     
