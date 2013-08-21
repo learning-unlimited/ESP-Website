@@ -50,15 +50,9 @@ def qsdmedia2(request, url):
     except MultipleObjectsReturned: # If there exist multiple Media entries, we want the first one
         media_rec = Media.objects.filter(hashed_name=url).latest('id')
 
-    
-    # aseering 8-7-2006: Add permissions enforcement; Only show the page if the current user has V/Flags/Public on this node
-    have_view = request.user.isAdministrator() or UserBit.UserHasPerms( request.user, media_rec.anchor, GetNode('V/Flags/Public') )
-    if have_view:
-        file_name = os.path.join(settings.MEDIA_ROOT, "..", media_rec.target_file.url)
-        f = open(file_name, 'rb')
-        response = HttpResponse(f.read(), content_type=media_rec.mime_type)
-        response['Content-Disposition'] = 'attachment; filename="' + media_rec.file_name + '"'
-        return response
-    else:
-        raise Http404
+    file_name = os.path.join(settings.MEDIA_ROOT, "..", media_rec.target_file.url.lstrip('/'))
+    f = open(file_name, 'rb')
+    response = HttpResponse(f.read(), content_type=media_rec.mime_type)
+    response['Content-Disposition'] = 'attachment; filename="' + media_rec.file_name + '"'
+    return response
 
