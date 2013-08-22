@@ -32,9 +32,14 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+from esp.program.models import FinancialAidRequest
+from esp.accounting.models import FinancialAidGrant, LineItemType
+
 from esp.program.modules.base import ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 
+from decimal import Decimal
 import random
 import re
 
@@ -63,6 +68,12 @@ class StudentRegTest(ProgramFrameworkTest):
         pm = ProgramModule.objects.get(handler='StudentClassRegModule')
         self.moduleobj = ProgramModuleObj.getFromProgModule(self.program, pm)
         self.moduleobj.user = self.students[0]
+
+    def get_template_names(self, response):
+        return [x.name for x in response.template]        
+
+    def expect_template(self, response, template):
+        self.assertTrue(template in self.get_template_names(response), 'Wrong template for profile: got %s, expected %s' % (self.get_template_names(response), template))
 
     def test_confirm(self):
         program = self.program
@@ -133,28 +144,155 @@ class StudentRegTest(ProgramFrameworkTest):
         verify_catalog_correctness()
 
     def test_profile(self):
-        def template_names(response):
-            return [x.name for x in response.template]        
-
-        def expect_template(response, template):
-            self.assertTrue(template in template_names(response), 'Wrong template for profile: got %s, expected %s' % (template_names(response), template))
 
         #   Login as a student and ensure we can submit the profile
         student = random.choice(self.students)
         self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
         response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
-        expect_template(response, 'users/profile.html')      
+        self.expect_template(response, 'users/profile.html')      
 
         #   Login as a teacher and ensure we get the right message
         teacher = random.choice(self.teachers)
         self.failUnless( self.client.login( username=teacher.username, password='password' ), "Couldn't log in as student %s" % teacher.username )
         response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
-        expect_template(response, 'errors/program/notastudent.html')
+        self.expect_template(response, 'errors/program/notastudent.html')
 
         #   Login as an admin and ensure we get the right message
         admin = random.choice(self.admins)
         self.failUnless( self.client.login( username=admin.username, password='password' ), "Couldn't log in as student %s" % admin.username )
         response = self.client.get('/learn/%s/profile' % self.program.getUrlBase())
-        expect_template(response, 'users/profile.html')
+        self.expect_template(response, 'users/profile.html')
 
+    def test_finaid(self):
+        """ Verify that financial aid behaves as specified. """
 
+        program_cost = 25.0
+
+        #   Set the cost of the program
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(program_cost)
+
+        #   Choose a random student and sign up for a class
+        student = random.choice(self.students)
+        iac = IndividualAccountingController(self.program, student)
+        sec = random.choice(self.program.sections())
+        sec.preregister_student(student)
+        
+        #   Check that the student owes the cost of the program
+        self.assertEqual(iac.amount_due(), program_cost)
+        
+        #   Apply for financial aid
+        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        response = self.client.get('/learn/%s/finaid' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        
+        form_settings = {
+            'reduced_lunch': '',
+            'household_income': '12345',
+            'extra_explaination': 'No',
+            'student_prepare': '',
+        }
+        response = self.client.post('/learn/%s/finaid' % self.program.getUrlBase(), form_settings)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        
+        #   Check that the student still owes the cost of the program
+        self.assertEqual(iac.amount_due(), program_cost)
+        
+        #   Have an admin approve the financial aid app and check a few different cases:
+        request = FinancialAidRequest.objects.get(user=student, program=self.program)
+
+        #   - 100 percent
+        (fg, created) = FinancialAidGrant.objects.get_or_create(request=request, percent=100)
+        self.assertEqual(iac.amount_due(), 0.0)
+        
+        #   - absolute discount amount
+        fg.percent = None
+        fg.amount_max_dec = Decimal('15.0')
+        fg.save()
+        self.assertEqual(iac.amount_due(), program_cost - 15.0)
+        
+        #   - discount percentage
+        fg.amount_max_dec = None
+        fg.percent = 50
+        fg.save()
+        self.assertEqual(iac.amount_due(), program_cost / 2)
+        
+        #   Check that deleting the financial aid grant restores original program cost
+        fg.delete()
+        self.assertEqual(iac.amount_due(), program_cost)
+        
+        #   Check that the 'free/reduced lunch' option on the finaid results in zero amount due
+        form_settings = {
+            'reduced_lunch': 'checked',
+            'household_income': '12345',
+            'extra_explaination': 'No',
+            'student_prepare': '',
+        }
+        response = self.client.post('/learn/%s/finaid' % self.program.getUrlBase(), form_settings)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertEqual(iac.amount_due(), 0)
+        
+    def test_extracosts(self):
+        """ Verify that the "Student Extra Costs" module behaves as specified. """
+    
+        program_cost = 25.0
+    
+        #   Set up some extra costs options: Item1 (max-qty 1) for $10, Item2 (max-qty 10) for $5, and selectable food
+        pac = ProgramAccountingController(self.program)
+        pac.clear_all_data()
+        pac.setup_accounts()
+        pac.setup_lineitemtypes(program_cost, [('Item1', 10, 1), ('Item2', 5, 10)], [('Food', [('Small', 3), ('Large', 7)])])
+    
+        #   Choose a random student and check that the extracosts page loads
+        student = random.choice(self.students)
+        iac = IndividualAccountingController(self.program, student)
+        self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
+        response = self.client.get('/learn/%s/extracosts' % self.program.url)
+        self.assertEqual(response.status_code, 200)
+        
+        #   Check that they are being charged the program admission fee
+        self.assertEqual(iac.amount_due(), program_cost)
+        
+        #   Check that selecting one of the "buy-one" extra items works
+        lit = LineItemType.objects.get(program=self.program, text='Item1')
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-cost' % lit.id: 'checked'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertEqual(iac.amount_due(), program_cost + 10)
+        
+        #   Check that selecting one or more than one of the "buy many" extra items works
+        lit = LineItemType.objects.get(program=self.program, text='Item2')
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-cost' % lit.id: 'checked', '%d-count' % lit.id: '1'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertEqual(iac.amount_due(), program_cost + 5)
+
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'%d-cost' % lit.id: 'checked', '%d-count' % lit.id: '3'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertEqual(iac.amount_due(), program_cost + 15)
+        
+        #   Check that selecting an option for a "multiple choice" extra item works
+        lit = LineItemType.objects.get(program=self.program, text='Food')
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {'multi%d-cost' % lit.id: '7.00'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertEqual(iac.amount_due(), program_cost + 7)
+        
+        #   Check that financial aid applies to the "full" cost including the extra items
+        #   (e.g. we are not forcing financial aid students to pay for food)
+        request = FinancialAidRequest.objects.create(user=student, program=self.program)
+        (fg, created) = FinancialAidGrant.objects.get_or_create(request=request, percent=100)
+        self.assertEqual(iac.amount_due(), 0.0)
+        fg.delete()
+        
+        #   Check that removing items on the form removes their cost for the student
+        response = self.client.post('/learn/%s/extracosts' % self.program.getUrlBase(), {})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/learn/%s/studentreg' % self.program.url, response['Location'])
+        self.assertEqual(iac.amount_due(), program_cost)
+        
