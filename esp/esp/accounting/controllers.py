@@ -407,22 +407,15 @@ class IndividualAccountingController(ProgramAccountingController):
         aid_amount = Decimal('0')
         if FinancialAidGrant.objects.filter(request__user=self.user, request__program=self.program).exists():
             latest_grant = FinancialAidGrant.objects.get(request__user=self.user, request__program=self.program)
-            print 'Applying financial aid for %s at %s' % (self.user.name(), self.program.niceName())
-
             if latest_grant.amount_max_dec is not None:
-                print '-- Aid ceiling: %s' % latest_grant.amount_max_dec
                 if amount_requested - amount_siblingdiscount > latest_grant.amount_max_dec:
                     aid_amount = latest_grant.amount_max_dec
-                    print '   Aid updated to %s' % aid_amount
                 else:
                     aid_amount = amount_requested - amount_siblingdiscount
-                    print '   Aid updated to %s (equal to amount due)' % aid_amount
 
             if latest_grant.percent is not None:
-                print '-- Discount percentage: %s%%' % latest_grant.percent
                 discount_aid_amount = (Decimal('0.01') * latest_grant.percent) * (amount_requested - amount_siblingdiscount - aid_amount)
                 aid_amount += discount_aid_amount
-                print '   Aid updated to %s' % aid_amount
 
         return aid_amount
     
