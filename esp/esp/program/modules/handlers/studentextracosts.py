@@ -167,7 +167,8 @@ class StudentExtraCosts(ProgramModuleObj):
                         if form.cleaned_data['cost'] is True:
                             form_prefs.append((lineitem_type.text, form.cleaned_data['count'], lineitem_type.amount))
                     elif isinstance(form, MultiSelectCostItem):
-                        form_prefs.append((lineitem_type.text, 1, Decimal(form.cleaned_data['cost'])))
+                        if form.cleaned_data['cost']:
+                            form_prefs.append((lineitem_type.text, 1, Decimal(form.cleaned_data['cost'])))
                 else:
                     #   Preserve selected quantity for any items that we don't have a valid form for
                     preserve_items.append(lineitem_type.text)
