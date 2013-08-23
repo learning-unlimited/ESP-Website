@@ -4,9 +4,9 @@ from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 
+import re
 
 class Migration(DataMigration):
-
 
     def forwards(self, orm):
 
@@ -22,10 +22,12 @@ class Migration(DataMigration):
                 else:
                     result = 'programs/' + '/'.join(path_parts[2:] + [name_parts[0]])
             elif my_path.uri.startswith(web_top.uri):
-                result =  '/'.join(path_parts[2:] + [qsd.name])
+                result = '/'.join(path_parts[2:] + [qsd.name])
             else:
                 result = '/'.join(path_parts[1:] + [qsd.name])
-            return result
+
+            #   Substitute colons with slashes in case any non-program QSDs were erroneously named
+            return re.sub(r'^(teach|learn|manage|volunteer|onsite):', r'\1/', result)
 
         # Adding field 'QuasiStaticData.url'
         db.add_column('qsd_quasistaticdata', 'url', self.gf('django.db.models.fields.CharField')(default='', max_length=256), keep_default=False)
