@@ -40,7 +40,7 @@ from datetime import datetime
 from esp.db.fields import AjaxForeignKey
 
 from esp.datatree.models import *
-from esp.users.models import PersistentQueryFilter, ESPUser #, UserBit
+from esp.users.models import PersistentQueryFilter, ESPUser
 from django.template import Template #, VariableNode, TextNode
 
 

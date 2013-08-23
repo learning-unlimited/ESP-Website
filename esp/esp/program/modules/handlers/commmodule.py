@@ -119,7 +119,7 @@ class CommModule(ProgramModuleObj):
         settings.TEMPLATE_CONTEXT_PROCESSORS = old_context_processors
 
         return render_to_response(self.baseDir()+'preview.html', request,
-                                  (prog, tl), {'filterid': filterid,
+                                              {'filterid': filterid,
                                                'listcount': listcount,
                                                'subject': subject,
                                                'from': fromemail,
@@ -134,7 +134,6 @@ class CommModule(ProgramModuleObj):
         from esp.dbmail.models import MessageRequest
         from esp.users.models import PersistentQueryFilter
         
-        announcements = self.program_anchor_cached().tree_create(['Announcements'])
         filterid, fromemail, replytoemail, subject, body = [
                                     request.POST['filterid'],
                                     request.POST['from'],
@@ -178,7 +177,7 @@ class CommModule(ProgramModuleObj):
 
         #        assert False, self.baseDir()+'finished.html'
         return render_to_response(self.baseDir()+'finished.html', request,
-                                  (prog, tl), {'time': est_time})
+                                  {'time': est_time})
 
 
     @aux_call
@@ -199,7 +198,7 @@ class CommModule(ProgramModuleObj):
         listcount = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
 
         return render_to_response(self.baseDir()+'step2.html', request,
-                                  (prog, tl), {'listcount': listcount,
+                                              {'listcount': listcount,
                                                'filterid': filterObj.id })
 
     @main_call
@@ -209,7 +208,6 @@ class CommModule(ProgramModuleObj):
         usc = UserSearchController()
     
         context = {}
-        context['program'] = prog
 
         #   If list information was submitted, continue to prepare a message
         if request.method == 'POST':
@@ -230,7 +228,7 @@ class CommModule(ProgramModuleObj):
                     
                 context['filterid'] = filterObj.id
                 context['listcount'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
-                return render_to_response(self.baseDir()+'step2.html', request, (prog, tl), context)
+                return render_to_response(self.baseDir()+'step2.html', request, context)
                 
             ##  Prepare a message starting from an earlier request
             elif 'msgreq_id' in data:
@@ -241,7 +239,7 @@ class CommModule(ProgramModuleObj):
                 context['subject'] = msgreq.subject
                 context['replyto'] = msgreq.special_headers_dict.get('Reply-To', '')
                 context['body'] = msgreq.msgtext
-                return render_to_response(self.baseDir()+'step2.html', request, (prog, tl), context)
+                return render_to_response(self.baseDir()+'step2.html', request, context)
                 
             else:
                 raise ESPError(True), 'What do I do without knowing what kind of users to look for?'
@@ -249,7 +247,7 @@ class CommModule(ProgramModuleObj):
         #   Otherwise, render a page that shows the list selection options
         context.update(usc.prepare_context(prog))
         
-        return render_to_response(self.baseDir()+'commpanel_new.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'commpanel_new.html', request, context)
 
     @aux_call
     @needs_admin
@@ -264,7 +262,7 @@ class CommModule(ProgramModuleObj):
                                                          request.POST['body']    ]
 
         return render_to_response(self.baseDir()+'step2.html', request,
-                                  (prog, tl), {'listcount': listcount,
+                                              {'listcount': listcount,
                                                'filterid': filterid,
                                                'from': fromemail,
                                                'replyto': replytoemail,

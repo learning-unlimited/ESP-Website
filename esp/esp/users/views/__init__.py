@@ -72,7 +72,7 @@ def login_checked(request, *args, **kwargs):
                 }
                 if next_uri == '/':
                     context['next_title'] = 'the home page'
-                return render_to_response('users/login_duplicate_warning.html', request, request.get_node('Q/Web/myesp'), context)
+                return render_to_response('users/login_duplicate_warning.html', request, context)
 
     mask_locations = ['/', '/myesp/signout/', '/admin/logout/']
     if reply.get('Location', '') in mask_locations:
@@ -139,18 +139,14 @@ def signout(request):
     #   Tag the (now anonymous) user object so our middleware knows to delete cookies
     request._cached_user = request.user
     
-    return render_to_response('registration/logged_out.html',
-                              request, request.get_node('Q/Web/myesp'),
-                              {})
+    return render_to_response('registration/logged_out.html', request, {})
 
 def signed_out_message(request):
     """ If the user is indeed logged out, show them a "Goodbye" message. """
     if request.user.is_authenticated():
         return HttpResponseRedirect('/')
 
-    return render_to_response('registration/logged_out.html',
-                              request, request.get_node('Q/Web/myesp'),
-                              {})
+    return render_to_response('registration/logged_out.html', request, {})
                               
 @login_required
 def disable_account(request):
@@ -166,7 +162,7 @@ def disable_account(request):
         
     context = {'user': curUser}
         
-    return render_to_response('users/disable_account.html', request, request.get_node('Q/Web/myesp'), context)
+    return render_to_response('users/disable_account.html', request, context)
 
 def morph_into_user(request):
     morph_user = ESPUser.objects.get(id=request.GET[u'morph_user'])

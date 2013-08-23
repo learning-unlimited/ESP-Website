@@ -2,7 +2,6 @@ from esp.program.models import *
 from esp.users.models import * 
 from esp.cal.models import * 
 from esp.survey.models import *
-from esp.datatree.models import DataTree
 from django.db.models import Model
 from django.db.models.related import RelatedObject
 from django.db.models.fields.related import RelatedField, ForeignKey, ManyToManyField
@@ -13,7 +12,7 @@ from inspect import isclass
 from collections import deque
 from datetime import datetime
 
-useful_models = sorted([ESPUser, Program, RegistrationProfile, RegistrationType, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication, StudentRegistration, Event, ClassCategories, ClassSection, ClassSubject, EventType, ArchiveClass, FinancialAidRequest, QuestionType, Question, SurveyResponse, Survey, ContactInfo, EducatorInfo, GuardianInfo, K12School, StudentInfo, TeacherInfo, UserAvailability, UserBit, ZipCodeSearches, ZipCode], key=lambda model: model.__name__)
+useful_models = sorted([ESPUser, Program, RegistrationProfile, RegistrationType, StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication, StudentRegistration, Event, ClassCategories, ClassSection, ClassSubject, EventType, ArchiveClass, FinancialAidRequest, QuestionType, Question, SurveyResponse, Survey, ContactInfo, EducatorInfo, GuardianInfo, K12School, StudentInfo, TeacherInfo, UserAvailability, ZipCodeSearches, ZipCode], key=lambda model: model.__name__)
 query_terms = ('exact', 'iexact', 'contains', 'icontains', 'gt', 'gte', 'lt', 'lte', 'in', 'startswith', 'istartswith', 'endswith', 'iendswith', 'range', 'year', 'month', 'day', 'week_day', 'isnull', 'search', 'regex', 'iregex', )
 
 def is_useful_model(cls): 

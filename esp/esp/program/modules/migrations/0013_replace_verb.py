@@ -5,7 +5,7 @@ from south.v2 import SchemaMigration
 from django.db import models
 from esp.program.modules.module_ext import StudentClassRegModuleInfo
 from esp.program.models import RegistrationType
-from esp.datatree.models import *
+from esp.datatree.models import GetNode, DataTree
 
 class Migration(SchemaMigration):
 
@@ -14,7 +14,11 @@ class Migration(SchemaMigration):
         original_verb_len = len('V/Flags/Registration/')
         ## MIT-specific fix:  Make sure all SCRMI's actually have regg verbs
 
-        default_verb = GetNode("V/Flags/Registration/Enrolled")
+        try:
+            default_verb = GetNode("V/Flags/Registration/Enrolled")
+        except DataTree.DoesNotExist:
+            #   Insufficient tree information; use null
+            default_verb = DataTree()
 
         verb_map = {}
         name_map = {}

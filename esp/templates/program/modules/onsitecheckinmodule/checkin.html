@@ -31,19 +31,19 @@
     <table>
       <tr>
 	<td><label for="attended"><strong>Attending? (i.e. here right now?)</strong></label></td>
-	<td><input type="checkbox" name="Attended" id="attended" checked="checked" /></td>
+	<td><input type="checkbox" name="attended" id="attended" checked="checked" /></td>
       </tr>
       <tr>
 	<td><label for="medical"><strong>Medical Form?</strong></label></td>
-	<td><input type="checkbox" name="MedicalFiled" id="medical" checked="checked" /></td>
+	<td><input type="checkbox" name="med" id="medical" checked="checked" /></td>
       </tr>
       <tr>
 	<td><label for="liability"><strong>Liability Form?</strong></label></td>
-	<td><input type="checkbox" name="LiabilityFiled" id="liability" checked="checked" /></td>
+	<td><input type="checkbox" name="liab" id="liability" checked="checked" /></td>
       </tr>
       <tr>
 	<td><label for="paid"><strong>Paid?</strong></label></td>
-	<td><input type="checkbox" name="Paid" id="paid" checked="checked" /></td>
+	<td><input type="checkbox" name="paid" id="paid" checked="checked" /></td>
       </tr>
     </table>
     <input type="hidden" name="userid" value="{{module.student.id}}" />
@@ -59,19 +59,19 @@
     <table>
       <tr>
 	<td><label for="attended"><strong>Attending? (i.e. here right now?)</strong></label></td>
-	<td><input type="checkbox" name="Attended" id="attended" {% if module.hasAttended %}checked="checked"{% endif %} /></td>
+	<td><input type="checkbox" name="attended" id="attended" {% if module.hasAttended %}checked="checked"{% endif %} /></td>
       </tr>
       <tr>
 	<td><label for="medical"><strong>Medical Form?</strong></label></td>
-	<td><input type="checkbox" name="MedicalFiled" id="medical" {% if module.hasMedical %}checked="checked"{% endif %} /></td>
+	<td><input type="checkbox" name="med" id="medical" {% if module.hasMedical %}checked="checked"{% endif %} /></td>
       </tr>
       <tr>
 	<td><label for="liability"><strong>Liability Form?</strong></label></td>
-	<td><input type="checkbox" name="LiabilityFiled" id="liability" {% if module.hasLiability %}checked="checked"{% endif %} /></td>
+	<td><input type="checkbox" name="liab" id="liability" {% if module.hasLiability %}checked="checked"{% endif %} /></td>
       </tr>
       <tr>
 	<td><label for="paid"><strong>Paid?</strong></label></td>
-	<td><input type="checkbox" name="Paid" id="paid" {% if module.hasPaid %}checked="checked"{% endif %} /></td>
+	<td><input type="checkbox" name="paid" id="paid" {% if module.hasPaid %}checked="checked"{% endif %} /></td>
       </tr>
     </table>
     <input type="hidden" name="userid" value="{{module.student.id}}" />

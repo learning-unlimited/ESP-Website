@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 """
 from esp.qsd.models import QuasiStaticData
 from django.contrib.auth.models import User
-from esp.users.models import ContactInfo, UserBit, GetNodeOrNoBits
+from esp.users.models import ContactInfo, Permission
 from esp.datatree.models import *
 from esp.web.views.navBar import makeNavBar
 from esp.web.models import NavBarEntry, NavBarCategory
@@ -46,7 +46,6 @@ from os.path import basename, dirname
 from datetime import datetime
 from django.core.cache import cache
 from django.template.defaultfilters import urlencode
-from esp.datatree.decorators import branch_find
 from esp.middleware import ESPError, Http403
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from django.utils.cache import add_never_cache_headers, patch_cache_control, patch_vary_headers
@@ -60,69 +59,23 @@ EDIT_PERM = 'V/Administer/Edit'
 # spacing between separate nav bar entries
 DEFAULT_SPACING = 5
 
-def handle_ajax_mover(method):
-    """
-    Takes a view and wraps it in such a way that a user can
-    submit AJAX requests for changing the order of navbar entries.
-    """
-
-    def ajax_mover(request, *args, **kwargs):
-        if not request.GET.has_key('ajax_movepage') or \
-           not request.GET.has_key('seq'):
-            return method(request, *args, **kwargs)
-
-        START = 'nav_entry__'
-
-        entries = request.GET['seq'].strip(',').split(',')
-        try:
-            entries = [x[len(START):] for x in entries]
-        except:
-            return method(request, *args, **kwargs)
-
-        # using some good magic we get a list of tree_node common
-        # ancestors
-        tree_nodes = DataTree.get_only_parents(DataTree.objects.filter(navbar__in = entries))
-
-        edit_verb = GetNode(EDIT_PERM)
-        for node in tree_nodes:
-            if not UserBit.UserHasPerms(request.user,
-                            node,
-                            edit_verb):
-                return method(request, *args, **kwargs)
-
-        # now we've properly assessed the person knows what
-        # they're doing. We actually do the stuff we wanted.
-        rank = 0
-        for entry in entries:
-            try:
-                navbar = NavBarEntry.objects.get(pk = entry)
-                navbar.sort_rank = rank
-                navbar.save()
-                rank += DEFAULT_SPACING
-            except:
-                pass
-
-        return HttpResponse('Success')
-
-    return ajax_mover
-
-
-
-@handle_ajax_mover
-@branch_find
 #@vary_on_cookie
 #@cache_control(max_age=180)    NOTE: patch_cache_control() below inserts cache header for view mode only
 @disable_csrf_cookie_update
-def qsd(request, branch, name, section, action):
+def qsd(request, url):
 
-    READ_VERB = 'V/Flags/Public'
-    EDIT_VERB = 'V/Administer/Edit/QSD'
-
-    if action == 'read':
-        base_url = request.path[:-5]
+    #   Extract the 'action' from the supplied URL if there is one
+    url_parts = url.split('/')
+    page_name = url_parts[-1]
+    page_name_parts = page_name.split('.')
+    if len(page_name_parts) > 1:
+        action = page_name_parts[-1]
+        page_name_base = '.'.join(page_name_parts[:-1])
     else:
-        base_url = request.path[:(-len(action)-6)]
-
+        action = 'read'
+        page_name_base = page_name
+    base_url = '/'.join(url_parts[:-1] + [page_name_base])
+    
     # Detect edit authorizations
     have_read = True
     
@@ -131,20 +84,19 @@ def qsd(request, branch, name, section, action):
 
     # Fetch the QSD object
     try:
-        qsd_rec = QuasiStaticData.objects.get_by_path__name(branch, name)
+        qsd_rec = QuasiStaticData.objects.get_by_url(base_url)
         if qsd_rec == None:
             raise QuasiStaticData.DoesNotExist
         if qsd_rec.disabled:
             raise QuasiStaticData.DoesNotExist
 
     except QuasiStaticData.DoesNotExist:
-        have_edit = UserBit.UserHasPerms(request.user, branch, EDIT_VERB)
+        have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if have_edit:
             if action in ('edit','create',):
                 qsd_rec = QuasiStaticData()
-                qsd_rec.path = branch
-                qsd_rec.name = name
+                qsd_rec.url = base_url
                 qsd_rec.nav_category = NavBarCategory.default()
                 qsd_rec.title = 'New Page'
                 qsd_rec.content = 'Please insert your text here'
@@ -154,8 +106,8 @@ def qsd(request, branch, name, section, action):
                 action = 'edit'
 
             if (action == 'read'):
-                edit_link = base_url+'.edit.html'
-                return render_to_response('qsd/nopage_edit.html', request, (branch, section), {'edit_link': edit_link}, use_request_context=False)
+                edit_link = '/' + base_url + '.edit.html'
+                return render_to_response('qsd/nopage_create.html', request, {'edit_link': edit_link}, use_request_context=False)
         else:
             if action == 'read':
                 raise Http404, 'This page does not exist.'
@@ -171,13 +123,13 @@ def qsd(request, branch, name, section, action):
             raise Http403, 'You do not have permission to read this page.'
 
         # Render response
-        response = render_to_response('qsd/qsd.html', request, (branch, section), {
+        response = render_to_response('qsd/qsd.html', request, {
             'title': qsd_rec.title,
             'nav_category': qsd_rec.nav_category, 
             'content': qsd_rec.html(),
             'qsdrec': qsd_rec,
             'have_edit': True,  ## Edit-ness is determined client-side these days
-            'edit_url': base_url + ".edit.html" }, use_request_context=False)
+            'edit_url': '/' + base_url + ".edit.html" }, use_request_context=False)
 
 #        patch_vary_headers(response, ['Cookie'])
 #        if have_edit:
@@ -191,7 +143,7 @@ def qsd(request, branch, name, section, action):
             
     # Detect POST
     if request.POST.has_key('post_edit'):
-        have_edit = UserBit.UserHasPerms(request.user, branch, EDIT_VERB)
+        have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         if not have_edit:
             raise Http403, "Sorry, you do not have permission to edit this page."
@@ -200,8 +152,7 @@ def qsd(request, branch, name, section, action):
         # method, and then update it. Doing it this way saves a DB call
         # (and requires me to make fewer changes).
         qsd_rec_new = QuasiStaticData()
-        qsd_rec_new.path = branch
-        qsd_rec_new.name = name
+        qsd_rec_new.url = base_url
         qsd_rec_new.author = request.user
         qsd_rec_new.nav_category = NavBarCategory.objects.get(id=request.POST['nav_category'])
         qsd_rec_new.content = request.POST['content']
@@ -211,7 +162,7 @@ def qsd(request, branch, name, section, action):
         qsd_rec_new.save()
 
         # We should also purge the cache
-        purge_page(qsd_rec_new.url())
+        purge_page(qsd_rec_new.url+".html")
 
         qsd_rec = qsd_rec_new
 
@@ -221,10 +172,6 @@ def qsd(request, branch, name, section, action):
 
             # Strip "media/" from FILE, and strip the file name; just return the path
             path = dirname(name[9:])
-            if path == '':
-                m.anchor = qsd_rec.path
-            else:
-                m.anchor = GetNode('Q/' + dirname(name))
                 
             # Do we want a better/manual mechanism for setting friendly_name?
             m.friendly_name = basename(name)
@@ -241,7 +188,7 @@ def qsd(request, branch, name, section, action):
 
     # Detect the edit verb
     if action == 'edit':
-        have_edit = UserBit.UserHasPerms(request.user, branch, EDIT_VERB)
+        have_edit = Permission.user_can_edit_qsd(request.user, base_url)
 
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
@@ -253,7 +200,7 @@ def qsd(request, branch, name, section, action):
 #        assert False, m.BrokenLinks()
         
         # Render an edit form
-        return render_to_response('qsd/qsd_edit.html', request, (branch, section), {
+        return render_to_response('qsd/qsd_edit.html', request, {
             'title'        : qsd_rec.title,
             'content'      : qsd_rec.content,
             'keywords'     : qsd_rec.keywords,
@@ -276,8 +223,6 @@ def ajax_qsd(request):
     from django.utils import simplejson
     from esp.lib.templatetags.markdown import markdown
 
-    EDIT_VERB = 'V/Administer/Edit/QSD'
-
     result = {}
     post_dict = request.POST.copy()
 
@@ -285,7 +230,7 @@ def ajax_qsd(request):
         return HttpResponse(content='Oops! Your session expired!\nPlease open another window, log in, and try again.\nYour changes will not be lost if you keep this page open.', status=500)
     if post_dict['cmd'] == "update":
         qsdold = QuasiStaticData.objects.get(id=post_dict['id'])
-        if not UserBit.UserHasPerms(request.user, qsdold.path, EDIT_VERB):
+        if not Permission.user_can_edit_qsd(request.user, qsdold.url):
             return HttpResponse(content='Sorry, you do not have permission to edit this page.', status=500)
         qsd = qsdold.copy()
         qsd.content = post_dict['data']
@@ -296,10 +241,9 @@ def ajax_qsd(request):
         result['content'] = markdown(qsd.content)
         result['id'] = qsd.id
     if post_dict['cmd'] == "create":
-        qsd_path = DataTree.objects.get(id=post_dict['anchor'])
-        if not UserBit.UserHasPerms(request.user, qsd_path, EDIT_VERB):
+        if not Permission.user_can_edit_qsd(request.user, post_dict['url']):
             return HttpResponse(content="Sorry, you do not have permission to edit this page.", status=500)
-        qsd, created = QuasiStaticData.objects.get_or_create(name=post_dict['name'],path=qsd_path,defaults={'author': request.user})
+        qsd, created = QuasiStaticData.objects.get_or_create(url=post_dict['url'],defaults={'author': request.user})
         qsd.content = post_dict['data']
         qsd.author = request.user
         qsd.save()

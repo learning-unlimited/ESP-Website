@@ -50,7 +50,7 @@ This is the anonymous survey response of a single student at {{ program.niceName
         {% ifchanged answer.anchor %}{% if not forloop.first or classes_only %}
             <table class="fullwidth">
             <tr>
-                <th>Responses for Class {{ answer.anchor.name }}: {{ answer.anchor.parent.friendly_name }} {{ answer.anchor.friendly_name }}</th>
+                <th>Responses for Class {{ answer.target.emailcode }}: {{ answer.target.title }}</th>
             </tr>
             </table>
         {% endif %}{% endifchanged %}

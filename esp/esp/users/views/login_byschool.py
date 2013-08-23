@@ -45,7 +45,7 @@ def login_byschool(request, *args, **kwargs):
     else:
         form = SchoolSelectForm()
     
-    return render_to_response('registration/login_byschool.html', request, request.get_node('Q/Web/myesp'),
+    return render_to_response('registration/login_byschool.html', request,
         { 'form': form, 'action': request.get_full_path(), 'redirect_field_name': REDIRECT_FIELD_NAME, 'next': redirect_to, 'pwform': BarePasswordForm().as_table() })
 
 def login_byschool_pickname(request, school_id, *args, **kwargs):
@@ -79,7 +79,7 @@ def login_byschool_pickname(request, school_id, *args, **kwargs):
         if request.REQUEST.has_key('dynamic'):
             return HttpResponse( form.as_table() )
     
-    return render_to_response('registration/login_byschool_pickname.html', request, request.get_node('Q/Web/myesp'),
+    return render_to_response('registration/login_byschool_pickname.html', request,
         { 'form': form, 'action': action, 'redirect_field_name': REDIRECT_FIELD_NAME, 'next': redirect_to, 'preset_username': preset_username })
 
 def login_byschool_new(request):

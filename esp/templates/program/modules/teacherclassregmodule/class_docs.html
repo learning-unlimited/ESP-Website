@@ -34,7 +34,7 @@ We would like you, as a teacher, to upload all documents and other materials rel
 		Documents for {{ cls.emailcode }}&mdash;{{ cls.title }}
 		</th>
 	</tr>
-	{% if cls.anchor.media_set.count %}
+	{% if cls.documents.exists %}
 	<tr>
 		<td class="clsmiddle"><b>Document</b></td>
 		<td class="clsmiddle"><b>Options</b></td>
@@ -44,7 +44,7 @@ We would like you, as a teacher, to upload all documents and other materials rel
 		<td colspan="2">There are no documents associated with this class.  Please add some below!</td>
 	</tr>
 	{% endif %}
-	{% for doc in cls.anchor.media_set.all %}
+	{% for doc in cls.getDocuments %}
 	<tr>
 		<td class="clsmiddle"><a href="/download/{{ doc.hashed_name }}">{{ doc.friendly_name }}</a></td>
 		<td class="clsmiddle">

@@ -188,7 +188,7 @@ def answer_to_list(ans):
         value = [ ans.answer ]
     
     if ans.question.question_type.name == 'Favorite Class':
-        return [ c.emailcode() + ': ' + c.title() for c in ClassSubject.objects.filter(id__in=value) ]
+        return [ c.emailcode() + ': ' + c.title for c in ClassSubject.objects.filter(id__in=value) ]
     
     return value
 
@@ -217,7 +217,7 @@ def favorite_classes(answer_list, limit=20):
     for key in key_list[:max_count]:
         cl = ClassSubject.objects.filter(id=key)
         if cl.count() == 1:
-            result_list.append({'title': '%s: %s' % (cl[0].emailcode(), cl[0].title()), 'votes': class_dict[key]})
+            result_list.append({'title': '%s: %s' % (cl[0].emailcode(), cl[0].title), 'votes': class_dict[key]})
 
     return result_list
 

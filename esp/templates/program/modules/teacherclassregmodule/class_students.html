@@ -15,12 +15,12 @@
 <h1>Registration Summary for <u>{{ cls.title }}</u></h1>
 
 {% load render_qsd %}
-{% inline_qsd_block program.anchor "teach:class_students_top" request.user %}
+{% inline_program_qsd_block program "teach:class_students_top" request.user %}
 <p>
 Here are your class' students.  Only those who have enrolled will show up on your attendance sheet.
 <br />
 </p>
-{% end_inline_qsd_block %}
+{% end_inline_program_qsd_block %}
 
 <div class="info">
   Note: You can email your students using <tt style="font-size: 130%;">{{ cls.emailcode }}-students@{{ EMAIL_HOST }}</tt>

@@ -38,7 +38,7 @@ from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
 from django.template.loader      import render_to_string
 from esp.cal.models              import Event
-from esp.users.models            import User, ESPUser, UserBit, UserAvailability
+from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
 from esp.datatree.models         import DataTree
@@ -116,9 +116,9 @@ class LotteryStudentRegModule(ProgramModuleObj):
         print ProgInfo.priority_limit
         #HSSP-style lottery
         if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:
-            return render_to_response('program/modules/lotterystudentregmodule/student_reg_old.html', request, (prog, tl), context)
+            return render_to_response('program/modules/lotterystudentregmodule/student_reg_old.html', request, context)
         #Splark/Spash style lottery
-        return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, (prog, tl), context)
+        return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, context)
 
     @aux_call
     @meets_deadline('/Classes/Lottery')
@@ -153,7 +153,6 @@ class LotteryStudentRegModule(ProgramModuleObj):
     def viewlotteryprefs(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['student'] = request.user
-        context['program'] = prog
 
         priority_classids = set()
         uniquified_flags = []
@@ -179,7 +178,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
             context['iempty'] = True
         else: context['iempty'] = False
 
-        return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, context)
     
     class Meta:
         abstract = True

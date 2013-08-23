@@ -130,7 +130,7 @@ class StudentAppQuestion(BaseAppElement, models.Model):
     
     def __unicode__(self):
         if self.subject is not None:
-            return '%s (%s)' % (self.question[:80], self.subject.title())
+            return '%s (%s)' % (self.question[:80], self.subject.title)
         else:
             return '%s (%s)' % (self.question[:80], self.program.niceName())
     

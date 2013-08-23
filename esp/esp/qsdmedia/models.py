@@ -41,6 +41,9 @@ from esp.db.fields import AjaxForeignKey
 from time import strftime
 import hashlib
 
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import generic
+from django.db.models import Q
 
 # Create your models here.
 
@@ -49,7 +52,7 @@ root_file_path = "uploaded/%y_%m"
 
 class Media(models.Model):
     """ A generic container for 'media': videos, pictures, papers, etc. """
-    anchor = AjaxForeignKey(DataTree) # Relevant node in the tree
+    anchor = AjaxForeignKey(DataTree, blank=True, null=True) # Relevant node in the tree
     friendly_name = models.TextField() # Human-readable description of the media
     target_file = models.FileField(upload_to=root_file_path) # Target media file
     size = models.IntegerField(blank=True, null=True, editable=False) # Size of the file, in bytes
@@ -58,6 +61,12 @@ class Media(models.Model):
     file_extension = models.TextField(blank=True, null=True, max_length=16, editable=False) # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
     file_name = models.TextField(blank=True, null=True, max_length=256, editable=False) # original filename that this file should be downloaded as
     hashed_name = models.TextField(blank=True, null=True, max_length=256, editable=False) # safe hashed filename
+    
+    #   Generic Foreign Key to object this media is associated with.
+    #   Currently limited to be either a ClassSubject or Program.
+    owner_type = models.ForeignKey(ContentType, blank=True, null=True, limit_choices_to=Q(name__in=['ClassSubject', 'Program']))
+    owner_id = models.PositiveIntegerField(blank=True, null=True)
+    owner = generic.GenericForeignKey(ct_field='owner_type', fk_field='owner_id')
 
     #def get_target_file_relative_url(self):a
     #    return str(self.target_file)[ len(root_file_path): ]
@@ -106,26 +115,6 @@ class Media(models.Model):
 
     def __unicode__(self):
         return unicode(self.friendly_name)
-
-    @staticmethod
-    def find_by_url_parts(parts, filename):
-        """ Fetch a QSD record by its url parts """
-        # Get the Q_Web root
-        Q_Web = GetNode('Q/Web')
-
-        # Find the branch
-        try:
-            branch = Q_Web.tree_decode( parts )
-        except DataTree.NoSuchNodeException:
-            raise Media.DoesNotExist
-
-        # Find the record
-        media = Media.objects.filter( anchor = branch, friendly_name = filename )
-        if len(media) < 1:
-            raise Media.DoesNotExist
-        
-        # Operation Complete!
-        return media[0]
 
 class Video(models.Model):
     """ Video media object

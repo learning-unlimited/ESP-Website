@@ -1,5 +1,5 @@
 from django.db import transaction
-from django.shortcuts import redirect, render_to_response, HttpResponse
+from django.shortcuts import redirect, HttpResponse
 from django.http import Http404,HttpResponseRedirect
 from django.template import RequestContext
 from django.db import connection
@@ -14,6 +14,7 @@ from django.contrib.auth.decorators import user_passes_test
 
 from esp.users.models import ESPUser
 from esp.middleware import ESPError
+from esp.web.util.main import render_to_response
 
 def test_func(user):
     return user.is_authenticated() and (ESPUser(user).isTeacher() or ESPUser(user).isAdministrator())
@@ -23,7 +24,7 @@ def landing(request):
     forms = Form.objects.all().order_by('-date_created')
     if not ESPUser(request.user).isAdministrator():
         forms = forms.filter(created_by=request.user)
-    return render_to_response("customforms/landing.html", {'form_list': forms}, context_instance=RequestContext(request))
+    return render_to_response("customforms/landing.html", request, {'form_list': forms})
 
 @user_passes_test(test_func)
 def formBuilder(request):
@@ -32,7 +33,7 @@ def formBuilder(request):
     if not ESPUser(request.user).isAdministrator():
         form_list = form_list.filter(created_by=request.user)
     return render_to_response(
-                            'customforms/index.html',
+                            'customforms/index.html', request,
                             {'prog_list': prog_list, 'form_list': form_list, 'only_fkey_models': cf_cache.only_fkey_models.keys()}
                             )
     
@@ -281,9 +282,8 @@ def success(request, form_id):
         raise Http404
     
     form = Form.objects.get(pk=form_id)        
-    return render_to_response('customforms/success.html',{'success_message': form.success_message, 
-                                                            'success_url': form.success_url}, 
-                                                            context_instance=RequestContext(request))
+    return render_to_response('customforms/success.html', request, {'success_message': form.success_message, 
+                                                            'success_url': form.success_url})
 
 @user_passes_test(test_func)
 def viewResponse(request, form_id):

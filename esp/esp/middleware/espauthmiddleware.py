@@ -38,7 +38,7 @@ from django.contrib.auth.models import AnonymousUser
 from django.utils.cache import patch_vary_headers
 from django.utils.functional import SimpleLazyObject
 
-from esp.users.models import ESPUser, UserBit, GetNode
+from esp.users.models import ESPUser
 
 __all__ = ('ESPAuthMiddleware',)
 
@@ -85,18 +85,9 @@ class ESPAuthMiddleware(object):
             if encoding is None:
                 encoding = settings.DEFAULT_CHARSET
             espuser = ESPUser(user)
-            
-            #   Check for QSD editing permissions - should be simplified soon
-            in_program_area = False
-            program_areas = ['learn', 'teach', 'manage', 'onsite', 'volunteer']
-            for tl in program_areas:
-                if request.path.startswith('/' + tl):
-                    in_program_area = True
-            if in_program_area:
-                has_qsd_bits = UserBit.objects.UserHasPerms(espuser, GetNode('Q/Programs'), GetNode('V/Administer/Edit/QSD'))
-            else:
-                has_qsd_bits = UserBit.objects.UserHasPerms(espuser, GetNode('Q/Web'), GetNode('V/Administer/Edit/QSD'))
-                
+
+            has_qsd_bits = espuser.isAdministrator()
+
             new_values = {'cur_username': user.username,
                           'cur_userid': user.id,
                           'cur_email': urllib.quote(user.email.encode(encoding)),

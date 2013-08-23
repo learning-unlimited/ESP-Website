@@ -41,52 +41,41 @@ from django.views.decorators.csrf import csrf_exempt
 #from django.core.mail import send_mail
 from django.db.models.query import Q
 #from esp.miniblog.models import Entry
-from esp.datatree.models import GetNode, DataTree
 #from esp.cal.models import Event
-from esp.users.models import ESPUser, UserBit, User
+from esp.users.models import ESPUser, User, Record
 from esp.customforms.models import Form
 from esp.customforms.DynamicForm import FormHandler
 from esp.tagdict.models import Tag
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
-#from datetime import datetime
+from datetime import datetime
 import re
 
 class TeacherQuizController(object):
 
     twoday_pattern = re.compile('^[^0-9]*([0-9]+)[^0-9]+([0-9]+)[^0-9]*$')
 
-    def __init__(self, program_or_anchor, *args, **kwargs):
+    def __init__(self, program, *args, **kwargs):
         super(TeacherQuizController, self).__init__(*args, **kwargs)
-        self.program_anchor = program_or_anchor
-        # We'll also accept a program
-        if hasattr(self.program_anchor, 'anchor'):
-            self.program_anchor = self.program_anchor.anchor
-        # Make a sad attempt at type safety
-        if not isinstance(self.program_anchor, DataTree):
-            raise TypeError("Argument to constructor should be Program or DataTree node.")
-        # Some setup
-        self.reg_verb = GetNode('V/Flags/Registration/Teacher/QuizDone')
+        self.program = program
 
-    def _bitsByUser(self, user):
-        """Get relevant UserBits (the "completed quiz" ones) for a user."""
-        return UserBit.objects.filter(Q(user=user, qsc=self.program_anchor, verb=self.reg_verb) & UserBit.not_expired())
+        # Some setup
+        self.event = "teacher_quiz_done"
 
     def markCompleted(self, user):
         """Mark a user as having completed the quiz."""
-        ub, created = UserBit.objects.get_or_create(user=user, qsc=self.program_anchor, verb=self.reg_verb)
+        r,created = Record.objects.get_or_create(user=user, event=self.event)
         if not created:
-            ub.renew()
+            r.time=datetime.now()
+            r.save()
 
     def unmarkCompleted(self, user):
         """Mark a user as not having completed the quiz."""
-        ubs = self._bitsByUser(user)
-        for ub in ubs:
-            ub.expire()
+        Record.objects.filter(user=user, event=self.event, program=self.program).delete()
 
     def isCompleted(self, user):
         """Has a user completed the quiz?"""
-        if self._bitsByUser(user):
+        if Record.objects.filter(user=user, event=self.event, program=self.program).count()>0:
             return True
         return False
 
@@ -94,13 +83,13 @@ class TeacherQuizModule(ProgramModuleObj):
     # Initialization
     def __init__(self, *args, **kwargs):
         super(TeacherQuizModule, self).__init__(*args, **kwargs)
-        self.reg_verb = GetNode('V/Flags/Registration/Teacher/QuizDone')
+        self.event="teacher_quiz_done"
 
     @property
     def controller(self):
         if hasattr(self, '_controller'):
             return self._controller
-        return TeacherQuizController(self.program_anchor_cached())
+        return TeacherQuizController(self.program)
 
     # General Info functions
     @classmethod
@@ -116,10 +105,8 @@ class TeacherQuizModule(ProgramModuleObj):
     def teachers(self, QObject = False):
         """Returns lists of teachers who've completed the teacher quiz."""
 
-        qo = Q(
-            userbit__verb = self.controller.reg_verb,
-            userbit__qsc = self.program_anchor_cached(),
-            ) & UserBit.not_expired(prefix='userbit__')
+        qo = Q(record__event=self.event, 
+               record__program=self.program)
         if QObject is True:
             return {
                 'quiz_done': self.getQForUser(qo),
@@ -163,7 +150,7 @@ class TeacherQuizModule(ProgramModuleObj):
         else:
             form = form_wizard.get_form(0)
             
-        return render_to_response(self.baseDir()+'quiz.html', request, (prog, tl), {'prog':prog, 'form': form})
+        return render_to_response(self.baseDir()+'quiz.html', request, {'prog':prog, 'form': form})
 
     class Meta:
         abstract = True

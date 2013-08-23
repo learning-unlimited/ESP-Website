@@ -41,7 +41,7 @@ from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
 from django.template.loader      import render_to_string
 from esp.cal.models              import Event
-from esp.users.models            import User, ESPUser, UserBit, UserAvailability
+from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
 from esp.datatree.models         import DataTree
@@ -80,7 +80,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         context = {}
         
-        return render_to_response(self.baseDir()+'ajax_scheduling.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'ajax_scheduling.html', request, context)
 
     @aux_call
     @needs_admin
@@ -99,13 +99,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
         rrequest_dict = defaultdict(list)
         for r in rrequests:
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
-
-
-        teacher_bits = UserBit.valid_objects().filter(verb=GetNode('V/Flags/Registration/Teacher'), qsc__in = (s.parent_class.anchor_id for s in sections), user__isnull=False).values("qsc_id", "user_id").distinct()
-
-        teacher_dict = defaultdict(list)
-        for b in teacher_bits:
-            teacher_dict[b["qsc_id"]].append(b["user_id"])
         
         sections_dicts = [
             {   'id': s.id,
@@ -114,7 +107,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'text': s.title(),
                 'category': s.category.category,
                 'length': float(s.duration),
-                'teachers': teacher_dict[s.parent_class.anchor_id],
+                'teachers': list(s.parent_class.get_teachers().values_list('id', flat=True)),
                 'resource_requests': rrequest_dict[s.id],
                 'max_class_capacity': s.max_class_capacity,
                 'capacity': s.capacity,
@@ -137,8 +130,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
     ajax_sections_cached.depend_on_model(lambda: ClassSection)
     ajax_sections_cached.depend_on_model(lambda: ClassSizeRange)
     ajax_sections_cached.depend_on_model(lambda: ResourceRequest)
-    ajax_sections_cached.depend_on_model(lambda: UserBit)
-        
 
     @aux_call
     @needs_admin
@@ -176,9 +167,8 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @cache_function
     def ajax_teachers_cached(self, prog):
-        teachers = ESPUser.objects.filter(userbit__verb=GetNode('V/Flags/Registration/Teacher')).filter(userbit__qsc__classsubject__isnull=False, userbit__qsc__parent__parent__program=prog).distinct()
-
-        resources = UserAvailability.objects.filter(user__in=teachers).filter(QTree(event__anchor__below = prog.anchor)).values('user_id', 'event_id')
+        teachers = ESPUser.objects.filter(classsubject__parent_program=prog).distinct()
+        resources = UserAvailability.objects.filter(user__in=teachers).filter(event__program = prog).values('user_id', 'event_id')
         resources_for_user = defaultdict(list)
 
         for resource in resources:
@@ -194,10 +184,9 @@ class AJAXSchedulingModule(ProgramModuleObj):
         simplejson.dump(teacher_dicts, response)
         return response
     ajax_teachers_cached.get_or_create_token(('prog',))
-    ajax_teachers_cached.depend_on_model(UserBit)
     ajax_teachers_cached.depend_on_model(UserAvailability)
+    ajax_teachers_cached.depend_on_m2m(ClassSubject, 'teachers', lambda sub, teacher: {'prog': sub.parent_program})
     
-
     @aux_call
     @needs_admin
     def ajax_times(self, request, tl, one, two, module, extra, prog):
@@ -252,7 +241,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     @cache_function
     def ajax_resources_cached(self, prog):
-        resources = Resource.objects.filter(event__anchor=self.program_anchor_cached()).exclude(res_type__name__in=["Classroom", "Teacher Availability"])
+        resources = Resource.objects.filter(event__program=self.program).exclude(res_type__name__in=["Classroom", "Teacher Availability"])
 
         resources_grouped = defaultdict(list)
 
@@ -402,7 +391,6 @@ class AJAXSchedulingModule(ProgramModuleObj):
     ajax_schedule_last_changed_cached.depend_on_model(lambda: Resource)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: ResourceRequest)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: Event)
-    ajax_schedule_last_changed_cached.depend_on_model(lambda: UserBit)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: ClassSection)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: ClassSubject)
     ajax_schedule_last_changed_cached.depend_on_model(lambda: UserAvailability)
@@ -428,12 +416,12 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @needs_admin
     def securityschedule(self, request, tl, one, two, module, extra, prog):
         """ Display a list of classes (by classroom) for each timeblock in a program """
-        events = Event.objects.filter(anchor=prog.anchor).order_by('start')
+        events = Event.objects.filter(program=prog).order_by('start')
         events_ctxt = [ { 'event': e, 'classes': ClassSection.objects.filter(meeting_times=e).select_related() } for e in events ]
 
         context = { 'events': events_ctxt }
 
-        return render_to_response(self.baseDir()+'securityschedule.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'securityschedule.html', request, context)
             
     @aux_call
     @needs_admin

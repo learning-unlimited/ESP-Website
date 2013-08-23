@@ -154,8 +154,8 @@
 
 <div style="font-size: 0.8em">
 <ul class="nodelist">
-{% for bit in bits %}
-    <li><a href="#userbit_form_{{ bit.id }}">{{ bit.uri_rel }}</a>: {{ bit.verb.friendly_name }}</li>
+{% for perm in perms %}
+    <li><a href="#perm_form_{{ perm.id }}">{{ perm.permission_type }}</a>: {{ perm.nice_name }}</li>
 {% endfor %}
 </ul>
 </div>
@@ -165,64 +165,62 @@
 <form method="post" action="/manage/{{ program.getUrlBase }}/deadlines" id="manage_form">
 {% autoescape off %}
 {{ manage_form }}
-{% for bit in bits %}
-    <a name="userbit_form_{{ bit.id }}"></a>
-    {{ bit.form.id }}
+
+{% for perm in perms %}
+    <a name="perm_form_{{ perm.id }}"></a>
+    {{ perm.form.id }}
     <table border="0" width="550px" cellspacing="0" cellpadding="3px">
     <tr>
-        <th colspan="2" width="400px"><p class="bitname"><span style="color: #000066">{% if bit.open_now %}Open:{% else %}Closed:{% endif %}</span> {{ bit.verb.friendly_name }} </p>
-            <span class="bituri">{{ bit.verb.uri }}</span>
+        <th width="400px"><p class="bitname"><span style="color: #000066">{% if perm.open_now %}Open:{% else %}Closed:{% endif %}</span> {{ perm.name }}</p>
+<p class="bitname"><span style="color: #000066">To:</span> {{ perm.role }}s</p>
+            <span class="bituri">{{ perm.permission_type }}</span>
         </th>
-        <th class="small" width="145px">Available from: <br />{{ bit.form.startdate }} to <br /> {{ bit.form.enddate }}</th>
+        <th class="small" width="145px">Available from: <br />{{ perm.form.startdate }} to <br /> {{ perm.form.enddate }}</th>
     </tr>
     <tr>
-        <td valign="top" width="100px">Scope: {{ bit.form.recursive }}</td>
         <td valign="top">
-            <div id="bit_{{ bit.id }}_recursive" style="display: {% if bit.recursive %}block{% else %}none{% endif %};">
-            {% if bit.open_now %}
-                {% if not bit.includes|length_is:0 %}The recursive scope of this deadline includes: {% endif %}
+            <div id="perm_{{ perm.id }}_implications" style="display: {% if perm.recursive %}block{% else %}none{% endif %};">
+            {% if perm.open_now %}
+                {% if not perm.includes|length_is:0 %}The recursive scope of this deadline includes: {% endif %}
             {% else %}
-                This deadline is closed; click 'Open' to open it along with all {{ bit.includes|length }} inner deadlines.
+                This deadline is closed; click 'Open' to open it along with all {{ perm.includes|length }} inner deadlines.
             {% endif %}
             <ul class="nodelist">
-            {% for node in bit.includes %}
-                {% if bit.open_now or node.bit_open %}
-                <li>{% if node.overridden %}<span class="override">
-                    <a href="#userbit_form_{{ node.overridden_by.id }}">
-                        {% if bit.open_now %}
+            {% for p in perm.includes %}
+                {% if perm.open_now or p.bit_open %}
+                <li>{% if p.overridden %}<span class="override">
+                    <a href="#perm_form_{{ p.overridden_by.id }}">
+                        {% if perm.open_now %}
                             Overrides: 
                         {% else %}
                             Overridden by:
                         {% endif %}
                     </a>{% endif %}
-                    {% if node.friendly_name %}
-                        {{ node.friendly_name }}
-                    {% else %}
-                        {{ node.name }}
-                    {% endif %}
-                    {% if node.overridden %}</span>{% endif %}
+		    {{ p.nice_name }}
+                    {% if p.overridden %}</span>{% endif %}
                 </li>
                 {% endif %}
             {% endfor %}
             </ul>
-            {% if bit.includes|length_is:0 %}
-            <span style="color: #999999">No dependent activities - "recursive" and "individual" are equivalent</span>
+            {% if perm.includes|length_is:0 %}
+            <span style="color: #999999">No dependent activities.</span>
             {% endif %}
             </div>
             
-            <div id="bit_{{ bit.id }}_nonrecursive" style="display: {% if bit.recursive %}none{% else %}block{% endif %};">
-            {% if not bit.includes|length_is:0 %}
-            {{ bit.includes|length }} dependent activit{% if bit.includes|length_is:1 %}y{% else %}ies{% endif %} can be enabled jointly 
-            when this deadline is open by marking its scope "recursive" and clicking "Save Changes."
+            <div id="perm_{{ perm.id }}_nonrecursive" style="display: {% if perm.recursive %}none{% else %}block{% endif %};">
+            {% if not perm.includes|length_is:0 %}
+            {{ perm.includes|length }} dependent activit{% if perm.includes|length_is:1 %}y{% else %}ies{% endif %} are enabled jointly 
+            when this deadline is open.
             {% else %}
-            <span style="color: #999999">No dependent activities - "recursive" and "individual" are equivalent</span>
+            <span style="color: #999999">No dependent activities.</span>
             {% endif %}
             </div>
         </td>
-        <td align="center" valign="center">{% if bit.open_now %}
-            <a class="abutton" href="/manage/{{ program.getUrlBase }}/deadlines/close?id={{ bit.id }}">Close</a>
+
+        <td align="center" valign="center">{% if perm.open_now %}
+            <a class="abutton" href="/manage/{{ program.getUrlBase }}/deadlines/close?id={{ perm.id }}">Close</a>
             {% else %}
-            <a class="abutton" href="/manage/{{ program.getUrlBase }}/deadlines/open?id={{ bit.id }}">Open</a>
+            <a class="abutton" href="/manage/{{ program.getUrlBase }}/deadlines/open?id={{ perm.id }}">Open</a>
             {% endif %}<br /><br />
             <input class="button" type="Submit" name="submit" value="Save Changes" />
         </td>

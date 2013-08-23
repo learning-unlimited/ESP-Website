@@ -36,7 +36,6 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.program.models  import Program, ProgramCheckItem
 from esp.web.util        import render_to_response
-from esp.datatree.models import *
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
 from esp.datatree.models import *
@@ -64,15 +63,12 @@ class CheckListModule(ProgramModuleObj):
 
 
     def teachers(self, QObject = False):
-        teaching = GetNode('V/Flags/Registration/Teacher')
-
         finish_dict = {}
 
         for check_item in self.program.checkitems.all():
             finish_dict['checkitem_%s' % check_item.id] = \
-                     Q(userbit__qsc__classsubject__checklist_progress = check_item) &\
-                     Q(userbit__verb = teaching) & \
-                     Q(userbit__qsc__classsubject__parent_program = self.program)
+                     Q(classsubject__checklist_progress = check_item) &\
+                     Q(classsubject__parent_program = self.program)
 
         if QObject:
             return finish_dict

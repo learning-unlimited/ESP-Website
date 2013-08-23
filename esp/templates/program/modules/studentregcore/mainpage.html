@@ -46,15 +46,15 @@
 {% endif %}
 {% endif %}
 {% load render_qsd %}
-{% inline_qsd_block program.anchor registration_steps request.user %}    <p>
+{% inline_program_qsd_block program registration_steps request.user %}    <p>
     Please complete the following steps to register for {{ program.niceName }}.
     When each step is completed, the corresponding box in the right-hand column will
     be &#8220;checked off&#8221;. <!-- After finishing all the steps, click the &#8220;Confirm&#8221;
     button at the bottom of the page. -->
     </p>
-{% end_inline_qsd_block %}
+{% end_inline_program_qsd_block %}
 
-{% render_inline_qsd program.anchor "learn:studentregheader" %}
+{% render_inline_program_qsd program "learn:studentregheader" %}
     <center><div class="note">
     <b>Parents:</b> You should not be at this page!  Please let your kids fill out the registration forms.
     </div></center>
@@ -70,7 +70,7 @@
 {% endif %}
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:studentreg" %}
+{% render_inline_program_qsd program "learn:studentreg" %}
 
 <form action="/learn/{{one}}/{{two}}/confirmreg" method="post">
 
@@ -99,7 +99,7 @@
 {% endif %}
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:studentregfooter" %}
+{% render_inline_program_qsd program "learn:studentregfooter" %}
 
 {% if not request.user.onsite_local and not no_confirm %}
     <center>
