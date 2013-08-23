@@ -92,7 +92,7 @@ class SurveyTest(ProgramFrameworkTest):
         #   Fill out the survey with some arbitrary answers
         sec_timeslot = sec.get_meeting_times()[0]
         form_settings = {
-            'attendance_%d' % cls_timeslot.id: '%s' % sec.id,
+            'attendance_%d' % sec_timeslot.id: '%s' % sec.id,
             'question_%d' % question_base.id: 'Yes',
             'question_%d_%d' % (question_perclass.id, sec_timeslot.id): 'No',
         }
