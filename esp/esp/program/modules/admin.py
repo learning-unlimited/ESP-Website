@@ -63,7 +63,7 @@ class ProgramModelObjAdmin(admin.ModelAdmin):
         'required_label',
     )
     list_filter = ('program', 'module')
-    search_fields = ('program__anchor__friendly_name', 'program__anchor__parent__friendly_name', 'module__admin_title', 'module__link_title')
+    search_fields = ('program__name', 'program__url', 'module__admin_title', 'module__link_title')
 admin_site.register(ProgramModuleObj, ProgramModelObjAdmin)
 
 admin_site.register(CreditCardSettings)

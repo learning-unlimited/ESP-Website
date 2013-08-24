@@ -92,9 +92,8 @@ class VolunteerManage(ProgramModuleObj):
             form = VolunteerRequestForm(program=prog)
         
         context['form'] = form
-        context['program'] = prog
         context['requests'] = self.program.getVolunteerRequests()
-        return render_to_response('program/modules/volunteermanage/main.html', request, (prog, tl), context)
+        return render_to_response('program/modules/volunteermanage/main.html', request, context)
 
     class Meta:
         abstract = True

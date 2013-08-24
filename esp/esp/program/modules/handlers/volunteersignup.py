@@ -77,7 +77,7 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             help_text_html = u'%s',
             errors_on_separate_row = False)
         
-        return render_to_response('program/modules/volunteersignup/signup.html', request, (prog, tl), context)
+        return render_to_response('program/modules/volunteersignup/signup.html', request, context)
 
     def volunteers(self, QObject=False):
         requests = self.program.volunteerrequest_set.all()

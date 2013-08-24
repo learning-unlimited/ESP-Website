@@ -36,15 +36,15 @@ Learning Unlimited, Inc.
 from esp.program.modules.forms.onsite import OnSiteRapidCheckinForm, OnsiteBarcodeCheckinForm
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules import module_ext
+from esp.accounting.controllers import IndividualAccountingController
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser, UserBit, User
+from esp.users.models    import ESPUser, User, Record
 from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string, select_template
 from esp.users.views    import search_for_user
-from esp.accounting_docs.models   import Document
 
 import simplejson as json
 
@@ -63,70 +63,47 @@ class OnSiteCheckinModule(ProgramModuleObj):
         """ Close off the student's invoice and, if paid is True, create a receipt showing
         that they have paid all of the money they owe for the program. """
         if not self.hasPaid():
-            doc = Document.get_invoice(self.student, self.program_anchor_cached())
-            Document.prepare_onsite(self.student, doc.locator)
+            iac = IndividualAccountingController(self.program, self.user)
+            iac.add_required_transfers()
             if paid:
-                Document.receive_onsite(self.student, doc.locator)
-            
+                iac.submit_payment(iac.amount_due())
 
-    def createBit(self, extension):
-        if extension == 'Paid':
+    def create_record(self, event):
+        if event=="paid":
             self.updatePaid(True)
-        verb = GetNode('V/Flags/Registration/'+extension)
-        ub = UserBit.objects.filter(user = self.student,
-                                    verb = verb,
-                                    qsc  = self.program_anchor_cached())
-        if len(ub) > 0:
-            return False
 
-        ub = UserBit()
-        ub.verb = verb
-        ub.qsc  = self.program_anchor_cached()
-        ub.user = self.student
-        ub.recursive = False
-        ub.save()
-        return True
+        recs, created = Record.objects.get_or_create(user=self.student,
+                                                     event=event,
+                                                     program=self.program)
+        return created
 
-    def deleteBit(self, extension):
-        if extension == 'Paid':
+    def delete_record(self, extension):
+        if event=="paid":
             self.updatePaid(False)
-        verb = GetNode('V/Flags/Registration/'+extension)
-        ub = UserBit.objects.filter(user = self.student,
-                                    verb = verb,
-                                    qsc  = self.program_anchor_cached())
-        for userbit in ub:
-            userbit.expire()
 
+        recs = Record.objects.get_or_create(user=self.student,
+                                            event=event,
+                                            program=self.program)
+        recs.delete()
         return True
 
     def hasAttended(self):
-        verb = GetNode('V/Flags/Registration/Attended')
-        return UserBit.UserHasPerms(self.student,
-                                    self.program_anchor_cached(),
-                                    verb)
+        return Record.user_completed(self.student, "attended",self.program)
 
     def hasPaid(self):
-        verb = GetNode('V/Flags/Registration/Paid')
-        ps = self.student.paymentStatus(self.program_anchor_cached())
-        return UserBit.UserHasPerms(self.student,
-                                    self.program_anchor_cached(),
-                                    verb) or self.student.has_paid(self.program_anchor_cached())
+        iac = IndividualAccountingController(self.program, self.user)
+        return Record.user_completed(self.student, "paid", self.program) or \
+            iac.has_paid(in_full=True)
     
     def hasMedical(self):
-        verb = GetNode('V/Flags/Registration/MedicalFiled')
-        return UserBit.UserHasPerms(self.student,
-                                    self.program_anchor_cached(),
-                                    verb)
+        return Record.user_completed(self.student, "med", self.program)
+
     def hasLiability(self):
-        verb = GetNode('V/Flags/Registration/LiabilityFiled')
-        return UserBit.UserHasPerms(self.student,
-                                    self.program_anchor_cached(),
-                                    verb)
+        return Record.user_completed(self.student, "liab", self.program)
 
     def timeCheckedIn(self):
-        verb = GetNode('V/Flags/Registration/Attended')
-        u = UserBit.objects.get(verb=verb, qsc=self.program_anchor_cached(), user=self.student)
-        return str(u.startdate.strftime("%H:%M %d/%m/%y"))
+        u = Record.objects.filter(event="attended",program=self.program, user=self.student).sort_by("time")
+        return str(u[0].startdate.strftime("%H:%M %d/%m/%y"))
 
     @aux_call
     @needs_onsite
@@ -167,8 +144,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
             context['students'] = None
         
         context['module'] = self
-        context['program'] = prog
-       
+
         json_data = {'checkin_status_html': render_to_string(self.baseDir()+'checkinstatus.html', context)}
         return HttpResponse(json.dumps(json_data))
 
@@ -184,9 +160,9 @@ class OnSiteCheckinModule(ProgramModuleObj):
                 student = ESPUser(form.cleaned_data['user'])
                 #   Check that this is a student user who is not also teaching (e.g. an admin)
                 if student.isStudent() and student not in self.program.teachers()['class_approved']:
-                    existing_bits = UserBit.valid_objects().filter(user=student, qsc=prog.anchor, verb=GetNode('V/Flags/Registration/Attended'))
-                    if not existing_bits.exists():
-                        new_bit, created = UserBit.objects.get_or_create(user=student, qsc=prog.anchor, verb=GetNode('V/Flags/Registration/Attended'))
+                    recs = Record.objects.filter(user=student, event="attended", program=prog)
+                    if not recs.exists():
+                        rec, created = Record.objects.get_or_create(user=student, event="attended", program=prog)
                     context['message'] = '%s %s marked as attended.' % (student.first_name, student.last_name)
                     if request.is_ajax():
                         return self.ajax_status(request, tl, one, two, module, extra, prog, context)
@@ -199,14 +175,12 @@ class OnSiteCheckinModule(ProgramModuleObj):
         
         context['module'] = self
         context['form'] = form
-        return render_to_response(self.baseDir()+'ajaxcheckin.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'ajaxcheckin.html', request, context)
         
     @aux_call
     @needs_onsite
     def barcodecheckin(self, request, tl, one, two, module, extra, prog):
         context = {}
-        attended_verb=GetNode('V/Flags/Registration/Attended')
-        prog_anchor=prog.anchor
         if request.method == 'POST':
             results = {'not_found': [], 'existing': [], 'new': [], 'not_student': []}
             form = OnsiteBarcodeCheckinForm(request.POST)
@@ -224,11 +198,11 @@ class OnSiteCheckinModule(ProgramModuleObj):
                     else:
                         student=result[0]
                         if student.isStudent():
-                            existing = UserBit.valid_objects().filter(user=student, qsc=prog_anchor, verb=attended_verb)
+                            existing = Record.user_completed(student, 'attended', prog)
                             if existing:
                                 results['existing'].append(code)
                             else:
-                                new = UserBit(user=student, qsc=prog_anchor, verb=attended_verb)
+                                new = Record(user=student, program=prog, event='attended')
                                 new.save()
                                 results['new'].append(code)
                         else:
@@ -239,14 +213,13 @@ class OnSiteCheckinModule(ProgramModuleObj):
         context['module'] = self
         context['form'] = form
         context['results'] = results
-        return render_to_response(self.baseDir()+'barcodecheckin.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'barcodecheckin.html', request, context)
         
 
 
     @aux_call
     @needs_onsite
     def checkin(self, request, tl, one, two, module, extra, prog):
-
         user, found = search_for_user(request, self.program.students_union())
         if not found:
             return user
@@ -254,16 +227,16 @@ class OnSiteCheckinModule(ProgramModuleObj):
         self.student = user
             
         if request.method == 'POST':
-            for key in ['Attended','Paid','LiabilityFiled','MedicalFiled']:
+            for key in ['attended','paid','liab','med']:
                 if request.POST.has_key(key):
-                    self.createBit(key)
+                    self.create_record(key)
                 else:
-                    self.deleteBit(key)
+                    self.delete_record(key)
                 
 
             return self.goToCore(tl)
 
-        return render_to_response(self.baseDir()+'checkin.html', request, (prog, tl), {'module': self})
+        return render_to_response(self.baseDir()+'checkin.html', request, {'module': self, 'program': prog})
 
 
     class Meta:

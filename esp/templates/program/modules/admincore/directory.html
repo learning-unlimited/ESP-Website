@@ -54,9 +54,9 @@ $j(document).ready(initialize);
 
 <h1>Admin Portal for {{ program.niceName }} </h1>
 
-{% inline_qsd_block program.anchor "manage:main_top" request.user %}
+{% inline_program_qsd_block program "manage:main_top" request.user %}
 Welcome to the administrative home page for {{ program.niceName }}.  This page links to the most common functions needed by program administrators, many of which are documented on <a href="http://wiki.learningu.org/How_to_use_the_website">the LU wiki</a>.  Feel free to edit these directions to add your program-specific links and notes here.
-{% end_inline_qsd_block %}
+{% end_inline_program_qsd_block %}
 
 <div class="module_group" id="module_group_1">
     <div class="module_group_header">
@@ -208,7 +208,7 @@ Please select an option to the left to continue, or look down below to select fu
 </div> <!-- div#complete_list -->
 
 <td colspan="2">
-{% render_inline_qsd program.anchor "manage:main_bottom" %}
+{% render_inline_program_qsd program "manage:main_bottom" %}
 </td>
 
 {% endblock %}

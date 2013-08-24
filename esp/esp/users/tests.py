@@ -1,13 +1,12 @@
-from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from django import forms
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserBit, UserForwarder, StudentInfo
+from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission
 from esp.users.forms.user_reg import ValidHostEmailField
 from esp.program.tests import ProgramFrameworkTest
-from esp.datatree.models import GetNode
 from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth.models import Group
 from esp.middleware import ESPError
 from esp.users.views import make_user_admin
-from esp.tests.util import CacheFlushTestCase
 from django.core import mail
 from esp.program.models import RegistrationProfile, Program
 import datetime
@@ -15,6 +14,9 @@ import esp.users.views as views
 from esp.tagdict.models import Tag
 
 class ESPUserTest(TestCase):
+    def setUp(self):
+        user_role_setup()
+
     def testInit(self):
         one = ESPUser()
         two = User()
@@ -23,18 +25,16 @@ class ESPUserTest(TestCase):
         self.failUnless( three.__dict__ == four.__dict__ )
 
     def testDelete(self):
-        from esp.datatree.models import GetNode
-        from esp.users.models import UserBit
-        # Create a user and a userbit
+        # Create a user and a permission
         self.user, created = ESPUser.objects.get_or_create(username='forgetful')
-        self.userbit = UserBit.objects.get_or_create(user=self.user, verb=GetNode('V/Administer'), qsc=GetNode('Q'))
+        self.permission, created = Permission.objects.get_or_create(user=self.user, permission_type='Administer')
         # Save the ID and then delete the user
         uid = self.user.id
         self.user.delete()
         # Make sure it's gone.
         self.failUnless( User.objects.filter(id=uid).count() == 0 )
         self.failUnless( ESPUser.objects.filter(id=uid).count() == 0 )
-        self.failUnless( UserBit.objects.filter(user=uid).count() == 0 )
+        self.failUnless( Permission.objects.filter(user=uid).count() == 0 )
 
     def testMorph(self):
         class scratchCls(object):
@@ -55,12 +55,12 @@ class ESPUserTest(TestCase):
         request.user = None
         request.session = scratchDict()
 
-        # Create a couple users and a userbit
+        # Create a couple users and give them roles
         self.user, created = ESPUser.objects.get_or_create(username='forgetful')
-        self.userbit = UserBit.objects.get_or_create(user=self.user, verb=GetNode('V/Administer'), qsc=GetNode('Q'))
+        self.user.makeRole('Administrator')
 
         self.basic_user, created = ESPUser.objects.get_or_create(username='simple_student')
-        self.userbit = UserBit.objects.get_or_create(user=self.basic_user, verb=GetNode('V/Flags/UserRole/Student'), qsc=GetNode('Q'))
+        self.basic_user.makeRole('Student')
 
         self.user.backend = request.backend
         self.basic_user.backend = request.backend
@@ -91,7 +91,7 @@ class ESPUserTest(TestCase):
         # Create the student user
         studentUser, c2 = ESPUser.objects.get_or_create(username='student')
         # Make it a student
-        role_bit, created = UserBit.objects.get_or_create(user=studentUser, qsc=GetNode('Q'), verb=GetNode('V/Flags/UserRole/Student'), recursive=False)
+        studentUser.makeRole("Student")
         # Give it a starting grade
         student_studentinfo = StudentInfo(user=studentUser, graduation_year=ESPUser.YOGFromGrade(9))
         student_studentinfo.save()
@@ -268,16 +268,14 @@ class MakeAdminTest(TestCase):
     def setUp(self):
         self.user, created = ESPUser.objects.get_or_create(username='admin_test')
         self.user.is_staff = False
-        self.user.is_superview = False
-        UserBit.objects.filter(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Administer')).delete()
-        UserBit.objects.filter(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Flags/UserRole/Administrator')).delete()
+        self.user.is_superuser = False
+        user_role_setup()
 
     def runTest(self):
         # Make sure user starts off with no administrator priviliges
         self.assertFalse(self.user.is_staff)        
         self.assertFalse(self.user.is_superuser)
-        self.assertFalse(UserBit.objects.UserHasPerms(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Administer')))
-        self.assertFalse(UserBit.objects.UserHasPerms(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Flags/UserRole/Administrator')))
+        self.assertFalse(self.user.groups.filter(name="Administrator").exists())
 
         # Now make admin_test into an admin using make_admin
         make_user_admin(self.user)
@@ -285,8 +283,7 @@ class MakeAdminTest(TestCase):
         # Make sure user now has administrator privileges
         self.assertTrue(self.user.is_staff)
         self.assertTrue(self.user.is_superuser)
-        self.assertTrue(UserBit.objects.UserHasPerms(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Administer')))
-        self.assertTrue(UserBit.objects.UserHasPerms(user=self.user, qsc=GetNode('Q'), verb=GetNode('V/Flags/UserRole/Administrator')))
+        self.assertTrue(self.user.groups.filter(name="Administrator").exists())
 
         # Make sure that an unprivileged access to /myesp/makeadmin/ returns 403 Forbidden
         response = self.client.get('/myesp/makeadmin/')
@@ -325,6 +322,9 @@ class AjaxScheduleExistenceTest(AjaxExistenceChecker, ProgramFrameworkTest):
 
 class AccountCreationTest(TestCase):
     
+    def setUp(self):
+        user_role_setup()
+
     def test_phase_1(self):
         #There's a tag that affects phase 1 so we put the tests into a function
         #and call it twice here

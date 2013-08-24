@@ -77,7 +77,7 @@ class MailingLabels(ProgramModuleObj):
         else:
             form = BanZipsForm()
 
-        return render_to_response(self.baseDir()+"mailinglabel_badzips.html", request, (prog, tl), {'form': form})
+        return render_to_response(self.baseDir()+"mailinglabel_badzips.html", request, {'form': form})
                 
 
     @main_call
@@ -89,7 +89,7 @@ class MailingLabels(ProgramModuleObj):
         combine = True
         
         if extra is None or extra.strip() == '':
-            return render_to_response(self.baseDir()+'mailinglabel_index.html',request, (prog, tl), {})
+            return render_to_response(self.baseDir()+'mailinglabel_index.html',request, {})
 
         if 'nocombine' in extra.strip().lower():
             combine = False
@@ -138,16 +138,16 @@ class MailingLabels(ProgramModuleObj):
 
                         num_schools = ContactInfo.objects.filter(Q_infos).distinct().count()
 
-                        return render_to_response(self.baseDir()+'schools_confirm.html', request, (prog, tl), {'filter':f,'num': num_schools, 'combine': combine})
+                        return render_to_response(self.baseDir()+'schools_confirm.html', request, {'filter':f,'num': num_schools, 'combine': combine})
 
                     else:
-                        return render_to_response(self.baseDir()+'selectschools.html', request, (prog, tl), {'form': form})
+                        return render_to_response(self.baseDir()+'selectschools.html', request, {'form': form})
 
             else:
                 form = SchoolSelectForm(initial = {'zip_code': '02139',
                                                    'combine_addresses': True})
 
-                return render_to_response(self.baseDir()+'selectschools.html', request, (prog, tl), {'form': form})
+                return render_to_response(self.baseDir()+'selectschools.html', request, {'form': form})
 
         else:
             filterObj, found = get_user_list(request, self.program.getLists(True))

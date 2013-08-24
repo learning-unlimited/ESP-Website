@@ -1,7 +1,7 @@
 <!-- secondary nav -->
 <ul id="submenu">
 
-{% for nav_entry in navbar_list.qsdTree %}
+{% for nav_entry in navbar_list.entries %}
   <li class="divsecondarynavlink {% if nav_entry.entry.indent %}indent{% endif %}"> 
     {% if nav_entry.entry.is_link %}
       <a href="{{ nav_entry.entry.makeUrl }}"

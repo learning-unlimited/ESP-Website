@@ -30,7 +30,7 @@ class CancelClassTest(ProgramFrameworkTest):
         
         # Cancel the class
         cancelMsg = 'Testing cancel class'
-        self.client.post("/manage/"+self.program.url()+"/manageclass/"+str(self.cls.id)+"?action=cancel_cls", { 'acknowledgement': 'on', 'explanation': cancelMsg, 'target': self.cls.id })
+        self.client.post("/manage/"+self.program.url+"/manageclass/"+str(self.cls.id)+"?action=cancel_cls", { 'acknowledgement': 'on', 'explanation': cancelMsg, 'target': self.cls.id })
 
         # Update the class
         self.cls = ClassSubject.objects.get(pk=self.cls.id)
@@ -57,6 +57,6 @@ class CancelClassTest(ProgramFrameworkTest):
         self.failUnless(studentEmail != None and cancelMsg in studentEmail.body)
 
         # Check that classes show up in the cancelled classes printable
-        r = self.client.get("/manage/"+self.program.url()+"/classesbytime?cancelled")
+        r = self.client.get("/manage/"+self.program.url+"/classesbytime?cancelled")
         self.failUnless(self.cls.emailcode() in r.content)
                 

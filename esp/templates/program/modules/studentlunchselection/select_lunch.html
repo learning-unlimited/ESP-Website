@@ -18,11 +18,11 @@
 
 {% if errors %}<p align="center" style="color: red;">Please correct the form below before continuing.</p>{% endif %}
 
-{% inline_qsd_block program.anchor studentlunchinstructions request.user %}
+{% inline_program_qsd_block program studentlunchinstructions request.user %}
 <h2>Directions</h2>
 <p>If you are taking classes in both the morning and the afternoon, you'll need to reserve at least one timeslot for lunch.  You may select a lunch period below.  To change your selection, you can return to this page by clicking the "Select Lunch Period" link on the main registration page, or manually remove "Lunch Period" from your schedule and register for "Lunch Period" at the desired time.
 </p>
-{% end_inline_qsd_block %}
+{% end_inline_program_qsd_block %}
 
 {% if messages %}
 {% for msg in messages %}

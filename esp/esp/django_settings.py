@@ -177,7 +177,6 @@ MIDDLEWARE_GLOBAL = [
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
-    (1600, 'esp.datatree.middleware.DataTreeLockMiddleware'),
     (9000, 'django.contrib.redirects.middleware.RedirectFallbackMiddleware'),
 ]
 
@@ -209,6 +208,7 @@ INSTALLED_APPS = (
     'esp.gen_media',
     'esp.dblog',
     'esp.survey',
+    'esp.accounting',
     'esp.accounting_core',
     'esp.accounting_docs',
     'esp.shortterm',
@@ -218,6 +218,7 @@ INSTALLED_APPS = (
     'esp.cache_loader',
     'esp.tagdict',
     'django_extensions',
+    'django_extensions.tests',
     'reversion',
     'south',
     'form_utils',
@@ -242,6 +243,8 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this
                                'esp.context_processors.index_backgrounds',
                                'esp.context_processors.espuserified_request',
                                'esp.context_processors.preload_images',
+                               'esp.context_processors.email_settings',
+                               'esp.context_processors.program',
                                'django.core.context_processors.i18n',
                                'django.contrib.auth.context_processors.auth',
                                'django.contrib.messages.context_processors.messages',

@@ -1,11 +1,11 @@
-from esp.users.models import User, UserBit, ESPUser_Profile, ESPUser
+from esp.users.models import ESPUser_Profile, ESPUser
 from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm
 from esp.web.util.main import render_to_response
-from esp.datatree.models import GetNode
 from esp.mailman import add_list_member
 from esp.middleware.esperrormiddleware import ESPError
 from esp.tagdict.models import Tag
 from django.contrib.auth import login, authenticate
+from django.contrib.auth.models import Group
 from django.http import HttpResponseRedirect
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
@@ -27,7 +27,7 @@ def join_emaillist(request):
 
     if request.user.is_authenticated():
         return render_to_response('registration/already_logged_in.html',
-                                  request, request.get_node('Q/Web/myesp'), {})
+                                  request, {})
 
 
     if request.method == 'POST':
@@ -37,7 +37,7 @@ def join_emaillist(request):
         if form.is_valid():
             # create a user, which will be used if the email address
             # is used for a real account
-            User.objects.get_or_create(email    = form.cleaned_data['email'],
+            ESPUser.objects.get_or_create(email    = form.cleaned_data['email'],
                                        username = form.cleaned_data['email'],
                                        password = 'emailuser')
 
@@ -48,7 +48,7 @@ def join_emaillist(request):
         form = EmailUserRegForm()    
 
     return render_to_response('registration/emailuser.html',
-                              request, request.get_node('Q/Web/myesp'), {'form':form})
+                              request, {'form':form})
 
 
 def user_registration_validate(request):    
@@ -66,14 +66,14 @@ This function is overloaded to handle either one or two phase reg"""
             #there is an email-only account with that email address to upgrade
             user = ESPUser.objects.get(email=form.cleaned_data['email'],
                                        password = 'emailuser')
-        except User.DoesNotExist:
+        except ESPUser.DoesNotExist:
             try:
                 #there is an inactive account with that username
                 user = ESPUser.objects.filter(
                     username = form.cleaned_data['username'],
                     is_active = False).latest('date_joined')
 
-            except User.DoesNotExist:
+            except ESPUser.DoesNotExist:
                 user = ESPUser(email = form.cleaned_data['email'])
 
         user.username   = form.cleaned_data['username']
@@ -90,11 +90,7 @@ This function is overloaded to handle either one or two phase reg"""
         user.save()
         ESPUser_Profile.objects.get_or_create(user = user)
 
-        role_verb = GetNode('V/Flags/UserRole/%s' % form.cleaned_data['initial_role'])
-        role_bit  = UserBit.objects.create(user = user,
-                                               verb = role_verb,
-                                               qsc  = request.get_node('Q'),
-                                               recursive = False)
+        user.groups.add(Group.objects.get(name=form.cleaned_data['initial_role']))
 
         if not Tag.getBooleanTag('require_email_validation', default=False):
             user = authenticate(username=form.cleaned_data['username'],
@@ -104,12 +100,11 @@ This function is overloaded to handle either one or two phase reg"""
             return HttpResponseRedirect('/myesp/profile/')
         else:
             send_activation_email(user,userkey)
-            return render_to_response('registration/account_created_activation_required.html',
-                                      request, request.get_node('Q/Web/myesp'),
+            return render_to_response('registration/account_created_activation_required.html', request,
                                       {'user': user, 'site': Site.objects.get_current()})
     else:
         return render_to_response('registration/newuser.html',
-                                  request, request.get_node('Q/Web/myesp'),{'form':form})
+                                  request, {'form':form})
 
 def user_registration_checkemail(request):
     """Method to handle the first phase of registration when submitted as a form.
@@ -130,7 +125,7 @@ When there are already accounts with this email address (depending on some tags)
                 #if they want to try to log in
                 return render_to_response(
                     'registration/newuser_phase1.html',
-                    request, request.get_node('Q/Web/myesp'),
+                    request,
                     { 'accounts': existing_accounts,'awaitings':awaiting_activation_accounts, 'email':form.cleaned_data['email'], 'site': Site.objects.get_current(), 'form': form })    
 
         #form is valid, and not caring about multiple accounts
@@ -138,14 +133,14 @@ When there are already accounts with this email address (depending on some tags)
         return HttpResponseRedirect(reverse('users.views.user_registration_phase2')+'?email='+email)
     else: #form is not valid
         return render_to_response('registration/newuser_phase1.html',
-                                  request, request.get_node('Q/Web/myesp'),
+                                  request,
                                   {'form':form, 'site': Site.objects.get_current()})
 
 def user_registration_phase1(request):
     """Displays phase 1, and receives and passes off phase 1 submissions."""
     if request.user.is_authenticated():
         return render_to_response('registration/already_logged_in.html',
-                                  request, request.get_node('Q/Web/myesp'), {})
+                                  request, {})
 
     #depending on a tag, we'll either have registration all in one page,
     #or in two separate ones
@@ -155,7 +150,7 @@ def user_registration_phase1(request):
 
         form=SinglePhaseUserRegForm()
         return render_to_response('registration/newuser.html',
-                                  request, request.get_node('Q/Web/myesp'),
+                                  request,
                                   {'form':form, 'site': Site.objects.get_current()})
 
     #we do want to ask about duplicate accounts
@@ -164,7 +159,7 @@ def user_registration_phase1(request):
     
     form=EmailUserRegForm()
     return render_to_response('registration/newuser_phase1.html',
-                              request, request.get_node('Q/Web/myesp'),
+                              request,
                               {'form':form, 'site': Site.objects.get_current()})
 
 def user_registration_phase2(request):
@@ -181,7 +176,7 @@ def user_registration_phase2(request):
         return HttpResponseRedirect(reverse("users.views.user_registration_phase1"))
     form = UserRegForm(initial={'email':email,'confirm_email':email})
     return render_to_response('registration/newuser.html',
-                              request, request.get_node('Q/Web/myesp'),{'form':form, 'email':email})
+                              request, {'form':form, 'email':email})
 
 
 def activate_account(request):
@@ -211,22 +206,19 @@ def send_activation_email(user,userkey):
 def resend_activation_view(request):
     if request.user.is_authenticated():
         return render_to_response('registration/already_logged_in.html',
-                                  request, request.get_node('Q/Web/myesp'), {})
+                                  request, {})
 
     if request.method == 'POST':
         form=AwaitingActivationEmailForm(request.POST)
         if not form.is_valid():
             return render_to_response('registration/resend.html',request,
-                                      request.get_node('Q/Web/myesp'),
                                       {'form':form, 'site': Site.objects.get_current()})
         user=ESPUser.objects.get(username=form.cleaned_data['username'])
         userkey=user.password[user.password.rfind("_")+1:]
         send_activation_email(user,userkey)
         return render_to_response('registration/resend_done.html',request,
-                                  request.get_node('Q/Web/myesp'),
                                   {'form':form, 'site': Site.objects.get_current()})
     else: 
         form=AwaitingActivationEmailForm()
         return render_to_response('registration/resend.html',request,
-                                  request.get_node('Q/Web/myesp'),
                                   {'form':form, 'site': Site.objects.get_current()})

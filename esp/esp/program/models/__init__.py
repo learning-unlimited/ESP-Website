@@ -39,7 +39,7 @@ from django.db.models import Count
 from django.contrib.auth.models import User, AnonymousUser
 from esp.cal.models import Event
 from esp.datatree.models import *
-from esp.users.models import UserBit, ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types
+from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types, Record
 from datetime import datetime, timedelta, date
 from django.core.cache import cache
 from django.db.models import Q
@@ -53,6 +53,10 @@ from esp.tagdict.models import Tag
 from django.conf import settings
 from collections import defaultdict
 import simplejson as json
+from decimal import Decimal
+from esp.qsdmedia.models import Media
+
+from django.contrib.contenttypes import generic
 
 from esp.customforms.linkfields import CustomFormsLinkModel
 
@@ -255,7 +259,7 @@ def _get_type_url(type):
         else:
             self._type_url = {}
 
-        self._type_url[type] = '/%s/%s/' % (type, '/'.join(self.anchor.tree_encode()[-2:]))
+        self._type_url[type] = '/%s/%s/' % (type, self.url)
 
         return self._type_url[type]
 
@@ -270,7 +274,9 @@ class Program(models.Model, CustomFormsLinkModel):
     #customforms definitions
     form_link_name='Program'
     
-    anchor = AjaxForeignKey(DataTree,unique=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
+    anchor = AjaxForeignKey(DataTree, unique=True, blank=True, null=True) # Series containing all events in the program, probably including an event that spans the full duration of the program, to represent this program
+    url = models.CharField(max_length=80)
+    name = models.CharField(max_length=80)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField()
@@ -279,6 +285,8 @@ class Program(models.Model, CustomFormsLinkModel):
     program_modules = models.ManyToManyField(ProgramModule)
     class_categories = models.ManyToManyField('ClassCategories')
     
+    documents = generic.GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
+
     class Meta:
         app_label = 'program'
         db_table = 'program_program'
@@ -290,7 +298,9 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def __init__(self, *args, **kwargs):
         super(Program, self).__init__(*args, **kwargs)
+        self.setup_user_filters()
 
+    def setup_user_filters(self):
         # Setup for the ProgramModule user filters
         if not hasattr(Program, Program.USER_TYPE_LIST_FUNCS[0]):
             for i, user_type in enumerate(Program.USER_TYPE_LIST_FUNCS):
@@ -325,59 +335,29 @@ class Program(models.Model, CustomFormsLinkModel):
         
         return retVal
 
-    def url(self):
-        str_array = self.anchor.tree_encode()
-        return '/'.join(str_array[-2:])
-    
     def __unicode__(self):
         return self.niceName()
 
-    def parent(self):
-        return self.anchor.parent
-
     def niceName(self):
-        if not hasattr(self, "_nice_name"):
-            # Separate this so that in-memory and memcache are used in the right order
-            self._nice_name = self._niceName_memcache()
-        return self._nice_name
-
-    @cache_function
-    def _niceName_memcache(self):
-        if Tag.getProgramTag(key='ignore_parent_name', program=self):
-            return str(self.anchor.friendly_name)
-        else:
-            return str(self.anchor.parent.friendly_name) + ' ' + str(self.anchor.friendly_name)
-    # this stuff never really changes
+        return self.name
 
     def niceSubName(self):
-        return self.anchor.name.replace('_', ' ')
+        return self.name
+
+    @property
+    def program_type(self):
+        return self.url.split('/')[0]
+
+    @property
+    def program_instance(self):
+        return '/'.join(self.url.split('/')[1:])
 
     def getUrlBase(self):
         """ gets the base url of this class """
-        return self.url() # This makes looking up subprograms by name work; I've left it so that it can be undone without too much effort
-        tmpnode = self.anchor
-        urllist = []
-        while tmpnode.name != 'Programs':
-            urllist.insert(0,tmpnode.name)
-            tmpnode = tmpnode.parent
-        return "/".join(urllist)
-                      
+        return self.url
 
-    def teacherSubscribe(self, user):
-        v = GetNode('V/Subscribe')
-        qsc = self.anchor.tree_create(['Announcements',
-                           'Teachers'])
-        
-        if UserBit.objects.filter(user = user,
-                      qsc = qsc,
-                      verb = v).count() > 0:
-            return False
-
-        ub, created = UserBit.objects.get_or_create(user = user,
-                                qsc = qsc,
-                                verb = v)
-        return True
-
+    def getDocuments(self):
+        return self.documents.all()
 
     def get_msg_vars(self, user, key):
         modules = self.getModules(user)
@@ -433,9 +413,6 @@ class Program(models.Model, CustomFormsLinkModel):
     
         counts = {}
         checked_in_ids = self.students()['attended'].values_list('id', flat=True)
-        qsc_map = {}
-        for sec in self.sections().values('id', 'anchor'):
-            qsc_map[sec['anchor']] = sec['id']
     
         reg_type = RegistrationType.get_map()['Enrolled']
 
@@ -581,17 +558,14 @@ class Program(models.Model, CustomFormsLinkModel):
         if students_dict.has_key('classreg'):
             students_count = ESPUser.objects.filter(students_dict['classreg']).distinct().count()
         else:
-            students_count = ESPUser.objects.filter(userbit__qsc=self.anchor['Confirmation']).distinct().count()
+            students_count = ESPUser.objects.filter(record__event="reg_confirmed",record__program=self).distinct().count()
 
         isfull = ( students_count >= self.program_size_max )
 
         return isfull
     isFull.depend_on_cache(lambda: ClassSection.num_students, lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
     isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
-    isFull.depend_on_row(lambda: UserBit, lambda bit: {}, lambda bit: bit.qsc.name == 'Confirmation')
-        
-    def classes_node(self):
-        return DataTree.objects.get(parent = self.anchor, name = 'Classes')
+    isFull.depend_on_row(lambda: Record, lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
 
     @cache_function
     def getScheduleConstraints(self):
@@ -614,16 +588,8 @@ class Program(models.Model, CustomFormsLinkModel):
         ResourceAssignment.objects.filter(target__parent_class__parent_program=self, lock_level__lt=lock_level).update(lock_level=lock_level)
 
     def isConfirmed(self, espuser):
-        v = GetNode('V/Flags/Public')
-        userbits = UserBit.objects.filter(verb = v, user = espuser,
-                         qsc = self.anchor.tree_create(['Confirmation']))
-
-        userbits = userbits.filter(enddate__gte=datetime.now())
-
-        if len(userbits) < 1:
-            return False
-        
-        return True
+        return Record.objects.filter(event="reg_confirmed",user=espuser,
+                                     program=self).exists()
     
     """ These functions have been rewritten.  To avoid confusion, I've changed "ClassRooms" to
     "Classrooms."  So, if you try to call the old functions (which have no point anymore), then 
@@ -653,7 +619,7 @@ class Program(models.Model, CustomFormsLinkModel):
                 result[c.name].timeslots = [c.event]
                 result[c.name].furnishings = c.associated_resources()
                 result[c.name].sequence = c.schedule_sequence(self)
-                result[c.name].prog_available_times = c.available_times_html(self.anchor)
+                result[c.name].prog_available_times = c.available_times_html(self)
             else:
                 result[c.name].timeslots.append(c.event)
             
@@ -706,13 +672,21 @@ class Program(models.Model, CustomFormsLinkModel):
     def sections(self):
         return ClassSection.objects.filter(parent_class__parent_program=self).distinct().order_by('id').select_related('parent_class')
 
-    def getTimeSlots(self, exclude_types=['Compulsory','Volunteer']):
+    def getTimeSlots(self, types=None, exclude_types=None):
         """ Get the time slots for a program. 
             A flag, exclude_types, allows you to restrict which types of timeslots
-            are grabbed.  The default excludes 'compulsory' events, which are
-            not intended to be used for classes (they're for lunch, photos, etc.)
+            are grabbed.  You can also provide a list of timeslot types to include.
+            The default behavior is to include only class time slots.  See the
+            install() function in esp/esp/cal/models.py for a list of time slot types.
         """
-        return Event.objects.filter(anchor=self.anchor).exclude(event_type__description__in=exclude_types).select_related('event_type').order_by('start')
+        qs = Event.objects.filter(program=self)
+        if exclude_types is not None:
+            qs = qs.exclude(event_type__description__in=exclude_types)
+        elif types is not None:
+            qs = qs.filter(event_type__description__in=types)
+        else:
+            qs = qs.filter(event_type__description='Class Time Block')
+        return qs.select_related('event_type').order_by('start')
 
     def num_timeslots(self):
         return len(self.getTimeSlots())
@@ -720,11 +694,11 @@ class Program(models.Model, CustomFormsLinkModel):
     #   In situations where you just want a list of all time slots in the program,
     #   that can be cached.
     @cache_function
-    def getTimeSlotList(self, exclude_compulsory=True):
-        if exclude_compulsory:
-            return list(self.getTimeSlots(exclude_types=['Compulsory','Volunteer']))
-        else:
+    def getTimeSlotList(self, include_all=False):
+        if include_all:
             return list(self.getTimeSlots(exclude_types=[]))
+        else:
+            return list(self.getTimeSlots())
     getTimeSlotList.depend_on_model(lambda: Event)
 
     def total_duration(self):
@@ -775,17 +749,11 @@ class Program(models.Model, CustomFormsLinkModel):
         else:
             Q_filters = Q(program=self)
         
-        #   Inherit resource types from parent programs.
-        parent_program = self.getParentProgram()
-        if parent_program is not None:
-            Q_parent = Q(id__in=[rt.id for rt in parent_program.getResourceTypes()])
-            Q_filters = Q_filters | Q_parent
-        
         return ResourceType.objects.filter(Q_filters).exclude(id__in=[t.id for t in exclude_types])
 
     def getResources(self):
         from esp.resources.models import Resource
-        return Resource.objects.filter(event__anchor=self.anchor)
+        return Resource.objects.filter(event__program=self)
     
     def getFloatingResources(self, timeslot=None, queryset=False):
         from esp.resources.models import ResourceType
@@ -844,46 +812,17 @@ class Program(models.Model, CustomFormsLinkModel):
 
     def getSurveys(self):
         from esp.survey.models import Survey
-        return Survey.objects.filter(anchor=self.anchor)
+        return Survey.objects.filter(program=self)
     
-    def getSubprograms(self):
-        if not self.anchor.has_key('Subprograms'):
-            return Program.objects.filter(id=-1)
-        return Program.objects.filter(anchor__parent__in=self.anchor['Subprograms'].children())
-    
-    @cache_function
-    def getParentProgram(self):
-        #   Ridiculous syntax is actually correct for our subprograms scheme.
-        pl = []
-        if self.anchor.parent.parent.name == 'Subprograms':
-            pl = Program.objects.filter(anchor=self.anchor.parent.parent.parent)
-        if len(pl) == 1:
-            return pl[0]
-        else:
-            return None
-    getParentProgram.depend_on_model(lambda: Program)
         
     def getLineItemTypes(self, user=None, required=True):
-        from esp.accounting_core.models import LineItemType, Balance
-        
+        from esp.accounting.controllers import ProgramAccountingController
+        pac = ProgramAccountingController(self)
         if required:
-            li_types = list(LineItemType.objects.filter(anchor=GetNode(self.anchor.get_uri()+'/LineItemTypes/Required')))
+            li_types = list(pac.get_lineitemtypes(required_only=True))
         else:
-            li_types = list(LineItemType.objects.filter(anchor__parent=GetNode(self.anchor.get_uri()+'/LineItemTypes/Optional')))
-        
-        #   OK, nevermind... Add in *parent program* line items that have not been paid for.
-        parent_li_types = []
-        cur_anchor = self.anchor
-        parent_prog = self.getParentProgram()
-        #   Check if there's a parent program and the student is registered for it.
-        if (parent_prog is not None) and (user is not None) and (User.objects.filter(parent_prog.students(QObjects=True)['classreg']).filter(id=user.id).count() != 0):
-            cur_anchor = parent_prog.anchor
-            parent_li_types += list(LineItemType.objects.filter(anchor=GetNode(parent_prog.anchor.get_uri()+'/LineItemTypes/Required')))
-        for li in parent_li_types:
-            li.bal = Balance.get_current_balance(user, li)
-            if Balance.get_current_balance(user, li)[0] == 0:
-                li_types.append(li)
-                
+            li_types = list(pac.get_lineitemtypes(optional_only=True))
+
         return li_types
 
     @cache_function
@@ -1007,7 +946,7 @@ class Program(models.Model, CustomFormsLinkModel):
         return options.visible_enrollments
         
     def getVolunteerRequests(self):
-        return VolunteerRequest.objects.filter(timeslot__anchor=self.anchor).order_by('timeslot__start')
+        return VolunteerRequest.objects.filter(timeslot__program=self).order_by('timeslot__start')
     
     @cache_function
     def getShirtInfo(self):
@@ -1057,14 +996,9 @@ class Program(models.Model, CustomFormsLinkModel):
         else: 
             return 1
     
-    @staticmethod
-    def find_by_perms(user, verb):
-        """ Fetch a list of relevant programs for a given user and verb """
-        return UserBit.find_by_anchor_perms(Program,user,verb)
-
     @cache_function
     def by_prog_inst(cls, program, instance):
-        prog_inst = Program.objects.select_related().get(anchor__name=instance, anchor__parent__name=program)
+        prog_inst = Program.objects.select_related().get(url='%s/%s' % (program, instance))
         return prog_inst
     by_prog_inst.depend_on_row(lambda: Program, lambda prog: {'program': prog})
     def program_selector(node):
@@ -1138,6 +1072,44 @@ class SplashInfo(models.Model):
     def pretty_sunlunch(self):
         return self.pretty_version('lunchsun')
 
+    def execute_sibling_discount(self):
+        if self.siblingdiscount:
+            from esp.accounting.controllers import IndividualAccountingController
+            from esp.accounting.models import Transfer
+            iac = IndividualAccountingController(self.program, self.student)
+            source_account = iac.default_finaid_account()
+            dest_account = iac.default_source_account()
+            line_item_type = iac.default_siblingdiscount_lineitemtype()
+            transfer, created = Transfer.objects.get_or_create(source=source_account, destination=dest_account, user=self.student, line_item=line_item_type, amount_dec=Decimal('20.00'))
+            return transfer
+
+    def save(self):
+        from esp.accounting.controllers import IndividualAccountingController
+
+        #   We have two things to put in: "Saturday Lunch" and "Sunday Lunch".  
+        #   If they are not there, they will be created.  These names are hard coded.
+        from esp.accounting.models import LineItemType
+        LineItemType.objects.get_or_create(program=self.program, text='Saturday Lunch')
+        LineItemType.objects.get_or_create(program=self.program, text='Sunday Lunch')
+
+        #   Figure out how much everything costs
+        cost_info = json.loads(Tag.getProgramTag('splashinfo_costs', self.program, default='{}'))
+
+        #   Save accounting information
+        iac = IndividualAccountingController(self.program, self.student)
+
+        if self.lunchsat == 'no':
+            iac.set_preference('Saturday Lunch', 0)
+        elif 'lunchsat' in cost_info:
+            iac.set_preference('Saturday Lunch', 1, cost_info['lunchsat'][self.lunchsat])
+
+        if self.lunchsun == 'no':
+            iac.set_preference('Sunday Lunch', 0)
+        elif 'lunchsun' in cost_info:
+            iac.set_preference('Sunday Lunch', 1, cost_info['lunchsun'][self.lunchsun])
+        
+        super(SplashInfo, self).save()
+
 
 class RegistrationProfile(models.Model):
     """ A student registration form """
@@ -1201,15 +1173,13 @@ class RegistrationProfile(models.Model):
 
     def confirmStudentReg(self, user):
         """ Confirm the specified user's registration in the program """
-        bits = UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(self.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now())
-        if bits.count() == 0:
-            bit = UserBit.objects.create(user=self.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
+        records = Record.objects.filter(user=self.user, event="reg_confirmed")
+        if records.count() == 0:
+            record = Record.objects.create(user=self.user, event="reg_confirmed", program=self.program)
 
     def cancelStudentRegConfirmation(self, user):
         """ Cancel the registration confirmation for the specified student """
         raise ESPError(), "Error: You can't cancel a registration confirmation!  Confirmations are final!"
-        #for bit in UserBit.objects.filter(user=user, verb=GetNode("V/Flags/Public"), qsc__parent=self.anchor, qsc__name="Confirmation").filter(enddate__gte=datetime.now()):
-        #    bit.expire()
         
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
@@ -1226,25 +1196,12 @@ class RegistrationProfile(models.Model):
         else:
             regProfList = RegistrationProfile.objects.filter(user__exact=user,program__exact=program).select_related().order_by('-last_ts','-id')[:1]
         if len(regProfList) < 1:
-            if program:
-                # Has this user already filled out a profile for the parent program?
-                parent_program = program.getParentProgram()
-            else:
-                parent_program = None
-            if parent_program is not None:
-                regProf = RegistrationProfile.getLastForProgram(user, parent_program)
-                regProf.program = program
-                # If they've filled out a profile for the parent program, use a copy of that.
-                if regProf.id is not None:
-                    regProf.id = None
+            regProf = RegistrationProfile.getLastProfile(user)
+            regProf.program = program
+            if regProf.id is not None:
+                regProf.id = None
+                if (datetime.now() - regProf.last_ts).days <= 5:
                     regProf.save()
-            else:
-                regProf = RegistrationProfile.getLastProfile(user)
-                regProf.program = program
-                if regProf.id is not None:
-                    regProf.id = None
-                    if (datetime.now() - regProf.last_ts).days <= 5:
-                        regProf.save()
         else:
             regProf = regProfList[0]
         return regProf
@@ -1343,8 +1300,6 @@ class FinancialAidRequest(models.Model):
     program = models.ForeignKey(Program, editable = False)
     user    = AjaxForeignKey(ESPUser, editable = False)
 
-    approved = models.DateTimeField(blank=True, null=True)
-
     reduced_lunch = models.BooleanField(verbose_name = 'Do you receive free/reduced lunch at school?', blank=True, default=False)
 
     household_income = models.CharField(verbose_name = 'Approximately what is your household income (round to the nearest $10,000)?', null=True, blank=True,
@@ -1356,74 +1311,17 @@ class FinancialAidRequest(models.Model):
 
     done = models.BooleanField(default=False, editable=False)
 
-    reviewed = models.BooleanField(default=False, verbose_name='Reviewed by Directors')
-
-    amount_received = models.IntegerField(blank=True,null=True, verbose_name='Amount granted')
-    amount_needed = models.IntegerField(blank=True,null=True, verbose_name='Amount due from student')
+    @property
+    def approved(self):
+        return (self.financialaidgrant_set.all().count() > 0)
 
     class Meta:
         app_label = 'program'
         db_table = 'program_financialaidrequest'
+        unique_together = ('program', 'user')
 
-    def save(self, *args, **kwargs):
-        """ If possible, find the student's invoice and update it to reflect the 
-        financial aid that has been granted. """
-        
-        #   By default, the amount received is 0.  If this is the case, don't do
-        #   any extra work.
-        models.Model.save(self, *args, **kwargs)
-        if (not self.amount_received) or (self.amount_received <= 0):
-            return
-        
-        from esp.accounting_docs.models import Document
-        from esp.accounting_core.models import LineItemType
-        from decimal import Decimal
-        
-        #   Take the 'root' program for the tree anchors.
-        pp = self.program.getParentProgram()
-        if pp:
-            anchor = pp.anchor
-        else:
-            anchor = self.program.anchor
-
-        inv = Document.get_invoice(self.user, anchor)
-        txn = inv.txn
-        funding_node = anchor['Accounts']
-        
-        #   Find the amount we're charging the student for the program.
-        #charges = txn.lineitem_set.filter(QTree(anchor__below=anchor), anchor__parent__name='LineItemTypes',)
-        charges = txn.lineitem_set.filter(QTree(anchor__below=anchor)).exclude(li_type__text__startswith='Financial Aid')
-        chg_amt = 0
-        for li in charges:
-            chg_amt += li.amount - li.li_type.finaid_amount
-        
-        #   Check if the student was granted exactly the bare admission cost of the program.
-        required_types = LineItemType.objects.filter(anchor=self.program.anchor['LineItemTypes']['Required'])
-        admission_cost = 0
-        for type in required_types:
-            admission_cost += type.amount
-            
-        #   If they were, go ahead and give them financial aid for their other line items.
-        #   Otherwise, give them financial aid for the stated amount received.
-        if self.amount_received > 0 and admission_cost == -self.amount_received:
-            self.amount_received = -chg_amt
-
-        #   Ensure that the financial aid is not larger than the amount they owe.
-        if self.amount_received > (-chg_amt):
-            self.amount_received = -chg_amt
-        
-        #   Reverse all financial aid awards and add a new line item for this one.
-        finaids = txn.lineitem_set.filter(QTree(anchor__below=anchor), anchor__parent__name='Accounts')
-        rev_li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid Reversal',anchor=funding_node['FinancialAid'])
-        fwd_li_type, unused = LineItemType.objects.get_or_create(text='Financial Aid',anchor=funding_node['FinancialAid'])
-        for li in finaids:
-            if li.amount != 0:
-                txn.add_item(self.user, rev_li_type, amount=-(li.amount))
-        txn.add_item(self.user, fwd_li_type, amount=Decimal(str(self.amount_received)))
-    
     def __unicode__(self):
         """ Represent this as a string. """
-        accepted_verb = GetNode('V/Flags/Registration/Accepted')
         if self.reduced_lunch:
             reducedlunch = "(Free Lunch)"
         else:
@@ -1441,9 +1339,6 @@ class FinancialAidRequest(models.Model):
 
         if self.done:
             string = "Finished: [" + string + "]"
-
-        if self.reviewed:
-            string += " (REVIEWED)"
 
         return string
         
@@ -1604,7 +1499,7 @@ class ScheduleMap:
 
     def populate(self):
         result = {}
-        for t in self.program.getTimeSlotList(exclude_compulsory=True):
+        for t in self.program.getTimeSlotList():
             result[t.id] = []
         sl = self.user.getEnrolledSectionsFromProgram(self.program)
         for s in sl:

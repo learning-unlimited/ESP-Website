@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# encoding: utf-8
 import datetime
 from south.db import db
 from south.v2 import SchemaMigration
@@ -7,7 +7,12 @@ from django.db import models
 
 class Migration(SchemaMigration):
 
+    depends_on = (
+        ('datatree', '0001_initial'),
+    )
+
     def forwards(self, orm):
+        
         # Adding model 'EventType'
         db.create_table('cal_eventtype', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
@@ -36,8 +41,8 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('cal', ['Event'])
 
-
     def backwards(self, orm):
+        
         # Deleting model 'EventType'
         db.delete_table('cal_eventtype')
 
@@ -46,7 +51,6 @@ class Migration(SchemaMigration):
 
         # Deleting model 'Event'
         db.delete_table('cal_event')
-
 
     models = {
         'auth.group': {
@@ -141,6 +145,9 @@ class Migration(SchemaMigration):
             'sender': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'special_headers': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'}),
             'subject': ('django.db.models.fields.TextField', [], {'null': 'True', 'blank': 'True'})
+        },
+        'users.espuser': {
+            'Meta': {'object_name': 'ESPUser', 'db_table': "'auth_user'", '_ormbases': ['auth.User'], 'proxy': 'True'}
         },
         'users.persistentqueryfilter': {
             'Meta': {'object_name': 'PersistentQueryFilter'},

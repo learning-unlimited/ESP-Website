@@ -28,7 +28,7 @@ def doc_view(request, model_name):
             context['reverse'].append((name, field.field.model.__name__))
         else:
             context['fields'].append((name, field.__class__.__name__))
-    return render_to_response('dataviews/doc.html', request, context=context)
+    return render_to_response('dataviews/doc.html', request, context)
 
 def path_view(request, model1_name, model2_name): 
     context = defaultdict(list)
@@ -37,6 +37,6 @@ def path_view(request, model1_name, model2_name):
     context['base_model'] = globals()[model1_name]
     context['model'] = globals()[model2_name]
     context['labels'] = [label_for_path(context['base_model'], path, models, many, links=True) for (path,models,many) in path_v1(context['base_model'], context['model'])]
-    return render_to_response('dataviews/paths.html', request, context=context)
+    return render_to_response('dataviews/paths.html', request, context)
     
     

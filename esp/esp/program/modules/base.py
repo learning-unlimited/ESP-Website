@@ -40,8 +40,7 @@ from django.db import models
 from django.utils.safestring import mark_safe
 
 from esp.program.models import Program, ProgramModule
-from esp.users.models import ESPUser, UserBit
-from esp.datatree.models import GetNode
+from esp.users.models import ESPUser, Permission
 from esp.web.util import render_to_response
 from esp.cache import cache_function
 from esp.tagdict.models import Tag
@@ -53,6 +52,8 @@ from django.db.models.query import Q
 from django.core.cache import cache
 from django.template.loader import get_template
 from django.template import TemplateDoesNotExist
+
+from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
 from os.path import exists
@@ -71,19 +72,6 @@ class ProgramModuleObj(models.Model):
     seq      = models.IntegerField()
     required = models.BooleanField()
     required_label = models.CharField(max_length=80, blank=True, null=True)
-        
-    def program_anchor_cached(self, parent=False):
-        """ We reference "self.program.anchor" quite often.  Getting it requires two DB lookups.  So, cache it. """
-        CACHE_KEY = "PROGRAMMODULEOBJ__PROGRAM__ANCHOR__CACHE__%d,%d" % ((parent and 1 or 0), self.id)
-        val = cache.get(CACHE_KEY)
-        if val == None:
-            if parent and self.program.getParentProgram():
-                val = self.program.getParentProgram().anchor
-            else:
-                val = self.program.anchor
-            cache.set(CACHE_KEY, val, 60)
-
-        return val
 
     def docs(self):
         if hasattr(self, 'doc') and self.doc is not None and str(self.doc).strip() != '':
@@ -282,7 +270,7 @@ class ProgramModuleObj(models.Model):
             if not get_current_request().user.canEdit(classes[0]):
                 from esp.middleware import ESPError
                 raise ESPError(False), 'You do not have permission to edit %s.' %\
-                      classes[0].title()
+                      classes[0].title
             else:
                 Found = True
                 return (classes[0], True)
@@ -308,32 +296,32 @@ class ProgramModuleObj(models.Model):
 
     def deadline_met(self, extension=''):
     
-        from esp.users.models import UserBit
-        from esp.datatree.models import GetNode, DataTree
+        #   Short-circuit the request middleware during testing, when we call
+        #   this function without an actual request.
+        if hasattr(self, 'user'):
+            user = self.user
+        else:
+            request = get_current_request()
+            user = request.user
 
-        if not get_current_request().user or not self.program:
+        if not user or not self.program:
             raise ESPError(False), "There is no user or program object!"
 
-
-            
         if self.module.module_type != 'learn' and self.module.module_type != 'teach':
             return True
-
-        canView = get_current_request().user.isOnsite(self.program)
+            
+        canView = user.isOnsite(self.program) or user.isAdministrator(self.program)
 
         if not canView:
-            test_node = GetNode('V/Deadline/Registration/'+{'learn':'Student', 'teach':'Teacher'}[self.module.module_type]+extension)
-            canView = UserBit.UserHasPerms(get_current_request().user, self.program.anchor_id, test_node)
+            deadline = {'learn':'Student', 'teach':'Teacher'}[self.module.module_type]+extension
+            canView = Permission.user_has_perm(user, deadline, program=self.program)
 
         return canView
 
     # important functions for hooks...
     @cache_function
     def get_full_path(self, tl=None):
-        str_array = self.program.anchor.tree_encode()
-        url = '/'+self.module.module_type \
-              +'/'+'/'.join(str_array[-2:])+'/'+self.get_main_view(tl)
-        return url
+        return '/' + self.module.module_type + '/' + self.program.url + '/' + self.get_main_view(tl)
     get_full_path.depend_on_row(lambda: ProgramModuleObj, 'self')
 
     @classmethod
@@ -524,13 +512,13 @@ def usercheck_usetl(method):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
             
         if tl == 'learn' and not request.user.isStudent():
-            return render_to_response(errorpage, request, moduleObj.program, {})
+            return render_to_response(errorpage, request, {})
         
         if tl == 'teach' and not request.user.isTeacher():
-            return render_to_response(errorpage, request, moduleObj.program, {})
+            return render_to_response(errorpage, request, {})
         
         if tl == 'manage' and not request.user.isAdmin(moduleObj.program):
-            return render_to_response(errorpage, request, moduleObj.program, {})
+            return render_to_response(errorpage, request, {})
 
         return method(moduleObj, request, tl, *args, **kwargs)
 
@@ -545,7 +533,7 @@ def needs_teacher(method):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
             
         if not request.user.isTeacher() and not request.user.isAdmin(moduleObj.program) and not (set(request.user.getUserTypes()) & set(allowed_teacher_types)):
-            return render_to_response('errors/program/notateacher.html', request, (moduleObj.program, 'teach'), {})
+            return render_to_response('errors/program/notateacher.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
     _checkTeacher.call_tl = 'teach'
     _checkTeacher.method = method
@@ -563,7 +551,7 @@ def needs_admin(method):
 
         if not (request.user.isAdmin(moduleObj.program) or (morpheduser and morpheduser.isAdmin(moduleObj.program))):
             if not ( hasattr(request.user, 'other_user') and request.user.other_user and request.user.other_user.isAdmin(moduleObj.program) ):
-                return render_to_response('errors/program/notanadmin.html', request, (moduleObj.program, 'manage'), {})
+                return render_to_response('errors/program/notanadmin.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'manage'
     _checkAdmin.method = method
@@ -580,7 +568,7 @@ def needs_onsite(method):
             user.updateOnsite(request)
             ouser = user.get_old(request)
             if not user.other_user or (not ouser.isOnsite(moduleObj.program) and not ouser.isAdmin(moduleObj.program)):
-                return render_to_response('errors/program/notonsite.html', request, (moduleObj.program, 'onsite'), {})
+                return render_to_response('errors/program/notonsite.html', request, {})
             user.switch_back(request)
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
@@ -598,7 +586,7 @@ def needs_onsite_no_switchback(method):
             user.updateOnsite(request)
             ouser = user.get_old(request)
             if not user.other_user or (not ouser.isOnsite(moduleObj.program) and not ouser.isAdmin(moduleObj.program)):
-                return render_to_response('errors/program/notonsite.html', request, (moduleObj.program, 'onsite'), {})
+                return render_to_response('errors/program/notonsite.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
     _checkAdmin.call_tl = 'onsite'
     _checkAdmin.method = method
@@ -608,12 +596,11 @@ def needs_student(method):
     def _checkStudent(moduleObj, request, *args, **kwargs):
         if not_logged_in(request):
             return HttpResponseRedirect('%s?%s=%s' % (LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
-
         if not request.user.isStudent() and not request.user.isAdmin(moduleObj.program):
             allowed_student_types = Tag.getTag("allowed_student_types", moduleObj.program, default='')
-            matching_user_types = UserBit.valid_objects().filter(user=request.user, verb__parent=GetNode("V/Flags/UserRole"), verb__name__in=allowed_student_types.split(","))
+            matching_user_types = any(x in request.user.groups.all().values_list("name",flat=True) for x in allowed_student_types.split(","))
             if not matching_user_types:
-                return render_to_response('errors/program/notastudent.html', request, (moduleObj.program, 'learn'), {})
+                return render_to_response('errors/program/notastudent.html', request, {})
         return method(moduleObj, request, *args, **kwargs)
     _checkStudent.call_tl = 'learn'
     _checkStudent.method = method
@@ -631,15 +618,9 @@ def needs_account(method):
 def meets_grade(method):
     def _checkGrade(moduleObj, request, tl, *args, **kwargs):
         errorpage = 'errors/program/wronggrade.html'
-        from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
-        from esp.users.models import UserBit
-
-        verb_override = GetNode('V/Flags/Registration/GradeOverride')
 
         # if there's grade override we can just skip everything
-        if UserBit.UserHasPerms(user = request.user,
-                                  qsc  = moduleObj.program.anchor_id,
-                                  verb = verb_override):
+        if Permission.user_has_perm(request.user, 'GradeOverride', moduleObj.program):
             return method(moduleObj, request, tl, *args, **kwargs)
         
         # now we have to use the grade..
@@ -648,7 +629,7 @@ def meets_grade(method):
         cur_grade = request.user.getGrade(moduleObj.program)
         if cur_grade != 0 and (cur_grade < moduleObj.program.grade_min or \
                                cur_grade > moduleObj.program.grade_max):
-            return render_to_response(errorpage, request, (moduleObj.program, tl), {})
+            return render_to_response(errorpage, request, {})
 
         return method(moduleObj, request, tl, *args, **kwargs)
     
@@ -659,8 +640,6 @@ def meets_grade(method):
 # Just broke out this function to allow combined deadlines (see meets_any_deadline,
 # meets_all_deadlines functions below).  -Michael P, 6/23/2009
 def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kwargs):
-    from esp.users.models import UserBit
-    from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString
     if tl != 'learn' and tl != 'teach':
         return (True, None)
     response = None
@@ -670,10 +649,14 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
     else:
         canView = request.user.updateOnsite(request)
         if not canView:
-            canView = UserBit.UserHasPerms(request.user,
-                                           request.program.anchor_id,
-                                           GetNode('V/Deadline/Registration/'+{'learn':'Student',
-                                                                           'teach':'Teacher'}[tl]+extension))
+            perm_name = {'learn':'Student','teach':'Teacher'}[tl]+extension
+            canView = Permission.user_has_perm(request.user, 
+                                               perm_name,
+                                               program=request.program)
+            #   For now, allow an exception if the user is of the wrong type
+            #   This is because we are used to UserBits having a null user affecting everyone, regardless of user type.
+            if not canView and Permission.objects.filter(permission_type=perm_name, program=request.program, user__isnull=True).exists():
+                canView = True
 
     return (canView, response)
 
@@ -702,7 +685,7 @@ def meets_deadline(extension=''):
                 if response:
                     return response
                 else:
-                    return render_to_response(errorpage, request, (moduleObj.program, tl), {'extension': list_extensions(tl,[extension]), 'moduleObj': moduleObj})
+                    return render_to_response(errorpage, request, {'extension': list_extensions(tl,[extension]), 'moduleObj': moduleObj})
         return _checkDeadline
     return meets_deadline
 
@@ -720,7 +703,7 @@ def meets_any_deadline(extensions=[]):
             if response:
                 return response
             else:
-                return render_to_response(errorpage, request, (moduleObj.program, tl), {'extension': list_extensions(tl,extensions,'and') , 'moduleObj': moduleObj})
+                return render_to_response(errorpage, request, {'extension': list_extensions(tl,extensions,'and') , 'moduleObj': moduleObj})
         return _checkDeadline
     return meets_deadline
 
@@ -735,7 +718,7 @@ def meets_all_deadlines(extensions=[]):
                     if response:
                         return response
                     else:
-                        return render_to_response(errorpage, request, (moduleObj.program, tl), {'extension': list_extensions(tl,extensions,'or') , 'moduleObj': moduleObj})
+                        return render_to_response(errorpage, request, {'extension': list_extensions(tl,extensions,'or') , 'moduleObj': moduleObj})
             return method(moduleObj, request, tl, *args, **kwargs)
         return _checkDeadline
     return meets_deadline

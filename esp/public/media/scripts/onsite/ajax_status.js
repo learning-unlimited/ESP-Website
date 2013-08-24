@@ -735,11 +735,10 @@ function populate_classes()
             continue;
         
         new_sec.class_id = new_sec.parent_class__id;
-        new_sec.title = parent_class.anchor__friendly_name;
+        new_sec.title = parent_class.title;
         new_sec.grade_min = parent_class.grade_min;
         new_sec.grade_max = parent_class.grade_max;
         new_sec.rooms = null;
-        new_sec.emailcode = parent_class.category__symbol + parent_class.id + "s" + new_sec.anchor__name.substr(7);
         new_sec.students_enrolled = [];
         new_sec.students_checked_in = [];
         new_sec.num_students_enrolled = 0;

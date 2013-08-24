@@ -4,6 +4,8 @@ from esp.survey.models import Answer, SurveyResponse, Survey
 from esp.program.models import Program, ClassSubject, ClassSection
 from datetime import datetime, date, time
 
+from django.contrib.contenttypes.models import ContentType
+
 try:
     from cStringIO import StringIO
 except:
@@ -25,19 +27,20 @@ def get_all_data():
     # if we don't, the performance is absolutely horrible,
     # as there are (as of 12/2009) ~100,000 answers,
     # and 100,000 of any sort of query, no matter how cheap, takes an extremely long time.
-    all_answers = list( Answer.objects.all().select_related('anchor',
-                                                            'anchor__parent',
-                                                            'anchor__parent__parent',
-                                                            'question',
+    all_answers = list( Answer.objects.all().select_related('question',
                                                             'question__questiontype',
                                                             'survey_response',
                                                             'survey_response__survey',
                                                             ) )
 
+    print 'Got answers'
     gc.collect() # 'cause the Django query parser system uses gobs of RAM; keep RAM usage down a bit
     
     all_survey_responses = list( SurveyResponse.objects.all().select_related() )
     all_surveys = list( Survey.objects.all().select_related() )
+
+    print 'Got surveys/responses'
+    gc.collect()
 
     # This one can be an ordinary QuerySet; no funky tricks and small table
     all_programs = Program.objects.all().select_related()#'anchor__parent', 'anchor__parent__parent')
@@ -45,11 +48,19 @@ def get_all_data():
     # Bigger table; but it turns out we want real objects anyway so we need an ordinary QuerySet
     # In fact, we need even more fields; pull some stuff via catalog()
     # Don't bother using the cache for this; it doesn't fit.
-    all_classes = ClassSubject.objects.catalog(None, use_cache=False)
+    all_classes = ClassSubject.objects.catalog(None, force_all=True, use_cache=False)
 
-    all_sections = ClassSection.objects.all().select_related('anchor')
-
+    print 'Got classes'
     gc.collect()
+
+    all_sections = ClassSection.objects.all()
+
+    print 'Got sections'
+    gc.collect()
+
+    content_type_program = ContentType.objects.get_for_model(Program)
+    content_type_classsubject = ContentType.objects.get_for_model(ClassSubject)
+    content_type_classsection = ContentType.objects.get_for_model(ClassSection)
 
     # So, we now basically have a tree structure, with Answers at the leaves
     # and Surveys at the root.
@@ -58,16 +69,16 @@ def get_all_data():
     # Survey responses for a class share an anchor with that class
     all_classes_dict = {}
     for c in all_classes:
-        all_classes_dict[c.anchor_id] = c        
+        all_classes_dict[c.id] = c        
 
     all_sections_dict = {}
     for s in all_sections:
-        all_sections_dict[s.anchor_id] = s
+        all_sections_dict[s.id] = s
 
     # Survey responses for a program share an anchor with that program
     all_programs_dict = {}
     for p in all_programs:
-        all_programs_dict[p.anchor_id] = p
+        all_programs_dict[p.id] = p
 
     # Prepare the survey and survey_response lists to receive a whole pile of data
     # aggregated from the massive Answers query above
@@ -89,34 +100,23 @@ def get_all_data():
     for a in all_answers:
         # Get the parent program
         # We could be a per-class question; figure this out from our anchor
-        a._is_per_class = not(a.anchor_id in all_programs_dict)
+        a._is_per_section = (a.content_type == content_type_classsection)
+        a._is_per_class = (a.content_type == content_type_classsubject)
         
-        if not a._is_per_class:
-            anchor_id = a.anchor_id
-        elif "Section" in a.anchor.name:
-            anchor_id = a.anchor.parent.parent.parent_id
-        else:
-            anchor_id = a.anchor.parent.parent_id
-
-        a._program = all_programs_dict[anchor_id]
-
-        a._program_name = a._program.niceName()
-
         if a._is_per_class:
-            if a.anchor.parent_id in all_classes_dict:
-                a._class = all_classes_dict[a.anchor.parent_id]
-            elif a.anchor_id in all_classes_dict:
-                a._class = all_classes_dict[a.anchor_id]
-            else:
-                a._class = None
-
-            if a.anchor_id in all_sections_dict:
-                a._section = all_sections_dict[a.anchor_id]
-            else:
-                a._section = None
+            a._class = all_classes_dict[a.object_id]
+            a._program = all_programs_dict[a._class.parent_program_id]
+            a._section = None
+        elif a._is_per_section:
+            a._section = all_sections_dict[a.object_id]
+            a._class = all_classes_dict[a._section.parent_class_id]
+            a._program = all_programs_dict[a._class.parent_program_id]
         else:
+            a._program = all_programs_dict[a.object_id]
             a._class = None
             a._section = None
+
+        a._program_name = a._program.niceName()
 
         s = all_survey_responses_dict[a.survey_response_id]
         s._answers.append(a)
@@ -319,7 +319,7 @@ def build_workbook_data():
         for r in s._responses:
             # Build up a data structure giving answers per response per class
             for ans in r._answers:
-                response_per_usercls[r.id][ans.anchor_id].append(ans)
+                response_per_usercls[r.id][ans.object_id].append(ans)
 
             surveyresponse_answers = [r.id, r.time_filled, s.name]
 
@@ -330,8 +330,8 @@ def build_workbook_data():
                 for ans in resp:
                     ans_dict[ans.question_id] = auto_cell_type(ans.answer)
                     ans_dict[-1] = ans._class.emailcode() if ans._class != None else ans_dict[-1]
-                    ans_dict[-2] = ans._section.anchor.name[7:] if ans._section != None else ans_dict[-2]
-                    ans_dict[-3] = ", ".join("%s %s" % (x.first_name, x.last_name) for x in ans._class.teachers()) if ans._class != None else ans_dict[-3]
+                    ans_dict[-2] = ans._section.title() if ans._section != None else ans_dict[-2]
+                    ans_dict[-3] = ", ".join("%s %s" % (x.first_name, x.last_name) for x in ans._class._teachers) if ans._class != None else ans_dict[-3]
 
                 this_answers = [ans_dict[q] for q in this_question_ids]
                 

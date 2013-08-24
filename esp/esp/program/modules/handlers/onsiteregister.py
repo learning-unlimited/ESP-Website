@@ -36,13 +36,13 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser, UserBit, User, ContactInfo, StudentInfo, K12School
+from django.contrib.auth.models import Group
+from esp.users.models    import ESPUser, Record, ContactInfo, StudentInfo, K12School
 from esp.datatree.models import *
 from django.http import HttpResponseRedirect
 from esp.program.models import RegistrationProfile
 from esp.program.modules.forms.onsite import OnSiteRegForm
-from esp.accounting_docs.models   import Document
-
+from esp.accounting.controllers import IndividualAccountingController
 
 class OnSiteRegister(ProgramModuleObj):
     @classmethod
@@ -57,30 +57,25 @@ class OnSiteRegister(ProgramModuleObj):
     def updatePaid(self, paid=True):
         """ Create an invoice for the student and, if paid is True, create a receipt showing
         that they have paid all of the money they owe for the program. """
-        li_types = self.program.getLineItemTypes(self.student)
-        doc = Document.get_invoice(self.student, self.program_anchor_cached(), li_types)
-        Document.prepare_onsite(self.student, doc.locator)
-        if paid:
-            Document.receive_onsite(self.student, doc.locator)
+        iac = IndividualAccountingController(self.program, self.student)
+        if not iac.has_paid():
+            iac.add_required_transfers()
+            if paid:
+                iac.submit_payment(iac.amount_due())
 
     def createBit(self, extension):
         if extension == 'Paid':
             self.updatePaid(True)
             
-        verb = GetNode('V/Flags/Registration/'+extension)
-        ub = UserBit.objects.filter(user = self.student,
-                                    verb = verb,
-                                    qsc  = self.program_anchor_cached())
-        if len(ub) > 0:
+        if Record.user_completed(self.student, extension.lower(), self.program):
             return False
-
-        ub = UserBit()
-        ub.verb = verb
-        ub.qsc  = self.program_anchor_cached()
-        ub.user = self.student
-        ub.recursive = False
-        ub.save()
-        return True
+        else:
+            Record.objects.create(
+                user = self.student,
+                event = extension.lower(),
+                program = self.program
+            )
+            return True
 
     @main_call
     @needs_onsite
@@ -130,7 +125,7 @@ class OnSiteRegister(ProgramModuleObj):
                 regProf.save()
                 
                 if new_data['paid']:
-                    self.createBit('Paid')
+                    self.createBit('paid')
                     self.updatePaid(True)
                 else:
                     self.updatePaid(False)
@@ -138,24 +133,19 @@ class OnSiteRegister(ProgramModuleObj):
                 self.createBit('Attended')
 
                 if new_data['medical']:
-                    self.createBit('MedicalFiled')
+                    self.createBit('Med')
 
                 if new_data['liability']:
-                    self.createBit('LiabilityFiled')
+                    self.createBit('Liab')
 
                 self.createBit('OnSite')
 
-                v = GetNode( 'V/Flags/UserRole/Student')
-                ub = UserBit()
-                ub.user = new_user
-                ub.recursive = False
-                ub.qsc = GetNode('Q')
-                ub.verb = v
-                ub.save()
+                
+                new_user.groups.add(Group.objects.get(name="Student"))
 
                 new_user.recoverPassword()
                 
-                return render_to_response(self.baseDir()+'reg_success.html', request, (prog, tl), {
+                return render_to_response(self.baseDir()+'reg_success.html', request, {
                     'student': new_user, 
                     'retUrl': '/onsite/%s/classchange_grid?student_id=%s' % (self.program.getUrlBase(), new_user.id)
                     })
@@ -163,7 +153,7 @@ class OnSiteRegister(ProgramModuleObj):
         else:
             form = OnSiteRegForm()
 
-	return render_to_response(self.baseDir()+'reg_info.html', request, (prog, tl), {'form':form, 'current_year':ESPUser.current_schoolyear()})
+	return render_to_response(self.baseDir()+'reg_info.html', request, {'form':form, 'current_year':ESPUser.current_schoolyear()})
 
     class Meta:
         abstract = True

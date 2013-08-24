@@ -72,7 +72,7 @@ classes!</center></font>
 <br /> {% endcomment %}
 <p>
 {% load render_qsd %}
-{% inline_qsd_block program.anchor class_schedule_header_text request.user %}
+{% inline_program_qsd_block program class_schedule_header_text request.user %}
 Below is your class schedule for {{ program.niceName }}.  You can
 <a href="/learn/{{one}}/{{two}}/catalog">click here</a> to view the full 
 catalog, or you can use the course listing below.
@@ -84,7 +84,7 @@ click the "Confirm" button below to mark your registration as complete and
 receive instructions on how to get to the program and what to do when
 you arrive. 
 </p>
-{% end_inline_qsd_block %}
+{% end_inline_program_qsd_block %}
 
 {% if not module.deadline_met_or_lottery_open %}
     <center>
@@ -148,9 +148,6 @@ you arrive.
             {% for cls in timeslot.1 %}
                 {% if cls.first_meeting_time %}
                     <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}" class="remove" data-remove-type="{% if cls.section.is_enrolled %}enrolled{% else %}applied{% endif %}" data-sec-code="{{ cls.section.emailcode }}">[remove]</a>
-                    {% if cls.changeable %}
-                        <a href="/learn/{{one}}/{{two}}/changeslot/{{timeslot.0.id}}?sec_id={{ cls.section.id }}">[change section]</a>
-                    {% endif %}
                 {% endif %}
                 <br />
             {% endfor %}

@@ -43,11 +43,9 @@ class EmailVerifyModule(ProgramModuleObj):
     """ This module will allow users to verify that their email accounts work. """
     def students(self, QObject = False):
         Q_students =  Q(registrationprofile__email_verified = True) & \
-                                             Q(userbit__qsc  = GetNode('Q')) &\
-                                             Q(userbit__verb = GetNode('V/Flags/UserRole/Student'))
+                      Q(groups__name="Student")
         if QObject:
             return {'student_emailverified': Q_students}
-                                 
 
         students = ESPUser.objects.filter(Q_students).distinct()
         return {'student_emailverified': students }
@@ -58,8 +56,7 @@ class EmailVerifyModule(ProgramModuleObj):
 
     def teachers(self, QObject = False):
         Q_teachers =  Q(registrationprofile__email_verified = True) & \
-                                             Q(userbit__qsc  = GetNode('Q')) &\
-                                             Q(userbit__verb = GetNode('V/Flags/UserRole/Teacher'))
+                      Q(groups__name="Teacher")
         if QObject:
             return {'teacher_emailverified': Q_teachers}
                                  
@@ -117,9 +114,9 @@ class EmailVerifyModule(ProgramModuleObj):
             
             newmsg_request.save()
             
-            return render_to_response(self.baseDir() + 'emailsent.html', request, (prog, tl), {})
+            return render_to_response(self.baseDir() + 'emailsent.html', request, {})
 
-        return render_to_response(self.baseDir() + 'sendemail.html', request, (prog, tl), {})
+        return render_to_response(self.baseDir() + 'sendemail.html', request, {})
     
 
 

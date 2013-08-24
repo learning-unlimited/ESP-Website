@@ -37,7 +37,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
 from esp.program.models import ClassSubject, Program
-from esp.users.models import UserBit, ESPUser
+from esp.users.models import ESPUser
 
 class AdminMaterials(ProgramModuleObj):
     doc = """ This allows you to view the submitted documents for all classes
@@ -58,11 +58,10 @@ class AdminMaterials(ProgramModuleObj):
     @needs_admin
     def get_materials(self, request, tl, one, two, module, extra, prog):
         from esp.web.forms.fileupload_form import FileUploadForm_Admin    
-        from esp.qsdmedia.models import Media
-        from esp.datatree.models import DataTree, GetNode, QTree, get_lowest_parent, StringToPerm, PermToString            
+        from esp.qsdmedia.models import Media            
         context_form = FileUploadForm_Admin()
-        new_choices = [(a.anchor.id, a.emailcode() + ': ' + unicode(a)) for a in prog.classes()]
-        new_choices.append((prog.anchor.id,'Document pertains to program'))
+        new_choices = [(a.id, a.emailcode() + ': ' + unicode(a)) for a in prog.classes()]
+        new_choices.append((0, 'Document pertains to program'))
         new_choices.reverse()
         context_form.set_choices(new_choices)
     
@@ -71,23 +70,27 @@ class AdminMaterials(ProgramModuleObj):
                 docid = request.POST['docid']
                 media = Media.objects.get(id = docid)
                 media.delete()
-            	
             elif request.POST['command'] == 'add':
                 form = FileUploadForm_Admin(request.POST, request.FILES)
                 form.set_choices(new_choices)
                 
                 if form.is_valid():
+                    media = Media(friendly_name=form.cleaned_data['title'])
+
                     ufile = form.cleaned_data['uploadedfile']
+
                     #	Append the class code on the filename if necessary
                     target_id = int(form.cleaned_data['target_obj'])
-                    if target_id != prog.anchor.id:
-                        desired_filename = ClassSubject.objects.get(anchor__id = target_id).emailcode() + '_' + ufile.name
+                    if target_id > 0:
+                        cls = ClassSubject.objects.get(id=target_id)
+                        desired_filename = cls.emailcode() + '_' + ufile.name
+                        media.owner = cls
                     else:
                         desired_filename = ufile.name
+                        media.owner = prog
 
-                    media = Media(friendly_name=form.cleaned_data['title'], anchor=DataTree.objects.get(id = form.cleaned_data['target_obj']))
                     media.handle_file(ufile, desired_filename)
-                    
+
                     media.format = ''
                     media.save()
                 else:
@@ -97,7 +100,7 @@ class AdminMaterials(ProgramModuleObj):
         
         classes = ClassSubject.objects.filter(parent_program = prog)
     
-        return render_to_response(self.baseDir()+'listmaterials.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'listmaterials.html', request, context)
     
 
 

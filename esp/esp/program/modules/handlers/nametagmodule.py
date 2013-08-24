@@ -60,7 +60,7 @@ class NameTagModule(ProgramModuleObj):
         """ Display a teacher eg page """
         context = {'module': self}
 
-        return render_to_response(self.baseDir()+'selectoptions.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'selectoptions.html', request, context)
 
     @aux_call
     @needs_admin
@@ -182,7 +182,7 @@ class NameTagModule(ProgramModuleObj):
         context['group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['phone_number'] = Tag.getTag('group_phone_number')
             
-        return render_to_response(self.baseDir()+'ids.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'ids.html', request, context)
         
 
 

@@ -114,7 +114,7 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
         formdata = {'slugbio': lastbio.slugbio, 'bio': lastbio.bio, 'picture': lastbio.picture}
         form = BioEditForm(formdata)
         
-    return render_to_response('users/teacherbioedit.html', request, GetNode('Q/Web/myesp'), {'form':    form,
+    return render_to_response('users/teacherbioedit.html', request, {'form':    form,
                                                    'institution': settings.INSTITUTION_NAME,
                                                    'user':    founduser,
                                                    'picture_file': lastbio.picture})
@@ -173,7 +173,7 @@ def bio_user(request, founduser):
     cls_ids = [x.id for x in recent_classes]
     classes = ArchiveClass.getForUser(founduser).exclude(original_id__in=cls_ids)
 
-    return render_to_response('users/teacherbio.html', request, GetNode('Q/Web/Bio'),
+    return render_to_response('users/teacherbio.html', request,
                               {'biouser': founduser,
                                'bio': teacherbio,
                                'classes': classes,
