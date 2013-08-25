@@ -33,13 +33,11 @@ class UserBitAdmin(admin.ModelAdmin):
         self.message_user(request, "%s successfully expired." % message_bit)
     renew.short_description = "Renew bits"
     
-admin_site.register(UserBit, UserBitAdmin)
 
 
 class UserBitImplicationAdmin(admin.ModelAdmin):
     exclude = ('created_bits',)
 
-admin_site.register(UserBitImplication, UserBitImplicationAdmin)
 
 admin_site.register(UserForwarder)
 
