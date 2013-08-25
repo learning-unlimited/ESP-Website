@@ -44,4 +44,3 @@ class DataTreeAdmin(admin.ModelAdmin):
     list_display = ('uri',)
     search_fields = ['uri']
 
-admin_site.register(DataTree, DataTreeAdmin)
