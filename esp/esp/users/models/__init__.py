@@ -745,7 +745,6 @@ class ESPUser(User, AnonymousUser):
         #   Allow Tag to remove user types as well as adding/updating them.
         #   So, if you set the Tag, be sure to include all of the user types you want.
         return json.loads(Tag.getTag('user_types', default=json.dumps(DEFAULT_USER_TYPES)))
-            print tag_data
     getAllUserTypes.depend_on_model(Tag)
     getAllUserTypes = staticmethod(getAllUserTypes)
 
