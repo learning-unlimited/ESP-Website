@@ -54,7 +54,7 @@ def landing(request):
     tc = ThemeController()
     context['theme_name'] = tc.get_current_theme()
     context['last_customization_name'] = Tag.getTag('prev_theme_customization', default='None')
-    return render_to_response('themes/landing.html', context)
+    return render_to_response('themes/landing.html', request, context)
 
 @admin_required
 def selector(request):
@@ -78,7 +78,7 @@ def selector(request):
     
     context['theme_name'] = tc.get_current_theme()
     context['themes'] = tc.get_theme_names()
-    return render_to_response('themes/selector.html', context)
+    return render_to_response('themes/selector.html', request, context)
 
 @admin_required
 def configure(request, current_theme=None, force_display=False):
@@ -91,7 +91,7 @@ def configure(request, current_theme=None, force_display=False):
     form_class = tc.get_config_form_class(current_theme)
     if form_class is None:
         form = None
-        return render_to_response('themes/configure_form.html', context)
+        return render_to_response('themes/configure_form.html', request, context)
     
     if request.method == 'POST' and not force_display:
         form = form_class(request.POST.copy())
@@ -110,7 +110,7 @@ def configure(request, current_theme=None, force_display=False):
 
     context['form'] = form
     
-    return render_to_response('themes/configure_form.html', context)
+    return render_to_response('themes/configure_form.html', request, context)
 
 @admin_required
 def editor(request):
@@ -182,5 +182,5 @@ def editor(request):
                 category_vars[key] = ('text', initial_val)
         context['adv_vars'][category_name] = category_vars
 
-    return render_to_response('themes/editor.html', context)
+    return render_to_response('themes/editor.html', request, context)
 
