@@ -2064,7 +2064,8 @@ class Permission(models.Model):
 
     @staticmethod
     def user_can_edit_qsd(user,url):
-        #the logic here is as follow:
+        #the logic here is as follows:
+        #  -you must be logged in to edit qsd
         #  -admins can edit any qsd
         #  -admins of a program can edit qsd of the form
         #      /section/<Program.url>/<any url>.html
@@ -2072,6 +2073,8 @@ class Permission(models.Model):
         #      /section/<Program.url>/Classes/<x>/<any url>.html
         if url.endswith(".html"):
             url = url[-5]
+        if user is None:
+            return False
         if user.isAdmin():
             return True
         import re
