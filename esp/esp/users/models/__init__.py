@@ -2104,6 +2104,11 @@ def install():
     """
     Installs some initial users and permissions.
     """    
+    #   First make groups
+    names=['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']
+    for x in names:
+        Group.objects.get_or_create(name=x)
+
     if ESPUser.objects.count() == 1: # We just did a syncdb;
                                      # the one account is the admin account
         user = ESPUser.objects.all()[0]
