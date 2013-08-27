@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from datetime import datetime, timedelta
 from collections import defaultdict
 
-from django.contrib.auth import logout, login, authenticate
+from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group
 from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
 from django.contrib.localflavor.us.forms import USStateSelect
@@ -45,7 +45,7 @@ from django.core.mail import send_mail
 from django.db import models
 from django.db.models.base import ModelState
 from django.db.models.query import Q, QuerySet
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponseRedirect
 from django.template import loader, Context as DjangoContext
 from django import forms
 from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
@@ -64,6 +64,8 @@ from django.conf import settings
 import simplejson as json
 from esp.customforms.linkfields import CustomFormsLinkModel
 from esp.customforms.forms import AddressWidget, NameWidget
+
+from urllib import quote
 
 try:
     import cPickle as pickle
@@ -89,7 +91,9 @@ def user_get_key(user):
 
 def admin_required(func):
     def wrapped(request, *args, **kwargs):
-        if not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator():
+        if not request.user or not request.user.is_authenticated():
+            return HttpResponseRedirect('%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+        elif not ESPUser(request.user).isAdministrator():
             raise PermissionDenied
         return func(request, *args, **kwargs)
     return wrapped
