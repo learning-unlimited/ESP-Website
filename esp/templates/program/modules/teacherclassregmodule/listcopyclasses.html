@@ -17,7 +17,7 @@
 <br /><br />
 
 {% load render_qsd %}
-{% inline_qsd_block prog.anchor "teacher_class_import_description" request.user %}Write instructions here!{% end_inline_qsd_block %}
+{% inline_program_qsd_block prog "teacher_class_import_description" request.user %}Write instructions here!{% end_inline_program_qsd_block %}
 
 {% if allow_class_import %}
 <div id="battlescreen">
@@ -47,6 +47,7 @@
   {% endfor %}
 
 </table>
+</div> <!-- div#battlescreen -->
 {% else %}
 Sorry! Class importing is disabled for {{ program.niceName }}.
 {% endif %}

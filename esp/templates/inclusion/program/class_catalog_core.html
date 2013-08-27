@@ -19,7 +19,7 @@
     </div>
     <div class="class_teachers">
        Teachers:
-       {% for teacher in class.teachers %}
+       {% for teacher in class.get_teachers %}
        <a href="/teach/teachers/{{ teacher.username|urlencode }}/bio.html"
           title="The biography of {{teacher.first_name }} {{teacher.last_name }}">{{ teacher.first_name }} {{teacher.last_name }}</a>{% if not forloop.last %},{% endif %}
        {% endfor %}
@@ -60,7 +60,7 @@
            {% if not class.parent_program.incrementGrade %}
            {{ class.grade_min }}</span> -
            {% else %}
-           Rising {{ class.grade_min }}<sup>th</sup> graders to <br />
+           Rising {{ class.grade_min }}<sup>th</sup> graders</span> to <br />
            {% endif %}
            <span class="gradelisting grademax" id="class_{{ class.id }}_grade_max">
            {% if not class.parent_program.incrementGrade %}
@@ -71,8 +71,9 @@
 	       {% else %}
 	       rising {{ class.grade_max }}<sup>th</sup> graders
 	       {% endif %}
+	       </span>
            {% endif %}
-           </span><br />
+           <br />
          {% if show_enrollment %} 
          <strong>Enrollment</strong><br />
            {% for sec in class.get_sections %}

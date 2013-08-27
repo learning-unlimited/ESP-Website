@@ -36,15 +36,14 @@ from django.db import models
 from django.db.models.query import Q
 from esp.datatree.models import *
 from esp.lib.markdown import markdown
-from esp.users.models import UserBit
 from esp.db.fields import AjaxForeignKey  
+from esp.program.models import Program
         
-# Create your models here.
-
 class NavBarCategory(models.Model):
     anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     include_auto_links = models.BooleanField()
     name = models.CharField(max_length=64)
+    path = models.CharField(max_length=64, default='')
     long_explanation = models.TextField()
 
     def get_navbars(self):
@@ -54,6 +53,7 @@ class NavBarCategory(models.Model):
     def default(cls):
         """ Default navigation category.  For now, the one with the lowest ID. """
         if not hasattr(cls, '_default'):
+
             cls._default = cls.objects.all().order_by('id')[0]
         return cls._default
     
@@ -65,9 +65,7 @@ class NavBarCategory(models.Model):
 
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """
-    
-    #   ONLY the program related nav bars (i.e. "Splash Registration pages") should be anchored.
-    #   This is to allow automatically generated links to appear.
+
     path = AjaxForeignKey(DataTree, related_name = 'navbar', blank=True, null=True)
     
     sort_rank = models.IntegerField()
@@ -78,7 +76,7 @@ class NavBarEntry(models.Model):
     category = models.ForeignKey(NavBarCategory, default=NavBarCategory.default)
 
     def can_edit(self, user):
-        return UserBit.UserHasPerms(user, self.path, GetNode('V/Administer/Edit/QSD'))
+        return user.isAdmin()
     
     def __unicode__(self):
         return u'%s:%s (%s) [%s]' % (self.category, self.sort_rank, self.text, self.link)
@@ -94,35 +92,6 @@ class NavBarEntry(models.Model):
     
     class Meta:
         verbose_name_plural = 'Nav Bar Entries'
-
-    def save(self, *args, **kwargs):
-        from django.core.cache import cache
-
-        super(NavBarEntry, self).save(*args, **kwargs)
-        
-        cache.delete('LEFTBAR')
-
-    
-    @staticmethod
-    def find_by_url_parts(parts):
-        """ Fetch a QuerySet of NavBarEntry objects by the url parts """
-        # Get the Q_Web root
-        Q_Web = GetNode('Q/Web')
-        
-        # Remove the last component
-        parts.pop()
-        
-        # Find the branch
-        try:
-            branch = Q_Web.tree_decode( parts )
-        except DataTree.NoSuchNodeException, ex:
-            branch = ex.anchor
-            if branch is None:
-                raise NavBarEntry.DoesNotExist
-            
-        # Find the valid entries
-        return NavBarEntry.objects.filter(QTree(path__above =branch)).order_by('sort_rank')
-
 
 def install():
     # Add a default nav bar category, to let QSD editing work.

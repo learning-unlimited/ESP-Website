@@ -33,7 +33,7 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         self.client.login(username='admin', password='password')
         
         # Try to set the values
-        r = self.client.post("/manage/"+self.program.url()+"/registrationtype_management/", { 'display_names': ["Enrolled", self.testRT] })
+        r = self.client.post("/manage/"+self.program.url+"/registrationtype_management/", { 'display_names': ["Enrolled", self.testRT] })
 
         # Check that the tag was created
         self.failUnless(len(Tag.objects.filter(key='display_registration_names')) > 0)
@@ -52,11 +52,11 @@ class RegistrationTypeManagementTest(ProgramFrameworkTest):
         # Initially, delete the tag
         Tag.objects.filter(key='display_registration_names').delete()
         # Check the displayed types
-        r = self.client.get("/learn/"+self.program.url()+"/studentreg")
+        r = self.client.get("/learn/"+self.program.url+"/studentreg")
         self.failUnless(not self.testRT in r.content)
 
         # Then set the tag
         Tag.objects.get_or_create(key='display_registration_names', value='["Enrolled", "'+self.testRT+'"]')
         # Check the displayed types again
-        r = self.client.get("/learn/"+self.program.url()+"/studentreg")
+        r = self.client.get("/learn/"+self.program.url+"/studentreg")
         self.failUnless(self.testRT in r.content)

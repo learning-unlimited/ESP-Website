@@ -36,7 +36,7 @@ from django.http     import HttpResponseRedirect
 from esp.users.views import search_for_user
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
-from esp.users.models import ESPUser, UserBit
+from esp.users.models import ESPUser
 from esp.datatree.models import *
 from datetime         import datetime, timedelta
 
@@ -53,19 +53,10 @@ class OnsiteClassSchedule(ProgramModuleObj):
     @aux_call
     @needs_student
     def printschedule(self, request, tl, one, two, module, extra, prog):#(self, request, *args, **kwargs):
-        verb  = request.get_node('V/Publish/Print')
-        if extra and extra != "":
-            verb = verb[extra]
-
-        qsc   = self.program_anchor_cached().tree_create(['Schedule'])
-
-        if len(UserBit.objects.filter(user=request.user,
-                                  verb=verb,
-                                  qsc=qsc).exclude(enddate__lte=datetime.now())[:1]) == 0:
-
-            newbit = UserBit.objects.create(user=request.user, verb=verb,
-                             qsc=qsc, recursive=False, enddate=datetime.now() + timedelta(days=1))
-
+        printer = None
+        if extra and Printer.objects.filter(name=extra).exists():
+            printer = Printer.objects.filter(name=extra)[0]
+        PrintRequest.objects.create(user=request.user, printer=printer)
         return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
 
     @aux_call

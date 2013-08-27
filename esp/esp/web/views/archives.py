@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
-from esp.users.models import ContactInfo, UserBit, ESPUser
+from esp.users.models import ContactInfo, ESPUser
 from esp.datatree.models import *
 from esp.program.models import ArchiveClass, ClassSubject, ClassCategories
 from esp.web.util.main import render_to_response
@@ -233,21 +233,21 @@ def archive_classes(request, category, options, sortorder = None):
     context['num_results_list'] = ['10', '25', '50', '100', '250', 'Show all']
     context['num_results_shown'] = len(context['results'])
     
-    return render_to_response('program/archives.html', request, GetNode('Q/Web/archives'), context) 
+    return render_to_response('program/archives.html', request, context) 
 
 def archive_teachers(request, category, options):
     context = {'selection': 'Teachers'}
     context['category'] = category
     context['options'] = options
     
-    return render_to_response('program/archives.html', request, None, context) 
+    return render_to_response('program/archives.html', request, context) 
     
 def archive_programs(request, category, options):
     context = {'selection': 'Programs'}
     context['category'] = category
     context['options'] = options
     
-    return render_to_response('program/archives.html', request, None, context) 
+    return render_to_response('program/archives.html', request, context) 
 
 archive_handlers = {    'classes': archive_classes,
             'teachers': archive_teachers,

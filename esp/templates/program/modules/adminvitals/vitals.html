@@ -1,4 +1,9 @@
 {% block xtrajs %}
+<script type="text/javascript">
+// Initialize the json_data holder
+json_data = {};
+</script>
+
   <script type="text/javascript" src="/media/scripts/program/modules/adminvitals.js"></script>
 
   <script type="text/javascript">
@@ -9,7 +14,8 @@
         .add("#stats_categories")
         .add("#stats_hours")
         .add("#stats_timeslots")
-        .add("#stats_tshirts");
+        .add("#stats_tshirts")
+        .add("#stats_splashinfo");
       $module_group_headers = $module_groups.children(".module_group_header");
       $module_group_headers.click(getStats);
     });
@@ -67,6 +73,12 @@
 	  Loading data...
 	</div>
       </div>
-    </div>
+      <div class="module_group" id="stats_splashinfo">
+        <div class="module_group_header module_group_expandable">Lunch and Sibling Discounts <span class="expand_collapse_text">(click to expand)</span></div>
+	<div class="module_group_body" style="display:none">
+	  Loading data...
+	</div>
+      </div>
+    </div> <!-- div#program_vitals_wrapper -->
   </div>
-</div>
+</div> <!-- div#program_form -->

@@ -37,7 +37,7 @@ from esp.datatree.models import *
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
-from esp.users.models    import ESPUser, UserBit, User
+from esp.users.models    import ESPUser
 from django.db.models.query       import Q
 from django.template.loader import get_template
 from esp.program.models  import StudentApplication
@@ -131,7 +131,7 @@ class StudentJunctionAppModule(ProgramModuleObj):
         else:
             forms = app.get_forms()
 
-        return render_to_response(self.baseDir()+'application.html', request, (self.program, tl), {'forms': forms, 'app': app})
+        return render_to_response(self.baseDir()+'application.html', request, {'forms': forms, 'app': app})
     
 
     class Meta:

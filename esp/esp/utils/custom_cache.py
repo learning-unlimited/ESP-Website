@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp import settings
+from django.conf import settings
 import random
 
 class custom_cache:

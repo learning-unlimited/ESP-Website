@@ -32,17 +32,17 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 from esp.cache           import cache_function
-from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, CoreModule, main_call, aux_call, _checkDeadline_helper
 from esp.program.modules import module_ext
 from esp.program.models  import Program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.web.util        import render_to_response
-from esp.users.models    import UserBit, ESPUser, User
+from esp.users.models    import ESPUser, Record
 from esp.datatree.models import *
+from esp.utils.models import Printer
+from esp.accounting.controllers import IndividualAccountingController
 from django.db.models.query import Q
 from esp.middleware   import ESPError
-from esp.accounting_docs.models import Document
-from esp.accounting_core.models import LineItemType, EmptyTransactionException
 from decimal import Decimal
 from datetime import datetime
 from django.db import models
@@ -65,48 +65,34 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
             }
 
     def have_paid(self, user):
-        """ Whether the user has paid for this program or its parent program.  """
-        if ( len(Document.get_completed(user, self.program_anchor_cached())) > 0 ):
-            return True
-        else:
-            parent_program = self.program.getParentProgram()
-            if parent_program is not None:
-                return ( len(Document.get_completed(user, parent_program.anchor)) > 0 )
-
-        return False
+        """ Whether the user has paid for this program.  """
+        iac = IndividualAccountingController(self.program, user)
+        return (iac.amount_due() <= 0)
 
     def students(self, QObject = False):
-        verb = GetNode('V/Flags/Public')
-        verb2 = GetNode('V/Flags/Registration/Attended')
-        STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRep')
-        STUDREP_QSC  = GetNode('Q')
         now = datetime.now()
         
-        qsc  = GetNode("/".join(self.program_anchor_cached().tree_encode()) + "/Confirmation")
-        qsc_waitlist = GetNode("/".join(self.program_anchor_cached().tree_encode()) + "/Waitlist")
-
-        Q_studentrep = Q(userbit__qsc = STUDREP_QSC, userbit__verb = STUDREP_VERB, userbit__startdate__lte=now, userbit__enddate__gte=now)
+        q_confirmed = self.getQForUser(Q(record__event = "reg_confirmed", record__program=self.program))
+        q_attended = self.getQForUser(Q(record__event= "attended", record__program=self.program))
+        q_studentrep = self.getQForUser(Q(groups__name="StudentRep"))
 
         if QObject:
-            retVal = {'confirmed': self.getQForUser(Q(userbit__qsc = qsc, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now)),
-                      'attended' : self.getQForUser(Q(userbit__qsc = self.program_anchor_cached(), userbit__startdate__lte=now, userbit__enddate__gte=now, userbit__verb = verb2)),
-                      'studentrep': self.getQForUser(Q_studentrep)}
+            retVal = {'confirmed': q_confirmed,
+                      'attended' : q_attended, 
+                      'studentrep': q_studentrep}
 
 
             if self.program.program_allow_waitlist:
-                retVal['waitlisted_students'] = self.getQForUser(Q(userbit__qsc = qsc_waitlist, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now))
+                retVal['waitlisted_students'] = self.getQForUser(Q(record__event="waitlist",record__program=self.program))
                     
             return retVal
 
-        retVal = {'confirmed': ESPUser.objects.filter(userbit__qsc = qsc, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct(),
-                  'attended' : ESPUser.objects.filter(userbit__qsc = self.program_anchor_cached(), \
-                                                       userbit__verb = verb2,
-                                                       userbit__startdate__lte=now,
-                                                       userbit__enddate__gte=now).distinct(),
-                  'studentrep': ESPUser.objects.filter(Q_studentrep).distinct()}
+        retVal = {'confirmed': ESPUser.objects.filter(q_confirmed).distinct(),
+                  'attended' : ESPUser.objects.filter(q_attended).distinct(),
+                  'studentrep': ESPUser.objects.filter(q_studentrep).distinct()}
                   
         if self.program.program_allow_waitlist:
-            retVal['waitlisted_students'] = ESPUser.objects.filter(userbit__qsc = qsc_waitlist, userbit__verb = verb, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+            retVal['waitlisted_students'] = ESPUser.objects.filter(Q(record__event="waitlist",record__program=self.program)).distinct()
                   
         return retVal
 
@@ -130,22 +116,24 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         if not self.program.isFull():
             raise ESPError(False), "You can't subscribe to the waitlist of a program that isn't full yet!  Please click 'Back' and refresh the page to see the button to confirm your registration."
 
-        waitlist_all = UserBit.objects.filter(verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Waitlist")).filter(enddate__gte=datetime.now())
-        waitlist = waitlist_all.filter(user=request.user)
+        waitlist = Record.objects.filter(event="waitlist",
+                                         user=request.user,
+                                         program=prog)
         
         if waitlist.count() <= 0:
-            UserBit.objects.create(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Waitlist"), recursive=False)
+            Record.objects.create(event="waitlist", user=request.user,
+                                  program=prog)
             already_on_list = False
         else:
             already_on_list = True
 
-        return render_to_response(self.baseDir()+'waitlist.html', request, (prog, tl), { 'already_on_list': already_on_list, 'waitlist': waitlist_all })
+        return render_to_response(self.baseDir()+'waitlist.html', request, { 'already_on_list': already_on_list })
         
     @aux_call
     @needs_student
     @meets_grade
     def confirmreg(self, request, tl, one, two, module, extra, prog):
-        if UserBit.objects.filter(user=request.user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation")).filter(enddate__gte=datetime.now()).count() > 0:
+        if Record.objects.filter(user=request.user, event="reg_confirmed",program=prog).count() > 0:
             return self.confirmreg_forreal(request, tl, one, two, module, extra, prog, new_reg=False)
         return self.confirmreg_new(request, tl, one, two, module, extra, prog)
     
@@ -162,31 +150,21 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
         from esp.program.modules.module_ext import DBReceipt
 
-        try:
-            invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True, get_complete=True)
-        except:
-            invoice = Document.get_invoice(request.user, prog.anchor, LineItemType.objects.filter(anchor=GetNode(prog.anchor.get_uri()+'/LineItemTypes/Required')), dont_duplicate=True)
-
-        #   Why is get_complete false?
-        receipt = Document.get_receipt(request.user, prog.anchor, [], get_complete=False)
+        iac = IndividualAccountingController(prog, request.user)
 
         context = {}
         context['one'] = one
         context['two'] = two
 
-        context['itemizedcosts'] = invoice.get_items()
+        context['itemizedcosts'] = iac.get_transfers()
 
         user = ESPUser(request.user)
-        context['finaid'] = user.hasFinancialAid(prog.anchor)
+        context['finaid'] = user.hasFinancialAid(prog)
         if user.appliedFinancialAid(prog):
             context['finaid_app'] = user.financialaidrequest_set.filter(program=prog).order_by('-id')[0]
         else:
             context['finaid_app'] = None
-
-        try:
-            context['balance'] = Decimal("%0.2f" % invoice.cost())
-        except EmptyTransactionException:
-            context['balance'] = Decimal("0.0")
+        context['balance'] = iac.amount_due()
             
         context['owe_money'] = ( context['balance'] != Decimal("0.0") )
 
@@ -204,7 +182,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         
         if completedAll:
             if new_reg:
-                bit = UserBit.objects.create(user=user, verb=GetNode("V/Flags/Public"), qsc=GetNode("/".join(prog.anchor.tree_encode()) + "/Confirmation"))
+                rec = Record.objects.create(user=user, event="reg_confirmed",
+                                            program=prog)
         else:
             raise ESPError(False), "You must finish all the necessary steps first, then click on the Save button to finish registration."
 
@@ -219,15 +198,15 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         except DBReceipt.DoesNotExist:
             try:
                 receipt = 'program/receipts/'+str(prog.id)+'_custom_receipt.html'
-                return render_to_response(receipt, request, (prog, tl), context)
+                return render_to_response(receipt, request, context)
             except:
                 receipt = 'program/receipts/default.html'
-                return render_to_response(receipt, request, (prog, tl), context)
+                return render_to_response(receipt, request, context)
 
     @aux_call
     @needs_student
     @meets_grade    
-    @meets_deadline()
+    @meets_deadline('/Cancel')
     def cancelreg(self, request, tl, one, two, module, extra, prog):
         self.request = request
 
@@ -236,13 +215,11 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         if self.have_paid(request.user):
             raise ESPError(False), "You have already paid for this program!  Please contact us directly (using the contact information in the footer of this page) to cancel your registration and to request a refund."
         
-        bits = UserBit.objects.filter(user = request.user,
-                                      verb = GetNode('V/Flags/Public'),
-                                      qsc  = GetNode('/'.join(prog.anchor.tree_encode())+'/Confirmation'))
-
-        if len(bits) > 0:
-            for bit in bits:
-                bit.expire()
+        recs = Record.objects.filter(user=request.user,
+                                     event="reg_confirmed",
+                                     program=prog)
+        for rec in recs:
+            rec.delete()
 
         #   If the appropriate flag is set, remove the student from their classes.
         scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
@@ -263,8 +240,8 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     @cache_function
     def printer_names(self):
-        return GetNode('V/Publish/Print').children().values_list('name', flat=True)
-    printer_names.depend_on_row(lambda: DataTree, lambda node: {}, lambda node: node.get_uri(save=False).startswith('V/Publish/Print'))
+        return Printer.objects.all().values_list('name', flat=True)
+    printer_names.depend_on_model(lambda: Printer)
 
     @main_call
     @needs_student
@@ -296,6 +273,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         context['two'] = two
         context['coremodule'] = self
         context['scrmi'] = prog.getModuleExtension('StudentClassRegModuleInfo')
+        context['can_confirm'] = _checkDeadline_helper(None, '/Confirm', self, request, tl)[0]
         context['isConfirmed'] = self.program.isConfirmed(request.user)            
         context['have_paid'] = self.have_paid(request.user)
         context['extra_steps'] = "learn:extra_steps"
@@ -306,7 +284,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
         else:
             context['no_confirm'] = False
         
-        return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'mainpage.html', request, context)
 
     def isStep(self):
         return False
@@ -314,7 +292,7 @@ class StudentRegCore(ProgramModuleObj, CoreModule):
 
     def getNavBars(self):
         nav_bars = []
-        if super(StudentRegCore, self).deadline_met() or ( self.request.user and self.program and UserBit.objects.UserHasPerms(self.request.user, self.program, GetNode("V/Deadline/Registration/Student/Classes/OneClass")) ):
+        if super(StudentRegCore, self).deadline_met() or ( self.request.user and self.program and Permission.objects.user_has_perms(self.request.user, "Student/Classes/OneClass", program=self.program)):
              nav_bars.append({ 'link': '/learn/%s/studentreg/' % ( self.program.getUrlBase() ),
                       'text': '%s Student Registration' % ( self.program.niceSubName() ),
                       'section': ''})

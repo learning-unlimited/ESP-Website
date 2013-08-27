@@ -17,11 +17,7 @@
   <td class="clsmiddle bordertop2">
     <form method="post" action="/teach/{{program.getUrlBase}}/editclass/{{cls.id }}">
       <input type="hidden" name="command" value="edit_class_{{cls.id}}">
-      {% if can_edit %}
-      <input class="button" type="submit" value="Edit">
-      {% else %}
-      <input class="button" type="submit" value="View">
-      {% endif %}
+      <input class="button" type="submit" value="View/Edit">
     </form>
   </td>
   <td class="clsmiddle bordertop2">
@@ -31,11 +27,11 @@
   </td>
 
   <td class="clsright bordertop2">
-    {% if cls.pageExists %}
-    <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.html"
+    {% if cls.got_index_qsd %}
+    <a class="abutton" href="/learn/{{ cls.url }}/index.html"
        title="{{ cls }}...">Visit web page</a>
     {% else %}
-    <a class="abutton" href="/learn/{{cls.getUrlBase}}/index.edit.html"
+    <a class="abutton" href="/learn/{{ cls.url }}/index.edit.html"
        title="Create `{{ cls }}'...">Create web page</a>
     {% endif %}
   </td>
@@ -65,7 +61,7 @@
 
 <tr>
   <td class="clsleft" colspan="5">
-    <b>Document uploads</b>: There are {{ cls.anchor.media_set.count }} documents associated with this class.
+    <b>Document uploads</b>: There are {{ cls.documents.count }} documents associated with this class.
   </td>
   {% block cls_row_3_buttons %}
   <td class="clsright" colspan="1">
@@ -77,7 +73,7 @@
 {% if teacherclsmodule.allow_coteach %}
 <tr>
   <td class="clsleft"><b>(Co-)Teachers: </b></td>
-  <td class="clsmiddle" colspan="4">{% for t in cls.teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
+  <td class="clsmiddle" colspan="4">{% for t in cls.get_teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
   {% block cls_row_4_buttons %}
   <td class="clsright">
     <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">

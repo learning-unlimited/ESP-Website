@@ -11,7 +11,7 @@
 <h1>Teacher registration for {{program.niceName}}</h1>
 
 {% load render_qsd %}
-{% inline_qsd_block program.anchor "teach:teacherreg" request.user %}
+{% inline_qsd_block "teach:teacherreg" %}
 <p>
 Please complete the following steps to teach for {{ program.niceName }}.  When each step is completed, the corresponding box in the right-hand column will be "checked off."  If you have any questions, please <a href="mailto:{{ program.director_email}}">contact the program directors</a>.
 </p>
@@ -25,24 +25,7 @@ Please complete the following steps to teach for {{ program.niceName }}.  When e
 {% endifequal %}
 <br />
 
-{% if progposts|length_is:0 %}
-<!-- No announcements for this program -->
-{% else %}
-<h2>Announcements</h2>
-{% for blogentry in progposts %}
-<div class="blogentry">
-  <p class="heading">
-    <span class="date">{{ blogentry.timestamp|date:"N d, Y @ f a" }}</span>
-    <span class="title">{{ blogentry.title }}</span>
-  </p>
-  <p class="contents">{% autoescape off %}
-    {{ blogentry.html }}
-    {% endautoescape %}
-  </p>
 </div>
-
-{% endfor %}
-{% endif %}
 
 {% for module in modules %}
 {% if module.useTemplate or module.getTemplate %}

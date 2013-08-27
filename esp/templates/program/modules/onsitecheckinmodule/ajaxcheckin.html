@@ -52,11 +52,16 @@ Welcome to student check-in for {{program.niceName}}.  Make sure that the studen
 
 <br />
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "onsite:status" %}
+{% render_inline_program_qsd program "onsite:status" %}
 
 <h1>Advanced Checkin &mdash; For {{ program.niceName }}</h1>
 <p style="margin: 10px;">
   <a href="/onsite/{{ program.url }}/checkin">Click here to view and edit the check-in of a user</a>
+</p>
+
+<h1>Barcode Checkin &mdash; For {{ program.niceName }}</h1>
+<p style="margin: 10px;">
+  <a href="/onsite/{{ program.url }}/barcodecheckin">Click here to check in many users at once by ID</a>
 </p>
 
 </div>

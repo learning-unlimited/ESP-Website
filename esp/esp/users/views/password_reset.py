@@ -23,7 +23,7 @@ def initial_passwd_request(request, success=None):
 
     if success:
         return render_to_response('users/recovery_request_success.html',
-                                  request, request.get_node('Q/Web/myesp'),{})
+                                  request, {})
                                   
 
     if request.method == 'POST':
@@ -47,7 +47,6 @@ def initial_passwd_request(request, success=None):
         form = PasswordResetForm()
 
     return render_to_response('users/recovery_request.html',request,
-                              request.get_node('Q/Web/myesp'),
                               {'form':form})
 
 
@@ -56,7 +55,7 @@ def email_passwd_followup(request,success=None):
 
     if success:
         return render_to_response('users/recovery_finished.html',
-                                  request, request.get_node('Q/Web/myesp'),{})
+                                  request, {})
     try:
         code = request.GET['code']
     except KeyError:
@@ -65,7 +64,7 @@ def email_passwd_followup(request,success=None):
     ticket = PasswordRecoveryTicket.objects.filter(recover_key=code)[:1]
     if len(ticket) == 0 or not ticket[0].is_valid():
         return render_to_response('users/recovery_invalid_code.html',
-                                  request,request.get_node('Q/Web/myesp'),{})
+                                  request, {})
     ticket = ticket[0]
 
     if request.method == 'POST':
@@ -84,13 +83,12 @@ def email_passwd_followup(request,success=None):
                 return HttpResponseRedirect('%ssuccess/' % request.path)
             else:
                 return render_to_response('users/recovery_invalid_code.html',
-                                  request,request.get_node('Q/Web/myesp'),{})
+                                  request, {})
 
     else:
         form = NewPasswordSetForm(initial={'code':code})
 
     return render_to_response('users/recovery_email.html', request,
-                              request.get_node('Q/Web/myesp'),
                               {'form':form})
 
 def email_passwd_cancel(request,success=None):
@@ -98,7 +96,7 @@ def email_passwd_cancel(request,success=None):
 
     if success:
         return render_to_response('users/recovery_finished.html',
-                                  request, request.get_node('Q/Web/myesp'),{})
+                                  request, {})
     try:
         code = request.GET['code']
     except KeyError:
@@ -107,9 +105,9 @@ def email_passwd_cancel(request,success=None):
     ticket = PasswordRecoveryTicket.objects.filter(recover_key=code)[:1]
     if len(ticket) == 0 or not ticket[0].is_valid():
         return render_to_response('users/recovery_invalid_code.html',
-                                  request,request.get_node('Q/Web/myesp'),{})
+                                  request, {})
     ticket = ticket[0]
     ticket.cancel()
 
     return render_to_response('users/recovery_cancelled.html',
-                request, request.get_node('Q/Web/myesp'),{})
+                request, {})

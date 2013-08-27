@@ -1,11 +1,10 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
 __license__   = "AGPL v.3"
 __copyright__ = """
 This file is part of the ESP Web Site
-Copyright (c) 2012 by the individual contributors
+Copyright (c) 2013 by the individual contributors
   (see AUTHORS file)
 
 The ESP Web Site is free software; you can redistribute it and/or
@@ -38,6 +37,9 @@ from django.template.loaders.cached import Loader as CachedLoader
 from django.template.loader import find_template
 import reversion
 
+from esp.users.models import ESPUser
+from esp.db.fields import AjaxForeignKey
+
 ## aseering 11/29/2011
 ## HACK to generate a warning on deferred field evaluation
 from esp.utils import deferred_notifier
@@ -65,6 +67,29 @@ class TemplateOverride(models.Model):
     def save(self, *args, **kwargs):
         #   Never overwrite; save a new copy with the version incremented.
         self.version = self.next_version()
+
+        #   Reset all Django template loaders
+        #   (our own template loader will be reset through the caching API)
+        from django.template.loader import template_source_loaders
+        from django.template.loaders.cached import Loader as cached_loader
+        if isinstance(template_source_loaders, list):
+            for tloader in filter(lambda x: isinstance(x, cached_loader), template_source_loaders):
+                tloader.reset()
+
         super(TemplateOverride, self).save(*args, **kwargs)
+
+class Printer(models.Model):
+    name = models.CharField(max_length=255, help_text='Name to display in onsite interface')
+    printer_type = models.CharField(max_length=255, blank=True)
+    notes = models.TextField(blank=True)
+    
+    def __unicode__(self):
+        return self.name
+
+class PrintRequest(models.Model):
+    printer = models.ForeignKey(Printer, blank=True, null=True)     #   Leave blank to allow any printer to be used.
+    user = AjaxForeignKey(ESPUser)
+    time_requested = models.DateTimeField(auto_now_add=True)
+    time_executed = models.DateTimeField(blank=True, null=True)
 
 from esp.utils import get_user

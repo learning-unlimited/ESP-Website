@@ -36,12 +36,10 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser, UserBit, User
+from esp.users.models    import ESPUser
 from esp.datatree.models import *
 from django              import forms
 from django.http import HttpResponseRedirect
-from esp.program.models import SATPrepRegInfo
-
 
 
 class OnsiteCore(ProgramModuleObj, CoreModule):
@@ -74,7 +72,7 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
         else:
             context['core_admin'] = False
 
-        return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'mainpage.html', request, context)
 
     def isStep(self):
         return False

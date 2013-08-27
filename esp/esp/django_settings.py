@@ -60,8 +60,8 @@ MEDIA_ROOT_DIR = 'public/media/'
 
 MEDIA_URL = '/media/'
 
-STATIC_URL = '/media/admin'
-STATIC_ROOT =  '/'
+STATIC_ROOT_DIR =  'public/static/'
+STATIC_URL = '/static/'
 
 LOGIN_REDIRECT_URL = '/'
 
@@ -119,6 +119,8 @@ DEFAULT_EMAIL_ADDRESSES = {
     'support': 'websupport@lists.learningu.org',
     'membership': 'info@learningu.org',
     'default': 'info@learningu.org',
+    'treasury': 'esp-credit-cards@mit.edu',
+    'mailman_moderator': 'esp-moderators@mit.edu'
 }
 # The name of your host institution.
 INSTITUTION_NAME = 'MIT'
@@ -171,7 +173,7 @@ MIDDLEWARE_GLOBAL = [
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
-    (1600, 'esp.datatree.middleware.DataTreeLockMiddleware'),
+    (9000, 'django.contrib.redirects.middleware.RedirectFallbackMiddleware'),
 ]
 
 ROOT_URLCONF = 'esp.urls'
@@ -184,11 +186,11 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.sessions',
     'django.contrib.sites',
+    'django.contrib.staticfiles',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'esp.datatree',
     'esp.users',
-    'esp.membership',
     'esp.miniblog',
     'esp.web',
     'esp.program',
@@ -201,9 +203,8 @@ INSTALLED_APPS = (
     'esp.resources',
     'esp.gen_media',
     'esp.dblog',
-    'esp.membership',
-#    'esp.queue',
     'esp.survey',
+    'esp.accounting',
     'esp.accounting_core',
     'esp.accounting_docs',
     'esp.shortterm',
@@ -216,10 +217,11 @@ INSTALLED_APPS = (
     'esp.dataviews',
     'esp.themes',
     'django_extensions',
+    'django_extensions.tests',
     'reversion',
     'south',
-    'formwizard',
     'form_utils',
+    'django.contrib.redirects',
 )
 
 import os
@@ -238,6 +240,8 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this
                                'esp.context_processors.index_backgrounds',
                                'esp.context_processors.espuserified_request',
                                'esp.context_processors.preload_images',
+                               'esp.context_processors.email_settings',
+                               'esp.context_processors.program',
                                'django.core.context_processors.i18n',
                                'django.contrib.auth.context_processors.auth',
                                'django.contrib.messages.context_processors.messages',
@@ -257,8 +261,6 @@ DEFAULT_REDIRECT = '/myesp/redirect'
 
 USE_MAILMAN = False
 MAILMAN_PATH = '/usr/lib/mailman/bin/'
-
-TEST_RUNNER = 'esp.utils.custom_test_runner.CustomSeleniumTestRunner'
 
 SELENIUM_PATH = os.path.join(os.path.dirname(__file__), '../../../dependencies/selenium-server-standalone-2.9.0/selenium-server-standalone-2.9.0.jar')
 

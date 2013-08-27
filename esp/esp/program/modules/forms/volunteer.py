@@ -76,7 +76,7 @@ class VolunteerRequestForm(forms.Form):
             vr.save()
         else:
             ts = Event()
-            ts.anchor = self.program.anchor
+            ts.program = self.program
             ts.start = self.cleaned_data['start_time']
             ts.end = self.cleaned_data['end_time']
             ts.short_description = ts.description = self.cleaned_data['description']

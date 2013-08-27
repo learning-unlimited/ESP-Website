@@ -1,21 +1,50 @@
-from django.utils.unittest.case import skipUnless
-from django_selenium.testcases import SeleniumTestCase
+__author__    = "Individual contributors (see AUTHORS file)"
+__date__      = "$DATE$"
+__rev__       = "$REV$"
+__license__   = "AGPL v.3"
+__copyright__ = """
+This file is part of the ESP Web Site
+Copyright (c) 2012 by the individual contributors
+  (see AUTHORS file)
+
+The ESP Web Site is free software; you can redistribute it and/or
+modify it under the terms of the GNU Affero General Public License
+as published by the Free Software Foundation; either version 3
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public
+License along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
+
+Contact information:
+MIT Educational Studies Program
+  84 Massachusetts Ave W20-467, Cambridge, MA 02139
+  Phone: 617-253-4882
+  Email: esp-webmasters@mit.edu
+Learning Unlimited, Inc.
+  527 Franklin St, Cambridge, MA 02139
+  Phone: 617-379-0178
+  Email: web-team@lists.learningu.org
+"""
+from esp.qsd.models import QuasiStaticData
+from esp.seltests.util import try_normal_login, logout, noActiveAjaxJQuery
+from esp.tagdict.models import Tag
 from esp.users.views.make_admin import make_user_admin
 from esp.users.models import ESPUser
-from esp.users.models import UserBit
-# Can't do "from django.conf import settings", because this uses
-# the settings from django_selenium
-from django.conf import settings
-import django_selenium.settings as selenium_settings
-from django.contrib.sites.models import Site
-from esp.datatree.models import GetNode
-from esp.seltests import try_normal_login, logout, noActiveAjaxJQuery
-from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory
-from esp.tagdict.models import Tag
+
+from django.conf import settings
+from django.contrib.sites.models import Site
+from django.utils.unittest.case import skipUnless
+from django_selenium.testcases import SeleniumTestCase
+from selenium import selenium
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.keys import Keys
-from selenium import selenium
 from sys import stdout, stderr, exc_info
 
 class TestQsdCachePurging(SeleniumTestCase):
@@ -41,16 +70,12 @@ class TestQsdCachePurging(SeleniumTestCase):
     def setUp(self):
         SeleniumTestCase.setUp(self)
 
-        # Make Q/Web public
-        UserBit.objects.create(verb = GetNode('V/Flags/Public'), qsc = GetNode('Q/Web'))
-
         # Make our users
         self.admin_user, created = ESPUser.objects.get_or_create(username='admin', first_name='Harry', last_name='Alborez')
         self.admin_user.set_password(self.PASSWORD_STRING)
         make_user_admin(self.admin_user)
         self.qsd_user, created = ESPUser.objects.get_or_create(username='qsd', first_name='Aylik', last_name='Kewesd')
         self.qsd_user.set_password(self.PASSWORD_STRING)
-        self.qsd_user.userbit_set.add(UserBit(verb = GetNode('V/Administer/Edit'), qsc = GetNode('Q'), recursive = True))
         self.qsd_user.save()
 
         # Check that a NavBarCategory exists
@@ -61,7 +86,7 @@ class TestQsdCachePurging(SeleniumTestCase):
 
         # Make our test page
         qsd_rec_new = QuasiStaticData()
-        qsd_rec_new.path = GetNode('Q/Web')
+        qsd_rec_new.url = 'test'
         qsd_rec_new.name = 'test'
         qsd_rec_new.author = self.admin_user
         qsd_rec_new.nav_category = NavBarCategory.default()

@@ -35,8 +35,7 @@ Learning Unlimited, Inc.
 
 from django.contrib import admin
 from esp.admin import admin_site
-from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo, SATPrepTeacherModuleInfo, SATPrepAdminModuleInfo, CreditCardSettings
-from esp.program.modules.module_ext import RemoteProfile
+from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo, CreditCardSettings
 from esp.program.modules.base import ProgramModuleObj
 
 class Admin_DBReceipt(admin.ModelAdmin):
@@ -45,8 +44,6 @@ class Admin_DBReceipt(admin.ModelAdmin):
         'program',
     )
 admin_site.register(DBReceipt, Admin_DBReceipt)
-
-admin_site.register(SATPrepAdminModuleInfo)
 
 class SCRMIAdmin(admin.ModelAdmin):
     pass
@@ -66,13 +63,7 @@ class ProgramModelObjAdmin(admin.ModelAdmin):
         'required_label',
     )
     list_filter = ('program', 'module')
-    search_fields = ('program__anchor__friendly_name', 'program__anchor__parent__friendly_name', 'module__admin_title', 'module__link_title')
+    search_fields = ('program__name', 'program__url', 'module__admin_title', 'module__link_title')
 admin_site.register(ProgramModuleObj, ProgramModelObjAdmin)
-
-admin_site.register(SATPrepTeacherModuleInfo)
-
-class RemoteProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'program', 'volunteer', 'need_bus')
-admin_site.register(RemoteProfile, RemoteProfileAdmin)
 
 admin_site.register(CreditCardSettings)

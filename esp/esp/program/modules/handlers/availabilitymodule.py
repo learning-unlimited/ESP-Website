@@ -32,18 +32,19 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
-from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
+from esp.program.modules.base    import ProgramModuleObj, needs_teacher, needs_admin, meets_deadline, main_call, aux_call
 from esp.program.modules         import module_ext
-from esp.program.models          import Program
+from esp.program.models          import Program, ClassSection
 from esp.program.controllers.classreg import ClassCreationController
 from esp.middleware              import ESPError
 from esp.datatree.models import *
 from esp.web.util                import render_to_response
+from django.http import HttpResponse, HttpResponseRedirect
 from django                      import forms
-from esp.cal.models              import Event
+from esp.cal.models              import Event, EventType
 from esp.tagdict.models          import Tag
 from django.db.models.query      import Q
-from esp.users.models            import User, ESPUser
+from esp.users.models            import User, ESPUser, UserAvailability
 from esp.resources.models        import ResourceType, Resource
 from django.conf import settings
 from django.template.loader      import render_to_string
@@ -54,20 +55,24 @@ from esp.middleware.threadlocalrequest import get_current_request
 class AvailabilityModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
 
-    @property
-    def teacher_role_node(self):
-        if not hasattr(self, '_teacher_role_node'):
-            self._teacher_role_node = GetNode('V/Flags/UserRole/Teacher')
-        return self._teacher_role_node
-
     @classmethod
     def module_properties(cls):
-        return {
+        return [ {
             "admin_title": "Teacher Availability",
             "link_title": "Indicate Your Availability",
             "module_type": "teach",
+            "required": True,
             "seq": 0
-            }
+            }, {
+            "admin_title": "Teacher Availability Checker",
+            "link_title": "Check Teacher Availability",
+            "module_type": "manage",
+            "seq": 0
+            } ]
+    
+    def event_type(self):
+        et, created = EventType.objects.get_or_create(description='Class Time Block')
+        return et
     
     def prepare(self, context={}):
         """ prepare returns the context for the main availability page. 
@@ -101,7 +106,7 @@ class AvailabilityModule(ProgramModuleObj):
     def teachers(self, QObject = False):
         """ Returns a list of teachers who have indicated at least one segment of teaching availability for this program. """
         
-        qf = Q(useravailability__event__anchor=self.program_anchor_cached(), useravailability__role=self.teacher_role_node)
+        qf = Q(useravailability__event__program=self.program, useravailability__role__name='Teacher')
         if QObject is True:
             return {'availability': self.getQForUser(qf)}
         
@@ -112,17 +117,9 @@ class AvailabilityModule(ProgramModuleObj):
     def teacherDesc(self):
         return {'availability': """Teachers who have indicated their scheduled availability for the program."""}
 
-    def deadline_met(self):
-        if get_current_request().user.isAdmin(self.program):
-            return True
-        
-        tmpModule = ProgramModuleObj()
-        tmpModule.__dict__ = self.__dict__
-        return tmpModule.deadline_met()
-    
     def getTimes(self):
         #   Get a list of tuples with the id and name of each of the program's timeslots
-        times = self.program.getTimeSlots()
+        times = self.program.getTimeSlots(types=[self.event_type()])
         return [(str(t.id), t.short_description) for t in times]
 
     @main_call
@@ -131,8 +128,14 @@ class AvailabilityModule(ProgramModuleObj):
     def availability(self, request, tl, one, two, module, extra, prog):
         #   Renders the teacher availability page and handles submissions of said page.
         
-        teacher = ESPUser(request.user)
-        time_options = self.program.getTimeSlots()
+        if tl == "manage":
+        	# They probably want to be check someone's availability instead-
+        	return HttpResponseRedirect( '/manage/%s/%s/check_availability' % (one, two) )
+        else:
+            return self.availabilityForm(request, tl, one, two, prog, ESPUser(request.user), False)
+
+    def availabilityForm(self, request, tl, one, two, prog, teacher, isAdmin):
+        time_options = self.program.getTimeSlots(types=[self.event_type()])
         #   Group contiguous blocks
         if Tag.getTag('availability_group_timeslots', default=True) == 'False':
             time_groups = [list(time_options)]
@@ -164,8 +167,12 @@ class AvailabilityModule(ProgramModuleObj):
                 ccc = ClassCreationController(self.program)
                 ccc.send_availability_email(teacher)
                 
-                #   Return to the main registration page
-                return self.goToCore(tl)
+                if isAdmin:
+                    #   Return to the relevant check_availability page
+                    return HttpResponseRedirect( '/manage/%s/%s/check_availability?user=%s' % (one, two, teacher.username) )
+                else:
+                    #   Return to the main registration page
+                    return self.goToCore(tl)
         
         #   Show new form
         available_slots = teacher.getAvailableTimes(self.program, True)
@@ -185,7 +192,7 @@ class AvailabilityModule(ProgramModuleObj):
 
         if not (len(available_slots) or blank): # I'm not sure whether or not we want the "or blank"
             #   If they didn't enter anything, make everything checked by default.
-            available_slots = self.program.getTimeSlots()
+            available_slots = self.program.getTimeSlots(types=[self.event_type()])
             #   The following 2 lines mark the teacher as always available.  This
             #   is sometimes helpful, but not usually the desired behavior.
             #   for a in available_slots:
@@ -194,11 +201,86 @@ class AvailabilityModule(ProgramModuleObj):
         context = {'groups': [{'selections': [{'checked': (t in available_slots), 'taken': (t in taken_slots), 'slot': t} for t in group]} for group in time_groups]}
         context['num_groups'] = len(context['groups'])
         context['prog'] = self.program
-        context['is_overbooked'] = (not self.isCompleted() and (request.user.getTaughtTime(self.program) > timedelta(0)))
+        context['is_overbooked'] = (not self.isCompleted() and (teacher.getTaughtTime(self.program) > timedelta(0)))
         context['submitted_blank'] = blank
         context['conflict_found'] = conflict_found
+        context['teacher_user'] = teacher
         
-        return render_to_response(self.baseDir()+'availability_form.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'availability_form.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def check_availability(self, request, tl, one, two, module, extra, prog):
+        """
+        Check availability of the specified user.
+        """
+        
+        target_username = None
+        
+        if request.GET.has_key('user'):
+            target_username = request.GET['user']
+        elif request.POST.has_key('user'):
+            target_username = request.POST['user']
+        else:
+            context = {}
+            return render_to_response(self.baseDir()+'searchform.html', request, context)
+        
+        try:
+            teacher = ESPUser.objects.get(username=target_username)
+        except:
+            raise ESPError(False), "That username does not appear to exist!"
+
+        # Get the times that the teacher marked they were available
+        resources = UserAvailability.objects.filter(user=teacher, event__program=prog)
+
+        # Now get times that teacher is teaching
+        classes = [cls for cls in teacher.getTaughtClasses() if cls.parent_program.id == prog.id ]
+        times = set()
+        
+        for cls in classes:
+            cls_secs = ClassSection.objects.filter(parent_class=cls)
+            
+            for cls_sec in cls_secs:
+                sec_times = Event.objects.filter(meeting_times=cls_sec)
+                
+                for time in sec_times:
+                    times.add(time)
+        
+        # Check which are truly available and mark in tuple as True, otherwise as False (will appear red)
+        available = []
+        
+        for resource in resources:
+            if resource.event not in times:
+                available.append((resource.event.start, resource.event.end, True))
+            else:
+                available.append((resource.event.start, resource.event.end, False))
+
+        context = {'available': available, 'teacher_name': teacher.first_name + ' ' + teacher.last_name, 'edit_path': '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.username) }
+        return render_to_response(self.baseDir()+'check_availability.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def edit_availability(self, request, tl, one, two, module, extra, prog):
+        """
+        Admins edits availability of the specified user.
+        """
+        
+        target_username = None
+        
+        if request.GET.has_key('user'):
+            target_username = request.GET['user']
+        elif request.POST.has_key('user'):
+            target_username = request.POST['user']
+        else:
+            context = {}
+            return render_to_response(self.baseDir()+'searchform.html', request, context)
+        
+        try:
+            teacher = ESPUser.objects.get(username=target_username)
+        except:
+            raise ESPError(False), "That username does not appear to exist!"
+
+        return self.availabilityForm(request, tl, one, two, prog, teacher, True)
 
     class Meta:
         abstract = True

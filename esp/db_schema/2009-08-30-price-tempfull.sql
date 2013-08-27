@@ -1,1 +1,0 @@
-ALTER TABLE modules_studentclassregmoduleinfo ADD COLUMN temporarily_full_text varchar(255);

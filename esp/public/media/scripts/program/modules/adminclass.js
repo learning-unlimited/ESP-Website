@@ -1,3 +1,7 @@
+//  Global variables for storing the class and section data
+var classes_global = {};
+var sections_global = {};
+
 function deleteClass() {
     if (confirm('Are you sure you would like to delete this class? \n Since you are an admin, you can delete this class with students. \n Deleting is hard to undo, so consider instead marking it unreviewed or rejected.')) {
        return true;
@@ -63,24 +67,26 @@ function fill_class_popup(clsid, classes_data) {
         text: "Approve (all sections)",
         click: function() {
           approve_class($j(this).attr('clsid'));
-        },
+        }
       },
       {
         text: "Unreview",
         click: function() {
           unreview_class($j(this).attr('clsid'));
-        },
+        }
       },
       {
         text: "Reject (all sections)",
         click: function() {
           reject_class($j(this).attr('clsid'));
-        },
+        }
       }])
     .html('')
     .append("<p><b>Status:</b> " + status_string + "</p>")
     .append("<p><b>Sections:</b> " + class_info.sections.length + "</p>")
     .append("<p><b>Max Size:</b> " + class_info.class_size_max + "</p>")
+    .append("<p><b>Duration:</b> " + class_info.duration + "</p>")
+    .append("<p><b>Grade Range:</b> " + class_info.grade_range + "</p>")
     .append("<p><b>Category:</b> " + class_info.category + "</p>")
     //.append("<p>Difficulty: " + class_info.difficulty + "</p>")
     .append("<p><b>Prereqs:</b> " + class_info.prereqs + "</p>")
@@ -207,6 +213,10 @@ function fillClasses(data)
 	var cls = classes[i];
 	$j("#classes_anchor").append(createClassRow(cls));
     }
+    
+    //  Save the data for later if we need it
+    classes_global = classes;
+    sections_global = sections;
 }
 
 function createClassRow(clsObj)
@@ -216,7 +226,8 @@ function createClassRow(clsObj)
     <td class='clsleft classname'> \
       <span title='{{ cls.title }}'> \
         <strong>{{ cls.emailcode }}.</strong> \
-        <span class='{{ title_css_class }}'>{{ cls.title }}</span> \
+        <span class='{{ title_css_class }}'>{{ cls.title }} \
+        <strong>[{{ cls_status }}]</strong></span> \
       </span> \
     </td> \
     <td class='clsmiddle' style='font-size: 12px' width='40px'> \
@@ -232,7 +243,7 @@ function createClassRow(clsObj)
  \
  \
     <td class='clsmiddle'> \
-       <form method='post' action='/manage/{{ program.getUrlBase }}/deleteclass/{{ cls.id }}' onsubmit=;return deleteClass();'> \
+       <form method='post' action='/manage/{{ program.getUrlBase }}/deleteclass/{{ cls.id }}' onsubmit='return deleteClass();'> \
          <input class='button' type='submit' value='Delete' /> \
        </form> \
     </td> \
@@ -280,21 +291,31 @@ function createClassRow(clsObj)
 
 
     var title_css_class = "";
+    var cls_status = "";
     if (clsObj.status == 0)
     {
 	title_css_class = "unapproved dashboard_blue";
+	cls_status = "UNREVIEWED";
     }
     else if (clsObj.status == -10)
     {
 	title_css_class = "unapproved dashboard_red";
+	cls_status = "REJECTED";
+    }
+    else if (clsObj.status == -20)
+    {
+	title_css_class = "unapproved dashboard_red";
+	cls_status = "CANCELLED";
     }
     else if (clsObj.status > 0)
     {
 	title_css_class = "approved";
+	cls_status = "APPROVED";
     }
     else if (clsObj.status <= 0)
     {
 	title_css_class = "unapproved";
+	cls_status = "UNAPPROVED";
     }
 
     var rapid_approval_style = "style='display:none;'";
@@ -310,6 +331,7 @@ function createClassRow(clsObj)
 	.replace(new RegExp("{{ section_links }}", "g"), section_link_list)
 	.replace(new RegExp("{{ program.getUrlBase }}", "g"), base_url)
 	.replace(new RegExp("{{ title_css_class }}", "g"), title_css_class)
+	.replace(new RegExp("{{ cls_status }}", "g"), cls_status)
 	.replace(new RegExp("{{ rapid_approval_style }}", "g"), rapid_approval_style);
 
     // Turn the template into a jQuery node
@@ -320,4 +342,40 @@ function createClassRow(clsObj)
 
     // Return the jQuery node
     return $node;
+}
+
+function handle_sort_control()
+{
+    //  Detect specified sorting method
+    var method = $j("#dashboard_sort_control").prop("value");
+    //  Update the sorttable_customkey of the first td in each row
+    $j("#classes_anchor > tr").each(function (index) {
+        var clsid = parseInt($j(this).prop("id").split("-")[1])
+        if (!classes_global.hasOwnProperty(clsid))
+            return;
+        var cls = classes_global[clsid];
+        if (method == "id")
+            $j(this).children("td").first().attr("sorttable_customkey", cls.id);
+        else if (method == "category")
+            $j(this).children("td").first().attr("sorttable_customkey", cls.emailcode);
+        else if (method == "name")
+            $j(this).children("td").first().attr("sorttable_customkey", cls.title);
+        else if (method == "status")
+            $j(this).children("td").first().attr("sorttable_customkey", cls.status);
+        else if (method == "size")
+            $j(this).children("td").first().attr("sorttable_customkey", cls.class_size_max);
+        else if (method == "special")
+            $j(this).children("td").first().attr("sorttable_customkey", (cls.message_for_directors || "").length + (cls.requested_special_resources || "").length);
+    });
+    
+    $j("#header-row > th").first().removeClass("sorttable_sorted sorttable_sorted_reverse");
+    //  sorttable.makeSortable($j("#dashboard_class_table").get(0));
+    if (sorttable.innerSortFunction)
+        sorttable.innerSortFunction.apply($j("#header-row > th").get(0), []);
+}
+
+function setup_sort_control()
+{
+    $j("#dashboard_sort_control").change(handle_sort_control);
+    handle_sort_control();
 }

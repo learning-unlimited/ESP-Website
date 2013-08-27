@@ -40,9 +40,11 @@ from datetime import date, datetime
 from esp.cal.models import Event
 from esp.users.models import ESPUser, StudentInfo
 from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, ClassSection
+from esp.program.models.class_ import ClassCategories
 from esp.mailman import add_list_member, remove_list_member, list_contents
 
 from django.conf import settings
+import os
 
 class LotteryAssignmentController(object):
 
@@ -51,11 +53,15 @@ class LotteryAssignmentController(object):
         'Ki': 1.1,
         'check_grade': True,
         'stats_display': False,
+        'directory': os.getenv("HOME"),
     }
     
     def __init__(self, program, **kwargs):
         """ Set constant parameters for a lottery assignment. """
         
+        if 'lotteried_students' not in program.students():
+            raise Exception('Cannot retrive lottery preferences for program, please ensure that it has the lottery module.')
+
         self.program = program
         self.num_timeslots = len(self.program.getTimeSlots())
         self.num_students = self.program.students()['lotteried_students'].count()
@@ -103,7 +109,7 @@ class LotteryAssignmentController(object):
         self.student_schedules = numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool)
         self.student_sections = numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool)
         self.student_weights = numpy.ones((self.num_students,))
-        
+
     def initialize(self):
         """ Gather all of the information needed to run the lottery assignment.
             This includes:
@@ -118,6 +124,12 @@ class LotteryAssignmentController(object):
         self.section_capacities = numpy.zeros((self.num_sections,), dtype=numpy.uint32)
         self.section_overlap = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool)
         
+        # One array to keep track of the utility of each student
+        # (defined as hours of interested class + 1.5*hours of priority classes)
+        # and the other arrary to keep track of student weigths (defined as # of classes signed up for)
+        self.student_utility_weights = numpy.zeros((self.num_students, ), dtype=numpy.float)
+        self.student_utilities = numpy.zeros((self.num_students, ), dtype=numpy.float)
+
         #   Get student, section, timeslot IDs and prepare lookup table
         (self.student_ids, self.student_indices) = self.get_ids_and_indices(self.program.students()['lotteried_students'])
         (self.section_ids, self.section_indices) = self.get_ids_and_indices(self.program.sections().filter(status__gt=0, registration_status=0))
@@ -134,12 +146,18 @@ class LotteryAssignmentController(object):
             if ts_day not in dates:
                 dates.append(ts_day)
         lunch_by_day = [[] for x in dates]
+        ts_count = 0
         for ts in lunch_timeslots:
             d = date(ts.start.year, ts.start.month, ts.start.day)
             lunch_by_day[dates.index(d)].append(ts.id)
             self.lunch_schedule[self.timeslot_indices[ts.id]] = True
-        self.lunch_timeslots = numpy.array(lunch_by_day)
-        
+        for i in range(len(lunch_by_day)):
+            if len(lunch_by_day[i]) > ts_count:
+                ts_count = len(lunch_by_day[i])
+        self.lunch_timeslots = numpy.zeros((len(lunch_by_day), ts_count), dtype=numpy.int32)
+        for i in range(len(lunch_by_day)):
+            self.lunch_timeslots[i, :len(lunch_by_day[i])] = numpy.array(lunch_by_day[i])
+
         now = datetime.now()
         
         #   Populate interest matrix
@@ -152,6 +170,10 @@ class LotteryAssignmentController(object):
         pra = numpy.array(priority_regs, dtype=numpy.uint32)
         self.priority[self.student_indices[pra[:, 0]], self.section_indices[pra[:, 1]]] = True
         
+        #   Set student utility weights. Counts number of classes that students selected. Used only for computing the overall_utility stat
+        #   NOTE: Uses fixed (interest + priority) formula, needs attention when multiple priority levels are merged.
+        self.student_utility_weights = numpy.sum(self.interest.astype(float), 1) + numpy.sum(self.priority.astype(float), 1)
+
         #   Populate section schedule
         section_times = numpy.array(self.program.sections().filter(status__gt=0, registration_status=0).filter(meeting_times__id__isnull=False).distinct().values_list('id', 'meeting_times__id'))
         self.section_schedules[self.section_indices[section_times[:, 0]], self.timeslot_indices[section_times[:, 1]]] = True
@@ -168,12 +190,16 @@ class LotteryAssignmentController(object):
         
         #   Populate student grades; grade will be assumed to be 0 if not entered on profile
         self.student_grades = numpy.zeros((self.num_students,))
-        gradyear_pairs = numpy.array(RegistrationProfile.objects.filter(user__id__in=list(self.student_ids), most_recent_profile=True).values_list('user__id', 'student_info__graduation_year'), dtype=numpy.uint32)
+        gradyear_pairs = numpy.array(RegistrationProfile.objects.filter(user__id__in=list(self.student_ids), most_recent_profile=True, student_info__graduation_year__isnull=False).values_list('user__id', 'student_info__graduation_year'), dtype=numpy.uint32)
         self.student_grades[self.student_indices[gradyear_pairs[:, 0]]] = 12 + ESPUser.current_schoolyear() - gradyear_pairs[:, 1]
         
         #   Find section capacities (TODO: convert to single query)
         for sec in self.program.sections().filter(status__gt=0, registration_status=0):
             self.section_capacities[self.section_indices[sec.id]] = sec.capacity
+
+        # Populate section lengths (hours)
+        self.section_lengths = numpy.array([x.nonzero()[0].size for x in self.section_schedules])
+
     
     def fill_section(self, si, priority=False):
         """ Assigns students to the section with index si.
@@ -213,7 +239,7 @@ class LotteryAssignmentController(object):
         #   Check that this section does not cover all lunch timeslots on any given day
         lunch_overlap = self.lunch_schedule * self.section_schedules[si, :]
         for i in range(self.lunch_timeslots.shape[0]):
-            if self.lunch_timeslots[i].shape[0] != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i, :]]]) >= (self.lunch_timeslots.shape[1]):
+            if len(self.lunch_timeslots[i]) != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i]]]) >= (self.lunch_timeslots.shape[1]):
                 if self.options['stats_display']: print '   Section covered all lunch timeslots %s on day %d, aborting' % (self.lunch_timeslots[i, :], i)
                 return False
         
@@ -267,6 +293,12 @@ class LotteryAssignmentController(object):
         for i in range(timeslots.shape[0]):
             assert(numpy.sum(self.student_schedules[selected_students, timeslots[i]]) == 0)
             self.student_schedules[selected_students, timeslots[i]] = True
+
+            #   Update student utilies
+            if priority:
+                self.student_utilities[selected_students] += 1.5
+            else:
+                self.student_utilities[selected_students] += 1
         
         #   Update student weights
         self.student_weights[selected_students] /= weight_factor
@@ -282,8 +314,10 @@ class LotteryAssignmentController(object):
             
         self.clear_assignments()
         
-        #   Assign priority students to all sections in random order
+        #   Assign priority students to all sections in random order, grouped by duration
+        #   so that longer sections aren't disadvantaged by scheduling conflicts
         random_section_indices = numpy.random.choice(self.num_sections, self.num_sections, replace=False)
+        random_section_indices = sorted(random_section_indices, key=lambda i : -self.section_lengths[i])
         if self.options['stats_display']: print '\n== Assigning priority students'
         for section_index in random_section_indices:
             self.fill_section(section_index, priority=True)
@@ -315,22 +349,22 @@ class LotteryAssignmentController(object):
         for i in range(self.num_students):
             assert(numpy.sum(self.student_schedules[i, :] != numpy.sum(self.section_schedules[numpy.nonzero(self.student_sections[i, :])[0], :], 0)) == 0)
     
-    def compute_stats(self):
+    def compute_stats(self, display=True):
         """ Compute statistics to provide feedback to the user about how well the
             lottery assignment worked.  """
-            
+
         stats = {}
-        
+
         priority_matches = self.student_sections * self.priority
         priority_assigned = numpy.sum(priority_matches, 1)
         priority_requested = numpy.sum(self.priority, 1)
         priority_fractions = numpy.nan_to_num(priority_assigned.astype(numpy.float) / priority_requested)
-        
+
         interest_matches = self.student_sections * self.interest
         interest_assigned = numpy.sum(interest_matches, 1)
         interest_requested = numpy.sum(self.interest, 1)
         interest_fractions = numpy.nan_to_num(interest_assigned.astype(numpy.float) / interest_requested)
-        
+
         stats['priority_requested'] = priority_requested
         stats['priority_assigned'] = priority_assigned
         stats['interest_requested'] = interest_requested
@@ -345,7 +379,7 @@ class LotteryAssignmentController(object):
         stats['num_registrations'] = numpy.sum(self.student_sections)
         stats['num_full_classes'] = numpy.sum(self.section_capacities == numpy.sum(self.student_sections, 0))
         stats['total_spaces'] = numpy.sum(self.section_capacities)
-        
+
         #   Compute histograms of assigned vs. requested classes
         hist_priority = {}
         for i in range(self.num_students):
@@ -354,7 +388,7 @@ class LotteryAssignmentController(object):
                 hist_priority[key] = 0
             hist_priority[key] += 1
         stats['hist_priority'] = hist_priority
-        
+
         hist_interest = {}
         for i in range(self.num_students):
             key = (interest_assigned[i], interest_requested[i])
@@ -362,13 +396,70 @@ class LotteryAssignmentController(object):
                 hist_interest[key] = 0
             hist_interest[key] += 1
         stats['hist_interest'] = hist_interest
-        
-        if self.options['stats_display']:
-            print 'Summary statistics:'
-            print stats
-            
+
+        # Compute the overall utility of the current run.
+        # 1. Each student has a utility of sqrt(#hours of interested + 1.5 #hours of priority).
+        # This measures how happy the student will be with their classes
+        # 2. Each student gets a weight of sqrt(# classes regged for)
+        # This measures how much responsibility we take if the student gets a
+        # bad schedule (we care less if students regged for less classes).
+        # 3. We then sum weight*utility over all students and divide that
+        # by the sum of weights to get a weighted average utility.
+        #
+        # Also use the utility to get a list of screwed students,
+        # where the level of screwedness is defined by (1+utility)/(1+weight)
+        # So, people with low untilities and high weights (low screwedness scores)
+        # are considered screwed. This is pretty sketchy, so take it with a grain of salt.
+        weighted_overall_utility = 0.0
+        sum_of_weights=0.0
+        screwed_students=[]
+        for i in range(self.num_students):
+            utility = numpy.sqrt(self.student_utilities[i])
+            weight = numpy.sqrt((self.student_utility_weights[i]))
+            weighted_overall_utility += utility * weight
+            sum_of_weights += weight
+            screwed_students.append(((1+utility)/(1+weight), self.student_ids[i]))
+
+        overall_utility = weighted_overall_utility/sum_of_weights
+        screwed_students.sort()
+
+        stats['overall_utility'] = overall_utility
+        stats['students_by_screwedness'] = screwed_students
+
+        if self.options['stats_display'] or display:
+            self.display_stats(stats)
+
+        self.stats = stats
         return stats
-    
+
+    def display_stats(self, stats):
+        print 'Lottery results for %s' % self.program.niceName()
+        print '--------------------------------------'
+
+        print 'Counts:'
+        print '%6d students applied to the lottery' % stats['num_lottery_students']
+        print '%6d students were enrolled in at least 1 class' % stats['num_enrolled_students']
+        print '%6d total enrollments' % stats['num_registrations']
+        print '%6d available sections' % stats['num_sections']
+        print '%6d sections were filled to capacity' % stats['num_full_classes']
+
+        print 'Ratios:'
+        print '%2.2f%% of priority classes were enrolled' % (stats['overall_priority_ratio'] * 100.0)
+        print '%2.2f%% of interested classes were enrolled' % (stats['overall_interest_ratio'] * 100.0)
+        """
+        print 'Example results:'
+        no_pri_indices = numpy.nonzero(stats['priority_assigned'] == 0)[0]
+        print '1) First %d students who got none of their priority classes:' % min(5, no_pri_indices.shape[0])
+        for i in range(min(5, no_pri_indices.shape[0])):
+            sid = stats['student_ids'][no_pri_indices[i]]
+            student = ESPUser.objects.get(id=sid)
+            print '   Student: %s (grade %s)' % (student.name(), student.getGrade())
+            cs_ids = self.section_ids[numpy.nonzero(self.priority[no_pri_indices[i], :])[0]]
+            print '   - Priority classes: %s' % ClassSection.objects.filter(id__in=list(cs_ids))
+            cs_ids = self.section_ids[numpy.nonzero(self.interest[no_pri_indices[i], :])[0]]
+            print '   - Interested classes: %s' % ClassSection.objects.filter(id__in=list(cs_ids))
+            """
+
     def get_computed_schedule(self, student_id, mode='assigned'):
         #   mode can be 'assigned', 'interested', or 'priority'
         if mode == 'assigned':
@@ -381,8 +472,38 @@ class LotteryAssignmentController(object):
         for i in range(assignments.shape[0]):
             result.append(ClassSection.objects.get(id=self.section_ids[assignments[i]]))
         return result
+
+    def generate_screwed_csv(self, directory=None, n=None, stats=None):
+        """Generate a CSV file of the n most screwed students. Default: All of them.
+        Directory: string of what directory you like the information stored in.
+        This is also known as the script shulinye threw together while trying to run the Spark 2013 lottery.
+        You might want to crosscheck this file before accepting it."""
+        import csv
+
+        if directory == None:
+            directory = self.options['directory']
+
+        if stats == None:
+            stats = self.compute_stats(display=False) #Calculate stats if I didn't get any
+
+        studentlist = stats['students_by_screwedness']
+        if n != None: studentlist = studentlist[:n]
+        tday = datetime.today().strftime('%Y-%m-%d')
+        
+        fullfilename = directory + '/screwed_csv_' + tday + '.csv'
+        
+        csvfile = open(fullfilename, 'wb')
+        csvwriter = csv.writer(csvfile)
+        
+        csvwriter.writerow(["Student", "Student ID", "StudentScrewedScore", "#Classes"])
+
+        for s in studentlist:
+            csvwriter.writerow([ESPUser.objects.get(id=s[1]).name().encode('ascii', 'ignore'), s[1], s[0], len(self.get_computed_schedule(s[1]))])
+
+        csvfile.close()
+        print 'File can be found at: ' + fullfilename
     
-    def save_assignments(self, debug_display=False):
+    def save_assignments(self, debug_display=False, try_mailman=False):
         """ Store lottery assignments in the database once they have been computed.
             This is a fairly time consuming step compared to computing the assignments. """
             
@@ -395,13 +516,15 @@ class LotteryAssignmentController(object):
         assert(student_ids.shape == section_ids.shape)
         
         relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
-        for i in range(student_ids.shape[0]):
-            #   Note: can be switched to bulk_create once Django 1.4 is out
-            StudentRegistration.objects.create(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship)
-            if i % 1000 == 0 and debug_display:
-                print 'Created %d/%d registrations' % (i, student_ids.shape[0])
+        self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
+        StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
+        print "StudentRegistration enrollments all created to start at %s" % self.now
+        if debug_display:
+            print 'Created %d registrations' % student_ids.shape[0]
         
-        self.update_mailman_lists()
+        #As mailman doesn't work, disable for now.
+        if try_mailman:
+            self.update_mailman_lists()
     
     def clear_saved_assignments(self, delete=False):
         """ Expire/delete all previous StudentRegistration enrollments associated with the program. """
@@ -419,7 +542,7 @@ class LotteryAssignmentController(object):
         
     def update_mailman_lists(self, delete=True):
         if hasattr(settings, 'USE_MAILMAN') and settings.USE_MAILMAN:
-            self.clear_mailman_list("%s_%s-students" % (self.program.anchor.parent.name, self.program.anchor.name))
+            self.clear_mailman_list("%s_%s-students" % (self.program.program_type, self.program.program_instance))
             for i in range(self.num_sections):
                 section = ClassSection.objects.get(id=self.section_ids[i])
                 list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
@@ -429,5 +552,5 @@ class LotteryAssignmentController(object):
                     student = ESPUser.objects.get(id=self.student_ids[i])
                     for list_name in list_names:
                         add_list_member(list_name, student.email)
-                    add_list_member("%s_%s-students" % (self.program.anchor.parent.name, self.program.anchor.name), student.email)
+                    add_list_member("%s_%s-students" % (self.program.program_type, self.program.program_instance), student.email)
         

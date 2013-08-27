@@ -38,7 +38,6 @@ from django.test.client import RequestFactory
 
 class ProgramPrintablesModuleTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
-        from esp.datatree.models import GetNode
         from esp.program.models import Program
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
 
@@ -75,8 +74,8 @@ class ProgramPrintablesModuleTest(ProgramFrameworkTest):
     def get_userlist_views(self):
         #   Hard-code some views that can be tested using simple teacher/student lists.
         #   Exclude those tested by specialized functions below.
-        teacher_views = ['teacherlist', 'teachersbytime', 'teacherinfo', 'teacherschedules']
-        student_views = ['satpreplabels', 'satpreplabels_bysection', 'studentsbyname', 'emergencycontacts', 'flatstudentschedules', 'studentchecklist', 'student_tickets']
+        teacher_views = ['teacherlist', 'teachersbytime', 'teacherschedules']
+        student_views = ['studentsbyname', 'emergencycontacts', 'flatstudentschedules', 'studentchecklist', 'student_tickets']
         result = []
         for v in teacher_views:
             result.append((v, 'teachers', 'class_approved'))

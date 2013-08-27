@@ -30,7 +30,7 @@ Here is some important information regarding your class:<br />
 </tr>
 <tr>
  <th>Class Title:</th>
- <td>&quot;{{cls.title|escape }}&quot;</th>
+ <td>&quot;{{cls.title|escape }}&quot;</td>
 </tr>
 <tr>
  <th>Teachers:</th>
@@ -63,11 +63,7 @@ Students: {{cls.emailcode}}-students@{{ EMAIL_HOST }}
 </tr>
 <tr>
   <th>Time Blocks (if assigned): </th>
-  <td>{{ cls.friendly_times|join:"<br />" }}</td>
-</tr>
-<tr>
-  <th>Rooms (if assigned)</th>
-  <td>{{ cls.prettyrooms|join:"<br />" }}</td>
+  <td>{{ cls.prettyblocks|join:"<br />" }}</td>
 </tr>
 <tr>
   <th>Directors' Emails (if available)</th>
@@ -78,24 +74,4 @@ Students: {{cls.emailcode}}-students@{{ EMAIL_HOST }}
 <br />
 <br />
 
-
-<h2>Announcements &ndash; Class Specific</h2>
-
-{% if blogposts|length_is:0 %}
-<em>There are currently no posts.</em>
-{% else %}
-{% for blogentry in blogposts %}
-<div class="blogentry">
-  <p class="heading">
-    <span class="date">{{ blogentry.timestamp|date:"N d, Y @ f a" }}</span>
-    <span class="title">{{ blogentry.title }}</span>
-  </p>
-  <p class="contents">
-    {{ blogentry.html }}
-  </p>
-</div>
-<br />
-<br />
-{% endfor %}
-{% endif %}
 {% endblock %}

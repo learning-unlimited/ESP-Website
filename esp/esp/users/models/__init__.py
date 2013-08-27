@@ -36,7 +36,7 @@ from datetime import datetime, timedelta
 from collections import defaultdict
 
 from django.contrib.auth import logout, login, authenticate
-from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.auth.models import User, AnonymousUser, Group
 from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
 from django.contrib.localflavor.us.forms import USStateSelect
 from django.core.cache import cache
@@ -87,9 +87,6 @@ def user_get_key(user):
     else:
         return str(user.id)
 
-def userBitCacheTime():
-    return 300
-
 def admin_required(func):
     def wrapped(request, *args, **kwargs):
         if not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator():
@@ -105,7 +102,7 @@ class FakeState(object):
 class UserAvailability(models.Model):
     user = AjaxForeignKey('ESPUser')
     event = models.ForeignKey(Event)
-    role = AjaxForeignKey(DataTree)
+    role = models.ForeignKey('auth.Group')
     priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
 
     class Meta:
@@ -119,9 +116,7 @@ class UserAvailability(models.Model):
         #   Careful with this; the result may differ for users with multiple types.
         #   (With this alphabetical ordering, you get roles in the order: teacher, student, guardian, educator, administrator)
         if (not hasattr(self, 'role')) or self.role is None:
-            queryset = self.user.userbit_set.filter(QTree(verb__below=GetNode('V/Flags/UserRole'))).order_by('-verb__name')
-            if queryset.count() > 0:
-                self.role = queryset[0].verb
+            self.role = self.user.getUserTypes()[0]
         return super(UserAvailability, self).save(*args, **kwargs)
 
 
@@ -173,6 +168,10 @@ class ESPUser(User, AnonymousUser):
 
         self.other_user = False
 
+        if not hasattr(ESPUser, 'isOfficer'):
+            for user_type in ESPUser.getTypes() + ['Officer']:
+                setattr(ESPUser, 'is%s' % user_type, ESPUser.create_membership_method(user_type))
+
     def is_anonymous(self):
         return self._is_anonymous
 
@@ -185,15 +184,26 @@ class ESPUser(User, AnonymousUser):
 
     @classmethod
     def ajax_autocomplete(cls, data):
+        #q_name assumes data is a comma separated list of names
+        #lastname first
+        #q_username is username
+        #q_id is id
+        #this feels kind of weird because it's selecting
+        #from three keys using the same value
         names = data.strip().split(',')
         last = names[0]
-
-        query_set = cls.objects.filter(last_name__istartswith = last.strip())
-
+        username = names[0]
+        idstr = names[0]
+        q_names = Q(last_name__istartswith = last.strip())
         if len(names) > 1:
-            first  = ','.join(names[1:])
-            if len(first.strip()) > 0:
-                query_set = query_set.filter(first_name__istartswith = first.strip())
+          first = ','.join(names[1:])
+          if len(first.strip()) > 0:
+            q_names = q_names & Q(first_name__istartswith = first.strip())
+
+        q_username = Q(username__istartswith = username.strip())
+        q_id = Q(id__istartswith = idstr.strip())
+
+        query_set = cls.objects.filter(q_names | q_username | q_id)
 
         values = query_set.order_by('last_name','first_name','id').values('first_name', 'last_name', 'username', 'id')
 
@@ -222,28 +232,11 @@ class ESPUser(User, AnonymousUser):
     def is_authenticated(self):
         return self.getOld().is_authenticated()
 
-    def getVisible(self, objType):
-        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Flags/Public'))
-
     def getLastProfile(self):
         # caching is handled in RegistrationProfile.getLastProfile
         # for coherence w.r.t clearing and more caching
         from esp.program.models import RegistrationProfile
         return RegistrationProfile.getLastProfile(self)
-
-    @cache_function
-    def getEditable_ids(self, objType, qsc=None):
-        # As far as I know, fbap's cache is still screwy, so we'll retain this cache at a higher level for now --davidben, 2009-04-06
-        return UserBit.find_by_anchor_perms(objType, self, GetNode('V/Administer/Edit'), qsc).values_list('id', flat=True)
-    getEditable_ids.get_or_create_token(('self',)) # Currently very difficult to determine type, given anchor
-    getEditable_ids.depend_on_row(lambda:UserBit, lambda bit: {} if bit.user_id is None else {'self': bit.user},
-                                                  lambda bit: bit.applies_to_verb('V/Administer/Edit'))
-
-    def getEditable(self, objType, qsc=None):
-        return objType.objects.filter(id__in=self.getEditable_ids(objType, qsc))
-
-    def canEdit(self, object):
-        return UserBit.UserHasPerms(self, object.anchor, GetNode('V/Administer/Edit'), datetime.now())
 
     def updateOnsite(self, request):
         if 'user_morph' in request.session:
@@ -268,7 +261,7 @@ class ESPUser(User, AnonymousUser):
                       'retTitle': retTitle,
                       'onsite'  : onsite}
 
-        if user.isAdministrator():
+        if user.isAdministrator() or user.is_staff or user.is_superuser:
             # Disallow morphing into Administrators.
             # It's too broken, from a security perspective.
             # -- aseering 1/29/2010
@@ -327,105 +320,82 @@ class ESPUser(User, AnonymousUser):
             return "?code=%s" % otheruser.password
         return ''
 
-    def getTaughtPrograms(self,):
-        taught_programs = Program.objects.filter(
-            anchor__child_set__child_set__userbit_qsc__user=self,
-            anchor__child_set__child_set__userbit_qsc__verb=GetNode('V/Flags/Registration/Teacher'),
-            anchor__child_set__child_set__userbit_qsc__qsc__classsubject__status=10)
+    def getTaughtPrograms(self):
+        taught_programs = Program.objects.filter(classsubject__teachers=self)
         taught_programs = taught_programs.distinct()
         return taught_programs
 
-    def getTaughtClasses(self, program = None):
+    def getTaughtClasses(self, program = None, include_rejected = False):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
         if program is None:
-            return self.getTaughtClassesAll()
+            return self.getTaughtClassesAll(include_rejected = include_rejected)
         else:
-            return self.getTaughtClassesFromProgram(program)
+            return self.getTaughtClassesFromProgram(program, include_rejected = include_rejected)
 
     @cache_function
-    def getTaughtClassesFromProgram(self, program):
+    def getTaughtClassesFromProgram(self, program, include_rejected = False):
         from esp.program.models import ClassSubject, Program # Need the Class object.
-        
-        #   Why is it that we had a find_by_anchor_perms function again?
-        tr_node = GetNode('V/Flags/Registration/Teacher')
-        when = datetime.now()
-        all_classes = ClassSubject.objects.filter(
-            anchor__userbit_qsc__verb__id=tr_node.id,
-            anchor__userbit_qsc__user=self,
-            anchor__userbit_qsc__startdate__lte=when,
-            anchor__userbit_qsc__enddate__gte=when,
-        ).distinct()
-
         if type(program) != Program: # if we did not receive a program
             error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
         else:
-            return all_classes.filter(parent_program = program)
-    getTaughtClassesFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
-                                                              lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
-                                                                          bit.qsc.parent.name == 'Classes' and
-                                                                          bit.qsc.parent.parent.program_set.count() > 0 )
+            if include_rejected: 
+                return self.classsubject_set.filter(parent_program = program)
+            else:
+                return self.classsubject_set.filter(parent_program = program).exclude(status=-10)
+    getTaughtClassesFromProgram.depend_on_m2m(lambda:ClassSubject, 'teachers', lambda cls, teacher: {'self': teacher})
     getTaughtClassesFromProgram.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
     @cache_function
-    def getTaughtClassesAll(self):
+    def getTaughtClassesAll(self, include_rejected = False):
         from esp.program.models import ClassSubject # Need the Class object.
         
-        #   Why is it that we had a find_by_anchor_perms function again?
-        tr_node = GetNode('V/Flags/Registration/Teacher')
-        when = datetime.now()
-        return ClassSubject.objects.filter(
-            anchor__userbit_qsc__verb__id=tr_node.id,
-            anchor__userbit_qsc__user=self,
-            anchor__userbit_qsc__startdate__lte=when,
-            anchor__userbit_qsc__enddate__gte=when,
-        ).distinct()
-    getTaughtClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
-                                                      lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
-                                                                  bit.qsc.parent.name == 'Classes' and
-                                                                  bit.qsc.parent.parent.program_set.count() > 0 )
-    getTaughtClassesAll.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
+        return self.classsubject_set.all()
+    getTaughtClassesAll.depend_on_row(lambda:ClassSubject, lambda cls: {'self': cls})
+    getTaughtClassesAll.depend_on_m2m(lambda:ClassSubject, 'teachers', lambda cls, teacher: {'self': teacher})
 
     @cache_function
     def getFullClasses_pretty(self, program):
         full_classes = [cls for cls in self.getTaughtClassesFromProgram(program) if cls.is_nearly_full()]
-        return "\n".join([cls.emailcode()+": "+cls.title() for cls in full_classes])
-    getFullClasses_pretty.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
-                                                      lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
-                                                                  bit.qsc.parent.name == 'Classes' and
-                                                                  bit.qsc.parent.parent.program_set.count() > 0 )
+        return "\n".join([cls.emailcode()+": "+cls.title for cls in full_classes])
     getFullClasses_pretty.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
 
 
-    def getTaughtSections(self, program = None):
+    def getTaughtSections(self, program = None, include_rejected = False):
         if program is None:
-            return self.getTaughtSectionsAll()
+            return self.getTaughtSectionsAll(include_rejected = include_rejected)
         else:
-            return self.getTaughtSectionsFromProgram(program)
+            return self.getTaughtSectionsFromProgram(program, include_rejected = include_rejected)
 
     @cache_function
-    def getTaughtSectionsAll(self):
+    def getTaughtSectionsAll(self, include_rejected = False):
         from esp.program.models import ClassSection
-        classes = list(self.getTaughtClassesAll())
-        return ClassSection.objects.filter(parent_class__in=classes)
+        classes = list(self.getTaughtClassesAll(include_rejected = include_rejected))
+        if include_rejected:
+            return ClassSection.objects.filter(parent_class__in=classes)
+        else:
+            return ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
     getTaughtSectionsAll.depend_on_model(lambda:ClassSection)
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
     @cache_function
-    def getTaughtSectionsFromProgram(self, program):
+    def getTaughtSectionsFromProgram(self, program, include_rejected = False):
         from esp.program.models import ClassSection
-        classes = list(self.getTaughtClasses(program))
-        return ClassSection.objects.filter(parent_class__in=classes)
+        classes = list(self.getTaughtClasses(program, include_rejected = include_rejected))
+        if include_rejected:
+            return ClassSection.objects.filter(parent_class__in=classes)
+        else:
+            return ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
     getTaughtSectionsFromProgram.depend_on_row(lambda:ClassSection, lambda instance: {'program': instance.parent_program})
     getTaughtSectionsFromProgram.depend_on_cache(getTaughtClassesFromProgram, lambda self=wildcard, program=wildcard, **kwargs:
                                                                               {'self':self, 'program':program})
 
-    def getTaughtTime(self, program = None, include_scheduled = True, round_to = 0.0):
+    def getTaughtTime(self, program = None, include_scheduled = True, round_to = 0.0, include_rejected = False):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
             If include_scheduled is given as False, we don't count time for already-scheduled classes.
             Rounds to the nearest round_to (if zero, doesn't round at all). """
-        user_sections = self.getTaughtSections(program)
+        user_sections = self.getTaughtSections(program, include_rejected = include_rejected)
         total_time = timedelta()
         round_to = float( round_to )
         if round_to:
@@ -433,7 +403,8 @@ class ESPUser(User, AnonymousUser):
         else:
             rounded_hours = lambda x: float( x )
         for s in user_sections:
-            if include_scheduled or (s.start_time() is None):
+            #   don't count cancelled or rejected classes -- Ted
+            if (include_scheduled or (s.start_time() is None)) and (s.parent_class.status >= 0):
                 total_time = total_time + timedelta(hours=rounded_hours(s.duration))
         return total_time
 
@@ -451,23 +422,20 @@ class ESPUser(User, AnonymousUser):
             raise ESPError(False), '"%s %s": Unknown User' % (first, last)
         return users[num]
 
-    @staticmethod
+    @cache_function
     def getTypes():
-        """ Get a list of the different roles an ESP user can have. By default there are four rols,
-            but there can be more. (Returns ['Student','Teacher','Educator','Guardian']. """
-
-        return ['Student','Teacher','Educator','Guardian','Volunteer']
+        """ Get a list of the different roles an ESP user can have. By default there are five roles,
+            but there can be more. (Returns ['Student','Teacher','Educator','Guardian','Volunteer'] by default. """
+        return [x[0] for x in ESPUser.getAllUserTypes()]
+    getTypes.depend_on_model(Tag)
+    getTypes = staticmethod(getTypes)
 
     @staticmethod
     def getAllOfType(strType, QObject = True):
-        types = ['Student', 'Teacher','Guardian','Educator','Volunteer']
-
-        if strType not in types:
+        if strType not in ESPUser.getTypes():
             raise ESPError(), "Invalid type to find all of."
 
-        Q_useroftype      = Q(userbit__verb = GetNode('V/Flags/UserRole/'+strType)) &\
-                            Q(userbit__qsc = GetNode('Q'))                          &\
-                            UserBit.not_expired('userbit')
+        Q_useroftype      = Q(groups__name=strType)
 
         if QObject:
             return Q_useroftype
@@ -484,7 +452,7 @@ class ESPUser(User, AnonymousUser):
         #   Detect whether the program has the availability module, and assume
         #   the user is always available if it isn't there.
         if program.program_modules.filter(handler='AvailabilityModule').exists():
-            valid_events = Event.objects.filter(useravailability__user=self, anchor=program.anchor).order_by('start')
+            valid_events = Event.objects.filter(useravailability__user=self, program=program).order_by('start')
         else:
             valid_events = program.getTimeSlots()
 
@@ -506,23 +474,23 @@ class ESPUser(User, AnonymousUser):
     getAvailableTimes.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'program': sec.parent_program})
     getAvailableTimes.depend_on_m2m(lambda:Program, 'program_modules', lambda prog, pm: {'program': prog})
     getAvailableTimes.depend_on_row(lambda:UserAvailability, lambda ua:
-                                        # FIXME: What if resource.event.anchor somehow isn't a program?
-                                        # Probably want a helper method return a special "nothing" object (XXX: NOT None)
-                                        # and have key_sets discarded if they contain it
-                                        {'program': Program.objects.get(anchor=ua.event.anchor),
+                                        {'program': ua.event.program,
                                             'self': ua.user})
     # Should depend on Event as well... IDs are safe, but not necessarily stored objects (seems a common occurence...)
     # though Event shouldn't change much
 
     def clearAvailableTimes(self, program):
         """ Clear this teacher's availability for a program """
-        self.useravailability_set.filter(QTree(event__anchor__below=program.anchor)).delete()
+        self.useravailability_set.filter(event__program=program).delete()
 
-    def addAvailableTime(self, program, timeslot):
+    def addAvailableTime(self, program, timeslot, role=None):
         from esp.resources.models import Resource, ResourceType
         
         #   Because the timeslot has an anchor, the program is unnecessary.
-        new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot)
+        #   Default to teacher mode
+        if role is None:
+            role = Group.objects.get(name='Teacher')
+        new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot, role=role)
         new_availability.save()
         
     def convertAvailability(self):
@@ -694,112 +662,37 @@ class ESPUser(User, AnonymousUser):
     def isEnrolledInClass(self, clsObj, request=None):
         return clsObj.students().filter(id=self.id).exists()
 
-    def canAdminister(self, nodeObj):
-        return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer'))
-
-    def canRegToFullProgram(self, nodeObj):
-        return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Flags/RegAllowed/ProgramFull'))
+    def canRegToFullProgram(self, program):
+        return Permission.user_has_perm(self, 'Student/OverrideFull', program)
 
     #   This is needed for cache dependencies on financial aid functions
     def get_finaid_model():
         from esp.program.models import FinancialAidRequest
         return FinancialAidRequest
+    def get_finaid_grant_model():
+        from esp.accounting.models import FinancialAidGrant
+        return FinancialAidGrant
 
     @cache_function
     def appliedFinancialAid(self, program):
         return self.financialaidrequest_set.all().filter(program=program, done=True).count() > 0
     #   Invalidate cache when any of the user's financial aid requests are changed
     appliedFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
+    appliedFinancialAid.depend_on_row(get_finaid_grant_model, lambda fr: {'self': fr.request.user})
 
     @cache_function
-    def hasFinancialAid(self, anchor):
-        from esp.program.models import Program, FinancialAidRequest
-        progs = [p['id'] for p in Program.objects.filter(anchor=anchor).values('id')]
-        apps = FinancialAidRequest.objects.filter(user=self, program__in=progs)
-        for a in apps:
-            if a.approved:
-                return True
-        return False
+    def hasFinancialAid(self, program):
+        from esp.accounting.controllers import IndividualAccountingController
+        iac = IndividualAccountingController(program, self)
+        if iac.amount_finaid() > 0:
+            return True
+        else:
+            return False
     hasFinancialAid.depend_on_row(get_finaid_model, lambda fr: {'self': fr.user})
 
-    def paymentStatus(self, anchor=None):
-        """ Returns a tuple of (has_paid, status_str, amount_owed, line_items) to indicate
-        the user's payment obligations to ESP:
-        -   has_paid: True or False, indicating whether any money is owed to
-            the accounts under the specified anchor
-        -   status: A string briefly explaining the status of the transactions
-        -   amount_owed: A Decimal for the amount they need to pay
-        -   line_items: A list of the relevant line items
-        """
-        from esp.accounting_docs.models import Document
-        from esp.accounting_core.models import LineItem, Transaction
-
-        if anchor is None:
-            anchor = GetNode('Q/Programs')
-
-        receivable_parent = GetNode('Q/Accounts/Receivable')
-        realized_parent = GetNode('Q/Accounts/Realized')
-
-        #   We have to check both complete and incomplete documents belonging to the anchor.
-        docs = Document.objects.filter(user=self, anchor__rangestart__gte=anchor.rangestart, anchor__rangeend__lte=anchor.rangeend)
-
-        li_list = []
-        for d in docs:
-            li_list += list(d.txn.lineitem_set.all())
-
-        amt_charged = 0
-        amt_expected = 0
-        amt_paid = 0
-        #   Compute amount charged by looking at line items posted under the specified anchor.
-        #   Compute amount expected by looking at line items posted to Accounts Receivable.
-        #   Compute amount paid by looking at line items posted to Accounts Realized.
-        #   Exclude duplicate line items.  We may want to remove this soon, but it was
-        #   a necessity for HSSP/Spark.   -Michael
-        previous_li = []
-        for li in li_list:
-            li_str = '%.2f,%d,%d' % (li.amount, li.li_type.id, li.anchor.id)
-            if li_str not in previous_li:
-                previous_li.append(li_str)
-            else:
-                continue
-
-            if li.anchor in anchor:
-                amt_charged -= li.amount
-            if li.anchor in receivable_parent:
-                amt_expected += li.amount
-            if li.anchor in realized_parent:
-                amt_paid += li.amount
-        has_paid = False
-        status = 'Unknown'
-        if amt_charged == 0:
-            status = 'No charges'
-        elif amt_expected != 0:
-            if amt_paid == 0:
-                status = 'Pending/Unpaid'
-            else:
-                status = 'Partially paid'
-        elif amt_charged > 0 and amt_paid == 0:
-            status = 'Unpaid'
-        else:
-            status = 'Fully paid'
-            has_paid = True
-        
-        amt_owed = amt_charged - amt_paid
-        return (has_paid, status, amt_owed, li_list)
-
-    has_paid = lambda x, y: x.paymentStatus(y)[0]
-    payment_status_str = lambda x, y: x.paymentStatus(y)[1]
-    amount_owed = lambda x, y: x.paymentStatus(y)[2]
-    line_items = lambda x, y: x.paymentStatus(y)[3]
-
     def isOnsite(self, program = None):
-        verb = GetNode('V/Registration/OnSite')
-        if program is None:
-            return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
-                   UserBit.objects.user_has_verb(self, verb)
-        else:
-            return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
-                    UserBit.UserHasPerms(self, program.anchor, verb)
+        return (hasattr(self, 'onsite_local') and self.onsite_local is True) or \
+            Permission.user_has_perm(self, "Onsite", program=program)
 
     def recoverPassword(self):
         # generate the ticket, send the email.
@@ -834,59 +727,53 @@ class ESPUser(User, AnonymousUser):
         send_mail(subject, msgtext, from_email, to_email)
 
 
-    def isAdministrator(self, anchor_object = None):
-        if anchor_object is None:
-            return UserBit.objects.user_has_verb(self, GetNode('V/Administer'))
-        else:
-            if hasattr(anchor_object, 'anchor'):
-                anchor = anchor_object.anchor
-            else:
-                anchor = anchor_object
+    def isAdministrator(self, program = None):
+        #this method is in an intermediate state
+        #the underlying permission system changed, but not that actual calls
+        #to this
+        if self.is_anonymous() or self.id is None: return False
+        is_admin_role = self.groups.filter(name="Administrator").exists()
+        if is_admin_role: return True
+        if program is None:
+            return Permission.user_has_perm(self, "Administer")
 
-            return UserBit.UserHasPerms(self, anchor, GetNode('V/Administer'))
-
+        return Permission.user_has_perm(self, "Administer",program=program)
     isAdmin = isAdministrator
 
-    @staticmethod
+    @cache_function
     def getAllUserTypes():
         #   Allow Tag to remove user types as well as adding/updating them.
         #   So, if you set the Tag, be sure to include all of the user types you want.
         return json.loads(Tag.getTag('user_types', default=json.dumps(DEFAULT_USER_TYPES)))
+            print tag_data
+    getAllUserTypes.depend_on_model(Tag)
+    getAllUserTypes = staticmethod(getAllUserTypes)
 
     def getUserTypes(self):
         """ Return the set of types for this user """
-        retVal = UserBit.valid_objects().filter(user=self, verb__parent=GetNode("V/Flags/UserRole")).values_list('verb__name', flat=True).distinct()
-        if len(retVal) == 0:
-            UserBit.objects.create(user=self, verb=GetNode("V/Flags/UserRole/Student"), qsc=GetNode("Q"))
-            retVal = UserBit.valid_objects().filter(user=self, verb__parent=GetNode("V/Flags/UserRole")).values_list('verb__name', flat=True).distinct()
-            
-        return retVal
+        return self.groups.all().order_by('name').values_list("name",flat=True)
         
-    @classmethod
-    def create_membership_methods(cls):
+    @staticmethod
+    def create_membership_method(user_class):
         """
-        Creates the methods such as isTeacher that determins whether
+        Creates the methods such as isTeacher that determines whether
         or not the user is a member of that user class.
         """
-        user_classes = ('Teacher','Guardian','Educator','Officer','Student','Volunteer')
-        overrides = {'Officer': 'Administrator'}
-        for user_class in user_classes:
-            method_name = 'is%s' % user_class
-            bit_name = 'V/Flags/UserRole/%s' % overrides.get(user_class, user_class)
-            property_name = '_userclass_%s' % user_class
-            def method_gen(bit_name, property_name):
-                def _new_method(user):
-                    if not hasattr(user, property_name):
-                        setattr(user, property_name, bool(UserBit.UserHasPerms(user, GetNode('Q'),
-                                                                          GetNode(bit_name))))
-                    return getattr(user, property_name)
+        def _new_method(user):
+            return user.is_user_type(user_class)
+        _new_method.__name__    = 'is%s' % user_class
+        _new_method.__doc__     = "Returns ``True`` if the user is a %s and False otherwise." % user_class
+        return _new_method
 
-                _new_method.__name__ = method_name
-                _new_method.__doc__ = "Returns ``True`` if the user is a %s and False otherwise." % user_class
-
-                return _new_method
-
-            setattr(cls, method_name, method_gen(bit_name, property_name))
+    def is_user_type(self, user_class):
+        """
+        Determines whether the user is a member of user_class.
+        """
+        property_name = '_userclass_%s' % user_class
+        if not hasattr(self, property_name):
+            role_name = {'Officer': 'Administrator'}.get(user_class, user_class)
+            setattr(self, property_name, self.groups.filter(name=role_name).exists())
+        return getattr(self, property_name)
 
     @classmethod
     def get_unused_username(cls, first_name, last_name):
@@ -900,21 +787,24 @@ class ESPUser(User, AnonymousUser):
         return username
         
     def makeVolunteer(self):
-        ub, created = UserBit.objects.get_or_create(user=self,
-                                qsc=GetNode('Q'),
-                                verb=GetNode('V/Flags/UserRole/Volunteer'))
-        ub.renew()
-        
-    def canEdit(self, nodeObj):
-        """Returns True or False if the user can edit the node object"""
-        # Axiak
-        return UserBit.UserHasPerms(self, nodeObj.anchor, GetNode('V/Administer/Edit'))
+        self.groups.add(Group.objects.get(name="Volunteer"))
 
-    def getMiniBlogEntries(self):
-        """Return all miniblog posts this person has V/Subscribe bits for"""
-        # Axiak 12/17
-        from esp.miniblog.models import Entry
-        return UserBit.find_by_anchor_perms(Entry, self, GetNode('V/Subscribe')).order_by('-timestamp')
+    def makeRole(self, role_name):
+        self.groups.add(Group.objects.get(name=role_name))
+
+    def removeRole(self, role_name):
+        self.groups.remove(Group.objects.get(name=role_name))
+
+    def hasRole(self, role_name):
+        return self.groups.filter(name=role_name).exists()
+
+    def canEdit(self, cls):
+        """Returns if the user can edit the class
+
+A user can edit a class if they can administrate the program or if they
+are a teacher of the class"""
+        if self in cls.get_teachers(): return True
+        return self.isAdmin(cls.parent_program)
 
     def getVolunteerOffers(self, program):
         return self.volunteeroffer_set.filter(request__program=program)
@@ -985,9 +875,6 @@ class ESPUser(User, AnonymousUser):
 
         return schoolyear + 12 - grade
 
-
-ESPUser.create_membership_methods()
-
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
 shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))
@@ -1051,8 +938,6 @@ class StudentInfo(models.Model):
         return "%s - %s %d" % (ESPUser(self.user).ajax_str(), self.school, self.graduation_year)
 
     def updateForm(self, form_dict):
-        STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
-        STUDREP_QSC  = GetNode('Q')
         form_dict['graduation_year'] = self.graduation_year
         #   Display data from school field in the k12school box if there's no k12school data.
         if self.k12school:
@@ -1068,9 +953,7 @@ class StudentInfo(models.Model):
             form_dict['food_preference'] = self.food_preference
         form_dict['heard_about']      = self.heard_about
         form_dict['studentrep_expl'] = self.studentrep_expl
-        form_dict['studentrep']      = UserBit.UserHasPerms(user = self.user,
-                                                            qsc  = STUDREP_QSC,
-                                                            verb = STUDREP_VERB)
+        form_dict['studentrep']      = self.user.hasRole('StudentRep')
         form_dict['schoolsystem_id'] = self.schoolsystem_id
         form_dict['medical_needs'] = self.medical_needs
         form_dict['schoolsystem_optout'] = self.schoolsystem_optout
@@ -1081,8 +964,6 @@ class StudentInfo(models.Model):
     @staticmethod
     def addOrUpdate(curUser, regProfile, new_data):
         """ adds or updates a StudentInfo record """
-        STUDREP_VERB = GetNode('V/Flags/UserRole/StudentRepRequest')
-        STUDREP_QSC  = GetNode('Q')
 
         if regProfile.student_info is None:
             studentInfo = StudentInfo()
@@ -1140,14 +1021,9 @@ class StudentInfo(models.Model):
 
             #   Add the user bit representing a student rep request.
             #   The membership coordinator has to make the 'real' student rep bit.
-            UserBit.objects.get_or_create(user = curUser,
-                                          verb = STUDREP_VERB,
-                                          qsc  = STUDREP_QSC,
-                                          recursive = False)
+            curUser.makeRole("StudentRep")
         else:
-            UserBit.objects.filter(user = curUser,
-                                   verb = STUDREP_VERB,
-                                   qsc  = STUDREP_QSC).delete()
+            curUser.removeRole("StudentRep")
         return studentInfo
 
     def getSchool(self):
@@ -1714,37 +1590,6 @@ class K12School(models.Model):
         return lst
 
 
-def GetNodeOrNoBits(nodename, user = AnonymousUser(), verb = None, create=True):
-    """ Get the specified node.  Create it only if the specified user has create bits on it """
-
-    DEFAULT_VERB = 'V/Administer/Edit'
-
-    # get a node, if it exists, return it.
-    try:
-        node = DataTree.get_by_uri(nodename)
-        return node
-    except:
-        pass
-
-
-    # if we weren't given a verb, use the default one
-    if verb == None:
-        verb = GetNode(DEFAULT_VERB)
-
-    # get the lowest parent that exists
-    lowest_parent = get_lowest_parent(nodename)
-
-    if UserBit.UserHasPerms(user, lowest_parent, verb, recursive_required = True):
-        if create:
-            # we can now create it
-            return GetNode(nodename)
-        else:
-            raise DataTree.NoSuchNodeException(lowest_parent, [nodename])
-    else:
-        # person not allowed to
-        raise PermissionDenied
-
-
 class PersistentQueryFilter(models.Model):
     """ This class stores generic query filters persistently in the database, for retrieval (by ID, presumably) and
         to pass the query along to multiple pages and retrival (et al). """
@@ -1785,7 +1630,7 @@ class PersistentQueryFilter(models.Model):
             raise ESPError(), 'Invalid Q object stored in database.'
 
         #   Do not include users if they have disabled their account.
-        if restrict_to_active and self.item_model.find('auth.models.User') >= 0:
+        if restrict_to_active and (self.item_model.find('auth.models.User') >= 0 or self.item_model.find('esp.users.models.ESPUser') >= 0):
             QObj = QObj & Q(is_active=True)
 
         return QObj
@@ -1994,29 +1839,273 @@ class EmailPref(models.Model):
     class Meta:
         app_label = 'users'
 
+class Record(models.Model):
+    #To make these better to work with in the admin panel, and to have a 
+    #well defined set of possibilities, we'll use a set of choices
+    #if you want to use this model for an additional thing, 
+    #add it as a choice
+    EVENT_CHOICES=(
+        ("student_survey", "Completed student survey"),
+        ("teacher_survey", "Completed teacher survey"),
+        ("reg_confirmed", "Confirmed registration"),
+        ("attended", "Attended program"),
+        ("conf_email","Was sent confirmation email"),
+        ("teacher_quiz_done","Completed teacher quiz"),
+        ("paid","Paid for program"),
+        ("med","Submitted medical form"),
+        ("liab","Submitted liability form"),
+        ("onsite","Registered for program on-site"),
+        ("schedule_printed","Printed student schedule on-site"),
+        ("teacheracknowledgement","Did teacher acknowledgement"),
+        ("lunch_selected","Selected a lunch block"),
+        ("extra_form_done","Filled out Custom Form"),
+        ("waitlist","Waitlisted for a program"),
+        ("interview","Teacher-interviewed for a program"),
+        ("teacher_training","Attended teacher-training for a program"),
+        ("teacher_checked_in", "Teacher checked in for teaching on the day of the program"),
+    )
+        
+    event = models.CharField(max_length=80,choices=EVENT_CHOICES)
+    program = models.ForeignKey("program.Program",blank=True,null=True)
+    user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True)
+
+    time = models.DateTimeField(blank=True, default = datetime.now)
+
+    @classmethod
+    def user_completed(cls, user, event, program=None):
+        if program is None:
+            return cls.objects.filter(user=user, event=event).count()>0
+        else:
+            return cls.objects.filter(user=user, event=event, program=program).count()>0
+
+#helper method for designing implications
+def flatten(choices):
+    l=[]
+    for x in choices:
+        if type(x[1])!=tuple: l.append(x[0])
+        else: l=l+flatten(x[1])
+    return l
+
+class Permission(models.Model):
+
+    #a permission can be assigned to a user, or a role
+    user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True,
+                          help_text="Blank does NOT mean apply to everyone, use role-based permissions for that.")
+    role = models.ForeignKey("auth.Group", blank=True, null=True, 
+                             help_text="Apply this permission to an entire user role (can be blank).")
+
+    #For now, we'll use plain text for a description of what permission it is
+    PERMISSION_CHOICES=(
+        ("Administer", "Full administrative permissions"),
+        ("View", "Able to view a program"),
+        ("Onsite", "Access to onsite interfaces"),
+        ("GradeOverride","Ignore grade ranges for studentreg"),
+        ("Student Deadlines", (
+                ("Student", "Basic student access"),
+                ("Student/OverrideFull", "Register for a full program"),
+                ("Student/All", "All student deadlines"),
+                ("Student/Applications","Apply for classes"),
+                ("Student/Catalog","View the catalog"),
+                ("Student/Classes","Classes"),
+                ("Student/Classes/All","Classes/All"),
+                ("Student/Classes/OneClass","Class/OneClass"),
+                ("Student/Classes/Lottery","Enter the lottery"),
+                ("Student/Classes/Lottery/View","View lottery results"),
+                ("Student/ExtraCosts","Extra costs page"),
+                ("Student/MainPage","Registration mainpage"),
+                ("Student/Confirm","Confirm registration"),
+                ("Student/Payment","Pay for a program"),
+                ("Student/Profile","Set profile info"),
+                ("Student/Survey", "Access to survey"),
+                ("Student/FormstackMedliab", "Access to Formstack medical and liability form"),
+                ("Student/Finaid", "Access to financial aid application"),
+                )
+         ),
+        ("Teacher Deadlines", (
+                ("Teacher", "Basic teacher access"),
+                ("Teacher/All", "All teacher deadlines"),
+                ("Teacher/Acknowledgement", "Teacher acknowledgement"),
+                ("Teacher/AppReview", "Review students' apps"),
+                ("Teacher/Availability", "Set availability"),
+                ("Teacher/Catalog","Catalog"),
+                ("Teacher/Classes", "Classes"),
+                ("Teacher/Classes/All", "Class/All"),
+                ("Teacher/Classes/View", "Classes/View"),
+                ("Teacher/Classes/Edit", "Classes/Edit"),
+                ("Teacher/Classes/Create","Classes/Create"),
+                ("Teacher/Classes/SelectStudents","Classes/SelectStudents"),
+                ("Teacher/Quiz", "Teacher quiz"),
+                ("Teacher/MainPage","Registration mainpage"),
+                ("Teacher/Survey","Teacher Survey"),
+                ("Teacher/Profile","Set profile info"),
+                ("Teacher/Survey", "Access to survey"),
+                )
+         ),
+    )
+    permission_type = models.CharField(max_length=80, choices=PERMISSION_CHOICES)
+     
+
+    implications = {"Administer":[x for x in flatten(PERMISSION_CHOICES)
+                                  if x!="Administer"],
+                    "Student/All": [x for x in flatten(PERMISSION_CHOICES)
+                                if x.startswith("Student")],
+                    "Teacher/All": [x for x in flatten(PERMISSION_CHOICES)
+                                if x.startswith("Teacher")],
+                    }
+    #i'm not really sure if implications is a good idea
+    #use sparingly
+
+    #optionally, a permission may be tied to a program
+    program = models.ForeignKey("program.Program", blank=True, null=True)
+    #note that the ability to do things will not always be determined by 
+    #a permission object, such as teachers automatically having access to 
+    #their classes
+    #it may, however, be the case that this model is not general enough,
+    #in which case program may need to be replaced by a generic foreignkey
+
+    #permissions may optionally have start and end dates
+    #a permission is active if it has NOT ended and is NOT before its start
+    #so leaving out start = on until end, leaving out end - never ends
+    #perhaps start should be defaulted to now and not optional, idk
+
+    startdate = models.DateTimeField(blank=True, null=True, default = None,
+                                     help_text="If blank, has always started.")
+    enddate = models.DateTimeField(blank=True, null=True, default = None,
+                                   help_text="If blank, never ends.")
+
+    @classmethod
+    def user_has_perm(self, user, name, program=None, when=None):
+        perms=[name]
+        for k,v in self.implications.items():
+            if name in v: perms.append(k)
+
+        quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
+        initial_qset = self.objects.filter(quser).filter(permission_type__in=perms, program=program)
+        return initial_qset.filter(self.is_open_qobject()).exists()
+    
+    #list of all the permission types which are deadlines
+    deadline_types = [x for x in flatten(PERMISSION_CHOICES) if x.startswith("Teacher") or x.startswith("Student")]
+
+    @classmethod
+    def deadlines(cls):
+        return cls.objects.filter(permission_type__in = cls.deadline_types)
+
+    def is_open(self, when=None):
+        if when is None:
+            when = datetime.now()
+        return (self.startdate is None or self.startdate < when) and \
+               (self.enddate is None or self.enddate > when)
+
+    @staticmethod
+    def is_open_qobject(when=None):
+        if when is None:
+            when = datetime.now()
+        qstart = Q(startdate=None) | Q(startdate__lte=when)
+        qend = Q(enddate=None) | Q(enddate__gte=when)
+        return qstart & qend
+
+    def recursive(self):
+        return bool(self.implications.get(self.permission_type, None))
+
+    def __unicode__(self):
+        #TODO
+        if self.user is not None:
+            user = self.user.username
+        else:
+            user = self.role
+
+        if self.program is not None:
+            program = self.program.niceName()
+        else:
+            program = "None"
+        
+        return "GRANT %s ON %s TO %s" % (self.permission_type,
+                                         program, user)
+
+    @classmethod
+    def nice_name_lookup(cls,perm_type):
+        def squash(choices):
+            l=[]
+            for x in choices:
+                if type(x[1])!=tuple: l.append(x)
+                else: l=l+squash(x[1])
+            return l
+        
+        for x in squash(cls.PERMISSION_CHOICES):
+            if x[0] == perm_type: return x[1]
+
+    def nice_name(self):
+        def squash(choices):
+            l=[]
+            for x in choices:
+                if type(x[1])!=tuple: l.append(x)
+                else: l=l+squash(x[1])
+            return l
+        
+        for x in squash(self.PERMISSION_CHOICES):
+            if x[0] == self.permission_type: return x[1]
+        
+    @classmethod
+    def program_by_perm(cls,user,perm):
+        """Find all program that user has perm"""
+        implies = [perm]
+        implies+=[x for x,y in cls.implications.items() if perm in y]
+        now=datetime.now()
+        qstart = Q(permission__startdate=None) | Q(permission__startdate__lte=now)
+        qend = Q(permission__enddate=None) | Q(permission__enddate__gte=now)
+
+        direct = Program.objects.filter(qstart & qend,
+                                       permission__user=user,
+                                       permission__permission_type__in=implies)
+        role = Program.objects.filter(qstart & qend,
+                                      permission__permission_type__in=implies,
+                                      permission__user__isnull=True,
+                                      permission__role__in=user.groups.all())
+        return direct | role
+
+    @staticmethod
+    def user_can_edit_qsd(user,url):
+        #the logic here is as follow:
+        #  -admins can edit any qsd
+        #  -admins of a program can edit qsd of the form
+        #      /section/<Program.url>/<any url>.html
+        #  -teachers of a class with emailcode x (eg x=T1993) can edit
+        #      /section/<Program.url>/Classes/<x>/<any url>.html
+        if url.endswith(".html"):
+            url = url[-5]
+        if user.isAdmin():
+            return True
+        import re
+        m = re.match("^([^/]*)/([^/]*)/([^/]*)/(.*)",url)
+        if m:
+            (section, prog1, prog2, rest) = m.groups()
+            prog_url = prog1 + "/" + prog2
+            try:
+                prog = Program.objects.get(url=prog_url)
+            except Program.DoesNotExist:
+                #not actually a program
+                return False
+            if user.isAdmin(prog): return True
+            m2 = re.match("Classes/(.)(\d+)/(.*)", rest)
+            if m2:
+                (code, cls_id, basename) = m2.groups()
+                try:
+                    cls = ClassSubject.objects.get(category__symbol=code,
+                                                   id=cls_id)
+                except ClassSubject.DoesNotExist:
+                    return False
+                if user in cls.get_teachers(): return True
+
+        return False
+    
 def install():
     """
-    Installs some initial useful UserBits.
-    This function should be idempotent: if run more than once consecutively,
-    subsequent runnings should have no effect on the db.
+    Installs some initial users and permissions.
     """    
-        
-    # Populate UserBits from the stored list in initial_userbits.py
-    from esp.users.initial_userbits import populateInitialUserBits
-    populateInitialUserBits()
-
     if ESPUser.objects.count() == 1: # We just did a syncdb;
-                                  # the one account is the admin account
+                                     # the one account is the admin account
         user = ESPUser.objects.all()[0]
-        AdminUserBits = ( { "user": user,
-                            "verb": GetNode("V/Administer"),
-                            "qsc": GetNode("Q") },
-                          { "user": user,
-                            "verb": GetNode("V/Flags/UserRole/Administrator"),
-                            "qsc": GetNode("Q"),
-                            "recursive": False } )
-
-        populateInitialUserBits(AdminUserBits)
+        user.makeRole('Administrator')
 
     #   Ensure that there is an onsite user
     if not ESPUser.onsite_user():

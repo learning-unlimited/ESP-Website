@@ -41,7 +41,7 @@
   <div class="span6">
 <h1>Create a new account</h1><br />
 {% load render_qsd %}
-{% inline_qsd_block Q/Web/myesp create_new_account_headertext request.user %}
+{% inline_qsd_block "myesp/create_new_account_headertext" request.user %}
 <p>
   Welcome to ESP! To do almost anything with ESP, you first need to register
   an account with us. After you register account, you will be allowed to register

@@ -41,6 +41,8 @@ from esp.program.models import SplashInfo
 from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.tagdict.models import Tag
+from esp.users.models import ESPUser
+from django.db.models.query import Q
 
 class SplashInfoModule(ProgramModuleObj):
     @classmethod
@@ -51,6 +53,41 @@ class SplashInfoModule(ProgramModuleObj):
           "seq": 20,
           "required": True
           }
+
+    def students(self, QObject=False):
+        Q_students = Q(splashinfo__program = self.program)
+
+        result = {}
+        result['siblingdiscount'] = Q_students & Q(splashinfo__siblingdiscount=True)
+
+        for val in SplashInfo.objects.values_list('lunchsat').distinct():
+            if val[0] is not None:
+                result['lunchsat_'+val[0]] = Q_students & Q(splashinfo__lunchsat=val[0])
+
+        for val in SplashInfo.objects.values_list('lunchsun').distinct():
+            if val[0] is not None:
+                result['lunchsun_'+val[0]] = Q_students & Q(splashinfo__lunchsun=val[0])
+
+        if QObject:
+            return result
+        else:
+            for key in result:
+                result[key] = ESPUser.objects.filter(result[key])
+            return result
+
+    def studentDesc(self):
+        result = {}
+        result['siblingdiscount'] = """Students who have a sibling discount"""
+
+        for val in SplashInfo.objects.values_list('lunchsat').distinct():
+            if val[0] is not None:
+                result['lunchsat_'+val[0]] = """Students who selected {0} for lunch on Saturday""".format(val[0])
+        for val in SplashInfo.objects.values_list('lunchsun').distinct():
+            if val[0] is not None:
+                result['lunchsun_'+val[0]] = """Students who selected {0} for lunch on Sunday""".format(val[0])
+
+        return result
+
 
     def isCompleted(self):
         return SplashInfo.hasForUser(get_current_request().user, self.program)
@@ -102,7 +139,7 @@ class SplashInfoModule(ProgramModuleObj):
         context['form'] = form
         context['missing_siblingname'] = missing_siblingname
 
-        return render_to_response(self.baseDir()+'splashinfo.html', request, (prog,tl), context)
+        return render_to_response(self.baseDir()+'splashinfo.html', request, context)
 
     class Meta:
         abstract = True

@@ -53,7 +53,7 @@
 
 {% if form.shirt_size %}
 
-{% inline_qsd_block program.anchor teach:teacher_shirt_info request.user %}
+{% inline_qsd_block teach:teacher_shirt_info %}
 <div class="alert"><b>Shirts for teachers!</b> As a token of our appreciation for your teaching, you will receive a free shirt.  If you would like a shirt, please enter your preferred size {% if form.shirt_type %}and shape {% endif %}below.  This information is optional.</div>
 {% end_inline_qsd_block %}
  

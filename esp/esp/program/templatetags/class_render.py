@@ -3,6 +3,7 @@ from django.template.loader import render_to_string
 from esp.web.util.template import cache_inclusion_tag
 from esp.cache import cache_function
 from esp.users.models import ESPUser
+from esp.qsdmedia.models import Media as QSDMedia
 from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion, StudentRegistration
 from esp.program.models.class_ import open_class_category
 from esp.program.modules.module_ext import StudentClassRegModuleInfo, ClassRegModuleInfo
@@ -36,10 +37,10 @@ def render_class_core(cls):
     return render_class_core_helper(cls)
 render_class_core.cached_function.depend_on_row(ClassSubject, lambda cls: {'cls': cls})
 render_class_core.cached_function.depend_on_row(ClassSection, lambda sec: {'cls': sec.parent_class})
-render_class_core.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'cls': self})
 render_class_core.cached_function.depend_on_cache(ClassSection.num_students, lambda self=wildcard, **kwargs: {'cls': self.parent_class})
 render_class_core.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, ts: {'cls': sec.parent_class})
 render_class_core.cached_function.depend_on_row(StudentAppQuestion, lambda ques: {'cls': ques.subject})
+render_class_core.cached_function.depend_on_row(QSDMedia, lambda media: {'cls': media.owner}, lambda media: isinstance(media.owner, ClassSubject))
 render_class_core.cached_function.depend_on_model(lambda: StudentClassRegModuleInfo)
 render_class_core.cached_function.depend_on_model(lambda: ClassRegModuleInfo)
 render_class_core.cached_function.depend_on_model(lambda: Tag)

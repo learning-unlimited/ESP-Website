@@ -34,8 +34,6 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
 from esp.web.util        import render_to_response
-from esp.program.modules.forms.satprep import SATPrepInfoForm
-from esp.program.models import SATPrepRegInfo
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
@@ -45,6 +43,8 @@ from esp.dbmail.models import ActionHandler
 from django.template import Template
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
+
+from django.conf import settings
 
 class CommModule(ProgramModuleObj):
     """ Want to email all ESP students within a 60 mile radius of NYC?
@@ -107,10 +107,19 @@ class CommModule(ProgramModuleObj):
         esp_firstuser = ESPUser(firstuser)
         contextdict = {'user'   : ActionHandler(esp_firstuser, esp_firstuser),
                        'program': ActionHandler(self.program, esp_firstuser) }
+
+        #   Save the current context processors - we will disable them for rendering e-mail
+        old_context_processors = settings.TEMPLATE_CONTEXT_PROCESSORS
+        settings.TEMPLATE_CONTEXT_PROCESSORS = []
+
+        #   Render the e-mail using the unaltered context
         renderedtext = Template(htmlbody).render(Context(contextdict))
-        
+
+        #   Restore context processors for future template rendering
+        settings.TEMPLATE_CONTEXT_PROCESSORS = old_context_processors
+
         return render_to_response(self.baseDir()+'preview.html', request,
-                                  (prog, tl), {'filterid': filterid,
+                                              {'filterid': filterid,
                                                'listcount': listcount,
                                                'subject': subject,
                                                'from': fromemail,
@@ -125,7 +134,6 @@ class CommModule(ProgramModuleObj):
         from esp.dbmail.models import MessageRequest
         from esp.users.models import PersistentQueryFilter
         
-        announcements = self.program_anchor_cached().tree_create(['Announcements'])
         filterid, fromemail, replytoemail, subject, body = [
                                     request.POST['filterid'],
                                     request.POST['from'],
@@ -153,25 +161,23 @@ class CommModule(ProgramModuleObj):
 
         newmsg_request.save()
 
-        foo = MessageRequest.objects.all()[0]
-
         # now we're going to process everything
         # nah, we'll do this later.
         #newmsg_request.process()
 
-        numusers = filterobj.getList(ESPUser).count()
+        numusers = filterobj.getList(ESPUser).distinct().count()
 
         from django.conf import settings
         if hasattr(settings, 'EMAILTIMEOUT') and \
                settings.EMAILTIMEOUT is not None:
-            est_time = settings.EMAILTIMEOUT * len(users)
+            est_time = settings.EMAILTIMEOUT * numusers
         else:
             est_time = 1.5 * numusers
             
 
         #        assert False, self.baseDir()+'finished.html'
         return render_to_response(self.baseDir()+'finished.html', request,
-                                  (prog, tl), {'time': est_time})
+                                  {'time': est_time})
 
 
     @aux_call
@@ -192,7 +198,7 @@ class CommModule(ProgramModuleObj):
         listcount = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
 
         return render_to_response(self.baseDir()+'step2.html', request,
-                                  (prog, tl), {'listcount': listcount,
+                                              {'listcount': listcount,
                                                'filterid': filterObj.id })
 
     @main_call
@@ -202,7 +208,6 @@ class CommModule(ProgramModuleObj):
         usc = UserSearchController()
     
         context = {}
-        context['program'] = prog
 
         #   If list information was submitted, continue to prepare a message
         if request.method == 'POST':
@@ -223,7 +228,7 @@ class CommModule(ProgramModuleObj):
                     
                 context['filterid'] = filterObj.id
                 context['listcount'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
-                return render_to_response(self.baseDir()+'step2.html', request, (prog, tl), context)
+                return render_to_response(self.baseDir()+'step2.html', request, context)
                 
             ##  Prepare a message starting from an earlier request
             elif 'msgreq_id' in data:
@@ -234,7 +239,7 @@ class CommModule(ProgramModuleObj):
                 context['subject'] = msgreq.subject
                 context['replyto'] = msgreq.special_headers_dict.get('Reply-To', '')
                 context['body'] = msgreq.msgtext
-                return render_to_response(self.baseDir()+'step2.html', request, (prog, tl), context)
+                return render_to_response(self.baseDir()+'step2.html', request, context)
                 
             else:
                 raise ESPError(True), 'What do I do without knowing what kind of users to look for?'
@@ -242,7 +247,7 @@ class CommModule(ProgramModuleObj):
         #   Otherwise, render a page that shows the list selection options
         context.update(usc.prepare_context(prog))
         
-        return render_to_response(self.baseDir()+'commpanel_new.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'commpanel_new.html', request, context)
 
     @aux_call
     @needs_admin
@@ -257,7 +262,7 @@ class CommModule(ProgramModuleObj):
                                                          request.POST['body']    ]
 
         return render_to_response(self.baseDir()+'step2.html', request,
-                                  (prog, tl), {'listcount': listcount,
+                                              {'listcount': listcount,
                                                'filterid': filterid,
                                                'from': fromemail,
                                                'replyto': replytoemail,

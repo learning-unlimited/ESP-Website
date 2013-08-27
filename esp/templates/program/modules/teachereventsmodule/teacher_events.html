@@ -14,18 +14,27 @@
 <h1>Manage Teacher Events for {{ prog.niceName }}</h1>
 
 <p>
-Teacher Events include (for now) <a href="#training">teacher training</a> and <a href="#interview">teacher interviews</a>. You can view the timeslots here.
+Teacher Events include (for now) <a href="#training">teacher training</a> and <a href="#interview">teacher interviews</a>. You can view and manage the timeslots here.
 </p>
 
 <div id="program_form">
+<form method="post" action="/manage/{{ prog.url }}/teacher_events">
+<input type="hidden" name="command" value="add" />
+<table align="center" cellpadding="0" cellspacing="0" width="450">
+     <tr><th colspan="2" class="small">Add a Training or Interview</th></tr>
+    {{ timeslot_form }}
+    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" name = "submit" value="Add Training" /> <input class="fancybutton" type="submit" name="submit" value="Add Interview" /></td></tr>
+</table>
+</form>
+
 <table align="center" cellpadding="4" cellspacing="0"> 
     <tr><th colspan="4"><a name="interviews"></a>Interviews</th></tr>
-    <tr><th>Timeslot</th><th>Start</th><th>End</th><th>Teachers</th></tr>
+    <tr><th>Start</th><th>End</th><th>Teachers</th><th>Delete</th></tr>
     {% with interview_times as timeslots %}
         {% include "program/modules/teachereventsmodule/event_row.html" %}
     {% endwith %}
     <tr><th colspan="4"><a name="training"></a>Teacher Training</th></tr>
-    <tr><th>Timeslot</th><th>Start</th><th>End</th><th>Teachers</th></tr>
+    <tr><th>Start</th><th>End</th><th>Teachers</th><th>Delete</th></tr>
     {% with training_times as timeslots %}
         {% include "program/modules/teachereventsmodule/event_row.html" %}
     {% endwith %}

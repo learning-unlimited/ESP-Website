@@ -35,12 +35,12 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_grade, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
-from esp.users.models    import UserBit, ESPUser, User
+from esp.users.models    import ESPUser
 from esp.datatree.models import *
 from django.db.models.query   import Q
 from esp.middleware     import ESPError
 from esp.survey.models  import QuestionType, Question, Answer, SurveyResponse, Survey
-from esp.survey.views   import survey_view, survey_review, survey_graphical, survey_review_single, top_classes
+from esp.survey.views   import survey_view, survey_review, survey_graphical, survey_review_single, top_classes, survey_dump
 
 import operator
 
@@ -70,26 +70,28 @@ class SurveyManagement(ProgramModuleObj):
        
         context = {'program': prog}
         
-        return render_to_response('program/modules/surveymanagement/create.html', request, prog.anchor, context)
+        return render_to_response('program/modules/surveymanagement/create.html', request, context)
     
     @needs_admin
     def survey_edit(self, request, tl, one, two, module, extra, prog):
 
         context = {'program': prog}
         
-        return render_to_response('program/modules/surveymanagement/edit.html', request, prog.anchor, context)
+        return render_to_response('program/modules/surveymanagement/edit.html', request, context)
 
     @main_call
     @needs_admin
     def surveys(self, request, tl, one, two, module, extra, prog):
         if extra is None or extra == '':
-            return render_to_response('program/modules/surveymanagement/main.html', request, prog.anchor, {'program': prog, 'surveys': prog.getSurveys()})
+            return render_to_response('program/modules/surveymanagement/main.html', request, {'program': prog, 'surveys': prog.getSurveys()})
         elif extra == 'edit':
             return self.survey_edit(request, tl, one, two, module, extra, prog)
         elif extra == 'create':
             return self.survey_create(request, tl, one, two, module, extra, prog)
         elif extra == 'review':
             return survey_review(request, tl, one, two)
+        elif extra == 'dump':
+            return survey_dump(request, tl, one, two)
         elif extra == 'review_pdf':
             return survey_graphical(request, tl, one, two)
         elif extra == 'review_single':

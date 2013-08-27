@@ -17,20 +17,20 @@
 {% block content %}
 
 {% load render_qsd %}
-{% inline_qsd_block program.anchor volunteer_requests request.user %}
+{% inline_program_qsd_block program volunteer_requests request.user %}
 <p>
 You may request groups of volunteers for your program here.  At the <a href="/volunteer/{{ program.getUrlBase }}/signup">volunteer sign-up page</a>, people will be able to choose from any subset of this list.
 </p>
-{% end_inline_qsd_block %}
+{% end_inline_program_qsd_block %}
 
 <div id="program_form">
 <center>
 <table style="border: 1px solid #cccccc;">
 <tr>
 <th colspan="3" align="center">Current Volunteer Shifts and Offers</th>
-</tr
+</tr>
 {% if requests|length_is:0 %}
-    <td colspan="3">No requests at this time.  Please add some using the form below.</td>
+    <tr><td colspan="3">No requests at this time.  Please add some using the form below.</td></tr>
 {% else %}
     {% for vr in requests %}
     <tr>

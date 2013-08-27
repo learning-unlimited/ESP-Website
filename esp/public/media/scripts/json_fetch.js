@@ -69,7 +69,7 @@ function json_fetch(components, on_complete, result_data, on_error)
     if (!result_data)
     {
         result_data = Object();
-        console.log("Initialized result data to empty object");
+        //  console.log("Initialized result data to empty object");
     }
     for (var i in components)
     {
@@ -94,7 +94,7 @@ function json_fetch_complete(components, on_complete, data, data_fetch_status)
 {
     if (check_json_status(components, data_fetch_status))
     {
-        console.log("Completed fetch of: " + components);
+        //  console.log("Completed fetch of: " + components);
         on_complete(data);
     }
     else

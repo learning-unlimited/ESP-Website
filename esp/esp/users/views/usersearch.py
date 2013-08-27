@@ -221,12 +221,12 @@ def get_user_list(request, listDict2, extra=''):
         
         arrLists.sort(reverse=True) 
 
-        return (render_to_response('users/create_list.html', request, None, {'lists': arrLists}), False) # No, we didn't find it yet...
+        return (render_to_response('users/create_list.html', request, {'lists': arrLists}), False) # No, we didn't find it yet...
     else:
         from esp.mailman import all_lists
         public_lists = all_lists()
         nonpublic_lists = list( set(all_lists(show_nonpublic=True)) - set(public_lists) )
-        return (render_to_response('users/select_mailman_list.html', request, None, {'public_lists': public_lists, 'nonpublic_lists': nonpublic_lists}), False) # No, we didn't find it yet...
+        return (render_to_response('users/select_mailman_list.html', request, {'public_lists': public_lists, 'nonpublic_lists': nonpublic_lists}), False) # No, we didn't find it yet...
 
 def get_user_checklist(request, userList, extra='', nextpage=None):
     """ Generate a checklist of users given an initial list of users to pick from.
@@ -255,7 +255,7 @@ def get_user_checklist(request, userList, extra='', nextpage=None):
     else:
         context['nextpage'] = nextpage
 
-    return (render_to_response('users/userchecklist.html', request, None, context), False) # make the checklist
+    return (render_to_response('users/userchecklist.html', request, context), False) # make the checklist
 
 
 def search_for_user(request, user_type='Any', extra='', returnList = False):
@@ -285,7 +285,7 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
         users = None
 
     if users is None:
-        return (render_to_response('users/usersearch.html', request, None, {'error': error, 'extra':extra,  'list': returnList}), False)
+        return (render_to_response('users/usersearch.html', request, {'error': error, 'extra':extra,  'list': returnList}), False)
         
     if len(users) == 1:
         return (users[0], True)
@@ -296,20 +296,12 @@ def search_for_user(request, user_type='Any', extra='', returnList = False):
 
         if (request.GET.has_key('listokay') and request.GET['listokay'] == 'true') or \
            (request.GET.has_key('submitform') and request.GET['submitform'] == 'Use Filtered List'):
-            Q_Filter = None
-            if not hasattr(Q_include, 'old'):
-                Q_Filter = Q_include
-                if not hasattr(Q_exclude, 'old'):
-                    Q_Filter &= ~Q_exclude
-            else:
-                if not hasattr(Q_exclude, 'old'):
-                    Q_Filter = ~Q_exclude
-            
+            Q_Filter = Q(id__in=QSUsers.values_list('id', flat=True))
             return (Q_Filter, True)
-        
+
         context = {'users': users, 'extra':str(extra), 'list': returnList}
 
-        return (render_to_response('users/userpick.html', request, None, context), False)
+        return (render_to_response('users/userpick.html', request, context), False)
 
     print 'Ran into some kind of problem. %d users' % len(users)
 

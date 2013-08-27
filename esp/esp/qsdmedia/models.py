@@ -39,7 +39,11 @@ from esp.datatree.models import *
 from django.conf import settings
 from esp.db.fields import AjaxForeignKey
 from time import strftime
+import hashlib
 
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes import generic
+from django.db.models import Q
 
 # Create your models here.
 
@@ -48,13 +52,21 @@ root_file_path = "uploaded/%y_%m"
 
 class Media(models.Model):
     """ A generic container for 'media': videos, pictures, papers, etc. """
-    anchor = AjaxForeignKey(DataTree) # Relevant node in the tree
+    anchor = AjaxForeignKey(DataTree, blank=True, null=True) # Relevant node in the tree
     friendly_name = models.TextField() # Human-readable description of the media
     target_file = models.FileField(upload_to=root_file_path) # Target media file
     size = models.IntegerField(blank=True, null=True, editable=False) # Size of the file, in bytes
     format = models.TextField(blank=True, null=True)  # Format string; should be human-readable (string format is currently unspecified)
     mime_type = models.CharField(blank=True, null=True, max_length=256, editable=False)
     file_extension = models.TextField(blank=True, null=True, max_length=16, editable=False) # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
+    file_name = models.TextField(blank=True, null=True, max_length=256, editable=False) # original filename that this file should be downloaded as
+    hashed_name = models.TextField(blank=True, null=True, max_length=256, editable=False) # safe hashed filename
+    
+    #   Generic Foreign Key to object this media is associated with.
+    #   Currently limited to be either a ClassSubject or Program.
+    owner_type = models.ForeignKey(ContentType, blank=True, null=True, limit_choices_to=Q(name__in=['ClassSubject', 'Program']))
+    owner_id = models.PositiveIntegerField(blank=True, null=True)
+    owner = generic.GenericForeignKey(ct_field='owner_type', fk_field='owner_id')
 
     #def get_target_file_relative_url(self):a
     #    return str(self.target_file)[ len(root_file_path): ]
@@ -62,6 +74,14 @@ class Media(models.Model):
     def get_target_file_url(self):
         return str(self.target_file.url)
     target_url = property(get_target_file_url)
+
+    def safe_filename(self, filename):
+        """ Compute the MD5 hash of the original filename. 
+            The data is saved under this hashed filename to reduce
+            security risk.  """
+        m = hashlib.md5()
+        m.update(filename)
+        return m.hexdigest()
 
     def handle_file(self, file, filename):
         """ Saves a file from request.FILES. """
@@ -76,7 +96,11 @@ class Media(models.Model):
 
         self.mime_type = file.content_type
         self.size = file.size
-        self.target_file.save(filename, file)
+        
+        # hash the filename, easy way to prevent bad filename attacks
+        self.file_name = filename
+        self.hashed_name = self.safe_filename(filename)
+        self.target_file.save(self.hashed_name, file)
 
     def delete(self, *args, **kwargs):
         """ Delete entry; provide hack to fix old absolute-path-storing. """
@@ -91,26 +115,6 @@ class Media(models.Model):
 
     def __unicode__(self):
         return unicode(self.friendly_name)
-
-    @staticmethod
-    def find_by_url_parts(parts, filename):
-        """ Fetch a QSD record by its url parts """
-        # Get the Q_Web root
-        Q_Web = GetNode('Q/Web')
-
-        # Find the branch
-        try:
-            branch = Q_Web.tree_decode( parts )
-        except DataTree.NoSuchNodeException:
-            raise Media.DoesNotExist
-
-        # Find the record
-        media = Media.objects.filter( anchor = branch, friendly_name = filename )
-        if len(media) < 1:
-            raise Media.DoesNotExist
-        
-        # Operation Complete!
-        return media[0]
 
 class Video(models.Model):
     """ Video media object

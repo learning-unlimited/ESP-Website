@@ -31,7 +31,7 @@
 </tr>
 <tr>
     <th class="small">Move?</th>
-    <th class="small">Path (click to view/edit)</th>
+    <th class="small">URL (click to view/edit)</th>
     <th class="small">Nav. category</th>
     <th class="small">Title</th>
     <th class="small" colspan="2">Options</th>
@@ -39,7 +39,7 @@
 {% for qsd in qsd_list %}
 <tr>
     <td><input type="checkbox" name="check_{{ qsd.id }}" /></td>
-    <td><a href="{{ qsd.url }}">{{ qsd.url }}</a></td>
+    <td><a href="/{{ qsd.url }}.html">/{{ qsd.url }}.html</a></td>
     <td>{{ qsd.nav_category.name }}</td>
     <td>{{ qsd.title }}</td>
     <td><a href="{{ request.path }}?cmd=move&id={{ qsd.id }}" class="abutton">Move</a></td>
@@ -58,7 +58,7 @@
     </td>
 </tr>
 </table>
-</form
+</form>
 
 </center>
 

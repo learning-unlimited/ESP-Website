@@ -45,7 +45,6 @@ from esp.themes.controllers import ThemeController
 from django.conf import settings
 import django.shortcuts
 
-
 def get_from_id(id, module, strtype = 'object', error = True):
     """ This function will get an object from its id, and return an appropriate error if need be. """
     from esp.users.models import ESPUser
@@ -74,7 +73,7 @@ def _per_program_template_name(prog, templatename):
     new_tpath = tpath[:-1] + ["per_program", "%s_%s" % (prog.id, tpath[-1])]
     return "/".join(new_tpath)
 
-def render_to_response(template, requestOrContext, prog = None, context = None, auto_per_program_templates = True, mimetype=None, use_request_context=True):
+def render_to_response(template, request, context, prog=None, auto_per_program_templates=True, mimetype=None, use_request_context=True):
     from esp.web.views.navBar import makeNavBar
 
     if isinstance(template, (basestring,)):
@@ -83,60 +82,23 @@ def render_to_response(template, requestOrContext, prog = None, context = None, 
     if isinstance(prog, (list, tuple)) and auto_per_program_templates:
         template = [_per_program_template_name(prog[0], t) for t in template] + template
 
+    section = request.path.split('/')[1]
     tc = ThemeController()
+    context['theme'] = tc.get_template_settings()
 
-    # if there are only two arguments
-    if context is None and prog is None:
-        context = {'navbar_list': []}
-        context['settings'] = settings
-        context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
-        context['EMAIL_HOST'] = settings.EMAIL_HOST
-        context['theme'] = tc.get_template_settings()
-        return django.shortcuts.render_to_response(template, requestOrContext, Context(context), mimetype=mimetype)
-    
-    if context is not None:
-        request = requestOrContext
+    # create nav bar list
+    if not context.has_key('navbar_list'):
+        category = None
+        if context.has_key('nav_category'):
+            category = context['nav_category']
+        context['navbar_list'] = makeNavBar(section, category)
 
-        section = ''
-
-        if type(prog) == tuple:
-            section = prog[1]
-            prog = prog[0]
-            
-        #   Add e-mail addresses
-        context['settings'] = settings
-        context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
-        context['EMAIL_HOST'] = settings.EMAIL_HOST
-        context['theme'] = tc.get_template_settings()
-
-        if not context.has_key('program'):
-            if type(prog) == Program:
-                context['program'] = prog
-                
-        # create nav bar list
-        if not context.has_key('navbar_list'):
-            category = None
-            if context.has_key('nav_category'):
-                category = context['nav_category']
-            if prog is None:
-                context['navbar_list'] = []
-            elif type(prog) == Program:
-                context['navbar_list'] = makeNavBar(AnonymousUser(), prog.anchor, section, category)
-            else:
-                context['navbar_list'] = makeNavBar(AnonymousUser(), prog, section, category)
-
-        #   Force comprehension of navbar list
-        if hasattr(context['navbar_list'], 'value'):
-            context['navbar_list'] = context['navbar_list'].value
-        
-        if not use_request_context:
-            context['request'] = request
-            response = django.shortcuts.render_to_response(template, context, mimetype=mimetype)
-            return response
-        else:
-            return render_response(request, template, context, mimetype=mimetype)
-        
-    assert False, 'render_to_response expects 2 or 4 arguments.'
+    if not use_request_context:
+        context['request'] = request
+        response = django.shortcuts.render_to_response(template, context, mimetype=mimetype)
+        return response
+    else:
+        return render_response(request, template, context, mimetype=mimetype)
 
 """ Override Django error views to provide some context info. """
 def error404(request, template_name='404.html'):

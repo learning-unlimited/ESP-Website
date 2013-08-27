@@ -37,8 +37,7 @@ from django.core.exceptions import PermissionDenied
 from django.contrib.sites.models import Site
 from esp.program.modules.base import LOGIN_URL
 from django.contrib.auth import REDIRECT_FIELD_NAME
-from esp.datatree.models import GetNode
-from esp.users.models import GetNodeOrNoBits, ESPUser, UserBit
+from esp.users.models import ESPUser, Permission
 from django.http import Http404, HttpResponseRedirect, HttpResponse, MultiValueDict
 from django.template import loader
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
@@ -87,8 +86,8 @@ def my_import(name):
 def home(request):
     #   Get navbars corresponding to the 'home' category
     nav_category, created = NavBarCategory.objects.get_or_create(name='home')
-    context = {'navbar_list': makeNavBar(None, GetNode('Q/Web'), '', nav_category)}
-    return render_to_response('index.html', request, GetNode('Q/Web'), context)
+    context = {'navbar_list': makeNavBar('', nav_category)}
+    return render_to_response('index.html', request, context)
 
 @vary_on_headers('Cookie')
 def myesp(request, module):
@@ -96,76 +95,8 @@ def myesp(request, module):
 	if myesp_handlers.has_key(module):
 		return myesp_handlers[module](request, module)
 
-	return render_to_response('users/construction', request, GetNode('Q/Web/myesp'), {})
+	return render_to_response('users/construction', request, {})
 
-
-@vary_on_headers('Cookie')
-def redirect(request, url, subsection = None, filename = "", section_redirect_keys = {}, section_prefix_keys = {}, renderer = qsd ):
-	""" Universal mapping function between urls.py entries and QSD pages
-
-	Calls esp.qsd.views.qsd to actually get the QSD pages; we just find them
-	"""
-
-	if isinstance(renderer, basestring):
-		renderer = my_import(renderer)
-	
-	if filename != "":
-		url = url + "/" + filename
-
-	tree_branch = section_redirect_keys[subsection]
-
-	# URLs will be of the form "path/to/file.verb", or "path/to/file".
-	# In the latter case, assume that verb = view
-	# In either case, "path/to" is the tree path to the relevant page
-
-	url_parts = url.split('/')
-	url_address = url_parts.pop()
-
-	url_address_parts = url_address.split('.')
-
-	if len(url_address_parts) == 1: # We know the name; use the default verb
-		qsd_name = url_address_parts[0]
-		qsd_verb = 'read'
-	elif len(url_address_parts) == 2: # We're given both pieces; hopefully that's all we're given (we're ignoring extra data here)
-		qsd_name = url_address_parts[0]
-		qsd_verb = url_address_parts[1]
-	else: # In case someone breaks urls.py and "foo/.html" is allowed through
-		raise Http404
-
-	# If we have a subsection, descend into a node by that name
-	target_node = url_parts
-
-	# Get the node in question.  If it doesn't exist, deal with whether or not this user can create it.
-	try:
-		branch_name = 'Q/' + tree_branch
-		if target_node:
-			branch_name = branch_name + '/' + "/".join(target_node)
-		branch = GetNodeOrNoBits(branch_name, user=request.user)
-	except DataTree.NoSuchNodeException:
-		raise ESPError(False), "Directory does not exist."
-		#edit_link = request.path[:-5]+'.edit.html'
-		#return render_to_response('qsd/qsd_nopage_edit.html', request, (branch, section), {'edit_link': edit_link})
-	except PermissionDenied:
-		raise Http404
-		
-	if url_parts:
-		root_url = "/" + "/".join(url_parts) + "/" + qsd_name
-	else:
-		root_url = "/" + qsd_name
-
-
-	section = ''
-	if subsection == None:
-		subsection_str = ''
-	else:
-		subsection_str = subsection + "/"
-		root_url = "/" + subsection + root_url
-		if section_prefix_keys.has_key(subsection):
-			section = section_prefix_keys[subsection]
-			qsd_name = section + ':' + qsd_name
-	
-	return renderer(request, branch, section, qsd_name, qsd_verb, root_url)
-	
 def program(request, tl, one, two, module, extra = None):
 	""" Return program-specific pages """
         from esp.program.models import Program
@@ -186,13 +117,13 @@ def program(request, tl, one, two, module, extra = None):
 	newResponse = ProgramModuleObj.findModule(request, tl, one, two, module, extra, prog)
 
 	if newResponse:
-		return newResponse
+            return newResponse
 
 	raise Http404
 
 def classchangerequest(request, tl, one, two):
     from esp.program.models import Program, StudentAppResponse, StudentRegistration, RegistrationType
-    from esp.program.models.class_ import * 
+    from esp.program.models.class_ import ClassSubject 
     from urllib import quote
     try:
         prog = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
@@ -207,17 +138,15 @@ def classchangerequest(request, tl, one, two):
 
     if not request.user.isStudent() and not request.user.isAdmin(prog):
         allowed_student_types = Tag.getTag("allowed_student_types", prog, default='')
-        matching_user_types = UserBit.valid_objects().filter(user=request.user, verb__parent=GetNode("V/Flags/UserRole"), verb__name__in=allowed_student_types.split(","))
+        matching_user_types = any(x in request.user.groups.all().values_list("name",flat=True) for x in allowed_student_types.split(","))
         if not matching_user_types:
-            return render_to_response('errors/program/notastudent.html', request, (prog, 'learn'), {})
+            return render_to_response('errors/program/notastudent.html', request, {})
     
     errorpage = 'errors/program/wronggrade.html'
     
-    verb_override = GetNode('V/Flags/Registration/GradeOverride')
     cur_grade = request.user.getGrade(prog)
-    if (not UserBit.UserHasPerms(user = request.user, qsc  = prog.anchor_id, verb = verb_override)) and (cur_grade != 0 and (cur_grade < prog.grade_min or \
-                           cur_grade > prog.grade_max)):
-        return render_to_response(errorpage, request, (prog, tl), {})
+    if (not Permission.user_has_perm(request.user, 'GradeOverride', program=prog) and (cur_grade != 0 and (cur_grade < prog.grade_min or cur_grade > prog.grade_max))):
+        return render_to_response(errorpage, request, {})
 
     setattr(request, "program", prog)
     setattr(request, "tl", tl)
@@ -283,7 +212,7 @@ def classchangerequest(request, tl, one, two):
                 
             return HttpResponseRedirect(request.path.rstrip('/')+'/?success')
     else: 
-        return render_to_response('program/classchangerequest.html', request, (prog, tl), context)
+        return render_to_response('program/classchangerequest.html', request, context)
 
 
 def archives(request, selection, category = None, options = None):
@@ -300,83 +229,86 @@ def archives(request, selection, category = None, options = None):
 	if archive_handlers.has_key(selection):
 		return archive_handlers[selection](request, category, options, sortparams)
 	
-	return render_to_response('users/construction', request, GetNode('Q/Web'), {})
+	return render_to_response('users/construction', request, {})
 
 def contact(request, section='esp'):
-	"""
-	This view should take an email and post to those people.
-	"""
-	from django.core.mail import send_mail
+    """
+    This view should take an email and post to those people.
+    """
+    from django.core.mail import send_mail
 
-	if request.GET.has_key('success'):
-		return render_to_response('contact_success.html', request, GetNode('Q/Web/about'), {})
-	
-		
-	
-	if request.method == 'POST':
-		form = ContactForm(request.POST)
-		SUBJECT_PREPEND = '[webform]'
-                domain = Site.objects.get_current().domain
-		ok_to_send = True
+    if request.GET.has_key('success'):
+        return render_to_response('contact_success.html', request, {})
 
-		if form.is_valid():
-			
-			to_email = []
-			usernames = []
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        SUBJECT_PREPEND = '[webform]'
+        domain = Site.objects.get_current().domain
+        ok_to_send = True
 
-			if len(form.cleaned_data['sender'].strip()) == 0:
-				email = 'esp@mit.edu'
-			else:
-				email = form.cleaned_data['sender']
-				usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
+        if form.is_valid():
 
-			if usernames and not form.cleaned_data['decline_password_recovery']:
-				m = 'password|account|log( ?)in'
-				if re.search(m, form.cleaned_data['message'].lower()) or re.search(m, form.cleaned_data['subject'].lower()):
-					# Ask if they want a password recovery before sending.
-					ok_to_send = False
-					# If they submit again, don't ask a second time.
-					form.data = MultiValueDict(form.data)
-					form.data['decline_password_recovery'] = True
-                
-			if form.cleaned_data['cc_myself']:
-				to_email.append(email)
+            to_email = []
+            usernames = []
+            logged_in_as = request.user.username if hasattr(request, 'user') and request.user.is_authenticated() else "(not authenticated)"
+            user_agent_str = request.META.get('HTTP_USER_AGENT', "(not specified)")
+            
+            if len(form.cleaned_data['sender'].strip()) == 0:
+                email = 'esp@mit.edu'
+            else:
+                email = form.cleaned_data['sender']
+                usernames = ESPUser.objects.filter(email__iexact = email).values_list('username', flat = True)
 
+            if usernames and not form.cleaned_data['decline_password_recovery']:
+                m = 'password|account|log( ?)in'
+                if re.search(m, form.cleaned_data['message'].lower()) or re.search(m, form.cleaned_data['subject'].lower()):
+                    # Ask if they want a password recovery before sending.
+                    ok_to_send = False
+                    # If they submit again, don't ask a second time.
+                    form.data = MultiValueDict(form.data)
+                    form.data['decline_password_recovery'] = True
 
-			try:
-				to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
-			except KeyError:
-				to_email.append(fallback_address)
+            if form.cleaned_data['cc_myself']:
+                to_email.append(email)
 
-			if len(form.cleaned_data['name'].strip()) > 0:
-				email = '%s <%s>' % (form.cleaned_data['name'], email)
+            try:
+                to_email.append(settings.CONTACTFORM_EMAIL_ADDRESSES[form.cleaned_data['topic'].lower()])
+            except KeyError:
+                to_email.append(fallback_address)
 
+            if len(form.cleaned_data['name'].strip()) > 0:
+                email = '%s <%s>' % (form.cleaned_data['name'], email)
 
-			if ok_to_send:
-				t = loader.get_template('email/comment')
+            if ok_to_send:
+                t = loader.get_template('email/comment')
 
-				msgtext = t.render(Context({'form': form, 'domain': domain, 'usernames': usernames}))
+                context = {
+                    'form': form, 
+                    'domain': domain, 
+                    'usernames': usernames, 
+                    'logged_in_as': logged_in_as, 
+                    'user_agent_str': user_agent_str
+                }
+                msgtext = t.render(Context(context))
 
-				send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
-					  msgtext,
-					  email, to_email, fail_silently = True)
+                send_mail(SUBJECT_PREPEND + ' '+ form.cleaned_data['subject'],
+                    msgtext,
+                    email, to_email, fail_silently = True)
 
-				return HttpResponseRedirect(request.path + '?success')
+                return HttpResponseRedirect(request.path + '?success')
 
-        
-	else:
-		initial = {}
-		if request.user.is_authenticated():
-			initial['sender'] = request.user.email
-			initial['name']   = request.user.first_name + ' '+request.user.last_name
-		
-		if section != '':
-			initial['topic'] = section.lower()
+    else:
+        initial = {}
+        if request.user.is_authenticated():
+            initial['sender'] = request.user.email
+            initial['name']   = request.user.first_name + ' '+request.user.last_name
 
-		form = ContactForm(initial = initial)
-			
-	return render_to_response('contact.html', request, GetNode('Q/Web/about'),
-						 {'contact_form': form})
+        if section != '':
+            initial['topic'] = section.lower()
+
+        form = ContactForm(initial = initial)
+
+    return render_to_response('contact.html', request, {'contact_form': form})
 
 
 def registration_redirect(request):
@@ -384,7 +316,7 @@ def registration_redirect(request):
         - A redirect to the currently open registration if exactly one registration is open
         - A list of open registration links otherwise
     """
-    from esp.users.models import ESPUser, UserBit
+    from esp.users.models import ESPUser
     from esp.program.models import Program
 
     #   Make sure we have an ESPUser
@@ -393,17 +325,17 @@ def registration_redirect(request):
     # prepare the rendered page so it points them to open student/teacher reg's
     ctxt = {}
     userrole = {}
-    regverb = None
+    regperm = None
     if user.isStudent():
         userrole['name'] = 'Student'
         userrole['base'] = 'learn'
         userrole['reg'] = 'studentreg'
-        regverb = GetNode('V/Deadline/Registration/Student/Classes/OneClass')
+        regperm = 'Student/Classes'
     elif user.isTeacher():
         userrole['name'] = 'Teacher'
         userrole['base'] = 'teach'
         userrole['reg'] = 'teacherreg'
-        regverb = GetNode('V/Deadline/Registration/Teacher/Classes')
+        regperm = 'Teacher/Classes'
     else:
         #   Default to student registration (this will only show if the program
         #   is found via the 'allowed_student_types' Tag)
@@ -411,26 +343,22 @@ def registration_redirect(request):
         userrole['base'] = 'learn'
         userrole['reg'] = 'studentreg'
     ctxt['userrole'] = userrole
-    ctxt['navnode'] = GetNode('Q/Web/myesp')
-    
-    if regverb:
-        progs_userbit = list(UserBit.find_by_anchor_perms(Program, user=user, verb=regverb))
+
+    if regperm:
+        progs_deadline = list(Permission.program_by_perm(user,regperm))
     else:
-        progs_userbit = []
+        progs_deadline = []
+
     progs_tag = list(t.target \
             for t in Tag.objects.filter(key = "allowed_student_types").select_related() \
             if isinstance(t.target, Program) \
                 and (set(user.getUserTypes()) & set(t.value.split(","))))
-    progs = set(progs_userbit + progs_tag)
-
-    nextreg = UserBit.objects.filter(user__isnull=True, verb=regverb, startdate__gt=datetime.datetime.now()).order_by('startdate')
-    progs = list(progs)
+    progs = list(set(progs_deadline + progs_tag)) #distinct ones
     
     #   If we have 1 program, automatically redirect to registration for that program.
     #   Most chapters will want this, but it can be disabled by a Tag.
     if len(progs) == 1 and Tag.getBooleanTag('automatic_registration_redirect', default=True):
         ctxt['prog'] = progs[0]
-        ctxt['navnode'] = progs[0].anchor
         return HttpResponseRedirect(u'/%s/%s/%s' % (userrole['base'], progs[0].getUrlBase(), userrole['reg']))
     else:
         if len(progs) > 0:
@@ -438,8 +366,7 @@ def registration_redirect(request):
             progs.sort(key=lambda x: -x.id)
             ctxt['progs'] = progs
             ctxt['prog'] = progs[0]
-        ctxt['nextreg'] = list(nextreg)
-        return render_to_response('users/profile_complete.html', request, GetNode('Q/Web'), ctxt)		    
+        return render_to_response('users/profile_complete.html', request, ctxt)		    
 
 
 ## QUIRKS

@@ -62,14 +62,14 @@ function qsd_inline_upload(qsd_id)
     qsd_send_command(qsd_id, postdata);
 }
 
-function qsd_inline_create(qsd_name, anchor_id)
+function qsd_inline_create(qsd_name)
 {
     //  Switch the visibility of the edit and view areas.
     document.getElementById("inline_edit_" + qsd_name).className = "qsd_edit_hidden";
     document.getElementById("inline_qsd_" + qsd_name).className = "qsd_view_visible";
 
     var content = document.getElementById("qsd_content_" + qsd_name).value;
-    var postdata = {cmd: "create", name: qsd_name, data: content, anchor: anchor_id};
+    var postdata = {cmd: "create", url: qsd_name, data: content};
     qsd_send_command(qsd_name, postdata);
 }
 

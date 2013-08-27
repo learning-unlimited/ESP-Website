@@ -34,16 +34,22 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, main_call, aux_call
+from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
+from esp.program.modules.forms.splashinfo import SplashInfoForm
+from esp.program.models import SplashInfo
 from esp.users.models import UserAvailability
 from esp.cal.models import Event
-from esp.program.models import ClassSection, ClassSubject, StudentRegistration, ClassCategories
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories
 from esp.program.models.class_ import open_class_category
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
 from esp.datatree.models import *
 from esp.dbmail.models import MessageRequest
+from esp.tagdict.models import Tag
 
 from esp.utils.decorators import cached_module_view, json_response
 from esp.utils.no_autocookie import disable_csrf_cookie_update
+
+from esp.middleware import ESPError
 
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
@@ -52,6 +58,7 @@ from django.db.models.query import Q
 from collections import defaultdict
 from datetime import datetime
 import operator
+import simplejson as json
 
 class JSONDataModule(ProgramModuleObj, CoreModule):
     """ A program module dedicated to returning program-specific data in JSON form. """
@@ -169,9 +176,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
     @aux_call
     @json_response({
-            'parent_class__anchor__friendly_name': 'title',
+            'emailcode': 'emailcode',
+            'parent_class__title': 'title',
             'parent_class__id': 'parent_class',
-            'parent_class__anchor__name': 'emailcode',
             'parent_class__category__symbol': 'category',
             'parent_class__grade_max': 'grade_max',
             'parent_class__grade_min': 'grade_min',
@@ -183,25 +190,24 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         sections = list(prog.sections().values(
                 'id',
                 'status',
-                'parent_class__anchor__friendly_name',
                 'parent_class__id',
                 'parent_class__category__symbol',
-                'parent_class__anchor__name',
                 'parent_class__grade_max',
                 'parent_class__grade_min',
+                'parent_class__title',
                 'enrolled_students'))
         for section in sections:
             s = ClassSection.objects.get(id=section['id'])
             section['index'] = s.index()
-            section['parent_class__anchor__name'] += "s" + str(section['index'])
+            section['emailcode'] = s.emailcode()
             section['length'] = float(s.duration)
-            section['teachers'] = [t.id for t in s.parent_class.teachers()]
-            for t in s.parent_class.teachers():
+            section['teachers'] = [t.id for t in s.parent_class.get_teachers()]
+            for t in s.parent_class.get_teachers():
                 if teacher_dict.has_key(t.id):
                     continue
                 teacher_dict[t.id] = True
                 # Build up teacher availability
-                availabilities = UserAvailability.objects.filter(user__in=s.parent_class.teachers()).filter(QTree(event__anchor__below = prog.anchor)).values('user_id', 'event_id')
+                availabilities = UserAvailability.objects.filter(user__in=s.parent_class.get_teachers()).filter(event__program = prog).values('user_id', 'event_id')
                 avail_for_user = defaultdict(list)
                 for avail in availabilities:
                     avail_for_user[avail['user_id']].append(avail['event_id'])
@@ -210,20 +216,21 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     
         return {'sections': sections, 'teachers': teachers}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
+    sections.cached_function.depend_on_row(ClassSubject, lambda subj: {'prog': subj.parent_program})
+    sections.cached_function.depend_on_model(UserAvailability)
     # Put this import here rather than at the toplevel, because wildcard messes things up
     from esp.cache.key_set import wildcard
-    sections.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
-    sections.cached_function.depend_on_cache(ClassSubject.teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
+    sections.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
 
     @aux_call
     @json_response({
             'id': 'id',
             'status': 'status',
-            'anchor__friendly_name': 'title',
             'category__symbol': 'category',
             'grade_max': 'grade_max',
             'grade_min': 'grade_min',
-            'anchor__name': 'emailcode',
+            'emailcode': 'emailcode',
+            'title': 'title',
             })
     @cached_module_view
     def class_subjects(prog):
@@ -232,23 +239,24 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         classes = list(prog.classes().values(
                 'id',
                 'status',
-                'anchor__friendly_name',
+                'title',
                 'category__symbol',
-                'anchor__name',
                 'grade_max',
                 'grade_min'))
 
         for cls in classes:
             c = ClassSubject.objects.get(id=cls['id'])
+            class_teachers = c.get_teachers()
+            cls['emailcode'] = c.emailcode()
             cls['length'] = float(c.duration)
             cls['sections'] = [s.id for s in c.sections.all()]
-            cls['teachers'] = [t.id for t in c.teachers()]
-            for t in c.teachers():
+            cls['teachers'] = [t.id for t in class_teachers]
+            for t in class_teachers:
                 if teacher_dict.has_key(t.id):
                     continue
                 teacher_dict[t.id] = True
                 # Build up teacher availability
-                availabilities = UserAvailability.objects.filter(user__in=c.teachers()).filter(QTree(event__anchor__below = prog.anchor)).values('user_id', 'event_id')
+                availabilities = UserAvailability.objects.filter(user__in=class_teachers).filter(event__program=prog).values('user_id', 'event_id')
                 avail_for_user = defaultdict(list)
                 for avail in availabilities:
                     avail_for_user[avail['user_id']].append(avail['event_id'])
@@ -257,12 +265,8 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     
         return {'classes': classes, 'teachers': teachers}
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
-    # Put this import here rather than at the toplevel, because wildcard messes things up
-    from esp.cache.key_set import wildcard
-    class_subjects.cached_function.depend_on_cache(ClassSubject.title, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
-    class_subjects.cached_function.depend_on_cache(ClassSubject.teachers, lambda self=wildcard, **kwargs: {'prog': self.parent_program})
+    class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
 
-        
     @aux_call
     @json_response()
     @needs_student
@@ -316,13 +320,15 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             'id': cls.id if return_key == 'classes' else section_id,
             'status': cls.status,
             'emailcode': cls.emailcode(),
-            'title': cls.title(),
+            'title': cls.title,
             'class_info': cls.class_info, 
             'category': cls.category.category, 
             'difficulty': cls.hardness_rating,
             'prereqs': cls.prereqs, 
             'sections': [x.id for x in cls.sections.all()],
             'class_size_max': cls.class_size_max,
+            'duration': cls.prettyDuration(),
+            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
         }
 
         return {return_key: [return_dict]}
@@ -418,7 +424,6 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         for r in rrequests:
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
 
-        cls = section.parent_class
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
             'resource_requests': rrequest_dict,
@@ -460,8 +465,6 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", len(classes.filter(status=-20))))
         vitals['classnum'] = class_num_list
 
-        proganchor = prog.anchor
-        
         #   Display pretty labels for teacher and student numbers
         teacher_labels_dict = {}
         for module in prog.getModules():
@@ -571,9 +574,33 @@ len(teachers[key])))
         annotated_categories = ClassCategories.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'category').distinct()
         dictOut["stats"].append({"id": "categories", "data": filter(lambda x: x['id'] in program_categories, annotated_categories)})
 
+        #   Add SplashInfo statistics if our program has them
+        splashinfo_data = {}
+        splashinfo_modules = filter(lambda x: isinstance(x, SplashInfoModule), prog.getModules('learn'))
+        if len(splashinfo_modules) > 0:
+            splashinfo_module = splashinfo_modules[0]
+            tag_data = Tag.getProgramTag('splashinfo_choices', prog)
+            if tag_data:
+                splashinfo_choices = json.loads(tag_data)
+            else:
+                splashinfo_choices = {'lunchsat': SplashInfoForm.default_choices, 'lunchsun': SplashInfoForm.default_choices}
+            for key in splashinfo_choices:
+                counts = {}
+                for item in splashinfo_choices[key]:
+                    filter_kwargs = {'program': prog}
+                    filter_kwargs[key] = item[0]
+                    counts[item[1]] = SplashInfo.objects.filter(**filter_kwargs).distinct().count()
+                splashinfo_data[key] = counts
+            splashinfo_data['siblings'] = {
+                'yes': SplashInfo.objects.filter(program=prog, siblingdiscount=True).distinct().count(),
+                'no':  SplashInfo.objects.filter(program=prog).exclude(siblingdiscount=True).distinct().count()
+            }
+            dictOut["stats"].append({"id": "splashinfo", "data": splashinfo_data})
+        
         return dictOut
     stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
-
+    stats.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
+    stats.cached_function.depend_on_row(Program, lambda prog: {'prog': prog})
 
     class Meta:
         abstract = True

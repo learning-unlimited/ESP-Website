@@ -131,13 +131,8 @@ class LunchConstraintGenerator(object):
             new_subject.status = 10
             new_subject.duration = '%.4f' % timeslot_length
             new_subject.message_for_directors = day.isoformat()
-            new_subject.anchor = self.program.classes_node()
             new_subject.save()
-            nodestring = new_subject.category.symbol + str(new_subject.id)
-            new_anchor = new_subject.anchor.tree_create([nodestring])
-            new_anchor.friendly_name = 'Lunch Period'
-            new_anchor.save()
-            new_subject.anchor = new_anchor
+            new_subject.title = 'Lunch Period'
             new_subject.save()
             lunch_subject = new_subject
             #   print 'Generated subject: %s' % lunch_subject

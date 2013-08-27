@@ -3,8 +3,7 @@ from django import forms
 from django.forms.models import fields_for_model
 from form_utils.forms import BetterForm
 from django.utils.datastructures import SortedDict
-# from django.contrib.formtools.wizard import FormWizard
-from formwizard.views import SessionWizardView
+from django.contrib.formtools.wizard.views import SessionWizardView
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import redirect, render_to_response, HttpResponse
 from django.http import HttpResponseRedirect
@@ -502,6 +501,13 @@ class FormHandler:
             for section in page:
                 for field in section:
                     if field['id'] == field_id:
+                        # TODO I think this needs to be changed to
+                        # iterate through field['attributes'] instead
+                        # (see commit message), but I'm not familiar
+                        # enough with this function or when/how/on what
+                        # fields it is called to be confident enough to
+                        # make this change myself at this time.
+                        # -jmoldow, 2013-01-24
                         if field['attribute__value'] == "-1" or not field['attribute__value']:
                             return None
                         else:
@@ -545,11 +551,6 @@ class FormHandler:
                             # Compound field. Needs to be passed a list of values.
                             initial_data[handler.seq].update({k:[link_models_cache[v['model'].__name__][val] for val in v['model_field'] ]})
         return initial_data
-
-    def getWizard(self):
-        """Returns the ComboForm instance for this form"""
-        self.wizard=ComboForm(self._getFormList(), self.form, self, self._getInitialData(self.form, self.user))
-        return self.wizard
 
     def get_initial_data(self, initial_data=None):
         if initial_data is None:

@@ -1,10 +1,12 @@
-import pickle
-from esp.web.util.structures import cross_set
-from django.test.testcases import TestCase
-from django.core.cache import cache
 from esp.cache.registry import dump_all_caches
+from esp.web.util.structures import cross_set
+
+from django.core.cache import cache
+from django.test.testcases import TestCase
+import pickle
 import string
 import random
+
 
 class CacheFlushTestCase(TestCase):
     """ Flush the cache at the start and end of this test case """
@@ -29,7 +31,6 @@ class CacheFlushTestCase(TestCase):
         self._flush_cache()
         super(CacheFlushTestCase, self)._fixture_teardown()
         
-
 def build_posts(test_user_params = {}, test_user_joins = {}):
     """ This function will create a list of dictionaries to post to
         a web site. Useful for testing. An example using this lives in
@@ -75,3 +76,8 @@ def build_posts(test_user_params = {}, test_user_joins = {}):
         build_posts.append((tmp_dict, expect_success))
 
     return build_posts
+
+def user_role_setup(names=['Student', 'Teacher', 'Educator', 'Guardian', 'Volunteer', 'Administrator']):
+    from django.contrib.auth.models import Group
+    for x in names:
+        Group.objects.get_or_create(name=x)

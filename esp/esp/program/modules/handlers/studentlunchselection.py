@@ -32,7 +32,7 @@ Email: web@esp.mit.edu
 from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_student
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.datatree.models         import *
-from esp.users.models            import UserBit
+from esp.users.models            import Record
 from esp.cal.models              import Event
 
 from esp.middleware.threadlocalrequest import get_current_request
@@ -112,7 +112,7 @@ class StudentLunchSelection(ProgramModuleObj):
             }
 
     def isCompleted(self):
-        return UserBit.valid_objects().filter(user=get_current_request().user, qsc=self.program.anchor, verb=GetNode('V/Flags/Registration/LunchSelected')).exists()
+        return Record.objects.filter(user=get_current_request().user,event="lunch_selected",program=self.program).exists()
 
     @main_call
     @needs_student
@@ -136,7 +136,7 @@ class StudentLunchSelection(ProgramModuleObj):
                         success = False
                     context['messages'] += [msg]
                 if success:
-                    bit, created = UserBit.valid_objects().get_or_create(user=user, qsc=prog.anchor, verb=GetNode('V/Flags/Registration/LunchSelected'))
+                    rec, created = Record.objects.get_or_create(user=user,program=prog,event="lunch_selected")
                     return self.goToCore(tl)
             else:
                 context['errors'] = True
@@ -150,7 +150,7 @@ class StudentLunchSelection(ProgramModuleObj):
         
         context['forms'] = forms
         
-        return render_to_response(self.baseDir()+'select_lunch.html', context)
+        return render_to_response(self.baseDir()+'select_lunch.html', request, context)
 
     class Meta:
         abstract = True

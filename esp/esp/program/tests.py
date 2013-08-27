@@ -33,8 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.datatree.models import *
-from esp.users.models import UserBit, GetNode, ESPUser, StudentInfo
+from esp.users.models import ESPUser, StudentInfo, Permission
 from esp.program.models import ClassSubject, ClassSection, RegistrationProfile, ScheduleMap, ProgramModule, StudentRegistration, RegistrationType, Event, ClassCategories
 from esp.resources.models import ResourceType
 
@@ -42,12 +41,15 @@ from django.contrib.auth.models import User, Group
 import datetime, random, hashlib
 
 from django.test.client import Client
-from esp.tests.util import CacheFlushTestCase as TestCase
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 
 from esp.program.controllers.lottery import LotteryAssignmentController
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 
+import numpy
 import random
+import re
+import unicodedata
 
 class ViewUserInfoTest(TestCase):
     def setUp(self):
@@ -73,8 +75,8 @@ class ViewUserInfoTest(TestCase):
             self.fake_admin.set_password(self.password)
             self.fake_admin.save()
 
-        self.bit, created = UserBit.objects.get_or_create(user=self.admin, verb=GetNode("V/Administer"), qsc=GetNode("Q"))
-
+        self.admin.makeRole('Administrator')
+        
     def assertStringContains(self, string, contents):
         if not (contents in string):
             self.assert_(False, "'%s' not in '%s'" % (contents, string))
@@ -169,7 +171,6 @@ class ViewUserInfoTest(TestCase):
         self.assertEqual(response.status_code, 403)
 
     def tearDown(self):
-        self.bit.delete()
         self.user.delete()
         self.admin.delete()
         self.fake_admin.delete()
@@ -215,15 +216,11 @@ class ProgramHappenTest(TestCase):
         self.assertEqual( self.client.login(username='stubbudubbent', password='pubbasswubbord'), True, u'Oops, login failed!' )
     
     def setUp(self):
-        from esp.datatree.models import DataTree, GetNode
-        from esp.datatree.models import install as datatree_install
-        from esp.users.models import ESPUser, UserBit
-        
-        # make program type, since we can't do that yet
-        self.program_type_anchor = GetNode('Q/Programs/Prubbogrubbam')
-        self.program_type_anchor.friendly_name = u'Prubbogrubbam!'
-        self.program_type_anchor.save()
-        
+        from esp.users.models import ESPUser
+
+        #create Groups for userroles
+        user_role_setup()
+
         def makeuser(f, l, un, email, p):
             u = ESPUser(first_name=f, last_name=l, username=un, email=email)
             u.set_password(p)
@@ -235,17 +232,16 @@ class ProgramHappenTest(TestCase):
         self.student = makeuser('Stubbu', 'Dubbent', 'stubbudubbent', 'stubbudubbent@esp.mit.edu', 'pubbasswubbord')
         self.teacher = makeuser('Tubbea', 'Chubber', 'tubbeachubber', 'tubbeachubber@esp.mit.edu', 'pubbasswubbord')
         
-        UserBit.objects.create(user=self.admin, verb=GetNode('V/Flags/UserRole/Administrator'), qsc=GetNode('Q'), recursive=False)
-        UserBit.objects.create(user=self.admin, verb=GetNode('V/Administer'), qsc=GetNode('Q/Programs/Prubbogrubbam'))
-        UserBit.objects.create(user=self.student, verb=GetNode('V/Flags/UserRole/Student'), qsc=GetNode('Q'), recursive=False)
-        UserBit.objects.create(user=self.teacher, verb=GetNode('V/Flags/UserRole/Teacher'), qsc=GetNode('Q'), recursive=False)
-    
+        self.admin.makeRole("Administrator")
+        self.student.makeRole("Student")
+        self.teacher.makeRole("Teacher")
+
     def makeprogram(self):
         """ Test program creation through the web form. """
         from esp.users.models import ESPUser
         from esp.program.models import Program, ProgramModule, ClassCategories
         from esp.program.modules.base import ProgramModuleObj
-        from esp.accounting_core.models import LineItemType
+        from esp.accounting.models import LineItemType
         from decimal import Decimal
         # Imports for the HttpRequest hack
         from esp.program.views import newprogram
@@ -272,7 +268,7 @@ class ProgramHappenTest(TestCase):
                 'grade_max': '12',
                 'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234567@mit.edu',
                 'program_size_max': '3000',
-                'anchor': self.program_type_anchor.id,
+                'program_type': 'Prubbogrubbam!',
                 'program_modules': [x.id for x in ProgramModule.objects.all()],
                 'class_categories': [x.id for x in ClassCategories.objects.all()],
                 'admins': self.admin.id,
@@ -283,7 +279,6 @@ class ProgramHappenTest(TestCase):
                 'publish_start':     '2000-01-01 00:00:00',
                 'publish_end':       '3001-01-01 00:00:00',
                 'base_cost':         '666',
-                'finaid_cost':       '37',
             }
         self.client.post('/manage/newprogram', prog_dict)
         # TODO: Use the following line once we're officially on Django 1.1
@@ -303,11 +298,9 @@ class ProgramHappenTest(TestCase):
                 [prog_dict['grade_min'],      prog_dict['grade_max'],
                  prog_dict['director_email'], prog_dict['program_size_max']] ],
             u'Program options not properly set.' )
-        # Anchor
-        self.assertEqual( self.prog.anchor, self.program_type_anchor[prog_dict['term']], u'Anchor not properly set.' )
         # Program Cost
         self.assertEqual(
-            Decimal(-LineItemType.objects.get(anchor__name="Required", anchor__parent__parent=self.prog.anchor).amount),
+            Decimal(LineItemType.objects.get(required=True, program=self.prog).amount),
             Decimal(prog_dict['base_cost']),
             'Program admission cost not set properly.' )
     
@@ -328,15 +321,15 @@ class ProgramHappenTest(TestCase):
         self.failUnless( user_obj.getTaughtSections().count() == 0, "User tubbeachubber is teaching sections that don't exist")
         
         timeslot_type = EventType.objects.create(description='Class Time Block')
-        self.timeslot = Event.objects.create(anchor=self.prog.anchor, description='Never', short_description='Never Ever',
+        self.timeslot = Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
             start=datetime(3001,1,1,12,0), end=datetime(3001,1,1,13,0), event_type=timeslot_type )
 
         # Make some other time slots
-        Event.objects.create(anchor=self.prog.anchor, description='Never', short_description='Never Ever',
+        Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
             start=datetime(3001,1,1,13,0), end=datetime(3001,1,1,14,0), event_type=timeslot_type )
-        Event.objects.create(anchor=self.prog.anchor, description='Never', short_description='Never Ever',
+        Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
             start=datetime(3001,1,1,14,0), end=datetime(3001,1,1,15,0), event_type=timeslot_type )
-        Event.objects.create(anchor=self.prog.anchor, description='Never', short_description='Never Ever',
+        Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
             start=datetime(3001,1,1,15,0), end=datetime(3001,1,1,16,0), event_type=timeslot_type )
 
         classroom_type = ResourceType.objects.create(name='Classroom', consumable=False, priority_default=0,
@@ -391,9 +384,8 @@ class ProgramHappenTest(TestCase):
         self.assertEqual( classes.count(), 1, 'Classes failing to show up in program' )
         self.classsubject = classes[0]
 
-        # check the title and anchor are good
-        self.assertEqual( unicode(self.classsubject.anchor.name), unicode(self.classsubject.emailcode()), 'Anchor saved incorrectly as "%s".' % self.classsubject.anchor.uri )
-        self.assertEqual( unicode(self.classsubject.title()), unicode(class_dict['title']), 'Failed to save title.' )
+        # check the title ise good
+        self.assertEqual( unicode(self.classsubject.title), unicode(class_dict['title']), 'Failed to save title.' )
 
         # check getTaughtClasses
         getTaughtClasses = user_obj.getTaughtClasses()
@@ -435,7 +427,7 @@ class ProgramHappenTest(TestCase):
             self.assertTrue(set(user_obj.getTaughtClasses()) == set(target_classes), 'Could not delete class; expected to have %s, got %s' % (target_classes, user_obj.getTaughtClasses()))
     
     def studentreg(self):
-        from esp.users.models import ContactInfo, StudentInfo, UserBit
+        from esp.users.models import ContactInfo, StudentInfo
         from esp.program.models import RegistrationProfile, StudentRegistration
         from datetime import datetime, timedelta
 
@@ -513,11 +505,9 @@ class ProgramFrameworkTest(TestCase):
         from esp.qsd.models import QuasiStaticData
         from esp.web.models import NavBarCategory
         from datetime import datetime, timedelta
-        
-        #   Force Datatree to not use transactions
-        import esp.datatree.sql.set_isolation_level
-        esp.datatree.sql.set_isolation_level.DISABLE_TRANSACTIONS = True
-        
+
+        user_role_setup()
+
         #   Default parameters
         settings = {'num_timeslots': 3,
                     'timeslot_length': 50,
@@ -544,9 +534,6 @@ class ProgramFrameworkTest(TestCase):
                 
         self.settings = settings
 
-        #   Make an anchor for the program type
-        self.program_type_anchor = GetNode('Q/Programs/%s' % settings['program_type'])
-
         #   Create class categories
         self.categories = []
         for i in range(settings['num_categories']):
@@ -561,19 +548,19 @@ class ProgramFrameworkTest(TestCase):
             new_student, created = ESPUser.objects.get_or_create(username='student%04d' % i)
             new_student.set_password('password')
             new_student.save()
-            role_bit, created = UserBit.objects.get_or_create(user=new_student, verb=GetNode('V/Flags/UserRole/Student'), qsc=GetNode('Q'), recursive=False)
+            new_student.makeRole("Student")
             self.students.append(ESPUser(new_student)) 
         for i in range(settings['num_teachers']):
             new_teacher, created = ESPUser.objects.get_or_create(username='teacher%04d' % i)
             new_teacher.set_password('password')
             new_teacher.save()
-            role_bit, created = UserBit.objects.get_or_create(user=new_teacher, verb=GetNode('V/Flags/UserRole/Teacher'), qsc=GetNode('Q'), recursive=False)
+            new_teacher.makeRole("Teacher")
             self.teachers.append(ESPUser(new_teacher))
         for i in range(settings['num_admins']):
             new_admin, created = ESPUser.objects.get_or_create(username='admin%04d' % i)
             new_admin.set_password('password')
             new_admin.save()
-            role_bit, created = UserBit.objects.get_or_create(user=new_admin, verb=GetNode('V/Flags/UserRole/Administrator'), qsc=GetNode('Q'), recursive=False)
+            new_admin.makeRole("Administrator")
             self.admins.append(ESPUser(new_admin))
             
         #   Establish attributes for program
@@ -584,7 +571,7 @@ class ProgramFrameworkTest(TestCase):
                 'grade_max': '12',
                 'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234567@mit.edu',
                 'program_size_max': '3000',
-                'anchor': self.program_type_anchor.id,
+                'program_type': settings['program_type'],
                 'program_modules': settings['modules'],
                 'class_categories': [x.id for x in self.categories],
                 'admins': [x.id for x in self.admins],
@@ -595,7 +582,6 @@ class ProgramFrameworkTest(TestCase):
                 'publish_start':     '2000-01-01 00:00:00',
                 'publish_end':       '3001-01-01 00:00:00',
                 'base_cost':         '666',
-                'finaid_cost':       '37',
             }        
 
         #   Create the program much like the /manage/newprogram view does
@@ -608,24 +594,31 @@ class ProgramFrameworkTest(TestCase):
             raise Exception()
         
         temp_prog = pcf.save(commit=False)
-        datatrees, userbits, modules = prepare_program(temp_prog, pcf.cleaned_data)
-        costs = (pcf.cleaned_data['base_cost'], pcf.cleaned_data['finaid_cost'])
-        anchor = GetNode(pcf.cleaned_data['anchor'].get_uri() + "/" + pcf.cleaned_data["term"])
-        anchor.friendly_name = pcf.cleaned_data['term_friendly']
-        anchor.save()
-        new_prog = pcf.save(commit=False)
-        new_prog.anchor = anchor
+        (perms, modules) = prepare_program(temp_prog, pcf.cleaned_data)
+        
+        new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
+
+        #   Filter out unwanted characters from program type to form URL
+        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
+        new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
+        new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
         pcf.save_m2m()
-        commit_program(new_prog, datatrees, userbits, modules, costs)
+        
+        commit_program(new_prog, perms, modules, pcf.cleaned_data['base_cost'])
+
+        #   Add recursive permissions to open registration to the appropriate people
+        (perm, created) = Permission.objects.get_or_create(role=Group.objects.get(name='Teacher'), permission_type='Teacher/All', program=new_prog)
+        (perm, created) = Permission.objects.get_or_create(role=Group.objects.get(name='Student'), permission_type='Student/All', program=new_prog)
+
         self.program = new_prog
-            
+
         #   Create timeblocks and resources
-        self.event_type, created = EventType.objects.get_or_create(description='Default Event Type')
+        self.event_type, created = EventType.objects.get_or_create(description='Class Time Block')
         for i in range(settings['num_timeslots']):
             start_time = settings['start_time'] + timedelta(minutes=i * (settings['timeslot_length'] + settings['timeslot_gap']))
             end_time = start_time + timedelta(minutes=settings['timeslot_length'])
-            event, created = Event.objects.get_or_create(anchor=self.program.anchor, event_type=self.event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
+            event, created = Event.objects.get_or_create(program=self.program, event_type=self.event_type, start=start_time, end=end_time, short_description='Slot %i' % i, description=start_time.strftime("%H:%M %m/%d/%Y"))
         self.timeslots = self.program.getTimeSlots()
         for i in range(settings['num_rooms']):
             for ts in self.timeslots:
@@ -634,12 +627,10 @@ class ProgramFrameworkTest(TestCase):
                    
         #   Create classes and sections
         subject_count = 0
-        class_dummy_anchor = GetNode('Q/DummyClass')
         for t in self.teachers:
             for i in range(settings['classes_per_teacher']):
                 current_category = self.categories[subject_count % settings['num_categories']]
-                class_anchor = GetNode('%s/Classes/%s%d' % (self.program.anchor.get_uri(), current_category.symbol, subject_count + 1))
-                new_class, created = ClassSubject.objects.get_or_create(anchor=class_anchor, category=current_category, grade_min=7, grade_max=12, parent_program=self.program, class_size_max=settings['room_capacity'], class_info='Description %d!' % subject_count)
+                new_class, created = ClassSubject.objects.get_or_create(title='Test class %d' % subject_count, category=current_category, grade_min=7, grade_max=12, parent_program=self.program, class_size_max=settings['room_capacity'], class_info='Description %d!' % subject_count)
                 new_class.makeTeacher(t)
                 subject_count += 1
                 for j in range(settings['sections_per_class']):
@@ -648,13 +639,12 @@ class ProgramFrameworkTest(TestCase):
                 new_class.accept() 
 
         #   Give the program its own QSD main-page
-        QuasiStaticData.objects.get_or_create(path=new_prog.anchor,
+        (qsd, created) = QuasiStaticData.objects.get_or_create(url='learn/%s/index' % self.program.url,
                                               name="learn:index",
                                               title=new_prog.niceName(),
                                               content="Welcome to %s!  Click <a href='studentreg'>here</a> to go to Student Registration.  Click <a href='catalog'>here</a> to view the course catalog.",
                                               author=self.admins[0],
                                               nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="")[0])
-
 
     #   Helper function to give the program a schedule.
     #   Does not get called by default, but subclasses can call it.
@@ -715,7 +705,7 @@ class ProgramFrameworkTest(TestCase):
                 'grade_max': '12',
                 'director_email': '123456789-223456789-323456789-423456789-523456789-623456789-7234568@mit.edu',
                 'program_size_max': '3000',
-                'anchor': self.program_type_anchor.id,
+                'program_type': 'TestProgramPast',
                 'program_modules': [x.id for x in ProgramModule.objects.all()],
                 'class_categories': [x.id for x in self.categories],
                 'admins': [x.id for x in self.admins],
@@ -735,17 +725,21 @@ class ProgramFrameworkTest(TestCase):
             print pcf.errors
             print prog_form_values
             raise Exception()
+        
         temp_prog = pcf.save(commit=False)
-        datatrees, userbits, modules = prepare_program(temp_prog, pcf.cleaned_data)
-        costs = (pcf.cleaned_data['base_cost'], pcf.cleaned_data['finaid_cost'])
-        anchor = GetNode(pcf.cleaned_data['anchor'].get_uri() + "/" + pcf.cleaned_data["term"])
-        anchor.friendly_name = pcf.cleaned_data['term_friendly']
-        anchor.save()
-        new_prog = pcf.save(commit=False)
-        new_prog.anchor = anchor
+        (perms, modules) = prepare_program(temp_prog, pcf.cleaned_data)
+        
+        new_prog = pcf.save(commit=False) # don't save, we need to fix it up:
+
+        #   Filter out unwanted characters from program type to form URL
+        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
+        new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
+        new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
         new_prog.save()
         pcf.save_m2m()
-        commit_program(new_prog, datatrees, userbits, modules, costs)
+        
+        commit_program(new_prog, perms, modules, pcf.cleaned_data['base_cost'])
+
         self.new_prog = new_prog
 
 def randomized_attrs(program):
@@ -987,7 +981,7 @@ class ModuleControlTest(ProgramFrameworkTest):
     def runTest(self):
         from esp.program.models import ProgramModule
         from esp.program.modules.base import ProgramModuleObj
-        from esp.program.modules.handlers.satprepmodule import SATPrepModule
+        from esp.program.modules.handlers.financialaidappmodule import FinancialAidAppModule
     
         #   Make all default modules non-required
         for pmo in self.program.getModules():
@@ -1004,17 +998,17 @@ class ModuleControlTest(ProgramFrameworkTest):
         self.assertTrue('Steps for Registration' in response.content)
         
         #   Set a student module to be required and make sure we are shown it.
-        sat_module = ProgramModule.objects.filter(handler='SATPrepModule')[0]
-        moduleobj = ProgramModuleObj.getFromProgModule(self.program, sat_module)
+        fa_module = ProgramModule.objects.filter(handler='FinancialAidAppModule')[0]
+        moduleobj = ProgramModuleObj.getFromProgModule(self.program, fa_module)
         moduleobj.__class__ = ProgramModuleObj
         moduleobj.required = True
         moduleobj.save()
         
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
-        self.assertTrue('SAT Math Score' in response.content)
+        self.assertTrue('Financial Aid' in response.content)
         
         #   Remove the module and make sure we are not shown it anymore.
-        self.program.program_modules.remove(sat_module)
+        self.program.program_modules.remove(fa_module)
         self.program.save()
         
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
@@ -1067,7 +1061,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.waitlist_rt, created = RegistrationType.objects.get_or_create(name='Waitlist/1')
 
         # Add some priorities and interesteds for the lottery
-        es = Event.objects.filter(anchor=self.program.anchor)
+        es = Event.objects.filter(program=self.program)
         for student in self.students:
             # Give the student a starting grade
             startGrade = int(random.random() * 6) + 7
@@ -1114,6 +1108,44 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
                 self.failUnless(cls.cannotAdd(student) or cls.isFull())
+
+    def testStats(self):
+        """ Verify that the values returned by compute_stats() are correct
+            after running the lottery.  """
+
+        #   Run the lottery!
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+        #   Get stats
+        stats = lotteryController.compute_stats()
+
+        #   Check stats for correctness
+        #   - Some basic stats
+        self.assertEqual(stats['num_enrolled_students'], len(filter(lambda x: len(x.getEnrolledClasses(self.program)) > 0, self.students)))
+        self.assertEqual(stats['num_registrations'], len(StudentRegistration.valid_objects().filter(user__in=self.students, relationship__name='Enrolled')))
+        #   - 'Screwed students' list
+        for student in self.students:
+            stats_entry = filter(lambda x: x[1] == student.id, stats['students_by_screwedness'])[0]
+
+            #   Compute 'screwedness' score for this student
+            sections_interested = student.getSections(self.program, verbs=['Interested'])
+            sections_priority = student.getSections(self.program, verbs=['Priority/1'])
+            sections_enrolled = student.getSections(self.program, verbs=['Enrolled'])
+
+            sections_interested_and_enrolled = list((set(sections_interested) - set(sections_priority)) & set(sections_enrolled))
+            sections_priority_and_enrolled = list(set(sections_priority) & set(sections_enrolled))
+
+            hours_interested = numpy.sum([len(sec.get_meeting_times()) for sec in sections_interested_and_enrolled])
+            hours_priority = numpy.sum([len(sec.get_meeting_times()) for sec in sections_priority_and_enrolled])
+            student_utility = (hours_interested + 1.5 * hours_priority) ** 0.5
+
+            student_weight = (len(sections_interested) + len(sections_priority)) ** 0.5
+            student_screwed_val = (1.0 + student_utility) / (1.0 + student_weight)
+
+            #   Compare against the value in the stats dict (allow for floating-point error)
+            self.assertAlmostEqual(student_screwed_val, stats_entry[0])
 
     def testSingleLunchConstraint(self):
         # First generate 1 lunch timeslot
