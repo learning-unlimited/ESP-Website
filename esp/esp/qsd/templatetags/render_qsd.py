@@ -55,10 +55,14 @@ class InlineQSDNode(template.Node):
             program = self.program_variable.resolve(context) if self.program_variable is not None else None
         except template.VariableDoesNotExist:
             program = None
+        try: 
+            url_resolved = template.Variable(self.url).resolve(context)
+        except template.VariableDoesNotExist:
+            url_resolved = self.url
         if program is not None:
-            url = QuasiStaticData.prog_qsd_url(program,self.url)
+            url = QuasiStaticData.prog_qsd_url(program,url_resolved)
         else:
-            url = self.url
+            url = url_resolved
         #probably should have an error message if variable was not None and prog was
 
         edit_bits = Permission.user_can_edit_qsd(user, url)
