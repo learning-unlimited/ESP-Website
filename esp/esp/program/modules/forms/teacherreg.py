@@ -299,7 +299,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
                 field.initial = default
                 
         super(TeacherOpenClassRegForm, self).__init__(module, *args, **kwargs)
-        open_class_category = module.program.open_class_category
+        open_class_category = module.get_program().open_class_category
         self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
 
         # Re-enable the requested special resources field as a space needs .
@@ -311,7 +311,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
         fields = [('category', open_class_category.id), 
-                  ('prereqs', ''), ('session_count', 1), ('grade_min', module.program.grade_min), ('grade_max', module.program.grade_max), 
+                  ('prereqs', ''), ('session_count', 1), ('grade_min', module.get_program().grade_min), ('grade_max', module.get_program().grade_max), 
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''), 
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True), 
                   ('has_own_space', False), ('requested_room', ''), ('global_resources', ''),
