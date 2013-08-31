@@ -311,7 +311,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
         fields = [('category', open_class_category.id), 
-                  ('prereqs', ''), ('session_count', 1), ('grade_min', 7), ('grade_max', 12), 
+                  ('prereqs', ''), ('session_count', 1), ('grade_min', module.program.grade_min), ('grade_max', module.program.grade_max), 
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''), 
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True), 
                   ('has_own_space', False), ('requested_room', ''), ('global_resources', ''),
