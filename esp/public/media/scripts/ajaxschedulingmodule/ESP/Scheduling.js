@@ -71,11 +71,15 @@ ESP.Scheduling = function(){
         this.roomfilter = new ESP.Scheduling.Widgets.RoomFilter(this.matrix);
 	//add "drag here to unschedule" box to the matrix corner
         this.garbage   = new ESP.Scheduling.Widgets.GarbageBin();
-        $j('#matrix-corner-box').append(this.garbage.el);//.addClass('float-right'));
+        $j('#matrix-corner-box').append(this.garbage.el);
 
         $j('#directory-target').text('');
-        $j('#directory-target').append(this.searchbox.el);
-        $j('#directory-target').append(this.directory.el);
+	$j('#directory-target').append('<div id="directory-accordion-target"></div>')
+	$j('#directory-accordion-target').append('<div id="directory-accordion"></div>')
+	$j('#directory-accordion').append($j('<h3>Filter Classes</h3>'))
+        $j('#directory-accordion').append(this.searchbox.el);
+	$j('#directory-accordion').append($j('<h3>Directory</h3>'))
+        $j('#directory-accordion').append(this.directory.el);
 
         ESP.Utilities.evm.bind('drag_dropped', function(event, data){
             var extra = {
@@ -102,16 +106,17 @@ ESP.Scheduling = function(){
         ESP.Utilities.evm.bind('block_section_assignment_success', function(event, data){
             dir.filter();
         });
+	window_height = window.innerHeight - $j('#statusbar-wrapper').height() - 60;
         $j('#body').show()
 	
 	//size some things
-	window_height = window.innerHeight - $j('#statusbar-wrapper').height() - 60;
-	$j('#directory-target').height(window_height);
-	searchbox_start_height = $j("#searchbox").height();
-	$j("#directory-table-wrapper").height(window_height - searchbox_start_height - 2);
-	$j("#searchbox").height(searchbox_start_height);
+	console.log("window height:")
+	console.log(window_height)
+	$j('#directory-accordion-target').height(window_height);
 	$j("#directory-target").css("max-width", window.innerWidth-$j('.matrix').width() - 60);
 	$j("#directory-target").css("min-width", 50);
+	$j('#directory-accordion').accordion({fillSpace: "true"});
+	$j('#directory-accordion').accordion("refresh");
 
 	//make matrixx resizeable
 	$j('.matrix').resizable({handles: "e"})

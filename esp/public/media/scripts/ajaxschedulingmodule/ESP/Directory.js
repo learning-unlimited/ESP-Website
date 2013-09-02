@@ -43,9 +43,6 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
         
             // refresh the representation
             this.filter();
-	    //setup resizing
-	    //does not appear to be working here )-:
-	    $j('.directory-table-wrapper').resizable({handles: "w, n"});
 	    $j('.directory-table-wrapper').css("max-width", window.innerWidth - 50);
 	    $j('.directory-table-wrapper').css("min-width", 50);
         },
@@ -160,6 +157,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
         
         // filter active rows
         filter: function(filter){
+	    console.log("filtering")
             var filter = filter || this.activeFilter || function(){ return true; };
             this.activeFilter = filter;
             var active_rows = [];
@@ -259,16 +257,8 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
 
 ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
     initialize: function(directory) {
-        this.directory = directory;
-
-        this.el = $j('<div id="searchbox"/>').addClass('searchbox').addClass('ui-resizable');
-	//set up resizing so that the directory resizes in the reverse direction
-	this.el.resizable({
-	    handles: 's',
-	    resize: function(e) {
-		$j("#directory-table-wrapper").height(window_height-2-$j("#searchbox").height());
-	    }
-	});
+        this.directory = directory;        
+        this.el = $j('<div id="searchbox"/>').addClass('searchbox');
 
 	//add filters to filter box
 	this.filters = []
@@ -280,6 +270,7 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 	    tr = this.add_input(filter_names[i], table)
 	    this.filters.push(this.get_filter(filter_fields[i], input, "text"))
 	}      
+	
 	//teachers
 	input = this.add_input("Teacher", table, "text")
 	this.filters.push(this.get_teacher_filter(input))
@@ -291,9 +282,8 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 	this.filters.push(this.get_status_filter(input))
 	input.bind('change', this.do_search.bind(this))
 
-	//TODO:  modify the length of the table cell here
-
 	this.el.append(table)
+	this.directory.filter(this.all_filters.bind(this))
     },
 
     add_input: function(label, table, type, f){
