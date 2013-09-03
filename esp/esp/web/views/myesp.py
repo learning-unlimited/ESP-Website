@@ -101,7 +101,7 @@ def edit_profile(request, module):
 
     else:
         user_types = Group.objects.all().order_by('-id')
-        return profile_editor(request, None, True, user_types[0].verb.name if user_types else '')
+        return profile_editor(request, None, True, user_types[0].name if user_types else '')
 
 @login_required
 def profile_editor(request, prog_input=None, responseuponCompletion = True, role=''):

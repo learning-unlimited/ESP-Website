@@ -3,7 +3,7 @@ from django.db.utils import IntegrityError
 
 from esp.users.models import ESPUser, UserForwarder
 
-__all__ = ['get_related', 'merge', 'trim_userbits', 'merge_users']
+__all__ = ['get_related', 'merge', 'merge_users']
 
 #####################
 # Internal use only #
@@ -66,28 +66,18 @@ def merge(absorber, absorbee):
             transaction.commit()
         transaction.leave_transaction_management()
 
-def trim_userbits(user):
-    """Drop duplicate userbits from user."""
-    deletion_queue = []
-    for b in user.userbit_set.all():
-        if b.id != user.userbit_set.filter(qsc=b.qsc, verb=b.verb).order_by('-enddate','startdate')[0].id:
-            deletion_queue.append(b)
-    for b in deletion_queue:
-        b.delete()
-
 
 #########################
 # Usable from the shell #
 #########################
 
-def merge_users(absorber, absorbee, forward=True, deactivate=False, trim_bits=True):
+def merge_users(absorber, absorbee, forward=True, deactivate=False):
     """
     Merge two accounts, transferring everything from absorbee to abosorber.
 
     Options:
         forward: Set up login forwarding from absorbee to absorber
         deactivate: Deactivate the absorbee
-        trim_bits: Drop duplicate userbits from the absorber
 
     """
     merge(absorber, absorbee)
@@ -98,7 +88,3 @@ def merge_users(absorber, absorbee, forward=True, deactivate=False, trim_bits=Tr
     if deactivate:
         absorbee.is_active = False
         absorbee.save()
-    # Drop duplicate userbits from the absorbing account.
-    # Unnecessary if you're enforcing a uniqueness constraint on userbits.
-    if trim_bits:
-        trim_userbits(absorber)
