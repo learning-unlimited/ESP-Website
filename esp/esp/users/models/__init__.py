@@ -489,7 +489,7 @@ class ESPUser(User, AnonymousUser):
         #   Because the timeslot has an anchor, the program is unnecessary.
         #   Default to teacher mode
         if role is None:
-            role = Group.objects.get(name='Teacher')
+            role = Group.objects.get_or_create(name='Teacher')[0]
         new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot, role=role)
         new_availability.save()
         
@@ -795,13 +795,13 @@ class ESPUser(User, AnonymousUser):
         return username
         
     def makeVolunteer(self):
-        self.groups.add(Group.objects.get(name="Volunteer"))
+        self.groups.add(Group.objects.get_or_create(name="Volunteer")[0])
 
     def makeRole(self, role_name):
-        self.groups.add(Group.objects.get(name=role_name))
+        self.groups.add(Group.objects.get_or_create(name=role_name)[0])
 
     def removeRole(self, role_name):
-        self.groups.remove(Group.objects.get(name=role_name))
+        self.groups.remove(Group.objects.get_or_create(name=role_name)[0])
 
     def hasRole(self, role_name):
         return self.groups.filter(name=role_name).exists()
@@ -2110,6 +2110,8 @@ def install():
     """
     Installs some initial users and permissions.
     """    
+    for user_type in (list(ESPUser.getTypes()) + ["StudentRep", "Administrator"]):
+        Group.objects.get_or_create(name=user_type)
     if ESPUser.objects.count() == 1: # We just did a syncdb;
                                      # the one account is the admin account
         user = ESPUser.objects.all()[0]
