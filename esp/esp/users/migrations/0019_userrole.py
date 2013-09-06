@@ -24,6 +24,15 @@ class Migration(DataMigration):
             g,c = Group.objects.get_or_create(name=bit.verb.name)
             bit.user.groups.add(g)
 
+        # Adds Administrators who might not have had the UserRole.
+        # The enddate filter is to prevent the migration from adding
+        # Administrators with an Administer privilege that is set to expire,
+        # since membership in the Administrator group has no expiration.
+        # Instead, an Administer privilege should be given in a later migration.
+        admin_role = Group.objects.get_or_create(name="Administrator")
+        for admin_bit in UserBit.objects.filter(verb__uri="V/Administer", qsc__uri="Q", user__isnull=False, enddate__gte=datetime.datetime(3000,1,1)):
+            admin_bit.user.groups.add(admin_role)
+
     def backwards(self, orm):
         "Write your backwards methods here."
         for user in orm.ESPUser.objects.all():

@@ -25,6 +25,11 @@ class Migration(DataMigration):
                 continue
             Permission(permission_type="Administer", program=p, user=bit.user, startdate=bit.startdate, enddate=end(bit)).save()
 
+        # Administer all programs, but with an enddate.
+        # Adds users that we didn't add to the Administrator group in 0019_userrole.
+        for bit in UserBit.objects.filter(verb__uri="V/Administer", qsc__uri="Q", user__isnull=False, enddate__lt=datetime.datetime(3000,1,1)):
+            Permission(permission_type="Administer", program=None, user=bit.user, startdate=bit.startdate, enddate=end(bit)).save()
+
         #view programs
         program_anchors=Program.objects.all().values_list("anchor",flat=True)
         view_program_bits=UserBit.objects.filter(verb__uri="V/Flags/Public", qsc__id__in=program_anchors)
