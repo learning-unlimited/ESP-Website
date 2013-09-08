@@ -52,30 +52,32 @@ from django.views.decorators.cache import cache_control
 from esp.middleware.threadlocalrequest import get_current_request
 #def json_encode_timeslots(obj):
     
-class LotteryStudentRegModule(ProgramModuleObj):
+class StudentRegPhase2(ProgramModuleObj):
 
     def students(self, QObject = False):
-        q = Q(studentregistration__section__parent_class__parent_program=self.program, studentregistration__end_date__gte=datetime.now())
+        # TODO: fill this in
+        q = Q()
         if QObject:
-            return {'lotteried_students': q}
+            return {'phase2_students': q}
         else:
-            return {'lotteried_students': ESPUser.objects.filter(q).distinct()}
+            return {'phase2_students': ESPUser.objects.filter(q).distinct()}
 
     def studentDesc(self):
-        return {'lotteried_students': "Students who have entered the lottery"}
+        return {'phase2_students': "Students who have completed student registration phase 2"}
 
     def isCompleted(self):
-        return bool(StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, user=get_current_request().user))
+        # TODO: fill this in
+        return True
 
     @classmethod
     def module_properties(cls):
         return {
-            "link_title": "Class Registration Lottery",
-            "admin_title": "Lottery Student Registration",
+            "link_title": "Student Registration Phase 2",
+            "admin_title": "Student Registration Phase 2",
             "module_type": "learn",
-            "seq": 7
+            "seq": 6
             }
-    
+
         """ def prepare(self, context={}):
         if context is None: context = {}
 

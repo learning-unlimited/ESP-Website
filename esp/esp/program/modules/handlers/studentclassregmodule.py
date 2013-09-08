@@ -484,12 +484,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
     @aux_call
     @needs_student
-    def studentreg_1(self, request, tl, one, two, module, extra, prog):
-        # TODO: create a new program module and move this there
-        return render_to_response(self.baseDir() + 'studentregphase1.html', request, (prog, tl), {})
-
-    @aux_call
-    @needs_student
     @meets_deadline('/Classes/OneClass')    
     def fillslot(self, request, tl, one, two, module, extra, prog):
         """ Display the page to fill the timeslot for a program """
