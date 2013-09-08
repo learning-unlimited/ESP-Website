@@ -15,6 +15,7 @@
 
 {% block stylesheets %}
 {{ block.super }}
+<link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" />
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog-new.css" />
 {% endblock %}
 
@@ -35,6 +36,13 @@
 	<a href="/teach/teachers/bitdiddle/bio.html" title="The biography of Ben Bitdiddle" data-bind="text: name">
 	</a><!-- ko if: $index() != $parent.teachers().length - 1 -->, <!-- /ko -->
       </div>
+    </div>
+    <div class="mark-interested">
+      <a class="star" href="javascript:void(0)" title="Click the star to mark this class as interested." data-bind="click: toggle_interested">
+        <i class="star-outline icon-2x icon-star-empty"></i>
+        <i class="star-fill icon-2x icon-star" data-bind="visible: interested"></i>
+      </a>
+      <label>Click the star to mark this class as interested.</label>
     </div>
     <div class="catalog-entry-body">
       <div class="catalog-entry-description" data-bind="text: class_info"></div>

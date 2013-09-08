@@ -20,6 +20,7 @@ var ClassSubject = function (data, vm) {
     self.difficulty  = ko.observable("Loading...");
     self.prereqs     = ko.observable("Loading...");
     self.section_ids = ko.observableArray();
+    self.interested  = ko.observable(false);
 
     self.fulltitle = ko.computed(function () {
 	return self.emailcode() + ": " + self.title();
@@ -50,6 +51,11 @@ var ClassSubject = function (data, vm) {
         });
         return ret;
     });
+
+    // click handler for interested star
+    self.toggle_interested = function () {
+        self.interested(!self.interested());
+    }
 
     // rename attributes: teachers -> teacher_ids, sections -> section_ids
     data.teacher_ids = data.teachers;
