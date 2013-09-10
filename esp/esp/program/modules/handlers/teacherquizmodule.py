@@ -64,7 +64,7 @@ class TeacherQuizController(object):
 
     def markCompleted(self, user):
         """Mark a user as having completed the quiz."""
-        r,created = Record.objects.get_or_create(user=user, event=self.event)
+        r,created = Record.objects.get_or_create(user=user, event=self.event, program=self.program)
         if not created:
             r.time=datetime.now()
             r.save()
