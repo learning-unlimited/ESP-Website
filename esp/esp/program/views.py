@@ -70,6 +70,7 @@ import simplejson as json
 import re
 import unicodedata
 from collections import defaultdict
+from decimal import Decimal
 
 try:
     from cStringIO import StringIO
