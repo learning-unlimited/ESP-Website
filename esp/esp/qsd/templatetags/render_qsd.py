@@ -55,10 +55,11 @@ class InlineQSDNode(template.Node):
             program = self.program_variable.resolve(context) if self.program_variable is not None else None
         except template.VariableDoesNotExist:
             program = None
-        try: 
+        #   Accept literal string url argument if it is quoted; otherwise expect a template variable.
+        if not self.url.startswith('"'):
             url_resolved = template.Variable(self.url).resolve(context)
-        except template.VariableDoesNotExist:
-            url_resolved = self.url
+        else:
+            url_resolved = self.url.strip('"')
         if program is not None:
             url = QuasiStaticData.prog_qsd_url(program,url_resolved)
         else:
