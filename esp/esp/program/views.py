@@ -594,10 +594,10 @@ def submit_transaction(request):
         #   Save the payment as a transfer in the database
         iac.submit_payment(post_amount)
 
-        one = 'learn'
-        two = iac.program.url.split('/')[0]
+        tl = 'learn'
+        one, two = iac.program.url.split('/')
 
-        return HttpResponseRedirect("http://%s/%s/%s/confirmreg" % (request.META['HTTP_HOST'], one, two))
+        return HttpResponseRedirect("http://%s/%s/%s/%s/confirmreg" % (request.META['HTTP_HOST'], tl, one, two))
 
     return render_to_response( 'accounting_docs/credit_rejected.html', request, {} )
 
