@@ -735,6 +735,7 @@ function populate_classes()
             continue;
         
         new_sec.class_id = new_sec.parent_class__id;
+        new_sec.emailcode = parent_class.category__symbol + new_sec.parent_class__id;
         new_sec.title = parent_class.title;
         new_sec.grade_min = parent_class.grade_min;
         new_sec.grade_max = parent_class.grade_max;
