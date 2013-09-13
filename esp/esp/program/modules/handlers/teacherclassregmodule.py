@@ -578,8 +578,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return HttpResponse(json.dumps({'restype_forms_html': formset_str, 'script': formset_script}))
         
     @aux_call
-    @meets_deadline("/Classes/Edit")
     @needs_teacher
+    @meets_deadline("/Classes/Edit")
     def editclass(self, request, tl, one, two, module, extra, prog):
         try:
             int(extra)
@@ -602,14 +602,14 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls, action)
 
     @main_call
-    @meets_deadline('/Classes/Create')
     @needs_teacher
+    @meets_deadline('/Classes/Create')
     def makeaclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None)
 
     @aux_call
-    @meets_deadline('/Classes/Create')
     @needs_teacher
+    @meets_deadline('/Classes/Create')
     def copyaclass(self, request, tl, one, two, module, extra, prog):
         if request.method == 'POST':
             return self.makeaclass_logic(request, tl, one, two, module, extra, prog)
@@ -634,8 +634,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, cls, action, populateonly = True)
 
     @aux_call
-    @meets_deadline('/Classes/Create')
     @needs_teacher
+    @meets_deadline('/Classes/Create')
     def copyclasses(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['all_class_list'] = request.user.getTaughtClasses()
@@ -644,8 +644,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return render_to_response(self.baseDir()+'listcopyclasses.html', request, context)
 
     @aux_call
-    @meets_deadline('/Classes/Create')
     @needs_teacher
+    @meets_deadline('/Classes/Create')
     def makeopenclass(self, request, tl, one, two, module, extra, prog, newclass = None):
         return self.makeaclass_logic(request, tl, one, two, module, extra, prog, newclass = None, action = 'createopenclass')
 

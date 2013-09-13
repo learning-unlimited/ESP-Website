@@ -48,8 +48,8 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
             }
 
     @main_call
-    @meets_deadline("/MainPage")
     @needs_teacher
+    @meets_deadline("/MainPage")
     def teacherreg(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher reg page """
         context = {}
