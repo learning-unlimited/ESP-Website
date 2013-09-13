@@ -135,8 +135,8 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         return render_to_response(self.baseDir() + 'failure.html', request, context)
 
     @main_call
-    @meets_deadline('/Payment')
     @usercheck_usetl
+    @meets_deadline('/Payment')
     def payonline(self, request, tl, one, two, module, extra, prog):
 
         user = ESPUser(request.user)
