@@ -133,7 +133,6 @@ class ThemeController(object):
             local_results = {}
         
             #   Read less file
-            print filename
             less_file = open(filename)
             less_data = less_file.read()
             less_file.close()
