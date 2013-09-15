@@ -174,6 +174,7 @@ MIDDLEWARE_GLOBAL = [
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),
     (1200, 'django.middleware.gzip.GZipMiddleware'),
+    (1250, 'debug_toolbar.middleware.DebugToolbarMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
@@ -225,6 +226,7 @@ INSTALLED_APPS = (
     'esp.seltests',
     'esp.dataviews',
     'django.contrib.redirects',
+    'debug_toolbar',
 )
 
 import os
@@ -290,3 +292,36 @@ CONTACTFORM_EMAIL_CHOICES = (
 
 # corresponding email addresses - define these defaults in settings.py, since DEFAULT_EMAIL_ADDRESSES will be overwritten in local_settings.py
 CONTACTFORM_EMAIL_ADDRESSES = {}
+
+DEBUG_TOOLBAR_PANELS = (
+    'debug_toolbar.panels.cache.CacheDebugPanel',
+    'debug_toolbar.panels.headers.HeaderDebugPanel',
+    'debug_toolbar.panels.logger.LoggingPanel',
+    'debug_toolbar.panels.profiling.ProfilingDebugPanel',
+    'debug_toolbar.panels.request_vars.RequestVarsDebugPanel',
+    'debug_toolbar.panels.settings_vars.SettingsVarsDebugPanel',
+    'debug_toolbar.panels.signals.SignalDebugPanel',
+    'debug_toolbar.panels.sql.SQLDebugPanel',
+    'debug_toolbar.panels.template.TemplateDebugPanel',
+    'debug_toolbar.panels.timer.TimerDebugPanel',
+    'debug_toolbar.panels.version.VersionDebugPanel',
+)
+
+def custom_show_toolbar(request):
+    from django.conf import settings
+    return request.user.isAdmin() and (settings.DEBUG or request.GET.get('debug_toolbar', None) == 't')  # Always show toolbar when debugging, or when given a special GET param.
+
+DEBUG_TOOLBAR_CONFIG = {
+    'INTERCEPT_REDIRECTS': True,
+    'SHOW_TOOLBAR_CALLBACK': custom_show_toolbar,
+    'EXTRA_SIGNALS': [
+        'esp.cache.signals.cache_deleted',
+        'esp.cache.signals.m2m_added',
+        'esp.cache.signals.m2m_removed',
+    ],
+    'HIDE_DJANGO_SQL': True,
+    'SHOW_TEMPLATE_CONTEXT': True,
+    'TAG': 'body',
+    'ENABLE_STACKTRACES' : True,
+}
+
