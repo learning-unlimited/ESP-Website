@@ -5,7 +5,6 @@ from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.qsdmedia.models import Media as QSDMedia
 from esp.program.models import ClassSubject, ClassSection, StudentAppQuestion, StudentRegistration
-from esp.program.models.class_ import open_class_category
 from esp.program.modules.module_ext import StudentClassRegModuleInfo, ClassRegModuleInfo
 from esp.cache.key_set import wildcard
 from esp.tagdict.models import Tag
@@ -109,7 +108,7 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
         ajax_prereg_url = cls.parent_program.get_learn_url() + 'ajax_addclass'
 
     prereg_url = None
-    if not (crmi.open_class_registration and cls.category == open_class_category()):
+    if not (crmi.open_class_registration and cls.category == cls.parent_program.open_class_category):
         prereg_url = cls.parent_program.get_learn_url() + 'addclass'
 
     if user and prereg_url and timeslot:
