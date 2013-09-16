@@ -49,6 +49,9 @@ import tempfile
 import distutils.dir_util
 import simplejson as json
 
+THEME_PATH = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data')
+
+
 class ThemeController(object):
     """
     This is a controller for manipulating the currently selected theme.
@@ -63,7 +66,8 @@ class ThemeController(object):
         return json.loads(Tag.getTag('current_theme_params', default='{}'))
 
     def get_theme_names(self):
-        return filter(lambda x: '.py' not in x, os.listdir(settings.PROJECT_ROOT + 'esp/themes/theme_data/'))
+        return [name for name in os.listdir(THEME_PATH)
+            if os.path.isdir(os.path.join(THEME_PATH, name))]
 
     def get_template_settings(self):
         return json.loads(Tag.getTag('theme_template_control', default='{}'))
@@ -75,7 +79,7 @@ class ThemeController(object):
         Tag.setTag('theme_template_control', value=json.dumps(initial_data))
 
     def base_dir(self, theme_name):
-        return settings.PROJECT_ROOT + 'esp/themes/theme_data/%s' % theme_name
+        return os.path.join(THEME_PATH, theme_name)
 
     def list_filenames(self, dir, file_regexp, mask_base=False):
         result = []
@@ -114,7 +118,7 @@ class ThemeController(object):
         result = []
         if not theme_only:
             result += self.global_less()
-            result.append(os.path.join(themes_settings.less_dir, 'variables.less'))
+#            result.append(os.path.join(themes_settings.less_dir, 'variables.less'))
             result.append(os.path.join(themes_settings.less_dir, 'bootstrap.less'))
         result += self.list_filenames(self.base_dir(theme_name) + '/less', r'\.less$')
         return result
