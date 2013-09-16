@@ -102,11 +102,19 @@ class ThemeController(object):
         return self.list_filenames(self.base_dir(theme_name) + '/templates', r'\.html$', mask_base=True)
 
     def get_config_form_class(self, theme_name):
+        """ Themes can define a form for configuring settings that are not
+            represented by LESS variables.  This function will retrieve that
+            form class if the theme has defined one. """
+        #   There are two steps; if either fails, we return None and the form is skipped.
+        #   Step 1: Try to get the Python module containing the form class.
         try:
             theme_form_module = __import__('esp.themes.theme_data.%s.config_form' % theme_name, (), (), 'ConfigForm')
-            form = theme_form_module.ConfigForm
-            return form
-        except:
+        except ImportError:
+            return None
+        #   Step 2: Try to get the form class from the module.
+        if hasattr(theme_form_module, 'ConfigForm'):
+            return theme_form_module.ConfigForm
+        else:
             return None
 
     def global_less(self, search_dirs=None):
