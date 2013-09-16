@@ -1,0 +1,15 @@
+// Warning: Do not edit this section by hand, it contains metadata used 
+// by the theme editor.
+//
+// Base Theme: {% if base_theme %}{{ base_theme }}{% else %}default{% endif %}
+// Customized Theme Name: {% if save_name %}{{ save_name }}{% else %}None{% endif %}
+// Color Palette: [{% for color in palette %} palette:{{ color }}; {% endfor %}]
+// --------------------------------------------------------------------------
+
+{% autoescape off %} 
+
+{% for key, value in vars.items %}
+@{{ key }}: {{ value }};{% endfor %}
+
+{% endautoescape %}
+
