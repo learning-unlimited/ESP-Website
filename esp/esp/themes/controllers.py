@@ -264,8 +264,11 @@ parser.parse(data, function (err, tree) {
         #   Create template overrides using data provided (our models handle versioning)
         if themes_settings.THEME_DEBUG: print 'Loading theme: %s' % theme_name
         for template_name in self.get_template_names(theme_name):
+            #   Read default template override contents provided by theme
             to = TemplateOverride(name=template_name)
-            to.content = open(self.base_dir(theme_name) + '/templates/' + template_name).read()
+            template_filename = os.path.join(self.base_dir(theme_name), 'templates', template_name)
+            template_file = open(template_filename, 'r')
+            to.content = template_file.read()
             #   print 'Template override %s contents: \n%s' % (to.name, to.content)
             to.save()
             if themes_settings.THEME_DEBUG: print '-- Created template override: %s' % template_name
@@ -277,10 +280,14 @@ parser.parse(data, function (err, tree) {
         self.compile_css(theme_name, {}, self.css_filename)
         
         #   Copy images and script files to the active theme directory
-        if os.path.exists(self.base_dir(theme_name) + '/images'):
-            distutils.dir_util.copy_tree(self.base_dir(theme_name) + '/images', settings.MEDIA_ROOT + 'images/theme')
-        if os.path.exists(self.base_dir(theme_name) + '/scripts'):
-            distutils.dir_util.copy_tree(self.base_dir(theme_name) + '/scripts', settings.MEDIA_ROOT + 'scripts/theme')
+        img_src_dir = os.path.join(self.base_dir(theme_name), 'images')
+        if os.path.exists(img_src_dir):
+            img_dest_dir = os.path.join(settings.MEDIA_ROOT, 'images', 'theme')
+            distutils.dir_util.copy_tree(img_src_dir, img_dest_dir)
+        script_src_dir = os.path.join(self.base_dir(theme_name), 'scripts')
+        if os.path.exists(script_src_dir):
+            script_dest_dir = os.path.join(settings.MEDIA_ROOT, 'scripts', 'theme')
+            distutils.dir_util.copy_tree(script_src_dir, script_dest_dir)
 
         Tag.setTag('current_theme_name', value=theme_name)
         Tag.setTag('current_theme_params', value='{}')
