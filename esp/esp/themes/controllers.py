@@ -224,7 +224,7 @@ parser.parse(data, function (err, tree) {
         #   print js_code
 
         #   Compile to CSS
-        lessc_args = ["node"]
+        lessc_args = ["nodejs"] #   Ubuntu names its node.js binary 'nodejs' instead of 'node'
         lessc_process = subprocess.Popen(lessc_args, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
         css_data = lessc_process.communicate(input=js_code)[0]
 
