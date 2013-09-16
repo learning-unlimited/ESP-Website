@@ -197,7 +197,8 @@ class ThemeController(object):
         if themes_settings.THEME_DEBUG: print 'Wrote %d bytes to LESS file %s' % (len(less_data), less_output_filename)
         less_output_file.close()
 
-        less_search_path = ', '.join([("'%s'" % dir.replace('\\', '/')) for dir in (settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor/less')])])
+        less_search_path = ', '.join([("'%s'" % dirname) for dirname in (settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])])
+	if themes_settings.THEME_DEBUG: print 'LESS search path is "%s"' % less_search_path
 
         minify_js = False
         js_code = Template("""
