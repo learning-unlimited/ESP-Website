@@ -82,15 +82,18 @@ class ThemeController(object):
         return os.path.join(THEME_PATH, theme_name)
 
     def list_filenames(self, dir, file_regexp, mask_base=False):
+        """ Quick search for files in the specified directory (dir) which match
+            the specified pattern (file_regexp).  Used to determine which
+            templates and LESS files are present in a given theme. """
         result = []
         bd_len = len(dir)
-        for dir_tup in os.walk(dir):
-            for filename in dir_tup[2]:
+        for dirpath, dirnames, filenames in os.walk(dir):
+            for filename in filenames:
                 if re.search(file_regexp, filename):
                     if mask_base:
-                        full_name = ('%s/%s' % (dir_tup[0][bd_len:], filename))[1:]
+                        full_name = ('%s/%s' % (dirpath[bd_len:], filename))[1:]
                     else:
-                        full_name = dir_tup[0] + '/' + filename
+                        full_name = dirpath + '/' + filename
                     #   Hack needed for Windows - may not be necessary for other OS
                     result.append(full_name.replace('\\', '/'))
         return result
