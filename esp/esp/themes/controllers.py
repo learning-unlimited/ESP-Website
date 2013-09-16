@@ -203,20 +203,20 @@ var fs = require('fs');
 var less = require('less');
 
 var parser = new(less.Parser)({
-    paths: [%s], // Specify search paths for @import directives
+    paths: [$lesspath], // Specify search paths for @import directives
     filename: 'theme_compiled.less' // Specify a filename, for better error messages
 });
 
-var data = fs.readFileSync('%s', 'utf8');
+var data = fs.readFileSync('$lessfile', 'utf8');
 
 parser.parse(data, function (err, tree) {
     if (err)
     {
         return console.error(err);
     }
-    console.log(tree.toCSS({ compress: %s })); // Minify CSS output if desired
+    console.log(tree.toCSS({ compress: $minify })); // Minify CSS output if desired
 });
-        """ % (less_search_path, less_output_filename.replace('\\', '/'), str(minify_js).lower())
+        """.substitute(lesspath=less_search_path, lessfile=less_output_filename.replace('\\', '/'), minify=str(minify_js).lower())
 
         #   print js_code
 
