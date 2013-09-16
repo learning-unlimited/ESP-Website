@@ -41,6 +41,7 @@ from esp.themes import settings as themes_settings
 from django.conf import settings
 from django.template.loader import render_to_string
 
+from string import Template
 import cStringIO
 import os
 import re
@@ -198,7 +199,7 @@ class ThemeController(object):
         less_search_path = ', '.join([("'%s'" % dir.replace('\\', '/')) for dir in (settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor/less')])])
 
         minify_js = False
-        js_code = """
+        js_code = Template("""
 var fs = require('fs');
 var less = require('less');
 
@@ -216,7 +217,7 @@ parser.parse(data, function (err, tree) {
     }
     console.log(tree.toCSS({ compress: $minify })); // Minify CSS output if desired
 });
-        """.substitute(lesspath=less_search_path, lessfile=less_output_filename.replace('\\', '/'), minify=str(minify_js).lower())
+        """).substitute(lesspath=less_search_path, lessfile=less_output_filename.replace('\\', '/'), minify=str(minify_js).lower())
 
         #   print js_code
 
