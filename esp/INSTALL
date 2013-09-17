@@ -52,6 +52,7 @@ setuptools      Python                  python-setuptools
 virtualenv      Python                  python-virtualenv
 selenium-server-standalone	System	http://selenium.googlecode.com/files/selenium-server-standalone-2.9.0.jar
 Node.js         System                  nodejs
+LESS            JS                      node-less
 
 Note that the Lighttpd Web server is included in the list above.
 Apache2 and Lighttpd have both been used successfully.  After
