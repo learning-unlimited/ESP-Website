@@ -197,7 +197,8 @@ class ThemeController(object):
         if themes_settings.THEME_DEBUG: print 'Wrote %d bytes to LESS file %s' % (len(less_data), less_output_filename)
         less_output_file.close()
 
-        less_search_path = ', '.join([("'%s'" % dir.replace('\\', '/')) for dir in (settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor/less')])])
+        less_search_path = ', '.join([("'%s'" % dirname) for dirname in (settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])])
+	if themes_settings.THEME_DEBUG: print 'LESS search path is "%s"' % less_search_path
 
         minify_js = False
         js_code = Template("""
@@ -223,7 +224,7 @@ parser.parse(data, function (err, tree) {
         #   print js_code
 
         #   Compile to CSS
-        lessc_args = ["node"]
+        lessc_args = ["nodejs"] #   Ubuntu names its node.js binary 'nodejs' instead of 'node'
         lessc_process = subprocess.Popen(lessc_args, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
         css_data = lessc_process.communicate(input=js_code)[0]
 
