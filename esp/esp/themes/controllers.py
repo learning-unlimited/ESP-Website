@@ -373,7 +373,19 @@ parser.parse(data, function (err, tree) {
     ##  HTML color codes, e.g. ["#FFFFFF", "#3366CC"]
 
     def get_palette(self):
-        return json.loads(Tag.getTag('current_theme_palette', default='[]'))
+        palette_base = json.loads(Tag.getTag('current_theme_palette', default='[]'))
+        
+        #   Augment with the colors from any global LESS variables
+        palette = set(palette_base)
+        base_vars = self.find_less_variables()
+        for varset in base_vars.values():
+            for val in varset.values():
+                if isinstance(val, basestring) and val.startswith('#'):
+                    palette.add(val)
+        
+        palette = list(palette)
+        palette.sort()
+        return palette
 
     def set_palette(self, palette):
         Tag.setTag('current_theme_palette', value=json.dumps(palette))
