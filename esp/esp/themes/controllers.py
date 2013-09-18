@@ -131,6 +131,7 @@ class ThemeController(object):
         if not theme_only:
             result += self.global_less()
             result.append(os.path.join(themes_settings.less_dir, 'bootstrap.less'))
+            result.append(os.path.join(themes_settings.less_dir, 'variables_custom.less'))
         #   Make sure variables.less is included first, before any other custom LESS code
         result += self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'variables\.less')
         result += self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'(?<!variables)\.less$')
