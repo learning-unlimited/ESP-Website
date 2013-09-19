@@ -177,6 +177,7 @@ MIDDLEWARE_GLOBAL = [
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
+    (1600, 'reversion.middleware.RevisionMiddleware'),
     (9000, 'django.contrib.redirects.middleware.RedirectFallbackMiddleware'),
 ]
 
