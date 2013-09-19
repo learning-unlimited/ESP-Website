@@ -35,27 +35,26 @@ function show_saving_popup() {
     .dialog('open');
 }
 
+//returns details (status string, action, and CSS classes) for a given status code
+function getStatusDetails(statusCode) {
+  if(statusCode == -20)
+    return {text: "Cancelled", action: "", classes: ['unapproved', 'dashboard_red']};
+  else if(statusCode == -10)
+    return {text: "Rejected", action: "REJECT", classes: ['unapproved', 'dashboard_red']};
+  else if(statusCode == 0)
+    return {text: "Unreviewed", action: "UNREVIEW", classes: ['unapproved', 'dashboard_blue']};
+  else if(statusCode == 5)
+    return {text: "Approved but hidden", action: "", classes: ['approved']};
+  else if(statusCode > 0)
+    return {text: "Approved", action: "APPROVE", classes: ['approved']};
+  else //statusCode < 0
+    return {text: "Unapproved", action: "", classes: ['unapproved']};
+}
+
 function fill_class_popup(clsid, classes_data) {
   var class_info = classes_data.classes[clsid];
-  var status_string;
-  switch(class_info.status)
-  {
-    case -20:
-      status_string = "Cancelled";
-      break;
-    case -10:
-      status_string = "Rejected";
-      break;
-    case 0:
-      status_string = "Unreviewed";
-      break;
-    case 5:
-      status_string = "Approved but hidden";
-      break;
-    case 10:
-      status_string = "Approved";
-      break;
-  }
+  var status_details = getStatusDetails(class_info.status);
+  var status_string = status_details['text'];
 
   class_desc_popup
     .dialog('option', 'title', class_info.title)
@@ -66,19 +65,19 @@ function fill_class_popup(clsid, classes_data) {
       {
         text: "Approve (all sections)",
         click: function() {
-          approve_class($j(this).attr('clsid'));
+          update_class($j(this).attr('clsid'), 10);
         }
       },
       {
         text: "Unreview",
         click: function() {
-          unreview_class($j(this).attr('clsid'));
+          update_class($j(this).attr('clsid'), 0);
         }
       },
       {
         text: "Reject (all sections)",
         click: function() {
-          reject_class($j(this).attr('clsid'));
+          update_class($j(this).attr('clsid'), -10);
         }
       }])
     .html('')
@@ -117,9 +116,13 @@ function show_approve_class_popup(clsid) {
     });
 }
 
-function approve_class(clsid) {
+// status should be the status integer
+// this is one of {10 for ACCEPT, 0 for UNREVIEW, -10 for REJECT}
+function update_class(clsid, statusId) {
   // Show a popup while saving to avoid a "laggy" feeling
   show_saving_popup();
+
+  var status_details = getStatusDetails(statusId);
 
   // Make the AJAX request to actually set the class status
   $j.ajax({
@@ -127,7 +130,7 @@ function approve_class(clsid) {
     type: "post",
     data: {
       class_id: clsid,
-      review_status: "ACCEPT",
+      review_status: status_details['action'],
       csrfmiddlewaretoken: csrf_token()
     },
     complete: function() {
@@ -136,69 +139,18 @@ function approve_class(clsid) {
   });
 
   // Update our local data
-  classes[clsid].status = 10;
+  classes[clsid].status = statusId;
 
   // Set the appropriate styling and tag text
   var el = $j("#clsid-"+clsid+"-row").find("td > span > span");
-  el.removeClass("unapproved").removeClass("dashboard_blue").removeClass("dashboard_red")
-	.addClass("approved");
-  el.html(el.html().replace(/\[[A-Z]*\](?!.*\[)/, '[APPROVED]'));
-}
+  el.removeClass("unapproved").removeClass("approved").removeClass("dashboard_blue").removeClass("dashboard_red");
 
-function unreview_class(clsid) {
-  // Show a popup while saving to avoid a "laggy" feeling
-  show_saving_popup();
+  for(var i = 0; i < status_details['classes'].length; ++i)
+  {
+    el.addClass(status_details['classes'][i]);
+  }
 
-  // Make the AJAX request to actually set the class status
-  $j.ajax({
-    url: "/manage/"+base_url+"/reviewClass",
-    type: "post",
-    data: {
-      class_id: clsid,
-      review_status: "UNREVIEW",
-      csrfmiddlewaretoken: csrf_token()
-    },
-    complete: function() {
-      class_desc_popup.dialog("close");
-    }
-  });
-
-  // Update our local data
-  classes[clsid].status = 0;
-
-  // Set the appropriate styling and tag text
-  var el = $j("#clsid-"+clsid+"-row").find("td > span > span");
-  el.removeClass("approved").removeClass("dashboard_red")
-	.addClass("unapproved").addClass("dashboard_blue");
-  el.html(el.html().replace(/\[[A-Z]*\](?!.*\[)/, '[UNREVIEWED]'));
-}
-
-function reject_class(clsid) {
-  // Show a popup while saving to avoid a "laggy" feeling
-  show_saving_popup();
-
-  // Make the AJAX request to actually set the class status
-  $j.ajax({
-    url: "/manage/"+base_url+"/reviewClass",
-    type: "post",
-    data: {
-      class_id: clsid,
-      review_status: "REJECT",
-      csrfmiddlewaretoken: csrf_token()
-    },
-    complete: function() {
-      class_desc_popup.dialog("close");
-    }
-  });  
-
-  // Update our local data
-  classes[clsid].status = -10;
-
-  // Set the appropriate styling and tag text
-  var el = $j("#clsid-"+clsid+"-row").find("td > span > span");
-  el.removeClass("approved").removeClass("dashboard_blue")
-	.addClass("unapproved").addClass("dashboard_red");
-  el.html(el.html().replace(/\[[A-Z]*\](?!.*\[)/, '[REJECTED]'));
+  el.find("strong").text('[' + status_details['text'] + ']');
 }
 
 function fillClasses(data)
@@ -292,34 +244,7 @@ function createClassRow(clsObj)
 	class_title_trimmed = class_title_trimmed.concat("...");
     }
 
-
-    var title_css_class = "";
-    var cls_status = "";
-    if (clsObj.status == 0)
-    {
-	title_css_class = "unapproved dashboard_blue";
-	cls_status = "UNREVIEWED";
-    }
-    else if (clsObj.status == -10)
-    {
-	title_css_class = "unapproved dashboard_red";
-	cls_status = "REJECTED";
-    }
-    else if (clsObj.status == -20)
-    {
-	title_css_class = "unapproved dashboard_red";
-	cls_status = "CANCELLED";
-    }
-    else if (clsObj.status > 0)
-    {
-	title_css_class = "approved";
-	cls_status = "APPROVED";
-    }
-    else if (clsObj.status <= 0)
-    {
-	title_css_class = "unapproved";
-	cls_status = "UNAPPROVED";
-    }
+    var status_details = getStatusDetails(clsObj.status);
 
     var rapid_approval_style = "style='display:none;'";
     if (use_rapid_approval)
@@ -333,8 +258,8 @@ function createClassRow(clsObj)
 	.replace(new RegExp("{{ teacher_names }}", "g"), teacher_list_string)
 	.replace(new RegExp("{{ section_links }}", "g"), section_link_list)
 	.replace(new RegExp("{{ program.getUrlBase }}", "g"), base_url)
-	.replace(new RegExp("{{ title_css_class }}", "g"), title_css_class)
-	.replace(new RegExp("{{ cls_status }}", "g"), cls_status)
+	.replace(new RegExp("{{ title_css_class }}", "g"), status_details.classes.join(" "))
+	.replace(new RegExp("{{ cls_status }}", "g"), status_details['text'])
 	.replace(new RegExp("{{ rapid_approval_style }}", "g"), rapid_approval_style);
 
     // Turn the template into a jQuery node
