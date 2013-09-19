@@ -139,10 +139,11 @@ function approve_class(clsid) {
   // Update our local data
   classes[clsid].status = 10;
 
-  // Set the appropriate styling
-  $j("#clsid-"+clsid+"-row").find("td > span > span")
-	.removeClass("unapproved").removeClass("dashboard_blue").removeClass("dashboard_red")
+  // Set the appropriate styling and tag text
+  var el = $j("#clsid-"+clsid+"-row").find("td > span > span");
+  el.removeClass("unapproved").removeClass("dashboard_blue").removeClass("dashboard_red")
 	.addClass("approved");
+  el.html(el.html().replace(/\[[A-Z]*\](?!.*\[)/, '[APPROVED]'));
 }
 
 function unreview_class(clsid) {
@@ -166,10 +167,11 @@ function unreview_class(clsid) {
   // Update our local data
   classes[clsid].status = 0;
 
-  // Set the appropriate styling
-  $j("#clsid-"+clsid+"-row").find("td > span > span")
-	.removeClass("approved").removeClass("dashboard_red")
+  // Set the appropriate styling and tag text
+  var el = $j("#clsid-"+clsid+"-row").find("td > span > span");
+  el.removeClass("approved").removeClass("dashboard_red")
 	.addClass("unapproved").addClass("dashboard_blue");
+  el.html(el.html().replace(/\[[A-Z]*\](?!.*\[)/, '[UNREVIEWED]'));
 }
 
 function reject_class(clsid) {
@@ -193,10 +195,11 @@ function reject_class(clsid) {
   // Update our local data
   classes[clsid].status = -10;
 
-  // Set the appropriate styling
-  $j("#clsid-"+clsid+"-row").find("td > span > span")
-	.removeClass("approved").removeClass("dashboard_blue")
+  // Set the appropriate styling and tag text
+  var el = $j("#clsid-"+clsid+"-row").find("td > span > span");
+  el.removeClass("approved").removeClass("dashboard_blue")
 	.addClass("unapproved").addClass("dashboard_red");
+  el.html(el.html().replace(/\[[A-Z]*\](?!.*\[)/, '[REJECTED]'));
 }
 
 function fillClasses(data)
