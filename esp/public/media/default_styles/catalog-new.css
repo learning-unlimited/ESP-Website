@@ -84,3 +84,7 @@
     text-align: center;
     padding: 0 1em;
 }
+
+#search-spinner {
+    display: inline-block;
+}

@@ -9,6 +9,8 @@
 
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/knockout/2.3.0/knockout-min.js"></script>
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.3.5/knockout.mapping.js"></script>
+<script type="text/javascript" src="http://fgnass.github.io/spin.js/dist/spin.min.js"></script>
+<script type="text/javascript" src="http://fgnass.github.io/spin.js/jquery.spin.js"></script>
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
 <script type="text/javascript" src="/media/scripts/catalog-new.js"></script>
 {% endblock %}
@@ -25,10 +27,16 @@
 
 <hr>
 
+<label>Search:</label>
+<input type="text" data-bind="value: search, valueUpdate: 'afterkeydown'"></input>
+<div id="search-spinner">&nbsp;</div>
+
+<hr>
+
 <div id="catalog-new" style="display: none" data-bind="visible: true">
   <span data-bind="visible: loading">Loading classes...</span>
   <!-- ko foreach: classesArray -->
-  <div class="catalog-entry">
+  <div class="catalog-entry" data-bind="visible: $parent.searchPredicate($data)">
     <div class="catalog-entry-header">
       <h2 class="catalog-entry-title" data-bind="text: fulltitle"></h2>
       <div class="catalog-entry-teachers" data-bind="foreach: teachers">

@@ -10,6 +10,7 @@ var simpleFromJS = function (data, model) {
 // ClassSubject model constructor
 var ClassSubject = function (data, vm) {
     var self = this;
+    self.id          = ko.observable(-1);
     self.emailcode   = ko.observable("");
     self.title       = ko.observable("");
     self.teacher_ids = ko.observableArray();
@@ -50,6 +51,17 @@ var ClassSubject = function (data, vm) {
             }
         });
         return ret;
+    });
+
+    // key for the search box
+    self.search_key = ko.computed(function () {
+        var fields = [];
+        fields.push(self.fulltitle());
+        ko.utils.arrayForEach(self.teachers(), function (teacher) {
+            fields.push(teacher.name());
+        });
+        fields.push(self.class_info());
+        return fields.join('\0').toLowerCase();
     });
 
     // click handler for interested star
@@ -117,6 +129,28 @@ var CatalogViewModel = function () {
         }
         return ret;
     });
+
+    self.search = ko.observable("");
+    self.search.subscribe(function () {
+        $j('#search-spinner').spin({
+            lines: 8,
+            length: 2,
+            width: 2,
+            radius: 3,
+            left: 0
+        });
+    });
+    self.searchTerm = ko.computed(function () {
+        return self.search().toLowerCase();
+    }).extend({ throttle: 300 });
+    self.searchTerm.subscribe(function () {
+        $j('#search-spinner').spin(false);
+    });
+
+    self.searchPredicate = function (cls) {
+        return -1 !== cls.search_key().indexOf(self.searchTerm());
+    };
+
     json_fetch(['class_subjects', 'sections'], function (data) {
         self.loading(false);
         // update classes
