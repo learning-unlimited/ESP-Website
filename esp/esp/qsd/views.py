@@ -154,12 +154,13 @@ def qsd(request, url):
         # The revision will automatically be created upon calling the save function of the model object
         if qsd_rec.url != base_url or qsd_rec.nav_category != nav_category_target or qsd_rec.content != request.POST['content'] or qsd_rec.description != request.POST['description'] or qsd_rec.keywords != request.POST['keywords']:
             qsd_rec.url = base_url
-            qsd_rec.author = request.user
             qsd_rec.nav_category = NavBarCategory.objects.get(id=request.POST['nav_category'])
             qsd_rec.content = request.POST['content']
             qsd_rec.title = request.POST['title']
             qsd_rec.description = request.POST['description']
             qsd_rec.keywords    = request.POST['keywords']
+
+            qsd_rec.load_cur_user_time(request)
             qsd_rec.save()
 
             # We should also purge the cache
