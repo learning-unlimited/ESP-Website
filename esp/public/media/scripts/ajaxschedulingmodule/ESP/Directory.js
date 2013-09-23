@@ -12,52 +12,41 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             this.active_filter = null;
         
             // set up display
-            this.table = $j("<table/>").addClass('directory');
-            this.el = $j("<div id='directory-table-wrapper'/>").addClass('directory-table-wrapper');
-            this.el.append(this.table);
+            this.table = $j(".directory");
         
             // create header
-            var thead = $j('<thead/>');
-            this.table.append(thead);
-            this.tbody = $j('<tbody/>');
-            this.table.append(this.tbody);
-        
-            var header = this.header = $j('<tr/>').addClass('header');
-            thead.append(header);
+            this.header = $j("#directory-table-header")
+
+	    //TODO:  set up sorting
             $j.each(this.properties, function(key, prop){
-                var td = $j('<td style="'+(prop.css()||'')+'"><span>' + (prop.label || key) + '</span></td>');
+                var td = $j("#directory-header-"+key)
                 prop.header = td;
                 if (prop.sort) {
-                    td.addClass('sortable');
                     // enable onclick sorting
                     td.bind('click', function(e){
                         prop.reverse = (directory.active_sort != prop) ? prop.reverse : !prop.reverse;
                         directory.sort(prop);
                     });
                 }
-                header.append(td);
             });
         
             // add sections
             this.addEntry(sections, false);
-        
-            // refresh the representation
             this.filter();
-	    $j('.directory-table-wrapper').css("max-width", window.innerWidth - 50);
-	    $j('.directory-table-wrapper').css("min-width", 50);
         },
         
+
+        //TODO:  code to style unapproved (and scheduled classes so that it's not repeated for every column
         // table columns
         properties: {
         'ID': {
             get: function(x){ return x.block_contents.clone(true); },
-            //css: 'text-align:center; text-decoration:underline; font-weight:bold;',
             sort: function(x,y){
                 // use code instead of emailcode; that's how Scheduling.process_data names it
                 var diff = x.section.class_id - y.section.class_id;
                 return diff == 0 ? cmp(x.section.code, y.section.code) : diff;
             },
-	    //css: 'width:100px;'
+
 	    /* Code to style unapproved classes differently */
             css: function(x){
 		var default_css = fixed_width(70);
@@ -115,7 +104,6 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             sort: function(x,y){
                 return cmp(""+x.section.teachers.map(function(z){return z.text;}), ""+y.section.teachers.map(function(z){return z.text;}));
             },
-	    // css: 'width:200px;'
 	    /* Code to style unapproved classes differently */
             css: function(x){
 		var default_css = fixed_width(150);
@@ -157,7 +145,6 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
         
         // filter active rows
         filter: function(filter){
-	    console.log("filtering")
             var filter = filter || this.activeFilter || function(){ return true; };
             this.activeFilter = filter;
             var active_rows = [];
@@ -208,10 +195,11 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
         
         // update directory entries
         update: function(){
-            this.tbody.hide();
-            this.tbody[0].innerHTML = "";//.children().remove();  // The 'right' way here is vastly slower, sadly.  -- aseering 10/23/2010
-            $j.each(this.active_rows, function (i,x){ this.tbody.append(x.update().el); x.draggable(); }.bind(this));
-            this.tbody.show();
+	    tbody = $j("#directory-table-body")
+            tbody.hide();
+            tbody.innerHTML = "";//.children().remove();  // The 'right' way here is vastly slower, sadly.  -- aseering 10/23/2010
+            $j.each(this.active_rows, function (i,x){ tbody.append(x.update().el); x.draggable(); }.bind(this));
+            tbody.show();
         }
     }));
 
@@ -227,17 +215,9 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
             this.el.addClass('CLS_status_' + section.status);
             this.el.addClass('CLS_grade_min_' + section.grade_min);
             this.el.addClass('CLS_grade_max_' + section.grade_max);
-	    /*
-            for (var i = 0; i < section.resource_requests.length; i++) {
-                if (section.resource_requests[i][0]) {
-                    this.el.addClass('CLS_rsrc_req_' + section.resource_requests[i][0].text.replace(/[^a-zA-Z]+/g, '-'));
-                }
-            }
-	    */
-
+	    
             this.tds = {};
             $j.each(this.directory.properties,function(index, prop){
-		console.log(prop.css(section));
                 var td = $j('<td style="' + (prop.css(section)||'') + '"></td>');
 		td.append(prop.get(section));
                 this.tds[index] = td;
@@ -257,65 +237,23 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
 
 ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
     initialize: function(directory) {
-        this.directory = directory;        
-        this.el = $j('<div id="searchbox"/>').addClass('searchbox');
+        this.directory = directory;
 
 	//add filters to filter box
-	this.filters = []
-	table = $j('<table/>')
+	//TODO:  bind search to keypres for all inputs
 	//title and id
-	var filter_names  = ["Title" , "ID"   ]
-	var filter_fields = ["text"  , "code" ]
-	for (var i = 0; i < filter_fields.length; i++){
-	    tr = this.add_input(filter_names[i], table)
-	    this.filters.push(this.get_filter(filter_fields[i], input, "text"))
-	}      
-	
-	//teachers
-	input = this.add_input("Teacher", table, "text")
-	this.filters.push(this.get_teacher_filter(input))
-	//length and class size
-	this.add_two_inputs("Min length", "Max length", table, "length_hr")
-	this.add_two_inputs("Min size", "Max size", table, "class_size_max")
-	//status
-	input = this.add_input("Show unapproved classes", table, "checkbox")
-	this.filters.push(this.get_status_filter(input))
-	input.bind('change', this.do_search.bind(this))
+	this.filters = []
+	this.filters.push(this.get_filter("Title", $j("#filter_Title"), "text"))   
+	this.filters.push(this.get_filter("Id", $j("#filter_ID"), "text"))   
+	this.filters.push(this.get_teacher_filter($j("#filter_Teacher")))
+	this.filters.push(this.get_status_filter($j("#filter_Status")))
+	//input.bind('change', this.do_search.bind(this))
 
-	this.el.append(table)
 	this.directory.filter(this.all_filters.bind(this))
-    },
-
-    add_input: function(label, table, type, f){
-	tr = $j('<tr>')
-	input = $j('<input type="' + type + '" id="filter_'+label.replace(" ", "-")+'"/>');
-	input.bind('keypress', this.do_search.bind(this));
-	td = $j('<td/>').append(input)
-	tr.append($j('<td valign="center" style="width: 70px">'+ label +'</td>')).append(td);
-	table.append(tr)
-	return input
-    },
-
-    //make more specific to min/max?
-    add_two_inputs: function(label1, label2, table, attr){
-	tr = $j('<tr>')
-	input1 = $j('<input type="text" id="filter_'+label1.replace(" ", "-")+'"/>');
-	input2 = $j('<input type="text" id="filter_'+label2.replace(" ", "-")+'"/>');
-	input1.bind('keypress', this.do_search.bind(this));
-	input2.bind('keypress', this.do_search.bind(this));
-	td1 = $j('<td/>').append(input1)
-	td2 = $j('<td/>').append(input2)
-	l1 = $j('<td valign="center" style="width: 10%">'+ label1 +'</td>')
-	l2 = $j('<td valign="center" style="width: 10%">'+ label2 +'</td>')
-	tr.append(l1, td1, l2, td2)
-	table.append(tr)
-	this.filters.push(this.get_min_max_filter(input1, input2, attr))
-	return tr
     },
 
     all_filters: function(x){
 	for (var i=0; i < this.filters.length; i ++){
-	    console.log(x)
 	    if(!this.filters[i](x)){
 		return false
 	    }
@@ -352,8 +290,7 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 
     get_status_filter: function(checkbox){
         return function(x){	
-	    console.log(checkbox)
-            if (checkbox[0].checked) return true;
+            if (checkbox.checked) return true;
             else return x.status == "10";
         }.bind(this);	    	    	
     },

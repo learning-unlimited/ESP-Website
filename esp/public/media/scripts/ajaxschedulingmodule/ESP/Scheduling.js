@@ -60,26 +60,12 @@ ESP.Scheduling = function(){
             this.status = this._status.setStatus.bind(this._status);
             this.status('success','Welcome to the scheduling app!');
         }
-        
-        /*if(this.roomfilter)
-            this.roomfilter.save();*/
-        
-        this.matrix = new ESP.Scheduling.Widgets.Matrix(pd.times, pd.rooms, pd.blocks);
-        $j('#matrix-target').text('');
-        $j('#matrix-target').append(this.matrix.el);
-        
-        this.roomfilter = new ESP.Scheduling.Widgets.RoomFilter(this.matrix);
-	//add "drag here to unschedule" box to the matrix corner
-        this.garbage   = new ESP.Scheduling.Widgets.GarbageBin();
-        $j('#matrix-corner-box').append(this.garbage.el);
 
-        $j('#directory-target').text('');
-	$j('#directory-target').append('<div id="directory-accordion-target"></div>')
-	$j('#directory-accordion-target').append('<div id="directory-accordion"></div>')
-	$j('#directory-accordion').append($j('<h3>Filter Classes</h3>'))
-        $j('#directory-accordion').append(this.searchbox.el);
-	$j('#directory-accordion').append($j('<h3>Directory</h3>'))
-        $j('#directory-accordion').append(this.directory.el);
+        this.matrix = new ESP.Scheduling.Widgets.Matrix(pd.times, pd.rooms, pd.blocks)
+        this.roomfilter = new ESP.Scheduling.Widgets.RoomFilter(this.matrix);
+        this.garbage   = new ESP.Scheduling.Widgets.GarbageBin();
+
+	//TODO:  add directory contents
 
         ESP.Utilities.evm.bind('drag_dropped', function(event, data){
             var extra = {
@@ -89,11 +75,9 @@ ESP.Scheduling = function(){
             ESP.Utilities.evm.fire('block_section_assignment_request',extra);
         });
         ESP.Utilities.evm.bind('block_section_assignment_request', function(event, data){
-            //alert('[' + data.block.uid + '] : [' + data.section.uid + ']');
             ESP.Utilities.evm.fire('block_section_assignment',data);
         });
         ESP.Utilities.evm.bind('block_section_unassignment_request', function(event, data){
-            //alert('[' + data.block.uid + '] : [' + data.section.uid + ']');
             ESP.Utilities.evm.fire('block_section_unassignment',data);
         });
 
@@ -110,14 +94,15 @@ ESP.Scheduling = function(){
         $j('#body').show()
 	
 	//size some things
+	$j('.directory-table-wrapper').css("max-width", window.innerWidth - 50);
+	$j('.directory-table-wrapper').css("min-width", 50);
+
 	console.log("window height:")
 	console.log(window_height)
 	$j('#directory-accordion-target').height(window_height);
 	$j("#directory-target").css("max-width", window.innerWidth-$j('.matrix').width() - 60);
 	$j("#directory-target").css("min-width", 50);
 	$j('#directory-accordion').accordion({fillSpace: "true"});
-	$j('#directory-accordion').accordion("refresh");
-
 	//make matrixx resizeable
 	$j('.matrix').resizable({handles: "e"})
 	$j('.matrix').css("max-width", window.innerWidth - 50);
@@ -129,6 +114,7 @@ ESP.Scheduling = function(){
 	//TODO:  probably doesn't actually get correct behavior if a class is scheduled at exactly the right time
 	ESP.Scheduling.last_fetched_time = new Date().getTime()/1000
 
+	//TODO:  add verbose mode here
         //console.log("Classes of each type in each timeblock:");
         for (var time in ESP.Scheduling.classes_by_time_type) {
             for (var type in ESP.Scheduling.classes_by_time_type[time]) {
@@ -180,7 +166,6 @@ ESP.Scheduling = function(){
             processed_data.times.push(r =
                     Resources.create('Time',
 				     { uid: t.id, text: t.short_description, start: start, end: end, length: end - start + 15*60000, is_lunch: t.is_lunch?t.is_lunch:false }));
-            // console.log("Added block " + r.text + " (" + r.length + " ms)");
         }
         processed_data.times.sort(function(x,y){
             return x.start - y.start;
