@@ -209,7 +209,7 @@ overflow: hidden;
 }
 
 .searchbox input {
-width: 300px;
+width: 100% ;
 margin-bottom: 20px;
 }
 

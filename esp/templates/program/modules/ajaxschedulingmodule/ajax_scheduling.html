@@ -13,6 +13,12 @@
 <title>ESP Scheduling Application</title>
 
 <!-- LIBS -->
+<!-- STYLE -->
+<link id='sch_css' href='/media/default_styles/scheduling.css' type='text/css' rel='stylesheet' />
+<link id='tooltip_css' href='/media/default_styles/tooltips.css' type='text/css' rel='stylesheet' />
+<link id='sch_matrix_css' href='/media/default_styles/scheduling-matrix.css' type='text/css' rel='stylesheet' />
+<link rel="stylesheet" href='/media/default_styles/jquery-ui/jquery-ui.css'/>
+
 <!-- 3rd party -->
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/prototype.js'></script>
 <script type='text/javascript' src='/media/scripts/jquery.js'></script>
@@ -46,11 +52,8 @@ var $j = jQuery.noConflict(); // grr... stupid prototype fail
 <script type='text/javascript' src='/media/scripts/ajaxschedulingmodule/ESP/Matrix.js'></script>
 <!-- ENDLIBS -->
 
-<!-- STYLE -->
-<link id='sch_css' href='/media/default_styles/scheduling.css' type='text/css' rel='stylesheet' />
-<link id='tooltip_css' href='/media/default_styles/tooltips.css' type='text/css' rel='stylesheet' />
-<link id='sch_matrix_css' href='/media/default_styles/scheduling-matrix.css' type='text/css' rel='stylesheet' />
-<link rel="stylesheet" href="http://code.jquery.com/ui/1.10.1/themes/base/jquery-ui.css"/>
+
+
 <!-- ENDSTYLE -->
 
 <!-- APP -->
@@ -63,11 +66,74 @@ var $j = jQuery.noConflict(); // grr... stupid prototype fail
   <div id='progressbar' onload="$j(this).progressbar({ value: 50 })"></div>
   <span id='statusbar'>Loading...</span>
 </div>
+
 <div id='body'>
 <table>
   <tr>
-    <td width=200 id='matrix-target'></td>
-    <td width=200 id='directory-target'></td>
+    <!-- MATRIX TARGET-->
+    <td width=200 id='matrix-target'>
+      <div class="matrix">
+	<div class="matrix-header">
+	  <table class="matrix-column-header-box">
+	    <tr class="matrix-row-body">
+	      <td class="matrix-corner-box">
+		<div class="matrix-corner-box">
+		  <div id="garbage-div" class="garbage ui-droppable">Drag here to unschedule</div>	
+		  <!--times added by javascript here-->
+		</div>
+	      </td>
+	    </tr>
+	  </table>
+	</div>
+	<div class="matrix-body">
+	  <table id="matrix-table"></table>
+
+	<!--grid added here-->
+	</div>
+      </div>
+    </td>
+    <!-- DIRECTORY AND CLASS FILTER TARGET-->
+    <td width=200 id='directory-target'>
+      <div id="directory-accordion">
+	<h3><a href="#">Filter Class Directory</a></h3>
+	<div id="searchbox" class="searchbox">
+	  <table>
+	    <tr><td>Title</td><td colspan="3"><input id="filter_Title"/></td></tr>
+	    <tr><td>ID</td><td colspan="3"><input id="filter_ID"/></td></tr>
+	    <tr><td>Teacher</td><td colspan="3"><input id="filter_Teacher"/></td></tr>
+	    <tr>
+	      <td>Length</td>
+	      <td colspan="1"><input id="filter_Min-length"></td>
+	      <td align="center">to</td>
+	      <td colspan="1"><input id="filter_Max-length"></td>
+	    </tr>
+	    <tr>
+	      <td>Min size</td><td><input id="filter_Min-size"></td>
+	      <td align="center">to</td><td><input id="filter_Max-size"></td>
+	    </tr>
+            <tr>
+	      <td>Show unapproved classes</td>
+	      <td><input type="checkbox" id="filter_Status"></td>
+	      <td>Show unapproved classes</td>
+	      <td><input type="checkbox" id="filter_Scheduled"></td>
+	    </tr>
+	  </table>	  
+	</div>
+	<h3><a href="#">Class Directory</a></h3>
+	<div id="directory-table-wrapper" style="padding: 0px 0px" class="directory-table-wrapper">
+	  <table class="directory">
+	    <thead><tr id="directory_table_header" class="header">
+	      <td class="sortable" id="directory-header-ID"><span>ID</span></td>
+	      <td class="sortable" id="directory-header-Title"><span>Title</span></td>
+	      <td class="sortable" id="directory-header-Teacher"><span>Teacher</span></td>
+	      <td class="sortable" id="directory-header-Length"><span>Length</span></td>
+	    </tr></thead>
+	    <tbody id="directory-table-bodyx"></tbody>
+	    <!--classes get added here-->
+	  </table>
+	</div>
+      </div>
+    </td>
   </tr>
 </table>
 </div>

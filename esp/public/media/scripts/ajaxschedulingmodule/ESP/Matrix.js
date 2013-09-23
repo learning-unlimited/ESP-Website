@@ -3,8 +3,9 @@
  */
 ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
     initialize: function(times, rooms, blocks){
-        this.matrix = $j("<div/>").addClass('matrix');
+        this.matrix = $j('.matrix');
         this.el = this.matrix;
+	console.log(this.el)
 
         var Matrix = ESP.Scheduling.Widgets.Matrix;
         
@@ -14,16 +15,9 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         var room_rows = this.room_rows = {};
         var block_cells = this.block_cells = {};
         
-        //set up header
-	//bla bla bla make a table so we can have things side by side
-        var header = $j('<div/>').addClass('matrix-header');
-	this.matrix.append(header);
-	var header_table = $j('<table/>').addClass('matrix-column-header-box');
-	header.append(header_table);
-	var hr = $j('<tr/>').addClass('matrix-row-body');
-	header_table.append(hr);
-	//add corner box
-	hr.append($j('<div/>').addClass('matrix-corner-box'));
+	var hr = $j('.matrix-row-body');
+	console.log(hr)
+
 	//add class times
         for (var i = 0; i < times.length; i++) {
             var c = new Matrix.TimeCell(times[i]);
@@ -33,12 +27,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         }
         
 	//matrix body
-	//TODO:  can we refactor out this "create a table with a row" business?
-        var body = $j('<div/>').addClass('matrix-body');
-        this.matrix.append(body);
-	var body_table = $j('<table/>');
-	body.append(body_table);
-	body_table.append($j('<colgroup/>'));
+	body_table = $j("#matrix-table")
 
         // create rows
         for (var i = 0; i < rooms.length; i++) {
@@ -142,13 +131,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                 cell.td.addClass('CLS_status_' + section.status);
                 cell.td.addClass('CLS_grade_min_' + section.grade_min);
                 cell.td.addClass('CLS_grade_max_' + section.grade_max);
-		/*
-                for (var j = 0; j < section.resource_requests.length; j++) {
-                    if (section.resource_requests[j][0]) {
-                        cell.td.addClass('CLS_rsrc_req_' + section.resource_requests[j][0].text.replace(/[^a-zA-Z]+/g, '-'));
-                    }
-                }
-		*/
+
                 for (var j = 0; j < block.processed_room.resources.length; j++) {
                     if (block.processed_room.resources[j]) {
                         cell.td.addClass('CLS_ROOM_rsrc_' + block.processed_room.resources[j].replace(/[^a-zA-Z]+/g, '-'));
@@ -469,9 +452,10 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
     });
 })();
 
+//TODO:  this.el is no longer as useful a notion as it used to be, so maybe we should name it something less confusing
 ESP.declare('ESP.Scheduling.Widgets.GarbageBin', Class.create({
         initialize: function(){
-            this.el = $j('<div>Drag here to unschedule</div>').addClass('garbage');
+            this.el = $j('#garbage-div');
             var target = this.el;
             var activeClass = 'dd-highlight';
             var options = $j.extend({
@@ -493,7 +477,6 @@ ESP.declare('ESP.Scheduling.Widgets.GarbageBin', Class.create({
                 deactivate: function(e, ui) { target.removeClass(activeClass); }
             }, options || {});
             target.droppable(options);
-	    $j('.matrix-corner-box').append(this.el);
         }
    })
 );
