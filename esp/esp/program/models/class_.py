@@ -1034,7 +1034,7 @@ class ClassSection(models.Model):
 
         #   Send e-mail to administrators as well
         email_content = render_to_string('email/class_cancellation_admin.txt', context)
-        to_email = ['Directors <%s>' % (self.parent_program.director_email)]
+        to_email = ['Directors <%s>' % (self.parent_program.getDirectorCCEmail())]
         from_email = '%s Web Site <%s>' % (self.parent_program.program_type, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
 

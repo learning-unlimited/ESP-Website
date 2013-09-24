@@ -280,6 +280,7 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField()
+    director_cc_email = models.EmailField(blank=True, default='')
     program_size_max = models.IntegerField(null=True)
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule)
@@ -996,6 +997,12 @@ class Program(models.Model, CustomFormsLinkModel):
         else: 
             return 1
     
+    def getDirectorCCEmail(self):
+        if self.director_cc_email:
+            return self.director_cc_email
+        else:
+            return self.director_email
+
     @cache_function
     def by_prog_inst(cls, program, instance):
         prog_inst = Program.objects.select_related().get(url='%s/%s' % (program, instance))

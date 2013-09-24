@@ -180,7 +180,7 @@ This request can be (re)viewed at:
     settings.DEFAULT_HOST, # server hostname
     str(app.id)), 
                             settings.SERVER_EMAIL,
-                            [ prog.director_email ] )
+                            [ prog.getDirectorCCEmail() ] )
                               
                 return self.goToCore(tl)
             
@@ -194,4 +194,3 @@ This request can be (re)viewed at:
 
     class Meta:
         abstract = True
-

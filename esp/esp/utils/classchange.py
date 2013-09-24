@@ -234,7 +234,7 @@ def main():
     from esp.dbmail.models import send_mail, MessageRequest, TextOfEmail
     subject = "[" + p.niceName() + "] Class Change"
     from_email = p.director_email
-    bcc = p.director_email
+    bcc = p.getDirectorCCEmail()
     extra_headers = {}
     extra_headers['Reply-To'] = p.director_email
     for student in changed:
