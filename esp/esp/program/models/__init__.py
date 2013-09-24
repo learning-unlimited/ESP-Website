@@ -281,6 +281,7 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_max = models.IntegerField()
     director_email = models.EmailField()
     director_cc_email = models.EmailField(blank=True, default='')
+    director_confidential_email = models.EmailField(blank=True, default='')
     program_size_max = models.IntegerField(null=True)
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule)
@@ -1000,6 +1001,12 @@ class Program(models.Model, CustomFormsLinkModel):
     def getDirectorCCEmail(self):
         if self.director_cc_email:
             return self.director_cc_email
+        else:
+            return self.director_email
+
+    def getDirectorConfidentialEmail(self):
+        if self.director_confidential_email:
+            return self.director_confidential_email
         else:
             return self.director_email
 

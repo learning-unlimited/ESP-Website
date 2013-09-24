@@ -180,7 +180,7 @@ This request can be (re)viewed at:
     settings.DEFAULT_HOST, # server hostname
     str(app.id)), 
                             settings.SERVER_EMAIL,
-                            [ prog.getDirectorCCEmail() ] )
+                            [ prog.getDirectorConfidentialEmail() ] )
                               
                 return self.goToCore(tl)
             
