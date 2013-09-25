@@ -2106,10 +2106,12 @@ class Permission(models.Model):
 
         return False
 
-def install_groups(*additional_names):
+def install_groups(additional_names=None):
     """
     Installs the initial Groups.
     """
+    if additional_names is None:
+        additional_names = []
     for user_type in (list(ESPUser.getTypes()) + ["StudentRep", "Administrator"] + additional_names):
         Group.objects.get_or_create(name=user_type)
 

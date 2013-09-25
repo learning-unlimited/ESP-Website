@@ -12,8 +12,8 @@ class Migration(DataMigration):
     def forwards(self, orm):
         # First, create a Group for every verb name
         role_verbs = orm['datatree.DataTree'].objects.filter(parent__uri="V/Flags/UserRole")
-        role_names = role_verbs.values_list('name', flat=True).distinct()
-        install_groups(additional_names=*list(role_names))
+        role_names = list(role_verbs.values_list('name', flat=True).distinct())
+        install_groups(role_names)
 
         # Cache the groups so we don't have to keep fetching them from the DB.
         groups = dict([(g.name, g) for g in Group.objects.all()])
@@ -23,8 +23,8 @@ class Migration(DataMigration):
         # that role, and add them all at once to the Group.
         role_bits = UserBit.objects.filter(verb__parent__uri="V/Flags/UserRole", qsc__uri="Q").exclude(user=None).filter(enddate__gte=datetime.datetime.now())
         for role_name in role_names:
-            user_ids = role_bits.filter(name=role_name).values_list('user', flat=True).distinct()
-            groups[role_name].user_set.add(*list(user_ids))
+            user_ids = list(role_bits.filter(verb__name=role_name).values_list('user', flat=True).distinct())
+            groups[role_name].user_set.add(*user_ids)
 
         # Adds Administrators who might not have had the UserRole.
         # The enddate filter is to prevent the migration from adding
@@ -33,8 +33,8 @@ class Migration(DataMigration):
         # Instead, an Administer privilege should be given in a later migration.
         admin_role = groups["Administrator"]
         admin_bits = UserBit.objects.filter(verb__uri="V/Administer", qsc__uri="Q", user__isnull=False, enddate__gte=datetime.datetime(3000,1,1))
-        admin_ids = admin_bits.values_list('user', flat=True).distinct()
-        admin_role.user_set.add(*list(admin_ids))
+        admin_ids = list(admin_bits.values_list('user', flat=True).distinct())
+        admin_role.user_set.add(*admin_ids)
 
     def backwards(self, orm):
         "Write your backwards methods here."
