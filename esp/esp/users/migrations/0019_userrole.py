@@ -39,7 +39,7 @@ class Migration(DataMigration):
     def backwards(self, orm):
         "Write your backwards methods here."
         for user in orm.ESPUser.objects.all():
-            user.groups.delete()
+            user.groups.clear()
 
     models = {
         'auth.group': {

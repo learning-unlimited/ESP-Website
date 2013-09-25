@@ -105,7 +105,7 @@ class Migration(DataMigration):
                            enddate=end(bit)).save()
 
     def backwards(self, orm):
-        Permissions.objects.delete()
+        Permission.objects.all().delete()
 
     models = {
         'auth.group': {
