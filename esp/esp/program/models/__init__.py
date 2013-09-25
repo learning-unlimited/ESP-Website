@@ -1008,7 +1008,7 @@ class Program(models.Model, CustomFormsLinkModel):
         if self.director_confidential_email:
             return self.director_confidential_email
         else:
-            return self.director_email
+            return self.getDirectorCCEmail()
 
     @cache_function
     def by_prog_inst(cls, program, instance):
