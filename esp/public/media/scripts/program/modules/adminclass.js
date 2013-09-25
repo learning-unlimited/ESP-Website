@@ -46,7 +46,7 @@ function getStatusDetails(statusCode) {
   else if(statusCode == 5)
     return {text: "Approved but hidden", action: "", classes: ['approved']};
   else if(statusCode > 0)
-    return {text: "Approved", action: "APPROVE", classes: ['approved']};
+    return {text: "Approved", action: "ACCEPT", classes: ['approved']};
   else //statusCode < 0
     return {text: "Unapproved", action: "", classes: ['unapproved']};
 }
