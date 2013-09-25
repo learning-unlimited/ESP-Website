@@ -328,6 +328,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             'sections': [x.id for x in cls.sections.all()],
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
+            'location': ", ".join(cls.prettyrooms()),
             'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
         }
 
