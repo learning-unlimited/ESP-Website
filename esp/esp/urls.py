@@ -39,7 +39,6 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.generic.base import RedirectView
-import debug_toolbar.urls
 
 autodiscover(admin_site)
 
@@ -165,8 +164,6 @@ urlpatterns += patterns('esp.qsdmedia.views',
 
 urlpatterns += patterns('', 
     (r'^accounting/', include('esp.accounting.urls')) )
-
-urlpatterns += debug_toolbar.urls.urlpatterns
 
 urlpatterns +=patterns('esp.customforms.views',
 	(r'^customforms/$','landing'),
