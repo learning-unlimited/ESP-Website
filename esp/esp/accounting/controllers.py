@@ -233,6 +233,20 @@ class ProgramAccountingController(BaseAccountingController):
         # objects.
         return Transfer.objects.filter(self.all_transfers_Q(**kwargs)).distinct()
 
+    def all_students_Q(self, **kwargs):
+        """
+        The students we want to query have registered for this program and have
+        a transfer object that has the constraints we want.
+        """
+        q_object = self.all_transfers_Q(**kwargs)
+        return Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(q_object, 'transfer')
+
+    def all_students(self, **kwargs):
+        # Avoids a subquery by constructing a Q object, in all_students_Q(),
+        # that applies all the wanted constraints on the related transfer
+        # objects.
+        return ESPUser.objects.filter(self.all_students_Q(**kwargs)).distinct()
+
     def all_accounts(self):
         return Account.objects.filter(program=self.program)
 
