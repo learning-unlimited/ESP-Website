@@ -54,7 +54,7 @@ class ExpirableModel(models.Model):
         self.end_date = None
         self.save()
 
-    def is_open(self, when=None):
+    def is_valid(self, when=None):
         if when is None:
             when = datetime.now()
         return (self.start_date is None or self.start_date < when) and \
