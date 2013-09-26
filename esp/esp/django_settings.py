@@ -174,7 +174,6 @@ MIDDLEWARE_GLOBAL = [
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),
     (1200, 'django.middleware.gzip.GZipMiddleware'),
-    (1250, 'esp.middleware.espdebugtoolbarmiddleware.ESPDebugToolbarMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
