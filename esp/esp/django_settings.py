@@ -150,7 +150,7 @@ SITE_ID = 1
 
 TEMPLATE_LOADERS = (
     'esp.utils.template.Loader',
-    ('django.template.loaders.cached.Loader',
+    ('esp.utils.template.CachedLoader',
         (
          'django.template.loaders.filesystem.Loader',
          'django.template.loaders.app_directories.Loader',

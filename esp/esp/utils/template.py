@@ -51,3 +51,28 @@ class Loader(BaseLoader):
         return self.cache[hash_val]
     load_template.is_usable = True
 
+    def load_template_source(self, template_name, template_dirs=None):
+        from django.conf import settings
+        source = Loader.get_override_contents(template_name)
+        if source:
+            return (source.decode(settings.FILE_CHARSET), DEFAULT_ORIGIN)
+        raise TemplateDoesNotExist(template_name)
+
+"""
+Wrapper class that takes a list of template loaders as an argument and attempts
+to load templates from them in order, caching the result.
+"""
+
+import django.template.loaders.cached
+
+class CachedLoader(django.template.loaders.cached.Loader):
+    is_usable = True
+
+    def load_template_source(self, template_name, template_dirs=None):
+        for loader in self.loaders:
+            try:
+                return loader.load_template_source(template_name, template_dirs=template_dirs)
+            except TemplateDoesNotExist:
+                pass
+        raise TemplateDoesNotExist(template_name)
+
