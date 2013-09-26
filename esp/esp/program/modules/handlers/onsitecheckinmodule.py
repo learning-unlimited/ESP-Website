@@ -103,7 +103,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
 
     def timeCheckedIn(self):
         u = Record.objects.filter(event="attended",program=self.program, user=self.student).sort_by("time")
-        return str(u[0].startdate.strftime("%H:%M %d/%m/%y"))
+        return str(u[0].time.strftime("%H:%M %d/%m/%y"))
 
     @aux_call
     @needs_onsite

@@ -146,7 +146,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
-        Unexpired = Q(studentregistration__end_date__gte=now, studentregistration__start_date__lte=now) # Assumes that, for all still-valid registrations, we don't care about startdate, and enddate is null.
+        Unexpired = Q(studentregistration__end_date__gte=now, studentregistration__start_date__lte=now) # Assumes that, for all still-valid registrations, we don't care about start_date, and end_date is null.
         
         if QObject:
             retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser(Par & Unexpired)}
@@ -383,7 +383,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 datestring = ''
                 sreg_perms=Permission.objects.filter(user__isnull=True, role__name="Student", permission_type=reg_perm, program=prog)
                 if sreg_perms.count() > 0:
-                    d = sreg_perms[0].startdate
+                    d = sreg_perms[0].start_date
                     if d.date() == d.today().date():
                         datestring = ' later today'
                     else:
