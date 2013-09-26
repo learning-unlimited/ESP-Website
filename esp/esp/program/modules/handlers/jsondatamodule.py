@@ -179,6 +179,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'parent_class__title': 'title',
             'parent_class__id': 'parent_class',
             'parent_class__category__symbol': 'category',
+            'parent_class__category__id': 'category_id',
             'parent_class__grade_max': 'grade_max',
             'parent_class__grade_min': 'grade_min',
             'enrolled_students': 'num_students'})
@@ -191,6 +192,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'status',
                 'parent_class__id',
                 'parent_class__category__symbol',
+                'parent_class__category__id',
                 'parent_class__grade_max',
                 'parent_class__grade_min',
                 'parent_class__title',

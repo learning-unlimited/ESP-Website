@@ -72,7 +72,7 @@ classes!</center></font>
 <br /> {% endcomment %}
 <p>
 {% load render_qsd %}
-{% inline_program_qsd_block program class_schedule_header_text request.user %}
+{% inline_program_qsd_block program "class_schedule_header_text" request.user %}
 Below is your class schedule for {{ program.niceName }}.  You can
 <a href="/learn/{{one}}/{{two}}/catalog">click here</a> to view the full 
 catalog, or you can use the course listing below.
