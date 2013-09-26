@@ -462,21 +462,21 @@ def newprogram(request):
         # aseering 5/18/2008 -- More aggressively list everyone who was an Admin
         #template_prog["admins"] = [ x.id for x in UserBit.objects.bits_get_users(verb=GetNode("V/Administer"), qsc=tprogram.anchor, user_objs=True) ]
 
-        student_reg_bits = list(Permission.objects.filter(permission_type__startswith='Student', program=template_prog_id).order_by('-startdate'))
+        student_reg_bits = list(Permission.objects.filter(permission_type__startswith='Student', program=template_prog_id).order_by('-start_date'))
         if len(student_reg_bits) > 0:
             newest_bit = student_reg_bits[0]
             oldest_bit = student_reg_bits[-1]
 
-            template_prog["student_reg_start"] = oldest_bit.startdate
-            template_prog["student_reg_end"] = newest_bit.enddate
+            template_prog["student_reg_start"] = oldest_bit.start_date
+            template_prog["student_reg_end"] = newest_bit.end_date
 
-        teacher_reg_bits = list(Permission.objects.filter(permission_type__startswith='Teacher', program=template_prog_id).order_by('-startdate'))
+        teacher_reg_bits = list(Permission.objects.filter(permission_type__startswith='Teacher', program=template_prog_id).order_by('-start_date'))
         if len(teacher_reg_bits) > 0:
             newest_bit = teacher_reg_bits[0]
             oldest_bit = teacher_reg_bits[-1]
 
-            template_prog["teacher_reg_start"] = oldest_bit.startdate
-            template_prog["teacher_reg_end"] = newest_bit.enddate
+            template_prog["teacher_reg_start"] = oldest_bit.start_date
+            template_prog["teacher_reg_end"] = newest_bit.end_date
 
         pac = ProgramAccountingController(tprogram)
         line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')

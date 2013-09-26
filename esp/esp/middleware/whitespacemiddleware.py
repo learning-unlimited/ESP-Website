@@ -11,6 +11,7 @@ class StripWhitespaceMiddleware:
         if("text" in response['Content-Type'] ):
             new_content = response.content.strip()
             response.content = new_content
+            response['Content-Length'] = str(len(response.content))
             return response
         else:
             return response

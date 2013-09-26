@@ -31,34 +31,36 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
-import copy
-import random
 
+import copy
+from collections import defaultdict
+from datetime import datetime, timedelta, date
+from decimal import Decimal
+import random
+import simplejson as json
+
+from django.conf import settings
+from django.contrib.auth.models import User, AnonymousUser
+from django.contrib.contenttypes import generic
+from django.contrib.localflavor.us.models import PhoneNumberField
+from django.core.cache import cache
 from django.db import models
 from django.db.models import Count
-from django.contrib.auth.models import User, AnonymousUser
-from esp.cal.models import Event
-from esp.datatree.models import *
-from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types, Record
-from datetime import datetime, timedelta, date
-from django.core.cache import cache
 from django.db.models import Q
 from django.db.models.query import QuerySet
-from django.contrib.localflavor.us.models import PhoneNumberField
-from esp.db.fields import AjaxForeignKey
-from esp.middleware import ESPError, AjaxError
+
 from esp.cache import cache_function
 from esp.cache.key_set import wildcard
+from esp.cal.models import Event
+from esp.customforms.linkfields import CustomFormsLinkModel
+from esp.datatree.models import *
+from esp.db.fields import AjaxForeignKey
+from esp.middleware import ESPError, AjaxError
 from esp.tagdict.models import Tag
-from django.conf import settings
-from collections import defaultdict
-import simplejson as json
-from decimal import Decimal
+from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types, Record
+from esp.utils.expirable_model import ExpirableModel
 from esp.qsdmedia.models import Media
 
-from django.contrib.contenttypes import generic
-
-from esp.customforms.linkfields import CustomFormsLinkModel
 
 #   A function to lazily import models that is occasionally needed for cache dependencies.
 def get_model(module_name, model_name):
@@ -568,6 +570,27 @@ class Program(models.Model, CustomFormsLinkModel):
     isFull.depend_on_cache(lambda: ClassSection.num_students, lambda self=wildcard, **kwargs: {'self': self.parent_class.parent_program})
     isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
     isFull.depend_on_row(lambda: Record, lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
+
+    @property
+    def open_class_category(self):
+        """Return the name of the open class category, as determined by the program tag.
+
+        This assumes you've already created the Category manually.
+
+        Returns:
+          A ClassCategories object if one was found, or None.
+        """
+        pk = Tag.getProgramTag('open_class_category', self, default=None)
+        cc = None
+        if pk is not None:
+            try:
+                pk = int(pk)
+                cc = ClassCategories.objects.get(pk=pk)
+            except (ValueError, TypeError, ClassCategories.DoesNotExist) as e:
+                pass
+        if cc is None:
+            cc = ClassCategories.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
+        return cc
 
     @cache_function
     def getScheduleConstraints(self):
@@ -1759,23 +1782,14 @@ class RegistrationType(models.Model):
         else:
             return self.name
 
-class StudentRegistration(models.Model):
+class StudentRegistration(ExpirableModel):
+    """
+    Model relating a student with a class section (interest, priority,
+    enrollment, etc.).
+    """
     section = AjaxForeignKey('ClassSection')
-    #   section = models.ForeignKey(get_model('program', 'ClassSection'))
     user = AjaxForeignKey(ESPUser)
-    
-    relationship = models.ForeignKey(RegistrationType)   #   Same as userbit verb after V/Flags/Registration/
-    start_date = models.DateTimeField(default=datetime.now)
-    end_date = models.DateTimeField(default=datetime(9999,1,1))    
-    
-    def expire(self):
-        self.end_date = datetime.now()
-        self.save()
-    
-    @staticmethod
-    def valid_objects():
-        now = datetime.now()
-        return StudentRegistration.objects.filter(start_date__lte=now, end_date__gte=now)
+    relationship = models.ForeignKey(RegistrationType)
     
     def __unicode__(self):
         return u'%s %s in %s' % (self.user, self.relationship, self.section)

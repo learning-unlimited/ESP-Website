@@ -67,7 +67,7 @@ class RecordAdmin(admin.ModelAdmin):
 admin_site.register(Record, RecordAdmin)
 
 class PermissionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'role', 'permission_type','program','startdate','enddate']
+    list_display = ['id', 'user', 'role', 'permission_type','program','start_date','end_date']
 admin_site.register(Permission, PermissionAdmin)
 
 class ContactInfoAdmin(admin.ModelAdmin):

@@ -38,7 +38,6 @@ from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestri
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
-from esp.program.models.class_ import open_class_category as open_class_category_function
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
@@ -213,10 +212,10 @@ class TeacherClassRegForm(FormWithRequiredCss):
         #   Modify help text on these fields if necessary.
         custom_helptext_fields = ['duration', 'class_size_max', 'num_sections', 'requested_room', 'message_for_directors', 'purchase_requests', 'class_info'] + custom_fields.keys()
         for field in custom_helptext_fields:
-            tag_data = Tag.getTag('teacherreg_label_%s' % field)
+            tag_data = Tag.getProgramTag('teacherreg_label_%s' % field, prog)
             if tag_data:
                 self.fields[field].label = tag_data
-            tag_data = Tag.getTag('teacherreg_help_text_%s' % field)
+            tag_data = Tag.getProgramTag('teacherreg_help_text_%s' % field, prog)
             if tag_data:
                 self.fields[field].help_text = tag_data
                 
@@ -300,7 +299,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
                 field.initial = default
                 
         super(TeacherOpenClassRegForm, self).__init__(module, *args, **kwargs)
-        open_class_category = open_class_category_function()
+        open_class_category = module.get_program().open_class_category
         self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
 
         # Re-enable the requested special resources field as a space needs .
@@ -312,7 +311,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
         fields = [('category', open_class_category.id), 
-                  ('prereqs', ''), ('session_count', 1), ('grade_min', 7), ('grade_max', 12), 
+                  ('prereqs', ''), ('session_count', 1), ('grade_min', module.get_program().grade_min), ('grade_max', module.get_program().grade_max), 
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''), 
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True), 
                   ('has_own_space', False), ('requested_room', ''), ('global_resources', ''),
