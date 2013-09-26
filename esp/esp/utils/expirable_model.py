@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 from datetime import datetime
 
 from django.db import models
+from django.db.models.query import Q
 
 
 class ExpirableModel(models.Model):
@@ -64,6 +65,14 @@ class ExpirableModel(models.Model):
     def valid_objects(cls):
         now = datetime.now()
         return cls.objects.filter(start_date__lte=now, end_date__gte=now)
+
+    @staticmethod
+    def is_valid_qobject(when=None):
+        if when is None:
+            when = datetime.now()
+        qstart = Q(start_date=None) | Q(start_date__lte=when)
+        qend = Q(end_date=None) | Q(end_date__gte=when)
+        return qstart & qend
 
     class Meta:
         abstract = True

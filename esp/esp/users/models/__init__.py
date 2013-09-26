@@ -1980,7 +1980,7 @@ class Permission(ExpirableModel):
 
         quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
         initial_qset = self.objects.filter(quser).filter(permission_type__in=perms, program=program)
-        return initial_qset.filter(self.is_open_qobject()).exists()
+        return initial_qset.filter(self.is_valid_qobject()).exists()
     
     #list of all the permission types which are deadlines
     deadline_types = [x for x in flatten(PERMISSION_CHOICES) if x.startswith("Teacher") or x.startswith("Student")]
@@ -1988,14 +1988,6 @@ class Permission(ExpirableModel):
     @classmethod
     def deadlines(cls):
         return cls.objects.filter(permission_type__in = cls.deadline_types)
-
-    @staticmethod
-    def is_open_qobject(when=None):
-        if when is None:
-            when = datetime.now()
-        qstart = Q(start_date=None) | Q(start_date__lte=when)
-        qend = Q(end_date=None) | Q(end_date__gte=when)
-        return qstart & qend
 
     def recursive(self):
         return bool(self.implications.get(self.permission_type, None))
