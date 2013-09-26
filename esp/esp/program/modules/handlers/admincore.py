@@ -49,15 +49,15 @@ from esp.middleware import ESPError
 from datetime import datetime
 
 class EditPermissionForm(forms.Form):
-    startdate = forms.DateTimeField(widget=DateTimeWidget(), required=False)
-    enddate = forms.DateTimeField(widget=DateTimeWidget(), required=False)
+    start_date = forms.DateTimeField(widget=DateTimeWidget(), required=False)
+    end_date = forms.DateTimeField(widget=DateTimeWidget(), required=False)
     id = forms.IntegerField(required=True, widget=forms.HiddenInput)
 
 class NewPermissionForm(forms.Form):
     permission_type=forms.ChoiceField(choices=filter(lambda x:type(x[1])==tuple and "Deadline" in x[0],Permission.PERMISSION_CHOICES))
     role = forms.ChoiceField(choices = [("Student","Students"),("Teacher","Teachers")])
-    startdate = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
-    enddate = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
+    start_date = forms.DateTimeField(label='Opening date/time', initial=datetime.now, widget=DateTimeWidget(), required=False)
+    end_date = forms.DateTimeField(label='Closing date/time', initial=None, widget=DateTimeWidget(), required=False)
 
 class AdminCore(ProgramModuleObj, CoreModule):
 
@@ -160,7 +160,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             perm = Permission.objects.get(id=request.GET['id'])
             #   Clear any duplicate user permissions
             Permission.objects.filter(permission_type=perm.permission_type, program=perm.program, user__isnull=True, role=perm.role).exclude(id=perm.id).delete()
-            perm.enddate = None
+            perm.end_date = None
             perm.save()
             message = 'Deadline opened: %s.' % perm.nice_name()
 
@@ -168,7 +168,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
             perm = Permission.objects.get(id=request.GET['id'])
             #   Clear any duplicate user permissions
             Permission.objects.filter(permission_type=perm.permission_type, program=perm.program, user__isnull=True, role=perm.role).exclude(id=perm.id).delete()
-            perm.enddate = datetime.now()
+            perm.end_date = datetime.now()
             perm.save()
             message = 'Deadline closed: %s.' % perm.nice_name()
 
@@ -184,8 +184,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                         perm = Permission.objects.get(id=form.cleaned_data['id'])
                         #   Clear any duplicate perms
                         Permission.objects.filter(permission_type=perm.permission_type, program=perm.program, user__isnull=True, role=perm.role).exclude(id=perm.id).delete()
-                        perm.startdate = form.cleaned_data['startdate']
-                        perm.enddate = form.cleaned_data['enddate']
+                        perm.start_date = form.cleaned_data['start_date']
+                        perm.end_date = form.cleaned_data['end_date']
                         perm.save()
                 if num_forms > 0:
                     message = 'Changes saved.'
@@ -194,8 +194,8 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 if not created:
                     message = 'Deadline already exists: %s.  Please modify the existing deadline.' % perm.nice_name()
                 else:
-                    perm.startdate = create_form.cleaned_data['startdate']
-                    perm.enddate = create_form.cleaned_data['enddate']
+                    perm.start_date = create_form.cleaned_data['start_date']
+                    perm.end_date = create_form.cleaned_data['end_date']
                     perm.save()
                     message = 'Deadline created: %s.' % perm.nice_name()
             else:
@@ -210,7 +210,7 @@ class AdminCore(ProgramModuleObj, CoreModule):
 
         #   Set a flag on each perm for whether it has ended
         for perm in perms:
-            if perm.enddate is None or  perm.enddate > datetime.now():
+            if perm.end_date is None or  perm.end_date > datetime.now():
                 perm.open_now = True
             else:
                 perm.open_now = False
