@@ -1759,9 +1759,6 @@ class StudentRegistration(ExpirableModel):
     def __unicode__(self):
         return u'%s %s in %s' % (self.user, self.relationship, self.section)
     
-    def __unicode__(self):
-        return u'%s %s in %s' % (self.user, self.relationship, self.section)
-    
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
 
