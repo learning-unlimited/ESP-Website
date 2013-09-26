@@ -37,8 +37,9 @@ from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItem
 from esp.program.models import FinancialAidRequest, Program, SplashInfo
 from esp.users.models import ESPUser
 from esp.tagdict.models import Tag
+from esp.utils.query_utils import nest_Q
 
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.template.defaultfilters import slugify
 
 from decimal import Decimal
@@ -204,20 +205,33 @@ class ProgramAccountingController(BaseAccountingController):
     def default_siblingdiscount_lineitemtype(self):
         return LineItemType.objects.filter(program=self.program, for_finaid=True, text='Sibling discount').order_by('-id')[0]
 
-    def get_lineitemtypes(self, required_only=False, optional_only=False, payment_only=False):
+    def get_lineitemtypes_Q(self, required_only=False, optional_only=False, payment_only=False):
+        q_object = Q(program=self.program)
         if required_only:
-            qs = LineItemType.objects.filter(program=self.program, required=True, for_payments=False, for_finaid=False)
+            q_object &= Q(required=True, for_payments=False, for_finaid=False)
         elif optional_only:
-            qs = LineItemType.objects.filter(program=self.program, required=False, for_payments=False, for_finaid=False)
+            q_object &= Q(required=False, for_payments=False, for_finaid=False)
         elif payment_only:
-            qs = LineItemType.objects.filter(program=self.program, required=False, for_payments=True, for_finaid=False) 
-        else:
-            qs = LineItemType.objects.filter(program=self.program)
-            
+            q_object &= Q(required=False, for_payments=True, for_finaid=False)
+        return q_object
+
+    def get_lineitemtypes(self, **kwargs):
+        qs = LineItemType.objects.filter(self.get_lineitemtypes_Q(**kwargs))
         return qs.order_by('text', '-id').distinct('text')
 
+    def all_transfers_Q(self, **kwargs):
+        """
+        Returns a Q object that applies all wanted constraints on the related
+        line_item objects.
+        """
+        q_object = self.get_lineitemtypes_Q(**kwargs)
+        return nest_Q(q_object, 'line_item')
+
     def all_transfers(self, **kwargs):
-        return Transfer.objects.filter(line_item__in=self.get_lineitemtypes(**kwargs))
+        # Avoids a subquery by constructing a Q object, in all_transfers_Q(),
+        # that applies all the wanted constraints on the related line_item
+        # objects.
+        return Transfer.objects.filter(self.all_transfers_Q(**kwargs)).distinct()
 
     def all_accounts(self):
         return Account.objects.filter(program=self.program)
