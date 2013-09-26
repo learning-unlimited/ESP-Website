@@ -39,14 +39,18 @@ from django.core.exceptions import MultipleObjectsReturned
 from django.conf import settings
 import os.path
 
-
 def qsdmedia2(request, url):
     """ Download a media file """
 
     try:
         media_rec = Media.objects.get(hashed_name=url)
     except Media.DoesNotExist:
-        raise Http404
+        try:
+            media_rec = Media.objects.get(file_name=url)
+        except Media.DoesNotExist:
+            raise Http404
+        except MultipleObjectsreturned:
+            media_rec = Media.objects.filter(file_name=url).latest('id')
     except MultipleObjectsReturned: # If there exist multiple Media entries, we want the first one
         media_rec = Media.objects.filter(hashed_name=url).latest('id')
 
