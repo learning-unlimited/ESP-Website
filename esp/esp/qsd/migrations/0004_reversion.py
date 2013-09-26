@@ -96,20 +96,20 @@ class Migration(SchemaMigration):
 				if all (k in qsdRevision.field_dict for k in ('url', 'author', 'content', 'title', 'description', 'nav_category', 'keywords', 'disabled', 'create_date')):
 					qsdCopy = QuasiStaticData()
 					qsdCopy.url = qsdRevision.field_dict['url']
-					qsdCopy.author = qsdRevision.field_dict['author']
+					qsdCopy.author = ESPUser.objects.get(id=qsdRevision.field_dict['author'])
 					qsdCopy.content = qsdRevision.field_dict['content']
 					qsdCopy.title = qsdRevision.field_dict['title']
 					qsdCopy.description = qsdRevision.field_dict['description']
-					qsdCopy.nav_category = qsdRevision.field_dict['nav_category']
+					qsdCopy.nav_category = NavBarCategory.objects.get(id=qsdRevision.field_dict['nav_category'])
 					qsdCopy.keywords = qsdRevision.field_dict['keywords']
 					qsdCopy.disabled = qsdRevision.field_dict['disabled']
-					qsdCopy.create_date = qsdRevision.date_created
+					qsdCopy.create_date = qsdRevision.revision.date_created
 					qsdCopy.save()
 
 			qsd.delete()
 
 			counter += 1
-			if counter % 500 == 0:
+			if counter % 50 == 0:
 				print "... " + str(counter) + "/" + str(len(qsdObjects))
 
 		print "Finished QSD conversion"
