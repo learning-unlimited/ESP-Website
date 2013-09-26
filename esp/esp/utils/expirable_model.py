@@ -63,8 +63,7 @@ class ExpirableModel(models.Model):
 
     @classmethod
     def valid_objects(cls):
-        now = datetime.now()
-        return cls.objects.filter(start_date__lte=now, end_date__gte=now)
+        return cls.objects.filter(self.is_valid_qobject())
 
     @staticmethod
     def is_valid_qobject(when=None):
