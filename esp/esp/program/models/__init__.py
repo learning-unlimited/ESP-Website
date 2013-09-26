@@ -567,6 +567,27 @@ class Program(models.Model, CustomFormsLinkModel):
     isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
     isFull.depend_on_row(lambda: Record, lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
 
+    @property
+    def open_class_category(self):
+        """Return the name of the open class category, as determined by the program tag.
+
+        This assumes you've already created the Category manually.
+
+        Returns:
+          A ClassCategories object if one was found, or None.
+        """
+        pk = Tag.getProgramTag('open_class_category', self, default=None)
+        cc = None
+        if pk is not None:
+            try:
+                pk = int(pk)
+                cc = ClassCategories.objects.get(pk=pk)
+            except (ValueError, TypeError, ClassCategories.DoesNotExist) as e:
+                pass
+        if cc is None:
+            cc = ClassCategories.objects.get_or_create(category="Walk-in Activity", symbol='W', seq=0)[0]
+        return cc
+
     @cache_function
     def getScheduleConstraints(self):
         return ScheduleConstraint.objects.filter(program=self).select_related()

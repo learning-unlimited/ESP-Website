@@ -36,8 +36,10 @@ Learning Unlimited, Inc.
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType, LineItemOptions
 from esp.program.models import FinancialAidRequest, Program, SplashInfo
 from esp.users.models import ESPUser
+from esp.tagdict.models import Tag
+from esp.utils.query_utils import nest_Q
 
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.template.defaultfilters import slugify
 
 from decimal import Decimal
@@ -203,23 +205,50 @@ class ProgramAccountingController(BaseAccountingController):
     def default_siblingdiscount_lineitemtype(self):
         return LineItemType.objects.filter(program=self.program, for_finaid=True, text='Sibling discount').order_by('-id')[0]
 
-    def get_lineitemtypes(self, required_only=False, optional_only=False, payment_only=False):
+    def get_lineitemtypes_Q(self, required_only=False, optional_only=False, payment_only=False):
+        q_object = Q(program=self.program)
         if required_only:
-            qs = LineItemType.objects.filter(program=self.program, required=True, for_payments=False, for_finaid=False)
+            q_object &= Q(required=True, for_payments=False, for_finaid=False)
         elif optional_only:
-            qs = LineItemType.objects.filter(program=self.program, required=False, for_payments=False, for_finaid=False)
+            q_object &= Q(required=False, for_payments=False, for_finaid=False)
         elif payment_only:
-            qs = LineItemType.objects.filter(program=self.program, required=False, for_payments=True, for_finaid=False) 
-        else:
-            qs = LineItemType.objects.filter(program=self.program)
-            
+            q_object &= Q(required=False, for_payments=True, for_finaid=False)
+        return q_object
+
+    def get_lineitemtypes(self, **kwargs):
+        qs = LineItemType.objects.filter(self.get_lineitemtypes_Q(**kwargs))
         return qs.order_by('text', '-id').distinct('text')
 
+    def all_transfers_Q(self, **kwargs):
+        q_object = self.get_lineitemtypes_Q(**kwargs)
+        return nest_Q(q_object, 'line_item')
+
     def all_transfers(self, **kwargs):
-        return Transfer.objects.filter(line_item__in=self.get_lineitemtypes(**kwargs))
+        return Transfer.objects.filter(self.all_transfers_Q(**kwargs)).distinct()
+
+    def all_students_Q(self, **kwargs):
+        q_object = self.all_transfers_Q(**kwargs)
+        return Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(q_object, 'transfer')
+
+    def all_students(self, **kwargs):
+        return ESPUser.objects.filter(self.all_students_Q(**kwargs)).distinct()
 
     def all_accounts(self):
         return Account.objects.filter(program=self.program)
+
+    @property
+    def sibling_discount_tag(self):
+        if hasattr(self, "_sibling_discount_tag"):
+            return self._sibling_discount_tag
+        self._sibling_discount_tag = Decimal(Tag.getProgramTag('sibling_discount', program=self.program, default='0.00'))
+        return self._sibling_discount_tag
+
+    @property
+    def splashinfo_objects(self):
+        if hasattr(self, "_splashinfo_objects"):
+            return self._splashinfo_objects
+        self._splashinfo_objects = dict(SplashInfo.objects.filter(program=self.program, siblingdiscount=True).distinct().values_list('student', 'siblingdiscount'))
+        return self._splashinfo_objects
 
     def execute_pending_transfers(self, users):
         """ "Close the books" for this program, with the selected users.
@@ -229,9 +258,10 @@ class ProgramAccountingController(BaseAccountingController):
         for grant in FinancialAidGrant.objects.filter(request__program=self.program, request__user__in=users):
             grant.finalize()
 
-        #   Execute sibling discounts for these users
-        for splashinfo in SplashInfo.objects.filter(program=self.program, student__in=users):
-            splashinfo.execute_sibling_discount()
+        if self.sibling_discount_tag:
+            #   Execute sibling discounts for these users
+            for splashinfo in SplashInfo.objects.filter(program=self.program, student__in=users):
+                splashinfo.execute_sibling_discount()
 
         #   Execute transfers for these users
         self.execute_transfers(Transfer.objects.filter(user__in=users, line_item__program=self.program))
@@ -418,11 +448,10 @@ class IndividualAccountingController(ProgramAccountingController):
                 aid_amount += discount_aid_amount
 
         return aid_amount
-    
+
     def amount_siblingdiscount(self):
-        #   Hard-coded $20 discount for now; could be made into a Tag in the future
-        if SplashInfo.objects.filter(program=self.program, student=self.user, siblingdiscount=True).exists():
-            return Decimal('20.00')
+        if (not self.sibling_discount_tag) or self.splashinfo_objects.get(self.user):
+            return self.sibling_discount_tag
         else:
             return Decimal('0')
     

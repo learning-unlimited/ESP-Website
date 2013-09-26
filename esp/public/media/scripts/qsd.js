@@ -43,9 +43,11 @@ function qsd_send_command(qsd_id, postdata)
         }
         else
         {
-            alert("Error! Status: " + status);
-            alert("Data: " + data);
+            alert("Abnormal Status: " + status + "\nData: " + data);
         }
+    }).fail(function(request, jquery_status, http_status)
+    {
+        alert(jquery_status + ": " + http_status + "\n" + request.responseText);
     });
 
     $j.post("/cache/varnish_purge", { page: $j(location).attr('pathname'), csrfmiddlewaretoken: csrf_token()});

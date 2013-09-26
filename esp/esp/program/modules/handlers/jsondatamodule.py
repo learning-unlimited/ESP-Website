@@ -40,7 +40,6 @@ from esp.program.models import SplashInfo
 from esp.users.models import UserAvailability
 from esp.cal.models import Event
 from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories
-from esp.program.models.class_ import open_class_category
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
 from esp.datatree.models import *
 from esp.dbmail.models import MessageRequest
@@ -569,7 +568,7 @@ len(teachers[key])))
         Q_categories = Q(program=prog)
         crmi = prog.getModuleExtension('ClassRegModuleInfo')
         if crmi.open_class_registration:
-            Q_categories |= Q(pk=open_class_category().pk)
+            Q_categories |= Q(pk=prog.open_class_category.pk)
         #   Introduce a separate query to get valid categories, since the single query seemed to introduce duplicates
         program_categories = ClassCategories.objects.filter(Q_categories).distinct().values_list('id', flat=True)
         annotated_categories = ClassCategories.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'category').distinct()
