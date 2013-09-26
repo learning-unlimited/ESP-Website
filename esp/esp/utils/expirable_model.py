@@ -60,5 +60,10 @@ class ExpirableModel(models.Model):
         return (self.start_date is None or self.start_date < when) and \
                (self.end_date is None or self.end_date > when)
 
+    @classmethod
+    def valid_objects(cls):
+        now = datetime.now()
+        return cls.objects.filter(start_date__lte=now, end_date__gte=now)
+
     class Meta:
         abstract = True

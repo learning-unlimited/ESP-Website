@@ -1756,11 +1756,6 @@ class StudentRegistration(ExpirableModel):
     user = AjaxForeignKey(ESPUser)
     relationship = models.ForeignKey(RegistrationType)
     
-    @classmethod
-    def valid_objects(cls):
-        now = datetime.now()
-        return cls.objects.filter(start_date__lte=now, end_date__gte=now)
-    
     def __unicode__(self):
         return u'%s %s in %s' % (self.user, self.relationship, self.section)
     
