@@ -63,7 +63,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         """ Close off the student's invoice and, if paid is True, create a receipt showing
         that they have paid all of the money they owe for the program. """
         if not self.hasPaid():
-            iac = IndividualAccountingController(self.program, self.user)
+            iac = IndividualAccountingController(self.program, self.student)
             iac.add_required_transfers()
             if paid:
                 iac.submit_payment(iac.amount_due())
@@ -91,7 +91,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         return Record.user_completed(self.student, "attended",self.program)
 
     def hasPaid(self):
-        iac = IndividualAccountingController(self.program, self.user)
+        iac = IndividualAccountingController(self.program, self.student)
         return Record.user_completed(self.student, "paid", self.program) or \
             iac.has_paid(in_full=True)
     
@@ -102,7 +102,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
         return Record.user_completed(self.student, "liab", self.program)
 
     def timeCheckedIn(self):
-        u = Record.objects.filter(event="attended",program=self.program, user=self.student).sort_by("time")
+        u = Record.objects.filter(event="attended",program=self.program, user=self.student).order_by("time")
         return str(u[0].time.strftime("%H:%M %d/%m/%y"))
 
     @aux_call
