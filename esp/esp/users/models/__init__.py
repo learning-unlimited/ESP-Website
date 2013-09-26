@@ -32,9 +32,12 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from datetime import datetime, timedelta
 from collections import defaultdict
+from datetime import datetime, timedelta
+import simplejson as json
 
+from django import forms
+from django.conf import settings
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import User, AnonymousUser, Group
 from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
@@ -47,23 +50,21 @@ from django.db.models.base import ModelState
 from django.db.models.query import Q, QuerySet
 from django.http import HttpRequest
 from django.template import loader, Context as DjangoContext
-from django import forms
-from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
 from django.template.defaultfilters import urlencode
 
 from esp.cal.models import Event
 from esp.cache import cache_function, wildcard
+from esp.customforms.linkfields import CustomFormsLinkModel
+from esp.customforms.forms import AddressWidget, NameWidget
 from esp.datatree.models import *
 from esp.db.fields import AjaxForeignKey
 from esp.db.models.prepared import ProcedureManager
 from esp.dblog.models import error
-from esp.tagdict.models import Tag
 from esp.middleware import ESPError
+from esp.middleware.threadlocalrequest import get_current_request, AutoRequestContext as Context
+from esp.tagdict.models import Tag
+from esp.utils.expirable_model import ExpirableModel
 from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
-from django.conf import settings
-import simplejson as json
-from esp.customforms.linkfields import CustomFormsLinkModel
-from esp.customforms.forms import AddressWidget, NameWidget
 
 try:
     import cPickle as pickle
@@ -1894,7 +1895,7 @@ def flatten(choices):
         else: l=l+flatten(x[1])
     return l
 
-class Permission(models.Model):
+class Permission(ExpirableModel):
 
     #a permission can be assigned to a user, or a role
     user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True,
@@ -1971,16 +1972,6 @@ class Permission(models.Model):
     #it may, however, be the case that this model is not general enough,
     #in which case program may need to be replaced by a generic foreignkey
 
-    #permissions may optionally have start and end dates
-    #a permission is active if it has NOT ended and is NOT before its start
-    #so leaving out start = on until end, leaving out end - never ends
-    #perhaps start should be defaulted to now and not optional, idk
-
-    startdate = models.DateTimeField(blank=True, null=True, default = None,
-                                     help_text="If blank, has always started.")
-    enddate = models.DateTimeField(blank=True, null=True, default = None,
-                                   help_text="If blank, never ends.")
-
     @classmethod
     def user_has_perm(self, user, name, program=None, when=None):
         perms=[name]
@@ -1989,7 +1980,7 @@ class Permission(models.Model):
 
         quser = Q(user=user) | Q(user=None, role__in=user.groups.all())
         initial_qset = self.objects.filter(quser).filter(permission_type__in=perms, program=program)
-        return initial_qset.filter(self.is_open_qobject()).exists()
+        return initial_qset.filter(self.is_valid_qobject()).exists()
     
     #list of all the permission types which are deadlines
     deadline_types = [x for x in flatten(PERMISSION_CHOICES) if x.startswith("Teacher") or x.startswith("Student")]
@@ -1997,20 +1988,6 @@ class Permission(models.Model):
     @classmethod
     def deadlines(cls):
         return cls.objects.filter(permission_type__in = cls.deadline_types)
-
-    def is_open(self, when=None):
-        if when is None:
-            when = datetime.now()
-        return (self.startdate is None or self.startdate < when) and \
-               (self.enddate is None or self.enddate > when)
-
-    @staticmethod
-    def is_open_qobject(when=None):
-        if when is None:
-            when = datetime.now()
-        qstart = Q(startdate=None) | Q(startdate__lte=when)
-        qend = Q(enddate=None) | Q(enddate__gte=when)
-        return qstart & qend
 
     def recursive(self):
         return bool(self.implications.get(self.permission_type, None))
@@ -2059,8 +2036,8 @@ class Permission(models.Model):
         implies = [perm]
         implies+=[x for x,y in cls.implications.items() if perm in y]
         now=datetime.now()
-        qstart = Q(permission__startdate=None) | Q(permission__startdate__lte=now)
-        qend = Q(permission__enddate=None) | Q(permission__enddate__gte=now)
+        qstart = Q(permission__start_date=None) | Q(permission__start_date__lte=now)
+        qend = Q(permission__end_date=None) | Q(permission__end_date__gte=now)
 
         direct = Program.objects.filter(qstart & qend,
                                        permission__user=user,

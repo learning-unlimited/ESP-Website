@@ -178,7 +178,7 @@ def startreg(form, programs, students, profiles, result_dict={}):
     for student in students:
         for program in programs:
 
-            reg_bits = StudentRegistration.objects.filter(user=student).order_by('startdate')
+            reg_bits = StudentRegistration.objects.filter(user=student).order_by('start_date')
             if reg_bits.exists():
                 if reg_bits[0].start_date.date() not in reg_dict[program]:
                     reg_dict[program][reg_bits[0].start_date.date()] = 0
