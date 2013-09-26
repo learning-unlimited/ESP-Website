@@ -1,23 +1,26 @@
 # -*- coding: utf-8 -*-
 import datetime
+from south.v2 import SchemaMigration
 import reversion
 from reversion.management.commands import createinitialrevisions
 from south.db import db
-from south.v2 import SchemaMigration
 from django.db import models
 from esp.qsd.models import QuasiStaticData
+from esp.users.models import ESPUser
+from esp.web.models import NavBarCategory
+from reversion.models import Version, ContentType
 
 class Migration(SchemaMigration):
 
 	def forwards(self, orm):
-		print "Running reversion.management.commands.createinitialreversions (this could take several minutes)..."
+		print "Running reversion.management.commands.createinitialrevisions (this could take several minutes)..."
 		app = models.get_app('qsd')
 		model_class = models.get_model('qsd', 'QuasiStaticData')
 		createinitialrevisions_command = createinitialrevisions.Command()
 		createinitialrevisions_command.create_initial_revisions(app, model_class, "QSD initial revisions.", 500)
-		print "Finished running reversion.management.commands.createinitialreversions."
+		print "Finished running reversion.management.commands.createinitialrevisions."
 
-		print "Creating initial reversions for QSD objects (this may take a while)..."
+		print "Creating initial revisions for QSD objects (this may take a while)..."
 
 		# go through list of QuasiStaticData ordered by URL and
 		#  create a new object for each group with the same URL
@@ -27,7 +30,7 @@ class Migration(SchemaMigration):
 		counter = 0
 
 		for qsd in qsdObjects:
-			if lastQsd is not None and lastQsd.url == qsd.url:
+			if lastQsd and lastQsd.url == qsd.url:
 				try:
 					with reversion.create_revision():
 						lastQsd.author = qsd.author
@@ -38,21 +41,43 @@ class Migration(SchemaMigration):
 						lastQsd.keywords = qsd.keywords
 						lastQsd.disabled = qsd.disabled
 						lastQsd.create_date = qsd.create_date
+
+						if lastQsd.disabled is None:
+							lastQsd.disabled = False
+
 						lastQsd.save()
-				except: # eh, apparently some model objects don't have author defined?
-					pass
+				except (ESPUser.DoesNotExist, NavBarCategory.DoesNotExist):
+					print "... Warning: skipping " + str(qsd.url) + "/" + str(qsd.id) + " due to DoesNotExist error"
 			else:
 				with reversion.create_revision():
 					lastQsd = qsd.copy()
+
+					if lastQsd.disabled is None:
+						lastQsd.disabled = False
+
 					lastQsd.save()
 
+			# here we want to delete both the QSD objects itself
+			#  but also any revisions that we already have filed for it
+			qsdRevisions = reversion.get_for_object(qsd)
 			qsd.delete()
+
+			for qsdRevision in qsdRevisions:
+				qsdRevision.delete()
 
 			counter += 1
 			if counter % 1000 == 0:
 				print "... " + str(counter) + "/" + str(len(qsdObjects))
 
-		print "Finished creating initial reversions for QSD objects."
+		print "Finished creating initial revisions for QSD objects."
+		print "Updating dates for newly created revisions"
+
+		for version in Version.objects.filter(content_type=ContentType.objects.get_for_model(QuasiStaticData)):
+			revision = version.revision
+			revision.date_created = version.field_dict['create_date']
+			revision.save()
+
+		print "Finished updating revision dates."
 
 	def backwards(self, orm):
 		print "Converting from reversion format to separate-QSD format (this may take a while)..."
@@ -78,7 +103,7 @@ class Migration(SchemaMigration):
 					qsdCopy.nav_category = qsdRevision.field_dict['nav_category']
 					qsdCopy.keywords = qsdRevision.field_dict['keywords']
 					qsdCopy.disabled = qsdRevision.field_dict['disabled']
-					qsdCopy.create_date = qsdRevision.field_dict['create_date']
+					qsdCopy.create_date = qsdRevision.date_created
 					qsdCopy.save()
 
 			qsd.delete()
