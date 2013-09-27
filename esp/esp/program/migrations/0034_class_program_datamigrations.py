@@ -13,7 +13,7 @@ class Migration(DataMigration):
             cls.title = cls.anchor.friendly_name
             cls.save()
 
-        for prog in Program.objects.all():
+        for prog in orm['program.Program'].objects.all():
             if not Tag.getProgramTag(key='ignore_parent_name', program=prog):
                 prog.name=str(prog.anchor.parent.friendly_name) + ' ' + str(prog.anchor.friendly_name)
             else:
@@ -27,7 +27,7 @@ class Migration(DataMigration):
             cls.title = ""
             cls.save()
 
-        for prog in Program.objects.all():
+        for prog in orm['program.Program'].objects.all():
             prog.name = ""
             prog.url = ""
             prog.save()
