@@ -63,7 +63,7 @@ class ExpirableModel(models.Model):
 
     @classmethod
     def valid_objects(cls):
-        return cls.objects.filter(self.is_valid_qobject())
+        return cls.objects.filter(cls.is_valid_qobject())
 
     @staticmethod
     def is_valid_qobject(when=None):

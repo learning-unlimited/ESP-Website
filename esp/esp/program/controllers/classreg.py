@@ -293,4 +293,4 @@ class ClassCreationController(object):
             send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title, \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
                       ('%s Class Registration <%s>' % (self.program.program_type, self.program.director_email)), \
-                      [self.program.director_email], False)
+                      [self.program.getDirectorCCEmail()], False)
