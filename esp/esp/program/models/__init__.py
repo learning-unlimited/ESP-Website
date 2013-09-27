@@ -281,7 +281,9 @@ class Program(models.Model, CustomFormsLinkModel):
     name = models.CharField(max_length=80)
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
-    director_email = models.EmailField()
+    director_email = models.EmailField() # director contact email address used for from field and display
+    director_cc_email = models.EmailField(blank=True, default='', help_text='If set, automated outgoing mail from ESP-Website (except class cancellations) will be sent to this address instead') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
+    director_confidential_email = models.EmailField(blank=True, default='', help_text='If set, confidential emails such as financial aid applications will be sent to this address instead')
     program_size_max = models.IntegerField(null=True)
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule)
@@ -1019,6 +1021,18 @@ class Program(models.Model, CustomFormsLinkModel):
         else: 
             return 1
     
+    def getDirectorCCEmail(self):
+        if self.director_cc_email:
+            return self.director_cc_email
+        else:
+            return self.director_email
+
+    def getDirectorConfidentialEmail(self):
+        if self.director_confidential_email:
+            return self.director_confidential_email
+        else:
+            return self.getDirectorCCEmail()
+
     @cache_function
     def by_prog_inst(cls, program, instance):
         prog_inst = Program.objects.select_related().get(url='%s/%s' % (program, instance))
