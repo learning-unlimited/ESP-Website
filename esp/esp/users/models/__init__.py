@@ -2082,13 +2082,21 @@ class Permission(ExpirableModel):
                 if user in cls.get_teachers(): return True
 
         return False
-    
+
+def install_groups(additional_names=None):
+    """
+    Installs the initial Groups.
+    """
+    if additional_names is None:
+        additional_names = []
+    for user_type in (list(ESPUser.getTypes()) + ["StudentRep", "Administrator"] + additional_names):
+        Group.objects.get_or_create(name=user_type)
+
 def install():
     """
     Installs some initial users and permissions.
     """    
-    for user_type in (list(ESPUser.getTypes()) + ["StudentRep", "Administrator"]):
-        Group.objects.get_or_create(name=user_type)
+    install_groups()
     if ESPUser.objects.count() == 1: # We just did a syncdb;
                                      # the one account is the admin account
         user = ESPUser.objects.all()[0]
