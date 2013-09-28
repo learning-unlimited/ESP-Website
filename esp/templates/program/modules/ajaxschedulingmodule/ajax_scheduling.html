@@ -95,7 +95,20 @@ var $j = jQuery.noConflict(); // grr... stupid prototype fail
     <!-- DIRECTORY AND CLASS FILTER TARGET-->
     <td width=200 id='directory-target'>
       <div id="directory-accordion">
-	<h3><a href="#">Filter Class Directory</a></h3>
+	<h3><a href="#">Class Directory</a></h3>
+	<div id="directory-table-wrapper" style="padding: 0px 0px" class="directory-table-wrapper">
+	  <table class="directory">
+	    <thead><tr id="directory_table_header" class="header">
+	      <td class="sortable" id="directory-header-ID"><span>ID</span></td>
+	      <td class="sortable" id="directory-header-Title"><span>Title</span></td>
+	      <td class="sortable" id="directory-header-Teacher"><span>Teacher</span></td>
+	      <td class="sortable" id="directory-header-Length"><span>Length</span></td>
+	    </tr></thead>
+	    <tbody id="directory-table-body"></tbody>
+	    <!--classes get added here-->
+	  </table>
+	</div>
+	<h3><a href="#">Advanced Filter</a></h3>
 	<div id="searchbox" class="searchbox">
 	  <table>
 	    <tr><td>Title</td><td colspan="3"><input id="filter_Title"/></td></tr>
@@ -108,28 +121,15 @@ var $j = jQuery.noConflict(); // grr... stupid prototype fail
 	      <td colspan="1"><input id="filter_Max-length"></td>
 	    </tr>
 	    <tr>
-	      <td>Min size</td><td><input id="filter_Min-size"></td>
+	      <td>Class size</td><td><input id="filter_Min-size"></td>
 	      <td align="center">to</td><td><input id="filter_Max-size"></td>
 	    </tr>
             <tr>
 	      <td>Show unapproved classes</td>
 	      <td><input type="checkbox" id="filter_Status"></td>
-	      <td>Show unapproved classes</td>
+	      <td>Show already scheduled classes</td>
 	      <td><input type="checkbox" id="filter_Scheduled"></td>
 	    </tr>
-	  </table>	  
-	</div>
-	<h3><a href="#">Class Directory</a></h3>
-	<div id="directory-table-wrapper" style="padding: 0px 0px" class="directory-table-wrapper">
-	  <table class="directory">
-	    <thead><tr id="directory_table_header" class="header">
-	      <td class="sortable" id="directory-header-ID"><span>ID</span></td>
-	      <td class="sortable" id="directory-header-Title"><span>Title</span></td>
-	      <td class="sortable" id="directory-header-Teacher"><span>Teacher</span></td>
-	      <td class="sortable" id="directory-header-Length"><span>Length</span></td>
-	    </tr></thead>
-	    <tbody id="directory-table-bodyx"></tbody>
-	    <!--classes get added here-->
 	  </table>
 	</div>
       </div>
