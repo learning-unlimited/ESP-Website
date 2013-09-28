@@ -149,7 +149,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             this.activeFilter = filter;
             var active_rows = [];
             $j.each(this.entries, function(i,entry){
-                if (entry.section.blocks.length == 0 && filter(entry.section))
+                if (filter(entry.section))
                     active_rows.push(entry);
             });
             this.active_rows = active_rows;
@@ -190,15 +190,19 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             } else {
                 this.entries.push(new ESP.Scheduling.Widgets.Directory.Entry(this, entry));
             }
-            if (update) this.filter();
         },
         
         // update directory entries
         update: function(){
-	    tbody = $j("#directory-table-body")
+	    tbody = $j("#directory-table-body")[0]
             tbody.hide();
-            tbody.innerHTML = "";//.children().remove();  // The 'right' way here is vastly slower, sadly.  -- aseering 10/23/2010
-            $j.each(this.active_rows, function (i,x){ tbody.append(x.update().el); x.draggable(); }.bind(this));
+            tbody.innerHTML = "";
+            $j.each(
+		this.active_rows, function (i,x){ 
+		    this.table.append(x.update().el); 
+		    x.draggable(); 
+		}.bind(this)
+	    );
             tbody.show();
         }
     }));
@@ -235,21 +239,84 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
         }
     }));
 
+/* State of the art:  the current design is simple to understand but
+not very high performance.  It runs every filter on every class every time 
+filters run.  Right now for an HSSP this takes less than a second.  It needs to 
+be tested on MIT Splash size data, and possibly optimized there.  
+
+It also may be refactored when a quick search box appears.
+*/
 ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
-    initialize: function(directory) {
-        this.directory = directory;
-
-	//add filters to filter box
-	//TODO:  bind search to keypres for all inputs
-	//title and id
-	this.filters = []
-	this.filters.push(this.get_filter("Title", $j("#filter_Title"), "text"))   
-	this.filters.push(this.get_filter("Id", $j("#filter_ID"), "text"))   
-	this.filters.push(this.get_teacher_filter($j("#filter_Teacher")))
-	this.filters.push(this.get_status_filter($j("#filter_Status")))
-	//input.bind('change', this.do_search.bind(this))
-
-	this.directory.filter(this.all_filters.bind(this))
+    //QUESTION:  is grabbing the textbox every time a noticeable performance problem?
+    //QUESTION:  what does .bind do?
+     initialize: function(directory) {
+	 this.filters = [
+	     //id
+	     function(x){
+		 //TODO:  make this support sections numbers like X6034s1
+		 var textbox = $j("#filter_ID")
+		 var regex = new RegExp(textbox.val(),'i'); // case insensitive
+		 var class_code = x.category + x.class_id
+		 return (String(class_code).search(regex) != -1)
+             }.bind(this),
+	     //title
+	     function(x){
+		 var textbox = $j("#filter_Title")
+		 var regex = new RegExp(textbox.val(),'i'); // case insensitive
+		 return (String(x.text).search(regex) != -1)
+             }.bind(this),
+	     //teacher 
+	     function(x){
+		 if ($j("#filter_Teacher").val() == ""){
+		     //this is important.  If there is no text in the teacher filter, classes with no teacher listed
+		     //don't show up without this clause.
+		     //Most fields can't be blank, but we have blank teacher fields in production
+		     return true;
+		 }
+		 var regex = new RegExp($j("#filter_Teacher").val(),'i'); // case insensitive
+		 teachers = x["teachers"];
+		 for (var i = 0; i < teachers.length; i++){
+                     if (String(teachers[i]["text"]).search(regex) != -1) return true;
+		 }
+		 return false;
+             }.bind(this),
+	     //class size
+	     function(x){
+		 var min = $j("#filter_Min-size").val()
+		 if (min == "") min = 0
+		 var max = $j("#filter_Max-size").val()
+		 if (max == "") max = Number.MAX_VALUE
+		 if (x["class_size_max"] >= min && x["class_size_max"] <= max)
+		     return true;
+		 else return false;
+             }.bind(this),
+	     //length
+	     //TODO:  change all the xs to "section" which is actually descriptive
+	     function(x){
+		 var min = $j("#filter_Min-length").val()
+		 if (min == "") min = 0
+		 var max = $j("#filter_Max-length").val()
+		 if (max == "") max = Number.MAX_VALUE
+		 if (x.length_hr >= min && x.length_hr <= max)
+		     return true;
+		 else return false;
+             }.bind(this),
+	     //show rejected
+	     function(x){
+		 //QUESTION  how can I make jquery return just one and not a list
+		 if ($j("#filter_Status")[0].checked) return true;
+		 else return x.status == "10";
+             }.bind(this),
+	     //show scheduled classes
+	     function(x){
+		 //TODO:  styling for scheduled classes
+		 if ($j("#filter_Scheduled")[0].checked) return true;
+		 else return x.blocks.length == 0;
+	     }.bind(this)
+	 ]
+	 $j('#directory-accordion').bind("accordionchange", this.do_search.bind(this))
+         this.directory = directory;
+	 this.directory.filter(this.all_filters.bind(this))
     },
 
     all_filters: function(x){
@@ -261,61 +328,7 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 	return true
     },
 
-    do_search: function(e){
-	if(e.type == "keypress" && e.which !=13){
-	    return;
-	}
-
+    do_search: function(){
 	this.directory.filter(this.all_filters.bind(this))
     },
-
-    get_filter: function(field, textbox){
-        return function(x){	
-	    var regex = new RegExp(textbox.val(),'i'); // case insensitive
-            if (String(x[field]).search(regex) != -1) return true;
-            else return false;
-        }.bind(this);	    
-    },
-
-    get_teacher_filter: function(textbox){
-        return function(x){	
-	    var regex = new RegExp(textbox.val(),'i'); // case insensitive
-	    teachers = x["teachers"];
-	    for (var i = 0; i < teachers.length; i++){
-                if (String(teachers[i]["text"]).search(regex) != -1) return true;
-	    }
-            return false;
-        }.bind(this);	    	    
-    },
-
-    get_status_filter: function(checkbox){
-        return function(x){	
-            if (checkbox.checked) return true;
-            else return x.status == "10";
-        }.bind(this);	    	    	
-    },
-
-    get_length_filter: function(textbox){
-        return function(x){
-	    if (textbox.val() != "") {
-		if (x["length_hr"] == textbox.val())
-		    return true;
-		else return false;
-	    }
-	    return true
-        }.bind(this);	    
-    },
-
-    get_min_max_filter: function(textbox1, textbox2, attr){
-	return function(x){
-	    var min = textbox1.val()
-	    if (min == "") min = 0
-	    var max = textbox2.val()
-	    if (max == "") max = Number.MAX_VALUE
-	    if (x[attr] >= min && x[attr] <= max)
-		    return true;
-	    else return false;
-        }.bind(this);	    
-    
-    }
 }));
