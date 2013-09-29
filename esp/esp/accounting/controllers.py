@@ -258,7 +258,7 @@ class ProgramAccountingController(BaseAccountingController):
         for grant in FinancialAidGrant.objects.filter(request__program=self.program, request__user__in=users):
             grant.finalize()
 
-        if self.program.sibling_discount_tag:
+        if self.program.sibling_discount:
             #   Execute sibling discounts for these users
             for splashinfo in SplashInfo.objects.filter(program=self.program, student__in=users):
                 splashinfo.execute_sibling_discount()
@@ -450,8 +450,8 @@ class IndividualAccountingController(ProgramAccountingController):
         return aid_amount
 
     def amount_siblingdiscount(self):
-        if (not self.program.sibling_discount_tag) or self.program.splashinfo_objects.get(self.user):
-            return self.program.sibling_discount_tag
+        if (not self.program.sibling_discount) or self.program.splashinfo_objects.get(self.user):
+            return self.program.sibling_discount
         else:
             return Decimal('0')
     

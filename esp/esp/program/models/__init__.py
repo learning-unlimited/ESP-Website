@@ -1010,16 +1010,25 @@ class Program(models.Model, CustomFormsLinkModel):
     by_prog_inst.depend_on_row(lambda: DataTree, program_selector)
     by_prog_inst = classmethod(by_prog_inst)
 
-    @property
-    def sibling_discount_tag(self):
+    def _sibling_discount_get(self):
         """
         Memoizes and returns the amount of the sibling_discount Tag, defaulting
         to 0.00.
         """
-        if hasattr(self, "_sibling_discount_tag"):
-            return self._sibling_discount_tag
-        self._sibling_discount_tag = Decimal(Tag.getProgramTag('sibling_discount', program=self, default='0.00'))
-        return self._sibling_discount_tag
+        if hasattr(self, "_sibling_discount"):
+            return self._sibling_discount
+        self._sibling_discount = Decimal(Tag.getProgramTag('sibling_discount', program=self, default='0.00'))
+        return self._sibling_discount
+
+    def _sibling_discount_set(self, value):
+        if value is not None:
+            self._sibling_discount = Decimal(value)
+            Tag.setTag('sibling_discount', target=self, value=self._sibling_discount)
+        else:
+            self._sibling_discount = None
+            Tag.objects.filter(key='sibling_discount', object_id=self.id).delete()
+
+    sibling_discount = property(_sibling_discount_get, _sibling_discount_set)
 
     @property
     def splashinfo_objects(self):
