@@ -14,12 +14,12 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             // set up display
             this.table = $j(".directory");
         
-            // create header
+            // get header
             this.header = $j("#directory-table-header")
 
 	    //TODO:  set up sorting
             $j.each(this.properties, function(key, prop){
-                var td = $j("#directory-header-"+key)
+                var td = $j("#directory-header-"+key).addClass(prop.css)
                 prop.header = td;
                 if (prop.sort) {
                     // enable onclick sorting
@@ -48,19 +48,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             },
 
 	    /* Code to style unapproved classes differently */
-            css: function(x){
-		var default_css = fixed_width(70);
-		var unapproved_css = "color:#ff0000; font-style:italic;";
-		// if we're just calling it for the general properties of the ID td
-		// or if it's approved, return the default css
-		if (!x || x.status == 10) {
-		    return default_css;
-		}
-		// if the class is not approved, apply the unapproved styling to it
-		else {
-		    return default_css + unapproved_css;
-		}
-	    }
+            css: "td_id"
         },
         'Title': {
             get: function(x){ return x.text; },
@@ -69,19 +57,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             },
 	    // css: 'width:400px;'
 	    /* Code to style unapproved classes differently */
-            css: function(x){ 
-		var default_css = 'width:400px;';
-		var unapproved_css = "color:#ff0000; font-style:italic;";
-		// if we're just calling it for the general properties of the ID td
-		// or if it's approved, return the default css
-		if (!x || x.status == 10) {
-		    return default_css;
-		}
-		// if the class is not approved, apply the unapproved styling to it
-		else {
-		    return default_css + unapproved_css;
-		}
-	    }
+            css: "td_title"
         },
         'Teacher': {
             get: function(x) {
@@ -105,19 +81,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
                 return cmp(""+x.section.teachers.map(function(z){return z.text;}), ""+y.section.teachers.map(function(z){return z.text;}));
             },
 	    /* Code to style unapproved classes differently */
-            css: function(x){
-		var default_css = fixed_width(150);
-		var unapproved_css = "color:#ff0000; font-style:italic;";
-		// if we're just calling it for the general properties of the ID td
-		// or if it's approved, return the default css
-		if (!x || x.status == 10) {
-		    return default_css;
-		}
-		// if the class is not approved, apply the unapproved styling to it
-		else {
-		    return default_css + unapproved_css;
-		}
-	    }
+            css: "td_teacher"
         },
         'Length': {
             get: function(x) { return x.length_hr; },
@@ -126,21 +90,8 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             },
 	    // css: 'width:50px;'
 	    /* Code to style unapproved classes differently */
-            css: function(x){
-		//TODO:  factor out the messy thing with min-width and max-width
-		var default_css = fixed_width(50);
-		var unapproved_css = "color:#ff0000; font-style:italic;";
-		// if we're just calling it for the general properties of the ID td
-		// or if it's approved, return the default css
-		if (!x || x.status == 10) {
-		    return default_css;
-		}
-		// if the class is not approved, apply the unapproved styling to it
-		else {
-		    return default_css + unapproved_css;
-		}
-	    }
-        }
+            css: "td_length"
+          }
         },
         
         // filter active rows
@@ -222,8 +173,11 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
 	    
             this.tds = {};
             $j.each(this.directory.properties,function(index, prop){
-                var td = $j('<td style="' + (prop.css(section)||'') + '"></td>');
+                var td = $j('<td></td>').addClass(prop.css);
 		td.append(prop.get(section));
+		if (section.status != 10){
+		    td.addClass("unapproved")
+		}
                 this.tds[index] = td;
                 this.el.append(td);
             }.bind(this));
