@@ -233,3 +233,23 @@ background: yellow;
 .garbage.dd-hover {
 background: red !important;
 }
+
+.unapproved {
+color:#ff0000; font-style:italic;
+}
+
+.td_length {
+min-width:50px;  max-width:50px;
+}
+
+.td_title {
+width:400px;
+}
+
+.td_teacher {
+min-width:150px; max-width:150px;
+}
+
+.td_id {
+min-width:70px; max-width:70px;
+}
