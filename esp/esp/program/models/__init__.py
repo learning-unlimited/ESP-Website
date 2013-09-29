@@ -1009,8 +1009,30 @@ class Program(models.Model, CustomFormsLinkModel):
         return {}
     by_prog_inst.depend_on_row(lambda: DataTree, program_selector)
     by_prog_inst = classmethod(by_prog_inst)
-    
-    
+
+    @property
+    def sibling_discount_tag(self):
+        """
+        Memoizes and returns the amount of the sibling_discount Tag, defaulting
+        to 0.00.
+        """
+        if hasattr(self, "_sibling_discount_tag"):
+            return self._sibling_discount_tag
+        self._sibling_discount_tag = Decimal(Tag.getProgramTag('sibling_discount', program=self, default='0.00'))
+        return self._sibling_discount_tag
+
+    @property
+    def splashinfo_objects(self):
+        """
+        Memoizes and returns the dictionary of students who have sibling
+        discounts for this program.
+        """
+        if hasattr(self, "_splashinfo_objects"):
+            return self._splashinfo_objects
+        self._splashinfo_objects = dict(SplashInfo.objects.filter(program=self, siblingdiscount=True).distinct().values_list('student', 'siblingdiscount'))
+        return self._splashinfo_objects
+
+
 class SplashInfo(models.Model):
     """ A model that can be used to track additional student preferences specific to
         a program.  Stanford has used this for lunch selection and a sibling discount.

@@ -250,28 +250,6 @@ class ProgramAccountingController(BaseAccountingController):
     def all_accounts(self):
         return Account.objects.filter(program=self.program)
 
-    @property
-    def sibling_discount_tag(self):
-        """
-        Caches and returns the amount of the sibling_discount Tag, defaulting
-        to 0.00.
-        """
-        if hasattr(self, "_sibling_discount_tag"):
-            return self._sibling_discount_tag
-        self._sibling_discount_tag = Decimal(Tag.getProgramTag('sibling_discount', program=self.program, default='0.00'))
-        return self._sibling_discount_tag
-
-    @property
-    def splashinfo_objects(self):
-        """
-        Caches and returns the dictionary of students who have sibling
-        discounts for this program.
-        """
-        if hasattr(self, "_splashinfo_objects"):
-            return self._splashinfo_objects
-        self._splashinfo_objects = dict(SplashInfo.objects.filter(program=self.program, siblingdiscount=True).distinct().values_list('student', 'siblingdiscount'))
-        return self._splashinfo_objects
-
     def execute_pending_transfers(self, users):
         """ "Close the books" for this program, with the selected users.
             Typically this will be all students that attended the program. """
@@ -280,7 +258,7 @@ class ProgramAccountingController(BaseAccountingController):
         for grant in FinancialAidGrant.objects.filter(request__program=self.program, request__user__in=users):
             grant.finalize()
 
-        if self.sibling_discount_tag:
+        if self.program.sibling_discount_tag:
             #   Execute sibling discounts for these users
             for splashinfo in SplashInfo.objects.filter(program=self.program, student__in=users):
                 splashinfo.execute_sibling_discount()
@@ -472,8 +450,8 @@ class IndividualAccountingController(ProgramAccountingController):
         return aid_amount
 
     def amount_siblingdiscount(self):
-        if (not self.sibling_discount_tag) or self.splashinfo_objects.get(self.user):
-            return self.sibling_discount_tag
+        if (not self.program.sibling_discount_tag) or self.program.splashinfo_objects.get(self.user):
+            return self.program.sibling_discount_tag
         else:
             return Decimal('0')
     
