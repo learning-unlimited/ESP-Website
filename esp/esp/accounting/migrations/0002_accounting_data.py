@@ -15,7 +15,7 @@ class Migration(SchemaMigration):
         gac = GlobalAccountingController()
         gac.setup_accounts()
         
-        for program in Program.objects.all().order_by('id'):
+        for program in orm['program.Program'].objects.all().order_by('id'):
             pac = ProgramAccountingController(program)
             pac.setup_accounts()
 

@@ -44,7 +44,6 @@ Back to teacher reg
 <tr>
   <th>Name</th>
   <th>Grade</th>
-  <th>Time applied for your class</th>
   <th>Finished App?</th>
   <th>Review Date/Time</th>
   <th>Review</th>
@@ -58,9 +57,6 @@ Back to teacher reg
     </td>
     <td>
    {{ student.getGrade }}
-    </td>
-    <td>
-    {% for bit in student.added_userbits %}{{ bit.startdate|date:"n/d/y gA" }}: {{ bit.verb.friendly_name }}{% if not forloop.last %}<br />{% endif %}{% endfor %}
     </td>
     <td>
       <center>{% if student.app_completed %}<b>Yes</b>{% else %}<b>No</b>{% endif %}</center>

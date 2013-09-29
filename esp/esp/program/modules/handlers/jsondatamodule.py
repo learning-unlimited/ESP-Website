@@ -40,7 +40,6 @@ from esp.program.models import SplashInfo
 from esp.users.models import UserAvailability
 from esp.cal.models import Event
 from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories
-from esp.program.models.class_ import open_class_category
 from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
 from esp.datatree.models import *
 from esp.dbmail.models import MessageRequest
@@ -180,6 +179,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'parent_class__title': 'title',
             'parent_class__id': 'parent_class',
             'parent_class__category__symbol': 'category',
+            'parent_class__category__id': 'category_id',
             'parent_class__grade_max': 'grade_max',
             'parent_class__grade_min': 'grade_min',
             'enrolled_students': 'num_students'})
@@ -192,6 +192,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'status',
                 'parent_class__id',
                 'parent_class__category__symbol',
+                'parent_class__category__id',
                 'parent_class__grade_max',
                 'parent_class__grade_min',
                 'parent_class__title',
@@ -344,6 +345,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             'sections': [x.id for x in cls.sections.all()],
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
+            'location': ", ".join(cls.prettyrooms()),
             'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
         }
 
@@ -584,7 +586,7 @@ len(teachers[key])))
         Q_categories = Q(program=prog)
         crmi = prog.getModuleExtension('ClassRegModuleInfo')
         if crmi.open_class_registration:
-            Q_categories |= Q(pk=open_class_category().pk)
+            Q_categories |= Q(pk=prog.open_class_category.pk)
         #   Introduce a separate query to get valid categories, since the single query seemed to introduce duplicates
         program_categories = ClassCategories.objects.filter(Q_categories).distinct().values_list('id', flat=True)
         annotated_categories = ClassCategories.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'category').distinct()
