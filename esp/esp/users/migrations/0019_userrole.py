@@ -4,6 +4,7 @@ from south.db import db
 from south.v2 import DataMigration
 from django.db import models
 from esp.users.models import ESPUser, UserBit
+from esp.users.models import install_groups
 from django.contrib.auth.models import Group
 
 class Migration(DataMigration):
@@ -11,23 +12,34 @@ class Migration(DataMigration):
     def forwards(self, orm):
         # First, create a Group for every verb name
         role_verbs = orm['datatree.DataTree'].objects.filter(parent__uri="V/Flags/UserRole")
-        for role in role_verbs:
-            g = Group.objects.get_or_create(name=role.name)
+        role_names = list(role_verbs.values_list('name', flat=True).distinct())
+        install_groups(role_names)
 
-        #   Ensure that a minimal set of Groups are present
-        for role in ['Student', 'Teacher', 'Administrator']:
-            Group.objects.get_or_create(name=role)
+        # Cache the groups so we don't have to keep fetching them from the DB.
+        groups = dict([(g.name, g) for g in Group.objects.all()])
 
         # Now, for all user roles applied to users, add those users to the appropriate Group
+        # Do this in batched inserts: for each role, filter for all users with
+        # that role, and add them all at once to the Group.
         role_bits = UserBit.objects.filter(verb__parent__uri="V/Flags/UserRole", qsc__uri="Q").exclude(user=None).filter(enddate__gte=datetime.datetime.now())
-        for bit in role_bits:
-            g,c = Group.objects.get_or_create(name=bit.verb.name)
-            bit.user.groups.add(g)
+        for role_name in role_names:
+            user_ids = list(role_bits.filter(verb__name=role_name).values_list('user', flat=True).distinct())
+            groups[role_name].user_set.add(*user_ids)
+
+        # Adds Administrators who might not have had the UserRole.
+        # The enddate filter is to prevent the migration from adding
+        # Administrators with an Administer privilege that is set to expire,
+        # since membership in the Administrator group has no expiration.
+        # Instead, an Administer privilege should be given in a later migration.
+        admin_role = groups["Administrator"]
+        admin_bits = UserBit.objects.filter(verb__uri="V/Administer", qsc__uri="Q", user__isnull=False, enddate__gte=datetime.datetime(3000,1,1))
+        admin_ids = list(admin_bits.values_list('user', flat=True).distinct())
+        admin_role.user_set.add(*admin_ids)
 
     def backwards(self, orm):
         "Write your backwards methods here."
         for user in orm.ESPUser.objects.all():
-            user.groups.delete()
+            user.groups.clear()
 
     models = {
         'auth.group': {
