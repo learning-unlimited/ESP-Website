@@ -1802,7 +1802,7 @@ class StudentSubjectInterest(ExpirableModel):
     user = AjaxForeignKey(ESPUser)
 
     def __unicode__(self):
-        return u'%s %s in %s' % (self.user, self.relationship, self.section)
+        return u'%s interest in %s' % (self.user, self.subject)
     
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
