@@ -1793,6 +1793,16 @@ class StudentRegistration(ExpirableModel):
     
     def __unicode__(self):
         return u'%s %s in %s' % (self.user, self.relationship, self.section)
+
+class StudentSubjectInterest(ExpirableModel):
+    """
+    Model indicating a student interest in a class section.
+    """
+    subject = AjaxForeignKey('ClassSubject')
+    user = AjaxForeignKey(ESPUser)
+
+    def __unicode__(self):
+        return u'%s interest in %s' % (self.user, self.subject)
     
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
