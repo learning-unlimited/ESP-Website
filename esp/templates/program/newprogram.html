@@ -77,15 +77,20 @@ Use a past program as a template:
      <td> {{ field }} </td>
      {% else %}
     {% if field.label  %}
-    <td>{{ field.label }} </td>
+    <td style="vertical-align:text-top;">{{ field.label }} </td>
     {% endif %}
      {% if field %}
       <td>  {{ field }} 
     {% endif %}
+    {% if field.help_text %}
+      <br/>
+      <span> {{ field.help_text }} </span>
+    {% endif %}
     {% for error in  field.errors %}
     <br/>
-     <span> {{ error }} </span> </td>
+     <span> {{ error }} </span>
     {% endfor %}
+     </td>
      </tr>
       
     {% endif %}
