@@ -1025,7 +1025,7 @@ class Program(models.Model, CustomFormsLinkModel):
             self._sibling_discount = Decimal(value)
             Tag.setTag('sibling_discount', target=self, value=self._sibling_discount)
         else:
-            self._sibling_discount = None
+            self._sibling_discount = Decimal('0.00')
             Tag.objects.filter(key='sibling_discount', object_id=self.id).delete()
 
     sibling_discount = property(_sibling_discount_get, _sibling_discount_set)
