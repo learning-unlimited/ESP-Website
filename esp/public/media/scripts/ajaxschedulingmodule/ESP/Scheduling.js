@@ -97,8 +97,6 @@ ESP.Scheduling = function(){
 	$j('.directory-table-wrapper').css("max-width", window.innerWidth - 50);
 	$j('.directory-table-wrapper').css("min-width", 50);
 
-	console.log("window height:")
-	console.log(window_height)
 	$j('#directory-accordion-target').height(window_height);
 	$j("#directory-target").css("max-width", window.innerWidth-$j('.matrix').width() - 60);
 	$j("#directory-target").css("min-width", 50);
@@ -392,9 +390,6 @@ ESP.Scheduling = function(){
 	$j.getJSON('ajax_change_log', {'last_fetched_time': ESP.Scheduling.last_fetched_time}, function(d, status) {
 	    //if we need to reload
 	    if (d['other']){
-		console.log("other")
-		console.log(d['other'][0])
-		console.log(d['other'][0]['command'])
 		if (d['other'][0]['command'] == "reload"){
 		    console.log("reloading")
 		    load()
@@ -460,11 +455,11 @@ ESP.Scheduling = function(){
     var validate_block_assignment = function(block, section, str_err) {
         // check status
         if (block.status != ESP.Scheduling.Resources.BlockStatus.AVAILABLE) {
-            // console.log("Room " + block.room + " at " + block.time + " is not available"); 
+            //console.log("Room " + block.room + " at " + block.time + " is not available"); 
             return false;
         }
 
-        var time = block.time;
+        var time = block.time;	
 
         for (var i = 0; i < section.teachers.length; i++) {
             var valid = false;
@@ -477,8 +472,8 @@ ESP.Scheduling = function(){
             }
             if (!valid)
             {
-            // console.log("Teacher '" + section.teachers[i].text + "' not available at time '" + time.text + "'");
-            return (str_err ? "Teacher '" + section.teachers[i].text + "' not available at time '" + time.text + "'" : false);
+		//console.log("Teacher '" + section.teachers[i].text + "' not available at time '" + time.text + "'");
+		return (str_err ? "Teacher '" + section.teachers[i].text + "' not available at time '" + time.text + "'" : false);
             }
         }
 
@@ -507,7 +502,7 @@ ESP.Scheduling = function(){
                 for (var k = 0; k < other_section.blocks.length; k++) {
                     var other_block = other_section.blocks[k];
                     if (other_block.time == time) {
-                        //console.log("Teacher '" + teacher.text + "' cannot teach classes '" + section.code + "' and '" + other_section.code + "' simultaneously ('" + time.text + "')");
+                        console.log("Teacher '" + teacher.text + "' cannot teach classes '" + section.code + "' and '" + other_section.code + "' simultaneously ('" + time.text + "')");
                         return (str_err ? ("Teacher '" + teacher.text + "' cannot teach classes '" + section.code + "' and '" + other_section.code + "' simultaneously ('" + time.text + "')") : false);
                     }
                     if (other_block.seq == block || block.seq == other_block) {
@@ -515,7 +510,7 @@ ESP.Scheduling = function(){
                         if (other_class_bldg.length > 1 && other_class_bldg[0].length < 4) {
                             other_class_bldg = other_class_bldg[0];
                             if (other_class_bldg != class_bldg) {
-                                //console.log("Teacher '" + teacher.text + "' running between bldg " + class_bldg + " (" + block.time.text + ") and bldg " + other_class_bldg + " (" + other_block.time.text + ")");
+                                console.log("Teacher '" + teacher.text + "' running between bldg " + class_bldg + " (" + block.time.text + ") and bldg " + other_class_bldg + " (" + other_block.time.text + ")");
                                 return (str_err ? ("Teacher '" + teacher.text + "' running between bldg " + class_bldg + " (" + block.time.text + ") and bldg " + other_class_bldg + " (" + other_block.time.text + ")") : false);
                             }
                         }
@@ -576,22 +571,15 @@ ESP.Scheduling = function(){
     };
     
     var validate_start_time = function(time, section, str_err) {
-	var length = 0;
-	if (section.blocks && (section.blocks.length > 0)) {
-	    length = section.blocks.length;
-	}
-	else if (section.length_hr > 0) {
-	    length = Math.ceil(section.length_hr);
-	}
-	else {
+	var length = Math.ceil(section.length_hr);
+	if (!length || length == 0){
 	    return (str_err ? "No length defined!" : false)
 	}
-
 	    
         //  Check for not scheduling across a contiguous group of lunch periods - check start block only
         var test_time = time;
         var covered_lunch_start = false;
-	
+
 	// Start with the proposed start time and iterate over all time blocks the section will need
 	for (var i = 0; i < length; i++)
 	{
@@ -608,6 +596,8 @@ ESP.Scheduling = function(){
 	    
 	    //  If this is the last timeslot of the program, don't sweat it... this assignment
 	    //  is invalid anyway.
+	    //TODO!!!!!!!!!!!!!
+	    //  This generally does not work correctly when you have classes with non-integer hour lengths.
 	    if (!test_time.seq && i != length - 1)
 	    {
 		return (str_err ? "Section " + section.code + " has an invalid assignment" : false);
@@ -634,6 +624,7 @@ ESP.Scheduling = function(){
 	fetch_updates: fetch_updates,
 	//data: data
     };
+
     return self;
 }();
 
