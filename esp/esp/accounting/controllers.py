@@ -456,7 +456,7 @@ class IndividualAccountingController(ProgramAccountingController):
         return aid_amount
 
     def amount_siblingdiscount(self):
-        if (not self.program.sibling_discount) or self.program.splashinfo_objects.get(self.user):
+        if (not self.program.sibling_discount) or self.program.splashinfo_objects.get(self.user.id):
             return self.program.sibling_discount
         else:
             return Decimal('0')
