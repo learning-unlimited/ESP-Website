@@ -12,6 +12,11 @@ from reversion.models import Version, ContentType
 
 class Migration(SchemaMigration):
 
+	#   Require Reversion tables to be installed (up to the latest version we have)
+	depends_on = (
+		("reversion", "0005_auto__add_field_revision_manager_slug"),
+	)
+	
 	def forwards(self, orm):
 		print "Running reversion.management.commands.createinitialrevisions (this could take several minutes)..."
 		app = models.get_app('qsd')
