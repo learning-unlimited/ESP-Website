@@ -12,6 +12,7 @@
 <link rel="stylesheet" type="text/css" href="/media/styles/tooltips.css" />
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 <link rel="stylesheet" type="text/css" href="/media/styles/userview.css" />
+<script type="text/javascript" src="/media/scripts/clippy.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -25,18 +26,46 @@
 </div>
 
 <table class="dottedtable">
-<tr><td class="key">Name</td><td>{{ user.first_name }} {{ user.last_name }}</td></tr>
-<tr><td class="key">Username</td><td>{{ user.username }}</td></tr>
-<tr><td class="key">User ID</td><td>{{ user.id }}</td></tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ui-name"></i>Name</td>
+  <td id="ui-name">{{ user.first_name }} {{ user.last_name }}</td>
+</tr>
+<tr>
+    <td class="key"><i class="clippy" data-clippy-target="ui-username"></i>Username</td>
+    <td id="ui-username">{{ user.username }}</td>
+</tr>
+<tr>
+    <td class="key"><i class="clippy" data-clippy-target="ui-id"></i>User ID</td>
+    <td id="ui-id">{{ user.id }}</td>
+</tr>
 {% if profile.contact_user %}
-<tr><td class="key">E-mail</td><td>{{ profile.contact_user.e_mail }}</td></tr>
-<tr><td class="key">Day Phone</td><td>{{ profile.contact_user.phone_day }}</td></tr>
-<tr><td class="key">Cell Phone</td><td>{{ profile.contact_user.cell_day }}</td></tr>
-<tr><td class="key">Address</td><td>{{ profile.contact_user.address_street }}<br />{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {{ profile.contact_user.address_zip }}{% if profile.contact_user.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ui-email"></i>E-mail</td>
+  <td id="ui-email">{{ profile.contact_user.e_mail }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ui-dayphone"></i>Day Phone</td>
+  <td id="ui-dayphone">{{ profile.contact_user.phone_day }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ui-cellphone"></i>Cell Phone</td>
+  <td id="ui-cellphone">{{ profile.contact_user.cell_day }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ui-address"></i>Address</td>
+  <td id="ui-address">{{ profile.contact_user.address_street }}<br />{{ profile.contact_user.address_city }}, {{ profile.contact_user.address_state }} {{ profile.contact_user.address_zip }}{% if profile.contact_user.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td>
+</tr>
 {% else %}
-<tr><td class="key">E-mail</td><td>{{ user.email }}</td></tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ui-email"></i>E-mail</td>
+  <td id="ui-email">{{ user.email }}</td>
+</tr>
 <tr><td colspan="2"><font color="red">User account not fully created; please fill out a profile!</font></td></tr>
 {% endif %}
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ui-lastupdate"></i>Profile Last Updated</td>
+  <td id="ui-lastupdate">{{ profile.last_ts|date }}</td>
+</tr>
 </table>
 
 <div id="div_usertype_info">
@@ -47,42 +76,87 @@
 {% if profile.student_info %}
 <h2>Student Info</h2>
 <table class="dottedtable long">
-<tr><td class="key">School</td><td>{{ profile.student_info.school }}</td></tr>
-<tr><td class="key">Graduation Year</td><td>{{ profile.student_info.graduation_year }} ({{ user.getGrade }}th Grade)<br />
-<form action="/manage/userview/" method="get" name="change_grade">
-{{ change_grade_form.graduation_year }}
-<input type="hidden" name="username" value="{{ user.username }}" />
-<input type="submit" value="Change" />
-</form></td></tr>
-<tr><td class="key">Date of Birth</td><td>{{ profile.student_info.dob|date }}</td></tr>
-<tr><td class="key">Applied to be Student Rep?</td><td>{% if profile.student_info.studentrep %}<span class="yes"><a class="tooltip">Yes<span>{{ profile.student_info.studentrep_expl }}</span></a></span>{% else %}<span class="no">No</span>{% endif %}</td></tr>
-<tr><td class="key">How Heard About ESP?</td><td>{% ifnotequal profile.student_info.heard_about "" %}<span>{{ profile.student_info.heard_about }}</span>{% else %}(blank){% endifnotequal %}</td><tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="si-school"></i>School</td>
+  <td id="si-school">{{ profile.student_info.school }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="si-gradyear"></i>Graduation Year</td>
+  <td><span id="si-gradyear">{{ profile.student_info.graduation_year }}</span> ({{ user.getGrade }}th Grade)<br />
+  <form action="/manage/userview/" method="get" name="change_grade">
+  {{ change_grade_form.graduation_year }}
+  <input type="hidden" name="username" value="{{ user.username }}" />
+  <input type="submit" value="Change" />
+  </form></td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="si-dob"></i>Date of Birth</td>
+  <td id="si-dob">{{ profile.student_info.dob|date }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="si-rep"></i>Applied to be Student Rep?</td>
+  <td>{% if profile.student_info.studentrep %}<span class="yes"><a class="tooltip"><span id="si-rep">Yes</span><span>{{ profile.student_info.studentrep_expl }}</span></a></span>{% else %}<span class="no"><span id="si-rep">No</span></span>{% endif %}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="si-howheard"></i>How Heard About ESP?</td>
+  <td>{% ifnotequal profile.student_info.heard_about "" %}<span id="si-howheard">{{ profile.student_info.heard_about }}</span>{% else %}(blank){% endifnotequal %}</td>
+<tr>
 </table>
 {% endif %}
 
 {% if profile.teacher_info %}
 <h2>Teacher Info</h2>
 <table class="dottedtable long">
-<tr><td class="key">Graduation Year</td><td>{{ profile.teacher_info.graduation_year }}</td></tr>
-<tr><td class="key">College/Employer</td><td>{{ profile.teacher_info.college }}</td></tr>
-<tr><td class="key">Major</td><td>{{ profile.teacher_info.major }}</td></tr>
-<tr><td class="key">Shirt Size/Type</td><td>{{ profile.teacher_info.shirt_size }} {{ profile.teacher_info.shirt_type }}</td></tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ti-gradyear"></i>Graduation Year</td>
+  <td id="ti-gradyear">{{ profile.teacher_info.graduation_year }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ti-school"></i>College/Employer</td>
+  <td id="ti-school">{{ profile.teacher_info.college }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ti-major"></i>Major</td>
+  <td id="ti-major">{{ profile.teacher_info.major }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ti-shirt"></i>Shirt Size/Type</td>
+  <td id="ti-shirt">{{ profile.teacher_info.shirt_size }} {{ profile.teacher_info.shirt_type }}</td>
+</tr>
 </table>
 {% endif %}
 
 {% if profile.guardian_info %}
 <table class="dottedtable long">
-<tr><td class="key">Year Finished School</td><td>{{ profile.guardian_info.year_finished }}</td></tr>
-<tr><td class="key">Number of Children in ESP</td><td>{{ profile.guardian_info.num_kids }}</td></tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="gi-gradyear"></i>Year Finished School</td>
+  <td id="gi-gradyear">{{ profile.guardian_info.year_finished }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="gi-children"></i>Number of Children in ESP</td>
+  <td id="gi-children">{{ profile.guardian_info.num_kids }}</td>
+</tr>
 </table>
 {% endif %}
 
 {% if profile.educator_info %}
 <table class="dottedtable long">
-<tr><td class="key">Subjects Taught</td><td>{{ profile.educator_info.subject_taught }}</td></tr>
-<tr><td class="key">Grades Taught</td><td>{{ profile.educator_info.grades_taught }}</td></tr>
-<tr><td class="key">School</td><td>{{ profile.educator_info.school }}</td></tr>
-<tr><td class="key">Position</td><td>{{ profile.educator_info.position }}></td></tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ei-subjects"></i>Subjects Taught</td>
+  <td id="ei-subjects">{{ profile.educator_info.subject_taught }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ei-grades"></i>Grades Taught</td>
+  <td id="ei-grades">{{ profile.educator_info.grades_taught }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ei-school"></i>School</td>
+  <td id="ei-school">{{ profile.educator_info.school }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ei-position"></i>Position</td>
+  <td id="ei-position">{{ profile.educator_info.position }}></td>
+</tr>
 </table>
 {% endif %}
 
@@ -91,11 +165,26 @@
 <h2>Emergency Contact Info</h2>
 {% if profile.contact_emergency %}{# We want to explicitly say "no contact info here!" if we don't have any, so that, in an emergency, folks don't start burning admin power digging through the database for contact info that we don't have #}
 <table class="dottedtable long">
-<tr><td class="key">Name</td><td>{{ profile.contact_emergency.first_name }} {{ profile.contact_emergency.last_name }}</td></tr>
-<tr><td class="key">E-mail</td><td>{{ profile.contact_emergency.e_mail }}</td></tr>
-<tr><td class="key">Day Phone</td><td>{{ profile.contact_emergency.phone_day }}</td></tr>
-<tr><td class="key">Cell Phone</td><td>{{ profile.contact_emergency.phone_cell }}</td></tr>
-<tr><td class="key">Address</td><td>{{ profile.contact_emergency.address_street }}<br />{{ profile.contact_emergency.address_city }}, {{ profile.contact_emergency.address_state }} {{ profile.contact_emergency.address_zip }}{% if profile.contact_emergency.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ec-name"></i>Name</td>
+  <td id="ec-name">{{ profile.contact_emergency.first_name }} {{ profile.contact_emergency.last_name }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ec-email"></i>E-mail</td>
+  <td id="ec-email">{{ profile.contact_emergency.e_mail }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ec-dayphone"></i>Day Phone</td>
+  <td id="ec-dayphone">{{ profile.contact_emergency.phone_day }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ec-cellphone"></i>Cell Phone</td>
+  <td id="ec-cellphone">{{ profile.contact_emergency.phone_cell }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="ec-address"></i>Address</td>
+  <td id="ec-address">{{ profile.contact_emergency.address_street }}<br />{{ profile.contact_emergency.address_city }}, {{ profile.contact_emergency.address_state }} {{ profile.contact_emergency.address_zip }}{% if profile.contact_emergency.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td>
+</tr>
 </table>
 {% else %}
 <em>(None specified)</em>
@@ -105,11 +194,26 @@
 {% if profile.contact_guardian %}
 <h2>Parent/Guardian Contact Info</h2>
 <table class="dottedtable long">
-<tr><td class="key">Name</td><td>{{ profile.contact_guardian.first_name }} {{ profile.contact_guardian.last_name }}</td></tr>
-<tr><td class="key">E-mail</td><td>{{ profile.contact_guardian.e_mail }}</td></tr>
-<tr><td class="key">Day Phone</td><td>{{ profile.contact_guardian.phone_day }}</td></tr>
-<tr><td class="key">Cell Phone</td><td>{{ profile.contact_guardian.phone_cell }}</td></tr>
-<tr><td class="key">Address</td><td>{{ profile.contact_guardian.address_street }}<br />{{ profile.contact_guardian.address_city }}, {{ profile.contact_guardian.address_state }} {{ profile.contact_guardian.address_zip }}{% if profile.contact_guardian.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td></tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="pgc-name"></i>Name</td>
+  <td id="pgc-name">{{ profile.contact_guardian.first_name }} {{ profile.contact_guardian.last_name }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="pgc-email"></i>E-mail</td>
+  <td id="pgc-email">{{ profile.contact_guardian.e_mail }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="pgc-dayphone"></i>Day Phone</td>
+  <td id="pgc-dayphone">{{ profile.contact_guardian.phone_day }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="pgc-cellphone"></i>Cell Phone</td>
+  <td id="pgc-cellphone">{{ profile.contact_guardian.phone_cell }}</td>
+</tr>
+<tr>
+  <td class="key"><i class="clippy" data-clippy-target="pgc-address"></i>Address</td>
+  <td id="pgc-address">{{ profile.contact_guardian.address_street }}<br />{{ profile.contact_guardian.address_city }}, {{ profile.contact_guardian.address_state }} {{ profile.contact_guardian.address_zip }}{% if profile.contact_guardian.undeliverable %}<br /><font color="red">Mail has bounced!</font>{% endif %}</td>
+</tr>
 </table>
 {% endif %}
 
