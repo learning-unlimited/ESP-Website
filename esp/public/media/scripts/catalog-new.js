@@ -101,14 +101,7 @@ var CatalogViewModel = function () {
     self.classes = ko.observable({});
     self.sections = ko.observable({});
     self.teachers = ko.observable({});
-    self.classesArray = ko.computed(function () {
-        var ret = [];
-        var classes = self.classes();
-        for (var key in classes) {
-            ret.push(classes[key]);
-        }
-        return ret;
-    });
+    self.classesArray = ko.observableArray([]);
 
     self.search = ko.observable("");
     self.search.subscribe(function () {
@@ -148,6 +141,22 @@ var CatalogViewModel = function () {
             data.teachers[key] = new Teacher(data.teachers[key], self);
         }
         self.teachers(data.teachers);
+        // update classesArray
+        var classesQueue = [];
+        for (var key in data.classes) {
+            classesQueue.push(data.classes[key]);
+        }
+        classesQueue.reverse();
+        // add classes to the UI not-all-at-once so as to not hang the browser
+        (function dequeueClass () {
+            if (classesQueue.length > 0) {
+                var t = Date.now();
+                self.classesArray.push.apply(self.classesArray,
+                                             classesQueue.splice(-20).reverse());
+                var dt = Date.now() - t;
+                setTimeout(dequeueClass, dt);
+            }
+        })();
     });
 
     var getDirtyInterested = function () {
