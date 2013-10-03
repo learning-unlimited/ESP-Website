@@ -505,9 +505,14 @@ class ProgramFrameworkTest(TestCase):
         from esp.qsd.models import QuasiStaticData
         from esp.web.models import NavBarCategory
         from datetime import datetime, timedelta
+        from esp.program.modules.models import install as program_modules_install
+        
+        #   Force Datatree to not use transactions
+        import esp.datatree.sql.set_isolation_level
+        esp.datatree.sql.set_isolation_level.DISABLE_TRANSACTIONS = True
 
-        user_role_setup()
-
+        program_modules_install()
+        
         #   Default parameters
         settings = {'num_timeslots': 3,
                     'timeslot_length': 50,
@@ -520,13 +525,13 @@ class ProgramFrameworkTest(TestCase):
                     'sections_per_class': 1,
                     'num_students': 10,
                     'num_admins': 1,
-                    'modules': [x.id for x in ProgramModule.objects.all()],
+                    'modules':[x.id for x in ProgramModule.objects.all()],
                     'program_type': 'TestProgram',
                     'program_instance_name': '2222_Summer',
                     'program_instance_label': 'Summer 2222',
                     'start_time': datetime(2222, 7, 7, 7, 5),
                     }
-        
+
         #   Override parameters explicitly
         for key in settings:
             if key in kwargs:
@@ -591,7 +596,7 @@ class ProgramFrameworkTest(TestCase):
             print pcf.data
             print pcf.errors
             print prog_form_values
-            raise Exception()
+            raise Exception("Program form creation errors")
         
         temp_prog = pcf.save(commit=False)
         (perms, modules) = prepare_program(temp_prog, pcf.cleaned_data)
