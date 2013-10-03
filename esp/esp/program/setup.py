@@ -75,7 +75,7 @@ def prepare_program(program, data):
        
     return perms, modules
 
-def commit_program(prog, perms, modules, cost=0):
+def commit_program(prog, perms, modules, cost=0, sibling_discount=None):
     #   This function implements the changes suggested by prepare_program.
     
     def gen_perm(tup):
@@ -110,5 +110,6 @@ def commit_program(prog, perms, modules, cost=0):
     pac = ProgramAccountingController(prog)
     pac.setup_accounts()
     pac.setup_lineitemtypes(cost)
+    prog.sibling_discount = sibling_discount # property saves Tag, no explicit save needed
 
     return prog
