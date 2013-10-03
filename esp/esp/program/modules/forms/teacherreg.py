@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
+from django.core.exceptions import ObjectDoesNotExist
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
@@ -362,7 +363,11 @@ class TeacherEventSignupForm(FormWithRequiredCss):
             self.fields['training'].widget = forms.HiddenInput()
     
     def clean_interview(self):
-        data = Event.objects.get(id=self.cleaned_data['interview'])
+        event_id = self.cleaned_data['interview']
+        if type(event_id) == int:
+            data = Event.objects.get(id=event_id)
+        else:
+            return None
         if not data:
             return data
         if not self._slot_is_available(data):
@@ -370,4 +375,8 @@ class TeacherEventSignupForm(FormWithRequiredCss):
         return data
 
     def clean_training(self):
-        return Event.objects.get(id=self.cleaned_data['training'])
+        event_id = self.cleaned_data['training']
+        if type(event_id) == int:
+            return Event.objects.get(id=self.cleaned_data['training'])
+        else:
+            return None
