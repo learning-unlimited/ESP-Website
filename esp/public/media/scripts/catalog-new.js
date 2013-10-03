@@ -128,12 +128,24 @@ var CatalogViewModel = function () {
         self.loading(false);
         // update classes
         for (var key in data.classes) {
-            data.classes[key] = new ClassSubject(data.classes[key], self);
+            if (data.classes[key].status > 0) {
+                data.classes[key] = new ClassSubject(data.classes[key], self);
+            }
+            else {
+                // remove unapproved classes
+                delete data.classes[key];
+            }
         }
         self.classes(data.classes);
         // update sections
         for (var key in data.sections) {
-            data.sections[key] = new ClassSection(data.sections[key], self);
+            if (data.sections[key].status > 0) {
+                data.sections[key] = new ClassSection(data.sections[key], self);
+            }
+            else {
+                // remove unapproved sections
+                delete data.sections[key];
+            }
         }
         self.sections(data.sections);
         // update teachers
