@@ -364,19 +364,17 @@ class TeacherEventSignupForm(FormWithRequiredCss):
     
     def clean_interview(self):
         event_id = self.cleaned_data['interview']
-        if type(event_id) == int:
+        try:
             data = Event.objects.get(id=event_id)
-        else:
+        except ValueError:
             return None
-        if not data:
-            return data
         if not self._slot_is_available(data):
             raise forms.ValidationError('That time is taken; please select a different one.')
         return data
 
     def clean_training(self):
         event_id = self.cleaned_data['training']
-        if type(event_id) == int:
-            return Event.objects.get(id=self.cleaned_data['training'])
-        else:
+        try:
+            return Event.objects.get(id=event_id)
+        except ValueError:
             return None
