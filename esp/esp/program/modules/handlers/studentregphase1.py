@@ -28,24 +28,17 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+
+import datetime
+import json
+
 from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade
-from esp.web.util                import render_to_response
-# from django                      import forms
-# from django.http                 import HttpResponseRedirect, HttpResponse
-# from django.template.loader      import render_to_string
-# from esp.cal.models              import Event
+from esp.program.models          import ClassSubject, RegistrationType, StudentSubjectInterest
 from esp.users.models            import User, ESPUser, UserAvailability
-# from esp.middleware              import ESPError
-# from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
-# from esp.datatree.models         import DataTree
-# from datetime                    import datetime, timedelta
-# from django.utils                import simplejson
-# from collections                 import defaultdict
-# from esp.cache                   import cache_function
-# from uuid                        import uuid4 as get_uuid
+from esp.web.util                import render_to_response
+from django.core.exceptions      import ObjectDoesNotExist
+from django.http                 import HttpResponse, HttpResponseBadRequest
 from django.db.models.query      import Q
-# from django.views.decorators.cache import cache_control
-# from esp.middleware.threadlocalrequest import get_current_request
     
 class StudentRegPhase1(ProgramModuleObj):
 
@@ -77,6 +70,98 @@ class StudentRegPhase1(ProgramModuleObj):
     @needs_student
     def studentreg_1(self, request, tl, one, two, module, extra, prog):
         return render_to_response(self.baseDir() + 'studentreg_1.html', request, {})
+
+    @aux_call
+    @needs_student
+    def mark_classes_interested(self, request, tl, one, two, module, extra, prog):
+        """
+        Saves the set of classes marked as interested by the student.
+
+        Ex: request.POST['json_data'] = {
+            'interested': [1,5,3,9],
+            'not_interested': [4,6,10]
+        }
+        """
+        if not 'json_data' in request.POST:
+            return HttpResponseBadRequest('JSON data not included in request.')
+        json_data = json.loads(request.POST['json_data'])
+        if not 'interested' in json_data or not 'not_interested' in json_data:
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+        try:
+            interested_type, created = RegistrationType.objects.get_or_create(
+                name='Interested', category='student')
+            # Unexpire any matching SSIs that exist already (to avoid creating
+            # duplicate objects).
+            ssi_qs = StudentSubjectInterest.objects.filter(
+                user=request.user, subject__pk__in=json_data['interested'],
+                subject__parent_program=prog, subject__status__gte=0)
+            ssi_qs.update(end_date=None)
+            # Determine which ids are valid and haven't been created yet and
+            # bulk create those objects.
+            existing_ids = ssi_qs.values_list('subject__id', flat=True)
+            valid_ids = ClassSubject.objects.filter(
+                pk__in=json_data['interested'], parent_program=prog,
+                status__gte=0).values_list('id', flat=True)
+            to_create_ids = set(valid_ids)-set(existing_ids)
+            StudentSubjectInterest.objects.bulk_create([
+                    StudentSubjectInterest(
+                        user=request.user,
+                        subject=ClassSubject.objects.get(id=subj_id))
+                    for subj_id in to_create_ids])
+            # Expire any matching SSIs that are in 'not_interested'
+            StudentSubjectInterest.objects.filter(
+                user=request.user, subject__pk__in=json_data['not_interested']
+                ).update(end_date=datetime.datetime.now())
+        # Catch a misformatted JSON string
+        except TypeError:
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+
+        return HttpResponse()
+
+    @aux_call
+    @needs_student
+    def mark_class_interested(self, request, tl, one, two, module, extra, prog):
+        """
+        Saves the single class indicated as interested or not.
+
+        Ex: request.POST['json_data'] = {
+            'id': 1234,
+            'interested': true
+        }
+        """
+        if not 'json_data' in request.POST:
+            return HttpResponseBadRequest('JSON data not included in request.')
+        json_data = json.loads(request.POST['json_data'])
+        if not 'id' in json_data and not 'interested' in json_data:
+            return HttpResponseBadRequest('JSON data missing keys.')
+        id = json_data['id']
+        interested = json_data['interested']
+        if type(id) != int or type(interested) != bool:
+            return HttpResponseBadRequest('JSON data value types incorrect.')
+        if ClassSubject.objects.filter(
+            pk=id, parent_program=prog, status__gte=0).count() == 0:
+            return HttpResponseBadRequest('Class subject specified is invalid.')
+        interested_type, created = RegistrationType.objects.get_or_create(
+            name='Interested', category='student')
+
+        if interested:
+            # If the SSI exists, unexpire it, otherwise create it.
+            obj, created = StudentSubjectInterest.objects.get_or_create(
+                subject=ClassSubject.objects.get(id=id), user=request.user)
+            if not created:
+                obj.unexpire()
+        else:
+            qs = StudentSubjectInterest.objects.filter(
+                subject=id, user=request.user)
+            # If the SSI exists, and there's only one, expire it.
+            if len(qs) > 1:
+                return HttpResponseBadRequest(
+                    'Multiple student registrations match update.')
+            elif len(qs) == 1:
+                qs[0].expire()
+
+        return HttpResponse()
+
     
     class Meta:
         abstract = True
