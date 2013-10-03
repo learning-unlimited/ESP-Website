@@ -482,6 +482,7 @@ def newprogram(request):
         line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
 
         template_prog["base_cost"] = int(sum(x["amount_dec"] for x in line_items))
+        template_prog["sibling_discount"] = tprogram.sibling_discount_tag
 
     if 'checked' in request.GET:
         # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
@@ -499,7 +500,7 @@ def newprogram(request):
             new_prog.save()
             pcf.save_m2m()
             
-            commit_program(new_prog, context['perms'], context['modules'], context['cost'])
+            commit_program(new_prog, context['perms'], context['modules'], context['cost'], context['sibling_discount'])
 
             # Create the default resource types now
             default_restypes = Tag.getProgramTag('default_restypes', program=new_prog)
@@ -547,7 +548,7 @@ def newprogram(request):
             #   Save the form's raw data instead of the form itself, or its clean data.
             #   Unpacking of the data happens at the next step.
 
-            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost']})
+            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
             request.session['context_str'] = context_pickled
             
             return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'perms':perms, 'modules': modules})

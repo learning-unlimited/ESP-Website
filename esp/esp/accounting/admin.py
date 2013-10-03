@@ -39,8 +39,8 @@ class LIOInline(admin.TabularInline):
     model = LineItemOptions
 
 class LITAdmin(admin.ModelAdmin):
-    list_display = ['text', 'amount', 'program', 'required', 'num_options', 'max_quantity']
-    search_fields = ['text', 'amount', 'program__url']
+    list_display = ['text', 'amount_dec', 'program', 'required', 'num_options', 'max_quantity']
+    search_fields = ['text', 'amount_dec', 'program__url']
     inlines = [LIOInline,]
 admin_site.register(LineItemType, LITAdmin)
 
