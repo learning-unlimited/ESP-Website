@@ -47,7 +47,6 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
                 return diff == 0 ? cmp(x.section.code, y.section.code) : diff;
             },
 
-	    /* Code to style unapproved classes differently */
             css: "td_id"
         },
         'Title': {
@@ -56,7 +55,6 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
                 return cmp(x.section.text, y.section.text);
             },
 	    // css: 'width:400px;'
-	    /* Code to style unapproved classes differently */
             css: "td_title"
         },
         'Teacher': {
@@ -80,7 +78,6 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             sort: function(x,y){
                 return cmp(""+x.section.teachers.map(function(z){return z.text;}), ""+y.section.teachers.map(function(z){return z.text;}));
             },
-	    /* Code to style unapproved classes differently */
             css: "td_teacher"
         },
         'Length': {
@@ -88,8 +85,6 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             sort: function(x,y) {
                 return x.section.length - y.section.length;
             },
-	    // css: 'width:50px;'
-	    /* Code to style unapproved classes differently */
             css: "td_length"
           }
         },
