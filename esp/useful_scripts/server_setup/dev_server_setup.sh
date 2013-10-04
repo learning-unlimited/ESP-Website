@@ -342,6 +342,7 @@ then
     done
 
     #    Install python libraries
+    sudo pip install virtualenv>=1.10
     virtualenv $BASEDIR/env
     source $BASEDIR/env/bin/activate
     pip install -r $BASEDIR/esp/requirements.txt
