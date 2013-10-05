@@ -97,10 +97,11 @@ ESP.Scheduling = function(){
 	$j('.directory-table-wrapper').css("max-width", window.innerWidth - 50);
 	$j('.directory-table-wrapper').css("min-width", 50);
 
-	$j('#directory-accordion-target').height(window_height);
+	$j('#directory-accordion').height(window_height);
 	$j("#directory-target").css("max-width", window.innerWidth-$j('.matrix').width() - 60);
 	$j("#directory-target").css("min-width", 50);
 	$j('#directory-accordion').accordion({fillSpace: "true"});
+
 	//make matrixx resizeable
 	$j('.matrix').resizable({handles: "e"})
 	$j('.matrix').css("max-width", window.innerWidth - 50);
