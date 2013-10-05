@@ -648,10 +648,8 @@ $j(function(){
     //if we're in debug mode, we can use the button at the top to get updates
     if (!debug_on){
 	setInterval(function() {
-            ESP.Scheduling.status('warning','Pinging server...');
             $j.getJSON('ajax_schedule_last_changed', function(d, status) {
 		if (status == "success") {
-                    ESP.Scheduling.status('success','Refreshed data from server.');
                     if (d['val'] != ESP.version_uuid) {
 			ESP.version_uuid = d['val'];
 			ESP.Scheduling.fetch_updates();
@@ -660,7 +658,6 @@ $j(function(){
                     ESP.Scheduling.status('error','Unable to refresh data from server.');
 		}
             });
-	    //let's do this every 30 seconds
-	}, 3000);
+	}, 30000);
     }
 });
