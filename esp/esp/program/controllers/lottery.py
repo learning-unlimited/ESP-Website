@@ -42,6 +42,7 @@ from esp.users.models import ESPUser, StudentInfo
 from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, ClassSection
 from esp.program.models.class_ import ClassCategories
 from esp.mailman import add_list_member, remove_list_member, list_contents
+from esp.utils.query_utils import nest_Q
 
 from django.conf import settings
 import os
@@ -161,12 +162,12 @@ class LotteryAssignmentController(object):
         now = datetime.now()
         
         #   Populate interest matrix
-        interest_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Interested', end_date__gte=now).values_list('user__id', 'section__id').distinct()
+        interest_regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Interested').values_list('user__id', 'section__id').distinct()
         ira = numpy.array(interest_regs, dtype=numpy.uint32)
         self.interest[self.student_indices[ira[:, 0]], self.section_indices[ira[:, 1]]] = True
         
         #   Populate priority matrix
-        priority_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Priority/1', end_date__gte=now).values_list('user__id', 'section__id').distinct()
+        priority_regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Priority/1').values_list('user__id', 'section__id').distinct()
         pra = numpy.array(priority_regs, dtype=numpy.uint32)
         self.priority[self.student_indices[pra[:, 0]], self.section_indices[pra[:, 1]]] = True
         
@@ -533,7 +534,7 @@ class LotteryAssignmentController(object):
         if delete:
             old_registrations.delete()
         else:
-            old_registrations.filter(end_date__gte=datetime.now()).update(end_date=datetime.now())
+            old_registrations.filter(StudentRegistration.is_valid_qobject()).update(end_date=datetime.now())
         
     def clear_mailman_list(self, list_name):
         contents = list_contents(list_name)

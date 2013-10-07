@@ -2,12 +2,13 @@
 
 import sys
 from collections import defaultdict
-from datetime import datetime,date,time
+from datetime import datetime, date, time
+from decimal import Decimal
+from xlwt import Workbook, Style
+
 from esp.program.models import *
 from esp.users.models import *
-from decimal import Decimal
-from xlwt import Workbook,Style
-
+from esp.utils.query_utils import nest_Q
 
 p = None # program
 students = None # QuerySet of students in p
@@ -36,7 +37,7 @@ def getRankInClass(student, section):
     global NOW
     if not StudentAppQuestion.objects.filter(subject=section.parent_class).count():
         return 10
-    elif StudentRegistration.objects.filter(section=section, relationship__name="Rejected",end_date__gte=NOW,user=student).count() or not student.studentapplication_set.filter(program = section.parent_class.parent_program).count() or not StudentAppResponse.objects.filter(question__subject=section.parent_class, studentapplication__user=student).count():
+    elif StudentRegistration.valid_objects().filter(section=section, relationship__name="Rejected", user=student).count() or not student.studentapplication_set.filter(program = section.parent_class.parent_program).count() or not StudentAppResponse.objects.filter(question__subject=section.parent_class, studentapplication__user=student).count():
         return 1
     for sar in StudentAppResponse.objects.filter(question__subject=section.parent_class, studentapplication__user=student):
         if not len(sar.response.strip()):
@@ -168,7 +169,7 @@ def main():
         students_f[priority] = {}
         for section in sections:
             students_f[priority][section] = []
-            sr_filter = StudentRegistration.objects.filter(section=section, relationship__name=priority, end_date__gte=NOW).distinct()
+            sr_filter = StudentRegistration.valid_objects().filter(section=section, relationship__name=priority).distinct()
             for sr in sr_filter:
                 students_f[priority][section].append(sr.user)
                 # = [sr.user for sr in StudentRegistration.objects.filter(section=section, relationship__name=priority,end_date__gte=datetime.now()).distinct()]

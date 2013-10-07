@@ -1,15 +1,18 @@
 #!/usr/bin/python
 
 import sys
-from collections import defaultdict
-from datetime import datetime,date,time
-from esp.program.models import *
-from esp.users.models import *
-from decimal import Decimal
-from xlwt import Workbook,Style
-from django.db.models import Q
 import Queue
 import time
+from collections import defaultdict
+from datetime import datetime, date, time
+from xlwt import Workbook, Style
+from decimal import Decimal
+
+from django.db.models import Q
+
+from esp.program.models import *
+from esp.users.models import *
+from esp.utils.query_utils import nest_Q
 
 p = None # program
 timeslots = None
@@ -91,12 +94,12 @@ def main():
     studentregmodule = p.getModuleExtension('StudentClassRegModuleInfo')
     if studentregmodule and studentregmodule.priority_limit > 0:
         priorityLimit = studentregmodule.priority_limit
-    SR_PROG = Q(studentregistration__section__parent_class__parent_program=p, studentregistration__start_date__lte=NOW, studentregistration__end_date__gte=NOW)
+    SR_PROG = Q(studentregistration__section__parent_class__parent_program=p) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
     SR_REQ = Q(studentregistration__relationship__name="Request") & SR_PROG
     SR_WAIT = [Q(studentregistration__relationship=("Waitlist/%s" % str(i+1))) & SR_PROG for i in range(priorityLimit)]
     SR_WAIT.append(Q(studentregistration__relationship__contains="Waitlist") & SR_PROG)
     SR_EN = Q(studentregistration__relationship__name="Enrolled") & SR_PROG
-    PROG = Q(section__parent_class__parent_program=p, start_date__lte=NOW, end_date__gte=NOW)
+    PROG = Q(section__parent_class__parent_program=p) & StudentRegistration.is_valid_qobject()
     REQ = Q(relationship__name="Request") & PROG
     WAIT = [Q(relationship__name__contains="Waitlist") & PROG]
     WAIT += [Q(relationship__name=("Waitlist/%s" % str(i+1))) & PROG for i in range(priorityLimit)]

@@ -60,6 +60,7 @@ from esp.middleware import ESPError
 from esp.web.forms.contact_form import ContactForm
 from esp.tagdict.models import Tag
 from esp.utils.no_autocookie import disable_csrf_cookie_update
+from esp.utils.query_utils import nest_Q
 
 from django.views.decorators.vary import vary_on_headers
 from django.views.decorators.cache import cache_control
@@ -162,7 +163,7 @@ def classchangerequest(request, tl, one, two):
     enrollments = {}
     for timeslot in timeslots:
         try:
-            enrollments[timeslot] = ClassSubject.objects.get(sections__studentregistration__relationship__name="Enrolled", sections__studentregistration__user=request.user, sections__meeting_times=timeslot, parent_program=prog, sections__studentregistration__end_date__gte=datetime.now())
+            enrollments[timeslot] = ClassSubject.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'sections__studentregistration')).get(sections__studentregistration__relationship__name="Enrolled", sections__studentregistration__user=request.user, sections__meeting_times=timeslot, parent_program=prog)
         except ClassSubject.DoesNotExist: 
             enrollments[timeslot] = None
     
@@ -176,7 +177,7 @@ def classchangerequest(request, tl, one, two):
         context['success'] = False
     
     if request.user.isStudent():
-        sections_by_slot = dict([(timeslot,[(section, 1 == StudentRegistration.objects.filter(user=context['user'], section=section, relationship__name="Request", end_date__gte=datetime.now()).count()) for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in enrollments.values() and getRankInClass(request.user, section) in (5,10)]) for timeslot in timeslots])
+        sections_by_slot = dict([(timeslot,[(section, 1 == StudentRegistration.valid_objects().filter(user=context['user'], section=section, relationship__name="Request").count()) for section in sections if section.get_meeting_times()[0] == timeslot and section.parent_class.grade_min <= request.user.getGrade(prog) <= section.parent_class.grade_max and section.parent_class not in enrollments.values() and getRankInClass(request.user, section) in (5,10)]) for timeslot in timeslots])
     else: 
         sections_by_slot = dict([(timeslot,[(section, False) for section in sections if section.get_meeting_times()[0] == timeslot]) for timeslot in timeslots])
     
@@ -193,7 +194,7 @@ def classchangerequest(request, tl, one, two):
     form = type('ClassChangeRequestForm', (forms.Form,), fields)
     context['form'] = form()
     if request.method == "POST": 
-        old_requests = StudentRegistration.objects.filter(user=context['user'], section__parent_class__parent_program=prog, relationship__name="Request", end_date__gte=datetime.now())
+        old_requests = StudentRegistration.valid_objects().filter(user=context['user'], section__parent_class__parent_program=prog, relationship__name="Request")
         for r in old_requests:
             r.expire()
         form = form(request.POST)

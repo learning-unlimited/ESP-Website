@@ -28,36 +28,36 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+
+from uuid                        import uuid4 as get_uuid
+from datetime                    import datetime, timedelta
+from collections                 import defaultdict
+
+from django                      import forms
+from django.http                 import HttpResponseRedirect, HttpResponse
+from django.template.loader      import render_to_string
+from django.utils                import simplejson
+from django.db.models.query      import Q
+from django.views.decorators.cache import cache_control
+
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call, meets_deadline, needs_student, meets_grade
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.program.views           import lottery_student_reg, lsr_submit as lsr_view_submit
-from esp.datatree.models         import *
 from esp.web.util                import render_to_response
-from django                      import forms
-from django.http                 import HttpResponseRedirect, HttpResponse
-from django.template.loader      import render_to_string
 from esp.cal.models              import Event
 from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
-from esp.datatree.models         import DataTree
-from datetime                    import datetime, timedelta
-from django.utils                import simplejson
-from collections                 import defaultdict
 from esp.cache                   import cache_function
-from uuid                        import uuid4 as get_uuid
-from django.db.models.query      import Q
-from django.views.decorators.cache import cache_control
 from esp.middleware.threadlocalrequest import get_current_request
-#def json_encode_timeslots(obj):
-    
+from esp.utils.query_utils import nest_Q
 
 
 class LotteryStudentRegModule(ProgramModuleObj):
 
     def students(self, QObject = False):
-        q = Q(studentregistration__section__parent_class__parent_program=self.program, studentregistration__end_date__gte=datetime.now())
+        q = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
         if QObject:
             return {'lotteried_students': q}
         else:
