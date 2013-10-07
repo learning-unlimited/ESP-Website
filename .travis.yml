@@ -1,0 +1,13 @@
+language: python
+python:
+  - "2.7"
+services:
+  - postgresql
+  - memcached
+env: DJANGO_SETTINGS_MODULE=esp.settings
+install: 
+  - apt-get install -y esp/packages.txt
+  - pip install -r esp/requirements.txt --use-mirrors
+script: 
+  - cd esp
+  - ./manage.py test
