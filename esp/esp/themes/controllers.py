@@ -146,7 +146,9 @@ class ThemeController(object):
         results = {}
         for filename in self.get_less_names(theme_name, theme_only=theme_only):
             local_results = {}
-        
+
+            if themes_settings.THEME_DEBUG: print 'find_less_variables: including file %s' % filename
+
             #   Read less file
             less_file = open(filename)
             less_data = less_file.read()
@@ -285,12 +287,13 @@ class ThemeController(object):
         Tag.unSetTag('prev_theme_customization')
 
     def customize_theme(self, vars):
+        if themes_settings.THEME_DEBUG: print 'Customizing theme with variables: %s' % vars
         self.compile_css(self.get_current_theme(), vars, self.css_filename)
         vars_available = self.find_less_variables(self.get_current_theme(), flat=True)
         vars_diff = {}
         for key in vars:
             if key in vars_available and len(vars[key].strip()) > 0 and vars[key] != vars_available[key]:
-                print 'Customizing: %s -> %s' % (key, vars[key])
+                if themes_settings.THEME_DEBUG: print 'Customizing: %s -> %s' % (key, vars[key])
                 vars_diff[key] = vars[key]
         if themes_settings.THEME_DEBUG: print 'Customized %d variables for theme %s' % (len(vars_diff), self.get_current_theme())
         Tag.setTag('current_theme_params', value=json.dumps(vars_diff))
@@ -341,7 +344,7 @@ class ThemeController(object):
         for match in re.findall(r'palette:(#?\w+?);', data):
             palette.append(match)
 
-        print (vars, palette)
+        if themes_settings.THEME_DEBUG: print (vars, palette)
         return (vars, palette)
         
     def delete_customizations(self, save_name):
