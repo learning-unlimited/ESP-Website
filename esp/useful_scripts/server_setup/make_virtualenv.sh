@@ -24,5 +24,5 @@ except IOError:
 
 EOF
 
-cat $BASEDIR/esp.wsgi >/tmp/esp.wsgi
+cat $BASEDIR/esp.wsgi >>/tmp/esp.wsgi
 mv /tmp/esp.wsgi $BASEDIR/esp.wsgi
