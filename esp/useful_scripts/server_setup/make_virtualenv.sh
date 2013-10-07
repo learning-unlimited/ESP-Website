@@ -13,7 +13,7 @@ BASEDIR=$(echo "$FULLPATH" | sed -e "s/\/*$//")
 
 sudo apt-get install $(< "$BASEDIR/esp/packages.txt")
 
-sudo pip install virtualenv>=1.10
+sudo pip install "virtualenv>=1.10"
 virtualenv "$BASEDIR/env"
 source "$BASEDIR/env/bin/activate"
 pip install -r "$BASEDIR/esp/requirements.txt"
