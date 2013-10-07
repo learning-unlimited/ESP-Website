@@ -5,6 +5,8 @@ services:
   - postgresql
   - memcached
 env: DJANGO_SETTINGS_MODULE=esp.settings
+before_install:
+  - sudo apt-get update
 install: 
   - sudo apt-get install -y $(< esp/packages.txt)
   - pip install -r esp/requirements.txt --use-mirrors
