@@ -37,6 +37,7 @@ from esp.utils.models import TemplateOverride
 from esp.utils.template import Loader as TemplateOverrideLoader
 from esp.tagdict.models import Tag
 from esp.themes import settings as themes_settings
+from esp.middleware import ESPError
 
 from django.conf import settings
 from django.template.loader import render_to_string
@@ -198,36 +199,16 @@ class ThemeController(object):
         if themes_settings.THEME_DEBUG: print 'Wrote %d bytes to LESS file %s' % (len(less_data), less_output_filename)
         less_output_file.close()
 
-        less_search_path = ', '.join([("'%s'" % dirname) for dirname in (settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])])
-	if themes_settings.THEME_DEBUG: print 'LESS search path is "%s"' % less_search_path
-
-        minify_js = False
-        js_code = Template("""
-var fs = require('fs');
-var less = require('less');
-
-var parser = new(less.Parser)({
-    paths: [$lesspath], // Specify search paths for @import directives
-    filename: 'theme_compiled.less' // Specify a filename, for better error messages
-});
-
-var data = fs.readFileSync('$lessfile', 'utf8');
-
-parser.parse(data, function (err, tree) {
-    if (err)
-    {
-        return console.error(err);
-    }
-    console.log(tree.toCSS({ compress: $minify })); // Minify CSS output if desired
-});
-        """).substitute(lesspath=less_search_path, lessfile=less_output_filename.replace('\\', '/'), minify=str(minify_js).lower())
-
-        #   print js_code
+        less_search_path = ':'.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
+        if themes_settings.THEME_DEBUG: print 'LESS search path is "%s"' % less_search_path
 
         #   Compile to CSS
-        lessc_args = ["nodejs"] #   Ubuntu names its node.js binary 'nodejs' instead of 'node'
-        lessc_process = subprocess.Popen(lessc_args, stdout=subprocess.PIPE, stdin=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        css_data = lessc_process.communicate(input=js_code)[0]
+        lessc_args = ['lessc', '--include-path="%s"' % less_search_path, less_output_filename]
+        lessc_process = subprocess.Popen(' '.join(lessc_args), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+        css_data = lessc_process.communicate()[0]
+
+        if lessc_process.returncode != 0:
+            raise ESPError(True)('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support']))
 
         output_file = open(output_filename, 'w')
         output_file.write(css_data)
@@ -273,6 +254,11 @@ parser.parse(data, function (err, tree) {
             template_filename = os.path.join(self.base_dir(theme_name), 'templates', template_name)
             template_file = open(template_filename, 'r')
             to.content = template_file.read()
+            
+            #   Add an HTML comment indicating theme type to the main.html override (for tests)
+            if to.name == 'main.html':
+                to.content = ('<!-- Theme: %s -->' % theme_name) + to.content
+            
             #   print 'Template override %s contents: \n%s' % (to.name, to.content)
             to.save()
             if themes_settings.THEME_DEBUG: print '-- Created template override: %s' % template_name
