@@ -172,7 +172,7 @@ LIMIT 1
         except:
             result['messages'].append('Error: no user specified.')
         if result['user']:
-            result['sections'] = list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')).values_list('id', flat=True).distinct())
+            result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
         simplejson.dump(result, resp)
         return resp
         
@@ -200,7 +200,7 @@ LIMIT 1
         if user and desired_sections is not None:
             override_full = (request.GET.get("override", "") == "true")
         
-            current_sections = list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')).values_list('id', flat=True).order_by('id').distinct())
+            current_sections = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).values_list('id', flat=True).order_by('id').distinct())
             sections_to_remove = ClassSection.objects.filter(id__in=list(set(current_sections) - set(desired_sections)))
             sections_to_add = ClassSection.objects.filter(id__in=list(set(desired_sections) - set(current_sections)))
 
@@ -246,7 +246,7 @@ LIMIT 1
                             result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, error))
         
             result['user'] = user.id
-            result['sections'] = list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')).values_list('id', flat=True).distinct())
+            result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
         
         simplejson.dump(result, resp)
         return resp

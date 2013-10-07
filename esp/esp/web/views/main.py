@@ -163,7 +163,7 @@ def classchangerequest(request, tl, one, two):
     enrollments = {}
     for timeslot in timeslots:
         try:
-            enrollments[timeslot] = ClassSubject.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'sections__studentregistration')).get(sections__studentregistration__relationship__name="Enrolled", sections__studentregistration__user=request.user, sections__meeting_times=timeslot, parent_program=prog)
+            enrollments[timeslot] = ClassSubject.objects.get(nest_Q(StudentRegistration.is_valid_qobject(), 'sections__studentregistration'), sections__studentregistration__relationship__name="Enrolled", sections__studentregistration__user=request.user, sections__meeting_times=timeslot, parent_program=prog)
         except ClassSubject.DoesNotExist: 
             enrollments[timeslot] = None
     

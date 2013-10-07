@@ -565,9 +565,9 @@ class ESPUser(User, AnonymousUser):
             rts = RegistrationType.objects.all()
 
         if program:
-            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(relationship__in=rts).filter( StudentRegistration.is_valid_qobject()).values_list('section', flat=True)).filter(parent_class__parent_program=program)
+            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(StudentRegistration.is_valid_qobject(), relationship__in=rts).values_list('section', flat=True)).filter(parent_class__parent_program=program)
         else:
-            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(relationship__in=rts).filter(StudentRegistration.is_valid_qobject()).values_list('section', flat=True))
+            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(StudentRegistration.is_valid_qobject(), relationship__in=rts).values_list('section', flat=True))
 
     def getSectionsFromProgram(self, program, verbs=None):
         return self.getSections(program, verbs=verbs)

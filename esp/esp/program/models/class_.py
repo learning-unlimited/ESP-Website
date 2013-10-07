@@ -969,7 +969,7 @@ class ClassSection(models.Model):
         result = {}
         for key in rmap:
             result_key = rmap[key] #the RegistrationType object, not the name field
-            result[result_key] = list(self.registrations.filter(studentregistration__relationship=rmap[key]).filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')).distinct())
+            result[result_key] = list(self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), studentregistration__relationship=rmap[key]).distinct())
             if len(result[result_key]) == 0:
                 del result[result_key]
         return result
@@ -983,7 +983,7 @@ class ClassSection(models.Model):
         now = datetime.datetime.now()
         result = ESPUser.objects.none()
         for verb_str in verbs:
-            result = result | self.registrations.filter(studentregistration__relationship__name=verb_str).filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'))
+            result = result | self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), studentregistration__relationship__name=verb_str)
         return result.distinct()
     
     @cache_function
@@ -1223,7 +1223,7 @@ class ClassSection(models.Model):
             now = datetime.datetime.now()
             
             rt = RegistrationType.get_cached(name=prereg_verb, category='student')
-            qs = self.registrations.filter(id=user.id, studentregistration__relationship=rt).filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'))
+            qs = self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
             if fast_force_create or not qs.exists():
                 sr = StudentRegistration(user=user, section=self, relationship=rt)
                 sr.save()
