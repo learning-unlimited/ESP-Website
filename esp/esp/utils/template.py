@@ -35,6 +35,8 @@ Learning Unlimited, Inc.
 
 """ A loader that looks for templates in the override model. """
 
+import django.template.loaders.cached
+
 from django.template.loader import BaseLoader, get_template_from_string
 from django.template import TemplateDoesNotExist
 
@@ -84,4 +86,45 @@ class Loader(BaseLoader):
             self.cache[hash_val] = (template, DEFAULT_ORIGIN)
         return self.cache[hash_val]
     load_template.is_usable = True
+
+    def load_template_source(self, template_name, template_dirs=None):
+        """
+        Returns a tuple containing the source and origin for the given template
+        name. Raises TemplateDoesNotExist Exception if the template override
+        for the given template name does not exist.
+
+        Overrides the unimplemented method from the BaseLoader base class.
+        """
+        from django.conf import settings
+        source = Loader.get_override_contents(template_name)
+        if source:
+            return (source.decode(settings.FILE_CHARSET), DEFAULT_ORIGIN)
+        raise TemplateDoesNotExist(template_name)
+
+class CachedLoader(django.template.loaders.cached.Loader):
+    """
+    Wrapper class that takes a list of template loaders as an argument and
+    attempts to load templates from them in order, caching the result.
+
+    A subclass of django.template.loaders.cached.Loader that implements the
+    unimplemented load_template_source method from the BaseLoader base class.
+    """
+    is_usable = True
+
+    def load_template_source(self, template_name, template_dirs=None):
+        """
+        Returns a tuple containing the source and origin for the given template
+        name. Iterates through its list of template loaders in order, calling
+        load_template_source() for each of them and returning the first valid
+        result. Raises TemplateDoesNotExist Exception if the template for the
+        given template name does not exist in any of the template loaders.
+
+        Overrides the unimplemented method from the BaseLoader base class.
+        """
+        for loader in self.loaders:
+            try:
+                return loader.load_template_source(template_name, template_dirs=template_dirs)
+            except TemplateDoesNotExist:
+                pass
+        raise TemplateDoesNotExist(template_name)
 

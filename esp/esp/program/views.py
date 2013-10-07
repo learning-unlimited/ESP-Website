@@ -59,7 +59,7 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import CompletedTransactionException
-from esp.accounting.controllers import ProgramAccountingController
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
 from esp.resources.models import ResourceType
 from esp.tagdict.models import Tag
@@ -70,6 +70,7 @@ import simplejson as json
 import re
 import unicodedata
 from collections import defaultdict
+from decimal import Decimal
 
 try:
     from cStringIO import StringIO
@@ -461,26 +462,27 @@ def newprogram(request):
         # aseering 5/18/2008 -- More aggressively list everyone who was an Admin
         #template_prog["admins"] = [ x.id for x in UserBit.objects.bits_get_users(verb=GetNode("V/Administer"), qsc=tprogram.anchor, user_objs=True) ]
 
-        student_reg_bits = list(Permission.objects.filter(permission_type__startswith='Student', program=template_prog_id).order_by('-startdate'))
+        student_reg_bits = list(Permission.objects.filter(permission_type__startswith='Student', program=template_prog_id).order_by('-start_date'))
         if len(student_reg_bits) > 0:
             newest_bit = student_reg_bits[0]
             oldest_bit = student_reg_bits[-1]
 
-            template_prog["student_reg_start"] = oldest_bit.startdate
-            template_prog["student_reg_end"] = newest_bit.enddate
+            template_prog["student_reg_start"] = oldest_bit.start_date
+            template_prog["student_reg_end"] = newest_bit.end_date
 
-        teacher_reg_bits = list(Permission.objects.filter(permission_type__startswith='Teacher', program=template_prog_id).order_by('-startdate'))
+        teacher_reg_bits = list(Permission.objects.filter(permission_type__startswith='Teacher', program=template_prog_id).order_by('-start_date'))
         if len(teacher_reg_bits) > 0:
             newest_bit = teacher_reg_bits[0]
             oldest_bit = teacher_reg_bits[-1]
 
-            template_prog["teacher_reg_start"] = oldest_bit.startdate
-            template_prog["teacher_reg_end"] = newest_bit.enddate
+            template_prog["teacher_reg_start"] = oldest_bit.start_date
+            template_prog["teacher_reg_end"] = newest_bit.end_date
 
         pac = ProgramAccountingController(tprogram)
         line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
 
         template_prog["base_cost"] = int(sum(x["amount_dec"] for x in line_items))
+        template_prog["sibling_discount"] = tprogram.sibling_discount_tag
 
     if 'checked' in request.GET:
         # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
@@ -498,7 +500,7 @@ def newprogram(request):
             new_prog.save()
             pcf.save_m2m()
             
-            commit_program(new_prog, context['perms'], context['modules'], context['cost'])
+            commit_program(new_prog, context['perms'], context['modules'], context['cost'], context['sibling_discount'])
 
             # Create the default resource types now
             default_restypes = Tag.getProgramTag('default_restypes', program=new_prog)
@@ -546,7 +548,7 @@ def newprogram(request):
             #   Save the form's raw data instead of the form itself, or its clean data.
             #   Unpacking of the data happens at the next step.
 
-            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost']})
+            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
             request.session['context_str'] = context_pickled
             
             return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'perms':perms, 'modules': modules})
@@ -593,10 +595,10 @@ def submit_transaction(request):
         #   Save the payment as a transfer in the database
         iac.submit_payment(post_amount)
 
-        one = 'learn'
-        two = iac.program.url.split('/')[0]
+        tl = 'learn'
+        one, two = iac.program.url.split('/')
 
-        return HttpResponseRedirect("http://%s/learn/%s/%s/confirmreg" % (request.META['HTTP_HOST'], one, two))
+        return HttpResponseRedirect("http://%s/%s/%s/%s/confirmreg" % (request.META['HTTP_HOST'], tl, one, two))
 
     return render_to_response( 'accounting_docs/credit_rejected.html', request, {} )
 

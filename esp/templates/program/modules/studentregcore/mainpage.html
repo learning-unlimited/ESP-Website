@@ -39,7 +39,7 @@
 {% endif %}
 {% endif %}
 {% load render_qsd %}
-{% inline_program_qsd_block program registration_steps request.user %}    <p>
+{% inline_program_qsd_block program "registration_steps" request.user %}    <p>
     Please complete the following steps to register for {{ program.niceName }}.
     When each step is completed, the corresponding box in the right-hand column will
     be &#8220;checked off&#8221;. <!-- After finishing all the steps, click the &#8220;Confirm&#8221;

@@ -75,16 +75,16 @@ def prepare_program(program, data):
        
     return perms, modules
 
-def commit_program(prog, perms, modules, cost=0):
+def commit_program(prog, perms, modules, cost=0, sibling_discount=None):
     #   This function implements the changes suggested by prepare_program.
     
     def gen_perm(tup):
         new_perm=Permission(permission_type=tup[0], program=prog)
 
         if tup[2]:
-            new_perm.startdate = tup[2]
+            new_perm.start_date = tup[2]
         if tup[3]:
-            new_perm.enddate = tup[3]
+            new_perm.end_date = tup[3]
 
         if tup[1] is not None:
             new_perm.user=tup[1]
@@ -101,7 +101,7 @@ def commit_program(prog, perms, modules, cost=0):
 
         #It's not for a specific user and not a teacher or student deadline
         for x in ESPUser.getTypes():
-            newnew_perm=Permission(permission_type=new_perm.permission_type, role=Group.objects.get(name=x), startdate=new_perm.startdate, enddate=new_perm.enddate, program=prog)
+            newnew_perm=Permission(permission_type=new_perm.permission_type, role=Group.objects.get(name=x), start_date=new_perm.start_date, end_date=new_perm.end_date, program=prog)
             newnew_perm.save()
 
     for perm_tup in perms:
@@ -110,5 +110,6 @@ def commit_program(prog, perms, modules, cost=0):
     pac = ProgramAccountingController(prog)
     pac.setup_accounts()
     pac.setup_lineitemtypes(cost)
+    prog.sibling_discount = sibling_discount # property saves Tag, no explicit save needed
 
     return prog

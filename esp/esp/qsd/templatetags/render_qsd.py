@@ -16,9 +16,8 @@ render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qs
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html')
 def render_inline_qsd(url):
-    try:
-        qsd_obj = QuasiStaticData.objects.get_by_url(url)
-    except QuasiStaticData.DoesNotExist:
+    qsd_obj = QuasiStaticData.objects.get_by_url(url)
+    if qsd_obj is None:
         return {'url':url}
     
     return {'qsdrec': qsd_obj}
@@ -30,11 +29,10 @@ def render_inline_program_qsd(program, name):
     #we could attempt to construct the url in the template
     #or just do this
     url = QuasiStaticData.prog_qsd_url(program, name)
-    try:
-        qsd_obj = QuasiStaticData.objects.get_by_url(url)
-    except QuasiStaticData.DoesNotExist:
+    qsd_obj = QuasiStaticData.objects.get_by_url(url)
+    if qsd_obj is None:
         return {'url':url}
-    
+
     return {'qsdrec': qsd_obj}
 render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'url':qsd.url})
     
@@ -55,10 +53,15 @@ class InlineQSDNode(template.Node):
             program = self.program_variable.resolve(context) if self.program_variable is not None else None
         except template.VariableDoesNotExist:
             program = None
-        if program is not None:
-            url = QuasiStaticData.prog_qsd_url(program,self.url)
+        #   Accept literal string url argument if it is quoted; otherwise expect a template variable.
+        if not self.url.startswith('"'):
+            url_resolved = template.Variable(self.url).resolve(context)
         else:
-            url = self.url
+            url_resolved = self.url.strip('"')
+        if program is not None:
+            url = QuasiStaticData.prog_qsd_url(program,url_resolved)
+        else:
+            url = url_resolved
         #probably should have an error message if variable was not None and prog was
 
         edit_bits = Permission.user_can_edit_qsd(user, url)

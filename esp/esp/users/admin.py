@@ -33,13 +33,11 @@ class UserBitAdmin(admin.ModelAdmin):
         self.message_user(request, "%s successfully expired." % message_bit)
     renew.short_description = "Renew bits"
     
-admin_site.register(UserBit, UserBitAdmin)
 
 
 class UserBitImplicationAdmin(admin.ModelAdmin):
     exclude = ('created_bits',)
 
-admin_site.register(UserBitImplication, UserBitImplicationAdmin)
 
 admin_site.register(UserForwarder)
 
@@ -69,7 +67,7 @@ class RecordAdmin(admin.ModelAdmin):
 admin_site.register(Record, RecordAdmin)
 
 class PermissionAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'role', 'permission_type','program','startdate','enddate']
+    list_display = ['id', 'user', 'role', 'permission_type','program','start_date','end_date']
 admin_site.register(Permission, PermissionAdmin)
 
 class ContactInfoAdmin(admin.ModelAdmin):

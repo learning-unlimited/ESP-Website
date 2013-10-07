@@ -59,6 +59,12 @@ class UserBit(models.Model):
         app_label = 'users'
         db_table = 'users_userbit'
 
+    def delete(self, *args, **kwargs):
+        raise Exception('Attempted to delete a UserBit')
+
+    def save(self, *args, **kwargs):
+        raise Exception('Attempted to save a UserBit')
+
     @staticmethod
     def valid_objects():
         now = datetime.datetime.now()
@@ -78,3 +84,10 @@ class UserBitImplication(models.Model):
     class Meta:
         app_label = 'users'
         db_table = 'users_userbitimplication'
+
+    def delete(self, *args, **kwargs):
+        raise Exception('Attempted to delete a UserBitImplication')
+
+    def save(self, *args, **kwargs):
+        raise Exception('Attempted to save a UserBitImplication')
+
