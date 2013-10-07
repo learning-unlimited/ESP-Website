@@ -2105,9 +2105,10 @@ def install():
         ESPUser.objects.create(username='onsite', first_name='Onsite', last_name='User')
         print 'Created onsite user, please set their password in the admin interface.'
 
-
 # We can't import these earlier because of circular stuff...
+from esp.users.models.userbits import UserBit
 from esp.users.models.forwarder import UserForwarder
 from esp.cal.models import Event
-from esp.program.models import ClassSubject, ClassSection, Program
+from esp.program.models import ClassSubject, ClassSection, Program, StudentRegistration
 from esp.resources.models import Resource
+
