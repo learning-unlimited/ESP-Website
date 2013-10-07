@@ -10,6 +10,9 @@ before_install:
 install: 
   - sudo apt-get install -y $(< esp/packages.txt)
   - pip install -r esp/requirements.txt --use-mirrors
+before_script:
+  - cp esp/esp/local_settings.py.travis esp/esp/local_settings.py
+  - psql -c "CREATE ROLE testuser PASSWORD 'testpassword' LOGIN CREATEDB;" -U postgres
 script: 
   - cd esp
   - ./manage.py test
