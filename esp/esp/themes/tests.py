@@ -13,6 +13,7 @@ from django.conf import settings
 from esp.users.models import ESPUser
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.themes.controllers import ThemeController
+from esp.themes import settings as themes_settings
 
 class ThemesTest(TestCase):
 
@@ -24,6 +25,15 @@ class ThemesTest(TestCase):
         new_admin.save()
         new_admin.makeRole('Administrator')
         self.admin = new_admin
+        
+        #   Redirect compiled CSS output to avoid disturbing installed setup
+        self._css_file = themes_settings.COMPILED_CSS_FILE
+        themes_settings.COMPILED_CSS_FILE = 'theme_compiled_test.css'
+        
+    def tearDown(self):
+    
+        #   Restore destination of compiled CSS output
+        themes_settings.COMPILED_CSS_FILE = self._css_file
 
     def testAvailableThemes(self):
         """ Check that the ThemeController says we have the themes we expect to have. """
@@ -75,7 +85,7 @@ class ThemesTest(TestCase):
             #   print 'Testing theme: %s' % theme_name
         
             #   Delete the theme_compiled.css file so we force a new one to be generated.
-            css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', 'theme_compiled.css')
+            css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
             if os.path.exists(css_filename):
                 os.remove(css_filename)
         
@@ -155,7 +165,7 @@ class ThemesTest(TestCase):
         
         #   Test that we can change a parameter and the right value appears in the stylesheet
         def verify_linkcolor(color_str):
-            css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', 'theme_compiled.css')
+            css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
             regexp = r'\n\s*?a\s*?{.*?color:\s*?%s;.*?}' % color_str
             self.assertTrue(len(re.findall(regexp, open(css_filename).read(), flags=(re.DOTALL | re.I))) == 1)
             

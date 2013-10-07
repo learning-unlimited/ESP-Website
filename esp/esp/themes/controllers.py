@@ -59,7 +59,7 @@ class ThemeController(object):
     This is a controller for manipulating the currently selected theme.
     """
     def __init__(self, *args, **kwargs):
-        self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles/theme_compiled.css')
+        self.css_filename = os.path.join(settings.MEDIA_ROOT, 'styles', themes_settings.COMPILED_CSS_FILE)
         
     def get_current_theme(self):
         return Tag.getTag('current_theme_name', default='default')

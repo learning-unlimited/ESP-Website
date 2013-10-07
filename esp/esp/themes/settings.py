@@ -28,4 +28,5 @@ sans_serif_fonts = {"Impact":"Impact, Charcoal, sans-serif",
                     "Georgia":"Georgia, serif"}
 
 THEME_DEBUG = False
+COMPILED_CSS_FILE = "theme_compiled.css"
 
