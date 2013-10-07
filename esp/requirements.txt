@@ -2,6 +2,7 @@ Django==1.4.5
 PIL==1.1.7
 South==0.8.1
 argparse==1.2.1
+cssutils==0.9.10
 distribute==0.6.24
 django-extensions==1.1.1
 django-form-utils==0.3.1
