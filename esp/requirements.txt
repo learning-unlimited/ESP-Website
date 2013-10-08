@@ -1,5 +1,5 @@
 Django==1.4.8
-PIL==1.1.7
+pillow==2.2.1
 South==0.8.1
 argparse==1.2.1
 django-extensions==1.1.1
