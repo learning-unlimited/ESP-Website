@@ -652,12 +652,13 @@ $j(function(){
 		if (status == "success") {
                     if (d['val'] != ESP.version_uuid) {
 			ESP.version_uuid = d['val'];
-			ESP.Scheduling.fetch_updates();
+			location.reload(true);
+			//ESP.Scheduling.fetch_updates();
                     }
 		} else {
                     ESP.Scheduling.status('error','Unable to refresh data from server.');
 		}
             });
-	}, 30000);
+	}, 300000);
     }
 });
