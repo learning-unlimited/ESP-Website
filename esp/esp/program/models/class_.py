@@ -1602,7 +1602,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def is_nearly_full(self, capacity_factor = None):
         if capacity_factor == None:
-            capacity_factor = get_capacity_factor()
+            capacity_factor = ClassSubject.get_capacity_factor()
         return len([x for x in self.get_sections() if x.num_students() > capacity_factor*x.capacity]) > 0
 
     def getTeacherNames(self):
