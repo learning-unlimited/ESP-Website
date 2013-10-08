@@ -1179,11 +1179,11 @@ class ClassSection(models.Model):
         
         #   Stop all active or pending registrations
         if prereg_verb:
-            qs = StudentRegistration.valid_objects().filter(relationship__name=prereg_verb, section=self, user=user)
+            qs = StudentRegistration.valid_objects(now).filter(relationship__name=prereg_verb, section=self, user=user)
             qs.update(end_date=now)
             #   print 'Expired %s' % qs
         else:
-            qs = StudentRegistration.valid_objects().filter(section=self, user=user)
+            qs = StudentRegistration.valid_objects(now).filter(section=self, user=user)
             qs.update(end_date=now)
             #   print 'Expired %s' % qs
             
