@@ -17,3 +17,4 @@ before_script:
 script: 
   - cd esp
   - ./manage.py test
+  - ./manage.py seltest --selenium-tests
