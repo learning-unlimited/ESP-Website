@@ -53,6 +53,7 @@ from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 from esp.utils.property import PropertyDict
 from esp.utils.fields import JSONField
+from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
 
@@ -191,7 +192,7 @@ class ClassManager(ProcedureManager):
         #   Retrieve the content type for finding class documents (generic relation)
         content_type_id = ContentType.objects.get_for_model(ClassSubject).id
         
-        select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration", "program_classsection" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND "program_classsection"."parent_class_id" = "program_class"."id" AND "program_studentregistration"."start_date" <= %s AND "program_studentregistration"."end_date" >= %s)'),
+        select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration", "program_classsection" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND "program_classsection"."parent_class_id" = "program_class"."id" AND ("program_studentregistration"."start_date" IS NULL OR "program_studentregistration"."start_date" <= %s) AND ("program_studentregistration"."end_date" IS NULL OR "program_studentregistration"."end_date" >= %s))'),
                              ('teacher_ids', 'SELECT list(DISTINCT espuser_id) FROM program_class_teachers Where program_class_teachers.classsubject_id=program_class.id'),
                              ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."owner_id" = "program_class"."id") AND ("qsdmedia_media"."owner_type_id" = %s)'),
                              ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."name" = \'learn:index\' AND "qsd_quasistaticdata"."url" LIKE %s AND "qsd_quasistaticdata"."url" SIMILAR TO %s || "program_class"."id" || %s)'),
@@ -352,7 +353,7 @@ class ClassSection(models.Model):
         now = datetime.datetime.now()
         enrolled_type = RegistrationType.get_map()['Enrolled']
 
-        select = SortedDict([( '_count_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND "program_studentregistration"."start_date" <= %s AND "program_studentregistration"."end_date" >= %s)'),
+        select = SortedDict([( '_count_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND ("program_studentregistration"."start_date" IS NULL OR "program_studentregistration"."start_date" <= %s) AND ("program_studentregistration"."end_date" IS NULL OR "program_studentregistration"."end_date" >= %s))'),
                              ('event_ids', 'SELECT list("cal_event"."id") FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id")')])
         
         select_params = [ enrolled_type.id,
@@ -968,7 +969,7 @@ class ClassSection(models.Model):
         result = {}
         for key in rmap:
             result_key = rmap[key] #the RegistrationType object, not the name field
-            result[result_key] = list(self.registrations.filter(studentregistration__relationship=rmap[key], studentregistration__start_date__lte=now, studentregistration__end_date__gte=now).distinct())
+            result[result_key] = list(self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), studentregistration__relationship=rmap[key]).distinct())
             if len(result[result_key]) == 0:
                 del result[result_key]
         return result
@@ -976,13 +977,13 @@ class ClassSection(models.Model):
     
     def students_prereg(self):
         now = datetime.datetime.now()
-        return self.registrations.filter(studentregistration__start_date__lte=now, studentregistration__end_date__gte=now).distinct()
+        return self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')).distinct()
 
     def students(self, verbs=['Enrolled']):
         now = datetime.datetime.now()
         result = ESPUser.objects.none()
         for verb_str in verbs:
-            result = result | self.registrations.filter(studentregistration__relationship__name=verb_str, studentregistration__start_date__lte=now, studentregistration__end_date__gte=now)
+            result = result | self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), studentregistration__relationship__name=verb_str)
         return result.distinct()
     
     @cache_function
@@ -1051,7 +1052,7 @@ class ClassSection(models.Model):
     def clearStudents(self):
         from esp.program.models import StudentRegistration
         now = datetime.datetime.now()
-        qs = StudentRegistration.objects.filter(section=self, end_date__gte=now)
+        qs = StudentRegistration.valid_objects().filter(section=self)
         qs.update(end_date=now)
         #   Compensate for the lack of a signal on update().
         for reg in qs:
@@ -1156,9 +1157,9 @@ class ClassSection(models.Model):
         from esp.program.models import StudentRegistration
         now = datetime.datetime.now()
         if user == None:
-            return StudentRegistration.objects.filter(section=self, start_date__lte=now, end_date__gte=now).order_by('start_date')
+            return StudentRegistration.valid_objects().filter(section=self).order_by('start_date')
         else:
-            return StudentRegistration.objects.filter(section=self, user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
+            return StudentRegistration.valid_objects().filter(section=self, user=user).order_by('start_date')
 
     def getRegVerbs(self, user, allowed_verbs=False):
         """ Get the list of reg-types that a student has on this class. """
@@ -1178,11 +1179,11 @@ class ClassSection(models.Model):
         
         #   Stop all active or pending registrations
         if prereg_verb:
-            qs = StudentRegistration.objects.filter(relationship__name=prereg_verb, section=self, user=user, end_date__gte=now)
+            qs = StudentRegistration.valid_objects(now).filter(relationship__name=prereg_verb, section=self, user=user)
             qs.update(end_date=now)
             #   print 'Expired %s' % qs
         else:
-            qs = StudentRegistration.objects.filter(section=self, user=user, end_date__gte=now)
+            qs = StudentRegistration.valid_objects(now).filter(section=self, user=user)
             qs.update(end_date=now)
             #   print 'Expired %s' % qs
             
@@ -1222,7 +1223,7 @@ class ClassSection(models.Model):
             now = datetime.datetime.now()
             
             rt = RegistrationType.get_cached(name=prereg_verb, category='student')
-            qs = self.registrations.filter(id=user.id, studentregistration__start_date__lte=now, studentregistration__end_date__gte=now, studentregistration__relationship=rt)
+            qs = self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
             if fast_force_create or not qs.exists():
                 sr = StudentRegistration(user=user, section=self, relationship=rt)
                 sr.save()
@@ -1601,7 +1602,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def is_nearly_full(self, capacity_factor = None):
         if capacity_factor == None:
-            capacity_factor = get_capacity_factor()
+            capacity_factor = ClassSubject.get_capacity_factor()
         return len([x for x in self.get_sections() if x.num_students() > capacity_factor*x.capacity]) > 0
 
     def getTeacherNames(self):
@@ -1818,9 +1819,9 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         from esp.program.models import StudentRegistration
         now = datetime.datetime.now()
         if user == None:
-            return StudentRegistration.objects.filter(section__in=self.sections.all(), start_date__lte=now, end_date__gte=now).order_by('start_date')
+            return StudentRegistration.valid_objects().filter(section__in=self.sections.all()).order_by('start_date')
         else:
-            return StudentRegistration.objects.filter(section__in=self.sections.all(), user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
+            return StudentRegistration.valid_objects().filter(section__in=self.sections.all(), user=user).order_by('start_date')
 
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """

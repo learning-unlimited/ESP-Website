@@ -62,8 +62,8 @@ class ExpirableModel(models.Model):
                (self.end_date is None or self.end_date > when)
 
     @classmethod
-    def valid_objects(cls):
-        return cls.objects.filter(cls.is_valid_qobject())
+    def valid_objects(cls, when=None):
+        return cls.objects.filter(cls.is_valid_qobject(when))
 
     @staticmethod
     def is_valid_qobject(when=None):

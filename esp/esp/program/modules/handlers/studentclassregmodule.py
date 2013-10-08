@@ -33,6 +33,19 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+import simplejson
+from datetime import datetime
+from decimal import Decimal
+from collections import defaultdict
+
+from django.db.models.query import Q
+from django.db.models.query import Q, QuerySet
+from django.template.loader import get_template
+from django.http import HttpResponse
+from django.views.decorators.cache import cache_control
+from django.views.decorators.vary import vary_on_cookie
+from django.core.cache import cache
+
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
 from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration
@@ -42,21 +55,12 @@ from esp.middleware      import ESPError, AjaxError, ESPError_Log, ESPError_NoLo
 from esp.users.models    import ESPUser, Permission, Record
 from esp.tagdict.models  import Tag
 from esp.cache           import cache_function
-from django.db.models.query import Q
-from django.db.models.query import Q, QuerySet
-from django.template.loader import get_template
-from django.http import HttpResponse
-from django.views.decorators.cache import cache_control
-from django.views.decorators.vary import vary_on_cookie
 from esp.utils.no_autocookie import disable_csrf_cookie_update
 from esp.cal.models import Event, EventType
 from esp.program.templatetags.class_render import render_class_direct
-from django.core.cache import cache
 from esp.middleware.threadlocalrequest import get_current_request
-from datetime import datetime
-from decimal import Decimal
-from collections import defaultdict
-import simplejson
+from esp.utils.query_utils import nest_Q
+
 
 def json_encode(obj):
     if isinstance(obj, ClassSubject):
@@ -146,7 +150,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
 
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
-        Unexpired = Q(studentregistration__end_date__gte=now, studentregistration__start_date__lte=now) # Assumes that, for all still-valid registrations, we don't care about start_date, and end_date is null.
+        Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
         
         if QObject:
             retVal = {'enrolled': self.getQForUser(Enrolled & Par & Unexpired), 'classreg': self.getQForUser(Par & Unexpired)}
