@@ -42,7 +42,6 @@ from esp.users.models import ESPUser, StudentInfo
 from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, ClassSection
 from esp.program.models.class_ import ClassCategories
 from esp.mailman import add_list_member, remove_list_member, list_contents
-from esp.utils.query_utils import nest_Q
 
 from django.conf import settings
 import os
