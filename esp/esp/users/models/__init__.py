@@ -2037,10 +2037,10 @@ class Permission(ExpirableModel):
         implies = [perm]
         implies+=[x for x,y in cls.implications.items() if perm in y]
 
-        direct = Program.objects.filter(nest_Q(Permission.is_valid_qobject(), 'permission')).filter(
+        direct = Program.objects.filter(nest_Q(Permission.is_valid_qobject(), 'permission'),
                                        permission__user=user,
                                        permission__permission_type__in=implies)
-        role = Program.objects.filter(nest_Q(Permission.is_valid_qobject(), 'permission')).filter(
+        role = Program.objects.filter(nest_Q(Permission.is_valid_qobject(), 'permission'),
                                       permission__permission_type__in=implies,
                                       permission__user__isnull=True,
                                       permission__role__in=user.groups.all())
