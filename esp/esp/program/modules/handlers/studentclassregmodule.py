@@ -146,8 +146,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def students(self, QObject = False):
         from django.db.models import Q
 
-        now = datetime.now()
-
         Enrolled = Q(studentregistration__relationship__name='Enrolled')
         Par = Q(studentregistration__section__parent_class__parent_program=self.program)
         Unexpired = nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
@@ -641,7 +639,6 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     @needs_student
     @vary_on_cookie
     def catalog_registered_classes_json(self, request, tl, one, two, module, extra, prog, timeslot=None):
-        now = datetime.now()
         reg_bits = StudentRegistration.valid_objects().filter(user=request.user, section__parent_class__parent_program=prog).select_related()
 
         reg_bits_data = [

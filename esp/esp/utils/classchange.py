@@ -16,7 +16,6 @@ from esp.utils.query_utils import nest_Q
 
 p = None # program
 timeslots = None
-NOW = datetime.now()
 priorityLimit = 1
 SR_PROG = None
 SR_REQ = None
@@ -55,7 +54,7 @@ def get_student_schedule(student):
 
 def main(): 
     
-    global NOW, priorityLimit, SR_PROG, SR_REQ, SR_WAIT, SR_EN, PROG, REQ, WAIT, EN, p, students, sections, timeslots, timeslot, all_students
+    global priorityLimit, SR_PROG, SR_REQ, SR_WAIT, SR_EN, PROG, REQ, WAIT, EN, p, students, sections, timeslots, timeslot, all_students
     global en, req, loc, en_new, cap, score, req_num, wait, changed, unchanged, student
     
     save_enrollments = False
