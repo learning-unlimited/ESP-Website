@@ -976,11 +976,9 @@ class ClassSection(models.Model):
     students_dict.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
     
     def students_prereg(self):
-        now = datetime.datetime.now()
         return self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')).distinct()
 
     def students(self, verbs=['Enrolled']):
-        now = datetime.datetime.now()
         result = ESPUser.objects.none()
         for verb_str in verbs:
             result = result | self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), studentregistration__relationship__name=verb_str)
@@ -1052,7 +1050,7 @@ class ClassSection(models.Model):
     def clearStudents(self):
         from esp.program.models import StudentRegistration
         now = datetime.datetime.now()
-        qs = StudentRegistration.valid_objects().filter(section=self)
+        qs = StudentRegistration.valid_objects(now).filter(section=self)
         qs.update(end_date=now)
         #   Compensate for the lack of a signal on update().
         for reg in qs:
@@ -1155,7 +1153,6 @@ class ClassSection(models.Model):
     def getRegistrations(self, user = None):
         """Gets all StudentRegistrations for this section and a particular user. If no user given, gets all StudentRegistrations for this section"""
         from esp.program.models import StudentRegistration
-        now = datetime.datetime.now()
         if user == None:
             return StudentRegistration.valid_objects().filter(section=self).order_by('start_date')
         else:
@@ -1220,8 +1217,6 @@ class ClassSection(models.Model):
 
         if overridefull or fast_force_create or not self.isFull():
             #    Then, create the registration for this class.
-            now = datetime.datetime.now()
-            
             rt = RegistrationType.get_cached(name=prereg_verb, category='student')
             qs = self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
             if fast_force_create or not qs.exists():
@@ -1817,7 +1812,6 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     def getRegistrations(self, user=None):
         """Gets all non-expired StudentRegistrations associated with this class. If user is given, will also filter to that particular user only."""
         from esp.program.models import StudentRegistration
-        now = datetime.datetime.now()
         if user == None:
             return StudentRegistration.valid_objects().filter(section__in=self.sections.all()).order_by('start_date')
         else:

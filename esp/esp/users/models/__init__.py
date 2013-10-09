@@ -557,8 +557,6 @@ class ESPUser(User, AnonymousUser):
         here's a slightly more general function for finding who belongs where. """
         from esp.program.models import ClassSection, RegistrationType
         
-        now = datetime.now()
-        
         if verbs:
             rts = RegistrationType.objects.filter(name__in=verbs)
         else:
