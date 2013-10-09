@@ -501,6 +501,7 @@ class ClassSection(models.Model):
     
     def resourceassignments(self):
         """   Get all assignments pertaining to floating resources like projectors. """
+
         from esp.resources.models import ResourceType
         cls_restype = ResourceType.get_or_create('Classroom')
         ta_restype = ResourceType.get_or_create('Teacher Availability')
@@ -852,6 +853,12 @@ class ClassSection(models.Model):
 
     def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
+
+        # Check if section is full
+        if checkFull and self.isFull():
+            scrmi = self.parent_class.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+            return scrmi.temporarily_full_text
+
         # Test any scheduling constraints
         relevantConstraints = self.parent_program.getScheduleConstraints()
         #   relevantConstraints = ScheduleConstraint.objects.none()
@@ -953,15 +960,23 @@ class ClassSection(models.Model):
     #   something will need to be changed.
     @cache_function
     def students_dict(self):
+        """
+        Returns a dict of RegistrationType objects to a list of Student objects associated with
+        this class and that registration type.  e.g.:
+        {RegistrationType(name='Enrolled'): [student1, student2, student3],
+         ...
+        }
+        """
         from esp.program.models import RegistrationType
         now = datetime.datetime.now()
         
         rmap = RegistrationType.get_map()
         result = {}
         for key in rmap:
-            result[key] = list(self.registrations.filter(studentregistration__relationship=rmap[key], studentregistration__start_date__lte=now, studentregistration__end_date__gte=now).distinct())
-            if len(result[key]) == 0:
-                del result[key]
+            result_key = rmap[key] #the RegistrationType object, not the name field
+            result[result_key] = list(self.registrations.filter(studentregistration__relationship=rmap[key], studentregistration__start_date__lte=now, studentregistration__end_date__gte=now).distinct())
+            if len(result[result_key]) == 0:
+                del result[result_key]
         return result
     students_dict.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
     
@@ -997,12 +1012,15 @@ class ClassSection(models.Model):
 
     enrolled_students = DerivedField(models.IntegerField, count_enrolled_students)(null=False, default=0)
 
-    def cancel(self, email_students=True, explanation=None):
+    def cancel(self, email_students=True, include_lottery_students=False, explanation=None, unschedule=True):
         from django.conf import settings
         from django.contrib.sites.models import Site
         from esp.dbmail.models import send_mail
 
-        student_verbs = ['Enrolled', 'Interested', 'Priority/1']
+        if include_lottery_students:
+            student_verbs = ['Enrolled', 'Interested', 'Priority/1']
+        else:
+            student_verbs = ['Enrolled']
 
         context = {'sec': self, 'prog': self.parent_program, 'explanation': explanation}
         context['full_group_name'] = Tag.getTag('full_group_name') or '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
@@ -1027,7 +1045,12 @@ class ClassSection(models.Model):
         send_mail(email_title, email_content, from_email, to_email)
 
         self.clearStudents()
-    
+
+        #   If specified, remove the class's time and room assignment.
+        if unschedule:
+            self.clearRooms()
+            self.meeting_times.clear()
+
         self.status = -20
         self.save()
 
@@ -1134,11 +1157,15 @@ class ClassSection(models.Model):
     def isRegClosed(self): return self.registration_status == 10
     def isFullOrClosed(self): return self.isFull() or self.isRegClosed()
 
-    def getRegistrations(self, user):
+    def getRegistrations(self, user = None):
+        """Gets all StudentRegistrations for this section and a particular user. If no user given, gets all StudentRegistrations for this section"""
         from esp.program.models import StudentRegistration
         now = datetime.datetime.now()
-        return StudentRegistration.objects.filter(section=self, user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
-    
+        if user == None:
+            return StudentRegistration.objects.filter(section=self, start_date__lte=now, end_date__gte=now).order_by('start_date')
+        else:
+            return StudentRegistration.objects.filter(section=self, user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
+
     def getRegVerbs(self, user, allowed_verbs=False):
         """ Get the list of verbs that a student has within this class's anchor. """
         if not allowed_verbs:
@@ -1299,7 +1326,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     status = models.IntegerField(default=0)   
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
     meeting_times = models.ManyToManyField(Event, blank=True)
-
+    
     @cache_function
     def get_allowable_class_size_ranges(self):
         return self.allowable_class_size_ranges.all()
@@ -1332,7 +1359,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         if len(self.get_sections()) <= 0:
             return "N/A"
         else:
-            return self.get_sections()[0].prettyrooms()
+            rooms = []
+        
+            for subj in self.get_sections():
+            	rooms.extend(subj.prettyrooms())
+       	    
+            return rooms
 
     def ascii_info(self):
         return self.class_info.encode('ascii', 'ignore')
@@ -1452,7 +1484,16 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         for s in self.get_sections():
             collapsed_times += s.friendly_times()
         return collapsed_times
+    
+    def prettyblocks(self):
+        blocks = []
         
+        for s in self.get_sections():
+            rooms = ", ".join(s.prettyrooms())
+            blocks += [(x + " in " + rooms) for x in s.friendly_times()]
+        
+        return blocks
+    
     def students_dict(self):
         result = PropertyDict({})
         for sec in self.get_sections():
@@ -1482,7 +1523,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def fraction_full(self):
         try:
-            return self.num_students()/self.max_students()
+            return (self.num_students()*1.0)/self.max_students()
         except ZeroDivisionError:
             return 1.0
 
@@ -1527,7 +1568,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         # SQL's cascading delete thing is sketchy --- if the anchor's corrupt,
         # we want webmin manual intervention
         if anchor and not anchor.name.endswith(str(self.id)):
-            raise ESPError("Tried to delete class %d with corrupt anchor." % self.id)
+            raise ESPError(), "Tried to delete class %d with corrupt anchor." % self.id
 
         if self.num_students() > 0 and not adminoverride:
             return False
@@ -1571,6 +1612,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return {'self': node.classsubject_set.all()[0]}
         return {}
     title.depend_on_row(lambda: DataTree, title_selector)
+    title.admin_order_field = 'anchor__friendly_name'	# Admin Panel Display Configuration
 
     @cache_function
     def teachers(self):
@@ -1854,10 +1896,10 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         self.status = -10
         self.save()
 
-    def cancel(self, email_students=True, explanation=None):
-        """ Cancel this class. Has yet to do anything useful. """
+    def cancel(self, email_students=True, include_lottery_students=False, explanation=None, unschedule=False):
+        """ Cancel this class by cancelling all of its sections. """
         for sec in self.sections.all():
-            sec.cancel(email_students, explanation)
+            sec.cancel(email_students, include_lottery_students, explanation, unschedule)
         self.status = -20
         self.save()
         
@@ -1882,11 +1924,15 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             tmpnode = tmpnode.parent
         return "/".join(urllist)
 
-    def getRegistrations(self, user):
+    def getRegistrations(self, user=None):
+        """Gets all non-expired StudentRegistrations associated with this class. If user is given, will also filter to that particular user only."""
         from esp.program.models import StudentRegistration
         now = datetime.datetime.now()
-        return StudentRegistration.objects.filter(section__in=self.sections.all(), user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
-    
+        if user == None:
+            return StudentRegistration.objects.filter(section__in=self.sections.all(), start_date__lte=now, end_date__gte=now).order_by('start_date')
+        else:
+            return StudentRegistration.objects.filter(section__in=self.sections.all(), user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
+
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """
         return self.getRegistrations(user).values_list('relationship__name', flat=True)

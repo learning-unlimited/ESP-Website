@@ -31,6 +31,15 @@ class TemplateOverride(models.Model):
     def save(self, *args, **kwargs):
         #   Never overwrite; save a new copy with the version incremented.
         self.version = self.next_version()
+
+        #   Reset all Django template loaders
+        #   (our own template loader will be reset through the caching API)
+        from django.template.loader import template_source_loaders
+        from django.template.loaders.cached import Loader as cached_loader
+        if isinstance(template_source_loaders, list):
+            for tloader in filter(lambda x: isinstance(x, cached_loader), template_source_loaders):
+                tloader.reset()
+
         super(TemplateOverride, self).save(*args, **kwargs)
 
 from esp.utils import get_user

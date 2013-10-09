@@ -6,11 +6,32 @@ from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
 from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser
 from django.contrib.auth.admin import UserAdmin
+import datetime
 
 class UserBitAdmin(admin.ModelAdmin):
     list_display = [ 'id', 'user', 'qsc', 'verb', 'startdate', 'enddate', 'recursive', ]
-    search_fields = ['user__last_name','user__first_name',
+    search_fields = ['user__last_name','user__first_name','user__username',
                      'qsc__uri','verb__uri']
+    actions = [ 'expire', 'renew' ]
+
+    def expire(self, request, queryset):
+        rows_updated = queryset.update(enddate=datetime.datetime.now())
+        if rows_updated == 1:
+            message_bit = "1 userbit was"
+        else:
+            message_bit = "%s userbits were" % rows_updated
+        self.message_user(request, "%s successfully expired." % message_bit)
+    expire.short_description = "Expire bits"
+
+    def renew(self, request, queryset):
+        rows_updated = queryset.update(enddate=datetime.datetime(9999, 01, 01))
+        if rows_updated == 1:
+            message_bit = "1 userbit was"
+        else:
+            message_bit = "%s userbits were" % rows_updated
+        self.message_user(request, "%s successfully expired." % message_bit)
+    renew.short_description = "Renew bits"
+    
 admin_site.register(UserBit, UserBitAdmin)
 
 
@@ -28,11 +49,11 @@ admin_site.register(ESPUser, UserAdmin)
 
 class ContactInfoAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'e_mail', 'phone_day', 'address_postal']
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'e_mail']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__username',  'e_mail']
 admin_site.register(ContactInfo, ContactInfoAdmin)
 
 class UserInfoAdmin(admin.ModelAdmin):
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__email']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'user__username',  'user__email']
 
 class StudentInfoAdmin(UserInfoAdmin):
     list_display = ['id', 'user', 'graduation_year', 'k12school', 'school']

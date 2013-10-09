@@ -36,7 +36,7 @@ from django.db import models
 from esp.datatree.models import *
 from esp.program.modules.base import ProgramModuleObj
 from esp.db.fields import AjaxForeignKey
-from esp import settings
+from django.conf import settings
 from esp.users.models import ESPUser
 from esp.program.models import Program, RegistrationType
 
@@ -50,16 +50,6 @@ class DBReceipt(models.Model):
     def __unicode__(self):
         return 'Registration (%s) receipt for %s' % (self.action, self.program)
 
-
-class SATPrepAdminModuleInfo(models.Model):
-    module        = models.ForeignKey(ProgramModuleObj)
-    num_divisions = models.IntegerField(blank=True, null=True)
-    
-    def __unicode__(self):
-        return 'SATPrep admin settings for %s' % self.module.program
-    
-    class Admin:
-        pass
 
 REG_VERB_BASE = 'V/Flags/Registration'
 class StudentClassRegModuleInfo(models.Model):

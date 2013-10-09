@@ -264,7 +264,7 @@ def qsd(request, branch, name, section, action):
             'qsd'          : True,
             'missing_files': m.BrokenLinks(),
             'target_url'   : base_url.split("/")[-1] + ".edit.html",
-            'return_to_view': base_url.split("/")[-1] + ".html" },
+            'return_to_view': base_url.split("/")[-1] + ".html#refresh" },
                                   use_request_context=False)
 
     

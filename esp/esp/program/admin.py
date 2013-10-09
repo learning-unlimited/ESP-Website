@@ -37,8 +37,8 @@ from django.db.models import ManyToManyField
 
 from esp.admin import admin_site
 
-from esp.program.models import ProgramModule, ArchiveClass, Program, BusSchedule
-from esp.program.models import TeacherParticipationProfile, SATPrepRegInfo, RegistrationProfile
+from esp.program.models import ProgramModule, ArchiveClass, Program
+from esp.program.models import RegistrationProfile
 from esp.program.models import TeacherBio, FinancialAidRequest, SplashInfo
 from esp.program.models import VolunteerRequest, VolunteerOffer
 
@@ -57,7 +57,7 @@ admin_site.register(ProgramModule, ProgramModuleAdmin)
     
 class ArchiveClassAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'year', 'date', 'category', 'program', 'teacher')
-    search_fields = ['description', 'title', 'program', 'teacher', 'category']
+    search_fields = ['id', 'description', 'title', 'program', 'teacher', 'category']
     pass
 admin_site.register(ArchiveClass, ArchiveClassAdmin)
 
@@ -73,16 +73,6 @@ class ProgramAdmin(admin.ModelAdmin):
         return super(ProgramAdmin, self).formfield_for_dbfield(db_field,**kwargs)
 admin_site.register(Program, ProgramAdmin)
 
-admin_site.register(BusSchedule)
-admin_site.register(TeacherParticipationProfile)
-
-class SATPrepRegInfoAdmin(admin.ModelAdmin):
-    list_display = ('user', 'program')
-    #list_filter = ('program',)
-    search_fields = ['user__username']
-    pass
-admin_site.register(SATPrepRegInfo, SATPrepRegInfoAdmin)
-
 class RegistrationProfileAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'contact_user', 'program')
     pass
@@ -97,6 +87,7 @@ admin_site.register(TeacherBio, TeacherBioAdmin)
 class FinancialAidRequestAdmin(admin.ModelAdmin):
     list_display = ('user', 'approved', 'reduced_lunch', 'program', 'household_income', 'extra_explaination')
     search_fields = ['user__username', 'user__first_name', 'user__last_name', 'id', 'program__anchor__parent__friendly_name', 'program__anchor__friendly_name']
+    list_filter = ['program']
 admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
 
 class Admin_SplashInfo(admin.ModelAdmin):
@@ -168,7 +159,7 @@ def expire_student_registrations(modeladmin, request, queryset):
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = ['user__last_name', 'user__first_name', 'user__email', 'id', 'section__id']
+    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__anchor__name']
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
 def sec_classrooms(obj):
@@ -186,7 +177,8 @@ admin_site.register(ClassSection, SectionAdmin)
 class SubjectAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'parent_program', 'category')
     list_display_links = ('title',)
-    search_fields = ['class_info', 'anchor__friendly_name']
+    search_fields = ['id', 'class_info', 'anchor__friendly_name']
+    list_filter = ('parent_program', 'category')
 admin_site.register(ClassSubject, SubjectAdmin)
 
 class Admin_ClassCategories(admin.ModelAdmin):

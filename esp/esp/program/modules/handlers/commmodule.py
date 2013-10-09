@@ -34,8 +34,6 @@ Learning Unlimited, Inc.
 """
 from esp.program.modules.base import ProgramModuleObj, needs_student, needs_admin, main_call, aux_call
 from esp.web.util        import render_to_response
-from esp.program.modules.forms.satprep import SATPrepInfoForm
-from esp.program.models import SATPrepRegInfo
 from esp.dbmail.models import MessageRequest
 from esp.users.models   import ESPUser, PersistentQueryFilter
 from esp.users.controllers.usersearch import UserSearchController
@@ -45,6 +43,8 @@ from esp.dbmail.models import ActionHandler
 from django.template import Template
 from esp.middleware.threadlocalrequest import AutoRequestContext as Context
 from esp.middleware import ESPError
+
+from django.conf import settings
 
 class CommModule(ProgramModuleObj):
     """ Want to email all ESP students within a 60 mile radius of NYC?
@@ -107,8 +107,17 @@ class CommModule(ProgramModuleObj):
         esp_firstuser = ESPUser(firstuser)
         contextdict = {'user'   : ActionHandler(esp_firstuser, esp_firstuser),
                        'program': ActionHandler(self.program, esp_firstuser) }
+
+        #   Save the current context processors - we will disable them for rendering e-mail
+        old_context_processors = settings.TEMPLATE_CONTEXT_PROCESSORS
+        settings.TEMPLATE_CONTEXT_PROCESSORS = []
+
+        #   Render the e-mail using the unaltered context
         renderedtext = Template(htmlbody).render(Context(contextdict))
-        
+
+        #   Restore context processors for future template rendering
+        settings.TEMPLATE_CONTEXT_PROCESSORS = old_context_processors
+
         return render_to_response(self.baseDir()+'preview.html', request,
                                   (prog, tl), {'filterid': filterid,
                                                'listcount': listcount,
@@ -153,18 +162,16 @@ class CommModule(ProgramModuleObj):
 
         newmsg_request.save()
 
-        foo = MessageRequest.objects.all()[0]
-
         # now we're going to process everything
         # nah, we'll do this later.
         #newmsg_request.process()
 
-        numusers = filterobj.getList(ESPUser).count()
+        numusers = filterobj.getList(ESPUser).distinct().count()
 
         from django.conf import settings
         if hasattr(settings, 'EMAILTIMEOUT') and \
                settings.EMAILTIMEOUT is not None:
-            est_time = settings.EMAILTIMEOUT * len(users)
+            est_time = settings.EMAILTIMEOUT * numusers
         else:
             est_time = 1.5 * numusers
             

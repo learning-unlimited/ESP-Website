@@ -8,6 +8,10 @@ from esp.users.models import ContactInfo
 
 class Migration(DataMigration):
 
+    depends_on = (
+        ("users", "0010_auto__add_field_contactinfo_receive_txt_message"),
+    )
+
     def forwards(self, orm):
         ContactInfo.objects.filter(as_user__old_text_reminder=True).update(receive_txt_message=True)
 

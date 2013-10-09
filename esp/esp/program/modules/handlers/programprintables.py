@@ -47,7 +47,7 @@ from esp.accounting_core.models import LineItem, LineItemType, Transaction
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
-from esp import settings
+from django.conf import settings
 from django.template.loader import select_template
 from django.utils.encoding import smart_str
 
@@ -322,7 +322,7 @@ class ProgramPrintables(ProgramModuleObj):
             template_file = 'sections_list.csv'
 
         if 'cancelled' in request.GET or (extra and 'cancelled' in extra):
-            sections = filter(lambda z: (z.isCancelled() and z.meeting_times.count() > 0), sections)
+            sections = filter(lambda z: z.isCancelled(), sections)
         else:
             sections = filter(lambda z: (z.isAccepted() and z.meeting_times.count() > 0), sections)
         sections = filter(filt_exp, sections)                  
@@ -641,13 +641,6 @@ class ProgramPrintables(ProgramModuleObj):
 
     @aux_call
     @needs_admin
-    def satprepStudentCheckboxes(self, request, tl, one, two, module, extra, prog):
-        students = [ESPUser(student) for student in self.program.students_union() ]
-        students.sort()
-        return render_to_response(self.baseDir()+'satprep_students.html', request, (prog, tl), {'students': students})
-
-    @aux_call
-    @needs_admin
     def teacherschedules(self, request, tl, one, two, module, extra, prog):
         """ generate teacher schedules """
 
@@ -665,6 +658,8 @@ class ProgramPrintables(ProgramModuleObj):
             # get list of valid classes
             classes = [ cls for cls in teacher.getTaughtSections()
                     if cls.parent_program == self.program
+                    and cls.meeting_times.all().exists()
+                    and cls.resourceassignment_set.all().exists()
                     and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()            
@@ -676,20 +671,6 @@ class ProgramPrintables(ProgramModuleObj):
         context['scheditems'] = scheditems
 
         return render_to_response(self.baseDir()+'teacherschedule.html', request, (prog, tl), context)
-
-    @aux_call
-    @needs_admin
-    def teacherinfo(self, request, tl, one, two, module, extra, prog):
-        from esp.program.modules.module_ext import RemoteProfile
-        
-        def get_remote_info(teacher):
-            qs = RemoteProfile.objects.filter(user=teacher, program=prog)
-            if qs.count() > 0:
-                return {'remoteprofile': qs[0]}
-            else:
-                return {}
-            
-        return self.teachersbyFOO(request, tl, one, two, module, extra, prog, extra_func=get_remote_info, template_file='teacherlist_remote.html')
 
     def get_msg_vars(self, user, key):
         user = ESPUser(user)
@@ -730,6 +711,8 @@ class ProgramPrintables(ProgramModuleObj):
             return ProgramPrintables.getSchedule(self.program, user)
         elif key == 'student_schedule':
             return ProgramPrintables.getSchedule(self.program, user, 'Student')
+        elif key == 'student_schedule_norooms':
+            return ProgramPrintables.getSchedule(self.program, user, 'Student', room_numbers=False)
         elif key == 'teacher_schedule':
             return ProgramPrintables.getSchedule(self.program, user, 'Teacher')
         elif key == 'volunteer_schedule':
@@ -787,7 +770,7 @@ class ProgramPrintables(ProgramModuleObj):
         return t.render(Context(context))
 
     @staticmethod
-    def getSchedule(program, user, schedule_type=None):
+    def getSchedule(program, user, schedule_type=None, room_numbers=True):
         
         if schedule_type is None:
             if user.isStudent():
@@ -799,11 +782,17 @@ class ProgramPrintables(ProgramModuleObj):
             
         schedule = ''
         if schedule_type in ['Student', 'Teacher']:
-            schedule = """
-%s schedule for %s:
+            if room_numbers:
+                schedule = """
+    %s schedule for %s:
 
- Time                   | Class                                  | Room\n""" % (schedule_type, user.name())
-            schedule += '------------------------+----------------------------------------+-----------\n'
+     Time                   | Class                                  | Room\n""" % (schedule_type, user.name())
+            else:
+                schedule = """
+    %s schedule for %s:
+
+     Time                   | Class                                  \n""" % (schedule_type, user.name())
+            schedule += '------------------------+---------------------------------------------------\n'
             if schedule_type == 'Student':
                 classes = ProgramPrintables.get_student_classlist(program, user)
             elif schedule_type == 'Teacher':
@@ -814,8 +803,10 @@ class ProgramPrintables(ProgramModuleObj):
                     rooms = ' N/A'
                 else:
                     rooms = ' ' + ", ".join(rooms)
-                    
-                schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
+                if room_numbers:
+                    schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
+                else:
+                    schedule += '%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40))
                 
         elif schedule_type == 'Volunteer':
             schedule = """
@@ -1099,65 +1090,6 @@ Volunteer schedule for %s:
         context['phone_number'] = Tag.getTag('group_phone_number')
 
         return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
-
-    @aux_call
-    @needs_admin
-    def satpreplabels(self, request, tl, one, two, module, extra, prog):
-        filterObj, found = UserSearchController().create_filter(request, self.program)
-        if not found:
-            return filterObj
-
-        context = {'module': self     }
-        students = list(ESPUser.objects.filter(filterObj.get_Q()).distinct())
-        students.sort()
-                                    
-        finished_verb = GetNode('V/Finished')
-        finished_qsc  = self.program_anchor_cached().tree_create(['SATPrepLabel'])
-
-        numperpage = 10
-            
-        expanded = [[] for i in range(numperpage)]
-
-        users = []
-        for u in students:
-            if u and u.id:
-                for sec in u.getSections(prog):
-                    u = ESPUser(u)
-                    u.sec = sec
-                    users.append(u)
-            
-        for i in range(len(users)):
-            expanded[(i*numperpage)/len(users)].append(users[i])
-
-        users = []
-                
-        for i in range(len(expanded[0])):
-            for j in range(len(expanded)):
-                if len(expanded[j]) <= i:
-                    users.append(None)
-                else:
-                    users.append(expanded[j][i])
-        students = users
-
-        return render_to_response(self.baseDir()+'SATPrepLabels_print.html', request, (prog, tl), {'students': students})
-
-            
-    @aux_call
-    @needs_admin
-    def satpreplabels_bysection(self, request, tl, one, two, module, extra, prog):
-        #   Generate SAT Prep labels sorted by the first-period class.
-        #   This is useful for the practice exam when it is held in the usual classrooms.
-        from esp.cal.models import Event
-        mt_list = []
-        csl = prog.sections()
-        for c in csl:
-            for t in c.meeting_times.all():
-                if t not in mt_list: mt_list.append(t)
-        mt_list.sort(key=lambda x: x.start)        
-        early_time = mt_list[0]
-        sections = csl.filter(meeting_times=early_time)
-
-        return render_to_response(self.baseDir()+'SATPrepLabels_bysection.html', request, (prog, tl), {'sections': sections})
 
     @aux_call
     @needs_admin

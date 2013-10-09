@@ -9,10 +9,19 @@
 
 {% block subsection %}{% autoescape off %}{{ title|subsection }}{% endautoescape %}{% endblock %}
 
+{% block xtrajs %}
+<script type="text/javascript">
+  if (window.location.hash == '#refresh') {
+    window.location.hash = '';
+    window.location.reload(true);
+  }
+</script>
+{% endblock %}
+
 {% block content %}
 
 {% load render_qsd %}
-{% autoescape off %}{% render_qsd qsdrec None %}{% endautoescape %}
+{% autoescape off %}{% render_qsd qsdrec %}{% endautoescape %}
 
 <div class="qsd_bits qsd_bits_hidden">
     <a href="{{ edit_url }}">Edit this page</a>

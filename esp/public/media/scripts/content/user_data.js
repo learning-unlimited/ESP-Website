@@ -10,7 +10,7 @@ if (typeof(window["$j"]) == "undefined") {
 }
 
 var esp_user = {};
-var esp_user_keys = new Array('cur_username','cur_email','cur_first_name','cur_last_name','cur_other_user','cur_retTitle', 'cur_admin','cur_grade','cur_roles','cur_qsd_bits');
+var esp_user_keys = new Array('cur_username','cur_userid','cur_email','cur_first_name','cur_last_name','cur_other_user','cur_retTitle', 'cur_admin','cur_grade','cur_roles','cur_qsd_bits');
 
 for (var i=0; i < esp_user_keys.length; i++) {
     var tmp = $j.cookie(esp_user_keys[i]);
@@ -21,6 +21,7 @@ for (var i=0; i < esp_user_keys.length; i++) {
      * : see esp/middleware/esperrormiddleware.py
      */
 }
+esp_user['cur_userid'] = parseInt(esp_user['cur_userid']);
 esp_user['cur_email'] = unescape(esp_user['cur_email']);
 esp_user['cur_first_name'] = unescape(esp_user['cur_first_name']);
 esp_user['cur_last_name'] = unescape(esp_user['cur_last_name']);

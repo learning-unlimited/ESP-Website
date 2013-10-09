@@ -173,6 +173,10 @@ class ESPUser(User, AnonymousUser):
 
         self.other_user = False
 
+        if not hasattr(ESPUser, 'isOfficer'):
+            for user_type in ESPUser.getTypes() + ['Officer']:
+                setattr(ESPUser, 'is%s' % user_type, ESPUser.create_membership_method(user_type))
+
     def is_anonymous(self):
         return self._is_anonymous
 
@@ -268,7 +272,7 @@ class ESPUser(User, AnonymousUser):
                       'retTitle': retTitle,
                       'onsite'  : onsite}
 
-        if user.isAdministrator():
+        if user.isAdministrator() or user.is_staff or user.is_superuser:
             # Disallow morphing into Administrators.
             # It's too broken, from a security perspective.
             # -- aseering 1/29/2010
@@ -335,16 +339,16 @@ class ESPUser(User, AnonymousUser):
         taught_programs = taught_programs.distinct()
         return taught_programs
 
-    def getTaughtClasses(self, program = None):
+    def getTaughtClasses(self, program = None, include_rejected = False):
         """ Return all the taught classes for this user. If program is specified, return all the classes under
             that class. For most users this will return an empty queryset. """
         if program is None:
-            return self.getTaughtClassesAll()
+            return self.getTaughtClassesAll(include_rejected = include_rejected)
         else:
-            return self.getTaughtClassesFromProgram(program)
+            return self.getTaughtClassesFromProgram(program, include_rejected = include_rejected)
 
     @cache_function
-    def getTaughtClassesFromProgram(self, program):
+    def getTaughtClassesFromProgram(self, program, include_rejected = False):
         from esp.program.models import ClassSubject, Program # Need the Class object.
         
         #   Why is it that we had a find_by_anchor_perms function again?
@@ -360,7 +364,10 @@ class ESPUser(User, AnonymousUser):
         if type(program) != Program: # if we did not receive a program
             error("Expects a real Program object. Not a `"+str(type(program))+"' object.")
         else:
-            return all_classes.filter(parent_program = program)
+            if include_rejected: 
+                return all_classes.filter(parent_program = program)
+            else:
+                return all_classes.filter(parent_program = program).exclude(status=-10)
     getTaughtClassesFromProgram.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user, 'program': Program.objects.get(anchor=bit.qsc.parent.parent)},
                                                               lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
                                                                           bit.qsc.parent.name == 'Classes' and
@@ -368,18 +375,24 @@ class ESPUser(User, AnonymousUser):
     getTaughtClassesFromProgram.depend_on_row(lambda:ClassSubject, lambda cls: {'program': cls.parent_program}) # TODO: auto-row-thing...
 
     @cache_function
-    def getTaughtClassesAll(self):
+    def getTaughtClassesAll(self, include_rejected = False):
         from esp.program.models import ClassSubject # Need the Class object.
         
         #   Why is it that we had a find_by_anchor_perms function again?
         tr_node = GetNode('V/Flags/Registration/Teacher')
         when = datetime.now()
-        return ClassSubject.objects.filter(
+        if include_rejected: return ClassSubject.objects.filter(
             anchor__userbit_qsc__verb__id=tr_node.id,
             anchor__userbit_qsc__user=self,
             anchor__userbit_qsc__startdate__lte=when,
             anchor__userbit_qsc__enddate__gte=when,
         ).distinct()
+        else: return ClassSubject.objects.filter(
+            anchor__userbit_qsc__verb__id=tr_node.id,
+            anchor__userbit_qsc__user=self,
+            anchor__userbit_qsc__startdate__lte=when,
+            anchor__userbit_qsc__enddate__gte=when,
+        ).distinct().exclude(status=-10)
     getTaughtClassesAll.depend_on_row(lambda:UserBit, lambda bit: {'self': bit.user},
                                                       lambda bit: bit.verb_id == GetNode('V/Flags/Registration/Teacher').id and
                                                                   bit.qsc.parent.name == 'Classes' and
@@ -397,35 +410,41 @@ class ESPUser(User, AnonymousUser):
     getFullClasses_pretty.depend_on_model(lambda:ClassSubject) # should filter by teachers... eh.
 
 
-    def getTaughtSections(self, program = None):
+    def getTaughtSections(self, program = None, include_rejected = False):
         if program is None:
-            return self.getTaughtSectionsAll()
+            return self.getTaughtSectionsAll(include_rejected = include_rejected)
         else:
-            return self.getTaughtSectionsFromProgram(program)
+            return self.getTaughtSectionsFromProgram(program, include_rejected = include_rejected)
 
     @cache_function
-    def getTaughtSectionsAll(self):
+    def getTaughtSectionsAll(self, include_rejected = False):
         from esp.program.models import ClassSection
-        classes = list(self.getTaughtClassesAll())
-        return ClassSection.objects.filter(parent_class__in=classes)
+        classes = list(self.getTaughtClassesAll(include_rejected = include_rejected))
+        if include_rejected:
+            return ClassSection.objects.filter(parent_class__in=classes)
+        else:
+            return ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
     getTaughtSectionsAll.depend_on_model(lambda:ClassSection)
     getTaughtSectionsAll.depend_on_cache(getTaughtClassesAll, lambda self=wildcard, **kwargs:
                                                               {'self':self})
     @cache_function
-    def getTaughtSectionsFromProgram(self, program):
+    def getTaughtSectionsFromProgram(self, program, include_rejected = False):
         from esp.program.models import ClassSection
-        classes = list(self.getTaughtClasses(program))
-        return ClassSection.objects.filter(parent_class__in=classes)
+        classes = list(self.getTaughtClasses(program, include_rejected = include_rejected))
+        if include_rejected:
+            return ClassSection.objects.filter(parent_class__in=classes)
+        else:
+            return ClassSection.objects.filter(parent_class__in=classes).exclude(status=-10)
     getTaughtSectionsFromProgram.get_or_create_token(('program',))
     getTaughtSectionsFromProgram.depend_on_row(lambda:ClassSection, lambda instance: {'program': instance.parent_program})
     getTaughtSectionsFromProgram.depend_on_cache(getTaughtClassesFromProgram, lambda self=wildcard, program=wildcard, **kwargs:
                                                                               {'self':self, 'program':program})
 
-    def getTaughtTime(self, program = None, include_scheduled = True, round_to = 0.0):
+    def getTaughtTime(self, program = None, include_scheduled = True, round_to = 0.0, include_rejected = False):
         """ Return the time taught as a timedelta. If a program is specified, return the time taught for that program.
             If include_scheduled is given as False, we don't count time for already-scheduled classes.
             Rounds to the nearest round_to (if zero, doesn't round at all). """
-        user_sections = self.getTaughtSections(program)
+        user_sections = self.getTaughtSections(program, include_rejected = include_rejected)
         total_time = timedelta()
         round_to = float( round_to )
         if round_to:
@@ -433,7 +452,8 @@ class ESPUser(User, AnonymousUser):
         else:
             rounded_hours = lambda x: float( x )
         for s in user_sections:
-            if include_scheduled or (s.start_time() is None):
+            #   don't count cancelled or rejected classes -- Ted
+            if (include_scheduled or (s.start_time() is None)) and (s.parent_class.status >= 0):
                 total_time = total_time + timedelta(hours=rounded_hours(s.duration))
         return total_time
 
@@ -451,18 +471,17 @@ class ESPUser(User, AnonymousUser):
             raise ESPError(False), '"%s %s": Unknown User' % (first, last)
         return users[num]
 
-    @staticmethod
+    @cache_function
     def getTypes():
-        """ Get a list of the different roles an ESP user can have. By default there are four rols,
-            but there can be more. (Returns ['Student','Teacher','Educator','Guardian']. """
-
-        return ['Student','Teacher','Educator','Guardian','Volunteer']
+        """ Get a list of the different roles an ESP user can have. By default there are five roles,
+            but there can be more. (Returns ['Student','Teacher','Educator','Guardian','Volunteer'] by default. """
+        return [x[0] for x in ESPUser.getAllUserTypes()]
+    getTypes.depend_on_model(Tag)
+    getTypes = staticmethod(getTypes)
 
     @staticmethod
     def getAllOfType(strType, QObject = True):
-        types = ['Student', 'Teacher','Guardian','Educator','Volunteer']
-
-        if strType not in types:
+        if strType not in ESPUser.getTypes():
             raise ESPError(), "Invalid type to find all of."
 
         Q_useroftype      = Q(userbit__verb = GetNode('V/Flags/UserRole/'+strType)) &\
@@ -518,11 +537,14 @@ class ESPUser(User, AnonymousUser):
         """ Clear this teacher's availability for a program """
         self.useravailability_set.filter(QTree(event__anchor__below=program.anchor)).delete()
 
-    def addAvailableTime(self, program, timeslot):
+    def addAvailableTime(self, program, timeslot, role=None):
         from esp.resources.models import Resource, ResourceType
         
         #   Because the timeslot has an anchor, the program is unnecessary.
-        new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot)
+        #   Default to teacher mode
+        if role is None:
+            role = GetNode('V/Flags/UserRole/Teacher')
+        new_availability, created = UserAvailability.objects.get_or_create(user=self, event=timeslot, role=role)
         new_availability.save()
         
     def convertAvailability(self):
@@ -847,12 +869,13 @@ class ESPUser(User, AnonymousUser):
 
     isAdmin = isAdministrator
 
-    @staticmethod
+    @cache_function
     def getAllUserTypes():
         tag_data = Tag.getTag('user_types')
         result = DEFAULT_USER_TYPES
         result_labels = [x[0] for x in result]
         if tag_data:
+            print tag_data
             json_data = json.loads(tag_data)
             for entry in json_data:
                 if entry[0] not in result_labels:
@@ -860,6 +883,8 @@ class ESPUser(User, AnonymousUser):
                 else:
                     result[result_labels.index(entry[0])][1] = entry[1]
         return result
+    getAllUserTypes.depend_on_model(Tag)
+    getAllUserTypes = staticmethod(getAllUserTypes)
 
     def getUserTypes(self):
         """ Return the set of types for this user """
@@ -870,31 +895,28 @@ class ESPUser(User, AnonymousUser):
             
         return retVal
         
-    @classmethod
-    def create_membership_methods(cls):
+    @staticmethod
+    def create_membership_method(user_class):
         """
         Creates the methods such as isTeacher that determins whether
         or not the user is a member of that user class.
         """
-        user_classes = ('Teacher','Guardian','Educator','Officer','Student','Volunteer')
-        overrides = {'Officer': 'Administrator'}
-        for user_class in user_classes:
-            method_name = 'is%s' % user_class
-            bit_name = 'V/Flags/UserRole/%s' % overrides.get(user_class, user_class)
-            property_name = '_userclass_%s' % user_class
-            def method_gen(bit_name, property_name):
-                def _new_method(user):
-                    if not hasattr(user, property_name):
-                        setattr(user, property_name, bool(UserBit.UserHasPerms(user, GetNode('Q'),
-                                                                          GetNode(bit_name))))
-                    return getattr(user, property_name)
+        def _new_method(user):
+            return user.is_user_type(user_class)
+        _new_method.__name__    = 'is%s' % str(user_class)
+        _new_method.__doc__     = "Returns ``True`` if the user is a %s and False otherwise." % user_class
+        return _new_method
 
-                _new_method.__name__ = method_name
-                _new_method.__doc__ = "Returns ``True`` if the user is a %s and False otherwise." % user_class
-
-                return _new_method
-
-            setattr(cls, method_name, method_gen(bit_name, property_name))
+    def is_user_type(self, user_class):
+        """
+        Determines whether the user is a member of user_class.
+        """
+        property_name = '_userclass_%s' % user_class
+        if not hasattr(self, property_name):
+            bit_name = 'V/Flags/UserRole/%s' % {'Officer': 'Administrator'}.get(user_class, user_class)
+            setattr(self, property_name, bool(UserBit.UserHasPerms(self,
+                GetNode('Q'), GetNode(bit_name))))
+        return getattr(self, property_name)
 
     @classmethod
     def get_unused_username(cls, first_name, last_name):
@@ -992,9 +1014,6 @@ class ESPUser(User, AnonymousUser):
             return 0
 
         return schoolyear + 12 - grade
-
-
-ESPUser.create_membership_methods()
 
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
@@ -1793,7 +1812,7 @@ class PersistentQueryFilter(models.Model):
             raise ESPError(), 'Invalid Q object stored in database.'
 
         #   Do not include users if they have disabled their account.
-        if restrict_to_active and self.item_model.find('auth.models.User') >= 0:
+        if restrict_to_active and (self.item_model.find('auth.models.User') >= 0 or self.item_model.find('esp.users.models.ESPUser') >= 0):
             QObj = QObj & Q(is_active=True)
 
         return QObj
@@ -1910,8 +1929,9 @@ class PasswordRecoveryTicket(models.Model):
         if self.user.username != username:
             return False
 
-        # Change the password
+        # Change the password, and activate the account
         self.user.set_password(password)
+        self.user.is_active = True
         self.user.save()
 
         # Invalidate all other tickets

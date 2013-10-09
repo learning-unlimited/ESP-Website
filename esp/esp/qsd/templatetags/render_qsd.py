@@ -11,11 +11,8 @@ from urllib import quote
 register = template.Library()
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html')
-def render_qsd(qsd, user=None):
-    edit_bits = False
-    if user:
-        edit_bits = UserBit.UserHasPerms(user, qsd.path, DataTree.get_by_uri('V/Administer/Edit'))
-    return {'qsdrec': qsd, 'edit_bits': edit_bits}
+def render_qsd(qsd):
+    return {'qsdrec': qsd}
 render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html')
@@ -59,7 +56,11 @@ class InlineQSDNode(template.Node):
         except:
             anchor = GetNode(self.input_anchor)
 
-        qsd = self.qsd_name
+        try:
+            qsd = template.Variable(self.qsd_name)
+            qsd = qsd.resolve(context)
+        except:
+            qsd = self.qsd_name
 
         edit_bits = UserBit.UserHasPerms(user, anchor, DataTree.get_by_uri('V/Administer/Edit'))
 

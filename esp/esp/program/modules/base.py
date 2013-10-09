@@ -100,7 +100,7 @@ class ProgramModuleObj(models.Model):
             'call_tag' attribute.  This function searches the methods of the
             current program module to find those that match the list supplied
             in the 'tags' argument. """
-        from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo
+        from esp.program.modules.module_ext import ClassRegModuleInfo, StudentClassRegModuleInfo
             
         result = []
         
@@ -108,7 +108,7 @@ class ProgramModuleObj(models.Model):
         #   - Attributes of ProgramMdouleObj, including Django stuff
         #   - Module extension attributes
         key_set = set(dir(self)) - set(dir(ProgramModuleObj)) - set(self.__class__._meta.get_all_field_names())
-        for exclude_class in [ClassRegModuleInfo, StudentClassRegModuleInfo, SATPrepAdminModuleInfo]:
+        for exclude_class in [ClassRegModuleInfo, StudentClassRegModuleInfo]:
             key_set = filter(lambda key: key not in dir(exclude_class), key_set)
         for key in key_set:
             #   Fetch the attribute, now that we're confident it's safe to look at.
@@ -276,7 +276,7 @@ class ProgramModuleObj(models.Model):
         except:
             return (False, True)
         
-        classes = ClassSubject.objects.filter(id = clsid)
+        classes = ClassSubject.objects.filter(id = clsid, parent_program = self.program)
             
         if len(classes) == 1:
             if not get_current_request().user.canEdit(classes[0]):
@@ -319,10 +319,7 @@ class ProgramModuleObj(models.Model):
         if self.module.module_type != 'learn' and self.module.module_type != 'teach':
             return True
 
-        canView = False
-
-        if get_current_request().user.__dict__.has_key('onsite_local'):
-            canView = get_current_request().user.__dict__['onsite_local']
+        canView = get_current_request().user.isOnsite(self.program)
 
         if not canView:
             test_node = GetNode('V/Deadline/Registration/'+{'learn':'Student', 'teach':'Teacher'}[self.module.module_type]+extension)
@@ -680,6 +677,17 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
 
     return (canView, response)
 
+def list_extensions(tl, extensions, andor=''):
+    nicetl={'teach':'Teacher','learn':'Student'}[tl]
+    if len(extensions)==0:
+        return 'no deadlines were'
+    elif len(extensions)==1:
+        return 'the deadline '+nicetl+extensions[0]+' was'
+    elif len(extensions)==2:
+        return 'the deadlines '+nicetl+extensions[0]+' '+andor+' '+nicetl+extensions[1]+' were'
+    else:
+        return 'the deadlines '+', '.join([nicetl+e for e in extensions[:-1]])+', '+andor+' '+nicetl+extensions[-1]+' were'
+
 #   Return a decorator that returns a function calling the decorated function if
 #   the deadline is met, or a function that generates an error page if the
 #   deadline is not met.
@@ -694,7 +702,7 @@ def meets_deadline(extension=''):
                 if response:
                     return response
                 else:
-                    return render_to_response(errorpage, request, (moduleObj.program, tl), {})
+                    return render_to_response(errorpage, request, (moduleObj.program, tl), {'extension': list_extensions(tl,[extension]), 'moduleObj': moduleObj})
         return _checkDeadline
     return meets_deadline
 
@@ -712,7 +720,7 @@ def meets_any_deadline(extensions=[]):
             if response:
                 return response
             else:
-                return render_to_response(errorpage, request, (moduleObj.program, tl), {})
+                return render_to_response(errorpage, request, (moduleObj.program, tl), {'extension': list_extensions(tl,extensions,'and') , 'moduleObj': moduleObj})
         return _checkDeadline
     return meets_deadline
 
@@ -727,7 +735,7 @@ def meets_all_deadlines(extensions=[]):
                     if response:
                         return response
                     else:
-                        return render_to_response(errorpage, request, (moduleObj.program, tl), {})
+                        return render_to_response(errorpage, request, (moduleObj.program, tl), {'extension': list_extensions(tl,extensions,'or') , 'moduleObj': moduleObj})
             return method(moduleObj, request, tl, *args, **kwargs)
         return _checkDeadline
     return meets_deadline

@@ -60,7 +60,12 @@ class AjaxForeignKeyFieldBase:
 <!--
 
 $j("#id_%s").val("%s");
-$j("#id_%s_data").val(%s);
+$j("#id_%s_data").val("%s");
+$j("#id_%s").change(function () {
+    //  Clear current result and copy value to shadow field whenever text changes
+    $j("#id_%s_data").val(null);
+    $j("#id_%s").val($j("#id_%s").val());
+});
 $j("#id_%s").autocomplete({
     source: function(request, response) {
         $j.ajax({
@@ -77,7 +82,7 @@ $j("#id_%s").autocomplete({
                     return {
                         label: item.ajax_str,
                         value: item.ajax_str,
-                        id: item.id,
+                        id: item.id
                     };
                 });
                 response(output);
@@ -93,7 +98,7 @@ $j("#id_%s").autocomplete({
 
 //-->
 </script>""" % \
-         (fn, addslashes(init_val), fn, data, fn,
+         (fn, addslashes(init_val), fn, data, fn, fn, self.shadow_field, fn, fn,
           model_module, model_name, self.ajax_func or 'ajax_autocomplete',
           fn, shadow_field_javascript)
 
@@ -156,6 +161,8 @@ class AjaxForeignKeyNewformField(forms.IntegerField):
                  widget=None, help_text='', ajax_func=None, queryset=None,
                  error_messages=None, show_hidden_initial=False, shadow_field_name=None,
                  *args, **kwargs):
+
+        super(AjaxForeignKeyNewformField, self).__init__(*args, **kwargs)
 
         if ajax_func is None:
             self.widget.ajax_func = 'ajax_autocomplete'

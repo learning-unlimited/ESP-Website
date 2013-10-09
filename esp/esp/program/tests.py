@@ -47,6 +47,7 @@ from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.program.controllers.lottery import LotteryAssignmentController
 from esp.program.controllers.lunch_constraints import LunchConstraintGenerator
 
+import numpy
 import random
 
 class ViewUserInfoTest(TestCase):
@@ -987,7 +988,7 @@ class ModuleControlTest(ProgramFrameworkTest):
     def runTest(self):
         from esp.program.models import ProgramModule
         from esp.program.modules.base import ProgramModuleObj
-        from esp.program.modules.handlers.satprepmodule import SATPrepModule
+        from esp.program.modules.handlers.financialaidappmodule import FinancialAidAppModule
     
         #   Make all default modules non-required
         for pmo in self.program.getModules():
@@ -1004,17 +1005,17 @@ class ModuleControlTest(ProgramFrameworkTest):
         self.assertTrue('Steps for Registration' in response.content)
         
         #   Set a student module to be required and make sure we are shown it.
-        sat_module = ProgramModule.objects.filter(handler='SATPrepModule')[0]
-        moduleobj = ProgramModuleObj.getFromProgModule(self.program, sat_module)
+        fa_module = ProgramModule.objects.filter(handler='FinancialAidAppModule')[0]
+        moduleobj = ProgramModuleObj.getFromProgModule(self.program, fa_module)
         moduleobj.__class__ = ProgramModuleObj
         moduleobj.required = True
         moduleobj.save()
         
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
-        self.assertTrue('SAT Math Score' in response.content)
+        self.assertTrue('Financial Aid' in response.content)
         
         #   Remove the module and make sure we are not shown it anymore.
-        self.program.program_modules.remove(sat_module)
+        self.program.program_modules.remove(fa_module)
         self.program.save()
         
         response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
@@ -1114,6 +1115,44 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
                 self.failUnless(cls.cannotAdd(student) or cls.isFull())
+
+    def testStats(self):
+        """ Verify that the values returned by compute_stats() are correct
+            after running the lottery.  """
+
+        #   Run the lottery!
+        lotteryController = LotteryAssignmentController(self.program)
+        lotteryController.compute_assignments()
+        lotteryController.save_assignments()
+
+        #   Get stats
+        stats = lotteryController.compute_stats()
+
+        #   Check stats for correctness
+        #   - Some basic stats
+        self.assertEqual(stats['num_enrolled_students'], len(filter(lambda x: len(x.getEnrolledClasses(self.program)) > 0, self.students)))
+        self.assertEqual(stats['num_registrations'], len(StudentRegistration.valid_objects().filter(user__in=self.students, relationship__name='Enrolled')))
+        #   - 'Screwed students' list
+        for student in self.students:
+            stats_entry = filter(lambda x: x[1] == student.id, stats['students_by_screwedness'])[0]
+
+            #   Compute 'screwedness' score for this student
+            sections_interested = student.getSections(self.program, verbs=['Interested'])
+            sections_priority = student.getSections(self.program, verbs=['Priority/1'])
+            sections_enrolled = student.getSections(self.program, verbs=['Enrolled'])
+
+            sections_interested_and_enrolled = list((set(sections_interested) - set(sections_priority)) & set(sections_enrolled))
+            sections_priority_and_enrolled = list(set(sections_priority) & set(sections_enrolled))
+
+            hours_interested = numpy.sum([len(sec.get_meeting_times()) for sec in sections_interested_and_enrolled])
+            hours_priority = numpy.sum([len(sec.get_meeting_times()) for sec in sections_priority_and_enrolled])
+            student_utility = (hours_interested + 1.5 * hours_priority) ** 0.5
+
+            student_weight = (len(sections_interested) + len(sections_priority)) ** 0.5
+            student_screwed_val = (1.0 + student_utility) / (1.0 + student_weight)
+
+            #   Compare against the value in the stats dict (allow for floating-point error)
+            self.assertAlmostEqual(student_screwed_val, stats_entry[0])
 
     def testSingleLunchConstraint(self):
         # First generate 1 lunch timeslot

@@ -6,6 +6,10 @@ from django.db import models
 
 class Migration(DataMigration):
 
+    depends_on = (
+        ("qsd", "0001_initial"),
+    )
+
     def forwards(self, orm):
         "Rename Q/Web/class_schedule_header_text to Q/Web/contact_header_text"
         for q in orm['qsd.QuasiStaticData'].objects.filter(name='class_schedule_header_text', path__uri='Q/Web'):

@@ -63,11 +63,7 @@ Students: {{cls.emailcode}}-students@{{ EMAIL_HOST }}
 </tr>
 <tr>
   <th>Time Blocks (if assigned): </th>
-  <td>{{ cls.friendly_times|join:"<br />" }}</td>
-</tr>
-<tr>
-  <th>Rooms (if assigned)</th>
-  <td>{{ cls.prettyrooms|join:"<br />" }}</td>
+  <td>{{ cls.prettyblocks|join:"<br />" }}</td>
 </tr>
 <tr>
   <th>Directors' Emails (if available)</th>

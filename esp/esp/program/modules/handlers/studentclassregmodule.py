@@ -198,6 +198,14 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         else:
             return super(StudentClassRegModule, self).deadline_met('/Classes/OneClass')
 
+    def deadline_met_or_lottery_open(self, extension=None):
+        #   Allow default extension to be overridden if necessary
+        if extension is not None:
+            return self.deadline_met(extension)
+        else:
+            return self.deadline_met(extension) or \
+                   super(StudentClassRegModule, self).deadline_met('/Classes/Lottery')
+
     def prepare(self, context={}):
         from esp.program.controllers.studentclassregmodule import RegistrationTypeController as RTC
         verbs = RTC.getVisibleRegistrationTypeNames(prog=self.program)
@@ -234,9 +242,23 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             #   - Michael P, 6/23/2009
             #   if scrmi.use_priority:
             sec.verbs = sec.getRegVerbs(user, allowed_verbs=verbs)
+            sec.verb_names = [v.name for v in sec.verbs]
+            sec.is_enrolled = True if "Enrolled" in sec.verb_names else False
             
-            for mt in sec.get_meeting_times():
-                section_dict = {'section': sec, 'changeable': show_changeslot}
+            # While iterating through the meeting times for a section,
+            # we use this variable to keep track of the first timeslot.
+            # In the section_dict appended to timeslot_dict,
+            # we save whether or not this is the first timeslot for this
+            # section. If it isn't, the student schedule will indicate
+            # this, and will not display the option to remove the
+            # section. This is to prevent students from removing what
+            # they have mistaken to be duplicated classes from their
+            # schedules.
+            first_meeting_time = True
+
+            for mt in sec.get_meeting_times().order_by('start'):
+                section_dict = {'section': sec, 'changeable': show_changeslot, 'first_meeting_time': first_meeting_time}
+                first_meeting_time = False
                 if mt.id in timeslot_dict:
                     timeslot_dict[mt.id].append(section_dict)
                 else:

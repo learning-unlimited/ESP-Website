@@ -11,10 +11,6 @@ DROPBOX_STARTUP_SCRIPT="/etc/rc.local"
 MATRIX="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
 LENGTH="8"
 
-# TODO
-# Dependency installation
-# Database dump loading
-
 #CURDIR=`dirname $0`
 CURDIR=`pwd`
 
@@ -69,7 +65,7 @@ Options:
     --db:       Set up a PostgreSQL database
     --settings: Write settings files
     --apache:   Set up Apache to serve the site using mod_wsgi
-    
+
 For more detailed documentation, see: 
     http://wiki.learningu.org/Dev_server_setup_script
 "
@@ -140,7 +136,7 @@ echo "Using site label: $SITENAME"
 
 while [[ ! -n $DEPDIR ]]; do 
     echo 
-    echo "Enter the directory to use for dependencies"
+    echo "Enter the temp directory to use for dependencies"
     echo -n "  (default = `dirname $BASEDIR`/dependencies) --> "
     read DEPDIR
     DEPDIR=${DEPDIR:-`dirname $BASEDIR`/dependencies}
@@ -167,22 +163,22 @@ done
 echo "Contact forms on the site will direct mail to $GROUPEMAIL."
 echo "GROUPEMAIL=\"$GROUPEMAIL\"" >> $BASEDIR/.espsettings
 
+while [[ ! -n $INSTITUTION ]]; do
+    echo
+    echo -n "Enter your institution (e.g. 'UCLA') --> "
+    read INSTITUTION
+done
+echo "INSTITUTION=\"$INSTITUTION\"" >> $BASEDIR/.espsettings
+
 while [[ ! -n $GROUPNAME ]]; do
     echo
     echo -n "Enter your group's short name (e.g. 'ESP', 'Splash') --> "
     read GROUPNAME
 done
 echo "GROUPNAME=\"$GROUPNAME\"" >> $BASEDIR/.espsettings
-
-while [[ ! -n $INSTITUTION ]]; do
-    echo
-    echo -n "Enter your institution (e.g. 'UCLA') --> "
-    read INSTITUTION
-done
 echo "In printed materials and e-mails your group will be referred to as"
 echo "$INSTITUTION $GROUPNAME.  To substitute a more defailted name in"
 echo "some printed materials, set the 'full_group_name' Tag."
-echo "INSTITUTION=\"$INSTITUTION\"" >> $BASEDIR/.espsettings
 
 while [[ ! -n $EMAILHOST ]]; do
     echo 
@@ -277,13 +273,13 @@ echo -n "above, then press enter to continue or Ctrl-C to quit."
 read THROWAWAY
 
 # Update package repositories
-apt-get update
+sudo apt-get update
 
 # Git repository setup
 # To manually reset: Back up .espsettings file in [sitename].old directory, then remove site directory
 if [[ "$MODE_GIT" || "$MODE_ALL" ]]
 then
-    apt-get install -y git-core
+    sudo apt-get install -y git-core
 
     if [[ -e $BASEDIR/esp ]]
     then
@@ -318,76 +314,40 @@ fi
 if [[ "$MODE_DEPS" || "$MODE_ALL" ]]
 then
 
-	mkdir -p $DEPDIR
-	cd $DEPDIR
-	
-	#	Get what we can using Ubuntu's package manager
-	apt-get install -y build-essential texlive texlive-latex-extra imagemagick subversion dvipng python python-support python-imaging python-flup python-dns python-setuptools python-pip python-dns postgresql-9.1 libevent-dev python-dev zlib1g-dev libapache2-mod-wsgi inkscape wamerican-large ipython wget memcached libmemcached6 libmemcached-dev python-pylibmc libpq-dev
+    mkdir -p $DEPDIR
+    cd $DEPDIR
 
-	#	Fetch and extract files
-	if [[ ! -d selenium-server-standalone-2.9.0 ]]
-	then
-		mkdir selenium-server-standalone-2.9.0
-		cd selenium-server-standalone-2.9.0
-		wget http://selenium.googlecode.com/files/selenium-server-standalone-2.9.0.jar
-		cd $DEPDIR
-	fi
-        if [[ ! -d andrewgodwin-south-21a635231327 ]]
-	then
-		wget https://bitbucket.org/andrewgodwin/south/get/21a635231327.tar.gz
-		tar -xvf 21a635231327.tar.gz
-		cd andrewgodwin-south-21a635231327/
-		./setup.py build
-		sudo ./setup.py install
-		cd $DEPDIR
-	fi
-	while [[ ! -d dropbox ]]
-	do
+    #    Get what we can using Ubuntu's package manager
+    sudo apt-get install -y $(< $BASEDIR/esp/packages.txt)
+
+    #    Fetch and extract files
+    if [[ ! -d selenium-server-standalone-2.9.0 ]]
+    then
+        mkdir selenium-server-standalone-2.9.0
+        cd selenium-server-standalone-2.9.0
+        wget http://selenium.googlecode.com/files/selenium-server-standalone-2.9.0.jar
+        cd $DEPDIR
+    fi
+    while [[ ! -d dropbox ]]
+    do
         rm -f dropbox.tar.gz
-		if [[ `uname -a | grep "_64" | wc -l` != "0" ]]
-		then
-			wget -O dropbox.tar.gz http://www.dropbox.com/download/?plat=lnx.x86_64
-		else
-			wget -O dropbox.tar.gz http://www.dropbox.com/download/?plat=lnx.x86
-		fi
-		tar -xzf dropbox.tar.gz
-		mv .dropbox-dist dropbox
-	done
+        if [[ `uname -a | grep "_64" | wc -l` != "0" ]]
+        then
+            wget -O dropbox.tar.gz http://www.dropbox.com/download/?plat=lnx.x86_64
+        else
+            wget -O dropbox.tar.gz http://www.dropbox.com/download/?plat=lnx.x86
+        fi
+        tar -xzf dropbox.tar.gz
+        mv .dropbox-dist dropbox
+    done
 
-	#	Install python libraries
-	python -m easy_install iCalendar
-	python -m easy_install django
-	python -m easy_install repoze.profile
-	python -m easy_install xlwt
-	python -m easy_install simplejson
-	python -m easy_install twill
-	python -m easy_install django-form-utils
-	python -m easy_install django-reversion
-	python -m easy_install selenium
-	python -m easy_install django-selenium==0.3
-	python -m easy_install django-selenium-test-runner
-	python -m easy_install django-extensions
-    pip install django-formwizard
-	
-	#   This is special for Ubuntu 11.10; if you install python-psycopg2 using apt-get
-	#   you get psycopg2 version 2.4.2, which is too new for the current version of
-	#   Django.  So we manually install version 2.4.1.
-	pip install psycopg2==2.4.1
-
-	#	Install sslauth
-	if [[ ! -e $BASEDIR/esp/esp/3rdparty/sslauth ]]
-	then
-		echo "You do not have sslauth (expected path: $BASEDIR/esp/esp/3rdparty/sslauth)."
-		echo "This is required only if you want to use Apache to serve your site;"
-		echo "Django's manage.py will work fine without it.  If you want to fix this,"
-		echo "go back and grab the Git repository by running this script with the "
-		echo "--git option."
-	else
-		cp -r $BASEDIR/esp/esp/3rdparty/sslauth /usr/local/lib/python2.6/dist-packages/
-	fi
+    #    Install python libraries
+    virtualenv $BASEDIR/env
+    source $BASEDIR/env/bin/activate
+    pip install -r $BASEDIR/esp/requirements.txt
 
     cd $CURDIR
-    
+
     echo "Dependencies have been installed.  Please check this by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
@@ -400,7 +360,7 @@ fi
 if [[ "$MODE_SETTINGS" || "$MODE_ALL" ]]
 then
     mkdir -p ${BASEDIR}/esp/esp
-    
+
     cat >${BASEDIR}/esp/esp/database_settings.py <<EOF
 DATABASE_USER = '$DBUSER'
 DATABASE_PASSWORD = '$DBPASS'
@@ -483,7 +443,7 @@ SELENIUM_DRIVERS = 'Firefox'
 
 EOF
 
-    /etc/init.d/memcached restart
+    sudo /etc/init.d/memcached restart
 
     echo "Generated Django settings overrides, saved to:"
     echo "  $BASEDIR/esp/esp/local_settings.py"
@@ -511,25 +471,25 @@ then
     echo "information for your chapter's Web site Dropbox when prompted."
     echo "Answer no if you are not mirroring a production site or you would like"
     echo "to skip the Dropbox setup."
-	echo -n "  Mirror an existing Dropbox for media files (y/N)? --> "
-	read DROPBOX_MIRROR
-	DROPBOX_MIRROR=${DROPBOX_MIRROR:-N}
-	
-	MEDIADIR=$BASEDIR/esp/public/media
-	DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
-	
+    echo -n "  Mirror an existing Dropbox for media files (y/N)? --> "
+    read DROPBOX_MIRROR
+    DROPBOX_MIRROR=${DROPBOX_MIRROR:-N}
+
+    MEDIADIR=$BASEDIR/esp/public/media
+    DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
+
     if [[ "$DROPBOX_MIRROR" == "y" ]]
-	then
-	    #   Set up Dropbox
-	    
-	    if [[ ! -e ${DROPBOX_PATH}/dropbox ]]
-	    then
-		    echo "Dropbox executable could not be found."
-		    echo "Expected path was: ${DROPBOX_PATH}/dropbox"
-		    echo "Please install dependencies using the --deps option."
-		    exit 1
-	    fi
-	
+    then
+        #   Set up Dropbox
+
+        if [[ ! -e ${DROPBOX_PATH}/dropbox ]]
+        then
+            echo "Dropbox executable could not be found."
+            echo "Expected path was: ${DROPBOX_PATH}/dropbox"
+            echo "Please install dependencies using the --deps option."
+            exit 1
+        fi
+
         echo "A Dropbox instance will now be created for this site's media."
         echo "You may be prompted to link this machine to a Dropbox account."
         echo -n "Once this is complete, type 'ok' and hit enter"
@@ -564,8 +524,7 @@ then
         mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/images
         mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/styles
         mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/uploaded
-        
-        cp -r ${DJANGO_DIR}/contrib/admin/media $MEDIADIR/admin
+
         ln -sf ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media $BASEDIR/esp/public/custom_media
         ln -sf $BASEDIR/esp/public/custom_media/images $BASEDIR/esp/public/media/images
         ln -sf $BASEDIR/esp/public/custom_media/styles $BASEDIR/esp/public/media/styles
@@ -574,13 +533,12 @@ then
         #   Set up default media directories
         ln -sf $MEDIADIR/default_styles $MEDIADIR/styles
         ln -sf $MEDIADIR/default_images $MEDIADIR/images
-        ln -sf ${DJANGO_DIR}/contrib/admin/media $MEDIADIR/admin
         echo "Default media files have been linked into the site's media directories."
     fi
 
     mkdir -p $MEDIADIR/uploaded/bio_pictures
     chmod -R 777 $MEDIADIR
-    
+
     echo "Media directories have been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
@@ -591,64 +549,63 @@ fi
 # To reset: remove user and DB in SQL
 if [[ "$MODE_DB" || "$MODE_ALL" ]]
 then
-    sudo -u postgres psql template1 -c "CREATE LANGUAGE plpgsql;"
     sudo -u postgres psql -c "DROP DATABASE $DBNAME;"
     sudo -u postgres psql -c "DROP ROLE IF EXISTS $DBUSER;"
-	sudo -u postgres psql -c "CREATE USER $DBUSER CREATEDB;"
-	sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
-	sudo -u postgres psql -c "CREATE DATABASE $DBNAME OWNER ${DBUSER};"
-	
-	echo "Created a PostgreSQL login role and empty database."
-	echo
+    sudo -u postgres psql -c "CREATE USER $DBUSER CREATEDB;"
+    sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
+    sudo -u postgres psql -c "CREATE DATABASE $DBNAME OWNER ${DBUSER};"
 
-	echo "You may load an existing database dump file (.sql.gz) if you have one."
-	echo "Otherwise we will populate the empty database."
-	echo -n "Would you like to load a database dump file? (y/N) --> "
-	read USE_DB_DUMP
-	USE_DB_DUMP=${USE_DB_DUMP:-N}
+    echo "Created a PostgreSQL login role and empty database."
+    echo
 
-	if [[ "$USE_DB_DUMP" == "y" ]]
-	then
-		#	Instantiate database dump
-		cd $CURDIR
-		while [[ ! -e $DUMPFILE ]]
-		do
-			echo "Enter the path (absolute or relative from $CURDIR)"
-			echo "to your database dump file.  It should be in gzipped ASCII SQL format."
-			echo -n " --> "
-			read DUMPFILE
-		done
-		gunzip $DUMPFILE
-		RAWDUMP=${DUMPFILE%.*}
+    echo "You may load an existing database dump file (.sql.gz) if you have one."
+    echo "Otherwise we will populate the empty database."
+    echo -n "Would you like to load a database dump file? (y/N) --> "
+    read USE_DB_DUMP
+    USE_DB_DUMP=${USE_DB_DUMP:-N}
 
-		#	Rename the role temporarily so that permissions are right
-		DBOWNER=`grep "ALTER TABLE public.program_class OWNER TO" $RAWDUMP | head -n 1 | cut -d' ' -f 6 | sed "s/;//"`
+    if [[ "$USE_DB_DUMP" == "y" ]]
+    then
+        #    Instantiate database dump
+        cd $CURDIR
+        while [[ ! -e $DUMPFILE ]]
+        do
+            echo "Enter the path (absolute or relative from $CURDIR)"
+            echo "to your database dump file.  It should be in gzipped ASCII SQL format."
+            echo -n " --> "
+            read DUMPFILE
+        done
+        gunzip $DUMPFILE
+        RAWDUMP=${DUMPFILE%.*}
 
-		sudo -u postgres psql -c "ALTER ROLE $DBUSER RENAME TO $DBOWNER;"
-		sudo -u postgres psql $DBNAME -f $RAWDUMP
-		sudo -u postgres psql -c "ALTER ROLE $DBOWNER RENAME TO $DBUSER;"
-		sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
+        #    Rename the role temporarily so that permissions are right
+        DBOWNER=`grep "ALTER TABLE public.program_class OWNER TO" $RAWDUMP | head -n 1 | cut -d' ' -f 6 | sed "s/;//"`
 
-		cd $BASEDIR/esp/esp
-		./manage.py migrate --delete-ghost-migrations
-		cd $CURDIR
+        sudo -u postgres psql -c "ALTER ROLE $DBUSER RENAME TO $DBOWNER;"
+        sudo -u postgres psql $DBNAME -f $RAWDUMP
+        sudo -u postgres psql -c "ALTER ROLE $DBOWNER RENAME TO $DBUSER;"
+        sudo -u postgres psql -c "ALTER ROLE $DBUSER WITH PASSWORD '$DBPASS';"
 
-	else
-		#	Set up blank database
-		echo "Django's manage.py scripts will now be used to initialize the"
-		echo "$DBNAME database.  Please follow their directions."
+        cd $BASEDIR/esp/esp
+        ./manage.py migrate --delete-ghost-migrations
+        cd $CURDIR
 
-		cd $BASEDIR/esp/esp
-		./manage.py syncdb
-		./manage.py migrate
-		
-		#   Set initial Site (used in password recovery e-mail)
-		sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
+    else
+        #    Set up blank database
+        echo "Django's manage.py scripts will now be used to initialize the"
+        echo "$DBNAME database.  Please follow their directions."
 
-		cd $CURDIR
+        cd $BASEDIR/esp/esp
+        ./manage.py syncdb
+        ./manage.py migrate
 
-	fi
-    
+        #   Set initial Site (used in password recovery e-mail)
+        sudo -u postgres psql -c "DELETE FROM django_site; INSERT INTO django_site (id, domain, name) VALUES (1, '$ESPHOSTNAME', '$INSTITUTION $GROUPNAME Site');" $DBNAME
+
+        cd $CURDIR
+
+    fi
+
     echo "Database has been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
@@ -659,9 +616,16 @@ fi
 
 if [[ "$MODE_APACHE" || "$MODE_ALL" ]]
 then
-	APACHE_CONF_DIR=/etc/apache2/conf.d
+    APACHE_CONF_DIR=/etc/apache2/conf.d
 
-    cat >$BASEDIR/esp.wsgi <<EOF
+    tee $BASEDIR/esp.wsgi <<EOF
+try:
+    # activate virtualenv
+    activate_this = '$BASEDIR/env/bin/activate_this.py'
+    execfile(activate_this, dict(__file__=activate_this))
+except IOError:
+    pass
+
 import os
 import sys
 
@@ -688,11 +652,11 @@ else:
 
 EOF
 
-	cat >$APACHE_CONF_DIR/enable_vhosts <<EOF
+    sudo tee $APACHE_CONF_DIR/enable_vhosts <<EOF
 NameVirtualHost *:80
 EOF
 
-    cat >$APACHE_CONF_DIR/esp_$SITENAME <<EOF
+    sudo tee $APACHE_CONF_DIR/esp_$SITENAME <<EOF
 #   $INSTITUTION $GROUPNAME (automatically generated)
 WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 <VirtualHost *:80>
@@ -700,6 +664,7 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 
     #   Static files
     Alias /media $BASEDIR/esp/public/media
+    Alias /static $BASEDIR/esp/public/static
 
     #   WSGI scripted Python
     DocumentRoot $BASEDIR/esp/public
@@ -711,9 +676,9 @@ WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000
 </VirtualHost>
 
 EOF
-    /etc/init.d/apache2 reload
+    sudo /etc/init.d/apache2 reload
     echo "Added VirtualHost to Apache configuration $APACHE_CONF_FILE"
-    
+
     echo "Apache has been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY

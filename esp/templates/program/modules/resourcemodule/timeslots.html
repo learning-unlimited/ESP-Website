@@ -19,6 +19,10 @@
 <form method="post" action="/manage/{{ prog.url }}/resources/timeslot">
 <input type="hidden" name="command" value="addedit" />
 <table align="center" cellpadding="0" cellspacing="0" width="450"> 
+    <tr><th colspan="2" class="small">Add a new timeslot (or edit an existing one)</th></tr>
+    {{ timeslot_form }}
+    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Submit Timeslot" /></td></tr>
+    
     <tr><th colspan="2">Timeslots for {{ prog.niceName }}</th></tr>
     <tr>
         <td><b>Timeslot Name (Length)</b></td>
@@ -38,10 +42,6 @@
         </tr>
         {% endfor %}
     {% endfor %}
-
-    <tr><th colspan="2" class="small">Add a new timeslot (or edit an existing one)</th></tr>
-    {{ timeslot_form }}
-    <tr><td colspan="2" align="center"><input class="fancybutton" type="submit" value="Submit Timeslot" /></td></tr>
 </table>
 </form>
 </div>

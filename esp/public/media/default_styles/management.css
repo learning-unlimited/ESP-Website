@@ -4,6 +4,8 @@ div .manage_hidden {
 }
 
 div .module_group_body {
+    padding-left: 10px;
+    padding-right: 10px;
     margin-bottom: 10px;
 }
 
@@ -41,4 +43,12 @@ div .module_link_main {
 
 div .module_link_caption {
     font-size: 0.7em;
+}
+
+div .module_group_expandable + .module_group_body {
+    display: none;
+}
+
+.expand_collapse_text {
+    font-weight: normal;
 }

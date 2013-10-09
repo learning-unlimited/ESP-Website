@@ -222,8 +222,12 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
         new_data['last_name']  = curUser.last_name
         new_data['e_mail']     = curUser.email
         new_data = regProf.updateForm(new_data, role)
-        if request.session.has_key('birth_month') and request.session.has_key('birth_day'):
-            new_data['dob'] = datetime.date(1994, int(request.session['birth_month']), int(request.session['birth_day']))
+        
+        if regProf.student_info and regProf.student_info.dob:
+            new_data['dob'] = regProf.student_info.dob
+        elif request.session.has_key('birth_month') and request.session.has_key('birth_day'):
+            new_data['dob'] = datetime.date(1998, int(request.session['birth_month']), int(request.session['birth_day']))
+
         if request.session.has_key('school_id'):
             new_data['k12school'] = request.session['school_id']
 

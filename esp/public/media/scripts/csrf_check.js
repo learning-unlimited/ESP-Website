@@ -53,13 +53,13 @@ var check_csrf_cookie = function(form)
     //If this form is missing the csrfmiddlewaretoken, add it
     if (!form.csrfmiddlewaretoken)
     {
-        console.log('Missing csrfmiddlewaretoken, adding');
+        //  console.log('Missing csrfmiddlewaretoken, adding');
         $j(form).append(csrf_token_string());
     }
 
     //Check it
-    csrf_token = $j(form.csrfmiddlewaretoken).val();
-    console.log(csrf_token);
+    var csrf_token = $j(form.csrfmiddlewaretoken).val();
+    //  console.log(csrf_token);
     csrf_cookie = $j.cookie("csrftoken");
     if (csrf_cookie == null)
     {
@@ -73,7 +73,7 @@ var check_csrf_cookie = function(form)
 
     if (csrf_cookie != $j(form.csrfmiddlewaretoken).val())
     {
-        console.log('Not matching. csrf_cookie: ' + csrf_cookie + ', csrfmiddlewaretoken: ' + csrf_token);
+        //  console.log('Not matching. csrf_cookie: ' + csrf_cookie + ', csrfmiddlewaretoken: ' + csrf_token);
     }
     return true;
 }

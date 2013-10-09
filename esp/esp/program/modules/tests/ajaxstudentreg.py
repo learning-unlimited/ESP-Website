@@ -32,19 +32,18 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.program.models.class_ import ClassSection
-
 from esp.middleware.esperrormiddleware import AjaxErrorMiddleware
-
+from esp.program.models.class_ import ClassSection
 from esp.program.tests import ProgramFrameworkTest
-from django_selenium.testcases import SeleniumTestCase
 
+from django_selenium.testcases import SeleniumTestCase
 import random
 import simplejson as json
 
 #from esp.utils.selenium_auto import selenium_test
 
 
+# TODO(gkanwar): Remove non-selenium tests from this TestCase
 class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
     def setUp(self, *args, **kwargs):
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
@@ -186,13 +185,8 @@ class AjaxStudentRegTest(ProgramFrameworkTest, SeleniumTestCase):
         self.expect_empty_schedule(response)
 
     def test_lottery(self):
+        # TODO(gkanwar): Make this test actually do something, or remove it
         program = self.program
         
-        self.open_url('/learn/%s/lotterystudentreg' % program.getUrlBase())
-
-    def runTest(self):
-        self.test_ajax_schedule()
-        self.test_ajax_addclass()
-        self.test_ajax_clearslot()
-        self.test_lottery()
+        self.webdriver.get('/learn/%s/lotterystudentreg' % program.getUrlBase())
 

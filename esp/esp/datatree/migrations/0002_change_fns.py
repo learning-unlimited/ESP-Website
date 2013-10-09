@@ -1,15 +1,18 @@
 # encoding: utf-8
 import datetime
+import os.path
 from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 from esp.datatree.models import install as datatree_install
+from django.conf import settings
+
 
 class Migration(SchemaMigration):
 
     depends_on = (
         ("program", "0001_initial"),
-        ("users", "0001_initial"),
+        ("users", "0010_auto__add_field_contactinfo_receive_txt_message"),
     )
     
     #   Added IF EXISTS in case the initial data fixture was deferred and hasn't been loaded yet.
@@ -29,13 +32,13 @@ DROP FUNCTION IF EXISTS userbit__user_has_perms(integer, integer, integer, times
         print 'Populating initial datatree...'
         datatree_install()
 
-        with open("datatree/sql/datatree.postgresql-multiline.sql") as f:
+        with open(os.path.join(settings.PROJECT_ROOT, "esp/datatree/sql/datatree.postgresql-multiline.sql")) as f:
             db.execute(self.del_fns_str)
             db.execute(f.read())
 
     def backwards(self, orm):
         # The file should be reverted by now; and it's self-clobbering, so just run it again
-        with open("datatree/sql/datatree.postgresql-multiline.sql") as f:
+        with open(os.path.join(settings.PROJECT_ROOT, "esp/datatree/sql/datatree.postgresql-multiline.sql")) as f:
             db.execute(self.del_fns_str)
             db.execute(f.read())
 

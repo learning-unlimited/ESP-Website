@@ -3,8 +3,7 @@ from django import forms
 from django.forms.models import fields_for_model
 from form_utils.forms import BetterForm
 from django.utils.datastructures import SortedDict
-# from django.contrib.formtools.wizard import FormWizard
-from formwizard.views import SessionWizardView
+from django.contrib.formtools.wizard.views import SessionWizardView
 from django.core.files.storage import FileSystemStorage
 from django.shortcuts import redirect, render_to_response, HttpResponse
 from django.http import HttpResponseRedirect
@@ -502,6 +501,13 @@ class FormHandler:
             for section in page:
                 for field in section:
                     if field['id'] == field_id:
+                        # TODO I think this needs to be changed to
+                        # iterate through field['attributes'] instead
+                        # (see commit message), but I'm not familiar
+                        # enough with this function or when/how/on what
+                        # fields it is called to be confident enough to
+                        # make this change myself at this time.
+                        # -jmoldow, 2013-01-24
                         if field['attribute__value'] == "-1" or not field['attribute__value']:
                             return None
                         else:
