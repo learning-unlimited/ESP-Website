@@ -158,8 +158,6 @@ class LotteryAssignmentController(object):
         for i in range(len(lunch_by_day)):
             self.lunch_timeslots[i, :len(lunch_by_day[i])] = numpy.array(lunch_by_day[i])
 
-        now = datetime.now()
-        
         #   Populate interest matrix
         interest_regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Interested').values_list('user__id', 'section__id').distinct()
         ira = numpy.array(interest_regs, dtype=numpy.uint32)
