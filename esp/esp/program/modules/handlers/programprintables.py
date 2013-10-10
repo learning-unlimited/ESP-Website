@@ -256,6 +256,9 @@ class ProgramPrintables(ProgramModuleObj):
         first_sort = request.GET.get('first_sort', 'category')
 
         #   Perform sorting based on specified order rules
+        #   NOTE: Other catalogs can filter by _num_students but this one can't.
+        if '_num_students' in sort_order:
+            sort_order.remove('_num_students')
         classes = classes.order_by(*sort_order)
 
         #   Filter out classes that are not scheduled
