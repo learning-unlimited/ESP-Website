@@ -286,8 +286,6 @@ class ClassManager(ProcedureManager):
     catalog_cached.depend_on_model(lambda: ClassSection)
     catalog_cached.depend_on_model(lambda: Media)
     catalog_cached.depend_on_model(lambda: Tag)
-    #catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
-    #                             lambda bit: bit.applies_to_verb('V/Flags/Registration/Enrolled')) # This will expire a *lot*, and the value that it saves can be gotten from cache (with effort) instead of from SQL.  Should go do that.
 
     #perhaps make it program-specific?
     @staticmethod
