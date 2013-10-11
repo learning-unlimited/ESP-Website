@@ -33,11 +33,11 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 from esp.datatree.models import *
-from esp.users.models import ESPUser, User, UserBit
-from esp.users.models.userbits import UserBitImplication
+from esp.users.models import ESPUser, User, Permission
 from esp.program.Lists_ClassCategories import populate as populate_LCC
 from esp.program.models import Program, ProgramModule
-from esp.accounting_core.models import LineItemType
+from esp.accounting.controllers import ProgramAccountingController
+from django.contrib.auth.models import Group
 
 #   Changed this function to accept a dictionary so that it can be called directly
 #   from code in addition to being used in the program creation form.  -Michael P 8/18/2009
@@ -45,44 +45,24 @@ def prepare_program(program, data):
     """ This function adds custom stuff to save_instance to facilitate making programs happen.
     """
 
-    #   Datatrees format: each item is a tuple of (node URI, friendly name)
-    datatrees = []
-    #   Userbits format: each item is a tuple of (QSC URI, user ID, startdate, enddate)
-    userbits = []
+    #   Permissions format:
+    perms = []
     modules = []
 
-    # Fetch/create the program node
-    program_node_name = program.anchor.get_uri() + '/' + data['term']
-
-    # Create the DataTree branches
-    for sub_node in ProgramTemplate:
-        datatrees += [(program_node_name + sub_node, '')]
-
-    userbits += [('V/Flags/Public', None, data['publish_start'], data['publish_end'])]
-    
-    userbits += [('V/Deadline/Registration/Student', None, data['student_reg_start'], data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Applications', None, data['student_reg_start'], data['student_reg_end'])]
-    userbits += [('V/Deadline/Registration/Student/Catalog', None, data['student_reg_start'], None)]
-    #userbits += [('V/Deadline/Registration/Student/Classes', None, data['student_reg_start'], data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Classes/OneClass', None, data['student_reg_start'], data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Confirm', None, data['student_reg_start'], data['publish_end'])]
-    #userbits += [('V/Deadline/Registration/Student/ExtraCosts', None, data['student_reg_start'], data['student_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Student/MainPage', None, data['student_reg_start'], data['publish_end'])]
-    #userbits += [('V/Deadline/Registration/Student/Payment', None, data['student_reg_start'], data['publish_end'])]
-    
-    userbits += [('V/Deadline/Registration/Teacher', None, data['teacher_reg_start'], data['teacher_reg_end'])]
-    #userbits += [('V/Deadline/Registration/Teacher/Catalog', None, data['teacher_reg_start'], None)]
-    #userbits += [('V/Deadline/Registration/Teacher/Classes', None, data['teacher_reg_start'], data['teacher_reg_end'])]
-    userbits += [('V/Deadline/Registration/Teacher/Classes/View', None, data['teacher_reg_start'], None)]
-    userbits += [('V/Deadline/Registration/Teacher/MainPage', None, data['teacher_reg_start'], None)]
-    userbits += [('V/Deadline/Registration/Teacher/Profile', None, data['teacher_reg_start'], None)]
+    perms += [('Student/All', None, data['student_reg_start'], data['student_reg_end'])] #it is recursive
+    perms += [('Student/Catalog', None, data['student_reg_start'], None)]
+    perms += [('Student/Profile', None, data['student_reg_start'], None)]
+    perms += [('Teacher/All', None, data['teacher_reg_start'], data['teacher_reg_end'])]
+    perms += [('Teacher/Classes/View', None, data['teacher_reg_start'], None)]
+    perms += [('Teacher/MainPage', None, data['teacher_reg_start'], None)]
+    perms += [('Teacher/Profile', None, data['teacher_reg_start'], None)]
     
     #   Grant onsite bit (for all times) if an onsite user is available.
     if ESPUser.onsite_user():
-        userbits += [('V/Registration/OnSite', ESPUser.onsite_user(), None, None)]
+        perms += [('Onsite', ESPUser.onsite_user(), None, None)]
     
     for director in data['admins']:
-        userbits += [('V/Administer', ESPUser.objects.get(id=int(director)), None, None)]
+        perms += [('Administer', ESPUser.objects.get(id=int(director)), None, None)]
         
     json_module = ProgramModule.objects.get(handler=u'JSONDataModule')  # get the JSON Data Module
     # If the JSON Data Module isn't already in the list of selected
@@ -93,110 +73,43 @@ def prepare_program(program, data):
         data['program_modules'].append(json_module.id)
     modules += [(str(ProgramModule.objects.get(id=i)), i) for i in data['program_modules']]
        
-    return datatrees, userbits, modules
+    return perms, modules
 
-def commit_program(prog, datatrees, userbits, modules, costs = (0, 0)):
-    #   This function implements the changes suggested by prepare_program, by actually
-    #   creating the necessary datatrees and userbits.
-    def gen_tree_node(tup):
-        new_node = DataTree.get_by_uri(tup[0], create=True)
-        new_node.friendly_name = tup[1]
-        new_node.save()
-        return new_node
+def commit_program(prog, perms, modules, cost=0, sibling_discount=None):
+    #   This function implements the changes suggested by prepare_program.
     
-    def gen_userbit(tup):
-        new_ub = UserBit()
-        new_ub.verb = DataTree.get_by_uri(tup[0], create=True)
-        new_ub.qsc = prog.anchor
-        new_ub.recursive = True
+    def gen_perm(tup):
+        new_perm=Permission(permission_type=tup[0], program=prog)
+
         if tup[2]:
-            new_ub.startdate = tup[2]
+            new_perm.start_date = tup[2]
         if tup[3]:
-            new_ub.enddate = tup[3]
-        if (tup[1] is None) or (tup[1] == 0):
-            new_ub.user = None
-        elif type(tup[1]) in (User, ESPUser):
-            new_ub.user = tup[1]
-        else:
-            new_ub.user = ESPUser.objects.get(id=tup[1])        
-        new_ub.save()
-        return new_ub
-        
-    for dt_tup in datatrees:
-        gen_tree_node(dt_tup)
-    
-    for ub_tup in userbits:
-        gen_userbit(ub_tup)
+            new_perm.end_date = tup[3]
 
-    l = LineItemType()
-    l.text = prog.niceName() + " Admission"
-    l.amount = -costs[0]
-    l.anchor = prog.anchor["LineItemTypes"]["Required"]
-    l.finaid_amount = -costs[1]
-    l.finaid_anchor = prog.anchor["Accounts"]["FinancialAid"]
-    l.save()
-        
-    #   Create a userbit implication giving permanent registration access to the directors.
-    ubi = UserBitImplication()
-    ubi.qsc_original = prog.anchor
-    ubi.verb_original = DataTree.get_by_uri('V/Administer')
-    ubi.qsc_implied = prog.anchor
-    ubi.verb_implied = DataTree.get_by_uri('V/Deadline/Registration')
-    ubi.recursive = True
-    ubi.save()
-        
+        if tup[1] is not None:
+            new_perm.user=tup[1]
+            new_perm.save()
+            return
+        elif tup[1] is None and tup[0].startswith("Student"):
+            new_perm.role=Group.objects.get(name="Student")
+            new_perm.save()
+            return
+        elif tup[1] is None and tup[0].startswith("Teacher"):
+            new_perm.role=Group.objects.get(name="Teacher")
+            new_perm.save()
+            return
+
+        #It's not for a specific user and not a teacher or student deadline
+        for x in ESPUser.getTypes():
+            newnew_perm=Permission(permission_type=new_perm.permission_type, role=Group.objects.get(name=x), start_date=new_perm.start_date, end_date=new_perm.end_date, program=prog)
+            newnew_perm.save()
+
+    for perm_tup in perms:
+        gen_perm(perm_tup)
+
+    pac = ProgramAccountingController(prog)
+    pac.setup_accounts()
+    pac.setup_lineitemtypes(cost)
+    prog.sibling_discount = sibling_discount # property saves Tag, no explicit save needed
+
     return prog
-
-
-def populate():
-	populate_LCC()
-	#	populate_LET()
-	for v_node in VerbNodes:
-		GetNode( v_node )
-
-ProgramTemplate = (
-    '/Critical',
-    '/Internal',
-    '/Prospectives',
-    '/Prospectives/Teachers',
-    '/Prospectives/Students',
-    '/Prospectives/Volunteers',
-    '/Classes',
-    '/Subprograms',
-    '/LineItemTypes',
-    '/LineItemTypes/Required',
-    '/LineItemTypes/Optional',
-    '/Announcements',
-    '/Announcements/Teachers',
-    '/Confirmation',
-    '/Accounts',
-    '/Accounts/FinancialAid',
-    '/TeacherEvents/Interview',
-    '/TeacherEvents/Training',
-    )
-
-VerbNodes = (
-    'V/Deadline/Registration/Student',
-    'V/Deadline/Registration/Student/Applications',
-    'V/Deadline/Registration/Student/Catalog',
-    'V/Deadline/Registration/Student/Classes',
-    'V/Deadline/Registration/Student/Classes/OneClass',
-    'V/Deadline/Registration/Student/Confirm',
-    'V/Deadline/Registration/Student/ExtraCosts',
-    'V/Deadline/Registration/Student/Finaid',
-    'V/Deadline/Registration/Student/MainPage',
-    'V/Deadline/Registration/Student/Payment',
-    'V/Deadline/Registration/Teacher',
-    'V/Deadline/Registration/Teacher/Catalog',
-    'V/Deadline/Registration/Teacher/Classes',
-    'V/Deadline/Registration/Teacher/Classes/View',
-    'V/Deadline/Registration/Teacher/MainPage',
-    'V/Flags/Public',
-    'V/Administer',
-    'V/Administer/Edit',
-    'V/Administer/Edit/QSD',
-    'V/Administer/Edit/Class',
-    'V/Flags/Registration/Preliminary',
-    'V/Flags/Registration/Confirmed',
-    )
-    

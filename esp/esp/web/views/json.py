@@ -34,7 +34,6 @@ Learning Unlimited, Inc.
 """
 from django.http import HttpResponse
 from django.utils import simplejson
-from esp.users.models import UserBit
 from django.db.models.query import Q
 from esp.datatree.models import *
 
@@ -51,12 +50,8 @@ class JsonResponse(HttpResponse):
 def teacher_lookup(request, limit=10):
      # FIXME: REQUIRE PERMISSIONS!
     
-    # Initialize anchors for identifying teachers
-    q = GetNode( 'Q' )
-    v = GetNode( 'V/Flags/UserRole/Teacher' )
-    
-    # Select teachers
-    queryset = UserBit.bits_get_users(q, v)
+    queryset = ESPUser.objects.filter(group__name="Teacher")
+
 
     # Search for teachers with names that start with search string
     startswith = request.GET['q']

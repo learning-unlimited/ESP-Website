@@ -549,7 +549,7 @@ function render_table(display_mode, student_id)
             var parent_class = data.classes[section.class_id];
             
             var new_div = $j("<div/>").addClass("section");
-            new_div.addClass("section_category_" + parent_class.category__symbol);
+            new_div.addClass("section_category_" + parent_class.category__id);
             
             if (display_mode == "classchange")
             {
@@ -649,10 +649,14 @@ function render_classchange_table(student_id)
 function update_category_filters()
 {
     $j(".section").removeClass("section_category_hidden");
-    for (var symbol in data.categories)
+    for (var id_str in data.categories)
     {
-        if (settings.categories_to_display.indexOf(symbol) == -1)
-            $j(".section_category_" + symbol).addClass("section_category_hidden");
+        var id = parseInt(id_str);
+        if (settings.categories_to_display.indexOf(id) == -1)
+        {
+            console.log("Hiding category .section_category_" + id);
+            $j(".section_category_" + id).addClass("section_category_hidden");
+        }
     }
 }
 
@@ -662,23 +666,24 @@ function render_category_options()
     top_div = $j("#category_list");
     top_div.html("");
     //  Add a checkbox for each category we know about
-    for (var symbol in data.categories)
+    for (var id_str in data.categories)
     {
+        var id = parseInt(id_str);
         var new_li = $j("<div/>").addClass("category_item");
-        var new_checkbox = $j("<input/>").attr("type", "checkbox").attr("id", "category_select_" + symbol);
-        if (settings.categories_to_display.indexOf(symbol) != -1)
+        var new_checkbox = $j("<input/>").attr("type", "checkbox").attr("id", "category_select_" + id);
+        if (settings.categories_to_display.indexOf(id) != -1)
             new_checkbox.attr("checked", "checked");
         new_checkbox.change(function (event) {
-            var symbol = event.target.id.split("_")[2];
-            var symbol_index = settings.categories_to_display.indexOf(symbol);
-            if (symbol_index == -1)
-                settings.categories_to_display.push(symbol)
+            var target_id = parseInt(event.target.id.split("_")[2]);
+            var id_index = settings.categories_to_display.indexOf(target_id);
+            if (id_index == -1)
+                settings.categories_to_display.push(target_id)
             else
-                settings.categories_to_display = settings.categories_to_display.slice(0, symbol_index).concat(settings.categories_to_display.slice(symbol_index + 1));
+                settings.categories_to_display = settings.categories_to_display.slice(0, id_index).concat(settings.categories_to_display.slice(id_index + 1));
             update_category_filters();
         });
         new_li.append(new_checkbox);
-        new_li.append($j("<span/>").html(symbol + ": " + data.categories[symbol].category));
+        new_li.append($j("<span/>").html(data.categories[id].symbol + ": " + data.categories[id].category));
         top_div.append(new_li);
     }
 }
@@ -694,18 +699,18 @@ function populate_classes()
     for (var i in data.catalog.categories)
     {
         var new_category = data.catalog.categories[i];
-        data.categories[new_category.symbol] = new_category;
-        if (settings.categories_to_display.indexOf(new_category.symbol) == -1)
+        /*
+        //  Skip "open class" category
+        if (new_category.id == open_class_category.id)
+            continue;
+        */
+        data.categories[new_category.id] = new_category;
+        if (settings.categories_to_display.indexOf(new_category.id) == -1)
         {
-            settings.categories_to_display.push(new_category.symbol);
+            settings.categories_to_display.push(new_category.id);
         }
     }
-    var walkins = {
-        symbol:'W',
-        category:'Walk-in Seminar'
-    };
-    data.categories['W'] = walkins;
-    
+
     //  Fill in timeslots (we need these)
     for (var i in data.catalog.timeslots)
     {
@@ -721,6 +726,8 @@ function populate_classes()
     {
         var new_cls = data.catalog.classes[i];
         new_cls.teachers = new_cls.teacher_names;
+        //  This check would hide walk-in seminars
+        //  if (new_cls.category__id != open_class_category.id)
         data.classes[new_cls.id] = new_cls;
     }
     
@@ -735,11 +742,11 @@ function populate_classes()
             continue;
         
         new_sec.class_id = new_sec.parent_class__id;
-        new_sec.title = parent_class.anchor__friendly_name;
+        new_sec.emailcode = parent_class.category__symbol + new_sec.parent_class__id;
+        new_sec.title = parent_class.title;
         new_sec.grade_min = parent_class.grade_min;
         new_sec.grade_max = parent_class.grade_max;
         new_sec.rooms = null;
-        new_sec.emailcode = parent_class.category__symbol + parent_class.id + "s" + new_sec.anchor__name.substr(7);
         new_sec.students_enrolled = [];
         new_sec.students_checked_in = [];
         new_sec.num_students_enrolled = 0;

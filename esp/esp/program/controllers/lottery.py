@@ -158,15 +158,13 @@ class LotteryAssignmentController(object):
         for i in range(len(lunch_by_day)):
             self.lunch_timeslots[i, :len(lunch_by_day[i])] = numpy.array(lunch_by_day[i])
 
-        now = datetime.now()
-        
         #   Populate interest matrix
-        interest_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Interested', end_date__gte=now).values_list('user__id', 'section__id').distinct()
+        interest_regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Interested').values_list('user__id', 'section__id').distinct()
         ira = numpy.array(interest_regs, dtype=numpy.uint32)
         self.interest[self.student_indices[ira[:, 0]], self.section_indices[ira[:, 1]]] = True
         
         #   Populate priority matrix
-        priority_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Priority/1', end_date__gte=now).values_list('user__id', 'section__id').distinct()
+        priority_regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Priority/1').values_list('user__id', 'section__id').distinct()
         pra = numpy.array(priority_regs, dtype=numpy.uint32)
         self.priority[self.student_indices[pra[:, 0]], self.section_indices[pra[:, 1]]] = True
         
@@ -533,7 +531,7 @@ class LotteryAssignmentController(object):
         if delete:
             old_registrations.delete()
         else:
-            old_registrations.filter(end_date__gte=datetime.now()).update(end_date=datetime.now())
+            old_registrations.filter(StudentRegistration.is_valid_qobject()).update(end_date=datetime.now())
         
     def clear_mailman_list(self, list_name):
         contents = list_contents(list_name)
@@ -542,7 +540,7 @@ class LotteryAssignmentController(object):
         
     def update_mailman_lists(self, delete=True):
         if hasattr(settings, 'USE_MAILMAN') and settings.USE_MAILMAN:
-            self.clear_mailman_list("%s_%s-students" % (self.program.anchor.parent.name, self.program.anchor.name))
+            self.clear_mailman_list("%s_%s-students" % (self.program.program_type, self.program.program_instance))
             for i in range(self.num_sections):
                 section = ClassSection.objects.get(id=self.section_ids[i])
                 list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
@@ -552,5 +550,5 @@ class LotteryAssignmentController(object):
                     student = ESPUser.objects.get(id=self.student_ids[i])
                     for list_name in list_names:
                         add_list_member(list_name, student.email)
-                    add_list_member("%s_%s-students" % (self.program.anchor.parent.name, self.program.anchor.name), student.email)
+                    add_list_member("%s_%s-students" % (self.program.program_type, self.program.program_instance), student.email)
         

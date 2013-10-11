@@ -39,8 +39,7 @@ from esp.web.util        import render_to_response
 from datetime            import datetime        
 from django.db.models.query     import Q
 from esp.users.models    import User, ESPUser
-from esp.accounting_core.models import LineItemType, EmptyTransactionException, Balance
-from esp.accounting_docs.models import Document
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.middleware      import ESPError
 
 class CreditCardViewer_Cybersource(ProgramModuleObj):
@@ -56,20 +55,17 @@ class CreditCardViewer_Cybersource(ProgramModuleObj):
     @main_call
     @needs_admin
     def viewpay_cybersource(self, request, tl, one, two, module, extra, prog):
-        student_list = ESPUser.objects.filter(document__anchor=self.program_anchor_cached(), document__txn__lineitem__isnull=False).distinct()
-
-        if request.GET.has_key('only_completed'):
-            student_list = student_list.filter(document__txn__complete=True)
-            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached(), txn__complete=True), ESPUser(student).paymentStatus(self.program_anchor_cached())) for student in student_list ]
-        elif request.GET.has_key('only_incomplete'):
-            student_list = student_list.filter(document__txn__complete=False)
-            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached(), txn__complete=False), ESPUser(student).paymentStatus(self.program_anchor_cached())) for student in student_list ]
-        else:
-            payment_table = [ (student, student.document_set.filter(anchor=self.program_anchor_cached()), ESPUser(student).paymentStatus(self.program_anchor_cached())) for student in student_list ]
-
-        context = { 'payment_table': payment_table }
+        pac = ProgramAccountingController(prog)
+        student_list = list(pac.all_students())
+        payment_table = []
         
-        return render_to_response(self.baseDir() + 'viewpay_cybersource.html', request, (prog, tl), context)
+        for student in student_list:
+            iac = IndividualAccountingController(prog, student)
+            payment_table.append((student, iac.get_transfers(), iac.amount_requested(), iac.amount_due()))
+
+        context = { 'program': prog, 'payment_table': payment_table }
+        
+        return render_to_response(self.baseDir() + 'viewpay_cybersource.html', request, context)
 
     class Meta:
         abstract = True

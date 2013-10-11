@@ -36,8 +36,7 @@ Learning Unlimited, Inc.
 from esp.tests.util import CacheFlushTestCase as TestCase
 from esp.qsd.models import QuasiStaticData
 from esp.web.models import NavBarCategory
-from esp.datatree.models import GetNode
-from esp.users.models import UserBit, ESPUser
+from esp.users.models import ESPUser
 
 from django.template import Template, Context
 
@@ -54,7 +53,7 @@ class QSDCorrectnessTest(TestCase):
         new_admin, created = ESPUser.objects.get_or_create(username='qsd_admin')
         new_admin.set_password('password')
         new_admin.save()
-        role_bit, created = UserBit.objects.get_or_create(user=new_admin, verb=GetNode('V/Flags/UserRole/Administrator'), qsc=GetNode('Q'), recursive=False)
+        new_admin.makeRole('Administrator')
         self.author = new_admin
     
     def testInlineCorrectness(self):
@@ -63,7 +62,7 @@ class QSDCorrectnessTest(TestCase):
         
         #   Create an inline QSD
         qsd_rec_new = QuasiStaticData()
-        qsd_rec_new.path = GetNode('Q/Programs')
+        qsd_rec_new.url = 'learn/bar'
         qsd_rec_new.name = "learn:bar"
         qsd_rec_new.author = self.author
         qsd_rec_new.nav_category = NavBarCategory.default()
@@ -76,7 +75,7 @@ class QSDCorrectnessTest(TestCase):
         #   Render a template that uses the inline_qsd template tag
         template_data = """
             {% load render_qsd %}
-            {% render_inline_qsd "Q/Programs" "learn:bar" %}
+            {% render_inline_qsd "learn/bar" %}
         """
         template = Template(template_data)
         response_content = template.render(Context({}))
@@ -101,7 +100,7 @@ class QSDCorrectnessTest(TestCase):
         
         #   Create QSD with desired URL
         qsd_rec_new = QuasiStaticData()
-        qsd_rec_new.path = GetNode('Q/Programs')
+        qsd_rec_new.url = 'learn/foo'
         qsd_rec_new.name = "learn:foo"
         qsd_rec_new.author = self.author
         qsd_rec_new.nav_category = NavBarCategory.default()

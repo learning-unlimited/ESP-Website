@@ -48,8 +48,8 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
             }
 
     @main_call
-    @meets_deadline("/MainPage")
     @needs_teacher
+    @meets_deadline("/MainPage")
     def teacherreg(self, request, tl, one, two, module, extra, prog):
         """ Display a teacher reg page """
         context = {}
@@ -67,10 +67,7 @@ class TeacherRegCore(ProgramModuleObj, CoreModule):
         context['one'] = one
         context['two'] = two
         context['extra_steps'] = "teach:extra_steps"
-
-        context['progposts'] = Entry.find_posts_by_perms(request.user,GetNode('V/Subscribe'),
-                                                         self.program_anchor_cached().tree_create(['Announcements', 'Teachers']))
-        return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'mainpage.html', request, context)
 
     def isStep(self):
         return False

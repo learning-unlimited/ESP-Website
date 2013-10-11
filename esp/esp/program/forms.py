@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.users.models import ESPUser, UserBit, StudentInfo, K12School
+from esp.users.models import ESPUser, StudentInfo, K12School
 from esp.datatree.models import *
 from esp.program.models import Program, ProgramModule
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
@@ -46,13 +46,12 @@ from form_utils.forms import BetterModelForm
 
 
 def make_id_tuple(object_list):
-    
     return tuple([(o.id, str(o)) for o in object_list])
 
 class ProgramCreationForm(BetterModelForm):
     """ Massive form for creating a new instance of a program. """
     
-    term = forms.CharField(label='Term or year, in URL form (i.e. "2007_Fall")', widget=forms.TextInput(attrs={'size': '40'}))
+    term = forms.SlugField(label='Term or year, in URL form (i.e. "2007_Fall")', widget=forms.TextInput(attrs={'size': '40'}))
     term_friendly = forms.CharField(label='Term, in English (i.e. "Fall 07")', widget=forms.TextInput(attrs={'size': '40'}))
     
     admins            = forms.MultipleChoiceField(choices = [], label = 'Administrators')
@@ -60,19 +59,16 @@ class ProgramCreationForm(BetterModelForm):
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
-    publish_start     = forms.DateTimeField(label = 'Program-Visible-on-Website Date', widget = DateTimeWidget())
-    publish_end       = forms.DateTimeField(label = 'Program-Completely-Over Archive Date', widget = DateTimeWidget())
     base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
-    finaid_cost       = forms.IntegerField( label = 'Cost to Students who receive Financial Aid $', min_value = 0 )
-    anchor            = forms.ModelChoiceField([], label = "Program Type")
+    sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None, help_text='The amount of the sibling discount. Leave blank to disable sibling discounts.')
+    program_type      = forms.CharField(label = "Program Type")
     program_modules   = forms.MultipleChoiceField(choices = [], label = 'Program Modules')
 
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current admins and modules. """
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
-        ub_list = UserBit.objects.bits_get_users(GetNode('Q'), GetNode('V/Flags/UserRole/Administrator'))
-        self.fields['admins'].choices = make_id_tuple(ESPUser.objects.filter(id__in=[u.user_id for u in ub_list]).distinct().order_by('username'))
-        self.fields['anchor'].queryset = DataTree.objects.filter(Q(child_set__program__isnull=False) | Q(parent=GetNode("Q/Programs"))).exclude(parent__name="Subprograms").distinct()
+        admin_list=ESPUser.objects.filter(groups__name="Administrator")
+        self.fields['admins'].choices = make_id_tuple(admin_list.distinct().order_by('username'))
         self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
 
         #   Enable validation on other fields
@@ -92,9 +88,9 @@ class ProgramCreationForm(BetterModelForm):
 ('Program Title', {'fields': ['term', 'term_friendly'] }),
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['admins','director_email']}),
-                     ('Financial Details' ,{'fields':['base_cost','finaid_cost']}),
-                     ('Program Internal details' ,{'fields':['anchor','program_modules','class_categories']}),
-                     ('Registrations Date',{'fields':['publish_start','publish_end','teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
+                     ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
+                     ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories']}),
+                     ('Registrations Date',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
 
 
 ]                      # Here You can also add description for each fieldset.
@@ -119,7 +115,7 @@ ProgramCreationForm.base_fields['publish_start'].line_group = 1
 ProgramCreationForm.base_fields['publish_end'].line_group = 1
 
 ProgramCreationForm.base_fields['base_cost'].line_group = 4
-ProgramCreationForm.base_fields['finaid_cost'].line_group = 4
+ProgramCreationForm.base_fields['sibling_discount'].line_group = 4
 '''
 
 class StatisticsQueryForm(forms.Form):
@@ -148,19 +144,17 @@ class StatisticsQueryForm(forms.Form):
 
     @staticmethod
     def get_program_type_choices():
-        anchors = DataTree.objects.filter(id__in=Program.objects.all().values_list('anchor', flat=True))
-        parents = list(set([x.parent for x in anchors if x.parent.name not in ['Subprograms']]))
-        names_url = [x.name for x in parents]
+        programs = Program.objects.all()
+        names_url = list(set([x.program_type for x in programs]))
         names_url.sort()
-        names_friendly = [x.friendly_name for x in parents]
-        result = zip(names_url, names_friendly)
+        result = zip(names_url, names_url)
         return result
         
     @staticmethod
     def get_program_instance_choices(program_name):
-        anchors = DataTree.objects.filter(parent__uri='Q/Programs/%s' % program_name)
-        names_url = [x.name for x in anchors]
-        names_friendly = [x.friendly_name for x in anchors]
+        programs = Program.objects.all()
+        names_url = [x.url for x in programs]
+        names_friendly = [x.name for x in programs]
         result = sorted(zip(names_url, names_friendly), key=lambda pair: pair[0])
         result = filter(lambda x: len(x[1]) > 0, result)
         return result

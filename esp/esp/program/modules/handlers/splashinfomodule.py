@@ -139,7 +139,7 @@ class SplashInfoModule(ProgramModuleObj):
         context['form'] = form
         context['missing_siblingname'] = missing_siblingname
 
-        return render_to_response(self.baseDir()+'splashinfo.html', request, (prog,tl), context)
+        return render_to_response(self.baseDir()+'splashinfo.html', request, context)
 
     class Meta:
         abstract = True

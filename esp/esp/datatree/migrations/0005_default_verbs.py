@@ -5,15 +5,13 @@ from south.v2 import SchemaMigration
 from django.db import models
 
 from esp.datatree import models
-from esp.datatree.sql import set_isolation_level
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
-        set_isolation_level.DISABLE_TRANSACTIONS = True
-        models.install()
-        set_isolation_level.DISABLE_TRANSACTIONS = False
-
+        #   Nothing to be done - placeholder migration
+        pass
+        
     def backwards(self, orm):
         pass
 

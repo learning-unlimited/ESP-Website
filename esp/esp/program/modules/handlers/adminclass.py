@@ -38,7 +38,7 @@ from esp.program.controllers.consistency import ConsistencyChecker
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
 from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem
-from esp.users.models import UserBit, ESPUser, User
+from esp.users.models import ESPUser, User
 from esp.datatree.models import *
 from esp.cal.models              import Event
 
@@ -275,9 +275,9 @@ class AdminClass(ProgramModuleObj):
                             'registered_students': registered_students,
                             'class_id': request.GET['class_id'] }
                     
-                return render_to_response(self.baseDir()+'attendees_enter_users.html', request, (prog, tl), context)
+                return render_to_response(self.baseDir()+'attendees_enter_users.html', request, context)
 
-        return render_to_response(self.baseDir()+'attendees_selectclass.html', request, (prog, tl), { 'saved_record': saved_record, 'prog': prog })
+        return render_to_response(self.baseDir()+'attendees_selectclass.html', request, { 'saved_record': saved_record, 'prog': prog })
         
     @aux_call
     @needs_admin
@@ -296,7 +296,7 @@ class AdminClass(ProgramModuleObj):
             section = ClassSection.objects.get(id=section_id)
             context = {'sec': section, 'module': self}
             
-            return render_to_response(self.baseDir()+'delete_confirm.html', request, (prog, tl), context)
+            return render_to_response(self.baseDir()+'delete_confirm.html', request, context)
                 
     @aux_call
     @needs_admin
@@ -392,7 +392,7 @@ class AdminClass(ProgramModuleObj):
             
         consistency_checker = ConsistencyChecker(self.program)
         context['errors'] = []
-        for teacher in cls.teachers():
+        for teacher in cls.get_teachers():
             context['errors'] += consistency_checker.check_teacher_conflict(teacher)
         for section in sections:
             context['errors'] += consistency_checker.check_expected_duration(section)
@@ -404,10 +404,9 @@ class AdminClass(ProgramModuleObj):
         context['sec_forms'] = sec_forms
         context['cls_cancel_form'] = cls_cancel_form
         context['sec_cancel_forms'] = sec_cancel_forms
-        context['program'] = self.program
         context['module'] = self
         
-        return render_to_response(self.baseDir()+'manageclass.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'manageclass.html', request, context)
 
     @aux_call
     @needs_admin
@@ -493,14 +492,14 @@ class AdminClass(ProgramModuleObj):
         context['one'] = one
         context['two'] = two
 
-        return render_to_response(self.baseDir()+'mainpage.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'mainpage.html', request, context)
 
     @aux_call
     @needs_admin
     def deleteclass(self, request, tl, one, two, module, extra, prog):
         classes = ClassSubject.objects.filter(id = extra)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-                return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
+                return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
         cls.delete(True)
@@ -526,14 +525,15 @@ class AdminClass(ProgramModuleObj):
             
         classes = ClassSubject.objects.filter(id = clsid)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-            return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
 
         cls = classes[0]
 
         # set txtTeachers and coteachers....
         if not request.POST.has_key('coteachers'):
-            coteachers = cls.teachers()
-            coteachers = [ ESPUser(user) for user in coteachers ]
+            coteachers = cls.get_teachers()
+            coteachers = [ ESPUser(user) for user in coteachers
+                           if user.id != request.user.id           ]
             
             txtTeachers = ",".join([str(user.id) for user in coteachers ])
             
@@ -560,7 +560,7 @@ class AdminClass(ProgramModuleObj):
                 error = 'Error - You already added this teacher as a coteacher!'
 
             if error:
-                return render_to_response(self.baseDir()+'coteachers.html', request, (prog, tl),{'class':cls,
+                return render_to_response(self.baseDir()+'coteachers.html', request,{'class':cls,
                                                                                                  'ajax':ajax,
                                                                                                  'txtTeachers': txtTeachers,
                                                                                                  'coteachers':  coteachers,
@@ -592,9 +592,8 @@ class AdminClass(ProgramModuleObj):
                 if cls.conflicts(teacher):
                     conflictingusers.append(teacher.first_name+' '+teacher.last_name)
             if len(conflictingusers) == 0:
-                for teacher in cls.teachers():
+                for teacher in cls.get_teachers():
                     cls.removeTeacher(teacher)
-                    cls.removeAdmin(teacher)
 
                 # add bits for all new (and old) coteachers
                 ccc = ClassCreationController(self.program)
@@ -605,7 +604,7 @@ class AdminClass(ProgramModuleObj):
 
 
         
-        return render_to_response(self.baseDir()+'coteachers.html', request, (prog, tl),{'class':cls,
+        return render_to_response(self.baseDir()+'coteachers.html', request, {'class':cls,
                                                                                          'ajax':ajax,
                                                                                          'txtTeachers': txtTeachers,
                                                                                          'coteachers':  coteachers,
@@ -619,7 +618,7 @@ class AdminClass(ProgramModuleObj):
         
         classes = ClassSubject.objects.filter(id = extra)
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
-            return render_to_response(self.baseDir()+'cannoteditclass.html', request, (prog, tl),{})
+            return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
         
         module_list = prog.getModules()
@@ -664,10 +663,10 @@ class AdminClass(ProgramModuleObj):
             context['failed_ids'] = [id for id in clsids if not (id in cls_id_strings)]
             context['num_failures'] = len(context['failed_ids'])
 
-            return render_to_response(self.baseDir()+"approval_success.html", request, (prog, tl), context)
+            return render_to_response(self.baseDir()+"approval_success.html", request, context)
 
 
-        return render_to_response(self.baseDir()+"mass_approve_form.html", request, (prog, tl), {})
+        return render_to_response(self.baseDir()+"mass_approve_form.html", request, {})
 
 
     class Meta:

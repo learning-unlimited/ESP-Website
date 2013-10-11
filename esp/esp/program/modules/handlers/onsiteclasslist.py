@@ -33,21 +33,26 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+import simplejson
+import colorsys
 from datetime import datetime, timedelta
+
+from django.db.models import Min
+from django.db.models.query import Q
+from django.http import HttpResponse
+from django.utils.safestring import mark_safe
+
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap
 from esp.web.util import render_to_response
 from esp.cal.models import Event
 from esp.cache import cache_function
-from esp.users.models import ESPUser, UserBit
+from esp.users.models import ESPUser, Record
 from esp.resources.models import ResourceAssignment
 from esp.datatree.models import *
-from django.db.models import Min
-from django.db.models.query import Q
-from django.http import HttpResponse
+from esp.utils.models import Printer, PrintRequest
+from esp.utils.query_utils import nest_Q
 
-import simplejson
-import colorsys
 
 def hsl_to_rgb(hue, saturation, lightness=0.5):
     (red, green, blue) = colorsys.hls_to_rgb(hue, lightness, saturation)
@@ -78,9 +83,8 @@ class OnSiteClassList(ProgramModuleObj):
         sect['rooms'] = (' ,'.join(sec.prettyrooms()))[:12]
         return sect
     section_data.depend_on_model(lambda: ResourceAssignment)
-    section_data.depend_on_cache(lambda: ClassSubject.teachers, lambda **kwargs: {})
-    section_data = staticmethod(section_data)
-
+    section_data.depend_on_cache(lambda: ClassSubject.get_teachers, lambda **kwargs: {})
+    section_data=staticmethod(section_data)
 
     """ Warning: for performance reasons, these views are not abstracted away from
         the models.  If the schema is changed this code will need to be updated.
@@ -93,8 +97,8 @@ class OnSiteClassList(ProgramModuleObj):
         #   Fetch a reduced version of the catalog to save time
         data = {
             #   Todo: section current capacity ? (see ClassSection.get_capacity())
-            'classes': list(ClassSubject.objects.filter(parent_program=prog, status__gt=0).extra({'teacher_names': """SELECT array_to_string(array_agg(auth_user.first_name || ' ' || auth_user.last_name), ', ') FROM users_userbit, auth_user, datatree_datatree WHERE users_userbit.user_id = auth_user.id AND	users_userbit.qsc_id = program_class.anchor_id 	AND	users_userbit.verb_id = datatree_datatree.id AND datatree_datatree.uri = 'V/Flags/Registration/Teacher'""", 'class_size_max_optimal': """SELECT	program_classsizerange.range_max FROM program_classsizerange WHERE program_classsizerange.id = optimal_class_size_range_id"""}).values('id', 'class_size_max', 'class_size_max_optimal', 'class_info', 'prereqs', 'hardness_rating', 'grade_min', 'grade_max', 'anchor__name', 'anchor__friendly_name', 'teacher_names', 'category__symbol')),
-            'sections': list(ClassSection.objects.filter(parent_class__parent_program=prog, status__gt=0).extra({'event_ids':  """SELECT list("cal_event"."id") FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id")"""}).values('id', 'max_class_capacity', 'parent_class__id', 'anchor__name', 'enrolled_students', 'event_ids', 'registration_status')),
+            'classes': list(ClassSubject.objects.filter(parent_program=prog, status__gt=0).extra({'teacher_names': """SELECT array_to_string(array_agg(auth_user.first_name || ' ' || auth_user.last_name), ', ') FROM auth_user,program_class_teachers WHERE program_class_teachers.classsubject_id=program_class.id AND auth_user.id=program_class_teachers.espuser_id""", 'class_size_max_optimal': """SELECT	program_classsizerange.range_max FROM program_classsizerange WHERE program_classsizerange.id = optimal_class_size_range_id"""}).values('id', 'class_size_max', 'class_size_max_optimal', 'class_info', 'prereqs', 'hardness_rating', 'grade_min', 'grade_max', 'title', 'teacher_names', 'category__symbol', 'category__id')),
+            'sections': list(ClassSection.objects.filter(parent_class__parent_program=prog, status__gt=0).extra({'event_ids':  """SELECT list("cal_event"."id") FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id")"""}).values('id', 'max_class_capacity', 'parent_class__id', 'enrolled_students', 'event_ids', 'registration_status')),
             'timeslots': list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label')),
             'categories': list(prog.class_categories.all().order_by('-symbol').values('id', 'symbol', 'category')),
         }
@@ -105,7 +109,7 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def enrollment_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-        data = StudentRegistration.objects.filter(section__status__gt=0, section__parent_class__status__gt=0, end_date__gte=datetime.now(), start_date__lte=datetime.now(), section__parent_class__parent_program=prog, relationship__name='Enrolled').values_list('user__id', 'section__id')
+        data = StudentRegistration.valid_objects().filter(section__status__gt=0, section__parent_class__status__gt=0, section__parent_class__parent_program=prog, relationship__name='Enrolled').values_list('user__id', 'section__id')
         simplejson.dump(list(data), resp)
         return resp
     
@@ -138,7 +142,7 @@ LIMIT 1
     @needs_onsite
     def checkin_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-        data = ESPUser.objects.filter(userbit__startdate__lte=datetime.now(), userbit__enddate__gte=datetime.now(), userbit__qsc=prog.anchor, userbit__verb__uri='V/Flags/Registration/Attended').values_list('id').distinct()
+        data = ESPUser.objects.filter(record__event="attended", record__program=prog).distinct().values_list('id')
         simplejson.dump(list(data), resp)
         return resp
         
@@ -168,7 +172,7 @@ LIMIT 1
         except:
             result['messages'].append('Error: no user specified.')
         if result['user']:
-            result['sections'] = list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__start_date__lte=datetime.now(), studentregistration__end_date__gte=datetime.now(), studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
+            result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
         simplejson.dump(result, resp)
         return resp
         
@@ -189,14 +193,14 @@ LIMIT 1
             desired_sections = None
             
         #   Check in student, since if they're using this view they must be onsite
-        existing_bits = UserBit.valid_objects().filter(user=user, qsc=prog.anchor, verb=GetNode('V/Flags/Registration/Attended'))
-        if not existing_bits.exists():
-            new_bit, created = UserBit.objects.get_or_create(user=user, qsc=prog.anchor, verb=GetNode('V/Flags/Registration/Attended'))
+        q = Record.objects.filter(user=user, program=prog, event='attended')
+        if not q.exists():
+            new_rec, created = Record.objects.get_or_create(user=user, program=prog, event='attended')
             
         if user and desired_sections is not None:
             override_full = (request.GET.get("override", "") == "true")
         
-            current_sections = list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__start_date__lte=datetime.now(), studentregistration__end_date__gte=datetime.now(), studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).values_list('id', flat=True).order_by('id').distinct())
+            current_sections = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).values_list('id', flat=True).order_by('id').distinct())
             sections_to_remove = ClassSection.objects.filter(id__in=list(set(current_sections) - set(desired_sections)))
             sections_to_add = ClassSection.objects.filter(id__in=list(set(desired_sections) - set(current_sections)))
 
@@ -242,7 +246,7 @@ LIMIT 1
                             result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, error))
         
             result['user'] = user.id
-            result['sections'] = list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__start_date__lte=datetime.now(), studentregistration__end_date__gte=datetime.now(), studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
+            result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
         
         simplejson.dump(result, resp)
         return resp
@@ -254,12 +258,7 @@ LIMIT 1
     @needs_onsite
     def printschedule_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-         
-        verb = GetNode('V/Publish/Print')
-        if extra and extra != "":
-            verb = verb[extra]
-        
-        qsc = self.program_anchor_cached().tree_create(['Schedule'])
+
         result = {}
 
         try:
@@ -269,12 +268,9 @@ LIMIT 1
             
         if user:
             user_obj = ESPUser.objects.get(id=user)
-            if not UserBit.objects.filter(user__id=user, verb=verb, qsc=qsc).exclude(enddate__lte=datetime.now()).exists():
-                newbit = UserBit.objects.create(user=user_obj, verb=verb, qsc=qsc, recursive=False, enddate=datetime.now() + timedelta(days=1))
-                result['message'] = "Submitted %s's schedule for printing." % (user_obj.name())
-            else:
-                result['message'] = "A schedule is already waiting to be printed for %s." % (user_obj.name())
-            
+            PrintRequest.objects.create(user=user_obj, printer=request.GET.get('printer', None))
+            result['message'] = "Submitted %s's schedule for printing." % (user_obj.name())
+
         simplejson.dump(result, resp)
         return resp
 
@@ -283,10 +279,14 @@ LIMIT 1
     def classchange_grid(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['timeslots'] = prog.getTimeSlots()
-        context['printers'] = GetNode('V/Publish/Print').children().values_list('name', flat=True)
-        context['program'] = prog
+        context['printers'] = Printer.objects.all().values_list('name', flat=True)
         context['initial_student'] = request.GET.get('student_id', '')
-        return render_to_response(self.baseDir()+'ajax_status.html', request, (prog, tl), context)
+        
+        open_class_category = prog.open_class_category
+        open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
+        context['open_class_category'] = mark_safe(simplejson.dumps(open_class_category))
+        
+        return render_to_response(self.baseDir()+'ajax_status.html', request, context)
 
     @aux_call
     @needs_onsite
@@ -368,7 +368,8 @@ LIMIT 1
                 item['sections'].append(sect)
             timeslots.append(item)
         context['timeslots'] = timeslots
-        response = render_to_response(self.baseDir()+'status.html', request, (prog, tl), context)
+        
+        response = render_to_response(self.baseDir()+'status.html', request, context)
         return response
 
     @aux_call
@@ -423,7 +424,7 @@ LIMIT 1
         else:
             context['use_categories'] = True
         
-        return render_to_response(self.baseDir()+'classlist.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'classlist.html', request, context)
 
     @main_call
     @needs_onsite
@@ -440,9 +441,9 @@ LIMIT 1
         for cls in classes:
             categories[cls.category_id] = {'id': cls.category_id, 'category': cls.category.category}
 
-        printers = [ x.name for x in GetNode('V/Publish/Print').children() ]
+        printers = [ x.name for x in Printer.objects.all() ]
         
-        return render_to_response(self.baseDir()+'allclasslist.html', request, (prog, tl), 
+        return render_to_response(self.baseDir()+'allclasslist.html', request,
             {'classes': classes, 'prog': self.program, 'one': one, 'two': two, 'categories': categories.values(), 'printers': printers})
 
 

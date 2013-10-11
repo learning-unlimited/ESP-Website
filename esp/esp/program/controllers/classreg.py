@@ -4,7 +4,6 @@ from esp.middleware import ESPError
 from esp.program.modules.forms.teacherreg import TeacherClassRegForm
 from esp.resources.forms import ResourceRequestFormSet, ResourceTypeFormSet
 from esp.resources.models import ResourceType, ResourceRequest
-from esp.datatree.models import GetNode
 from esp.tagdict.models import Tag
 
 from esp.dbmail.models import send_mail
@@ -102,22 +101,17 @@ class ClassCreationController(object):
         return reg_form, resource_formset, restype_formset
     
     def make_class_happen(self, cls, user, reg_form, resource_formset, restype_formset, editing=False):
-        teachers = cls.teachers()
-        anchor_modified = self.set_class_data(cls, reg_form)
+        self.set_class_data(cls, reg_form)
         self.update_class_sections(cls, int(reg_form.cleaned_data['num_sections']))
 
-        #   If someone is editing the class, we assume they don't want to be
-        #   added as a teacher if they aren't already one.
-        if anchor_modified:
-            cls.save()
-            for teacher in teachers:
-                self.associate_teacher_with_class(cls, teacher)
-            if not editing:
-                self.associate_teacher_with_class(cls, user)
+        #   Associate current user with class if it is being created.
+        if not editing:
+            self.associate_teacher_with_class(cls, user)
+
         self.add_rsrc_requests_to_class(cls, resource_formset, restype_formset)
 
         #   If someone is editing the class who isn't teaching it, don't unapprove it.
-        if user in cls.teachers():
+        if user in cls.get_teachers():
             cls.propose()
         
     def set_class_data(self, cls, reg_form):
@@ -140,15 +134,12 @@ class ClassCreationController(object):
         if 'optimal_class_size_range' in reg_form.cleaned_data and reg_form.cleaned_data['optimal_class_size_range']:
             cls.optimal_class_size_range = ClassSizeRange.objects.get(id=reg_form.cleaned_data['optimal_class_size_range'])
 
-        #   Set title of class explicitly
-        cls.save()
-        anchor_modified = self.update_class_anchorname(cls, reg_form.cleaned_data['title'])
-
         if 'allowable_class_size_ranges' in reg_form.cleaned_data and reg_form.cleaned_data['allowable_class_size_ranges']:
             cls.allowable_class_size_ranges = ClassSizeRange.objects.filter(id__in=reg_form.cleaned_data['allowable_class_size_ranges'])
-            cls.save()
-            
-        return anchor_modified
+
+        #   Set title of class explicitly
+        cls.title = reg_form.cleaned_data['title']
+        cls.save()
 
     def update_class_sections(self, cls, num_sections):
         #   Give the class the appropriate number of sections as specified by the teacher.
@@ -166,27 +157,10 @@ class ClassCreationController(object):
 
     def attach_class_to_program(self, cls):        
         cls.parent_program = self.program
-        cls.anchor = self.program.classes_node()
-
-    def update_class_anchorname(self, cls, title):
-        nodestring = cls.emailcode()
-        if cls.anchor and nodestring == cls.anchor.name:
-            anchor_modified = False
-        else:
-            anchor_modified = True
-        cls.anchor = self.program.classes_node().tree_create([nodestring])
-        cls.anchor.tree_create(['TeacherEmail'])  ## Just to make sure it's there
-        cls.anchor.friendly_name = title
-        cls.anchor.save()
-        return anchor_modified
 
     def associate_teacher_with_class(self, cls, user):
         self.add_teacher_to_program_mailinglist(user)
-
         cls.makeTeacher(user)
-        cls.makeAdmin(user, self.crmi.teacher_class_noedit)
-        cls.subscribe(user)
-        self.program.teacherSubscribe(user)
 
     def force_availability(self, user):
         if len(user.getAvailableTimes(self.program)) == 0:
@@ -198,7 +172,7 @@ class ClassCreationController(object):
     def send_availability_email(self, teacher, note=None):
         timeslots = teacher.getAvailableTimes(self.program, ignore_classes=True)
         email_title = 'Availability for %s: %s' % (self.program.niceName(), teacher.name())
-        email_from = '%s Registration System <server@%s>' % (self.program.anchor.parent.name, settings.EMAIL_HOST_SENDER)
+        email_from = '%s Registration System <server@%s>' % (self.program.program_type, settings.EMAIL_HOST_SENDER)
         email_context = {'teacher': teacher,
                          'timeslots': timeslots,
                          'program': self.program,
@@ -217,7 +191,7 @@ class ClassCreationController(object):
             raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
 
     def add_teacher_to_program_mailinglist(self, user):
-        add_list_member("%s_%s-teachers" % (self.program.anchor.parent.name, self.program.anchor.name), user)
+        add_list_member("%s_%s-teachers" % (self.program.program_type, self.program.program_instance), user)
 
     def add_rsrc_requests_to_class(self, cls, resource_formset, restype_formset):
         for sec in cls.get_sections():
@@ -264,9 +238,9 @@ class ClassCreationController(object):
         new_data = cls.__dict__
         mail_ctxt = dict(new_data.iteritems())
         
-        mail_ctxt['title'] = cls.title()
-        mail_ctxt['one'] = cls.parent_program.anchor.parent.name
-        mail_ctxt['two'] = cls.parent_program.anchor.name
+        mail_ctxt['title'] = cls.title
+        mail_ctxt['one'] = cls.parent_program.program_type
+        mail_ctxt['two'] = cls.parent_program.program_instance
         mail_ctxt['DEFAULT_HOST'] = settings.DEFAULT_HOST
         
         # Make some of the fields in new_data nicer for viewing.
@@ -287,7 +261,7 @@ class ClassCreationController(object):
             pass
         
         mail_ctxt['teachers'] = []
-        for teacher in cls.teachers():
+        for teacher in cls.get_teachers():
             teacher_ctxt = {'teacher': teacher}
             # Provide information about whether or not teacher's from MIT.
             last_profile = teacher.getLastProfile()
@@ -307,16 +281,16 @@ class ClassCreationController(object):
     def send_class_mail_to_directors(self, cls):
         mail_ctxt = self.generate_director_mail_context(cls)
         
-        recipients = [teacher.email for teacher in cls.teachers()]
+        recipients = [teacher.email for teacher in cls.get_teachers()]
         if recipients:
-            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
+            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title, \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
-                      ('%s Class Registration <%s>' % (self.program.anchor.parent.name, self.program.director_email)), \
+                      ('%s Class Registration <%s>' % (self.program.program_type, self.program.director_email)), \
                       recipients, False)
 
         if self.program.director_email:
             mail_ctxt['admin'] = True
-            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title(), \
+            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title, \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
-                      ('%s Class Registration <%s>' % (self.program.anchor.parent.name, self.program.director_email)), \
-                      [self.program.director_email], False)
+                      ('%s Class Registration <%s>' % (self.program.program_type, self.program.director_email)), \
+                      [self.program.getDirectorCCEmail()], False)

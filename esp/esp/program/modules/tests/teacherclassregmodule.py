@@ -33,8 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from django.db import transaction
-from esp.users.models import ESPUser, UserBit
-from esp.datatree.models import GetNode
+from esp.users.models import ESPUser, Permission
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.models import ClassSubject, RegistrationType
@@ -64,7 +63,6 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.free_teacher2.set_password('password')
         self.free_teacher2.save()
         # Make the primary teacher an admin of the class
-        self.cls.makeAdmin(self.teacher)
 
         # Get and remember the instance of TeacherClassRegModule
         pm = ProgramModule.objects.get(handler='TeacherClassRegModule')
@@ -234,7 +232,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.schedule_randomly()
         # Find an empty class
         cls = random.choice([cls for cls in self.program.classes() if not cls.isFull() and not cls.is_nearly_full(ClassSubject.get_capacity_factor())])
-        teacher = cls.teachers()[0]
+        teacher = cls.get_teachers()[0]
         classes = list(teacher.getTaughtClasses())
         classes.remove(cls)
         for c in classes:
@@ -265,8 +263,7 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         self.create_past_program()
 
         # Create a class for the teacher
-        class_dummy_anchor = GetNode('Q/DummyClass')
-        new_class, created = ClassSubject.objects.get_or_create(anchor=class_dummy_anchor, category=self.categories[0], grade_min=7, grade_max=12, parent_program=self.new_prog, class_size_max=30, class_info='Previous class!')
+        new_class, created = ClassSubject.objects.get_or_create(category=self.categories[0], grade_min=7, grade_max=12, parent_program=self.new_prog, class_size_max=30, class_info='Previous class!')
         new_class.makeTeacher(self.teacher)
         new_class.add_section(duration=50.0/60.0)
         new_class.accept()
@@ -278,14 +275,16 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
     @transaction.commit_manually
     def test_deadline_met(self):
+
         self.failUnless(self.moduleobj.deadline_met())
-        self.moduleobj.user = self.students[0]
+        self.moduleobj.user = self.teachers[0]
         self.failUnless(self.moduleobj.deadline_met())
-        ubs = UserBit.objects.filter(verb = GetNode('V/Deadline/Registration/Teacher'), qsc = self.program.anchor_id)
-        for ub in ubs:
-            ub.expire()
+
+        Permission.objects.filter(permission_type__startswith='Teacher', program=self.moduleobj.program).delete()
+
         self.failUnless(not self.moduleobj.deadline_met())
         self.moduleobj.user = self.teacher
         self.failUnless(not self.moduleobj.deadline_met())
         
         transaction.rollback()
+

@@ -4,7 +4,7 @@
         </td>
         <td>
        <span class="teachers">
-       {% for teacher in class.teachers %}
+       {% for teacher in class.get_teachers %}
        <a href="/teach/teachers/{{ teacher.username|urlencode }}/bio.html" 
           title="Click for the biography of {{teacher.first_name }} {{teacher.last_name }}">
           {{ teacher.first_name }} {{teacher.last_name }}

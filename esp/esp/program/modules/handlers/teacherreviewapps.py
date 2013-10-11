@@ -59,8 +59,8 @@ class TeacherReviewApps(ProgramModuleObj):
             }
     
     @aux_call
-    @meets_deadline("/AppReview")
     @needs_teacher
+    @meets_deadline("/AppReview")
     @never_cache
     def review_students(self, request, tl, one, two, module, extra, prog):
         try:
@@ -121,13 +121,12 @@ class TeacherReviewApps(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'roster.html',
                                   request,
-                                  (prog, tl),
                                   {'class': cls,
                                    'students':students})
 
     @aux_call
-    @meets_deadline()
     @needs_teacher
+    @meets_deadline()
     def app_questions(self, request, tl, one, two, module, extra, prog):
         """ Edit the subject-specific questions that students will respond to on
         their applications. """
@@ -176,11 +175,11 @@ class TeacherReviewApps(ProgramModuleObj):
             return self.goToCore(tl)
             
         context = {'clrmi': clrmi, 'prog': prog, 'forms': form_list}
-        return render_to_response(self.baseDir()+'questions.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'questions.html', request, context)
 
     @aux_call
-    @meets_deadline("/AppReview")
     @needs_teacher
+    @meets_deadline("/AppReview")
     def review_student(self, request, tl, one, two, module, extra, prog):
         scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
         reg_nodes = scrmi.reg_verbs()
@@ -239,7 +238,6 @@ class TeacherReviewApps(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'review.html',
                                   request,
-                                  (prog, tl),
                                   {'class': cls,
                                    'reviews': teacher_reviews,
                                   'program': prog,

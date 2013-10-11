@@ -47,47 +47,23 @@ class EventType(models.Model):
     def __unicode__(self):
         return unicode(self.description)
 
-
-class Series(models.Model):
-    """ A container object for grouping Events.  Can be nested. """
-    description = models.TextField()
-    target = AjaxForeignKey(DataTree) # location for this Series in the datatree
-
-    def __unicode__(self):
-        return unicode(self.description)
-
-    def is_happening(self, time=datetime.now()):
-        """ Returns True if any Event contained by this Series, or any event contained by any Series nested beneath this Series, returns is_happening(time)==True """
-        for event in self.event_set.all():
-            if event.is_happening(time):
-                return True
-
-        for series in self.series_set.all():
-            if series.is_happening(time):
-                return True;
-
-        return False;
-
-    class Meta:
-        verbose_name_plural = 'Series'
-
-
 class Event(models.Model):
     """ A unit calendar entry.
 
     All calendar entries are events; all data for the event that doesn't fit into the event field is keyed in from a remote class. """
-    anchor = AjaxForeignKey(DataTree)
-
     start = models.DateTimeField() # Event start time
     end = models.DateTimeField() # Event end time
     short_description = models.TextField() # Event short description
     description = models.TextField() # Event textual description; not computer-parseable
+    name = models.CharField(max_length=80)
+    program = models.ForeignKey('program.Program',blank=True, null=True)
     event_type = models.ForeignKey(EventType) # The type of event.  This implies, though does not require, the types of data that are keyed to this event.
-    #    container_series = models.ForeignKey(Series, blank=True, null=True)
     priority = models.IntegerField(blank=True, null=True) # Priority of this event
 
     def title(self):
-        return self.anchor.uri
+        if self.program is not None:
+            return "%s for %s" % (self.name, self.program.title())
+        return self.name
 
     def duration(self):
         return self.end - self.start
@@ -214,20 +190,8 @@ class Event(models.Model):
         from esp.program.models import ClassSection
         return ClassSection.objects.filter(meeting_times=self).count()
     
-    @cache_function
     def parent_program(self):
-        #   Returns the program if the event is associated with exactly one.
-        #   Otherwise returns None.
-        qs = self.anchor.program_set.all()
-        if qs.count() == 1:
-            return qs[0]
-        else:
-            return None
-    parent_program.depend_on_row(lambda: Event, lambda evt: {'self': evt})
-    def get_program_model():
-        from esp.program.models import Program
-        return Program
-    parent_program.depend_on_model(get_program_model)
+        return self.program
     
     def __cmp__(self, other):
         try:
@@ -252,5 +216,5 @@ def install():
         Teacher Interview -- for TeacherEventsModule
         Teacher Training -- for TeacherEventsModule
     """
-    for x in [ 'Class Time Block', 'Teacher Interview', 'Teacher Training' ]:
+    for x in [ 'Class Time Block', 'Teacher Interview', 'Teacher Training', 'Compulsory', 'Volunteer' ]:
         EventType.objects.get_or_create(description=x)

@@ -53,7 +53,7 @@
     <strong>Description</strong><br />
     <textarea class="wide" name="description" rows="5">{{ description|default_if_none:""|escape }}</textarea><br />
     <strong>Navigation Category: </strong>
-    <select name="nav_category" value="{{ nav_category }}"/>
+    <select name="nav_category" value="{{ nav_category }}">
     {% for category in nav_categories %}
         <option value="{{ category.id }}" {% ifequal category.id nav_category.id %}selected{% endifequal %}>{{ category.name }} - {{ category.long_explanation|truncatewords:8 }}</option>
     {% endfor %}

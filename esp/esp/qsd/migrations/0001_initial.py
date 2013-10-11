@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# encoding: utf-8
 import datetime
 from south.db import db
 from south.v2 import SchemaMigration
@@ -8,6 +8,7 @@ from django.db import models
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
+        
         # Adding model 'QuasiStaticData'
         db.create_table('qsd_quasistaticdata', (
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
@@ -30,18 +31,17 @@ class Migration(SchemaMigration):
             ('content', self.gf('django.db.models.fields.TextField')()),
             ('display', self.gf('django.db.models.fields.BooleanField')(default=False)),
             ('author', self.gf('django.db.models.fields.CharField')(max_length=64)),
-            ('create_date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2013, 6, 23, 0, 0))),
+            ('create_date', self.gf('django.db.models.fields.DateTimeField')(default=datetime.datetime(2012, 8, 21, 20, 34, 43, 561773))),
         ))
         db.send_create_signal('qsd', ['ESPQuotations'])
 
-
     def backwards(self, orm):
+        
         # Deleting model 'QuasiStaticData'
         db.delete_table('qsd_quasistaticdata')
 
         # Deleting model 'ESPQuotations'
         db.delete_table('qsd_espquotations')
-
 
     models = {
         'auth.group': {
@@ -97,7 +97,7 @@ class Migration(SchemaMigration):
             'Meta': {'object_name': 'ESPQuotations'},
             'author': ('django.db.models.fields.CharField', [], {'max_length': '64'}),
             'content': ('django.db.models.fields.TextField', [], {}),
-            'create_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2013, 6, 23, 0, 0)'}),
+            'create_date': ('django.db.models.fields.DateTimeField', [], {'default': 'datetime.datetime(2012, 8, 21, 20, 34, 43, 561773)'}),
             'display': ('django.db.models.fields.BooleanField', [], {'default': 'False'}),
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'})
         },
@@ -114,6 +114,9 @@ class Migration(SchemaMigration):
             'nav_category': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['web.NavBarCategory']"}),
             'path': ('django.db.models.fields.related.ForeignKey', [], {'to': "orm['datatree.DataTree']"}),
             'title': ('django.db.models.fields.CharField', [], {'max_length': '256'})
+        },
+        'users.espuser': {
+            'Meta': {'object_name': 'ESPUser', 'db_table': "'auth_user'", '_ormbases': ['auth.User'], 'proxy': 'True'}
         },
         'web.navbarcategory': {
             'Meta': {'object_name': 'NavBarCategory'},

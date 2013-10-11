@@ -50,11 +50,11 @@
 
 <tr>
  <td colspan="2">
-    {% inline_qsd_block program.anchor teach:teacher_shirt_info request.user %}
+    {% inline_program_qsd_block program "teach:teacher_shirt_info" request.user %}
     <p>
-    <div class="info"><b>Shirts for teachers!</b> As a token of our appreciation for your teaching, you will receive a free shirt.  If you would like a shirt, please enter your preferred size {% if form.shirt_type %}and shape {% endif %}below.  This information is optional.
+    <div class="info"><b>Shirts for teachers!</b> As a token of our appreciation for your teaching, you will receive a free shirt.  If you would like a shirt, please enter your preferred size {% if form.shirt_type %}and shape {% endif %}below.  This information is optional.</div>
     </p>
-    {% end_inline_qsd_block %}
+    {% end_inline_program_qsd_block %}
  </td>
 </tr>
 

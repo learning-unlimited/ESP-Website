@@ -40,7 +40,7 @@ from esp.miniblog.models import AnnouncementLink, Entry, Comment
 admin_site.register(AnnouncementLink)
 
 class EntryAdmin(admin.ModelAdmin):
-    search_fields = ['content','title','anchor__uri']
+    search_fields = ['content','title']
     class Media:
         js = (
             '/media/scripts/admin_miniblog.js',

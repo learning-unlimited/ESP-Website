@@ -585,7 +585,6 @@ class ArgCache(WithDelayableMethods):
         m2m_added.connect(add_cb, sender=Model, weak=False)
         m2m_removed.connect(rem_cb, sender=Model, weak=False)
 
-    #def depend_on_userbit(self, 
 
 class ArgCacheDecorator(ArgCache):
     """ An ArgCache that gets its parameters from a function. """

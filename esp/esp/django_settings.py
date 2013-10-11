@@ -150,7 +150,7 @@ SITE_ID = 1
 
 TEMPLATE_LOADERS = (
     'esp.utils.template.Loader',
-    ('django.template.loaders.cached.Loader',
+    ('esp.utils.template.CachedLoader',
         (
          'django.template.loaders.filesystem.Loader',
          'django.template.loaders.app_directories.Loader',
@@ -174,10 +174,11 @@ MIDDLEWARE_GLOBAL = [
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),
     (1200, 'django.middleware.gzip.GZipMiddleware'),
+    (1250, 'esp.middleware.espdebugtoolbarmiddleware.ESPDebugToolbarMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
-    (1600, 'esp.datatree.middleware.DataTreeLockMiddleware'),
+    (1600, 'reversion.middleware.RevisionMiddleware'),
     (9000, 'django.contrib.redirects.middleware.RedirectFallbackMiddleware'),
 ]
 
@@ -209,6 +210,7 @@ INSTALLED_APPS = (
     'esp.gen_media',
     'esp.dblog',
     'esp.survey',
+    'esp.accounting',
     'esp.accounting_core',
     'esp.accounting_docs',
     'esp.shortterm',
@@ -218,12 +220,14 @@ INSTALLED_APPS = (
     'esp.cache_loader',
     'esp.tagdict',
     'django_extensions',
+    'django_extensions.tests',
     'reversion',
     'south',
     'form_utils',
     'esp.seltests',
     'esp.dataviews',
     'django.contrib.redirects',
+    'debug_toolbar',
 )
 
 import os
@@ -242,6 +246,8 @@ TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this
                                'esp.context_processors.index_backgrounds',
                                'esp.context_processors.espuserified_request',
                                'esp.context_processors.preload_images',
+                               'esp.context_processors.email_settings',
+                               'esp.context_processors.program',
                                'django.core.context_processors.i18n',
                                'django.contrib.auth.context_processors.auth',
                                'django.contrib.messages.context_processors.messages',
@@ -287,3 +293,57 @@ CONTACTFORM_EMAIL_CHOICES = (
 
 # corresponding email addresses - define these defaults in settings.py, since DEFAULT_EMAIL_ADDRESSES will be overwritten in local_settings.py
 CONTACTFORM_EMAIL_ADDRESSES = {}
+
+DEBUG_TOOLBAR_PANELS = (
+    'debug_toolbar.panels.cache.CacheDebugPanel',
+    'debug_toolbar.panels.headers.HeaderDebugPanel',
+    'debug_toolbar.panels.logger.LoggingPanel',
+    'debug_toolbar.panels.request_vars.RequestVarsDebugPanel',
+    'debug_toolbar.panels.settings_vars.SettingsVarsDebugPanel',
+    'debug_toolbar.panels.signals.SignalDebugPanel',
+    'debug_toolbar.panels.sql.SQLDebugPanel',
+    'debug_toolbar.panels.template.TemplateDebugPanel',
+    'debug_toolbar.panels.timer.TimerDebugPanel',
+    'debug_toolbar.panels.version.VersionDebugPanel',
+
+    # The profiling panel causes every request to be computed twice, slowing
+    # down the page load by a factor of over 2x and giving incorrect results
+    # for the sql panel. So by default, we will not include it, but can add it
+    # back to the list at request time via the ESPDebugToolbarMiddleware and
+    # DEBUG_TOOLBAR_CONFIG['CONDITIONAL_PANELS'].
+    # 'debug_toolbar.panels.profiling.ProfilingDebugPanel',
+)
+
+def custom_show_toolbar(request):
+    from esp.middleware.espdebugtoolbarmiddleware import ESPDebugToolbarMiddleware
+    return ESPDebugToolbarMiddleware.custom_show_toolbar(request)
+
+def conditional_panels(request):
+    """
+    Adds new debug_toolbar panels to DEBUG_TOOLBAR_PANELS conditionally based
+    on the request.
+    """
+    from django.conf import settings
+    new_panels = []
+
+    if request.GET.get('debug_toolbar_profiling', None) == 't':
+        # Add the profiling panel if it is requested in the query params.
+        new_panels.append('debug_toolbar.panels.profiling.ProfilingDebugPanel')
+
+    settings.DEBUG_TOOLBAR_PANELS = tuple(list(settings.DEBUG_TOOLBAR_PANELS) + new_panels)
+
+DEBUG_TOOLBAR_CONFIG = {
+    'INTERCEPT_REDIRECTS': True,
+    'SHOW_TOOLBAR_CALLBACK': custom_show_toolbar,
+    'EXTRA_SIGNALS': [
+        'esp.cache.signals.cache_deleted',
+        'esp.cache.signals.m2m_added',
+        'esp.cache.signals.m2m_removed',
+    ],
+    'HIDE_DJANGO_SQL': True,
+    'SHOW_TEMPLATE_CONTEXT': True,
+    'TAG': 'div',
+    'ENABLE_STACKTRACES' : True,
+    'CONDITIONAL_PANELS': conditional_panels,
+}
+

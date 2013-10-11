@@ -28,36 +28,36 @@ MIT Educational Studies Program,
 Phone: 617-253-4882
 Email: web@esp.mit.edu
 """
+
+from uuid                        import uuid4 as get_uuid
+from datetime                    import datetime, timedelta
+from collections                 import defaultdict
+
+from django                      import forms
+from django.http                 import HttpResponseRedirect, HttpResponse
+from django.template.loader      import render_to_string
+from django.utils                import simplejson
+from django.db.models.query      import Q
+from django.views.decorators.cache import cache_control
+
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call, meets_deadline, needs_student, meets_grade
 from esp.program.modules         import module_ext
 from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
 from esp.program.views           import lottery_student_reg, lsr_submit as lsr_view_submit
-from esp.datatree.models         import *
 from esp.web.util                import render_to_response
-from django                      import forms
-from django.http                 import HttpResponseRedirect, HttpResponse
-from django.template.loader      import render_to_string
 from esp.cal.models              import Event
-from esp.users.models            import User, ESPUser, UserBit, UserAvailability
+from esp.users.models            import User, ESPUser, UserAvailability
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
-from esp.datatree.models         import DataTree
-from datetime                    import datetime, timedelta
-from django.utils                import simplejson
-from collections                 import defaultdict
 from esp.cache                   import cache_function
-from uuid                        import uuid4 as get_uuid
-from django.db.models.query      import Q
-from django.views.decorators.cache import cache_control
 from esp.middleware.threadlocalrequest import get_current_request
-#def json_encode_timeslots(obj):
-    
+from esp.utils.query_utils import nest_Q
 
 
 class LotteryStudentRegModule(ProgramModuleObj):
 
     def students(self, QObject = False):
-        q = Q(studentregistration__section__parent_class__parent_program=self.program, studentregistration__end_date__gte=datetime.now())
+        q = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')
         if QObject:
             return {'lotteried_students': q}
         else:
@@ -96,13 +96,12 @@ class LotteryStudentRegModule(ProgramModuleObj):
         it gets all of its content from AJAX callbacks.
         """
         from django.conf import settings
-        from esp.program.models.class_ import open_class_category as open_class_category_function
         from django.utils import simplejson
         from django.utils.safestring import mark_safe
 
         crmi = prog.getModuleExtension('ClassRegModuleInfo')
 
-        open_class_category = open_class_category_function()
+        open_class_category = prog.open_class_category
         # Convert the open_class_category ClassCategory object into a dictionary, only including the attributes the lottery needs or might need
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
         # Convert this into a JSON string, and mark it safe so that the Django template system doesn't try escaping it
@@ -116,9 +115,9 @@ class LotteryStudentRegModule(ProgramModuleObj):
         print ProgInfo.priority_limit
         #HSSP-style lottery
         if ProgInfo.use_priority == True and ProgInfo.priority_limit > 1:
-            return render_to_response('program/modules/lotterystudentregmodule/student_reg_old.html', request, (prog, tl), context)
+            return render_to_response('program/modules/lotterystudentregmodule/student_reg_old.html', request, context)
         #Splark/Spash style lottery
-        return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, (prog, tl), context)
+        return render_to_response('program/modules/lotterystudentregmodule/student_reg.html', request, context)
 
     @aux_call
     @meets_deadline('/Classes/Lottery')
@@ -153,7 +152,6 @@ class LotteryStudentRegModule(ProgramModuleObj):
     def viewlotteryprefs(self, request, tl, one, two, module, extra, prog):
         context = {}
         context['student'] = request.user
-        context['program'] = prog
 
         priority_classids = set()
         uniquified_flags = []
@@ -179,7 +177,7 @@ class LotteryStudentRegModule(ProgramModuleObj):
             context['iempty'] = True
         else: context['iempty'] = False
 
-        return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, context)
     
     class Meta:
         abstract = True

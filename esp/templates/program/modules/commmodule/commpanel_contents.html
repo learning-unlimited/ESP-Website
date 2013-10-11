@@ -25,7 +25,7 @@
                     {% for user_type in user_types %}
                     <option value="{{ user_type }}" id="{{ "recipient_type_"|add:user_type }}">{{ user_type|capfirst|add:"s" }}</option>
                     {% endfor %}
-                    <option value="emaillist" id="recipient_type_emaillist">Mailing list</label>
+                    <option value="emaillist" id="recipient_type_emaillist">Mailing list</option>
                 </select>
                 <p>&nbsp;</p>
                 <a name="#" class="recipient_step_button" id="recipient_type_next">Continue to select set of contacts</a>
@@ -121,7 +121,7 @@
         <div id="combo_step_container">
     
         <div id="starting_list_select">
-            <div class="step_header"><span class="step_label">Step 1:</span></span> <span class="step_text">Select a starting list</span></div>
+            <div class="step_header"><span class="step_label">Step 1:</span> <span class="step_text">Select a starting list</span></div>
             <div class="step_instructions">You may combine this with other lists in the next step.</div>
             <select name="combo_base_list">
             {% for kv in lists.items %}{% for item in kv.1 %}
@@ -133,7 +133,7 @@
         </div>
         
         <div id="combo_list_select" class="commpanel_hidden">
-            <div class="step_header"><span class="step_label">Step 2:</span></span> <span class="step_text">Combine with other lists</span></div>
+            <div class="step_header"><span class="step_label">Step 2:</span> <span class="step_text">Combine with other lists</span></div>
             <div class="step_instructions">For each of the lists below, choose whether you would like to combine it with the starting list, and whether you would like to negate it (NOT).  All of the lists selected with AND will be intersected with the starting list, and the result will be unioned with all of the lists marked OR.</div><br />
             <div class="step_instructions step_highlight">Starting list: <span id="combo_starting_list"></span></div>
             <div id="combo_list_form" class="recipient_list_options">

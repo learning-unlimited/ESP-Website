@@ -20,12 +20,12 @@
 
 {% if form.errors or missing_siblingname %}<p align="center" style="color: red;">Please correct the form below before continuing. <br />{{ form.errors }}</p>{% endif %}
 
-{% inline_qsd_block program.anchor splashinfo_lunch request.user %}
+{% inline_program_qsd_block program "splashinfo_lunch" request.user %}
 <h2>Lunch Preferences</h2>
 <p>Select your lunch preference below.
 <b>All meals come with chips or fruit and drink.</b>
 </p>
-{% end_inline_qsd_block %}
+{% end_inline_program_qsd_block %}
 
 <form action="{{ request.path }}" method="post">
 {% if form.lunchsat %}
@@ -80,13 +80,13 @@ We are offering a special discount to households with more than one attendee reg
 </table>
 {% endif %}
 
-{% inline_qsd_block program.anchor splashinfo_finaid request.user %}
+{% inline_program_qsd_block program "splashinfo_finaid" request.user %}
 <hr/>
 <h2>Financial Aid</h2>
 <p>
 Full financial aid is available to any students who need it. If you require financial aid, please fill out a quick request by clicking the "Financial Aid Application (optional)" link on the next page.  Please e-mail us if you have any questions.
 </p>
-{% end_inline_qsd_block %}
+{% end_inline_program_qsd_block %}
 
 <center><input type="submit" class="button" value="Save and Continue"></center>
 

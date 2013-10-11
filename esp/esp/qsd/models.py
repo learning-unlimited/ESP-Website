@@ -39,7 +39,6 @@ from django.db import models
 from django.core.cache import cache
 from django.contrib.auth.models import User
 
-from esp.datatree.models import *
 from esp.lib.markdown import markdown
 from esp.db.fields import AjaxForeignKey
 from esp.db.file_db import *
@@ -48,16 +47,20 @@ from esp.web.models import NavBarCategory
 from esp.users.models import ESPUser
 
 class QSDManager(FileDBManager):
+
     @cache_function
-    def get_by_path__name(self, path, name):
-        # aseering 11-15-2009 -- Punt FileDB for this purpose;
-        # it has consistency issues in multi-computer load-balanced setups,
-        # and memcached doesn't have a clear performance disadvantage.
+    def get_by_url(self, url):
+        #Besides caching, this also handles finding the latest easily, 
+        # and returning none when there isn't any such QSD
+        #comment from an older version of this function:
+        #    aseering 11-15-2009 -- Punt FileDB for this purpose;
+        #    it has consistency issues in multi-computer load-balanced setups,
+        #    and memcached doesn't have a clear performance disadvantage.
         try:
-            return self.filter(path=path, name=name).select_related().latest('create_date')
+            return self.filter(url=url).select_related().latest('create_date')
         except QuasiStaticData.DoesNotExist:
             return None
-    get_by_path__name.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'path': qsd.path, 'name': qsd.name})
+    get_by_url.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'url': qsd.url})
 
     def __str__(self):
         return "QSDManager()"
@@ -70,7 +73,7 @@ class QuasiStaticData(models.Model):
 
     objects = QSDManager(8, 'QuasiStaticData')
 
-    path = AjaxForeignKey(DataTree)
+    url = models.CharField(max_length=256, help_text="Full url, without the trailing .html")
     name = models.SlugField()
     title = models.CharField(max_length=256)
     content = models.TextField()
@@ -92,7 +95,7 @@ class QuasiStaticData(models.Model):
         
         In particular, IF you change this, update qsd/models.py's QSDManager class
         Otherwise, the cache *may* be used wrong elsewhere."""
-        return qsd_cache_key(self.path, self.name, None) # DB access cache --- user invariant
+        return qsd_cache_key(self.url, None) # DB access cache --- user invariant
 
     def copy(self,):
         """Returns a copy of the current QSD.
@@ -104,8 +107,7 @@ class QuasiStaticData(models.Model):
         Client code should probably reset the author to request.user
         and date to datetime.now (possibly with load_cur_user_time)"""
         qsd_new = QuasiStaticData()
-        qsd_new.path    = self.path
-        qsd_new.name    = self.name
+        qsd_new.url    = self.url
         qsd_new.author  = self.author
         qsd_new.content = self.content
         qsd_new.title   = self.title
@@ -120,50 +122,9 @@ class QuasiStaticData(models.Model):
         self.author = request.user
         self.create_date = datetime.now()
 
-    # Really, I think the correct solution here is to key it by path.get_uri and name
-    # is_descendant_of is slightly more expensive, but whatever.
-    @cache_function
-    def url(self):
-        """ Get the relative URL of a page (i.e. /learn/Splash/eligibility.html) """
-
-        my_path = self.path
-        path_parts = self.path.get_uri().split('/')
-        program_top = DataTree.get_by_uri('Q/Programs')
-        web_top = DataTree.get_by_uri('Q/Web')
-        if my_path.is_descendant_of(program_top):
-            name_parts = self.name.split(':')
-            if len(name_parts) > 1:
-                result =  '/' + name_parts[0] + '/' + '/'.join(path_parts[2:]) + '/' + name_parts[1] + '.html'
-            else:
-                result = '/programs/' + '/'.join(path_parts[2:]) + '/' + name_parts[0] + '.html'
-        elif my_path.is_descendant_of(web_top):
-            result = '/' + '/'.join(path_parts[2:]) + '/' + self.name + '.html'
-        else:
-            result = '/' + '/'.join(path_parts[1:]) + '/' + self.name + '.html'
-        
-        return result
-    url.depend_on_row(lambda:QuasiStaticData, 'self')
-    # This never really happens in this case, still... something to think about:
-    #
-    #    We can either do a query on Datatree modification and then delete the
-    #    relevant cache, or we could add a Token to the cache and then we can
-    #    delete by DataTree nodes. Although this is offloaded work from data
-    #    modification to data retrieval, the modified form of work is also MUCH
-    #    cheaper. As in, we can just grab qsd.path_id and not incur any
-    #    database load, whereas the current setup is going to force us to do a
-    #    database query AND do it at times a DataTree node is deleted... many
-    #    of these aren't relevant.
-    #
-    #    That said, how can we propogate stuff then? With fully general Tokens,
-    #    mapping functions are hard to write. Something more like the old
-    #    partitions idea?
-    #
-    #    Special-case DataTree?? :-(
-    #
-    # url.depend_on_row(lambda:DataTree, lambda instance: {'self': QuasiStaticData.objects.blahbalh})
             
     def __unicode__(self):
-        return (self.path.full_name() + ':' + self.name + '.html' )
+        return self.url
 
     @cache_function
     def html(self):
@@ -171,34 +132,25 @@ class QuasiStaticData(models.Model):
     html.depend_on_row(lambda:QuasiStaticData, 'self')
 
     @staticmethod
-    def find_by_url_parts(base, parts):
-        """ Fetch a QSD record by its url parts """
-        # Extract the last part
-        filename = parts.pop()
+    def prog_qsd_url(prog, name):
+        """Return the url for a program-qsd with given name
         
-        # Find the branch
-        try:
-            branch = base.tree_decode( parts )
-        except DataTree.NoSuchNodeException:
-            raise QuasiStaticData.DoesNotExist
-        
-        # Find the record
-        qsd = QuasiStaticData.objects.filter( path = branch, name = filename )
-        if len(qsd) < 1:
-            raise QuasiStaticData.DoesNotExist
-        
-        # Operation Complete!
-        return qsd[0]
+        Will have .html at the end iff name does"""
+        parts = name.split(":")
+        if len(parts)>1:
+            return "/".join([parts[0], prog.url, ":".join(parts[1:])])
+        else:
+            return "/".join(["programs", prog.url, name])
 
-def qsd_cache_key(path, name, user=None,):
+def qsd_cache_key(path, user=None,):
     # IF you change this, update qsd/models.py's QSDManager class
     # Otherwise, the wrong cache path will be invalidated
     # Also, make sure the qsd/models.py's get_file_id method
     # is also updated. Otherwise, other things might break.
     if user and user.is_authenticated():
-        return hashlib.md5('%s-%s-%s' % (path.get_uri(), name, user.id)).hexdigest()
+        return hashlib.md5('%s-%s' % (path, name, user.id)).hexdigest()
     else:
-        return hashlib.md5('%s-%s' % (path.get_uri(), name)).hexdigest()
+        return hashlib.md5('%s' % (path, ) ).hexdigest()
 
 
 class ESPQuotations(models.Model):

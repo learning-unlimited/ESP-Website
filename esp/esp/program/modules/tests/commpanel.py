@@ -50,7 +50,6 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
     """
     
     def setUp(self, *args, **kwargs):
-        from esp.datatree.models import GetNode
         from esp.program.models import Program
         from esp.program.modules.base import ProgramModule, ProgramModuleObj
 

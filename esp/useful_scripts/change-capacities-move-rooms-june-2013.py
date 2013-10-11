@@ -9,12 +9,14 @@
 #
 # Warning: the class capacity changes may not show up immediately in Ajax scheduling due to some caching bugs.  Even a flush cache doesn't work; I'm not sure what the issue is.  If it's a problem, shift-refresh the page open and re-save it from the admin panel, or be patient.
 #
+# Warning: if the class does not have a time set, this script will not assign it a room.
+#
 
 import csv
 from esp.program.models.class_ import ClassSection, ClassSubject
 from esp.resources.models import Resource
 
-def makeChanges(filename):
+def makeChanges(filename,override=False):
 
     secs = []
 
@@ -40,10 +42,6 @@ def makeChanges(filename):
             cas.delete()
 
     for cls,sec,capacity,room in secs:
-        if capacity is not "":
-            print "Changing class %s size to %s" % (cls.emailcode(),capacity)
-            cls.class_size_max = int(capacity)
-            cls.save()
         if room is not "":
             print "Moving section %s to room %s" % (sec.emailcode(), room)
             # the following is stolen from the manage class page code.  I don't like it, but that page works so I am using it.
@@ -55,4 +53,11 @@ def makeChanges(filename):
         print "Marking class %s accepted" % cls.emailcode()
         cls.accept()
             
-
+    for cls,sec,capacity,room in secs:
+        if capacity is not "":
+            print "Changing class %s size to %s" % (cls.emailcode(),capacity)
+            cls.class_size_max = int(capacity)
+            cls.save()
+            if override:
+                sec.max_class_capacity = int(capacity)
+                sec.save()

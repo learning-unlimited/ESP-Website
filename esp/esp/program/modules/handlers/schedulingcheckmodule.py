@@ -1,6 +1,5 @@
 from esp.program.models import Program, ClassSection
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
-from esp.program.models.class_ import open_class_category
 from copy import deepcopy
 from math import ceil
 from esp.cal.models import *
@@ -24,7 +23,7 @@ class SchedulingCheckModule(ProgramModuleObj):
          s = SchedulingCheckRunner(prog)
          results = s.run_diagnostics()
          context = {'checks': results}
-         return render_to_response(self.baseDir()+'output.html', request, (prog, tl), context)
+         return render_to_response(self.baseDir()+'output.html', request, context)
 
     class Meta:
         abstract = True
@@ -187,7 +186,7 @@ class SchedulingCheckRunner:
           else:
                self.all_sections = self.p.sections()
                #filter out walkins
-               self.all_sections = filter(lambda x: not x.category == open_class_category(), self.all_sections)
+               self.all_sections = filter(lambda x: not x.category == self.p.open_class_category, self.all_sections)
                #filter out non-approved classes
                self.all_sections = filter(lambda x: len(x.classrooms()) > 0, self.all_sections)
                #filter out lunch
@@ -289,7 +288,7 @@ class SchedulingCheckRunner:
           self.class_categories =  list(self.p.class_categories.all().values_list('category', flat=True))
 
           #not regular class categories          
-          open_class_cat = open_class_category().category
+          open_class_cat = self.p.open_class_category.category
           if open_class_cat in self.class_categories: self.class_categories.remove(open_class_cat)
           lunch_cat = "Lunch"
           if lunch_cat in self.class_categories: self.class_categories.remove(lunch_cat)

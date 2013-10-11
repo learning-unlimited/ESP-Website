@@ -36,19 +36,18 @@ from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_stud
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from django.contrib.auth.decorators import login_required
-from esp.users.models    import ESPUser, UserBit, User
+from esp.users.models    import ESPUser
 from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, SplashInfo, FinancialAidRequest
 from esp.users.views     import search_for_user
 from esp.users.controllers.usersearch import UserSearchController
 from esp.web.util.latex  import render_to_latex
-from esp.accounting_docs.models import Document, MultipleDocumentError
-from esp.accounting_core.models import LineItem, LineItemType, Transaction
+from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.tagdict.models import Tag
 from esp.cal.models import Event
 from esp.middleware import ESPError
 from django.conf import settings
-from django.template.loader import select_template
+from django.template.loader import select_template, render_to_string
 from django.utils.encoding import smart_str
 
 from decimal import Decimal
@@ -68,14 +67,15 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def paid_list_filter(self, request, tl, one, two, module, extra, prog):
-        lineitemtypes = LineItemType.objects.forProgram(prog)
+        pac = ProgramAccountingController(prog)
+        lineitemtypes = pac.get_lineitemtypes(optional_only=True)
         context = { 'lineitemtypes': lineitemtypes }
-        return render_to_response(self.baseDir()+'paid_list_filter.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'paid_list_filter.html', request, context)
 
     @aux_call
     @needs_admin
     def paid_list(self, request, tl, one, two, module, extra, prog):
-
+        pac = ProgramAccountingController(prog)
         if request.GET.has_key('filter'):
             try:
                 ids = [ int(x) for x in request.GET.getlist('filter') ]
@@ -85,15 +85,15 @@ class ProgramPrintables(ProgramModuleObj):
                 single_select = False
 
             if ids == None:
-                lineitems = LineItem.objects.forProgram(prog).order_by('li_type','user').select_related()
+                transfers = pac.all_transfers(optional_only=True).order_by('line_item','user').select_related()
             else:
-                lineitems = LineItem.objects.forProgram(prog).filter(li_type__id__in=ids).order_by('li_type','user').select_related()
+                lineitems = pac.all_transfers(optional_only=True).filter(line_item__id__in=ids).order_by('line_item','user').select_related()
         else:
             single_select = False
-            lineitems = LineItem.objects.forProgram(prog).order_by('li_type','user').select_related()
+            lineitems = pac.all_transfers(optional_only=True).order_by('line_item','user').select_related()
         
         for lineitem in lineitems:
-            lineitem.has_financial_aid = ESPUser(lineitem.user).hasFinancialAid(prog.anchor)
+            lineitem.has_financial_aid = ESPUser(lineitem.user).hasFinancialAid(prog)
 
         def sort_fn(a,b):
             if a.user.last_name.lower() > b.user.last_name.lower():
@@ -108,7 +108,7 @@ class ProgramPrintables(ProgramModuleObj):
                     'prog': prog,
                     'single_select': single_select }
 
-        return render_to_response(self.baseDir()+'paid_list.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'paid_list.html', request, context)
 
     @main_call
     @needs_admin
@@ -116,7 +116,7 @@ class ProgramPrintables(ProgramModuleObj):
         """ Display a teacher eg page """
         context = {'module': self, 'li_types': prog.getLineItemTypes(required=False)}
 
-        return render_to_response(self.baseDir()+'options.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'options.html', request, context)
 
     @aux_call
     @needs_admin
@@ -212,7 +212,6 @@ class ProgramPrintables(ProgramModuleObj):
             clsids = ','.join(clsids)
             return render_to_response(self.baseDir()+'catalog_order.html',
                                       request,
-                                      (self.program, tl),
                                       {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories })
 
         if request.GET.has_key("only_nonfull"):
@@ -227,7 +226,6 @@ class ProgramPrintables(ProgramModuleObj):
 
         return render_to_response(self.baseDir()+'catalog_order.html',
                                   request,
-                                  (self.program, tl),
                                   {'clsids': clsids, 'classes': classes, 'sorting_options': cmp_fn.keys(), 'sort_name_list': ",".join(sort_name_list), 'sort_name_list_orig': sort_name_list, 'category_options': category_options, 'grade_options': grade_options, 'grade_min_orig': grade_min, 'grade_max_orig': grade_max, 'categories_orig': categories  })
         
 
@@ -312,7 +310,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'classes': classes, 'program': self.program}
 
-        return render_to_response(self.baseDir()+'classes_list.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'classes_list.html', request, context)
 
     @needs_admin
     def sectionsbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file='sections_list.html'):
@@ -344,7 +342,7 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'sections': sections, 'program': self.program}
 
-        return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
+        return render_to_response(self.baseDir()+template_file, request, context)
 
     @aux_call
     @needs_admin
@@ -366,7 +364,7 @@ class ProgramPrintables(ProgramModuleObj):
     @needs_admin
     def classesbytitle(self, request, tl, one, two, module, extra, prog):
         def cmp_title(one, other):
-            cmp0 = cmp(one.anchor.friendly_name.upper().lstrip().strip('"\',.<![($'), other.anchor.friendly_name.upper().lstrip().strip('"\',.<![($'))
+            cmp0 = cmp(one.title.lstrip().strip('"\',.<![($'), other.title.lstrip().strip('"\',.<![($'))
 
             if cmp0 != 0:
                 return cmp0
@@ -410,7 +408,7 @@ class ProgramPrintables(ProgramModuleObj):
         classes = [cls for cls in classes
                    if cls.isAccepted()   ]
         
-        sort_exp = lambda x,y: ((x.title() != y.title()) and cmp(x.title().upper().lstrip().strip('"\',.<![($'), y.title().upper().lstrip().strip('"\',.<![($'))) or cmp(x.id, y.id)
+        sort_exp = lambda x,y: ((x.title != y.title) and cmp(x.title.upper().lstrip().strip('"\',.<![($'), y.title.upper().lstrip().strip('"\',.<![($'))) or cmp(x.id, y.id)
         
         if request.GET.has_key('clsids'):
             clsids = request.GET['clsids'].split(',')
@@ -433,7 +431,7 @@ class ProgramPrintables(ProgramModuleObj):
                 cls.implications.append(imp_info)
         
         context = { 'classes': classes, 'program': self.program }
-        return render_to_response(self.baseDir()+'classprereqs.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'classprereqs.html', request, context)
 
     @needs_admin
     def teachersbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True, template_file = 'teacherlist.html', extra_func = lambda x: {}):
@@ -506,7 +504,7 @@ class ProgramPrintables(ProgramModuleObj):
         context['res_types'] = resource_types
         context['scheditems'] = scheditems
 
-        return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
+        return render_to_response(self.baseDir()+template_file, request, context)
 
     @aux_call
     @needs_admin
@@ -561,18 +559,18 @@ class ProgramPrintables(ProgramModuleObj):
 
         context = {'rooms': rooms, 'program': self.program}
 
-        return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
+        return render_to_response(self.baseDir()+template_file, request, context)
 
     @aux_call
     @needs_admin
     def roomsbytime(self, request, tl, one, two, module, extra, prog):
         #   List of open classrooms, sorted by the first time they are available
         def filt(one):
-            return one.available_any_time(self.program.anchor)
+            return one.available_any_time(self.program)
         
         def cmpsort(one, other):
             #   Find when available
-            return cmp(one.available_times(self.program.anchor)[0], other.available_times(self.program.anchor)[0])
+            return cmp(one.available_times(self.program)[0], other.available_times(self.program)[0])
 
         return self.roomsbyFOO(request, tl, one, two, module, extra, prog, cmpsort, filt)
         
@@ -592,7 +590,7 @@ class ProgramPrintables(ProgramModuleObj):
         students.sort(sort_exp)
         context['students'] = students
         
-        return render_to_response(self.baseDir()+template_file, request, (prog, tl), context)
+        return render_to_response(self.baseDir()+template_file, request, context)
 
     @aux_call
     @needs_admin
@@ -624,7 +622,7 @@ class ProgramPrintables(ProgramModuleObj):
     @aux_call
     @needs_admin
     def students_lineitem(self, request, tl, one, two, module, extra, prog):
-        from esp.accounting_core.models import LineItem
+        from esp.accounting.models import Transfer
         #   Determine line item
         student_ids = []
         if request.GET.has_key('id'):
@@ -633,9 +631,9 @@ class ProgramPrintables(ProgramModuleObj):
         else:
             lit_id = request.session['li_type_id']
 
-        line_items = LineItem.objects.filter(li_type__id=lit_id)
+        line_items = Transfer.objects.filter(line_item__id=lit_id)
         for l in line_items:
-            student_ids.append(l.transaction.document_set.all()[0].user.id)
+            student_ids.append(l.user_id)
 
         return self.studentsbyFOO(request, tl, one, two, module, extra, prog, filt_exp = lambda x: x.id in student_ids)
 
@@ -670,42 +668,30 @@ class ProgramPrintables(ProgramModuleObj):
 
         context['scheditems'] = scheditems
 
-        return render_to_response(self.baseDir()+'teacherschedule.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'teacherschedule.html', request, context)
 
     def get_msg_vars(self, user, key):
         user = ESPUser(user)
         
         if key == 'receipt':
             #   Take the user's most recent registration profile.
-            from django.template import Template
             from esp.middleware.threadlocalrequest import AutoRequestContext as Context
-            from django.template.loader import find_template_source
             from django.conf import settings   
             prof = user.getLastProfile()
-            
-            li_types = prof.program.getLineItemTypes(user)
-            
-            # get program anchor or that of parent program
-            p_anchor = prof.program.anchor
-            if prof.program.getParentProgram():
-                p_anchor = prof.program.getParentProgram().anchor
-            try:
-                invoice = Document.get_invoice(user, p_anchor, li_types, dont_duplicate=True, get_complete=True)
-            except MultipleDocumentError:
-                invoice = Document.get_invoice(user, p_anchor, li_types, dont_duplicate=True)
-            
-            context_dict = {'prog': prof.program, 'first_name': user.first_name, 'last_name': user.last_name, 'username': user.username, 'e_mail': prof.contact_user.e_mail, 'schedule': ProgramPrintables.getSchedule(prof.program, user)}
-            
-            context_dict['itemizedcosts'] = invoice.get_items()
-            context_dict['itemizedcosttotal'] = invoice.cost()
-            context_dict['owe_money'] = ( context_dict['itemizedcosttotal'] != 0 )
-            
-            t = Template(open(settings.TEMPLATE_DIRS + '/program/receipts/' + str(prof.program.id) + '_custom_receipt.txt').read())
-            c = Context(context_dict)
-            result_str = t.render(c)
 
-            return result_str
-            
+            iac = IndividualAccountingController(self.program, user)
+
+            context = {'program': self.program, 'user': self.user}
+
+            payment_type = iac.default_payments_lineitemtype()
+            context['itemizedcosts'] = iac.get_transfers().exclude(line_item=payment_type).order_by('-line_item__required')
+            context['itemizedcosttotal'] = iac.amount_due()
+            context['subtotal'] = iac.amount_requested()
+            context['financial_aid'] = iac.amount_finaid()
+            context['amount_paid'] = iac.amount_paid()
+
+            return render_to_string(self.baseDir() + 'accounting_receipt.txt', context)
+
         if key == 'schedule':
             #   Generic schedule function kept for backwards compatibility
             return ProgramPrintables.getSchedule(self.program, user)
@@ -826,13 +812,13 @@ Volunteer schedule for %s:
 
         # Hack together a pseudocontext:
         context = { 'onsiteregform': True,
-                    'students': [{'classes': [{'friendly_times': [i.anchor.friendly_name],
+                    'students': [{'classes': [{'friendly_times': [prog.name],
                                                'classrooms': [''],
                                                'prettyrooms': ['______'],
                                                'title': '________________________________________',
                                                'getTeacherNames': [' ']} for i in prog.getTimeSlots()]}]
                     }
-        return render_to_response(self.baseDir()+'studentschedule.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'studentschedule.html', request, context)
 
     @aux_call
     @needs_admin
@@ -851,16 +837,11 @@ Volunteer schedule for %s:
         from django.http import HttpResponse
         response = HttpResponse(mimetype='text/csv')
         writer = csv.writer(response)
-
+        writer.writerow(('Control ID', 'Student ID', 'Last name', 'First name', 'Total cost', 'Finaid grant', 'Amount paid', 'Amount owed'))
         for student in students:            
-            li_types = prog.getLineItemTypes(student)
-            try:
-                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
-            except MultipleDocumentError:
-                invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
+            iac = IndividualAccountingController(self.program, student)
+            writer.writerow((iac.get_id(), student.id, student.last_name.encode('ascii', 'replace'), student.first_name.encode('ascii', 'replace'), '%.2f' % iac.amount_requested(), '%.2f' % iac.amount_finaid(), '%.2f' % iac.amount_paid(), '%.2f' % iac.amount_due()))
 
-            writer.writerow((invoice.locator, student.id, student.last_name.encode('ascii', 'replace'), student.first_name.encode('ascii', 'replace'), invoice.cost()))
-                
         return response
         
     @aux_call
@@ -891,15 +872,7 @@ Volunteer schedule for %s:
  
         scheditems = []
         
-        # get the list of students who are in the parent program.
-        parent_program_students_classreg = None
-        parent_program = prog.getParentProgram()
-        if parent_program is not None:
-            parent_program_students = parent_program.students()
-            if parent_program_students.has_key('classreg'):
-                parent_program_students_classreg = parent_program_students['classreg']
-        
-        all_events = Event.objects.filter(anchor=prog.anchor).order_by('start')
+        all_events = Event.objects.filter(program=prog).order_by('start')
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
@@ -924,7 +897,7 @@ Volunteer schedule for %s:
 
             #   Insert entries for the compulsory timeblocks into the schedule
             min_index = 0
-            times_compulsory = Event.objects.filter(anchor=prog.anchor, event_type__description='Compulsory').order_by('start')
+            times_compulsory = Event.objects.filter(program=prog, event_type__description='Compulsory').order_by('start')
             for t in times_compulsory:
                 i = min_index
                 while i < len(classes):
@@ -933,71 +906,26 @@ Volunteer schedule for %s:
                         break
                     i += 1
                 min_index = i
-                
-            # note whether student is in parent program
-            student.in_parent_program = False
-            if parent_program_students_classreg is not None:
-                # we use the filter instead of simply "in" because the types of items in "students" and "parent_program_students_classreg" don't match.
-                student.in_parent_program = parent_program_students_classreg.filter(id=student.id).count() > 0
             
             # get payment information
-            li_types = prog.getLineItemTypes(student)
-            try:
-                invoice = Document.get_invoice(student, prog.anchor, li_types, dont_duplicate=True, get_complete=True)
-            except MultipleDocumentError:
-                invoice = Document.get_invoice(student, prog.anchor, li_types, dont_duplicate=True)
+            iac = IndividualAccountingController(prog, student)
             
             # attach payment information to student
-            student.invoice_id = invoice.locator
-            student.itemizedcosts = invoice.get_items()
-            student.meals = student.itemizedcosts.filter(li_type__anchor__parent__name__in=('Optional','BuyMultiSelect')).distinct()  # catch everything that's not admission to the program.
-            student.admission = student.itemizedcosts.filter(li_type__anchor__name='Required').distinct()  # Program admission
-            student.paid_online = student.itemizedcosts.filter(anchor__parent__name='Receivable').distinct()  # LineItems for having paid online.
-            student.itemizedcosttotal = invoice.cost()
-            
-            # check financial aid
-            student.has_financial_aid = student.hasFinancialAid(prog.anchor)
-            if student.has_financial_aid and not student.itemizedcosts.filter(li_type__text=u'Financial Aid', amount__gt=0).distinct().count() and not student.itemizedcosts.filter(anchor__uri=prog.anchor.uri+"/Accounts/FinancialAid", amount__gt=0).distinct().count():
-                apps = FinancialAidRequest.objects.filter(user=student, program=prog, approved__isnull=False).distinct()
-                aid = max(list(apps.values_list('amount_received', flat=True).distinct()))
-                if aid:
-                    student.itemizedcosttotal -= aid
-                else:
-                    student.itemizedcosttotal = 0.0
-
-            # add cost/credit information from SplashInfo (looks in JSON Tag: splashinfo_costs)
-            student.splashinfo = SplashInfo.getForUser(student, prog)
-            if student.splashinfo:
-                tag_data = Tag.getTag('splashinfo_costs', target=prog)
-                if not tag_data: tag_data = Tag.getTag('splashinfo_costs')
-                if tag_data:
-                    tag_struct = json.loads(tag_data)
-                    for key in tag_struct:
-                        val = getattr(student.splashinfo, key)
-                        if val in tag_struct[key] and not student.has_financial_aid:
-                            student.itemizedcosttotal += Decimal(str(tag_struct[key][val]))
-                if student.splashinfo.siblingdiscount:
-                    amt_str = Tag.getTag('splashinfo_sibling_discount')
-                    if not amt_str:
-                        amt_str = '20.0'
-                    if not student.has_financial_aid:
-                        student.itemizedcosttotal -= Decimal(amt_str)
+            student.invoice_id = iac.get_id()
+            student.itemizedcosts = iac.get_transfers()
+            student.meals = iac.get_transfers(optional_only=True)  # catch everything that's not admission to the program.
+            student.admission = iac.get_transfers(required_only=True)  # Program admission
+            student.paid_online = iac.has_paid()
+            student.amount_finaid = iac.amount_finaid()
+            student.amount_siblingdiscount = iac.amount_siblingdiscount()
+            student.itemizedcosttotal = iac.amount_due()
 
             student.has_paid = ( student.itemizedcosttotal == 0 )
-            
-            # MIT Splash purchase counts; temporary, should be harmless
-            student.shirtcount = student.meals.filter(text__contains='T-shirt').count()
-            student.photocount = student.meals.filter(text__contains='Photo').count()
-            student.saturday_lunch = student.meals.filter(text__contains='Saturday Lunch').count()
-            student.sunday_lunch = student.meals.filter(text__contains='Sunday Lunch').count()
-            student.saturday_dinner = student.meals.filter(text__contains='Saturday Dinner').count()
-
             student.payment_info = True
             student.classes = classes
             
         context['students'] = students
-        context['program'] = prog
-        
+
         if extra:
             file_type = extra.strip()
         elif 'img_format' in request.GET:
@@ -1013,7 +941,7 @@ Volunteer schedule for %s:
     
         basedir = 'program/modules/programprintables/'
         if file_type == 'html':
-            return render_to_response(basedir+'studentschedule.html', request, (prog, tl), context)
+            return render_to_response(basedir+'studentschedule.html', request, context)
         else:  # elif format == 'pdf':
             from esp.web.util.latex import render_to_latex
             schedule_template = select_template([basedir+'program_custom_schedules/%s_studentschedule.tex' %(prog.id), basedir+'studentschedule.tex'])
@@ -1052,7 +980,7 @@ Volunteer schedule for %s:
         from django.conf import settings
         context['PROJECT_ROOT'] = settings.PROJECT_ROOT.rstrip('/') + '/'
         
-        return render_to_response(self.baseDir()+'flatstudentschedule.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'flatstudentschedule.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1089,7 +1017,7 @@ Volunteer schedule for %s:
         context['group_name'] = Tag.getTag('full_group_name')
         context['phone_number'] = Tag.getTag('group_phone_number')
 
-        return render_to_response(self.baseDir()+'roomrosters.html', request, (prog, tl), context)            
+        return render_to_response(self.baseDir()+'roomrosters.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1156,7 +1084,7 @@ Volunteer schedule for %s:
 
         context['pages'] = pages
 
-        return render_to_response(self.baseDir()+'student_tickets.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'student_tickets.html', request, context)
     
     @aux_call
     @needs_admin
@@ -1188,7 +1116,7 @@ Volunteer schedule for %s:
         else:
             tpl = 'classrosters.html'
         
-        return render_to_response(self.baseDir()+tpl, request, (prog, tl), context)
+        return render_to_response(self.baseDir()+tpl, request, context)
         
     @aux_call
     @needs_admin
@@ -1198,7 +1126,7 @@ Volunteer schedule for %s:
         teachers.sort()
         context['teachers'] = teachers
         context['settings'] = settings
-        return render_to_response(self.baseDir()+'teacherlabels.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'teacherlabels.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1222,23 +1150,17 @@ Volunteer schedule for %s:
                 else:
                     finaid_status = 'Req. (No RL)'
             
-            if student.hasFinancialAid(self.program_anchor_cached()):
+            iac = IndividualAccountingController(self.program, student)
+            if iac.amount_due() <= 0:
                 paid_symbol = 'X'
+            if student.hasFinancialAid(self.program):
                 finaid_status = 'Approved'
-            else:
-                li_types = prog.getLineItemTypes(student)
-                try:
-                    invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
-                except MultipleDocumentError:
-                    invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
-                if invoice.cost() == 0:
-                    paid_symbol = 'X'
 
-            studentList.append({'user': student, 'paid': paid_symbol, 'finaid': finaid_status})
+            studentList.append({'user': student, 'paid': paid_symbol, 'amount_due': iac.amount_due(), 'finaid': finaid_status})
 
         context['students'] = students
         context['studentList'] = studentList
-        return render_to_response(self.baseDir()+'studentchecklist.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'studentchecklist.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1259,18 +1181,11 @@ Volunteer schedule for %s:
             
             for student in students:
                 if c in student.getEnrolledClasses(self.program):
-                    paid_symbol = ''
-                    if student.hasFinancialAid(self.program_anchor_cached()):
+                    iac = IndividualAccountingController(self.program, student)
+                    if iac.amount_due() <= 0:
                         paid_symbol = 'X'
                     else:
-                        li_types = prog.getLineItemTypes(student)
-                        try:
-                            invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True, get_complete=True)
-                        except MultipleDocumentError:
-                            invoice = Document.get_invoice(student, self.program_anchor_cached(parent=True), li_types, dont_duplicate=True)
-                        if invoice.cost() == 0:
-                            paid_symbol = 'X'
-                    
+                        paid_symbol = ''
                     student_list.append({'user': student, 'paid': paid_symbol})
             
             class_dict['students'] = student_list
@@ -1278,7 +1193,7 @@ Volunteer schedule for %s:
 
         context['class_list'] = class_list
         
-        return render_to_response(self.baseDir()+'classchecklists.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'classchecklists.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1307,7 +1222,7 @@ Volunteer schedule for %s:
                                        'class'  : cls})
 
             context['scheditems'] = scheditems
-            return render_to_response(self.baseDir()+'adminteachers.html', request, (prog, tl), context)
+            return render_to_response(self.baseDir()+'adminteachers.html', request, context)
 
 
         
@@ -1318,12 +1233,12 @@ Volunteer schedule for %s:
             classes.sort(ClassSubject.idcmp)
 
             for cls in classes:
-                for teacher in cls.teachers():
+                for teacher in cls.get_teachers():
                     teacher = ESPUser(teacher)
                     scheditems.append({'teacher': teacher,
                                       'class'  : cls})
             context['scheditems'] = scheditems                    
-            return render_to_response(self.baseDir()+'adminclassid.html', request, (prog, tl), context)
+            return render_to_response(self.baseDir()+'adminclassid.html', request, context)
 
 
         if extra == 'timeblock':
@@ -1333,13 +1248,13 @@ Volunteer schedule for %s:
             classes.sort()
             
             for cls in classes:
-                for teacher in cls.teachers():
+                for teacher in cls.get_teachers():
                     teacher = ESPUser(teacher)
                     scheditems.append({'teacher': teacher,
                                       'cls'  : cls})
 
             context['scheditems'] = scheditems
-            return render_to_response(self.baseDir()+'adminclasstime.html', request, (prog, tl), context)        
+            return render_to_response(self.baseDir()+'adminclasstime.html', request, context)
 
     @aux_call
     @needs_admin
@@ -1375,8 +1290,8 @@ Volunteer schedule for %s:
         for cls in ClassSubject.objects.filter(parent_program=prog):
             write_cvs.writerow(
                 (cls.id,
-                 ", ".join([smart_str(t.name()) for t in cls.teachers()]),
-                 smart_str(cls.title()),
+                 ", ".join([smart_str(t.name()) for t in cls.get_teachers()]),
+                 smart_str(cls.title),
                  cls.prettyDuration(),
                  cls.grade_min,
                  cls.grade_max,
@@ -1533,7 +1448,7 @@ Volunteer schedule for %s:
             time_values = [time_possible(time, timeslist) for time in times]
 
             # get conflicts
-            teachers = section.parent_class.teachers()
+            teachers = section.parent_class.get_teachers()
             conflicts = []
             for teacher in teachers:
                 conflicts.extend(filter(lambda x: x not in conflicts and x != section.parent_class, teacher.getTaughtClassesFromProgram(prog)))

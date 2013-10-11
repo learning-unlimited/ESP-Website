@@ -19,7 +19,7 @@
 
 {% load render_qsd %}
 {% if contact_form.data.decline_password_recovery %}
-{% inline_qsd_block Q/Web contact_password_recovery_check request.user %}
+{% inline_qsd_block "contact_password_recovery_check" request.user %}
 <p>
 It looks like you're trying to recover your login information.
 If you would like, we can e-mail you a link to reset your password.
@@ -33,7 +33,7 @@ The e-mail will remind you of your username.
 <form action="{{ request.path }}" method="post">
 <input type="submit" name="sendanyway" value="I want to send this message anyway" />
 {% else %}
-{% inline_qsd_block Q/Web contact_header_text request.user %}
+{% inline_qsd_block "contact_header_text" request.user %}
 <p>
  Fill out this form to send a quick e-mail to the ESP office. We will get back to 
  you as soon as possible (usually within a day). 

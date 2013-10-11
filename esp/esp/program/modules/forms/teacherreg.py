@@ -34,13 +34,11 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
+from django.core.exceptions import ObjectDoesNotExist
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
 import re
-from esp.datatree.models import DataTree, GetNode
-from esp.users.models import UserBit
 from esp.program.models import ClassCategories, ClassSubject, ClassSection, ClassSizeRange
-from esp.program.models.class_ import open_class_category as open_class_category_function
 from esp.cal.models import Event
 from esp.tagdict.models import Tag
 from django.conf import settings
@@ -215,10 +213,10 @@ class TeacherClassRegForm(FormWithRequiredCss):
         #   Modify help text on these fields if necessary.
         custom_helptext_fields = ['duration', 'class_size_max', 'num_sections', 'requested_room', 'message_for_directors', 'purchase_requests', 'class_info'] + custom_fields.keys()
         for field in custom_helptext_fields:
-            tag_data = Tag.getTag('teacherreg_label_%s' % field)
+            tag_data = Tag.getProgramTag('teacherreg_label_%s' % field, prog)
             if tag_data:
                 self.fields[field].label = tag_data
-            tag_data = Tag.getTag('teacherreg_help_text_%s' % field)
+            tag_data = Tag.getProgramTag('teacherreg_help_text_%s' % field, prog)
             if tag_data:
                 self.fields[field].help_text = tag_data
                 
@@ -302,7 +300,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
                 field.initial = default
                 
         super(TeacherOpenClassRegForm, self).__init__(module, *args, **kwargs)
-        open_class_category = open_class_category_function()
+        open_class_category = module.get_program().open_class_category
         self.fields['category'].choices += [(open_class_category.id, open_class_category.category)]
 
         # Re-enable the requested special resources field as a space needs .
@@ -314,7 +312,7 @@ class TeacherOpenClassRegForm(TeacherClassRegForm):
         self.fields['duration'].help_text = "For how long are you willing to teach this class?"
 
         fields = [('category', open_class_category.id), 
-                  ('prereqs', ''), ('session_count', 1), ('grade_min', 7), ('grade_max', 12), 
+                  ('prereqs', ''), ('session_count', 1), ('grade_min', module.get_program().grade_min), ('grade_max', module.get_program().grade_max), 
                   ('class_size_max', 200), ('class_size_optimal', ''), ('optimal_class_size_range', ''), 
                   ('allowable_class_size_ranges', ''), ('hardness_rating', '**'), ('allow_lateness', True), 
                   ('has_own_space', False), ('requested_room', ''), ('global_resources', ''),
@@ -330,30 +328,23 @@ class TeacherEventSignupForm(FormWithRequiredCss):
     interview = forms.ChoiceField( label='Interview', choices=[], required=False, widget=BlankSelectWidget(blank_choice=('', 'Pick an interview timeslot...')) )
     training  = forms.ChoiceField( label='Teacher Training', choices=[], required=False, widget=BlankSelectWidget(blank_choice=('', 'Pick a teacher training session...')) )
     
-    def _slot_is_taken(self, anchor):
+    def _slot_is_taken(self, event):
         """ Determine whether an interview slot is taken. """
-        return self.module.bitsBySlot(anchor).count() > 0
+        return self.module.entriesBySlot(event).count() > 0
 
-    def _slot_is_mine(self, anchor):
+    def _slot_is_mine(self, event):
         """ Determine whether an interview slot is taken by you. """
-        return self.module.bitsBySlot(anchor).filter(user=self.user).count() > 0
+        return self.module.entriesBySlot(event).filter(user=self.user).count() > 0
 
-    def _slot_too_late(self, anchor):
+    def _slot_too_late(self, event):
         """ Determine whether it is too late to register for a time slot. """
         # Don't allow signing up for a spot insuficiently far in advance
-        return Event.objects.get(anchor=anchor).start - datetime.now() < timedelta(days=0)
+        return event.start - datetime.now() < timedelta(days=0)
 
-    def _slot_is_available(self, anchor):
+    def _slot_is_available(self, event):
         """ Determine whether a time slot is available. """
-        return self._slot_is_mine(anchor) or (not self._slot_is_taken(anchor) and not self._slot_too_late(anchor))
-    
-    def _get_datatree(self, id):
-        """ Given an ID, get the datatree node with that ID. """
-        try:
-            return DataTree.objects.get(id=id)
-        except (DoesNotExist, ValueError):
-            raise forms.ValidationError('The time you selected seems not to exist. Please try a different one.')
-    
+        return self._slot_is_mine(event) or (not self._slot_is_taken(event) and not self._slot_too_late(event))
+
     def __init__(self, module, *args, **kwargs):
         super(TeacherEventSignupForm, self).__init__(*args, **kwargs)
         self.module = module
@@ -361,30 +352,29 @@ class TeacherEventSignupForm(FormWithRequiredCss):
         
         interview_times = module.getTimes('interview')
         if interview_times.count() > 0:
-            self.fields['interview'].choices = [ (x.anchor.id, x.description) for x in interview_times if self._slot_is_available(x.anchor) ]
+            self.fields['interview'].choices = [ (x.id, x.description) for x in interview_times if self._slot_is_available(x) ]
         else:
             self.fields['interview'].widget = forms.HiddenInput()
         
         training_times = module.getTimes('training')
         if training_times.count() > 0:
-            self.fields['training'].choices = [ (x.anchor.id, x.description) for x in training_times if not self._slot_too_late(x.anchor) ]
+            self.fields['training'].choices = [ (x.id, x.description) for x in training_times if not self._slot_too_late(x) ]
         else:
             self.fields['training'].widget = forms.HiddenInput()
     
     def clean_interview(self):
-        data = self.cleaned_data['interview']
-        if not data:
-            return data
-        data = self._get_datatree( data )
+        event_id = self.cleaned_data['interview']
+        try:
+            data = Event.objects.get(id=event_id)
+        except ValueError:
+            return None
         if not self._slot_is_available(data):
             raise forms.ValidationError('That time is taken; please select a different one.')
         return data
-    
+
     def clean_training(self):
-        data = self.cleaned_data['training']
-        if not data:
-            return data
-        return self._get_datatree( data )
-
-
-
+        event_id = self.cleaned_data['training']
+        try:
+            return Event.objects.get(id=event_id)
+        except ValueError:
+            return None

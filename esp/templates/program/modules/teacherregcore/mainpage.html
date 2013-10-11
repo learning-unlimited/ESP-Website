@@ -27,7 +27,7 @@
 <h2>Teacher registration for {{program.niceName}} </h2>
 <br />
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "teach:teacherreg" %}
+{% render_inline_program_qsd program "teach:teacherreg" %}
 
 <br />
 
@@ -47,25 +47,6 @@ We appreciate your interest!  If you have any questions, please <a href="mailto:
     {% include "program/modules/progressbar.html" %}
 {% endifequal %}
 <br />
-
-{% if progposts|length_is:0 %}
-<!-- No announcements for this program -->
-{% else %}
-<h2>Announcements</h2>
-{% for blogentry in progposts %}
-<div class="blogentry">
-  <p class="heading">
-    <span class="date">{{ blogentry.timestamp|date:"N d, Y @ f a" }}</span>
-    <span class="title">{{ blogentry.title }}</span>
-  </p>
-  <p class="contents">{% autoescape off %}
-    {{ blogentry.html }}
-    {% endautoescape %}
-  </p>
-</div>
-
-{% endfor %}
-{% endif %}
 
 </div>
 

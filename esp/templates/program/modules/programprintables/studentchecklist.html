@@ -39,6 +39,7 @@ body { font-family: georgia; }
    <th>#</th>
    <th>Checked In?</th>
    <th>Paid?</th>
+   <th>Amount Due</th>
    <th>Med/Liability?</th>
    <th>Agreement?</th>
    <th>Aid Status</th>
@@ -52,6 +53,7 @@ body { font-family: georgia; }
    <td>{{forloop.counter}}</td>
    <td><div class="box">&nbsp;</div></td>
    <td><div class="box">{{ student.paid }}</div></td>
+   <td>${{ student.amount_due|floatformat:2 }}</td>
    <td><div class="box">&nbsp;</div></td>
    <td><div class="box">&nbsp;</div></td>
    <td>{{ student.finaid }}</td>

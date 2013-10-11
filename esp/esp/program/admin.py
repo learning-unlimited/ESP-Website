@@ -44,11 +44,12 @@ from esp.program.models import VolunteerRequest, VolunteerOffer
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
-from esp.program.models import RegistrationType, StudentRegistration
+from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest
 
 from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
 
+from esp.accounting.models import FinancialAidGrant
 
 class ProgramModuleAdmin(admin.ModelAdmin):
     list_display = ('link_title', 'admin_title', 'handler')
@@ -84,10 +85,17 @@ class TeacherBioAdmin(admin.ModelAdmin):
 
 admin_site.register(TeacherBio, TeacherBioAdmin)
 
+class FinancialAidGrantInline(admin.TabularInline):
+    model = FinancialAidGrant
+    extra = 1
+    max_num = 1
+    verbose_name_plural = 'Financial aid grant - enter 100 in "Percent" field to waive entire cost'
+
 class FinancialAidRequestAdmin(admin.ModelAdmin):
     list_display = ('user', 'approved', 'reduced_lunch', 'program', 'household_income', 'extra_explaination')
-    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'id', 'program__anchor__parent__friendly_name', 'program__anchor__friendly_name']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'id', 'program__url']
     list_filter = ['program']
+    inlines = [FinancialAidGrantInline,]
 admin_site.register(FinancialAidRequest, FinancialAidRequestAdmin)
 
 class Admin_SplashInfo(admin.ModelAdmin):
@@ -159,8 +167,14 @@ def expire_student_registrations(modeladmin, request, queryset):
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__anchor__name']
+    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
+
+class StudentSubjectInterestAdmin(admin.ModelAdmin):
+    list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
+    actions = [ expire_student_registrations, ]
+    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
+admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
 
 def sec_classrooms(obj):
     return list(set([(x.name, str(x.num_students) + " students") for x in obj.classrooms()]))
@@ -177,7 +191,8 @@ admin_site.register(ClassSection, SectionAdmin)
 class SubjectAdmin(admin.ModelAdmin):
     list_display = ('id', 'title', 'parent_program', 'category')
     list_display_links = ('title',)
-    search_fields = ['id', 'class_info', 'anchor__friendly_name']
+    search_fields = ['class_info', 'title']
+    exclude = ('teachers',)
     list_filter = ('parent_program', 'category')
 admin_site.register(ClassSubject, SubjectAdmin)
 

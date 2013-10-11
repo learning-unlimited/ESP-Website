@@ -9,26 +9,10 @@ from django.conf import settings
 
 class Migration(SchemaMigration):
 
-    del_fns_str = """
-DROP FUNCTION class__get_enrolled(integer, integer);
-DROP FUNCTION userbit__bits_get_qsc(integer, integer, timestamp with time zone, timestamp with time zone);
-DROP FUNCTION userbit__bits_get_qsc_root(integer, integer, timestamp with time zone, timestamp with time zone, integer);
-DROP FUNCTION userbit__bits_get_user(integer, integer, timestamp with time zone, timestamp with time zone);
-DROP FUNCTION userbit__bits_get_user_real(integer, integer, timestamp with time zone, timestamp with time zone);
-DROP FUNCTION userbit__bits_get_verb(integer, integer, timestamp with time zone, timestamp with time zone);
-DROP FUNCTION userbit__bits_get_verb_root(integer, integer, timestamp with time zone, timestamp with time zone, integer);
-DROP FUNCTION userbit__user_has_perms(integer, integer, integer, timestamp with time zone, boolean);
-"""
-
     def forwards(self, orm):
-        with open(os.path.join(settings.PROJECT_ROOT, "esp/datatree/sql/datatree.postgresql-multiline.sql")) as f:
-            db.execute(self.del_fns_str)
-            db.execute(f.read())
+        pass
 
     def backwards(self, orm):
-        # The file should be reverted by now; and it's self-clobbering, so just run it again
-        with open(os.path.join(settings.PROJECT_ROOT, "esp/datatree/sql/datatree.postgresql-multiline.sql")) as f:
-            db.execute(self.del_fns_str)
-            db.execute(f.read())
+        pass
 
     complete_apps = ['datatree']

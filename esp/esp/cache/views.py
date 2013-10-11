@@ -34,19 +34,18 @@ Learning Unlimited, Inc.
 """
 
 from esp.cache.registry import all_caches
-from esp.datatree.models import GetNode
-from esp.users.models import admin_required, UserBit, ESPUser
+from esp.users.models import admin_required, ESPUser
 from esp.web.util.main import render_to_response
 from esp.cache.varnish import purge_page
 from django.http import HttpResponse
 
 @admin_required
 def view_all(request):
-    return render_to_response('cache/view_all.html', request, GetNode('Q/Web'), {'caches': sorted(all_caches.values(), key=lambda c: c.name)})
+    return render_to_response('cache/view_all.html', request, {'caches': sorted(all_caches.values(), key=lambda c: c.name)})
 
 def varnish_purge(request):
     # Authenticate
-    if (not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator()) and (not UserBit.objects.user_has_verb(request.user, GetNode('V/Administer/Edit/QSD'))):
+    if (not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator()):
         raise PermissionDenied
     # Purge the page specified
     purge_page(request.POST['page'])

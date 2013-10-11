@@ -309,23 +309,23 @@ class Resource(models.Model):
     def is_conflicted(self):
         return (self.assignments().count() > 1)
     
-    def available_any_time(self, anchor=None):
-        return (len(self.available_times(anchor)) > 0)
+    def available_any_time(self, program=None):
+        return (len(self.available_times(program)) > 0)
     
-    def available_times_html(self, anchor=None):
-        return '<br /> '.join([unicode(e) for e in Event.collapse(self.available_times(anchor))])
+    def available_times_html(self, program=None):
+        return '<br /> '.join([unicode(e) for e in Event.collapse(self.available_times(program))])
 
-    def available_times(self, anchor=None):
-        if anchor:
-            event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times().filter(anchor=anchor)))
-        else:
-            event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times()))
+    def available_times(self, program=None):
+        event_list = filter(lambda x: self.is_available(timeslot=x), list(self.matching_times(program)))
         return event_list
     
-    def matching_times(self):
+    def matching_times(self, program=None):
         #   Find all times for which a resource of the same name is available.
         event_list = self.identical_resources().values_list('event', flat=True)
-        return Event.objects.filter(id__in=event_list).order_by('start')
+        if program:
+            return Event.objects.filter(id__in=event_list, program=program).order_by('start')
+        else:
+            return Event.objects.filter(id__in=event_list).order_by('start')
     
     def is_independent(self):
         if self.is_unique:

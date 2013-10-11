@@ -45,12 +45,15 @@ from django.core.cache import cache
 from django.utils.datastructures import SortedDict
 from django.template.loader import render_to_string
 from django.template import Template, Context
+from django.contrib.contenttypes import generic
+from django.contrib.contenttypes.models import ContentType
 
 # ESP Util
 from esp.db.models.prepared import ProcedureManager
 from esp.db.fields import AjaxForeignKey
 from esp.utils.property import PropertyDict
 from esp.utils.fields import JSONField
+from esp.utils.query_utils import nest_Q
 from esp.tagdict.models import Tag
 from esp.mailman import add_list_member, remove_list_member
 
@@ -62,8 +65,8 @@ from esp.miniblog.models import Entry
 from esp.datatree.models import *
 from esp.cal.models import Event
 from esp.qsd.models import QuasiStaticData
-from esp.qsdmedia.models import Media as QSDMedia
-from esp.users.models import ESPUser, UserBit, UserAvailability
+from esp.qsdmedia.models import Media
+from esp.users.models import ESPUser, Permission, UserAvailability
 from esp.middleware              import ESPError
 from esp.program.models          import Program, StudentRegistration, RegistrationType
 from esp.program.models import BooleanExpression, ScheduleMap, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
@@ -169,7 +172,6 @@ class ClassManager(ProcedureManager):
         now = datetime.datetime.now()
         
         enrolled_type = RegistrationType.get_map(include=['Enrolled'], category='student')['Enrolled']
-        teaching_node=GetNode("V/Flags/Registration/Teacher")
 
         if initial_queryset:
             classes = initial_queryset
@@ -179,8 +181,7 @@ class ClassManager(ProcedureManager):
         if not force_all:
             classes = classes.filter(self.approved(return_q_obj=True))
         
-        classes = classes.select_related('anchor',
-                                         'category')
+        classes = classes.select_related('category')
         
         if program != None:
             classes = classes.filter(parent_program = program)
@@ -188,21 +189,25 @@ class ClassManager(ProcedureManager):
         if ts is not None:
             classes = classes.filter(sections__meeting_times=ts)
         
-        select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration", "program_classsection" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND "program_classsection"."parent_class_id" = "program_class"."id" AND "program_studentregistration"."start_date" <= %s AND "program_studentregistration"."end_date" >= %s)'),
-                             ('teacher_ids', 'SELECT list(DISTINCT "users_userbit"."user_id") FROM "users_userbit" WHERE ("users_userbit"."verb_id" = %s AND "users_userbit"."qsc_id" = "program_class"."anchor_id" AND "users_userbit"."enddate" >= %s AND "users_userbit"."startdate" <= %s)'),
-                             ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."anchor_id" = "program_class"."anchor_id")'),
-                             ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."path_id" = "program_class"."anchor_id" AND "qsd_quasistaticdata"."name" = \'learn:index\')'),
+        #   Retrieve the content type for finding class documents (generic relation)
+        content_type_id = ContentType.objects.get_for_model(ClassSubject).id
+        
+        select = SortedDict([( '_num_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration", "program_classsection" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND "program_classsection"."parent_class_id" = "program_class"."id" AND ("program_studentregistration"."start_date" IS NULL OR "program_studentregistration"."start_date" <= %s) AND ("program_studentregistration"."end_date" IS NULL OR "program_studentregistration"."end_date" >= %s))'),
+                             ('teacher_ids', 'SELECT list(DISTINCT espuser_id) FROM program_class_teachers Where program_class_teachers.classsubject_id=program_class.id'),
+                             ('media_count', 'SELECT COUNT(*) FROM "qsdmedia_media" WHERE ("qsdmedia_media"."owner_id" = "program_class"."id") AND ("qsdmedia_media"."owner_type_id" = %s)'),
+                             ('_index_qsd', 'SELECT list("qsd_quasistaticdata"."id") FROM "qsd_quasistaticdata" WHERE ("qsd_quasistaticdata"."name" = \'learn:index\' AND "qsd_quasistaticdata"."url" LIKE %s AND "qsd_quasistaticdata"."url" SIMILAR TO %s || "program_class"."id" || %s)'),
                              ('_studentapps_count', 'SELECT COUNT(*) FROM "program_studentappquestion" WHERE ("program_studentappquestion"."subject_id" = "program_class"."id")')])
                              
         select_params = [ enrolled_type.id,
                           now,
                           now,
-                          teaching_node.id,
-                          now,
-                          now,
+                          content_type_id,
+                          '%/Classes/%',
+                          '%[A-Z]',
+                          '/%',
                          ]
         classes = classes.extra(select=select, select_params=select_params)
-        
+
         #   Allow customized orderings for the catalog.
         #   These are the default ordering fields in descending order of priority.
         if order_args_override:
@@ -245,8 +250,6 @@ class ClassManager(ProcedureManager):
         # Now to get the sections corresponding to these classes...
 
         sections = ClassSection.objects.filter(parent_class__in=class_ids)
-        
-        sections = sections.select_related('anchor')
 
         sections = ClassSection.prefetch_catalog_data(sections.distinct())
 
@@ -256,9 +259,9 @@ class ClassManager(ProcedureManager):
         
         # We got classes.  Now get teachers...
         if program != None:
-            teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__qsc__parent__parent=program.anchor_id, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+            teachers = ESPUser.objects.filter(classsubject__parent_program=program).distinct()
         else:
-            teachers = ESPUser.objects.filter(userbit__verb=teaching_node, userbit__startdate__lte=now, userbit__enddate__gte=now).distinct()
+            teachers = ESPUser.objects.filter(classsubject__isnull=False)
 
         teachers_by_id = {}
         for t in teachers:            
@@ -267,7 +270,7 @@ class ClassManager(ProcedureManager):
         # Now, to combine all of the above
 
         if len(classes) >= 1:
-            p = Program.objects.select_related('anchor').get(id=classes[0].parent_program_id)
+            p = Program.objects.get(id=classes[0].parent_program_id)
             
         for c in classes:
             c._teachers = [teachers_by_id[int(x)] for x in c.teacher_ids.split(',')] if c.teacher_ids != '' else []
@@ -275,28 +278,35 @@ class ClassManager(ProcedureManager):
             c._sections = sections_by_parent_id[c.id]
             for s in c._sections:
                 s.parent_class = c
-            c._sections.sort(cmp=lambda s1, s2: cmp(s1.anchor.name, s2.anchor.name))
+            c._sections.sort(cmp=lambda s1, s2: cmp(s1.id, s2.id))
             c.parent_program = p # So that if we set attributes on one instance of the program,
                                  # they show up for all instances.
             
         return classes
     catalog_cached.depend_on_model(lambda: ClassSubject)
     catalog_cached.depend_on_model(lambda: ClassSection)
-    catalog_cached.depend_on_model(lambda: QSDMedia)
+    catalog_cached.depend_on_model(lambda: Media)
     catalog_cached.depend_on_model(lambda: Tag)
-    catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
-                                 lambda bit: bit.applies_to_verb('V/Flags/Registration/Teacher'))
     #catalog_cached.depend_on_row(lambda: UserBit, lambda bit: {},
     #                             lambda bit: bit.applies_to_verb('V/Flags/Registration/Enrolled')) # This will expire a *lot*, and the value that it saves can be gotten from cache (with effort) instead of from SQL.  Should go do that.
+
+    #perhaps make it program-specific?
+    @staticmethod
+    def is_class_index_qsd(qsd):
+        parts = qsd.url.split("/")
+        return (parts and len(parts) > 1) and \
+            parts[-1] == "index" and \
+            parts[0] == "learn" and \
+            "Classes" in parts
     catalog_cached.depend_on_row(lambda: QuasiStaticData, lambda page: {},
-                                 lambda page: ("learn:index" == page.name) and ("Q/Programs/" in page.path.get_uri()) and ("/Classes/" in page.path.get_uri())) # Slightly dirty hack; has assumptions about the tree structure of where index.html pages for QSD will be stored
+                                 lambda page: ClassManager.is_class_index_qsd(page))
 
 
 class ClassSection(models.Model):
     """ An instance of class.  There should be one of these for each weekend of HSSP, for example; or multiple
     parallel sections for a course being taught more than once at Splash or Spark. """
     
-    anchor = AjaxForeignKey(DataTree)
+    anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     status = models.IntegerField(default=0)                 #   -10 = rejected, 0 = unreviewed, 10 = accepted
     registration_status = models.IntegerField(default=0)    #   0 = open, 10 = closed
     duration = models.DecimalField(blank=True, null=True, max_digits=5, decimal_places=2)
@@ -315,25 +325,26 @@ class ClassSection(models.Model):
         sec_index = ''.join(id_[1:])
         id_ = id_[0]
         
-        query_set = cls.objects.filter(parent_class__anchor__name__istartswith=id_.split('s')[0])
+        query_set = cls.objects.filter(parent_class__category__symbol=id_[0],
+                                       parent_class__id__startswith=id_[1:])
 
         if len(clsname) > 1:
             title  = ':'.join(clsname[1:])
             if len(title.strip()) > 0:
-                query_set = query_set.filter(parent_class__anchor__friendly_name__istartswith = title.strip())
+                query_set = query_set.filter(parent_class__title__istartswith = title.strip())
 
-        values_set = query_set.order_by('anchor__name').select_related()#.values('anchor__name', 'parent_class__anchor__friendly_name', 'id')
+        values_set = query_set.order_by('parent_class__category__symbol','id').select_related()
         values = []
         for v in values_set:
             index = str(v.index())
             if (not sec_index) or (sec_index == index):
-                values.append({'parent_class__anchor__name': v.parent_class.anchor.name,
-                               'parent_class__anchor__friendly_name': v.parent_class.anchor.friendly_name,
+                values.append({'parent_class__emailcode': v.parent_class.emailcode(),
+                               'parent_class__title': v.parent_class.title,
                                'secnum': index,
                                'id': str(v.id)})
 
         for value in values:
-            value['ajax_str'] = '%ss%s: %s' % (value['parent_class__anchor__name'], value['secnum'], value['parent_class__anchor__friendly_name'])
+            value['ajax_str'] = '%ss%s: %s' % (value['parent_class__emailcode'], value['secnum'], value['parent_class__title'])
         return values
     
     @classmethod
@@ -342,7 +353,7 @@ class ClassSection(models.Model):
         now = datetime.datetime.now()
         enrolled_type = RegistrationType.get_map()['Enrolled']
 
-        select = SortedDict([( '_count_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND "program_studentregistration"."start_date" <= %s AND "program_studentregistration"."end_date" >= %s)'),
+        select = SortedDict([( '_count_students', 'SELECT COUNT(DISTINCT "program_studentregistration"."user_id") FROM "program_studentregistration" WHERE ("program_studentregistration"."relationship_id" = %s AND "program_studentregistration"."section_id" = "program_classsection"."id" AND ("program_studentregistration"."start_date" IS NULL OR "program_studentregistration"."start_date" <= %s) AND ("program_studentregistration"."end_date" IS NULL OR "program_studentregistration"."end_date" >= %s))'),
                              ('event_ids', 'SELECT list("cal_event"."id") FROM "cal_event", "program_classsection_meeting_times" WHERE ("program_classsection_meeting_times"."event_id" = "cal_event"."id" AND "program_classsection_meeting_times"."classsection_id" = "program_classsection"."id")')])
         
         select_params = [ enrolled_type.id,
@@ -381,7 +392,7 @@ class ClassSection(models.Model):
     parent_program = property(_get_parent_program)
         
     def _get_teachers(self):
-        return self.parent_class.teachers()
+        return self.parent_class.get_teachers()
     teachers = property(_get_teachers)
     
     def _get_category(self):
@@ -449,7 +460,7 @@ class ClassSection(models.Model):
     capacity = property(_get_capacity)
 
     def title(self):
-        return self.parent_class.title()
+        return self.parent_class.title
 
     def __unicode__(self):
         return '%s: %s' % (self.emailcode(), self.title())
@@ -468,9 +479,7 @@ class ClassSection(models.Model):
         self.getResourceAssignments().delete()
         self.meeting_times.clear()
         self.checklist_progress.clear()
-        if self.anchor:
-            self.anchor.delete(True)
-        
+
         super(ClassSection, self).delete()
 
     @cache_function
@@ -729,7 +738,7 @@ class ClassSection(models.Model):
                         base_list.remove(elt)
             return base_list
 
-        teachers = self.parent_class.teachers()
+        teachers = self.parent_class.get_teachers()
         try:
             num_teachers = teachers.count()
         except:
@@ -764,12 +773,8 @@ class ClassSection(models.Model):
     #   - the target section and its meeting times
     viable_times.depend_on_model(lambda:UserAvailability)   #   To do: Make this more specific (so the cache doesn't get flushed so often)
     viable_times.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
+    viable_times.depend_on_m2m(lambda:ClassSubject, 'teachers', lambda subj, teacher: [{'self': sec} for sec in subj.get_sections()])
     viable_times.depend_on_row(lambda:ClassSection, lambda sec: {'self': sec})
-    @staticmethod
-    def key_set_from_userbit(bit):
-        sections = ClassSection.objects.filter(QTree(anchor__below=bit.qsc))
-        return [{'self': sec} for sec in sections]
-    viable_times.depend_on_row(lambda:UserBit, lambda bit: ClassSection.key_set_from_userbit(bit), lambda bit: bit.verb == GetNode('V/Flags/Registration/Teacher'))
 
     @cache_function
     def viable_rooms(self):
@@ -946,16 +951,6 @@ class ClassSection(models.Model):
             return "Some of the teachers (could not determine which) are unavailable at this time."
         return False
 
-    def students_dict_old(self):
-        verb_base = DataTree.get_by_uri('V/Flags/Registration')
-        uri_start = len(verb_base.get_uri())
-        result = defaultdict(list)
-        userbits = UserBit.objects.filter(QTree(verb__below = verb_base), qsc=self.anchor).filter(enddate__gte=datetime.datetime.now()).distinct()
-        for u in userbits:
-            bit_str = u.verb.get_uri()[uri_start:]
-            result[bit_str].append(ESPUser(u.user))
-        return PropertyDict(result)
-
     #   If the values returned by this function are ever needed in QuerySet form,
     #   something will need to be changed.
     @cache_function
@@ -974,21 +969,19 @@ class ClassSection(models.Model):
         result = {}
         for key in rmap:
             result_key = rmap[key] #the RegistrationType object, not the name field
-            result[result_key] = list(self.registrations.filter(studentregistration__relationship=rmap[key], studentregistration__start_date__lte=now, studentregistration__end_date__gte=now).distinct())
+            result[result_key] = list(self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), studentregistration__relationship=rmap[key]).distinct())
             if len(result[result_key]) == 0:
                 del result[result_key]
         return result
     students_dict.depend_on_row(lambda: StudentRegistration, lambda reg: {'self': reg.section})
     
     def students_prereg(self):
-        now = datetime.datetime.now()
-        return self.registrations.filter(studentregistration__start_date__lte=now, studentregistration__end_date__gte=now).distinct()
+        return self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration')).distinct()
 
     def students(self, verbs=['Enrolled']):
-        now = datetime.datetime.now()
         result = ESPUser.objects.none()
         for verb_str in verbs:
-            result = result | self.registrations.filter(studentregistration__relationship__name=verb_str, studentregistration__start_date__lte=now, studentregistration__end_date__gte=now)
+            result = result | self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), studentregistration__relationship__name=verb_str)
         return result.distinct()
     
     @cache_function
@@ -1034,14 +1027,14 @@ class ClassSection(models.Model):
             #   Send e-mail to each student
             for student in self.students(student_verbs):
                 to_email = ['%s <%s>' % (student.name(), student.email)]
-                from_email = '%s at %s <%s>' % (self.parent_program.anchor.parent.friendly_name, settings.INSTITUTION_NAME, self.parent_program.director_email)
+                from_email = '%s at %s <%s>' % (self.parent_program.program_type, settings.INSTITUTION_NAME, self.parent_program.director_email)
                 msgtext = template.render(Context({'user': student}))
                 send_mail(email_title, msgtext, from_email, to_email)
 
         #   Send e-mail to administrators as well
         email_content = render_to_string('email/class_cancellation_admin.txt', context)
         to_email = ['Directors <%s>' % (self.parent_program.director_email)]
-        from_email = '%s Web Site <%s>' % (self.parent_program.anchor.parent.friendly_name, self.parent_program.director_email)
+        from_email = '%s Web Site <%s>' % (self.parent_program.program_type, self.parent_program.director_email)
         send_mail(email_title, email_content, from_email, to_email)
 
         self.clearStudents()
@@ -1057,7 +1050,7 @@ class ClassSection(models.Model):
     def clearStudents(self):
         from esp.program.models import StudentRegistration
         now = datetime.datetime.now()
-        qs = StudentRegistration.objects.filter(section=self, end_date__gte=now)
+        qs = StudentRegistration.valid_objects(now).filter(section=self)
         qs.update(end_date=now)
         #   Compensate for the lack of a signal on update().
         for reg in qs:
@@ -1160,14 +1153,13 @@ class ClassSection(models.Model):
     def getRegistrations(self, user = None):
         """Gets all StudentRegistrations for this section and a particular user. If no user given, gets all StudentRegistrations for this section"""
         from esp.program.models import StudentRegistration
-        now = datetime.datetime.now()
         if user == None:
-            return StudentRegistration.objects.filter(section=self, start_date__lte=now, end_date__gte=now).order_by('start_date')
+            return StudentRegistration.valid_objects().filter(section=self).order_by('start_date')
         else:
-            return StudentRegistration.objects.filter(section=self, user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
+            return StudentRegistration.valid_objects().filter(section=self, user=user).order_by('start_date')
 
     def getRegVerbs(self, user, allowed_verbs=False):
-        """ Get the list of verbs that a student has within this class's anchor. """
+        """ Get the list of reg-types that a student has on this class. """
         if not allowed_verbs:
             return [v.relationship for v in self.getRegistrations(user).distinct()]
         else:
@@ -1184,11 +1176,11 @@ class ClassSection(models.Model):
         
         #   Stop all active or pending registrations
         if prereg_verb:
-            qs = StudentRegistration.objects.filter(relationship__name=prereg_verb, section=self, user=user, end_date__gte=now)
+            qs = StudentRegistration.valid_objects(now).filter(relationship__name=prereg_verb, section=self, user=user)
             qs.update(end_date=now)
             #   print 'Expired %s' % qs
         else:
-            qs = StudentRegistration.objects.filter(section=self, user=user, end_date__gte=now)
+            qs = StudentRegistration.valid_objects(now).filter(section=self, user=user)
             qs.update(end_date=now)
             #   print 'Expired %s' % qs
             
@@ -1225,10 +1217,8 @@ class ClassSection(models.Model):
 
         if overridefull or fast_force_create or not self.isFull():
             #    Then, create the registration for this class.
-            now = datetime.datetime.now()
-            
             rt = RegistrationType.get_cached(name=prereg_verb, category='student')
-            qs = self.registrations.filter(id=user.id, studentregistration__start_date__lte=now, studentregistration__end_date__gte=now, studentregistration__relationship=rt)
+            qs = self.registrations.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), id=user.id, studentregistration__relationship=rt)
             if fast_force_create or not qs.exists():
                 sr = StudentRegistration(user=user, section=self, relationship=rt)
                 sr.save()
@@ -1262,16 +1252,12 @@ class ClassSection(models.Model):
             list_names = ["%s-%s" % (self.emailcode(), "students"), "%s-%s" % (self.parent_class.emailcode(), "students")]
             for list_name in list_names:
                 add_list_member(list_name, user.email)
-            add_list_member("%s_%s-students" % (self.parent_program.anchor.parent.name, self.parent_program.anchor.name), user.email)
+            add_list_member("%s_%s-students" % (self.parent_program.program_type, self.parent_program.program_instance), user.email)
 
             return True
         else:
             #    Pre-registration failed because the class is full.
             return False
-
-    def pageExists(self):
-        from esp.qsd.models import QuasiStaticData
-        return len(self.anchor.quasistaticdata_set.filter(name='learn:index').values('id')[:1]) > 0
 
     def prettyDuration(self):
         if self.duration is None:
@@ -1284,7 +1270,7 @@ class ClassSection(models.Model):
     class Meta:
         db_table = 'program_classsection'
         app_label = 'program'
-        ordering = ['anchor__name']
+        ordering = ['id']
 
 class ClassSubject(models.Model, CustomFormsLinkModel):
     """ An ESP course.  The course includes one or more ClassSections which may be linked by ClassImplications. """
@@ -1294,10 +1280,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     from esp.program.models import Program
     
-    anchor = AjaxForeignKey(DataTree)
+    anchor = AjaxForeignKey(DataTree, blank=True, null=True)
+    title = models.TextField()
     parent_program = models.ForeignKey(Program)
     category = models.ForeignKey('ClassCategories',related_name = 'cls')
     class_info = models.TextField(blank=True)
+    teachers = models.ManyToManyField(ESPUser)
     allow_lateness = models.BooleanField(default=False)
     message_for_directors = models.TextField(blank=True)
     class_size_optimal = models.IntegerField(blank=True, null=True)
@@ -1319,6 +1307,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     purchase_requests = models.TextField(blank=True, null=True)
     custom_form_data = JSONField(blank=True, null=True)
     
+    documents = generic.GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
+    
     objects = ClassManager()
 
     #   Backwards compatibility with Class database format.
@@ -1338,16 +1328,19 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
         return self._sections
         
+    def getDocuments(self):
+        return self.documents.all()
+        
     @classmethod
     def ajax_autocomplete(cls, data):
-        values = cls.objects.filter(anchor__friendly_name__istartswith=data).values(
-                    'id', 'anchor__friendly_name').order_by('anchor__friendly_name')
+        values = cls.objects.filter(title__istartswith=data).values(
+                    'id', 'title').order_by('title')
         for v in values:
-            v['ajax_str'] = v['anchor__friendly_name']
+            v['ajax_str'] = v['title']
         return values
     
     def ajax_str(self):
-        return self.title()
+        return self.title
     
     def prettyDuration(self):
         if len(self.get_sections()) <= 0:
@@ -1438,7 +1431,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         new_section = ClassSection()
         new_section.parent_class = self
         new_section.duration = '%.4f' % duration
-        new_section.anchor = DataTree.get_by_uri(self.anchor.get_uri() + '/Section' + str(section_index), create=True)
         new_section.status = status
         new_section.save()
         self.sections.add(new_section)
@@ -1468,17 +1460,6 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return self.checklist_progress.all()
     checklist_progress_all_cached.depend_on_m2m(lambda: ClassSubject, 'checklist_progress', lambda cs, cp: {'self': cs})
 
-    def time_created(self):
-        #   Return the datetime for when the class was first created.
-        #   Oh wait, this is definitely not meh.
-        v = GetNode('V/Flags/Registration/Teacher')
-        q = self.anchor
-        ubl = UserBit.objects.filter(verb=v, qsc=q).order_by('startdate')
-        if ubl.count() > 0:
-            return ubl[0].startdate
-        else:
-            return None
-        
     def friendly_times(self):
         collapsed_times = []
         for s in self.get_sections():
@@ -1491,8 +1472,18 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         for s in self.get_sections():
             rooms = ", ".join(s.prettyrooms())
             blocks += [(x + " in " + rooms) for x in s.friendly_times()]
-        
+
         return blocks
+
+    @cache_function
+    def get_teachers(self):
+        """ Return a queryset of all teachers of this class. """
+        # We might have teachers pulled in by Awesome Query Magic(tm), as in .catalog()
+        if hasattr(self, "_teachers"):
+            return self._teachers
+        
+        return self.teachers.all()
+    get_teachers.depend_on_m2m(lambda: ClassSubject, 'teachers', lambda subj, event: {'self': subj})
     
     def students_dict(self):
         result = PropertyDict({})
@@ -1535,63 +1526,38 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return self.category.symbol+str(self.id)
 
     def url(self):
-        str_array = self.anchor.tree_encode()
-        return '/'.join(str_array[-4:])
+        return "%s/Classes/%s" % (self.parent_program.url, self.emailcode())
 
     def got_qsd(self):
         """ Returns if this class has any associated QSD. """
-        if QuasiStaticData.objects.filter(path = self.anchor)[:1]:
-            return True
-        else:
-            return False
+        return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url()).exists()
 
     def got_index_qsd(self):
         """ Returns if this class has an associated index.html QSD. """
         if hasattr(self, "_index_qsd"):
             return (self._index_qsd != '')
         
-        if QuasiStaticData.objects.filter(path = self.anchor, name = "learn:index")[:1]:
-            return True
-        else:
-            return False
-        
+        return QuasiStaticData.objects.filter(url__startswith='learn/' + self.url() + '/index').exists()
+
     def __unicode__(self):
-        if self.title() is not None:
-            return "%s: %s" % (self.id, self.title())
+        if self.title != "":
+            return "%s: %s" % (self.id, self.title)
         else:
             return "%s: (none)" % self.id
 
     def delete(self, adminoverride = False):
-        from esp.qsdmedia.models import Media
-        
-        anchor = self.anchor
-        # SQL's cascading delete thing is sketchy --- if the anchor's corrupt,
-        # we want webmin manual intervention
-        if anchor and not anchor.name.endswith(str(self.id)):
-            raise ESPError(), "Tried to delete class %d with corrupt anchor." % self.id
-
         if self.num_students() > 0 and not adminoverride:
             return False
-        
-        teachers = self.teachers()
-        for teacher in self.teachers():
-            self.removeTeacher(teacher)
-            self.removeAdmin(teacher)
 
         for sec in self.sections.all():
             sec.delete()
         
         #   Remove indirect dependencies
-        Media.objects.filter(QTree(anchor__below=self.anchor)).delete()
-        UserBit.objects.filter(QTree(qsc__below=self.anchor)).delete()
-        
+        self.documents.clear()
         self.checklist_progress.clear()
         
         super(ClassSubject, self).delete()
-        
-        if anchor:
-            anchor.delete(True)
-                
+
     def numStudentAppQuestions(self):
         # This field may be prepopulated by .objects.catalog()
         if not hasattr(self, "_studentapps_count"):
@@ -1603,45 +1569,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
     def cache_time(self):
         return 99999
     
-    @cache_function
-    def title(self):
-        return self.anchor.friendly_name
-        
-    def title_selector(node):
-        if node.classsubject_set.all().count() == 1:
-            return {'self': node.classsubject_set.all()[0]}
-        return {}
-    title.depend_on_row(lambda: DataTree, title_selector)
-    title.admin_order_field = 'anchor__friendly_name'	# Admin Panel Display Configuration
-
-    @cache_function
-    def teachers(self):
-        """ Return a queryset of all teachers of this class. """
-        # We might have teachers pulled in by Awesome Query Magic(tm), as in .catalog()
-        if hasattr(self, "_teachers"):
-            return self._teachers
-
-        v = GetNode('V/Flags/Registration/Teacher')
-
-        # NOTE: This ignores the recursive nature of UserBits, since it's very slow and kind of pointless here.
-        # Remove the following line and replace with
-        #     retVal = UserBit.objects.bits_get_users(self.anchor, v, user_objs=True)
-        # to reenable.
-        retVal = ESPUser.objects.all().filter(Q(userbit__qsc=self.anchor, userbit__verb=v), UserBit.not_expired('userbit')).distinct()
-
-        list(retVal)
-
-        return retVal
-    @staticmethod
-    def key_set_from_userbit(bit):
-        subjects = ClassSubject.objects.filter(anchor=bit.qsc)
-        return [{'self': cls} for cls in subjects]
-    teachers.depend_on_row(lambda:ClassSubject, lambda cls: {'self': cls})
-    teachers.depend_on_row(lambda:UserBit, lambda bit: ClassSubject.key_set_from_userbit(bit), lambda bit: bit.verb == GetNode('V/Flags/Registration/Teacher'))
-
     def pretty_teachers(self):
         """ Return a prettified string listing of the class's teachers """
-        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.teachers() ])
+        return ", ".join([ "%s %s" % (u.first_name, u.last_name) for u in self.get_teachers() ])
         
     def isFull(self, ignore_changes=False, timeslot=None):
         """ A class subject is full if all of its sections are full. """
@@ -1667,12 +1597,12 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def is_nearly_full(self, capacity_factor = None):
         if capacity_factor == None:
-            capacity_factor = get_capacity_factor()
+            capacity_factor = ClassSubject.get_capacity_factor()
         return len([x for x in self.get_sections() if x.num_students() > capacity_factor*x.capacity]) > 0
 
     def getTeacherNames(self):
         teachers = []
-        for teacher in self.teachers():
+        for teacher in self.get_teachers():
             name = '%s %s' % (teacher.first_name,
                               teacher.last_name)
             if name.strip() == '':
@@ -1682,7 +1612,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 
     def getTeacherNamesLast(self):
         teachers = []
-        for teacher in self.teachers():
+        for teacher in self.get_teachers():
             name = '%s, %s' % (teacher.last_name,
                               teacher.first_name)
             if name.strip() == '':
@@ -1711,12 +1641,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             return scrmi.temporarily_full_text
 
         if not Tag.getTag("allowed_student_types", target=self.parent_program):
-            verb_override = GetNode('V/Flags/Registration/GradeOverride')
             if user.getGrade(self.parent_program) < self.grade_min or \
                    user.getGrade(self.parent_program) > self.grade_max:
-                if not UserBit.UserHasPerms(user = user,
-                                            qsc  = self.anchor,
-                                            verb = verb_override):
+                if not Permission.user_has_perm(user, "GradeOverride", self.parent_program):
                     return 'You are not in the requested grade range for this class.'
 
         # student has no classes...no conflict there.
@@ -1742,48 +1669,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return 'This class conflicts with your schedule!'
 
     def makeTeacher(self, user):
-        v = GetNode('V/Flags/Registration/Teacher')
-        
-        ub, created = UserBit.objects.get_or_create(user = user,
-                                qsc = self.anchor,
-                                verb = v)
-        ub.renew()
+        self.teachers.add(user)
         return True
 
     def removeTeacher(self, user):
-        v = GetNode('V/Flags/Registration/Teacher')
-
-        for bit in UserBit.objects.filter(user = user, qsc = self.anchor, verb = v):
-            bit.expire()
-            
-        return True
-
-    def subscribe(self, user):
-        v = GetNode('V/Subscribe')
-
-        ub, created = UserBit.objects.get_or_create(user = user,
-                                qsc = self.anchor,
-                                verb = v)
-
+        self.teachers.remove(user)
         return True
     
-    def makeAdmin(self, user, endtime = None):
-        v = GetNode('V/Administer/Edit')
-
-        ub, created = UserBit.objects.get_or_create(user = user,
-                                qsc = self.anchor,
-                                verb = v)
-
-
-        return True        
-
-    def removeAdmin(self, user):
-        v = GetNode('V/Administer/Edit')
-        UserBit.objects.filter(user = user,
-                               qsc = self.anchor,
-                               verb = v).delete()
-        return True
-
     def getResourceRequests(self): # get all resource requests associated with this ClassSubject
         from esp.resources.models import ResourceRequest
         return ResourceRequest.objects.filter(target__parent_class=self)
@@ -1876,10 +1768,9 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
 was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view your class' status.
 
 -esp.mit.edu Autogenerated Message""" % \
-                  (self.title(), self.parent_program.getUrlBase(), self.id)
+                  (self.title, self.parent_program.getUrlBase(), self.id)
         if user is None:
             user = AnonymousUser()
-        Entry.post(user, self.anchor.tree_create(['TeacherEmail']), subject, content, True)       
         return True
 
     def propose(self):
@@ -1911,27 +1802,20 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     def docs_summary(self):
         """ Return the first three documents associated
         with a class, for previewing. """
-        return self.anchor.media_set.all()[:3]
-    docs_summary.depend_on_model(lambda: QSDMedia)
+        return self.documents.all()[:3]
+    docs_summary.depend_on_model(lambda: Media)
 
     def getUrlBase(self):
-        """ gets the base url of this class """
-        return self.url() # This makes looking up subprograms by name work; I've left it so that it can be undone without too much effort
-        tmpnode = self.anchor
-        urllist = []
-        while tmpnode.name != 'Programs':
-            urllist.insert(0,tmpnode.name)
-            tmpnode = tmpnode.parent
-        return "/".join(urllist)
+        """ Gets the base url of this class """
+        return self.url()
 
     def getRegistrations(self, user=None):
         """Gets all non-expired StudentRegistrations associated with this class. If user is given, will also filter to that particular user only."""
         from esp.program.models import StudentRegistration
-        now = datetime.datetime.now()
         if user == None:
-            return StudentRegistration.objects.filter(section__in=self.sections.all(), start_date__lte=now, end_date__gte=now).order_by('start_date')
+            return StudentRegistration.valid_objects().filter(section__in=self.sections.all()).order_by('start_date')
         else:
-            return StudentRegistration.objects.filter(section__in=self.sections.all(), user=user, start_date__lte=now, end_date__gte=now).order_by('start_date')
+            return StudentRegistration.valid_objects().filter(section__in=self.sections.all(), user=user).order_by('start_date')
 
     def getRegVerbs(self, user):
         """ Get the list of verbs that a student has within this class's anchor. """
@@ -1973,19 +1857,19 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
             return result[0]
         
         result = ArchiveClass()
-        date_dir = self.parent_program.anchor.name.split('_')
-        result.program = self.parent_program.anchor.parent.name
+        date_dir = self.parent_program.program_instance.split('_')
+        result.program = self.parent_program.program_type
         result.year = date_dir[0][:4]
         if len(date_dir) > 1:
             result.date = date_dir[1]
-        teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.teachers()]
+        teacher_strs = ['%s %s' % (t.first_name, t.last_name) for t in self.get_teachers()]
         result.teacher = ' and '.join(teacher_strs)
         result.category = self.category.category[:32]
-        result.title = self.title()
+        result.title = self.title
         result.description = self.class_info
         if self.prereqs and len(self.prereqs) > 0:
             result.description += '\n\nThe prerequisites for this class were: %s' % self.prereqs
-        result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.teachers()]) + '|'
+        result.teacher_ids = '|' + '|'.join([str(t.id) for t in self.get_teachers()]) + '|'
         all_students = self.students()
         result.student_ids = '|' + '|'.join([str(s.id) for s in all_students]) + '|'
         result.original_id = self.id
@@ -1998,6 +1882,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     def archive(self, delete=False):
         """ Archive a class to reduce the size of the database. """
         from esp.resources.models import ResourceRequest, ResourceAssignment
+        from esp.users.models.userbits import UserBit
         
         #   Ensure that the class has been saved in the archive.
         archived_class = self.getArchiveClass()
@@ -2043,7 +1928,7 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
     
     @staticmethod
     def class_sort_by_title(one, other):
-        return cmp(one.title(), other.title())
+        return cmp(one.title, other.title)
 
     @staticmethod
     def class_sort_by_timeblock(one, other):
@@ -2076,11 +1961,11 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
         super(ClassSubject, self).save(*args, **kwargs)
         if self.status < 0:
             # Punt teachers all of whose classes have been rejected, from the programwide teachers mailing list
-            teachers = self.teachers()
+            teachers = self.get_teachers()
             for t in teachers:
                 if ESPUser(t).getTaughtClasses(self.parent_program).filter(status__gte=10).count() == 0:
                     from esp.mailman import remove_list_member
-                    mailing_list_name = "%s_%s" % (self.parent_program.anchor.parent.name, self.parent_program.anchor.name)
+                    mailing_list_name = "%s_%s" % (self.parent_program.program_type, self.parent_program.program_instance)
                     teachers_list_name = "%s-%s" % (mailing_list_name, "teachers")
                     remove_list_member(teachers_list_name, t.email)
 
@@ -2196,8 +2081,6 @@ class ClassCategories(models.Model):
     class Admin:
         pass
 
-def open_class_category():
-    return ClassCategories.objects.get_or_create(category='Walk-in Seminar', symbol='W', seq=0)[0]
 
 @cache_function
 def sections_in_program_by_id(prog):

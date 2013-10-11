@@ -32,14 +32,14 @@ label.groupheader { font-size: 1.2em; font-weight: bold; }
 {% block content %}
 <h1>Your Profile Information</h1>
 {% load render_qsd %}
-{% inline_qsd_block Q/Web/myesp account_creation_basic_info request.user %}
+{% inline_qsd_block "myesp/account_creation_basic_info" request.user %}
 <p>First, please tell us a bit about yourself!  The fields in red boxes are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
 
 <p>E-mail addresses have a tendency to change regularly, so we are asking that you re-enter your e-mail address each time you visit this form.  Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
 {% end_inline_qsd_block %}
 
 {% if form.errors %}
-<h4 style="color:red">Please fix the following error{{ form.errors|pluralize }} in the form.</h3>
+<h4 style="color:red">Please fix the following error{{ form.errors|pluralize }} in the form.</h4>
 <ul>
 {% for error in form.errors.items %}
 {% if error.0 %}{% if error.0 == "__all__" %}General{% else %}{{ error.0 }}{% endif %}: {% endif %}{{ error.1 }}
