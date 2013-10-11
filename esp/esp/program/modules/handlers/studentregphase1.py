@@ -68,11 +68,15 @@ class StudentRegPhase1(ProgramModuleObj):
     
     @main_call
     @needs_student
+    @meets_grade
+    @meets_deadline('/Classes/Lottery')
     def studentreg_1(self, request, tl, one, two, module, extra, prog):
         return render_to_response(self.baseDir() + 'studentreg_1.html', request, {})
 
     @aux_call
     @needs_student
+    @meets_grade
+    @meets_deadline('/Classes/Lottery')
     def mark_classes_interested(self, request, tl, one, two, module, extra, prog):
         """
         Saves the set of classes marked as interested by the student.
@@ -120,6 +124,8 @@ class StudentRegPhase1(ProgramModuleObj):
 
     @aux_call
     @needs_student
+    @meets_grade
+    @meets_deadline('/Classes/Lottery')
     def mark_class_interested(self, request, tl, one, two, module, extra, prog):
         """
         Saves the single class indicated as interested or not.
