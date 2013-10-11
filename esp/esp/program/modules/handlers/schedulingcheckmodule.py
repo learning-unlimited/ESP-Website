@@ -184,13 +184,15 @@ class SchedulingCheckRunner:
           if self.listed_sections:
                return self.all_sections
           else:
-               self.all_sections = self.p.sections()
+               qs = self.p.sections()
                #filter out walkins
-               self.all_sections = filter(lambda x: not x.category == self.p.open_class_category, self.all_sections)
+               qs = qs.exclude(parent_class__category__id=self.p.open_class_category.id)
                #filter out non-approved classes
-               self.all_sections = filter(lambda x: len(x.classrooms()) > 0, self.all_sections)
+               qs = qs.exclude(status__lte=0)
+               qs = qs.exclude(resourceassignment__isnull=True)
                #filter out lunch
-               self.all_sections = filter(lambda x: not x.category.category == u'Lunch', self.all_sections)
+               qs = qs.exclude(parent_class__category__category=u'Lunch')
+               self.all_sections = list(qs)
                self.listed_sections = True
                return self.all_sections
 
