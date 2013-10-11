@@ -638,7 +638,7 @@ def manage_pages(request):
         elif request.GET['cmd'] == 'delete':
             #   Mark as inactive all QSD pages matching the one with ID request.GET['id']
             if data['sure'] == 'True':
-                all_qsds = QuasiStaticData.objects.filter(path=qsd.path, name=qsd.name)
+                all_qsds = QuasiStaticData.objects.filter(url=qsd.url, name=qsd.name)
                 for q in all_qsds:
                     q.disabled = True
                     q.save()
@@ -651,7 +651,7 @@ def manage_pages(request):
             return render_to_response('qsd/delete_confirm.html', request, {'qsd': qsd})
         elif request.GET['cmd'] == 'undelete':
             #   Make all the QSDs enabled and return to viewing the list
-            all_qsds = QuasiStaticData.objects.filter(path=qsd.path, name=qsd.name)
+            all_qsds = QuasiStaticData.objects.filter(url=qsd.url, name=qsd.name)
             for q in all_qsds:
                 q.disabled = False
                 q.save()
