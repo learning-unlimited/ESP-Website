@@ -671,12 +671,11 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def catalog_pdf(self, request, tl, one, two, module, extra, prog):
         #   Get the ProgramPrintables module for the program
         from esp.program.modules.handlers.programprintables import ProgramPrintables
-        modules = filter(lambda x: isinstance(x, ProgramPrintables), prog.getModules())
-        if len(modules) > 0:
-            #   Use it to generate a PDF catalog with the default settings
-            return modules[0].coursecatalog(request, tl, one, two, module, extra, prog)
-        else:
-            raise ESPError(False)('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.')
+        for module in prog.getModules():
+            if isinstance(module, ProgramPrintables):
+                #   Use it to generate a PDF catalog with the default settings
+                return module.coursecatalog(request, tl, one, two, module, extra, prog)
+        raise ESPError(False)('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.')
 
     @aux_call
     @needs_student
