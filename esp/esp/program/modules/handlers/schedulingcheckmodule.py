@@ -369,7 +369,7 @@ class SchedulingCheckRunner:
 
           d = self._timeslot_dict(slot=admin_dict)
           for s in self._all_class_sections():
-               teachers = s.parent_class.teachers()
+               teachers = s.parent_class.get_teachers()
                admin_teachers = [t for t in teachers if t.isAdministrator()]
                for a in admin_teachers:
                     mt =  s.get_meeting_times()
