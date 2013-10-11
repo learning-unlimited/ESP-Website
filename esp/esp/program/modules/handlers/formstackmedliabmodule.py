@@ -37,7 +37,7 @@ from esp.datatree.models import *
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
-from esp.users.models    import ESPUser, UserBit, User
+from esp.users.models    import ESPUser, Permission, Record, User
 from django.db.models.query       import Q
 from django.shortcuts import redirect
 from esp.middleware.threadlocalrequest import get_current_request
@@ -45,9 +45,6 @@ from esp.middleware.threadlocalrequest import get_current_request
 # hackish solution for Splash 2012
 class FormstackMedliabModule(ProgramModuleObj):
     """ Module for collecting medical information online via Formstack """
-
-    reg_verb = GetNode('V/Flags/Registration/FormstackMedliabDone')
-    bypass_verb = GetNode('V/Flags/Registration/FormstackMedliabOverride')
 
     @classmethod
     def module_properties(cls):
@@ -65,19 +62,14 @@ class FormstackMedliabModule(ProgramModuleObj):
                 }]
 
     def isCompleted(self):
-        return UserBit.valid_objects().filter(user=get_current_request().user,
-                                              qsc=self.program.anchor,
-                                              verb__in=[self.reg_verb,
-                                                        self.bypass_verb]).exists()
+        return Record.user_completed(user=get_current_request().user, event="med", program=self.program) or Record.user_complete(user=get_current_request().user, event="med_bypass", program=self.program)
 
     def students(self, QObject = False):
-        Q_students = Q(userbit__qsc=self.program.anchor,
-                       userbit__verb=self.reg_verb)
-        Q_students &= UserBit.not_expired('userbit')
+        Q_students = Q(permission__event="med",
+                       permission__program=self.program)
+        Q_bypass = Q(permission__event="med_bypass",
+                       permission__program=self.program)
 
-        Q_bypass = Q(userbit__qsc=self.program.anchor,
-                     userbit__verb=self.bypass_verb)
-        Q_bypass &= UserBit.not_expired('userbit')
 
         if QObject:
             students = Q_students
@@ -117,32 +109,31 @@ class FormstackMedliabModule(ProgramModuleObj):
         """
         Marks student off as completed.
         """
-        UserBit.objects.create(user=request.user,
-                               qsc=self.program.anchor,
-                               verb=self.reg_verb)
+        Record.objects.create(user=request.user, event="med", program=self.program)
         return self.goToCore(tl)
 
     @main_call
     @needs_admin
     def medicalbypass(self, request, tl, one, two, module, extra, prog):
         # yes it's hacky, but it's two days before Splash student reg
+        # still hacky, because it works and I'm too lazy to refactor ~shulinye
         status = None
         if request.method == 'POST':
             username = request.POST['username']
             if ESPUser.objects.filter(username=username).exists():
                 user = ESPUser.objects.get(username=username)
-                if UserBit.objects.filter(user=user,
-                                          qsc=self.program.anchor,
-                                          verb=self.bypass_verb).exists():
-                    status = 'bypass bit exists'
-                elif UserBit.objects.filter(user=user,
-                                            qsc=self.program.anchor,
-                                            verb=self.reg_verb).exists():
+                if Record.objects.filter(user=user,
+                                          program=self.program,
+                                          event="med_bypass").exists():
+                    status = 'bypass exists'
+                elif Record.objects.filter(user=user,
+                                            program=self.program,
+                                            event="med").exists():
                     status = 'reg bit exists'
                 else:
                     UserBit.objects.create(user=user,
-                                           qsc=self.program.anchor,
-                                           verb=self.bypass_verb)
+                                           program=self.program,
+                                           event="med_bypass")
                     status = 'success'
             else:
                 status = 'invalid user'

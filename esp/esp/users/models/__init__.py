@@ -1848,9 +1848,9 @@ class EmailPref(models.Model):
         app_label = 'users'
 
 class Record(models.Model):
-    #To make these better to work with in the admin panel, and to have a 
+    #To make these better to work with in the admin panel, and to have a
     #well defined set of possibilities, we'll use a set of choices
-    #if you want to use this model for an additional thing, 
+    #if you want to use this model for an additional thing,
     #add it as a choice
     EVENT_CHOICES=(
         ("student_survey", "Completed student survey"),
@@ -1861,6 +1861,7 @@ class Record(models.Model):
         ("teacher_quiz_done","Completed teacher quiz"),
         ("paid","Paid for program"),
         ("med","Submitted medical form"),
+        ("med_bypass","Recieved medical bypass"),
         ("liab","Submitted liability form"),
         ("onsite","Registered for program on-site"),
         ("schedule_printed","Printed student schedule on-site"),
