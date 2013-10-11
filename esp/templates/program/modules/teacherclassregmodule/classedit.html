@@ -41,7 +41,7 @@
 
 
 
-<form action="{{request.path}}" id="clsform" name="clsform" method="post" {% if grade_range_popup %}onsubmit="return check_grade_range($j(this), {{ program.grade_min }}, {{ program.grade_max }});"{% endif %}>
+<form action="{{request.path}}" id="clsform" name="clsform" method="post" onsubmit="$j(this).find('input[type=submit]').attr('disabled', 'disabled'); $j(this).find('button[type=submit]').attr('disabled', 'disabled'); {% if grade_range_popup %}return check_grade_range($j(this), {{ program.grade_min }}, {{ program.grade_max }});{% endif %}">
 
 {% if form.errors %}
 <p align="center">
