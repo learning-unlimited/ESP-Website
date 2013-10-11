@@ -306,8 +306,15 @@ class SchedulingCheckRunner:
           for s in self._all_class_sections():
                mt =  s.get_meeting_times()
                for t in mt:
-                    d_classes[t][s.category.category] += 1
-                    d_capacity[t][s.category.category] += s.capacity
+                    #   Handle classes not in program's list of class categories
+                    #   (edge case in the event of manual modifications)
+                    sc = s.category.category
+                    if sc not in d_classes[t]:
+                        d_classes[t][sc] = 0
+                    if sc not in d_capacity[t]:
+                        d_capacity[t][sc] = 0
+                    d_classes[t][sc] += 1
+                    d_capacity[t][sc] += s.capacity
 
           self.d_categories = {"classes":d_classes, "capacity":d_capacity}
           return self.d_categories
