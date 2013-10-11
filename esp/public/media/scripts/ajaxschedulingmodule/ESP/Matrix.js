@@ -3,52 +3,44 @@
  */
 ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
     initialize: function(times, rooms, blocks){
-        this.matrix = $j("<div/>").addClass('matrix');
+        this.matrix = $j('.matrix');
         this.el = this.matrix;
+	console.log(this.el)
 
         var Matrix = ESP.Scheduling.Widgets.Matrix;
         
         this.times = times;
         this.rooms = rooms;
         var time_cells = this.time_cells = {};
-        var room_cells = this.room_cells = {};
+        var room_rows = this.room_rows = {};
         var block_cells = this.block_cells = {};
         
-        // set up header
-        var header = $j('<div/>').addClass('matrix-header');
-        this.matrix.append(header);
-        header.append($j('<div/>').addClass('matrix-corner-box'));
-        
-        var col_header = $j('<table/>').addClass('matrix-column-header-box');
-        header.append(col_header);
-        var tr = $j('<tr/>').addClass('matrix-row-body');
-        col_header.append(tr);
+	var hr = $j('.matrix-row-body');
+	console.log(hr)
+
+	//add class times
         for (var i = 0; i < times.length; i++) {
             var c = new Matrix.TimeCell(times[i]);
             time_cells[times[i].uid] = c;
             if (!times[i].seq) c.td.addClass('non-sequential');
-            tr.append(c.td);
+            hr.append(c.td);
         }
         
-        var body = $j('<div/>').addClass('matrix-body');
-        this.matrix.append(body);
-        var row_header = $j('<table/>').addClass('matrix-row-header-box');
-        var cell_body = $j('<table/>').addClass('matrix-cell-body');
-        body.append(row_header);
-        body.append(cell_body);
-        
+	//matrix body
+	body_table = $j("#matrix-table")
+
         // create rows
         for (var i = 0; i < rooms.length; i++) {
-            var room = rooms[i];
-            
-            var rc = new Matrix.RoomCell(room);
-            room_cells[room.uid] = rc;
-            
-            block_cells[room.uid] = {};
             var tr = $j('<tr/>');
-            tr.append(rc.td);
-            row_header.append(tr);
-            cell_body.append(rc.tr);
+	    body_table.append(tr);
+
+            var room = rooms[i];
+            var rc = new Matrix.RoomCell(room);
+
+	    tr.append(rc.td);
+
+            room_rows[room.uid] = tr;            
+            block_cells[room.uid] = {};
         }
         
         // create individual blocks
@@ -60,7 +52,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         // add blocks in correct order
         for (var i = 0; i < rooms.length; i++) {
             var row = block_cells[rooms[i].uid];
-            var tr = room_cells[rooms[i].uid].tr;
+            var tr = room_rows[rooms[i].uid];
             var lt = false, t = false, td = null;
             for (var j = 0; j < times.length; j++) {
                 t = times[j];
@@ -72,17 +64,10 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             }
         }
         
-        // set up scrolling
-	/* obsolete -- see commit b7e793b3106949794ae8e067f66af920981049b7
-        cell_body.scroll(function(evt){
-            row_header.css('top','-'+cell_body.scrollTop()+'px');
-            col_header.children('tbody').css('left','-'+cell_body.scrollLeft()+'px');
-        });
-	*/
-        
         var BlockStatus = ESP.Scheduling.Resources.BlockStatus;
         // listen for assignments
         ESP.Utilities.evm.bind('block_section_assignment', function(e, data) {
+	    debug_log('block_section_assignment');
             if (!(data.nowriteback)) {
                 if (data.blocks.length > 0) {
                     //Refresh the csrf token
@@ -114,6 +99,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             }
         }.bind(this));
         ESP.Utilities.evm.bind('block_section_assignment_local', function(e, data) {
+	    debug_log('block_section_assignment_local')
             //Some checking
             var block_status;
             for (var i = 0; i < data.blocks.length; i++) {
@@ -145,13 +131,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                 cell.td.addClass('CLS_status_' + section.status);
                 cell.td.addClass('CLS_grade_min_' + section.grade_min);
                 cell.td.addClass('CLS_grade_max_' + section.grade_max);
-		/*
-                for (var j = 0; j < section.resource_requests.length; j++) {
-                    if (section.resource_requests[j][0]) {
-                        cell.td.addClass('CLS_rsrc_req_' + section.resource_requests[j][0].text.replace(/[^a-zA-Z]+/g, '-'));
-                    }
-                }
-		*/
+
                 for (var j = 0; j < block.processed_room.resources.length; j++) {
                     if (block.processed_room.resources[j]) {
                         cell.td.addClass('CLS_ROOM_rsrc_' + block.processed_room.resources[j].replace(/[^a-zA-Z]+/g, '-'));
@@ -161,7 +141,9 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 
             ESP.Utilities.evm.fire('block_section_assignment_success', data);
         }.bind(this));
+
         ESP.Utilities.evm.bind('block_section_unassignment', function(e, data) {
+	    debug_log('block_section_unassignment');
             if (!(data.nowriteback)) {
                 //Refresh the csrf token
                 refresh_csrf_cookie();
@@ -183,13 +165,34 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             }
         }.bind(this));
         ESP.Utilities.evm.bind('block_section_unassignment_local', function(e, data) {
-            //Update the actual data
-            data.section.blocks = [];
-            for (var i = 0; i < data.blocks.length; i++) {
-                data.blocks[i].section = null;
+            debug_log('block_section_unassignment_local');
+	    
+	    /*
+	      This function is called in two situations:  when a class was just unassigned
+	      locally and when we get a class back from the changelog.  In the first case,
+	      we've already changed the data locally, and passed the unassigned blocks to 
+	      this function.  In the other, the blocks need to be unassigned locally and 
+	      are still in the data.section datastructure.
+	      
+	      TODO:  probably the right answer here is to have the data not unassigned
+	      until this function everywhere.  On the other hand, I can't figure out
+	     */
+
+	    var old_blocks;
+	    if(data.blocks.length == 0){
+		old_blocks = data.section.blocks;// the blocks we're removing the class from
+	    }
+	    else{
+		old_blocks = data.blocks
+	    }
+
+
+            for (var i = 0; i < old_blocks.length; i++) {
+                blocks[i].section = null;
             }
+
             //Update the CSS
-            var old_blocks = data.blocks;
+	    //TODO:  can we find old blocks in our existing data structures somewhere?
             for (var i = 0; i < old_blocks.length; i++) {
                 var block = old_blocks[i];
                 var cell = this.block_cells[block.room.uid][block.time.uid];
@@ -202,17 +205,18 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                     }
                 }
             }
+            data.section.blocks = [];
         }.bind(this));
     },
     
     hideRoom:function(uid){
-        var rc=this.room_cells[uid];
+        var rc=this.room_rows[uid];
         rc.tr.hide();
         rc.td.parent().hide();
     },
     
     showRoom:function(uid){
-        var rc=this.room_cells[uid];
+        var rc=this.room_rows[uid];
         rc.tr.show();
         rc.td.parent().show();
     },
@@ -240,7 +244,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         }
         
         for(var i=0; i<sorted.length; i++){
-            var rc=this.room_cells[sorted[i].uid];
+            var rc=this.room_rows[sorted[i].uid];
             moveToEnd(rc.tr[0]);
             moveToEnd(rc.td.parent()[0]);
         }
@@ -318,7 +322,7 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
                 e.stopPropagation();
             }).bind(this))
         );
-        $j('.matrix-corner-box').append(this.el);
+        //$j('.matrix-corner-box').append(this.el);
     },
         
     filter: function(){
@@ -398,16 +402,16 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
         initialize: function($super, room){
             $super()
             this.room = room;
-            this.tr = $j('<tr/>').addClass('matrix-row-body');
             this.td.html(room.block_contents.clone(true));
-            this.td.addClass('matrix-row-header');
+	    //matrix cell class sets the width too narrowly
+	    this.td.removeClass('matrix-cell');
+            this.td.addClass('matrix-row-header-box');
             for (var j = 0; j < room.resources.length; j++) {
                 if (room.resources[j]) {
                     this.td.addClass('ROOM_rsrc_' + room.resources[j].replace(/[^a-zA-Z]+/g, '-'));
                 }
             }
             this.td.addClass('');
-            //this.tr.append(this.td);
         }
     });
     
@@ -448,9 +452,10 @@ ESP.declare('ESP.Scheduling.Widgets.RoomFilter', Class.create({
     });
 })();
 
+//TODO:  this.el is no longer as useful a notion as it used to be, so maybe we should name it something less confusing
 ESP.declare('ESP.Scheduling.Widgets.GarbageBin', Class.create({
         initialize: function(){
-            this.el = $j('<div>Drag here to unschedule</div>').addClass('garbage');
+            this.el = $j('#garbage-div');
             var target = this.el;
             var activeClass = 'dd-highlight';
             var options = $j.extend({
@@ -473,5 +478,6 @@ ESP.declare('ESP.Scheduling.Widgets.GarbageBin', Class.create({
             }, options || {});
             target.droppable(options);
         }
-    }));
+   })
+);
 
