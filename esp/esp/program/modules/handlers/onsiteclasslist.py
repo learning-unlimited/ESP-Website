@@ -33,7 +33,15 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+import simplejson
+import colorsys
 from datetime import datetime, timedelta
+
+from django.db.models import Min
+from django.db.models.query import Q
+from django.http import HttpResponse
+from django.utils.safestring import mark_safe
+
 from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap
 from esp.web.util import render_to_response
@@ -43,13 +51,8 @@ from esp.users.models import ESPUser, Record
 from esp.resources.models import ResourceAssignment
 from esp.datatree.models import *
 from esp.utils.models import Printer, PrintRequest
-from django.db.models import Min
-from django.db.models.query import Q
-from django.http import HttpResponse
-from django.utils.safestring import mark_safe
+from esp.utils.query_utils import nest_Q
 
-import simplejson
-import colorsys
 
 def hsl_to_rgb(hue, saturation, lightness=0.5):
     (red, green, blue) = colorsys.hls_to_rgb(hue, lightness, saturation)
@@ -106,7 +109,7 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def enrollment_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-        data = StudentRegistration.objects.filter(section__status__gt=0, section__parent_class__status__gt=0, end_date__gte=datetime.now(), start_date__lte=datetime.now(), section__parent_class__parent_program=prog, relationship__name='Enrolled').values_list('user__id', 'section__id')
+        data = StudentRegistration.valid_objects().filter(section__status__gt=0, section__parent_class__status__gt=0, section__parent_class__parent_program=prog, relationship__name='Enrolled').values_list('user__id', 'section__id')
         simplejson.dump(list(data), resp)
         return resp
     
@@ -169,7 +172,7 @@ LIMIT 1
         except:
             result['messages'].append('Error: no user specified.')
         if result['user']:
-            result['sections'] = list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__start_date__lte=datetime.now(), studentregistration__end_date__gte=datetime.now(), studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
+            result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
         simplejson.dump(result, resp)
         return resp
         
@@ -197,7 +200,7 @@ LIMIT 1
         if user and desired_sections is not None:
             override_full = (request.GET.get("override", "") == "true")
         
-            current_sections = list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__start_date__lte=datetime.now(), studentregistration__end_date__gte=datetime.now(), studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).values_list('id', flat=True).order_by('id').distinct())
+            current_sections = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=user.id).values_list('id', flat=True).order_by('id').distinct())
             sections_to_remove = ClassSection.objects.filter(id__in=list(set(current_sections) - set(desired_sections)))
             sections_to_add = ClassSection.objects.filter(id__in=list(set(desired_sections) - set(current_sections)))
 
@@ -243,7 +246,7 @@ LIMIT 1
                             result['messages'].append('Failed to add %s (%s) to %s: %s (%s).  Error was: %s' % (user.name(), user.id, sec.emailcode(), sec.title(), sec.id, error))
         
             result['user'] = user.id
-            result['sections'] = list(ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__start_date__lte=datetime.now(), studentregistration__end_date__gte=datetime.now(), studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
+            result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
         
         simplejson.dump(result, resp)
         return resp
