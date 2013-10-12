@@ -1887,6 +1887,9 @@ class Record(models.Model):
         else:
             return cls.objects.filter(user=user, event=event, program=program).count()>0
 
+    def __unicode__(self):
+        return unicode(self.user) + " has completed " + self.event + " for " + unicode(self.program)
+        
 #helper method for designing implications
 def flatten(choices):
     l=[]
