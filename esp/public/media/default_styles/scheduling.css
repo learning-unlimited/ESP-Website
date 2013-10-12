@@ -237,6 +237,12 @@ background: yellow;
 background: red !important;
 }
 
+#garbage-div {
+position:fixed;
+width:110px;
+height:35px;
+}
+
 .unapproved {
 color:#ff0000; font-style:italic;
 }
