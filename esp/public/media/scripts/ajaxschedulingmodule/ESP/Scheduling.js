@@ -109,6 +109,11 @@ ESP.Scheduling = function(){
 	$j('.matrix').height(window_height);
 	$j('.matrix-body').height($j('.matrix').height()-$j('.matrix-column-header-box').height()-2);
 
+        //make matrix header fixed to the top
+        $j('.matrix').scroll(function (event) {
+            $j('.matrix-header').css('top', $j('.matrix').scrollTop());
+        });
+
 	//set last_fetched_time to now
 	//TODO:  probably doesn't actually get correct behavior if a class is scheduled at exactly the right time
 	ESP.Scheduling.last_fetched_time = new Date().getTime()/1000
