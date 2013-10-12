@@ -671,5 +671,9 @@ $j(function(){
 		}
             });
 	}, 5000);
+
+	setInterval(function() {
+		location.reload(true);
+	}, 600000);
     }
 });
