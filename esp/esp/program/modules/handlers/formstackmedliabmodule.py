@@ -38,6 +38,7 @@ from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
 from esp.users.models    import ESPUser, Permission, Record, User
+from esp.tagdict.models import Tag
 from django.db.models.query       import Q
 from django.shortcuts import redirect
 from esp.middleware.threadlocalrequest import get_current_request
@@ -96,10 +97,9 @@ class FormstackMedliabModule(ProgramModuleObj):
         """
         Landing page redirecting to med-liab form on Formstack.
         """
-        # code for Junction admissions will have better handling of
-        # Formstack forms
-        # for now, just render a QSD page
-        context = {}
+        t = Tag.getTag("formstack_id", self.program)
+        print t
+        context = {"formstack_id": t}
         return render_to_response(self.baseDir()+'medliab.html',
                                   request, context)
 
