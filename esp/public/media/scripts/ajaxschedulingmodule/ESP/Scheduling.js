@@ -117,7 +117,9 @@ ESP.Scheduling = function(){
         });
 
 	//set last_fetched_index to the initial age
+	if(!ESP.Scheduling.hasOwnProperty('last_fetched_index')) {
 	ESP.Scheduling.last_fetched_index = 0
+	}
 
 	//TODO:  add verbose mode here
         //console.log("Classes of each type in each timeblock:");
