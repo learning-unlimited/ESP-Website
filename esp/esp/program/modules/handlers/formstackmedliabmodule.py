@@ -101,7 +101,7 @@ class FormstackMedliabModule(ProgramModuleObj):
         # for now, just render a QSD page
         context = {}
         return render_to_response(self.baseDir()+'medliab.html',
-                                  request, (prog, tl), context)
+                                  request, context)
 
     @aux_call
     @needs_student
