@@ -671,7 +671,7 @@ $j(function(){
                     ESP.Scheduling.status('error','Unable to refresh data from server.');
 		}
             });
-	}, 5000);
+	}, 10000);
 
 	setInterval(function() {
 	    load()
