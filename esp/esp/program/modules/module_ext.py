@@ -32,6 +32,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
+
+import time
+from datetime import timedelta
 from django.db import models
 from esp.datatree.models import *
 from esp.program.modules.base import ProgramModuleObj
@@ -385,3 +388,90 @@ class CreditCardSettings(models.Model):
     post_url = models.CharField(max_length=255, default='')
     offer_donation = models.BooleanField(default=False)
     invoice_prefix = models.CharField(max_length=80, default=settings.INSTITUTION_NAME.lower())
+
+class AJAXChangeLogEntry(models.Model):
+
+	# unique index in change_log of this entry
+	index = models.IntegerField()
+
+	# comma-separated list of integer timeslots
+	timeslots = models.CharField(max_length=256)
+
+	# name of the room involved in scheduling update
+	room_name = models.CharField(max_length=256)
+
+	# class ID to update
+	cls_id = models.IntegerField()
+
+	# time we entered this
+	time = models.FloatField()
+
+	def update(self, index, timeslots, room_name, cls_id):
+		self.index = index
+		self.timeslots = ','.join([str(x) for x in timeslots])
+		self.room_name = room_name
+		self.cls_id = cls_id
+
+	def save(self, *args, **kwargs):
+		self.time = time.time()
+		super(AJAXChangeLogEntry, self).save(*args, **kwargs)
+
+	def getTimeslots(self):
+		return self.timeslots.split(',')
+
+class AJAXChangeLog(models.Model):
+    # program this change log stores changes for
+    program = AjaxForeignKey(Program)
+
+    # many to many for entries in this change log
+    entries = models.ManyToManyField(AJAXChangeLogEntry)
+
+    # log entries older than this are deleted
+    max_log_age = timedelta(hours=12).total_seconds()
+
+    def update(self, program):
+	 	self.program = program
+		self.age = time.time()
+
+    def prune(self):
+        max_time = time.time() - self.max_log_age
+        self.entries.filter(time__lte=max_time).delete()
+        self.save()
+
+    def append(self, timeslots, room_name, cls_id):
+        next_index = self.get_latest_index() + 1
+
+        entry = AJAXChangeLogEntry()
+        entry.update(next_index, timeslots, room_name, cls_id)
+        entry.save()
+        self.save()
+        self.entries.add(entry)
+        self.save()
+
+    def get_latest_index(self):
+    	index = self.entries.all().aggregate(models.Max('index'))['index__max']
+
+    	if index is None:
+    		index = 0
+
+    	return index
+
+    def get_earliest_index(self):
+    	return self.entries.all().aggregate(models.Min('index'))['index__min']
+
+    	if index is None:
+    		index = 0
+
+		return index
+
+    def get_log(self, last_index):
+		new_entries = self.entries.filter(index__gt=last_index)
+		entry_list = list()
+
+		for entry in new_entries:
+			entry_list.append( {	'index'     : entry.index,
+									'room_name' : entry.room_name,
+									'id'    : entry.cls_id,
+									'timeslots' : entry.getTimeslots() })
+
+		return entry_list

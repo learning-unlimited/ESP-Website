@@ -71,8 +71,9 @@ ESP.Scheduling = function(){
             var extra = {
                 blocks:data.blocks, section:data.section
             };
-            ESP.Utilities.evm.fire('block_section_unassignment_request',{ section: data.section, blocks: data.section.blocks || [] });
-            ESP.Utilities.evm.fire('block_section_assignment_request',extra);
+            //in the past, we've done block_section_assignment_request firing immediately after block_section_unassignment_request here
+            //now we let Matrix.js call block_section_assignment_request with the 'recurse' data after the unassignment HTTP request completes
+            ESP.Utilities.evm.fire('block_section_unassignment_request',{ section: data.section, blocks: data.section.blocks || [], recurse: extra });
         });
         ESP.Utilities.evm.bind('block_section_assignment_request', function(event, data){
             ESP.Utilities.evm.fire('block_section_assignment',data);
@@ -114,9 +115,8 @@ ESP.Scheduling = function(){
             $j('.matrix-header').css('top', $j('.matrix').scrollTop());
         });
 
-	//set last_fetched_time to now
-	//TODO:  probably doesn't actually get correct behavior if a class is scheduled at exactly the right time
-	ESP.Scheduling.last_fetched_time = new Date().getTime()/1000
+	//set last_fetched_index to the initial age
+	ESP.Scheduling.last_fetched_index = 0
 
 	//TODO:  add verbose mode here
         //console.log("Classes of each type in each timeblock:");
@@ -393,19 +393,19 @@ ESP.Scheduling = function(){
     };
    
     var fetch_updates = function()  {
-	$j.getJSON('ajax_change_log', {'last_fetched_time': ESP.Scheduling.last_fetched_time}, function(d, status) {
+	$j.getJSON('ajax_change_log', {'last_fetched_index': ESP.Scheduling.last_fetched_index}, function(d, status) {
 	    //if we need to reload
-	    if (d['other']){
-		if (d['other'][0]['command'] == "reload"){
+	    if (d['other'] && d['other'][0]['command'] == "reload"){
 		    console.log("reloading")
 		    load()
 		}
-	    }
 	    else{
 		apply_existing_classes(d.changelog, this.data)
-		//update last change time if we didn't get an empty changelog
-		if (d.changelog.length > 0){
-		    ESP.Scheduling.last_fetched_time = d.changelog[d.changelog.length-1].schedule_time
+		//update last change time with received indices
+		for(var i = 0; i < d.changelog.length; i++){
+			if(d.changelog[i].index > ESP.Scheduling.last_fetched_index) {
+		    	ESP.Scheduling.last_fetched_index = d.changelog[i].index
+		    }
 		}
 	    }
 	});
@@ -427,7 +427,10 @@ ESP.Scheduling = function(){
             rsrc_sec[sa.id] = [];
 	    for (var j = 0; j < sa.timeslots.length; j++)
 	    {
-		rsrc_sec[sa.id].push(Resources.get('Block', [sa.timeslots[j],sa.room_name]));
+	    resource = Resources.get('Block', [sa.timeslots[j],sa.room_name]);
+	    if(resource !== undefined) {
+			rsrc_sec[sa.id].push(resource);
+		}
 	    }
         }
 
@@ -644,6 +647,7 @@ $j(function(){
     $j.getJSON('ajax_schedule_last_changed', function(d, status) {
         if (status == "success") {
             ESP.version_uuid = d['val'];
+            ESP.Scheduling.last_fetched_index = d['latest_index'];
         }
     });
 
@@ -657,13 +661,15 @@ $j(function(){
 		if (status == "success") {
                     if (d['val'] != ESP.version_uuid) {
 			ESP.version_uuid = d['val'];
-			location.reload(true);
-			//ESP.Scheduling.fetch_updates();
+			//location.reload(true);
+			ESP.Scheduling.fetch_updates();
+                    } else {
+			ESP.Scheduling.last_fetched_index = d['latest_index'];
                     }
 		} else {
                     ESP.Scheduling.status('error','Unable to refresh data from server.');
 		}
             });
-	}, 300000);
+	}, 5000);
     }
 });

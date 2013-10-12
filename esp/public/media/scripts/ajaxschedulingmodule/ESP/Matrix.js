@@ -155,6 +155,12 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
                 .success(function(ajax_data, status) {
                     ESP.version_uuid = data.val;
                     ESP.Utilities.evm.fire('block_section_unassignment_local', data);
+
+                    //recurse on any assignments
+                    //this is used when we want to assign immediately after unassigning
+                    if(data.hasOwnProperty('recurse')) {
+                    	ESP.Utilities.evm.fire('block_section_assignment', data['recurse']);
+                    }
                 })
                 .error(function(ajax_data, status) {
                     alert("Unassignment failure!");
@@ -480,4 +486,3 @@ ESP.declare('ESP.Scheduling.Widgets.GarbageBin', Class.create({
         }
    })
 );
-

@@ -53,31 +53,8 @@ from uuid                        import uuid4 as get_uuid
 from esp.utils.decorators         import json_response
 import calendar, time, datetime
 
-#TODO:  a class for log entries?
-class AJAXChangeLog: 
-    max_log_age =  timedelta(hours=12).total_seconds()
-    def __init__(self):
-        self.entries = []
-        self.age = time.time()
-        
-    def prune(self):
-        now = time.time()
-        #could be optimized.  Not super concerned with this.
-        self.entries = [s for s in self.entries if s['schedule_time'] > now - self.max_log_age]
-
-    def append(self, entry):
-        self.entries.append(entry)
-
-    def get_log(self, timestamp):
-        return [c for c in self.entries if c['schedule_time'] > timestamp]        
-    
-    def get_log_age(self):
-        return self.age
-
 class AJAXSchedulingModule(ProgramModuleObj):
     """ This program module allows teachers to indicate their availability for the program. """
-
-    change_log = {}
 
     @classmethod
     def module_properties(cls):
@@ -324,7 +301,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     #helper functions for ajax_schedule_class
     #seperated out here to make code more readeable and enable testing
     def makeret(self, prog, **kwargs):
-        last_changed = self.ajax_schedule_last_changed_cached(prog).raw_value
+        last_changed = self.ajax_schedule_last_changed_helper(prog).raw_value
         kwargs['val'] = last_changed['val']
         response = HttpResponse(content_type="application/json")
         simplejson.dump(kwargs, response)
@@ -333,14 +310,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     def ajax_schedule_deletereg(self, prog, cls):
         cls.clearRooms()
         cls.clear_meeting_times()
-        schedule_info = {
-            #use time as unique id.  Since this has microsecond resolution, I'm not worried about conflicts
-            'schedule_time': time.time(), 
-            'timeslots': [],
-            'room_name': "", #only support having one classroom scheduled this way
-            'id': int(cls.id),
-        }
-        self.get_change_log(prog).append(schedule_info)
+        self.get_change_log(prog).append([], "", int(cls.id))
 
         return self.makeret(prog, ret=True, msg="Schedule removed for Class Section '%s'" % cls.emailcode())
 
@@ -382,14 +352,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 return self.makeret(prog, ret=False, msg=" | ".join(errors))
             
             #add things to the change log here
-            schedule_info = {
-                #use time as unique id.  Since this has microsecond resolution, I'm not worried about conflicts
-                'schedule_time': time.time(), 
-                'timeslots': [int(t.id) for t in times],
-                'room_name': classroom_names[0], #only support having one classroom scheduled this way
-                'id': int(cls.id),
-                }
-            self.get_change_log(prog).append(schedule_info)
+            self.get_change_log(prog).append([int(t.id) for t in times], classroom_names[0], int(cls.id))
 
             return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
 
@@ -398,7 +361,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @json_response()
     def ajax_change_log(self, request, tl, one, two, module, extra, prog):
         cl = self.get_change_log(prog)
-        last_fetched_time =  float(request.GET['last_fetched_time'])
+        last_fetched_index = int(request.GET['last_fetched_index'])
         
         #print "schedule_time", cl[0]['schedule_time']
         #print "last fetched time", last_fetched_time
@@ -406,10 +369,11 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
         #check whether we have a log entry at least as old as the last fetched time
         #if not, we return a command to reload instead of the log
-        if cl.get_log_age() > last_fetched_time:
-            return { "other" : [ { 'command' : "reload"} ] }
+        #note: negative number implies we want to debug dump changelog
+        if cl.get_earliest_index() is not None and cl.get_earliest_index() > last_fetched_index:
+            return { "other" : [ { 'command' : "reload", 'earliest_index' : cl.get_earliest_index(), 'latest_index' : cl.get_latest_index(), 'time' : time.time() } ] }
 
-        return { "changelog" : cl.get_log(last_fetched_time) }
+        return { "changelog" : cl.get_log(last_fetched_index), 'other' : [ { 'time': time.time() } ] }
 
     @aux_call
     @needs_admin
@@ -418,13 +382,20 @@ class AJAXSchedulingModule(ProgramModuleObj):
         called in production, but it is annoying.  
         Clears the change log for this program. """
 
-        self.change_log[prog.id] = AJAXChangeLog()
+        self.get_change_log(prog).entries.all().delete()
         return HttpResponse('')
 
     def get_change_log(self, prog):
-        if not prog.id in self.change_log:
-            self.change_log[prog.id] = AJAXChangeLog()
-        return self.change_log[prog.id]
+		change_log = module_ext.AJAXChangeLog.objects.filter(program=prog)
+
+		if change_log.count() == 0:
+			change_log = module_ext.AJAXChangeLog()
+			change_log.update(prog)
+			change_log.save()
+		else:
+			change_log = change_log[0]
+
+		return change_log
 
     @aux_call
     @needs_admin
@@ -460,30 +431,34 @@ class AJAXSchedulingModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def ajax_schedule_last_changed(self, request, tl, one, two, module, extra, prog):
-        return self.ajax_schedule_last_changed_cached(prog)
+        return self.ajax_schedule_last_changed_helper(prog)
 
-    @cache_function
-    def ajax_schedule_last_changed_cached(self, prog):
-        # ret['val'] should be a valid nonce that's regenerated no less often than whenever the data changes
-        ret = { 'val': str(get_uuid()),  
-                'msg': 'UUID that changes every time the schedule is updated' }
+    def ajax_schedule_last_changed_helper(self, prog):
+        ret = { 'val': str(self.ajax_schedule_get_uuid(prog)),
+                'msg': 'UUID that changes every time the schedule is updated',
+                'time' : time.time(),
+                'latest_index' : self.get_change_log(prog).get_latest_index() }
 
         response = HttpResponse(content_type="application/json")
         simplejson.dump(ret, response)
         response.raw_value = ret  # So that other functions can call this view and get the original return value back
         return response
 
+    @cache_function
+    def ajax_schedule_get_uuid(self, prog):
+        return get_uuid()
+
     # This function should be called iff the data returned by any of the other ajax_ JSON functions changes.
     # So, cache it; and have the cache expire whenever any of the relevant models changes.
     # Yeah, the cache will get expired quite often...; but, eh, it's a cheap function.
-    ajax_schedule_last_changed_cached.get_or_create_token(('prog',))
-    ajax_schedule_last_changed_cached.depend_on_model(lambda: ResourceAssignment)
-    ajax_schedule_last_changed_cached.depend_on_model(lambda: Resource)
-    ajax_schedule_last_changed_cached.depend_on_model(lambda: ResourceRequest)
-    ajax_schedule_last_changed_cached.depend_on_model(lambda: Event)
-    ajax_schedule_last_changed_cached.depend_on_model(lambda: ClassSection)
-    ajax_schedule_last_changed_cached.depend_on_model(lambda: ClassSubject)
-    ajax_schedule_last_changed_cached.depend_on_model(lambda: UserAvailability)
+    ajax_schedule_get_uuid.get_or_create_token(('prog',))
+    ajax_schedule_get_uuid.depend_on_model(lambda: ResourceAssignment)
+    ajax_schedule_get_uuid.depend_on_model(lambda: Resource)
+    ajax_schedule_get_uuid.depend_on_model(lambda: ResourceRequest)
+    ajax_schedule_get_uuid.depend_on_model(lambda: Event)
+    ajax_schedule_get_uuid.depend_on_model(lambda: ClassSection)
+    ajax_schedule_get_uuid.depend_on_model(lambda: ClassSubject)
+    ajax_schedule_get_uuid.depend_on_model(lambda: UserAvailability)
 
     @cache_function
     def ajax_lunch_timeslots_cached(self, prog):
@@ -547,4 +522,3 @@ class AJAXSchedulingModule(ProgramModuleObj):
 
     class Meta:
         abstract = True
-
