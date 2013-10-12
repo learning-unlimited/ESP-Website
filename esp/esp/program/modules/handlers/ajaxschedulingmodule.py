@@ -138,7 +138,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 'text': s.title(),
                 'category': s.category.category,
                 'length': float(s.duration),
-                'teachers': list(s.parent_class.get_teachers().values_list('id', flat=True)),
+                'teachers': [t.id for t in s.parent_class.get_teachers()],
                 'resource_requests': rrequest_dict[s.id],
                 'max_class_capacity': s.max_class_capacity,
                 'capacity': s.capacity,
