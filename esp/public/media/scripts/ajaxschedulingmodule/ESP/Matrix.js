@@ -19,6 +19,7 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
 	console.log(hr)
 
 	//add class times
+	if(!ESP.Scheduling.hasOwnProperty('class_times_added')) {
         for (var i = 0; i < times.length; i++) {
             var c = new Matrix.TimeCell(times[i]);
             time_cells[times[i].uid] = c;
@@ -26,9 +27,12 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
             hr.append(c.td);
         }
         
+        ESP.Scheduling['class_times_added'] = true;
+    }
+
 	//matrix body
 	body_table = $j("#matrix-table");
-	body_table.html("");
+	body_table.empty();
 
         // create rows
         for (var i = 0; i < rooms.length; i++) {
