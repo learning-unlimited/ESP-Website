@@ -129,7 +129,7 @@ border-right: 1px solid #666;
 .matrix .data-cell.filled { background-color: #ccf; }
 .matrix .data-cell.unreviewed { background-color: #fcc; }
 
-.matrix .matrix-cell.non-sequential { border-right: 2px solid #666;}
+.matrix .matrix-cell.non-sequential { border-right: 4px solid #666;}
 /*.matrix .non-sequential:last-child { border-right-width: 0px; }*/
 .matrix-cell-body .matrix-cell { border: 0px solid #666; border-width: 0px 1px 1px 0px; }
 
