@@ -20,12 +20,12 @@ var load = function() {
 ESP.Scheduling = function(){
     function init(test_data_set){
         $j('#body').hide()
+
         // ensure event manager is empty before we begin setting up
         ESP.Utilities.evm.unbind();
 
 	//Add debug features
-	//TODO:  make sure these aren't added a second time when the interface reloads
-	if (debug_on){
+	if (debug_on && !ESP.Scheduling.hasOwnProperty('debug_features_added')){
 	    $j('#body').append(
 		$j("<input/>")
 		    .attr({type: "button", value: "Fetch Updates", id: "fetch_updates"})
@@ -45,6 +45,7 @@ ESP.Scheduling = function(){
 		    })
 	    );
 
+	    ESP.Scheduling['debug_features_added'] = true;
 	}
     
         ESP.Scheduling.classes_by_time_type = null;
@@ -673,7 +674,7 @@ $j(function(){
 	}, 5000);
 
 	setInterval(function() {
-		location.reload(true);
+	    load()
 	}, 600000);
     }
 });

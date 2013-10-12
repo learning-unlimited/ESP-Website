@@ -27,7 +27,8 @@ ESP.declare('ESP.Scheduling.Widgets.Matrix', Class.create({
         }
         
 	//matrix body
-	body_table = $j("#matrix-table")
+	body_table = $j("#matrix-table");
+	body_table.html("");
 
         // create rows
         for (var i = 0; i < rooms.length; i++) {
