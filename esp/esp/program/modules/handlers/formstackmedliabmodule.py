@@ -98,8 +98,8 @@ class FormstackMedliabModule(ProgramModuleObj):
         Landing page redirecting to med-liab form on Formstack.
         """
         t = Tag.getTag("formstack_id", self.program)
-        print t
-        context = {"formstack_id": t}
+        v = Tag.getTag("formstack_viewkey", self.program)
+        context = {"formstack_id": t, "formstack_viewkey": v}
         return render_to_response(self.baseDir()+'medliab.html',
                                   request, context)
 
