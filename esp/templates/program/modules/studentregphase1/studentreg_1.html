@@ -11,6 +11,7 @@
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.3.5/knockout.mapping.js"></script>
 <script type="text/javascript" src="http://fgnass.github.io/spin.js/dist/spin.min.js"></script>
 <script type="text/javascript" src="http://fgnass.github.io/spin.js/jquery.spin.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery.sticky.js"></script>
 <script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
 <script type="text/javascript" src="/media/scripts/catalog-new.js"></script>
 {% endblock %}
@@ -23,15 +24,14 @@
 
 {% block content %}
 <h1>{{ program.niceName }} Student Registration</h1>
-<h2>Step 1: Star Classes that Interest You</h2>
 
-<hr>
-
-<label>Search:</label>
-<input type="text" data-bind="value: search, valueUpdate: 'afterkeydown'"></input>
-<div id="search-spinner">&nbsp;</div>
-
-<hr>
+<div id="catalog-sticky" style="">
+  <h2>Step 1: Star Classes that Interest You</h2>
+  <hr>
+  <label>Search:</label>
+  <input type="text" data-bind="value: search, valueUpdate: 'afterkeydown'"></input>
+  <div id="search-spinner">&nbsp;</div>
+</div>
 
 <div id="catalog-new" style="display: none" data-bind="visible: true">
   <span data-bind="visible: loading">Loading classes...</span>

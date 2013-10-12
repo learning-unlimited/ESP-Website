@@ -246,6 +246,14 @@ var CatalogViewModel = function () {
 };
 
 $j(function () {
+    // make sticky bar stick
+    $j(function () {
+        $j('#catalog-sticky').sticky({
+            getWidthFrom: '#content'
+        });
+    });
+
+    // bind viewmodel
     var vm = new CatalogViewModel();
     ko.applyBindings(vm);
 });
