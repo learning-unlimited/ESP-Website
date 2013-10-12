@@ -67,6 +67,7 @@ display: table; z-index: 100;
 position: relative;
 border-bottom: 2px solid #000;
 height: 40px;
+padding-right: 200px;
 }
 .matrix-corner-box {
 display: block; z-index: 100;
