@@ -1,0 +1,77 @@
+{% extends "main.html" %}
+
+{% block title %}{{program.niceName}}{% endblock %}
+
+{% block xtrajs %}
+<script type="text/javascript">
+  var program_base_url = "/json/{{ program.getUrlBase }}/";
+  var catalog_type = "public";
+</script>
+
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/knockout/2.3.0/knockout-min.js"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/knockout.mapping/2.3.5/knockout.mapping.js"></script>
+<script type="text/javascript" src="/media/scripts/spin.min.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery.spin.js"></script>
+<script type="text/javascript" src="/media/scripts/jquery.sticky.js"></script>
+<script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
+<script type="text/javascript" src="/media/scripts/catalog-new.js"></script>
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" href="//netdna.bootstrapcdn.com/font-awesome/3.2.1/css/font-awesome.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog-new.css" />
+{% endblock %}
+
+{% block content %}
+<h1>{{ program.niceName }} Student Registration</h1>
+
+<div id="catalog-sticky" style="">
+  {% block catalog_sticky %}{% endblock %}
+</div>
+
+<div id="catalog-new" style="display: none" data-bind="visible: true">
+  <!-- ko foreach: classesArray -->
+  <div class="catalog-entry" data-bind="visible: $parent.searchPredicate($data)">
+    <div class="catalog-entry-header">
+      <h2 class="catalog-entry-title" data-bind="text: fulltitle"></h2>
+      <div class="catalog-entry-teachers" data-bind="foreach: teachers">
+	<!-- placeholder until teacher data is ready -->
+	<a href="/teach/teachers/bitdiddle/bio.html" title="The biography of Ben Bitdiddle" data-bind="text: name">
+	</a><!-- ko if: $index() != $parent.teachers().length - 1 -->, <!-- /ko -->
+      </div>
+    </div>
+    {% block class_action %}{% endblock %}
+    <div class="catalog-entry-body">
+      <div class="catalog-entry-description" data-bind="text: class_info"></div>
+      <dl>
+	<dt>Grades</dt> <dd data-bind="text: grade_range"></dd>
+	<dt>Difficulty</dt> <dd data-bind="text: difficulty"></dd>
+	<dt>Prerequisites</dt> <dd data-bind="text: prereqs"></dd>
+      </dl>
+      <table>
+	<thead>
+	  <tr>
+	    <th>Section</th>
+	    <th>Meeting Time</th>
+	    <th>Enrollment</th>
+	  </tr>
+	</thead>
+	<tbody data-bind="foreach: sections">
+	  <tr>
+	    <td data-bind="text: name"></td>
+	    <td>9am Saturday</td>
+	    <td>25/50</td>
+	  </tr>
+	</tbody>
+      </table>
+    </div>
+  </div>
+  <!-- /ko -->
+  <div id="catalog-loading" data-bind="visible: loading">
+    <p>Loading classes...</p>
+    <div id="catalog-spinner">&nbsp;</div>
+  </div>
+</div>
+
+{% endblock %}
