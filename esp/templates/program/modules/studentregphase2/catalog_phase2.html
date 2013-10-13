@@ -2,9 +2,19 @@
 
 {% block xtrajs %}
 {{ block.super }}
+<script type="text/javascript" src="/media/scripts/select2-3.4.3/select2.js"></script>
 <script type="text/javascript">
   var catalog_type = "phase2";
+
+  $j(document).ready(function() {
+    $j(".pri-select").select2();
+  });
 </script>
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/select2/select2.css" />
 {% endblock %}
 
 {% block catalog_sticky %}
@@ -13,7 +23,8 @@
 {% for pri in priorities %}
 <div class="priority">
   <label>Priority {{pri}}</label>
-  <select id="pri-{{pri}}" data-bind="options: classesArray, optionsText: 'fulltitle', value: 'id', optionsCaption: 'Select a class from below.'"></select>
+  <select id="pri-{{pri}}" class="pri-select"
+	  data-bind="options: classesArray, optionsText: 'fulltitle', value: 'id', optionsCaption: 'Select a class from below.'"></select>
 </div>
 {% endfor %}
 {% endblock %}
