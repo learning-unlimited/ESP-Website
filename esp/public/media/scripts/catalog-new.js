@@ -22,6 +22,7 @@ var ClassSubject = function (data, vm) {
     self.prereqs     = ko.observable("Loading...");
     self.section_ids = ko.observableArray();
     self.interested  = ko.observable(false);
+    self.dirty       = ko.observable(false);
 
     self.fulltitle = ko.computed(function () {
 	return self.emailcode() + ": " + self.title();
@@ -67,6 +68,7 @@ var ClassSubject = function (data, vm) {
     // click handler for interested star
     self.toggle_interested = function () {
         self.interested(!self.interested());
+        self.dirty(true);
     }
 
     // rename attributes: teachers -> teacher_ids, sections -> section_ids
@@ -169,6 +171,64 @@ var CatalogViewModel = function () {
         }
         self.teachers(data.teachers);
     });
+
+    var getDirtyInterested = function () {
+        var dirty = [];
+        ko.utils.arrayForEach(self.classesArray(), function (cls) {
+            if (cls.dirty()) {
+                dirty.push(cls);
+                cls.dirty(false);
+            }
+        })
+        return dirty;
+    };
+    var updateInterested = function () {
+        var dirty = getDirtyInterested();
+        if (dirty.length > 0) {
+            // update the server
+            var interested = [];
+            var not_interested = [];
+            ko.utils.arrayForEach(dirty, function (cls) {
+                if (cls.interested()) {
+                    interested.push(cls.id);
+                }
+                else {
+                    not_interested.push(cls.id);
+                }
+            });
+            var data = {
+                csrfmiddlewaretoken: csrf_token(),
+                json_data: JSON.stringify({
+                    interested: interested,
+                    not_interested: not_interested
+                })
+            }
+            var learn_url = program_base_url.replace(/^\/json/, '/learn');
+            var url = learn_url + 'mark_classes_interested';
+            $j.ajax({
+                type: "POST",
+                url: url,
+                data: data,
+                error: function () {
+                    // update failed, re-queue
+                    ko.utils.arrayForEach(self.classesArray(), function (cls) {
+                        cls.dirty(true);
+                    });
+                },
+                complete: updateInterested // if dirty, update again!
+            });
+        }
+        else {
+            // check again in 1 second
+            setTimeout(updateInterested, 1000);
+        }
+    };
+    updateInterested();
+    window.onbeforeunload = function () {
+        if (getDirtyInterested().length > 0) {
+            return 'Your preferences have not been saved.';
+        }
+    };
 };
 
 $j(function () {
