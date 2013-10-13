@@ -251,11 +251,10 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 
 		 	// check for conflicts
 		 	for(var j = 0; j < teachers[i].sections.length; j++) {
-		 		if(teachers[i].sections[j] !== undefined) {
+		 		if(teachers[i].sections[j] !== undefined && teachers[i].sections[j].blocks !== undefined) {
 		 			for(var k = 0; k < teachers[i].sections[j].blocks.length; k++) {
 		 				if(teachers[i].sections[j].blocks[k] !== undefined) {
 		 					k_timeslot = teachers[i].sections[j].blocks[k].time.text;
-		 					if(teachers[i].text == "Ryan Normandin") {console.log("blue: " + k_timeslot + "/" + i + "/" + j + "/" + k + "/" + teachers[i].text + "/" + searchby);}
 					 		if(k_timeslot !== undefined && (k_timeslot.indexOf(searchby) != -1 || searchby.indexOf(k_timeslot) != -1)) {
 					 			isTeacherAvailable = false;
 			 				}
