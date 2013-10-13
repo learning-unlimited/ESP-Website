@@ -63,7 +63,7 @@ overflow: auto;
 }
 
 .matrix-header {
-display: table; z-index: 100;
+display: table; z-index: 99;
 position: relative;
 border-bottom: 2px solid #000;
 height: 40px;
@@ -95,7 +95,7 @@ position: relative;
 height: 458px;
 }
 .matrix-row-header-box {
-display: block;
+display: block; z-index: 98;
 position: relative; left: 0; width: 121px; height: 40px; top: 0; bottom: 0;
 border-right: 2px solid #000; border-bottom: 2px solid #000; background: #eee;
 text-align: center;

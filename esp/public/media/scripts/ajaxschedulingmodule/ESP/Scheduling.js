@@ -114,6 +114,8 @@ ESP.Scheduling = function(){
         //make matrix header fixed to the top
         $j('.matrix').scroll(function (event) {
             $j('.matrix-header').css('top', $j('.matrix').scrollTop());
+            $j('.matrix-row-header-box').css('left', $j('.matrix').scrollLeft());
+            $j('td.matrix-corner-box').css('left', $j('.matrix').scrollLeft());
         });
 
 	//set last_fetched_index to the initial age
