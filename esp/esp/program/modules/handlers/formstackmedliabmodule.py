@@ -63,7 +63,14 @@ class FormstackMedliabModule(ProgramModuleObj):
                 }]
 
     def isCompleted(self):
-        return Record.user_completed(user=get_current_request().user, event="med", program=self.program) or Record.user_completed(user=get_current_request().user, event="med_bypass", program=self.program)
+        return Record.user_completed(
+                user=get_current_request().user,
+                event="med",
+                program=self.program) \
+            or Record.user_completed(
+                user=get_current_request().user,
+                event="med_bypass",
+                program=self.program)
 
     def students(self, QObject = False):
         Q_students = Q(permission__event="med",
@@ -131,7 +138,7 @@ class FormstackMedliabModule(ProgramModuleObj):
                                             event="med").exists():
                     status = 'reg bit exists'
                 else:
-                    UserBit.objects.create(user=user,
+                    Record.objects.create(user=user,
                                            program=self.program,
                                            event="med_bypass")
                     status = 'success'
