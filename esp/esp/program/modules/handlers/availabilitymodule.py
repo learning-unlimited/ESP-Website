@@ -191,7 +191,7 @@ class AvailabilityModule(ProgramModuleObj):
                 
                 if isAdmin:
                     #   Return to the relevant check_availability page
-                    return HttpResponseRedirect( '/manage/%s/%s/check_availability?user=%s' % (one, two, teacher.username) )
+                    return HttpResponseRedirect( '/manage/%s/%s/check_availability?user=%s' % (one, two, teacher.id) )
                 else:
                     #   Return to the main registration page
                     return self.goToCore(tl)
@@ -286,10 +286,12 @@ class AvailabilityModule(ProgramModuleObj):
         try:
             teacher = ESPUser.objects.get(id=target_id)
         except:
-            raise ESPError(False), "The user with id=" + str(target_id) + " does not appear to exist!"
+        	try:
+        		teacher = ESPUser.objects.get(username=target_id)
+        	except:
+        		raise ESPError(False), "The user with id/username=" + str(target_id) + " does not appear to exist!"
 
         return self.availabilityForm(request, tl, one, two, prog, teacher, True)
 
     class Meta:
         abstract = True
-
