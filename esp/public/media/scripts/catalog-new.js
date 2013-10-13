@@ -153,6 +153,10 @@ var CatalogViewModel = function () {
 	    }
             else {
                 data.classes[key] = new ClassSubject(data.classes[key], self);
+                // if marked interested, reflect that.
+                if (key in data.interested_subjects) {
+                    data.classes[key].interested(true);
+                }
             }
         }
         self.classes(data.classes);
