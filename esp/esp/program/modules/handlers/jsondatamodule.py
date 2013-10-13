@@ -33,31 +33,30 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, main_call, aux_call
-from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
-from esp.program.modules.forms.splashinfo import SplashInfoForm
-from esp.program.models import SplashInfo
-from esp.users.models import UserAvailability
-from esp.cal.models import Event
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories
-from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
-from esp.datatree.models import *
-from esp.dbmail.models import MessageRequest
-from esp.tagdict.models import Tag
-
-from esp.utils.decorators import cached_module_view, json_response
-from esp.utils.no_autocookie import disable_csrf_cookie_update
-
-from esp.middleware import ESPError
-
-from django.views.decorators.cache import cache_control
-from django.db.models import Count, Sum
-from django.db.models.query import Q
-
 from collections import defaultdict
 from datetime import datetime
 import operator
 import simplejson as json
+
+from django.views.decorators.cache import cache_control
+from django.db.models import Count, Sum
+from django.db.models.query import Q
+from django.http import HttpResponseBadRequest
+
+from esp.cal.models import Event
+from esp.datatree.models import *
+from esp.dbmail.models import MessageRequest
+from esp.middleware import ESPError
+from esp.program.models import SplashInfo
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest
+from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, main_call, aux_call
+from esp.program.modules.forms.splashinfo import SplashInfoForm
+from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
+from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
+from esp.tagdict.models import Tag
+from esp.users.models import UserAvailability
+from esp.utils.decorators import cached_module_view, json_response
+from esp.utils.no_autocookie import disable_csrf_cookie_update
 
 class JSONDataModule(ProgramModuleObj, CoreModule):
     """ A program module dedicated to returning program-specific data in JSON form. """
@@ -267,6 +266,30 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         return {'classes': classes, 'teachers': teachers}
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
+
+    @aux_call
+    @json_response()
+    @needs_student
+    def interested_sections(self, request, tl, one, two, module, extra, prog):
+        if extra == None:
+            return HttpResponseBadRequest()
+        timeslot_id = int(extra)
+
+        ssis = StudentSubjectInterest.valid_objects().filter(user=request.user)
+        sections = ClassSection.objects.filter(
+            parent_class__studentsubjectinterest__in=ssis)
+        sections = [{'id': sec.id} for sec in sections
+                    if timeslot_id in sec.timeslot_ids()]
+        return {'sections': sections}
+
+    @aux_call
+    @json_response({'subject': 'id'})
+    @needs_student
+    def interested_subjects(self, request, tl, one, two, module, extra, prog):
+        subject_ids = StudentSubjectInterest.valid_objects(
+            ).filter(user=request.user).values('subject')
+        return {'subjects': subject_ids}
+
 
     @aux_call
     @json_response()
