@@ -1,3 +1,11 @@
+#catalog-sticky {
+    width: 560px;
+    border-bottom: 1px solid #333;
+    padding: 0.5em 0;
+    background-color: #FFF;
+    z-index: 100;
+}
+
 #catalog-new {
     font-size: 13px;
 }
