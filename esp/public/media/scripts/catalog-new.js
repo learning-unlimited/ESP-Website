@@ -103,6 +103,7 @@ var CatalogViewModel = function () {
     self.teachers = ko.observable({});
     self.classesArray = ko.observableArray([]);
 
+    // search bar
     self.search = ko.observable("");
     self.search.subscribe(function () {
         $j('#search-spinner').spin({
@@ -124,8 +125,19 @@ var CatalogViewModel = function () {
         return -1 !== cls.search_key().indexOf(self.searchTerm());
     };
 
+    // loading spinner
+    setTimeout(function () {
+        $j('#catalog-spinner').spin({
+            lines: 10,
+            length: 8,
+            width: 4,
+            radius: 8,
+        });
+    }, 0);
+
     json_fetch(['class_subjects', 'sections'], function (data) {
         self.loading(false);
+        $j('#catalog-spinner').spin(false);
         // update classes
         for (var key in data.classes) {
             if (data.classes[key].status > 0) {

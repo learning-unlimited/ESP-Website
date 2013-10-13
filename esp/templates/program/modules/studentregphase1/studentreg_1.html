@@ -34,7 +34,10 @@
 </div>
 
 <div id="catalog-new" style="display: none" data-bind="visible: true">
-  <span data-bind="visible: loading">Loading classes...</span>
+  <div id="catalog-loading" data-bind="visible: loading">
+    <p>Loading classes...</p>
+    <div id="catalog-spinner">&nbsp;</div>
+  </div>
   <!-- ko foreach: classesArray -->
   <div class="catalog-entry" data-bind="visible: $parent.searchPredicate($data)">
     <div class="catalog-entry-header">
