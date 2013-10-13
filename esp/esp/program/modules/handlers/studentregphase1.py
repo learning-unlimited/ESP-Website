@@ -84,81 +84,39 @@ class StudentRegPhase1(ProgramModuleObj):
         """
         if not 'json_data' in request.POST:
             return HttpResponseBadRequest('JSON data not included in request.')
-        json_data = json.loads(request.POST['json_data'])
-        if not 'interested' in json_data or not 'not_interested' in json_data:
-            return HttpResponseBadRequest('JSON data mis-formatted.')
         try:
-            interested_type, created = RegistrationType.objects.get_or_create(
-                name='Interested', category='student')
-            # Unexpire any matching SSIs that exist already (to avoid creating
-            # duplicate objects).
-            ssi_qs = StudentSubjectInterest.objects.filter(
-                user=request.user, subject__pk__in=json_data['interested'],
-                subject__parent_program=prog, subject__status__gte=0)
-            ssi_qs.update(end_date=None)
-            # Determine which ids are valid and haven't been created yet and
-            # bulk create those objects.
-            existing_ids = ssi_qs.values_list('subject__id', flat=True)
-            valid_ids = ClassSubject.objects.filter(
-                pk__in=json_data['interested'], parent_program=prog,
-                status__gte=0).values_list('id', flat=True)
-            to_create_ids = set(valid_ids)-set(existing_ids)
-            StudentSubjectInterest.objects.bulk_create([
-                    StudentSubjectInterest(
-                        user=request.user,
-                        subject=ClassSubject.objects.get(id=subj_id))
-                    for subj_id in to_create_ids])
-            # Expire any matching SSIs that are in 'not_interested'
-            StudentSubjectInterest.objects.filter(
-                user=request.user, subject__pk__in=json_data['not_interested']
-                ).update(end_date=datetime.datetime.now())
-        # Catch a misformatted JSON string
-        except TypeError:
+            json_data = json.loads(request.POST['json_data'])
+        except ValueError:
+            return HttpResponseBadRequest('JSON data mis-formatted.')
+        if not isinstance(json_data.get('interested'), list) or \
+           not isinstance(json_data.get('not_interested'), list):
             return HttpResponseBadRequest('JSON data mis-formatted.')
 
-        return HttpResponse()
-
-    @aux_call
-    @needs_student
-    def mark_class_interested(self, request, tl, one, two, module, extra, prog):
-        """
-        Saves the single class indicated as interested or not.
-
-        Ex: request.POST['json_data'] = {
-            'id': 1234,
-            'interested': true
-        }
-        """
-        if not 'json_data' in request.POST:
-            return HttpResponseBadRequest('JSON data not included in request.')
-        json_data = json.loads(request.POST['json_data'])
-        if not 'id' in json_data and not 'interested' in json_data:
-            return HttpResponseBadRequest('JSON data missing keys.')
-        id = json_data['id']
-        interested = json_data['interested']
-        if type(id) != int or type(interested) != bool:
-            return HttpResponseBadRequest('JSON data value types incorrect.')
-        if ClassSubject.objects.filter(
-            pk=id, parent_program=prog, status__gte=0).count() == 0:
-            return HttpResponseBadRequest('Class subject specified is invalid.')
-        interested_type, created = RegistrationType.objects.get_or_create(
-            name='Interested', category='student')
-
-        if interested:
-            # If the SSI exists, unexpire it, otherwise create it.
-            obj, created = StudentSubjectInterest.objects.get_or_create(
-                subject=ClassSubject.objects.get(id=id), user=request.user)
-            if not created:
-                obj.unexpire()
-        else:
-            qs = StudentSubjectInterest.objects.filter(
-                subject=id, user=request.user)
-            # If the SSI exists, and there's only one, expire it.
-            if len(qs) > 1:
-                return HttpResponseBadRequest(
-                    'Multiple student registrations match update.')
-            elif len(qs) == 1:
-                qs[0].expire()
+        # Determine which of the given class ids are valid
+        valid_ids = ClassSubject.objects.filter(
+            pk__in=json_data['interested'],
+            parent_program=prog,
+            status__gte=0).values_list('pk', flat=True)
+        # Unexpire any matching SSIs that exist already (to avoid
+        # creating duplicate objects).
+        to_unexpire = StudentSubjectInterest.objects.filter(
+            user=request.user,
+            subject__pk__in=valid_ids)
+        to_unexpire.update(end_date=None)
+        # Determine which valid ids haven't had SSIs created yet
+        # and bulk create those objects.
+        existing_ids = to_unexpire.values_list('subject__pk', flat=True)
+        to_create_ids = set(valid_ids) - set(existing_ids)
+        StudentSubjectInterest.objects.bulk_create([
+            StudentSubjectInterest(
+                user=request.user,
+                subject_id=subj_id)
+            for subj_id in to_create_ids])
+        # Expire any matching SSIs that are in 'not_interested'
+        to_expire = StudentSubjectInterest.objects.filter(
+            user=request.user,
+            subject__pk__in=json_data['not_interested'])
+        to_expire.update(end_date=datetime.datetime.now())
 
         return HttpResponse()
 
