@@ -6,6 +6,16 @@
     z-index: 100;
 }
 
+#catalog-sticky .sticky-toggle {
+    float: right;
+}
+
+#catalog-sticky .sticky-toggle a {
+    color: inherit;
+    outline: 0;
+    text-decoration: none;
+}
+
 #catalog-sticky .search-box, #catalog-sticky .filter-box {
     font-size: 13px;
 }

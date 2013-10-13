@@ -125,6 +125,14 @@ var CatalogViewModel = function () {
         return -1 !== cls.search_key().indexOf(self.searchTerm());
     };
 
+    self.showFilter = ko.observable(true);
+    self.toggleFilter = function () {
+        self.showFilter(!self.showFilter());
+        // recompute sticky bar height
+        var $sticky = $j('#catalog-sticky');
+        $sticky.parent().height($sticky.outerHeight());
+    };
+
     // loading spinner
     setTimeout(function () {
         $j('#catalog-spinner').spin({

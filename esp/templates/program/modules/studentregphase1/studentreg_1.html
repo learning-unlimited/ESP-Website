@@ -15,12 +15,17 @@
 {% block catalog_sticky %}
 <h2>Step 1: Star Classes that Interest You</h2>
 <hr>
+<div class="sticky-toggle">
+  <a href="javascript:void(0)"
+     data-bind="click: toggleFilter, text: showFilter() ? '-' : '+'">
+  </a>
+</div>
 <div class="search-box">
   <label>Search:</label>
   <input type="text" data-bind="value: search, valueUpdate: 'afterkeydown'"></input>
   <div id="search-spinner">&nbsp;</div>
 </div>
-<div class="filter-box">
+<div class="filter-box" data-bind="visible: showFilter">
   <label>Category:</label>
   <br>
   {% for column in category_choices %}
@@ -35,7 +40,7 @@
   {% endfor %}
 </div>
 {% if grade_choices %}
-<div class="filter-box">
+<div class="filter-box" data-bind="visible: showFilter">
   <label>Grade:</label>
   <br>
   {% for column in grade_choices %}
