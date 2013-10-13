@@ -93,6 +93,7 @@ background: #eee;
 display: table;
 position: relative;
 height: 458px;
+margin-bottom: 200px;
 }
 .matrix-row-header-box {
 display: block; z-index: 98;
