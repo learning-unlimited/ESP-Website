@@ -1775,6 +1775,9 @@ was approved! Please go to http://esp.mit.edu/teach/%s/class_status/%s to view y
 
     def propose(self):
         """ Mark this class as just `proposed' """
+        for sec in self.sections.all():
+            sec.status = 0
+            sec.save()
         self.status = 0
         self.save()
 
