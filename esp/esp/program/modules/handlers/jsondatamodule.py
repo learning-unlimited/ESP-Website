@@ -270,7 +270,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     @aux_call
     @json_response({
             'subject': 'id',
-            'subject_sections': 'id',
+            'subject__sections': 'id',
             })
     @needs_student
     def interested_classes(self, request, tl, one, two, module, extra, prog):
