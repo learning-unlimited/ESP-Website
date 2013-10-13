@@ -136,8 +136,6 @@ var CatalogViewModel = function () {
     }, 0);
 
     json_fetch(['class_subjects', 'sections'], function (data) {
-        self.loading(false);
-        $j('#catalog-spinner').spin(false);
         // update classes
         for (var key in data.classes) {
             if (data.classes[key].status > 0) {
@@ -189,11 +187,18 @@ var CatalogViewModel = function () {
         // add classes to the UI not-all-at-once so as to not hang the browser
         (function dequeueClass () {
             if (classesQueue.length > 0) {
+                // add a chunk of classes
                 var t = Date.now();
                 self.classesArray.push.apply(self.classesArray,
                                              classesQueue.splice(-20).reverse());
                 var dt = Date.now() - t;
+                // wait awhile before adding more
                 setTimeout(dequeueClass, dt);
+            }
+            else {
+                // done loading all classes; remove "loading" message
+                self.loading(false);
+                $j('#catalog-spinner').spin(false);
             }
         })();
     });
