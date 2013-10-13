@@ -223,20 +223,20 @@ class AvailabilityModule(ProgramModuleObj):
         Check availability of the specified user.
         """
         
-        target_username = None
+        target_id = None
         
         if request.GET.has_key('user'):
-            target_username = request.GET['user']
+            target_id = request.GET['user']
         elif request.POST.has_key('user'):
-            target_username = request.POST['user']
+            target_id = request.POST['user']
         else:
             context = {}
-            return render_to_response(self.baseDir()+'searchform.html', request, context)
+            return render_to_response(self.baseDir()+'check_availability.html', request, context)
         
         try:
-            teacher = ESPUser.objects.get(username=target_username)
+            teacher = ESPUser.objects.get(id=target_id)
         except:
-            raise ESPError(False), "That username does not appear to exist!"
+            raise ESPError(False), "The user with id=" + str(target_id) + " does not appear to exist!"
 
         # Get the times that the teacher marked they were available
         resources = UserAvailability.objects.filter(user=teacher, event__program=prog)
@@ -263,7 +263,7 @@ class AvailabilityModule(ProgramModuleObj):
             else:
                 available.append((resource.event.start, resource.event.end, False))
 
-        context = {'available': available, 'teacher_name': teacher.first_name + ' ' + teacher.last_name, 'edit_path': '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.username) }
+        context = {'available': available, 'teacher_name': teacher.first_name + ' ' + teacher.last_name, 'edit_path': '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.id) }
         return render_to_response(self.baseDir()+'check_availability.html', request, context)
 
     @aux_call
@@ -273,20 +273,20 @@ class AvailabilityModule(ProgramModuleObj):
         Admins edits availability of the specified user.
         """
         
-        target_username = None
+        target_id = None
         
         if request.GET.has_key('user'):
-            target_username = request.GET['user']
+            target_id = request.GET['user']
         elif request.POST.has_key('user'):
-            target_username = request.POST['user']
+            target_id = request.POST['user']
         else:
             context = {}
-            return render_to_response(self.baseDir()+'searchform.html', request, context)
+            return render_to_response(self.baseDir()+'check_availability.html', request, context)
         
         try:
-            teacher = ESPUser.objects.get(username=target_username)
+            teacher = ESPUser.objects.get(id=target_id)
         except:
-            raise ESPError(False), "That username does not appear to exist!"
+            raise ESPError(False), "The user with id=" + str(target_id) + " does not appear to exist!"
 
         return self.availabilityForm(request, tl, one, two, prog, teacher, True)
 

@@ -1,14 +1,19 @@
 {% extends "main.html" %}
 
-{% block title %}Teacher availability: {{ teacher_name }}{% endblock %}
+{% block title %}{% if teacher_name %}Teacher availability: {{ teacher_name }}{% else %}Check teacher availability{% endif %}{% endblock %}
+{% block subsection_name %}{% if teacher_name %}{{ teacher_name }}: availability in {{program.niceName}}{% else %}Check teacher availability{% endif %}{% endblock %}
 
-{% block subsection_name %}{{ teacher_name }}: availability in {{program.niceName}}{% endblock %}
 {% block content %}
 
 {% load main %}
 
+{% if teacher_name %}
 <h1>{{ teacher_name }}: availability in {{ program.niceName }}</h1>
+{% else %}
+<h1>Check teacher availability</h1>
+{% endif %}
 
+{% if teacher_name %}
 <p>All times listed below are times that the teacher has indicated availability for. Additionally, <font color="red">all timeslots colored red are times during which the teacher is scheduled to teach.</font></p>
 <p><a href="{{ edit_path }}">Click here to edit teacher availability.</a></p>
 
@@ -18,11 +23,56 @@
 {% endfor %}
 </ul>
 <br /><br />
+{% endif %}
 
 <form method="GET" action="{{ request.path }}">
-Username: <input type="text" name="user" />
+User: <input type="text" id="id_user" name="user_raw" value="" />
+<input type="hidden" id="id_user_data" name="user" />
+
 <input type="submit" value="Search" />
 </form>
+
+<script type="text/javascript">
+<!--
+
+$j("#id_user").val("");
+$j("#id_user_data").val("");
+$j("#id_user").change(function () {
+    //  Clear current result and copy value to shadow field whenever text changes
+    $j("#id_user_data").val(null);
+    $j("#id_None").val($j("#id_user").val());
+});
+$j("#id_user").autocomplete({
+    source: function(request, response) {
+        $j.ajax({
+            url: "/admin/ajax_autocomplete/",
+            dataType: "json",
+            data: {
+                model_module: "esp.users.models",
+                model_name: "ESPUser",
+                ajax_func: "ajax_autocomplete",
+                ajax_data: request.term
+            },
+            success: function(data) {
+                var output = $j.map(data.result, function(item) {
+                    return {
+                        label: item.ajax_str,
+                        value: item.ajax_str,
+                        id: item.id
+                    };
+                });
+                response(output);
+            }
+        });
+    },
+    select: function(event, ui) {
+        $j("#id_user_data").val(ui.item.id);
+        
+    }
+});
+
+//-->
+</script>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
