@@ -619,7 +619,7 @@ ESP.Scheduling = function(){
 	    
 	    //  But, if our class period overlapped with the beginning of the lunch sequence
 	    //  and now also overlaps with the end of the lunch sequence, that's a conflict.
-	    if (covered_lunch_start && !(test_time.seq.is_lunch))
+	    if (covered_lunch_start && test_time.seq && !(test_time.seq.is_lunch))
 	    {
 		return (str_err ? "Section " + section.code + " starting at " + time.text + " would conflict with a group of lunch periods" : false);
 	    }
