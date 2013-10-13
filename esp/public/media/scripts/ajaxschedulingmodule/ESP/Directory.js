@@ -229,6 +229,45 @@ ESP.declare('ESP.Scheduling.Widgets.SearchBox', Class.create({
 		 }
 		 return false;
              }.bind(this),
+	     //timeslot
+	     function(x){
+		 if ($j("#filter_Timeslot").val() == ""){
+		     return true;
+		 }
+		 var searchby = $j("#filter_Timeslot").val();
+		 teachers = x["teachers"];
+		 for (var i = 0; i < teachers.length; i++){
+		 	var isTeacherAvailable = false;
+
+			// check for availability
+		 	for(var j = 0; j < teachers[i].available_times.length; j++) {
+		 		if(teachers[i].available_times[j] !== undefined) {
+			 		j_timeslot = teachers[i].available_times[j].text;
+			 		if(j_timeslot !== undefined && (j_timeslot.indexOf(searchby) != -1 || searchby.indexOf(j_timeslot) != -1)) {
+			 			isTeacherAvailable = true;
+			 		}
+		 		}
+		 	}
+
+		 	// check for conflicts
+		 	for(var j = 0; j < teachers[i].sections.length; j++) {
+		 		if(teachers[i].sections[j] !== undefined) {
+		 			for(var k = 0; k < teachers[i].sections[j].blocks.length; k++) {
+		 				if(teachers[i].sections[j].blocks[k] !== undefined) {
+		 					k_timeslot = teachers[i].sections[j].blocks[k].time.text;
+		 					if(teachers[i].text == "Ryan Normandin") {console.log("blue: " + k_timeslot + "/" + i + "/" + j + "/" + k + "/" + teachers[i].text + "/" + searchby);}
+					 		if(k_timeslot !== undefined && (k_timeslot.indexOf(searchby) != -1 || searchby.indexOf(k_timeslot) != -1)) {
+					 			isTeacherAvailable = false;
+			 				}
+		 				}
+		 			}
+		 		}
+		 	}
+
+		 	if(!isTeacherAvailable) return false;
+		 }
+		 return true;
+             }.bind(this),
 	     //class size
 	     function(x){
 		 var min = $j("#filter_Min-size").val()
