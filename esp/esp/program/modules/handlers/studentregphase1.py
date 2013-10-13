@@ -32,13 +32,13 @@ Email: web@esp.mit.edu
 import datetime
 import json
 
+from django.http                 import HttpResponse, HttpResponseBadRequest
+from django.db.models.query      import Q
+
 from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade
 from esp.program.models          import ClassSubject, RegistrationType, StudentSubjectInterest
 from esp.users.models            import User, ESPUser, UserAvailability
 from esp.web.util                import render_to_response
-from django.core.exceptions      import ObjectDoesNotExist
-from django.http                 import HttpResponse, HttpResponseBadRequest
-from django.db.models.query      import Q
     
 class StudentRegPhase1(ProgramModuleObj):
 
@@ -71,7 +71,30 @@ class StudentRegPhase1(ProgramModuleObj):
     @meets_grade
     @meets_deadline('/Classes/Lottery')
     def studentreg_1(self, request, tl, one, two, module, extra, prog):
-        return render_to_response(self.baseDir() + 'studentreg_1.html', request, {})
+        # get choices for filtering options
+        context = {}
+
+        def group_columns(items):
+            # collect into groups of 5
+            cols = []
+            for i, item in enumerate(items):
+                if i % 5 == 0:
+                    col = []
+                    cols.append(col)
+                col.append(item)
+            return cols
+
+        category_choices = []
+        for category in prog.class_categories.all():
+            category_choices.append((category.symbol, category.category))
+        context['category_choices'] = group_columns(category_choices)
+
+        grade_choices = []
+        for grade in range(prog.grade_min, prog.grade_max + 1):
+            grade_choices.append((grade, grade))
+        context['grade_choices'] = group_columns(grade_choices)
+
+        return render_to_response(self.baseDir() + 'studentreg_1.html', request, context)
 
     @aux_call
     @needs_student
