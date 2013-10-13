@@ -465,7 +465,7 @@ class AJAXChangeLog(models.Model):
 		return index
 
     def get_log(self, last_index):
-		new_entries = self.entries.filter(index__gt=last_index)
+		new_entries = self.entries.filter(index__gt=last_index).order_by('index')
 		entry_list = list()
 
 		for entry in new_entries:
