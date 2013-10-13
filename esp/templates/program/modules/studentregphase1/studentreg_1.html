@@ -32,7 +32,8 @@
   <div class="filter-column">
     {% for value, label in column %}
     <div>
-      <input type="checkbox" value="{{ value }}"></input>
+      <input type="checkbox" value="{{ value }}"
+             data-bind="checked: filterCategory"></input>
       <label>{{ label }}</label>
     </div>
     {% endfor %}
@@ -45,9 +46,15 @@
   <br>
   {% for column in grade_choices %}
   <div class="filter-column">
+    <div>
+      <input type="radio" value="ALL"
+             data-bind="checked: filterGrade"></input>
+      <label>All</label>
+    </div>
     {% for value, label in column %}
     <div>
-      <input type="checkbox" value="{{ value }}"></input>
+      <input type="radio" value="{{ value }}"
+             data-bind="checked: filterGrade"></input>
       <label>{{ label }}</label>
     </div>
     {% endfor %}

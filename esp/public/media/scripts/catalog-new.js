@@ -103,9 +103,8 @@ var CatalogViewModel = function () {
     self.teachers = ko.observable({});
     self.classesArray = ko.observableArray([]);
 
-    // search bar
-    self.search = ko.observable("");
-    self.search.subscribe(function () {
+    // search spinner
+    var searchSpinnerOn = function () {
         $j('#search-spinner').spin({
             lines: 8,
             length: 2,
@@ -113,18 +112,25 @@ var CatalogViewModel = function () {
             radius: 3,
             left: 0
         });
-    });
+    };
+    var searchSpinnerOff = function () {
+        $j('#search-spinner').spin(false);
+    };
+
+    // search bar
+    self.search = ko.observable("");
+    self.search.subscribe(searchSpinnerOn);
+
     self.searchTerm = ko.computed(function () {
         return self.search().toLowerCase();
     }).extend({ throttle: 300 });
-    self.searchTerm.subscribe(function () {
-        $j('#search-spinner').spin(false);
-    });
+    self.searchTerm.subscribe(searchSpinnerOff);
 
     self.searchPredicate = function (cls) {
         return -1 !== cls.search_key().indexOf(self.searchTerm());
     };
 
+    // show/hide filter options
     self.showFilter = ko.observable(true);
     self.toggleFilter = function () {
         self.showFilter(!self.showFilter());
@@ -132,6 +138,67 @@ var CatalogViewModel = function () {
         var $sticky = $j('#catalog-sticky');
         $sticky.parent().height($sticky.outerHeight());
     };
+
+    // filter options
+    self.filterCategory = ko.observableArray();
+    self.filterCategory.subscribe(searchSpinnerOn);
+
+    self.filterGrade = ko.observable("ALL");
+    self.filterGrade.subscribe(searchSpinnerOn);
+
+    self.filterCriteria = ko.computed(function () {
+        return {
+            'category': self.filterCategory(),
+            'grade': self.filterGrade()
+        }
+    }).extend({ throttle: 100 });
+    self.filterCriteria.subscribe(searchSpinnerOff);
+
+    self.filterPredicate = function (cls) {
+        var meets_category = false;
+        var criteria = self.filterCriteria();
+        if (criteria.category.length === 0) {
+            meets_category = true;
+        }
+        else {
+            var category = cls.emailcode[0];
+            if (-1 !== criteria.category.indexOf(category)) {
+                meets_category = true;
+            }
+        }
+
+        var meets_grade = false;
+        if (catalog_type == 'phase1') {
+            if (esp_user.cur_admin === "1") {
+                meets_grade = true;
+            }
+            else {
+                var grade = esp_user.cur_grade;
+                if (cls.grade_min <= grade &&
+                    cls.grade_max >= grade) {
+                    meets_grade = true;
+                }
+            }
+        }
+        else {
+            if (criteria.grade === "ALL") {
+                meets_grade = true;
+            }
+            else {
+                var grade = parseInt(criteria.grade, 10);
+                if (cls.grade_min <= grade &&
+                    cls.grade_max >= grade) {
+                    meets_grade = true;
+                }
+            }
+        }
+
+        return meets_category && meets_grade;
+    }
+
+    self.showClass = function (cls) {
+        return self.searchPredicate(cls) && self.filterPredicate(cls);
+    }
 
     // loading spinner
     setTimeout(function () {
