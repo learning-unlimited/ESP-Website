@@ -136,8 +136,11 @@ var CatalogViewModel = function () {
     }, 0);
 
     var json_views = ['class_subjects', 'sections'];
-    if (catalog_type == 'phase1' || catalog_type == 'phase2') {
+    if (catalog_type == 'phase1') {
 	json_views.push('interested_classes');
+    }
+    else if (catalog_type == 'phase2') {
+	json_views.push('interested_classes/'+timeslot_id);
     }
     json_fetch(json_views, function (data) {
         // update classes

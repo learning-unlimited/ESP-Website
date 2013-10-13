@@ -30,7 +30,7 @@ Email: web@esp.mit.edu
 """
 from esp.program.modules.base    import ProgramModuleObj, needs_admin, main_call, aux_call, meets_deadline, needs_student, meets_grade
 from esp.program.modules         import module_ext
-from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration
+from esp.program.models          import Program, ClassSubject, ClassSection, ClassCategories, StudentRegistration, RegistrationType
 from esp.program.views           import lottery_student_reg, lsr_submit as lsr_view_submit
 from esp.datatree.models         import *
 from esp.web.util                import render_to_response
@@ -50,6 +50,7 @@ from uuid                        import uuid4 as get_uuid
 from django.db.models.query      import Q
 from django.views.decorators.cache import cache_control
 from esp.middleware.threadlocalrequest import get_current_request
+from django.core.exceptions      import ObjectDoesNotExist
 #def json_encode_timeslots(obj):
     
 class StudentRegPhase2(ProgramModuleObj):
@@ -128,7 +129,7 @@ class StudentRegPhase2(ProgramModuleObj):
         """
         timeslot = Event.objects.get(pk=int(extra), program=prog)
         context = dict()
-        context['timeslot'] = timeslot
+        context['timeslot'] = timeslot.id
         context['priorities'] = range(1,prog.priorityLimit()+1)
         return render_to_response(
             'program/modules/studentregphase2/catalog_phase2.html',
@@ -138,10 +139,71 @@ class StudentRegPhase2(ProgramModuleObj):
     @needs_student
     @meets_grade
     @meets_deadline('/Classes/Lottery')
-    def save_preferences(self, request, tl, one, two, module, extra, prog):
+    def save_priorities(self, request, tl, one, two, module, extra, prog):
         """
         Saves the priority preferences for student registration phase 2.
         """
+        data = simplejson.loads(request.POST['json_data']);
+        timeslot_id = data.keys()[0]
+        priorities = data[timeslot_id]
+        rel_names = ['Priority/%s'%p for p in priorities.keys()]
+        # Pull up the registrations that exist (including expired ones)
+        srs = StudentRegistration.objects.filter(
+            user=request.user, section__parent_class__parent_program=prog,
+            relationship__name__in=rel_names).order_by('relationship__name')
+        # Modify the existing registrations as needed to ensure the section
+        # is correct, and they are unexpired
+        for (sr, p) in zip(srs, sorted(priorities.keys())):
+            # If blank, we are removing priority
+            if priorities[p] == '':
+                sr.expire()
+                continue
+            sec_id = int(priorities[p])
+
+            should_save = False
+            if sr.section.id != sec_id:
+                sr.section = ClassSection.objects.get(
+                    parent_class=sec_id,
+                    meeting_times__id__exact=timeslot_id)
+                should_save = True
+            if not sr.is_valid():
+                sr.unexpire(save=False)
+                should_save = True
+            if should_save:
+                sr.save()
+        # Create registrations that need to be created
+        rel_existing_names = srs.values_list('relationship__name', flat=True)
+        rel_existing = [r.split('/')[1]
+                        for r in rel_existing_names]
+        rel_create = set(priorities.keys()) - set(rel_existing)
+        for rel_index in rel_create:
+            rel, created = RegistrationType.objects.get_or_create(
+                name='Priority/%s' % rel_index)
+            try:
+                sec = ClassSection.objects.get(
+                    parent_class=int(priorities[rel_index]),
+                    meeting_times__id__exact=timeslot_id)
+            except ValueError as e:
+                # Catch having an empty string for the priority
+                # (nothing selected)
+                continue
+            except ObjectDoesNotExist as e:
+                print 'ObjectDoesNotExist', e
+                continue
+            sr = StudentRegistration(
+                user=request.user,
+                section=sec,
+                relationship=rel)
+            sr.save()
+
+        return HttpResponse()
+
+
+    @aux_call
+    @needs_student
+    @meets_grade
+    @meets_deadline('/Classes/Lottery')
+    def save_preferences(self, request, tl, one, two, module, extra, prog):
 
         data = json.loads(request.POST['json_data'])
         return lsr_submit_HSSP(request, self.program, self.program.priority_limit, data)

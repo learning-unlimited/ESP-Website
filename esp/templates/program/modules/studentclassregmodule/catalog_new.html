@@ -4,7 +4,8 @@
 
 {% block xtrajs %}
 <script type="text/javascript">
-  var program_base_url = "/json/{{ program.getUrlBase }}/";
+  var program_core_url = "{{ program.getUrlBase }}/";
+  var program_base_url = "/json/" + program_core_url;
   var catalog_type = "public";
 </script>
 

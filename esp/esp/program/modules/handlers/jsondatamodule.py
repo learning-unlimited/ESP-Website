@@ -274,7 +274,12 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             })
     @needs_student
     def interested_classes(self, request, tl, one, two, module, extra, prog):
-        ssis = StudentSubjectInterest.valid_objects().filter(user=request.user)
+        ssis = StudentSubjectInterest.valid_objects().filter(
+            user=request.user)
+        if extra != None:
+            timeslot_id = int(extra)
+            ssis = ssis.filter(
+                subject__sections__meeting_times__id__exact=timeslot_id)
         subject_ids = ssis.values('subject')
         section_ids = ssis.values('subject__sections')
         return {'interested_subjects': subject_ids,
