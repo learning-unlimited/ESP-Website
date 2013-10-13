@@ -88,7 +88,7 @@ class StudentRegPhase2(ProgramModuleObj):
     @needs_student
     @meets_grade
     @meets_deadline('/Classes/Lottery')
-    def lotterystudentreg(self, request, tl, one, two, module, extra, prog):
+    def studentreg_2(self, request, tl, one, two, module, extra, prog):
         """
         Serve the student reg page.
 
@@ -96,15 +96,16 @@ class StudentRegPhase2(ProgramModuleObj):
         it gets all of its content from AJAX callbacks.
         """
         from django.conf import settings
-        from esp.program.models.class_ import open_class_category as open_class_category_function
         from django.utils import simplejson
         from django.utils.safestring import mark_safe
 
         crmi = prog.getModuleExtension('ClassRegModuleInfo')
 
-        open_class_category = open_class_category_function()
         # Convert the open_class_category ClassCategory object into a dictionary, only including the attributes the lottery needs or might need
-        open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
+        open_class_category = dict()
+        open_class_category['id'] = prog.open_class_category.id
+        open_class_category['symbol'] = prog.open_class_category.symbol
+        open_class_category['category'] = prog.open_class_category.category
         # Convert this into a JSON string, and mark it safe so that the Django template system doesn't try escaping it
         open_class_category = mark_safe(simplejson.dumps(open_class_category))
 
@@ -112,17 +113,19 @@ class StudentRegPhase2(ProgramModuleObj):
 
         ProgInfo = prog.getModuleExtension('StudentClassRegModuleInfo')
 
-        return render_to_response('program/modules/studentregphase2/studetregphase2.html', request, (prog, tl), context)
+        return render_to_response('program/modules/studentregphase2/studentregphase2.html', request, context, prog=prog)
 
     @aux_call
+    @needs_student
+    @meets_grade
     @meets_deadline('/Classes/Lottery')
-    def lsr_submit(self, request, tl, one, two, module, extra, prog):
+    def save_preferences(self, request, tl, one, two, module, extra, prog):
         """
-        Currently a placeholder; someday this will get looped in
-        to the actual lottery student reg so that it gets called.
+        Saves the priority preferences for student registration phase 2.
         """
 
-        return lsr_view_submit(request, self.program)
+        data = json.loads(request.POST['json_data'])
+        return lsr_submit_HSSP(request, self.program, self.program.priority_limit, data)
 
     @aux_call
     @cache_control(public=True, max_age=3600)
@@ -143,6 +146,7 @@ class StudentRegPhase2(ProgramModuleObj):
 
     @aux_call
     @needs_student
+    @meets_grade
     @meets_deadline('/Classes/Lottery/View')
     def viewlotteryprefs(self, request, tl, one, two, module, extra, prog):
         context = {}
@@ -173,7 +177,7 @@ class StudentRegPhase2(ProgramModuleObj):
             context['iempty'] = True
         else: context['iempty'] = False
 
-        return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, (prog, tl), context)
+        return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, context, prog=prog)
     
     class Meta:
         abstract = True
