@@ -46,11 +46,6 @@
   <br>
   {% for column in grade_choices %}
   <div class="filter-column">
-    <div>
-      <input type="radio" value="ALL"
-             data-bind="checked: filterGrade"></input>
-      <label>All</label>
-    </div>
     {% for value, label in column %}
     <div>
       <input type="radio" value="{{ value }}"

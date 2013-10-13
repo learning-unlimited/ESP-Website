@@ -90,6 +90,7 @@ class StudentRegPhase1(ProgramModuleObj):
         context['category_choices'] = group_columns(category_choices)
 
         grade_choices = []
+        grade_choices.append(('ALL', 'All'))
         for grade in range(prog.grade_min, prog.grade_max + 1):
             grade_choices.append((grade, grade))
         context['grade_choices'] = group_columns(grade_choices)
