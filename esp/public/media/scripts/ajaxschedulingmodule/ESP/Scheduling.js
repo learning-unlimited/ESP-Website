@@ -75,6 +75,11 @@ ESP.Scheduling = function(){
             //in the past, we've done block_section_assignment_request firing immediately after block_section_unassignment_request here
             //now we let Matrix.js call block_section_assignment_request with the 'recurse' data after the unassignment HTTP request completes
             ESP.Utilities.evm.fire('block_section_unassignment_request',{ section: data.section, blocks: data.section.blocks || [], recurse: extra });
+            if(data.section.blocks !== undefined && data.section.blocks[0] !== undefined && extra.blocks[0] !== undefined) {
+            	console.log("Rescheduling [" + data.section.text + "] from " + data.section.blocks[0].time.text + " in " + data.section.blocks[0].room.text + " to " + extra.blocks[0].time.text + " in " + extra.blocks[0].room.text);
+            } else if(extra.blocks[0] !== undefined) {
+            	console.log("Rescheduling [" + data.section.text + "] to " + extra.blocks[0].time.text + " in " + extra.blocks[0].room.text);
+            }
         });
         ESP.Utilities.evm.bind('block_section_assignment_request', function(event, data){
             ESP.Utilities.evm.fire('block_section_assignment',data);
