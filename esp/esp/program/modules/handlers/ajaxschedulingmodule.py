@@ -307,14 +307,14 @@ class AJAXSchedulingModule(ProgramModuleObj):
         simplejson.dump(kwargs, response)
         return response            
 
-    def ajax_schedule_deletereg(self, prog, cls):
+    def ajax_schedule_deletereg(self, prog, cls, user=None):
         cls.clearRooms()
         cls.clear_meeting_times()
-        self.get_change_log(prog).append([], "", int(cls.id))
+        self.get_change_log(prog).append([], "", int(cls.id), user)
 
         return self.makeret(prog, ret=True, msg="Schedule removed for Class Section '%s'" % cls.emailcode())
 
-    def ajax_schedule_assignreg(self, prog, cls, blockrooms, times, classrooms):
+    def ajax_schedule_assignreg(self, prog, cls, blockrooms, times, classrooms, user=None):
         classroom_names = classrooms
 
         if len(times) < 1:
@@ -352,7 +352,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
                 return self.makeret(prog, ret=False, msg=" | ".join(errors))
             
             #add things to the change log here
-            self.get_change_log(prog).append([int(t.id) for t in times], classroom_names[0], int(cls.id))
+            self.get_change_log(prog).append([int(t.id) for t in times], classroom_names[0], int(cls.id), user)
 
             return self.makeret(prog, ret=True, msg="Class Section '%s' successfully scheduled" % cls.emailcode())
 
@@ -413,7 +413,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         if action == 'deletereg':
             times = []
             classrooms = [ None ]
-            retval =  self.ajax_schedule_deletereg(prog, cls)
+            retval =  self.ajax_schedule_deletereg(prog, cls, request.user)
 
         elif action == 'assignreg':
             blockrooms = request.POST['block_room_assignments'].split("\n")
@@ -422,7 +422,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
             
             times = [br['time_id'] for br in blockrooms]
             classrooms = [br['room_id'] for br in blockrooms]
-            retval = self.ajax_schedule_assignreg(prog, cls, blockrooms, times, classrooms)
+            retval = self.ajax_schedule_assignreg(prog, cls, blockrooms, times, classrooms, request.user)
         else:
             return self.makeret(prog, ret=False, msg="Unrecognized command: '%s'" % action)
 

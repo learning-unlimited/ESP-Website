@@ -403,6 +403,9 @@ class AJAXChangeLogEntry(models.Model):
 	# class ID to update
 	cls_id = models.IntegerField()
 
+	# user responsible for this entry
+	user = AjaxForeignKey(ESPUser, blank=True, null=True)
+
 	# time we entered this
 	time = models.FloatField()
 
@@ -418,6 +421,12 @@ class AJAXChangeLogEntry(models.Model):
 
 	def getTimeslots(self):
 		return self.timeslots.split(',')
+
+	def getUserName(self):
+		if self.user:
+			return self.user.username
+		else:
+			return "unknown"
 
 class AJAXChangeLog(models.Model):
     # program this change log stores changes for
@@ -438,11 +447,15 @@ class AJAXChangeLog(models.Model):
         self.entries.filter(time__lte=max_time).delete()
         self.save()
 
-    def append(self, timeslots, room_name, cls_id):
+    def append(self, timeslots, room_name, cls_id, user=None):
         next_index = self.get_latest_index() + 1
 
         entry = AJAXChangeLogEntry()
         entry.update(next_index, timeslots, room_name, cls_id)
+
+        if user:
+        	entry.user = user
+
         entry.save()
         self.save()
         self.entries.add(entry)
@@ -472,6 +485,7 @@ class AJAXChangeLog(models.Model):
 			entry_list.append( {	'index'     : entry.index,
 									'room_name' : entry.room_name,
 									'id'    : entry.cls_id,
-									'timeslots' : entry.getTimeslots() })
+									'timeslots' : entry.getTimeslots(),
+									'user'      : entry.getUserName() })
 
 		return entry_list
