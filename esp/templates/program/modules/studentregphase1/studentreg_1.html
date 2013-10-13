@@ -15,9 +15,41 @@
 {% block catalog_sticky %}
 <h2>Step 1: Star Classes that Interest You</h2>
 <hr>
-<label>Search:</label>
-<input type="text" data-bind="value: search, valueUpdate: 'afterkeydown'"></input>
-<div id="search-spinner">&nbsp;</div>
+<div class="search-box">
+  <label>Search:</label>
+  <input type="text" data-bind="value: search, valueUpdate: 'afterkeydown'"></input>
+  <div id="search-spinner">&nbsp;</div>
+</div>
+<div class="filter-box">
+  <label>Category:</label>
+  <br>
+  {% for column in category_choices %}
+  <div class="filter-column">
+    {% for value, label in column %}
+    <div>
+      <input type="checkbox" value="{{ value }}"></input>
+      <label>{{ label }}</label>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% if grade_choices %}
+<div class="filter-box">
+  <label>Grade:</label>
+  <br>
+  {% for column in grade_choices %}
+  <div class="filter-column">
+    {% for value, label in column %}
+    <div>
+      <input type="checkbox" value="{{ value }}"></input>
+      <label>{{ label }}</label>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 {% endblock %}
 
 {% block class_action %}
