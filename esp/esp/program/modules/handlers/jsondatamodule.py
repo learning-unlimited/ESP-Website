@@ -268,27 +268,17 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
 
     @aux_call
-    @json_response()
+    @json_response({
+            'subject': 'id',
+            'subject_sections': 'id',
+            })
     @needs_student
-    def interested_sections(self, request, tl, one, two, module, extra, prog):
-        if extra == None:
-            return HttpResponseBadRequest()
-        timeslot_id = int(extra)
-
+    def interested_classes(self, request, tl, one, two, module, extra, prog):
         ssis = StudentSubjectInterest.valid_objects().filter(user=request.user)
-        sections = ClassSection.objects.filter(
-            parent_class__studentsubjectinterest__in=ssis)
-        sections = [{'id': sec.id} for sec in sections
-                    if timeslot_id in sec.timeslot_ids()]
-        return {'sections': sections}
-
-    @aux_call
-    @json_response({'subject': 'id'})
-    @needs_student
-    def interested_subjects(self, request, tl, one, two, module, extra, prog):
-        subject_ids = StudentSubjectInterest.valid_objects(
-            ).filter(user=request.user).values('subject')
-        return {'subjects': subject_ids}
+        subject_ids = ssis.values('subject')
+        section_ids = ssis.values('subject__sections')
+        return {'interested_subjects': subject_ids,
+                'interested_sections': section_ids}
 
 
     @aux_call

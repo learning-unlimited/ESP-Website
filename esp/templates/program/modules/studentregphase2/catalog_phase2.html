@@ -1,0 +1,19 @@
+{% extends "program/modules/studentclassregmodule/catalog_new.html" %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript">
+  var catalog_type = "phase2";
+</script>
+{% endblock %}
+
+{% block catalog_sticky %}
+<h2>Step 2: Mark interested classes for {{ timeslot }}</h2>
+<hr>
+{% for pri in priorities %}
+<div class="priority">
+  <label>Priority {{pri}}</label>
+  <select id="pri-{{pri}}" data-bind="options: classesArray, optionsText: 'fulltitle', value: 'id', optionsCaption: 'Select a class from below.'"></select>
+</div>
+{% endfor %}
+{% endblock %}

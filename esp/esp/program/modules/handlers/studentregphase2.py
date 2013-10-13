@@ -119,6 +119,25 @@ class StudentRegPhase2(ProgramModuleObj):
     @needs_student
     @meets_grade
     @meets_deadline('/Classes/Lottery')
+    def timeslot_priorities(self, request, tl, one, two, module, extra, prog):
+        """
+        Serve a phase-2 specific catalog, which displays only class subejcts
+        for which the student has a StudentSubjectInterest. The sticky on top
+        of the catalog lets the student order the top N priorities of classes
+        for this particular timeslot. The timeslot is specified through extra.
+        """
+        timeslot = Event.objects.get(pk=int(extra), program=prog)
+        context = dict()
+        context['timeslot'] = timeslot
+        context['priorities'] = range(1,prog.priorityLimit()+1)
+        return render_to_response(
+            'program/modules/studentregphase2/catalog_phase2.html',
+            request, context)
+
+    @aux_call
+    @needs_student
+    @meets_grade
+    @meets_deadline('/Classes/Lottery')
     def save_preferences(self, request, tl, one, two, module, extra, prog):
         """
         Saves the priority preferences for student registration phase 2.

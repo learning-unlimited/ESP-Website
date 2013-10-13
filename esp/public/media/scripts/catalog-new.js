@@ -8,7 +8,7 @@ var simpleFromJS = function (data, model) {
 };
 
 // ClassSubject model constructor
-var ClassSubject = function (data, vm) {
+var ClassSubject = function (data) {
     var self = this;
     self.id          = data.id;
     self.emailcode   = data.emailcode;
@@ -26,7 +26,7 @@ var ClassSubject = function (data, vm) {
 
     // teacher objs for the teacher ids
     self.teachers = ko.computed(function () {
-        var teachersIndex = vm.teachers();
+        var teachersIndex = catalog_view_model.teachers();
         var ret = [];
         ko.utils.arrayForEach(data.teachers, function (teacher_id) {
             var teacher = teachersIndex[teacher_id];
@@ -39,7 +39,7 @@ var ClassSubject = function (data, vm) {
 
     // section objs for the section ids
     self.sections = ko.computed(function () {
-        var sectionsIndex = vm.sections();
+        var sectionsIndex = catalog_view_model.sections();
         var ret = [];
         ko.utils.arrayForEach(data.sections, function (section_id) {
             var section = sectionsIndex[section_id];
@@ -135,15 +135,24 @@ var CatalogViewModel = function () {
         });
     }, 0);
 
-    json_fetch(['class_subjects', 'sections'], function (data) {
+    var json_views = ['class_subjects', 'sections'];
+    if (catalog_type == 'phase1' || catalog_type == 'phase2') {
+	json_views.push('interested_classes');
+    }
+    json_fetch(json_views, function (data) {
         // update classes
         for (var key in data.classes) {
-            if (data.classes[key].status > 0) {
-                data.classes[key] = new ClassSubject(data.classes[key], self);
-            }
-            else {
+            if (data.classes[key].status <= 0) {
                 // remove unapproved classes
                 delete data.classes[key];
+            }
+	    else if (catalog_type == 'phase2' &&
+		     !(key in data.interested_subjects)) {
+		// remove non-interested subjects
+		delete data.classes[key];
+	    }
+            else {
+                data.classes[key] = new ClassSubject(data.classes[key], self);
             }
         }
         self.classes(data.classes);
@@ -152,6 +161,11 @@ var CatalogViewModel = function () {
             if (data.sections[key].status > 0) {
                 data.sections[key] = new ClassSection(data.sections[key], self);
             }
+	    else if (catalog_type == 'phase2' &&
+		     !(key in data.interested_sections)) {
+		// remove non-interested sections
+		delete data.sections[key];
+	    }
             else {
                 // remove unapproved sections
                 delete data.sections[key];
@@ -271,6 +285,6 @@ $j(function () {
     });
 
     // bind viewmodel
-    var vm = new CatalogViewModel();
-    ko.applyBindings(vm);
+    catalog_view_model = new CatalogViewModel();
+    ko.applyBindings(catalog_view_model);
 });
