@@ -89,7 +89,7 @@ class DependenciesTestCase(unittest.TestCase):
         
         self.tryImport("django")  # If this fails, we lose.
         self.tryImport("PIL")  # Needed for Django Image fields, which we use for (among other things) teacher bio's
-        self.tryImport("_imaging")  # Internal PIL module; PIL will import without it, but it won't have a lot of the functionality that we need
+        self.tryImport("PIL._imaging")  # Internal PIL module; PIL will import without it, but it won't have a lot of the functionality that we need
         self.tryImport("pylibmc")  # We currently depend specifically on the "pylibmc" Python<->memcached interface library.
         self.tryImport("DNS")  # Used for validating e-mail address hostnames.  Imports as DNS, but the package and egg are named "pydns".
         self.tryImport("simplejson")  # Used for some of our AJAX magic

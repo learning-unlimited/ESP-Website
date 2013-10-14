@@ -21,6 +21,14 @@ Note: The ESP Web site is based on the Django Web framework; the Django
 documentation will be very helpful.  Refer to it at:
 http://docs.djangoproject.com/en/dev/
 
+Automatic install (for Ubuntu):
+
+The easiest way to setup up the website is to run the server setup
+script at /useful_scripts/server_setup/dev_server_setup.sh. The script
+will prompt you through the installation process.
+
+
+Manual install:
 
 1) Install all required software.  The software libraries you need are
 summarized below.
@@ -65,6 +73,13 @@ In addition, a list of required Python libraries can be found in
 `requirements.txt`. It is recommended that you first set up virtualenv
 according to the instructions here:
 http://www.virtualenv.org/
+
+Note that in order for the installation to automatically detect and
+use the libraries installed in your virtualenv, you must create it in
+a directory called `env` in the top level directory of this repository
+(with `virtualenv /path/to/env`). Otherwise, you must
+activate it before running any management commands (with `source
+/path/to/env/bin/activate`).
 
 Once you have created and activated a virtualenv, you can install all
 of the Python dependencies with "pip install -r requirements.txt".

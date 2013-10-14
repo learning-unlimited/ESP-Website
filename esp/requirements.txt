@@ -1,12 +1,12 @@
-Django==1.4.5
-PIL==1.1.7
+Django==1.4.8
+pillow==2.2.1
 South==0.8.1
 argparse==1.2.1
 cssutils==0.9.10
-distribute==0.6.24
 django-extensions==1.1.1
 django-form-utils==0.3.1
-django-reversion==1.6.6
+# django-reversion==1.7.1
+git+https://github.com/etianen/django-reversion.git@a5a9c59582329af1b8dc8218f72b3e0021a44aed
 django-selenium==0.9.6
 flup==1.0.2
 icalendar==3.5
@@ -28,4 +28,3 @@ twill==0.9
 wsgiref==0.1.2
 xlwt==0.7.5
 django-debug-toolbar==0.9.4
-

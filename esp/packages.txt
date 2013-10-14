@@ -5,7 +5,7 @@ imagemagick
 dvipng
 python
 python-setuptools
-python-virtualenv
+python-pip
 postgresql-9.1
 libevent-dev
 python-dev
@@ -18,5 +18,6 @@ memcached
 libmemcached-dev
 libpq-dev
 libcurl4-openssl-dev
+libjpeg-dev
 nodejs
 node-less
