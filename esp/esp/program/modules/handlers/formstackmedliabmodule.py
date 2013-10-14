@@ -148,7 +148,7 @@ class FormstackMedliabModule(ProgramModuleObj):
         context = {'status': status}
 
         return render_to_response(self.baseDir()+'medicalbypass.html',
-                                  request, (prog, tl), context)
+                                  request, context)
 
     class Meta:
         abstract = True
