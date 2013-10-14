@@ -207,6 +207,7 @@ var CatalogViewModel = function () {
             length: 8,
             width: 4,
             radius: 8,
+            zIndex: 99
         });
     }, 0);
 
