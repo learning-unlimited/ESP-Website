@@ -12,7 +12,7 @@
 {% endif %}
 {% endcomment %}
 <meta name="author" content="Tony Valderrama, Vincent Lee, and others" />
-<link rel="stylesheet" type="text/css" href="/media/styles/splash.css" media="all" />
+<link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css" media="all" />
 <link rel="shortcut icon" href="/media/images/favicon.ico" />
 {% endblock %}
 
@@ -68,7 +68,7 @@ document.cookie = 'teachlearn=' + tl + '; expires=' + new Date("January 1, 2025"
 {% endblock %}
 
 {% block body %}
-<div id="page">
+<div id="splash_page">
 <!--
 <form name="select_type" method="get" action"#">
   <input type="submit" href="student.html" id="student" name="student" value="true" />
@@ -97,7 +97,6 @@ document.cookie = 'teachlearn=' + tl + '; expires=' + new Date("January 1, 2025"
   <a href="/myesp/register" id="login_signup"></a>
   <a href="/myesp/loginhelp.html" id="login_help">need help?</a>
 </form>
-
 {% else %}
 <!-- logout -->
   Hello, {{ request.user.first_name }} {{ request.user.last_name }}!<br />
