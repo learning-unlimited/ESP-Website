@@ -65,6 +65,7 @@ from esp.middleware.threadlocalrequest import get_current_request, AutoRequestCo
 from esp.tagdict.models import Tag
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
+from esp.utils.query_utils import nest_Q
 
 try:
     import cPickle as pickle
@@ -556,17 +557,15 @@ class ESPUser(User, AnonymousUser):
         here's a slightly more general function for finding who belongs where. """
         from esp.program.models import ClassSection, RegistrationType
         
-        now = datetime.now()
-        
         if verbs:
             rts = RegistrationType.objects.filter(name__in=verbs)
         else:
             rts = RegistrationType.objects.all()
 
         if program:
-            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(relationship__in=rts, start_date__lte=now, end_date__gte=now).values_list('section', flat=True)).filter(parent_class__parent_program=program)
+            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(StudentRegistration.is_valid_qobject(), relationship__in=rts).values_list('section', flat=True)).filter(parent_class__parent_program=program)
         else:
-            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(relationship__in=rts, start_date__lte=now, end_date__gte=now).values_list('section', flat=True))
+            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(StudentRegistration.is_valid_qobject(), relationship__in=rts).values_list('section', flat=True))
 
     def getSectionsFromProgram(self, program, verbs=None):
         return self.getSections(program, verbs=verbs)
@@ -1849,9 +1848,9 @@ class EmailPref(models.Model):
         app_label = 'users'
 
 class Record(models.Model):
-    #To make these better to work with in the admin panel, and to have a 
+    #To make these better to work with in the admin panel, and to have a
     #well defined set of possibilities, we'll use a set of choices
-    #if you want to use this model for an additional thing, 
+    #if you want to use this model for an additional thing,
     #add it as a choice
     EVENT_CHOICES=(
         ("student_survey", "Completed student survey"),
@@ -1862,6 +1861,7 @@ class Record(models.Model):
         ("teacher_quiz_done","Completed teacher quiz"),
         ("paid","Paid for program"),
         ("med","Submitted medical form"),
+        ("med_bypass","Recieved medical bypass"),
         ("liab","Submitted liability form"),
         ("onsite","Registered for program on-site"),
         ("schedule_printed","Printed student schedule on-site"),
@@ -1887,6 +1887,9 @@ class Record(models.Model):
         else:
             return cls.objects.filter(user=user, event=event, program=program).count()>0
 
+    def __unicode__(self):
+        return unicode(self.user) + " has completed " + self.event + " for " + unicode(self.program)
+        
 #helper method for designing implications
 def flatten(choices):
     l=[]
@@ -2035,14 +2038,11 @@ class Permission(ExpirableModel):
         """Find all program that user has perm"""
         implies = [perm]
         implies+=[x for x,y in cls.implications.items() if perm in y]
-        now=datetime.now()
-        qstart = Q(permission__start_date=None) | Q(permission__start_date__lte=now)
-        qend = Q(permission__end_date=None) | Q(permission__end_date__gte=now)
 
-        direct = Program.objects.filter(qstart & qend,
+        direct = Program.objects.filter(nest_Q(Permission.is_valid_qobject(), 'permission'),
                                        permission__user=user,
                                        permission__permission_type__in=implies)
-        role = Program.objects.filter(qstart & qend,
+        role = Program.objects.filter(nest_Q(Permission.is_valid_qobject(), 'permission'),
                                       permission__permission_type__in=implies,
                                       permission__user__isnull=True,
                                       permission__role__in=user.groups.all())
@@ -2111,6 +2111,6 @@ def install():
 from esp.users.models.userbits import UserBit
 from esp.users.models.forwarder import UserForwarder
 from esp.cal.models import Event
-from esp.program.models import ClassSubject, ClassSection, Program
+from esp.program.models import ClassSubject, ClassSection, Program, StudentRegistration
 from esp.resources.models import Resource
 
