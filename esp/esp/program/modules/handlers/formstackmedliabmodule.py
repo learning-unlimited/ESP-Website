@@ -73,10 +73,10 @@ class FormstackMedliabModule(ProgramModuleObj):
                 program=self.program)
 
     def students(self, QObject = False):
-        Q_students = Q(permission__event="med",
-                       permission__program=self.program)
-        Q_bypass = Q(permission__event="med_bypass",
-                       permission__program=self.program)
+        Q_students = Q(record__event="med",
+                       record__program=self.program)
+        Q_bypass = Q(record__event="med_bypass",
+                       record__program=self.program)
 
 
         if QObject:
