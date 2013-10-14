@@ -266,20 +266,16 @@ var CatalogViewModel = function () {
             classesQueue.push(data.classes[key]);
         }
         // sort the classesQueue in an order that is unique to every user
-        hashCode = function(s) {
-            var hash = 0;
-            if (s.length == 0) return hash;
-            for (i = 0; i < s.length; i++) {
-                char = s.charCodeAt(i);
-                hash = ((hash<<5)-hash)+char;
-                hash = hash & hash; // convert to 32bit integer
-            }
-            return hash;
+        var sortKey = function (c) {
+            var s = esp_user.cur_username + ':' + c.emailcode;
+            return CryptoJS.MD5(s).toString();
         }
         classesQueue.sort(function (a, b) {
-            var a_key = esp_user.cur_username + a.emailcode;
-            var b_key = esp_user.cur_username + b.emailcode;
-            return hashCode(a_key) - hashCode(b_key);
+            var a_key = sortKey(a);
+            var b_key = sortKey(b);
+            if (a_key < b_key) return -1;
+            if (a_key > b_key) return 1;
+            return 0;
         });
         // add classes to the UI not-all-at-once so as to not hang the browser
         (function dequeueClass () {
