@@ -85,6 +85,7 @@ def render_to_response(template, request, context, prog=None, auto_per_program_t
     section = request.path.split('/')[1]
     tc = ThemeController()
     context['theme'] = tc.get_template_settings()
+    context['settings'] = settings
 
     # create nav bar list
     if not context.has_key('navbar_list'):
