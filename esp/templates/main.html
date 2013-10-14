@@ -15,6 +15,9 @@
 <div class="container">
   <div class="row">
     {% block sidebar %}
+    <h3>Navigation</h3>
+    {% load navbar %}
+    {% navbar_gen request.path None navbar_list %}
     {% endblock %}
 
     <div id="main" class="span12">
