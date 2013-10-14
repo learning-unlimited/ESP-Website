@@ -1,13 +1,17 @@
 <script type="text/javascript"> 
 	  $j(document).ready(function(){
 	      $j('label').each(function(index) {
-		  if ($(this).attr('for') != undefined) {
-		      $(this).addClass('control-label');
+		  if ($j(this).attr('for') != undefined) {
+		      $j(this).addClass('control-label');
 		  }
 	      });
-	      $j('div.control-group span.help-inline').each(function(index){$(this).parent().parent().addClass('error');});
+	      $j('div.control-group span.help-inline').each(function(index){$j(this).parent().parent().addClass('error');});
 	  });
 </script>
+
+{% for field in form.hidden_fields %}
+{{ field }}
+{% endfor %}
 		      
 {% for field in form.visible_fields %}
 
