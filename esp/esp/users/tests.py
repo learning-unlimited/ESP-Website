@@ -285,9 +285,9 @@ class MakeAdminTest(TestCase):
         self.assertTrue(self.user.is_superuser)
         self.assertTrue(self.user.groups.filter(name="Administrator").exists())
 
-        # Make sure that an unprivileged access to /myesp/makeadmin/ returns 403 Forbidden
+        # Make sure that an unprivileged access to /myesp/makeadmin/ returns a redirect to the login page
         response = self.client.get('/myesp/makeadmin/')
-        self.assertEqual(response.status_code, 403)
+        self.assertRedirects(response, '/accounts/login/?next=/myesp/makeadmin/')
 
 class AjaxExistenceChecker(TestCase):
     """ Check that an Ajax view is there by trying to retrieve it and checking for the desired keys
