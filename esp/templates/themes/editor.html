@@ -36,7 +36,7 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
 {% endblock %}
 {% block title %}Theme Editor{% endblock %}
 {% block content %} 
-<div class="row"> {# figure out why this isn't aligning properly #}
+<div class="row-fluid">
 
 <div class="span7 offset1">
   <h1>Theme Editor</h1>
@@ -63,7 +63,7 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
 </div>
 
 <br />
-<div class="row">
+<div class="row-fluid">
   <div class="span7 offset1">
     <form class="well form-horizontal centered-form" method="post" action="/themes/customize/">
       {% csrf_token %} 

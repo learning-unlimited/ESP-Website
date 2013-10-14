@@ -13,11 +13,11 @@
 {% endblock %}
 
 {% block content %}
-<div class="row">
+<div class="row-fluid">
   <div class="span6 offset1">
     <h1>Your Profile Information</h1>
   </div>
-  <div class="row">
+  <div class="row-fluid">
     <div class="span8 offset1">
       {% load render_qsd %}
       {% inline_qsd_block "account_creation_basic_info" %}
@@ -28,7 +28,7 @@
     </div>
   </div>
 </div>
-<div class="row">
+<div class="row-fluid">
   <div class="span6 offset1">
       {% if form.errors %}
       <h4 style="color:red">Please fix the following error{{ form.errors|pluralize }} in the form.</h4>
