@@ -323,13 +323,15 @@ var CatalogViewModel = function () {
         ko.utils.arrayForEach(self.classesArray(), function (cls) {
             if (cls.dirty()) {
                 dirty.push(cls);
-                cls.dirty(false);
             }
         })
         return dirty;
     };
     var updateInterested = function () {
         var dirty = getDirtyInterested();
+        ko.utils.arrayForEach(dirty, function (cls) {
+            cls.dirty(false);
+        });
         if (dirty.length > 0) {
             // update the server
             var interested = [];
