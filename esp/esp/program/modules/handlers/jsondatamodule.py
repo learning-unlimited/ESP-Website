@@ -41,7 +41,7 @@ import simplejson as json
 from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
-from django.http import HttpResponseBadRequest
+from django.http import Http404
 
 from esp.cal.models import Event
 from esp.datatree.models import *
@@ -227,22 +227,40 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             'id': 'id',
             'status': 'status',
             'category__symbol': 'category',
+            'category__id': 'category_id',
             'grade_max': 'grade_max',
             'grade_min': 'grade_min',
             'emailcode': 'emailcode',
             'title': 'title',
+            'class_info': 'class_info',
+            'hardness_rating': 'difficulty',
+            'prereqs': 'prereqs'
             })
     @cached_module_view
-    def class_subjects(prog):
+    def class_subjects(extra, prog):
+        if extra == 'catalog':
+            catalog = True
+        elif extra == None:
+            catalog = False
+        else:
+            raise Http404
         teacher_dict = {}
         teachers = []
-        classes = list(prog.classes().values(
-                'id',
-                'status',
-                'title',
-                'category__symbol',
-                'grade_max',
-                'grade_min'))
+        attrs = [
+            'id',
+            'status',
+            'title',
+            'category__symbol',
+            'category__id',
+            'grade_max',
+            'grade_min']
+        if catalog:
+            attrs += [
+                'class_info',
+                'hardness_rating',
+                'prereqs']
+
+        classes = list(prog.classes().values(*attrs))
 
         for cls in classes:
             c = ClassSubject.objects.get(id=cls['id'])

@@ -1,28 +1,19 @@
-// helper to update observables of model with values from data if present
-var simpleFromJS = function (data, model) {
-    for (var key in data) {
-        if (ko.isWriteableObservable(model[key])) {
-            model[key](data[key]);
-        }
-    }
-};
-
 // ClassSubject model constructor
 var ClassSubject = function (data) {
     var self = this;
     self.id          = data.id;
     self.emailcode   = data.emailcode;
     self.title       = data.title;
-    self.class_info  = ko.observable("Loading class description...");
+    self.class_info  = data.class_info;
     self.grade_min   = data.grade_min;
     self.grade_max   = data.grade_max;
-    self.grade_range = ko.observable("Loading...");
-    self.difficulty  = ko.observable("Loading...");
-    self.prereqs     = ko.observable("Loading...");
+    self.difficulty  = data.difficulty;
+    self.prereqs     = data.prereqs;
     self.interested  = ko.observable(false);
     self.dirty       = ko.observable(false);
 
     self.fulltitle = data.emailcode + ": " + data.title;
+    self.grade_range = data.grade_min + " - " + data.grade_max;
 
     // teacher objs for the teacher ids
     self.teachers = ko.computed(function () {
@@ -57,7 +48,7 @@ var ClassSubject = function (data) {
         ko.utils.arrayForEach(self.teachers(), function (teacher) {
             fields.push(teacher.name);
         });
-        fields.push(self.class_info());
+        fields.push(self.class_info);
         return fields.join('\0').toLowerCase();
     });
 
@@ -66,16 +57,6 @@ var ClassSubject = function (data) {
         self.interested(!self.interested());
         self.dirty(true);
     }
-
-    // get detailed class info
-    // temporary hack until class_subjects view can return this info
-    var id = data.id;
-    json_fetch(["class_info?class_id=" + id], function (data) {
-        data = data.classes[id];
-        data.section_ids = data.sections;
-        delete data.sections;
-        simpleFromJS(data, self);
-    });
 };
 
 // Section model constructor
@@ -219,7 +200,7 @@ var CatalogViewModel = function () {
         });
     }, 0);
 
-    var json_views = ['class_subjects', 'sections'];
+    var json_views = ['class_subjects/catalog', 'sections'];
     if (catalog_type == 'phase1') {
 	json_views.push('interested_classes');
     }
