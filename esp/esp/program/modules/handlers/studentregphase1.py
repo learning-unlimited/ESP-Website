@@ -86,7 +86,7 @@ class StudentRegPhase1(ProgramModuleObj):
 
         category_choices = []
         for category in prog.class_categories.all():
-            category_choices.append((category.symbol, category.category))
+            category_choices.append((category.id, category.category))
         context['category_choices'] = group_columns(category_choices)
 
         grade_choices = []

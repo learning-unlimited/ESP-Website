@@ -1,28 +1,20 @@
-// helper to update observables of model with values from data if present
-var simpleFromJS = function (data, model) {
-    for (var key in data) {
-        if (ko.isWriteableObservable(model[key])) {
-            model[key](data[key]);
-        }
-    }
-};
-
 // ClassSubject model constructor
 var ClassSubject = function (data) {
     var self = this;
     self.id          = data.id;
     self.emailcode   = data.emailcode;
     self.title       = data.title;
-    self.class_info  = ko.observable("Loading class description...");
+    self.category    = data.category_id;
+    self.class_info  = data.class_info;
     self.grade_min   = data.grade_min;
     self.grade_max   = data.grade_max;
-    self.grade_range = ko.observable("Loading...");
-    self.difficulty  = ko.observable("Loading...");
-    self.prereqs     = ko.observable("Loading...");
+    self.difficulty  = data.difficulty;
+    self.prereqs     = data.prereqs;
     self.interested  = ko.observable(false);
     self.dirty       = ko.observable(false);
 
     self.fulltitle = data.emailcode + ": " + data.title;
+    self.grade_range = data.grade_min + " - " + data.grade_max;
 
     // teacher objs for the teacher ids
     self.teachers = ko.computed(function () {
@@ -57,7 +49,7 @@ var ClassSubject = function (data) {
         ko.utils.arrayForEach(self.teachers(), function (teacher) {
             fields.push(teacher.name);
         });
-        fields.push(self.class_info());
+        fields.push(self.class_info);
         return fields.join('\0').toLowerCase();
     });
 
@@ -66,23 +58,19 @@ var ClassSubject = function (data) {
         self.interested(!self.interested());
         self.dirty(true);
     }
-
-    // get detailed class info
-    // temporary hack until class_subjects view can return this info
-    var id = data.id;
-    json_fetch(["class_info?class_id=" + id], function (data) {
-        data = data.classes[id];
-        data.section_ids = data.sections;
-        delete data.sections;
-        simpleFromJS(data, self);
-    });
 };
 
 // Section model constructor
 var ClassSection = function (data) {
     var self = this;
     self.index = data.index;
+    self.times = data.times;
+    self.num_students = data.num_students;
+    self.capacity = data.capacity;
+
     self.name = "Section " + data.index;
+    self.time = data.times.join(", ");
+    self.enrollment = data.num_students + "/" + data.capacity;
 };
 
 // Teacher model constructor
@@ -161,8 +149,12 @@ var CatalogViewModel = function () {
             meets_category = true;
         }
         else {
-            var category = cls.emailcode[0];
-            if (-1 !== criteria.category.indexOf(category)) {
+            var categories = ko.utils.arrayMap(
+                criteria.category,
+                function (cat) {
+                    return parseInt(cat, 10);
+                });
+            if (-1 !== categories.indexOf(cls.category)) {
                 meets_category = true;
             }
         }
@@ -219,7 +211,7 @@ var CatalogViewModel = function () {
         });
     }, 0);
 
-    var json_views = ['class_subjects', 'sections'];
+    var json_views = ['class_subjects/catalog', 'sections/catalog'];
     if (catalog_type == 'phase1') {
 	json_views.push('interested_classes');
     }
@@ -323,13 +315,15 @@ var CatalogViewModel = function () {
         ko.utils.arrayForEach(self.classesArray(), function (cls) {
             if (cls.dirty()) {
                 dirty.push(cls);
-                cls.dirty(false);
             }
         })
         return dirty;
     };
     var updateInterested = function () {
         var dirty = getDirtyInterested();
+        ko.utils.arrayForEach(dirty, function (cls) {
+            cls.dirty(false);
+        });
         if (dirty.length > 0) {
             // update the server
             var interested = [];
