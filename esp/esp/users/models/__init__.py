@@ -1896,6 +1896,7 @@ class Record(models.Model):
         ("interview","Teacher-interviewed for a program"),
         ("teacher_training","Attended teacher-training for a program"),
         ("teacher_checked_in", "Teacher checked in for teaching on the day of the program"),
+        ("reg_phase2_done", "Completed phase 2 of registration"),
     )
         
     event = models.CharField(max_length=80,choices=EVENT_CHOICES)

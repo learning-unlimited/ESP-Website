@@ -38,7 +38,7 @@ from django                      import forms
 from django.http                 import HttpResponseRedirect, HttpResponse
 from django.template.loader      import render_to_string
 from esp.cal.models              import Event
-from esp.users.models            import User, ESPUser, UserBit, UserAvailability
+from esp.users.models            import User, ESPUser, UserBit, UserAvailability, Record
 from esp.middleware              import ESPError
 from esp.resources.models        import Resource, ResourceRequest, ResourceType, ResourceAssignment
 from esp.datatree.models         import DataTree
@@ -51,7 +51,6 @@ from django.db.models.query      import Q
 from django.views.decorators.cache import cache_control
 from esp.middleware.threadlocalrequest import get_current_request
 from django.core.exceptions      import ObjectDoesNotExist
-#def json_encode_timeslots(obj):
     
 class StudentRegPhase2(ProgramModuleObj):
 
@@ -67,8 +66,9 @@ class StudentRegPhase2(ProgramModuleObj):
         return {'phase2_students': "Students who have completed student registration phase 2"}
 
     def isCompleted(self):
-        # TODO: fill this in
-        return True
+        records = Record.objects.filter(user=self.user, event="reg_phase2_done",
+                                        program=self.program)
+        return records.count() != 0
 
     def deadline_met(self, extension=None):
         #   Allow default extension to be overridden if necessary
@@ -150,6 +150,21 @@ class StudentRegPhase2(ProgramModuleObj):
         context['prog'] = prog
         return render_to_response(
             self.baseDir()+'studentregphase2.html', request, context)
+
+    @aux_call
+    @needs_student
+    @meets_grade
+    def complete_studentreg_2(self, request, tl, one, two, module, extra, prog):
+        """
+        Set a Record for the user indicating that phase 2 is complete.
+        """
+        records = Record.objects.filter(user=request.user,
+                                        event="reg_phase2_done", program=prog)
+        if records.count() == 0:
+            Record.objects.create(user=request.user,
+                                  event="reg_phase2_done", program=prog)
+
+        return HttpResponseRedirect('/%s/%s/%s/studentreg' % (tl, one, two))
 
     @aux_call
     @needs_student
