@@ -1,66 +1,71 @@
 {% extends "main.html" %}
 {% load render_qsd %}
 
-{% block title %} Class Lottery Registration for {{prog.niceName}} {% endblock %}
+{% block title %} Student Registration (Phase 2) for {{prog.niceName}} {% endblock %}
 
 {% block stylesheets %}
 {{ block.super }}
-<link href="/media/styles/jquery-ui/jquery-ui.css" rel="stylesheet" type="text/css"/>
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
 {% endblock %}
 
 {% load subsection %}
 {% block subsection %}
 {% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
 
-{% block xtrajs %}
-<script type="text/javascript">    var base_url = "{{ program.getUrlBase }}";  </script>
-<script type="text/javascript">    var program_base_url = "/json/"+base_url+"/";
-var support = "{{ support }}";
-var open_class_registration = {{ open_class_registration }};
-var increment_grade = {{ prog.incrementGrade }};
-var priority_limit = {{ prog.priorityLimit }};
-</script>
-<script type="text/javascript" src="/media/scripts/program/modules/studentregphase2/timeslot.js"></script>
-<script type="text/javascript" src="/media/scripts/program/modules/studentregphase2/student_reg.js"></script>
-<script type="text/javascript" src="/media/scripts/program/modules/studentregphase2/preferences.js"></script>
-<script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
-<script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
-<!--
-<script type="text/javascript">
-  $j.getScript("/media/scripts/jquery-ui-1.8.17.custom.min.js", function(){
-    console.log(create_class_info_dialog);
-    console.log($j("<div></div>").accordion);
-    create_class_info_dialog();
-    jquery_ui_init(); 
-  });
-</script>
--->
-<script type="text/javascript">
-/**$j(document).ready(function() { 
-    
-});**/              
-</script>
-
-{% endblock %}                      
-
-
 {% block content %} 
-    {% inline_program_qsd_block prog "lsr_title" request.user %}Class Lottery for {{prog.niceName}}{% end_inline_program_qsd_block %}
+<h1>Student Registration (Phase 2) for {{prog.niceName}}</h1>
 
-    <div id="lsr_content">
-        <h3 class="header"><a href="#">Instructions</a></h3>
-        <div id="instructions">
-            {% inline_program_qsd_block prog "lsr_instructions" request.user %}Write instructions here!{% end_inline_program_qsd_block %}
-	</div>
+{% inline_program_qsd_block prog "learn:studentregphase2" request.user %}
+<p>
+Rank your preferences for each time block during {{prog.niceName}}. We highly
+recommend you mark a class for every priority slot to ensure a full schedule.
+</p>
+{% end_inline_program_qsd_block %}
 
-	<br/>
 
-	<div id="timeslots_anchor" style="display:none;"></div>
+<div id="program_form">
+<table cellpadding="3" class="fullwidth">
+<tr>
+    <th colspan="3">
+    Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}
+    </th>
+</tr>
+{% for timeslot, priority_list, blockCount in timeslots %}
+    {% ifchanged timeslot.start.day %}
+        <tr><th class="small" colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.pretty_date }}</th></tr>
+    {% endifchanged %}
+    {% ifchanged blockCount %}
+        <tr><th class="small" colspan="3" height="3">Block {{ blockCount }}</th></tr>
+    {% endifchanged %}
+    {% ifequal timeslot.event_type.description "Compulsory" %}
+        <td width="25%" valign="top" align="center" class="compulsory_event_time">{{ timeslot.short_description }}</td>
+        <td colspan="2" class="compulsory_event_desc">{{ timeslot.description }}</td>
+    </tr>
+    {% else %}
+    <tr>
+    <tr>
+        <td width="25%" valign="top" align="center">{{ timeslot.short_description }}</td>
 
-	<br/>
+        <td style="vertical-align: top !important;">
+            <i>
+            {% for verb,title in priority_list %}
+	        <span class="{{verb}}">{{verb}}</span>: {{title}}
+                {% if not forloop.last %}<br />{% endif %}
+            {% endfor %}
+            </i>
+            {% if priority_list|length_is:0 %}
+                Nothing Selected
+            {% endif %}
+        </td>
 
-	<h3 class="header"><a href="#">View and Save Preferences</a></h3>
-	<div id="preferences"></div>
-    </div>
-
+        {%comment%}{% if module.deadline_met %}{%endcomment%}
+        <td width='25%' align='center' style="vertical-align: top !important;">
+            <a href="/learn/{{one}}/{{two}}/timeslot_priorities/{{timeslot.id}}">[edit priorities]</a>
+        </td>
+        {%comment%}{% endif %}{%endcomment%}
+    </tr>
+    {% endifequal %}
+{% endfor %}
+</table>
+</div>
 {% endblock %}

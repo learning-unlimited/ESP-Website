@@ -70,6 +70,13 @@ class StudentRegPhase2(ProgramModuleObj):
         # TODO: fill this in
         return True
 
+    def deadline_met(self, extension=None):
+        #   Allow default extension to be overridden if necessary
+        if extension is not None:
+            return super(StudentClassRegModule, self).deadline_met(extension)
+        else:
+            return super(StudentClassRegModule, self).deadline_met('/Classes/Lottery')
+
     @classmethod
     def module_properties(cls):
         return {
@@ -91,30 +98,58 @@ class StudentRegPhase2(ProgramModuleObj):
     @meets_deadline('/Classes/Lottery')
     def studentreg_2(self, request, tl, one, two, module, extra, prog):
         """
-        Serve the student reg page.
-
-        This is just a static page;
-        it gets all of its content from AJAX callbacks.
+        Serve the phase 2 student reg page. The page lists the timeslots of the
+        program with the associated Priority/N classes for each one, and a link
+        to edit the timeslot priorities of each timeslot.
         """
-        from django.conf import settings
-        from django.utils import simplejson
-        from django.utils.safestring import mark_safe
 
-        crmi = prog.getModuleExtension('ClassRegModuleInfo')
+        timeslot_dict = {}
+        # Populate the timeslot dictionary with the priority to class title
+        # mappings for each timeslot.
+        priority_regs = StudentRegistration.valid_objects().filter(
+            user=request.user, relationship__name__startswith='Priority')
+        priority_regs = priority_regs.values(
+            'relationship__name', 'section', 'section__parent_class__title')
+        for student_reg in priority_regs:
+            rel = student_reg['relationship__name']
+            title = student_reg['section__parent_class__title']
+            sec = ClassSection.objects.get(pk=student_reg['section'])
+            times = sec.meeting_times.all().order_by('start')
+            if times.count() == 0:
+                continue
+            timeslot = times[0].id
+            if not timeslot in timeslot_dict:
+                timeslot_dict[timeslot] = {rel: title}
+            else:
+                timeslot_dict[timeslot][rel] = title
 
-        # Convert the open_class_category ClassCategory object into a dictionary, only including the attributes the lottery needs or might need
-        open_class_category = dict()
-        open_class_category['id'] = prog.open_class_category.id
-        open_class_category['symbol'] = prog.open_class_category.symbol
-        open_class_category['category'] = prog.open_class_category.category
-        # Convert this into a JSON string, and mark it safe so that the Django template system doesn't try escaping it
-        open_class_category = mark_safe(simplejson.dumps(open_class_category))
+        # Iterate through timeslots and create a list of tuples of information
+        prevTimeSlot = None
+        blockCount = 0
+        schedule = []
+        timeslots = prog.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+        for i in range(len(timeslots)):
+            timeslot = timeslots[i]
+            if prevTimeSlot != None:
+                if not Event.contiguous(prevTimeSlot, timeslot):
+                    blockCount += 1
 
-        context = {'prog': prog, 'support': settings.DEFAULT_EMAIL_ADDRESSES['support'], 'open_class_registration': {False: 0, True: 1}[crmi.open_class_registration], 'open_class_category': open_class_category}
+            if timeslot.id in timeslot_dict:
+                priority_dict = timeslot_dict[timeslot.id]
+                priority_list = sorted(priority_dict.items())
+                schedule.append((timeslot, priority_list, blockCount + 1))
+            else:
+                schedule.append((timeslot, {}, blockCount + 1))
 
-        ProgInfo = prog.getModuleExtension('StudentClassRegModuleInfo')
+            prevTimeSlot = timeslot
 
-        return render_to_response('program/modules/studentregphase2/studentregphase2.html', request, context, prog=prog)
+        context = {}
+        context['timeslots'] = schedule
+        context['one'] = one
+        context['two'] = two
+        context['prog'] = prog
+        return render_to_response(
+            self.baseDir()+'studentregphase2.html', request, context)
 
     @aux_call
     @needs_student
@@ -151,7 +186,9 @@ class StudentRegPhase2(ProgramModuleObj):
         # Pull up the registrations that exist (including expired ones)
         srs = StudentRegistration.objects.filter(
             user=request.user, section__parent_class__parent_program=prog,
-            relationship__name__in=rel_names).order_by('relationship__name')
+            relationship__name__in=rel_names,
+            section__meeting_times__id__exact=timeslot_id)
+        srs = srs.order_by('relationship__name')
         # Modify the existing registrations as needed to ensure the section
         # is correct, and they are unexpired
         for (sr, p) in zip(srs, sorted(priorities.keys())):
