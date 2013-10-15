@@ -17,9 +17,9 @@ $j(window).on('beforeunload', function() {
 });
 
 var error_and_quit = function(err) {
-    //alert('Error: ' + err + '. Please report the issue to esp-web@mit.edu ' +
-    //'if it is recurring.');
-    //window.location = '/learn/' + program_core_url + 'studentreg_2';
+    alert('Error: ' + err + '. Please report the issue to esp-web@mit.edu ' +
+	  'if it is recurring.');
+    window.location = '/learn/' + program_core_url + 'studentreg_2';
 };
 
 save_and_redirect = function() {
@@ -47,4 +47,6 @@ save_and_redirect = function() {
 	    }
 	});
     }
+
+    window.location = '/learn/' + program_core_url + 'studentreg_2';
 };
