@@ -4,6 +4,7 @@ var ClassSubject = function (data) {
     self.id          = data.id;
     self.emailcode   = data.emailcode;
     self.title       = data.title;
+    self.category    = data.category_id;
     self.class_info  = data.class_info;
     self.grade_min   = data.grade_min;
     self.grade_max   = data.grade_max;
@@ -142,8 +143,12 @@ var CatalogViewModel = function () {
             meets_category = true;
         }
         else {
-            var category = cls.emailcode[0];
-            if (-1 !== criteria.category.indexOf(category)) {
+            var categories = ko.utils.arrayMap(
+                criteria.category,
+                function (cat) {
+                    return parseInt(cat, 10);
+                });
+            if (-1 !== categories.indexOf(cls.category)) {
                 meets_category = true;
             }
         }
