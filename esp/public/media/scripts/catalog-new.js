@@ -64,7 +64,13 @@ var ClassSubject = function (data) {
 var ClassSection = function (data) {
     var self = this;
     self.index = data.index;
+    self.times = data.times;
+    self.num_students = data.num_students;
+    self.capacity = data.capacity;
+
     self.name = "Section " + data.index;
+    self.time = data.times.join(", ");
+    self.enrollment = data.num_students + "/" + data.capacity;
 };
 
 // Teacher model constructor
@@ -205,7 +211,7 @@ var CatalogViewModel = function () {
         });
     }, 0);
 
-    var json_views = ['class_subjects/catalog', 'sections'];
+    var json_views = ['class_subjects/catalog', 'sections/catalog'];
     if (catalog_type == 'phase1') {
 	json_views.push('interested_classes');
     }
