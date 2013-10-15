@@ -310,6 +310,7 @@ var CatalogViewModel = function () {
 		// set initial values for the phase2 dropdown
 		if (catalog_type == 'phase2') {
 		    $j('#catalog-sticky .pri-select').change();
+		    dirty = false;
 		}
             }
         })();
