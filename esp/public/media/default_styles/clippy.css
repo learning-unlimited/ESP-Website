@@ -1,0 +1,15 @@
+.clippy {
+  margin-right: 10px;
+}
+
+.clippy.zeroclipboard-is-hover {
+  color: #1c6ad2;
+}
+
+.clippy.zeroclipboard-is-active {
+  color: #3dc0ff;
+}
+
+.clippy.noflash {
+  display: none;
+}
