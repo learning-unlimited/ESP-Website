@@ -183,7 +183,13 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'parent_class__grade_min': 'grade_min',
             'enrolled_students': 'num_students'})
     @cached_module_view
-    def sections(prog):
+    def sections(extra, prog):
+        if extra == 'catalog':
+            catalog = True
+        elif extra == None:
+            catalog = False
+        else:
+            raise Http404
         teacher_dict = {}
         teachers = []
         sections = list(prog.sections().values(
@@ -201,6 +207,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             section['index'] = s.index()
             section['emailcode'] = s.emailcode()
             section['length'] = float(s.duration)
+            if catalog:
+                section['times'] = s.friendly_times_with_date()
+                section['capacity'] = s.capacity
             section['teachers'] = [t.id for t in s.parent_class.get_teachers()]
             for t in s.parent_class.get_teachers():
                 if teacher_dict.has_key(t.id):
