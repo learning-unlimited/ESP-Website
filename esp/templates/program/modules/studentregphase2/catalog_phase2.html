@@ -8,6 +8,7 @@
   // Use phase2 rendering of the catalog template
   var catalog_type = "phase2";
   var timeslot_id = "{{timeslot}}";
+  var num_priorities = "{{num_priorities}}";
 </script>
 {% endblock %}
 
@@ -29,7 +30,11 @@ Save and exit >>
 <div class="priority">
   <label>Priority {{pri}}</label>
   <select id="pri-{{pri}}" class="pri-select" data-pri="{{pri}}"
-	  data-bind="options: classesArray, optionsText: 'fulltitle', optionsValue: 'id', optionsCaption: 'Select a class from below.'"></select>
+	  data-bind="options: classesArray,
+		     optionsText: 'fulltitle',
+		     optionsValue: 'id',
+		     value: prioritySelection[{{pri}}-1](),
+		     optionsCaption: 'Select a class from below.'"></select>
 </div>
 {% endfor %}
 {% endblock %}

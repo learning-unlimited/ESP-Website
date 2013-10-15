@@ -200,6 +200,12 @@ var CatalogViewModel = function () {
         return self.searchPredicate(cls) && self.filterPredicate(cls);
     }
 
+    // priority selection
+    self.prioritySelection = [];
+    for (var i = 0; i < num_priorities; ++i) {
+        self.prioritySelection[i] = ko.observable();
+    }
+
     // loading spinner
     setTimeout(function () {
         $j('#catalog-spinner').spin({
@@ -217,6 +223,7 @@ var CatalogViewModel = function () {
     }
     else if (catalog_type == 'phase2') {
 	json_views.push('interested_classes/'+timeslot_id);
+	json_views.push('lottery_preferences');
     }
     json_fetch(json_views, function (data) {
         // update classes
@@ -241,8 +248,9 @@ var CatalogViewModel = function () {
         self.classes(data.classes);
         // update sections
         for (var key in data.sections) {
-            if (data.sections[key].status > 0) {
-                data.sections[key] = new ClassSection(data.sections[key], self);
+            if (data.sections[key].status <= 0) {
+		// remove un-approved sections
+		delete data.sections[key];
             }
 	    else if (catalog_type == 'phase2' &&
 		     !(key in data.interested_sections)) {
@@ -250,8 +258,15 @@ var CatalogViewModel = function () {
 		delete data.sections[key];
 	    }
             else {
-                // remove unapproved sections
-                delete data.sections[key];
+		if (catalog_type == 'phase2') {
+		    for (var attr in data.sections[key]) {
+			if (attr.search('Priority/') == 0) {
+			    pri = parseInt(attr.substr(9), 10);
+			    self.prioritySelection[pri-1](data.sections[key].parent_class);
+			}
+		    }
+		}
+                data.sections[key] = new ClassSection(data.sections[key], self);
             }
         }
         self.sections(data.sections);
@@ -292,6 +307,10 @@ var CatalogViewModel = function () {
                 // done loading all classes; remove "loading" message
                 self.loading(false);
                 $j('#catalog-spinner').spin(false);
+		// set initial values for the phase2 dropdown
+		if (catalog_type == 'phase2') {
+		    $j('#catalog-sticky .pri-select').change();
+		}
             }
         })();
     });

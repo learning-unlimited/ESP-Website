@@ -1,10 +1,12 @@
 var dirty = false;
 
 $j(document).ready(function() {
-    $j("#catalog-sticky .pri-select").select2();
-    $j("#catalog-sticky .pri-select").change(function() {
-	dirty = true;
-    });
+    $j('#catalog-sticky .pri-select').select2();
+    for (var i = 0; i < num_priorities; ++i) {
+	catalog_view_model.prioritySelection[i].subscribe(function() {
+	    dirty = true;
+	});
+    }
 });
 
 $j(window).on('beforeunload', function() {
@@ -23,7 +25,7 @@ var error_and_quit = function(err) {
 save_and_redirect = function() {
     if (dirty) {
 	priorities = {}
-	$j("#catalog-sticky .pri-select").each(function() {
+	$j('#catalog-sticky .pri-select').each(function() {
 	    priorities[$j(this).data('pri')] = $j(this).val();
 	});
 	response = {};

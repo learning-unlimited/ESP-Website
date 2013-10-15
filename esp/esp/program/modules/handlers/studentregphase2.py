@@ -130,6 +130,7 @@ class StudentRegPhase2(ProgramModuleObj):
         timeslot = Event.objects.get(pk=int(extra), program=prog)
         context = dict()
         context['timeslot'] = timeslot.id
+        context['num_priorities'] = prog.priorityLimit()
         context['priorities'] = range(1,prog.priorityLimit()+1)
         return render_to_response(
             'program/modules/studentregphase2/catalog_phase2.html',
