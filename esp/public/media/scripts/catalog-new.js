@@ -201,9 +201,11 @@ var CatalogViewModel = function () {
     }
 
     // priority selection
-    self.prioritySelection = [];
-    for (var i = 0; i < num_priorities; ++i) {
-        self.prioritySelection[i] = ko.observable();
+    if (catalog_type == 'phase2') {
+        self.prioritySelection = [];
+        for (var i = 0; i < num_priorities; ++i) {
+            self.prioritySelection[i] = ko.observable();
+        }
     }
 
     // loading spinner
