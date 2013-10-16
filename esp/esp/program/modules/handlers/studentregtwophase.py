@@ -29,6 +29,7 @@ Email: web@esp.mit.edu
 """
 
 import datetime
+import simplejson
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import HttpResponseRedirect, HttpResponse
@@ -165,7 +166,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         if not 'json_data' in request.POST:
             return HttpResponseBadRequest('JSON data not included in request.')
         try:
-            json_data = json.loads(request.POST['json_data'])
+            json_data = simplejson.loads(request.POST['json_data'])
         except ValueError:
             return HttpResponseBadRequest('JSON data mis-formatted.')
         if not isinstance(json_data.get('interested'), list) or \
