@@ -36,7 +36,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 
 from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.models import ClassSection, StudentRegistration, StudentSubjectInterest
+from esp.program.models import ClassSection, ClassSubject, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade
 from esp.users.models import Record
 from esp.web.util import render_to_response
