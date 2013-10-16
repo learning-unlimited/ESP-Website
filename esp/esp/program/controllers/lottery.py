@@ -162,10 +162,15 @@ class LotteryAssignmentController(object):
             d = date(ts.start.year, ts.start.month, ts.start.day)
             lunch_by_day[dates.index(d)].append(ts.id)
             self.lunch_schedule[self.timeslot_indices[ts.id]] = True
-        self.lunch_timeslots = numpy.array(lunch_by_day)
-        
+        for i in range(len(lunch_by_day)):
+            if len(lunch_by_day[i]) > ts_count:
+                ts_count = len(lunch_by_day[i])
+        self.lunch_timeslots = numpy.zeros((len(lunch_by_day), ts_count), dtype=numpy.int32)
+        for i in range(len(lunch_by_day)):
+            self.lunch_timeslots[i, :len(lunch_by_day[i])] = numpy.array(lunch_by_day[i])
+
         #   Populate interest matrix
-        interest_regs = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Interested', end_date__gte=self.now).values_list('user__id', 'section__id').distinct()
+        interest_regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Interested').values_list('user__id', 'section__id').distinct()
         ira = numpy.array(interest_regs, dtype=numpy.uint32)
         try:
             self.interest[self.student_indices[ira[:, 0]], self.section_indices[ira[:, 1]]] = True
@@ -173,22 +178,9 @@ class LotteryAssignmentController(object):
             pass
         
         #   Populate priority matrix
-        priority_regs = [StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Priority/%s'%i, end_date__gte=self.now).values_list('user__id', 'section__id').distinct() for i in range(self.priority_limit+1)]
-        if self.grade_range_exceptions:
-            priority_regs.append(StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='GradeRangeException', end_date__gte=self.now).values_list('user__id', 'section__id').distinct())
-            self.priority_limit += 1
-        pra = [numpy.array(priority_regs[i], dtype=numpy.uint32) for i in range(self.priority_limit+1)]
-        for i in range(1,self.priority_limit+1):
-            try:
-                self.priority[i][self.student_indices[pra[i][:, 0]], self.section_indices[pra[i][:, 1]]] = True
-            except IndexError:
-                pass
-        if self.options['use_student_apps']:
-            for i in range(1,self.priority_limit+1):
-                for (student_id,section_id) in priority_regs[i]:
-                    self.ranks[self.student_indices[student_id],self.section_indices[section_id]] = ESPUser.getRankInClass(student_id,self.parent_classes[self.section_indices[section_id]])
-            for (student_id,section_id) in interest_regs:
-                self.ranks[self.student_indices[student_id],self.section_indices[section_id]] = ESPUser.getRankInClass(student_id,self.parent_classes[self.section_indices[section_id]])
+        priority_regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Priority/1').values_list('user__id', 'section__id').distinct()
+        pra = numpy.array(priority_regs, dtype=numpy.uint32)
+        self.priority[self.student_indices[pra[:, 0]], self.section_indices[pra[:, 1]]] = True
         
         #   Set student utility weights. Counts number of classes that students selected. Used only for computing the overall_utility stat
         #   NOTE: Uses fixed (interest + priority) formula, needs attention when multiple priority levels are merged.
@@ -585,7 +577,7 @@ class LotteryAssignmentController(object):
         if delete:
             old_registrations.delete()
         else:
-            old_registrations.filter(end_date__gte=self.now).update(end_date=self.now)
+            old_registrations.filter(StudentRegistration.is_valid_qobject()).update(end_date=datetime.now())
         
     def clear_mailman_list(self, list_name):
         contents = list_contents(list_name)
