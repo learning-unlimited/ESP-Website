@@ -18,11 +18,12 @@ You need to log in before you can access <tt>{{ next }}</tt>.
 
 {% endif %}
 
-<div class="alert span6">
+<div class="row-fluid">
+<div class="alert span10">
 Both the username and password are <b>case-sensitive</b>: capitalization matters!
 </div>
 
-<div class="well span6">
+<div class="well span10">
 
 <form action="{{ request.action }}" class="form-horizontal" method="post">
 
@@ -71,9 +72,10 @@ document.getElementById('id_username').focus();
 </div>
 
 <br />
-<div class="alert alert-info span6">
+<div class="alert alert-info span10">
 Don't already have an account?  <a href="/myesp/register/">Click here to create one</a>. <br />
 Forgot your password? <a href="/myesp/passwdrecover/" title="Click for account recovery">Head on over to the Account Recovery Page</a>.
+</div>
 </div>
 
 {% endblock %}
