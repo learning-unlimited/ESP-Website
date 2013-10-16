@@ -84,18 +84,18 @@ document.cookie = 'teachlearn=' + tl + '; expires=' + new Date("January 1, 2025"
 <span id="orbox">- or -</span>
 
 {% block login %}
-<div id="login_box">
+<div id="login_box_index">
 <div class="corners"><div class="ul"></div><div class="ur"></div><div class="dl"></div><div class="dr"></div></div>
-<div id="login_div">
+<div id="login_div_index">
 {% if not request.user.is_authenticated %}
 <!-- login -->
-<form name="login_form" id="login_form" method="post" action="/myesp/login/">
+<form name="login_form" id="login_form_index" method="post" action="/myesp/login/">
   <input type="hidden" name="next" value="/" />
-  <input type="text" id="login_user" name="username"/>
-  <input type="password" id="login_pswd" name="password" />
-  <input type="submit" id="login_submit" name="login_submit" value="" />
-  <a href="/myesp/register" id="login_signup"></a>
-  <a href="/myesp/loginhelp.html" id="login_help">need help?</a>
+  <input type="text" id="login_user_index" name="username"/>
+  <input type="password" id="login_pswd_index" name="password" />
+  <input type="submit" id="login_submit_index" name="login_submit" value="" />
+  <a href="/myesp/register" id="login_signup_index"></a>
+  <a href="/myesp/loginhelp.html" id="login_help_index">need help?</a>
 </form>
 {% else %}
 <!-- logout -->
