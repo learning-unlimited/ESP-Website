@@ -32,6 +32,19 @@
     vertical-align: top;
 }
 
+#catalog-sticky a.save {
+    border: 1px solid black;
+    background-color: #ccccff;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 2px 5px 2px 5px;
+}
+#catalog-sticky a.save:hover {
+    background-color: #333399;
+    color: #ccccff;
+}
+
 #catalog-new {
     font-size: 13px;
 }

@@ -48,5 +48,5 @@ save_and_redirect = function() {
 	});
     }
 
-    window.location = '/learn/' + program_core_url + 'studentreg_2';
+    window.location = '/learn/' + program_core_url + 'studentreg';
 };
