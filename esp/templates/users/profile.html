@@ -14,11 +14,11 @@
 
 {% block content %}
 <div class="row-fluid">
-  <div class="span6 offset1">
+  <div class="span10 offset1">
     <h1>Your Profile Information</h1>
   </div>
   <div class="row-fluid">
-    <div class="span8 offset1">
+    <div class="span12 offset1">
       {% load render_qsd %}
       {% inline_qsd_block "account_creation_basic_info" %}
       <p>First, please tell us a bit about yourself!  The fields in red boxes are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
@@ -29,7 +29,7 @@
   </div>
 </div>
 <div class="row-fluid">
-  <div class="span6 offset1">
+  <div class="span10 offset1">
       {% if form.errors %}
       <h4 style="color:red">Please fix the following error{{ form.errors|pluralize }} in the form.</h4>
       <ul>
