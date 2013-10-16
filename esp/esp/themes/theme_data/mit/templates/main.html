@@ -80,14 +80,12 @@
     <div id="tab_sidebar">
       <ul id="menu">
       <li id="tab_logo" class="tabcolor0" ><span class="accent">&nbsp;</span><a href="/"><img id="logo" alt="home" src="/media/images/theme/logo.png" /></a></li>
-      {% for category in theme.nav_structure %}
-      {% if request.path|slice:':5' == category.header_link|slice:':5' %}
+      {% with request.path|get_nav_category as category %}
       {% for item in category.links %}
-        <li id="tab_{{ forloop.counter }}" class="tabcolor{{ forloop.counter }}" ><span class="accent">&nbsp;</span><a href="{{ item.link }}">{{ item.text.upper }}</a></li>
+      <li id="tab_{{ forloop.counter }}" class="tabcolor{{ forloop.counter }}" ><span class="accent">&nbsp;</span><a href="{{ item.link }}">{{ item.text.upper }}</a></li>
       {% endfor %}
-      {% endif %}
-      {% endfor %}
-        <div class="admin hidden">
+      {% endwith %}
+      <div class="admin hidden">
             <li id="tab_admin" class="tabcolor9" ><span class="accent">&nbsp;</span><a href="/manage/programs/">MANAGE</a></li>
         </div>
         <div class="unmorph hidden">

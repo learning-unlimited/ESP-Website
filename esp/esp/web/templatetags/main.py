@@ -74,6 +74,21 @@ def extract_theme(str):
     return 'tabcolor%d' % tab_index
 
 @register.filter
+def get_nav_category(path):
+    tc = ThemeController()
+    settings = tc.get_template_settings()
+                #   Search for current nav category based on request path
+    first_level = ''.join(path.lstrip('/').split('/')[:1])
+    for category in settings['nav_structure']:
+        if category['header_link'].lstrip('/').startswith(first_level):
+            return category
+    #   Search failed - use default nav category
+    default_nav_category = 'learn'
+    for category in settings['nav_structure']:
+        if category['header_link'].lstrip('/').startswith(default_nav_category):
+            return category
+
+@register.filter
 def truncatewords_char(value, arg):
     """
     Truncates a string before a certain number of characters, 
