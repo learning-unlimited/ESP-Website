@@ -84,7 +84,8 @@ class ClassAttrMergingSelect(forms.Select):
         attrs = dict(self.attrs, **kwargs)
         #   Merge 'class' attributes - this is the difference from Django's default implementation
         if extra_attrs:
-            if 'class' in attrs and 'class' in extra_attrs:
+            if 'class' in attrs and 'class' in extra_attrs \
+                    and isinstance(extra_attrs['class'], basestring):
                 attrs['class'] += ' ' + extra_attrs['class']
                 del extra_attrs['class']
             attrs.update(extra_attrs)
