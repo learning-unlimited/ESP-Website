@@ -252,11 +252,6 @@ class StudentRegTwoPhase(ProgramModuleObj):
         """
         Saves the priority preferences for student registration phase 2.
         """
-        # Guard against missing json_data (the save and go back button will
-        # leave json_data blank if not dirty)
-        if not 'json_data' in request.POST:
-            return HttpResponseRedirect('/learn/'+prog.getUrlBase()+'/studentreg')
-
         data = simplejson.loads(request.POST['json_data']);
         timeslot_id = data.keys()[0]
         priorities = data[timeslot_id]
