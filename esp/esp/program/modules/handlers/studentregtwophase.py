@@ -36,7 +36,7 @@ from django.http import HttpResponseRedirect, HttpResponse
 
 from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
-from esp.program.models import ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
+from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade
 from esp.users.models import Record
 from esp.web.util import render_to_response
@@ -115,6 +115,18 @@ class StudentRegTwoPhase(ProgramModuleObj):
         return render_to_response(
             self.baseDir()+'studentregtwophase.html', request, context)
 
+    def catalog_context(self, request, tl, one, two, module, extra, prog):
+        """
+        Builds context specific to the catalog. Used by all views which render
+        the catalog. This is not a view in itself.
+        """
+        context = {}
+        # FIXME(gkanwar): This is a terrible hack, we should find a better way
+        # to filter out certain categories of classes
+        context['open_class_category_id'] = prog.open_class_category.id
+        context['lunch_category_id'] = ClassCategories.objects.get(category='Lunch').id
+        return context
+
     @aux_call
     @needs_student
     @meets_grade
@@ -147,6 +159,10 @@ class StudentRegTwoPhase(ProgramModuleObj):
         for grade in range(prog.grade_min, prog.grade_max + 1):
             grade_choices.append((grade, grade))
         context['grade_choices'] = group_columns(grade_choices)
+
+        catalog_context = self.catalog_context(
+            request, tl, one, two,module, extra, prog)
+        context.update(catalog_context)
 
         return render_to_response(self.baseDir() + 'mark_classes.html', request, context)
 
@@ -217,6 +233,11 @@ class StudentRegTwoPhase(ProgramModuleObj):
         context['timeslot'] = timeslot.id
         context['num_priorities'] = prog.priorityLimit()
         context['priorities'] = range(1,prog.priorityLimit()+1)
+
+        catalog_context = self.catalog_context(
+            request, tl, one, two,module, extra, prog)
+        context.update(catalog_context)
+
         return render_to_response(
             self.baseDir() + 'rank_classes.html', request, context)
 
