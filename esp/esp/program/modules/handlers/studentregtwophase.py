@@ -275,7 +275,8 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 # (nothing selected)
                 continue
             except ObjectDoesNotExist as e:
-                print 'ObjectDoesNotExist', e
+                # TODO(gkanwar): Indicate to the caller what failed in some
+                # way that's better than silently ignoring them.
                 continue
             sr = StudentRegistration(
                 user=request.user,
