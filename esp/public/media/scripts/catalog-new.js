@@ -11,7 +11,7 @@ var ClassSubject = function (data) {
     self.difficulty  = data.difficulty;
     self.prereqs     = data.prereqs;
     self.interested  = ko.observable(false);
-    self.dirty       = ko.observable(false);
+    self.interested_saved = ko.observable(false);
 
     self.fulltitle = data.emailcode + ": " + data.title;
     self.grade_range = data.grade_min + " - " + data.grade_max;
@@ -56,7 +56,6 @@ var ClassSubject = function (data) {
     // click handler for interested star
     self.toggle_interested = function () {
         self.interested(!self.interested());
-        self.dirty(true);
     }
 };
 
@@ -242,6 +241,7 @@ var CatalogViewModel = function () {
                 // if marked interested, reflect that.
                 if (key in data.interested_subjects) {
                     data.classes[key].interested(true);
+                    data.classes[key].interested_saved(true);
                 }
             }
         }
@@ -318,37 +318,37 @@ var CatalogViewModel = function () {
     });
 
     var getDirtyInterested = function () {
-        var dirty = [];
+        var dirty = false;
+        var interested = [];
+        var not_interested = [];
         ko.utils.arrayForEach(self.classesArray(), function (cls) {
-            if (cls.dirty()) {
-                dirty.push(cls);
-            }
-        })
-        return dirty;
-    };
-    var updateInterested = function () {
-        var dirty = getDirtyInterested();
-        ko.utils.arrayForEach(dirty, function (cls) {
-            cls.dirty(false);
-        });
-        if (dirty.length > 0) {
-            // update the server
-            var interested = [];
-            var not_interested = [];
-            ko.utils.arrayForEach(dirty, function (cls) {
+            if (cls.interested() != cls.interested_saved()) {
+                dirty = true;
                 if (cls.interested()) {
                     interested.push(cls.id);
                 }
                 else {
                     not_interested.push(cls.id);
                 }
-            });
+            }
+        });
+        if (dirty) {
+            return {
+                interested: interested,
+                not_interested: not_interested
+            };
+        }
+        else {
+            return false;
+        }
+    };
+    var updateInterested = function () {
+        var updates = getDirtyInterested();
+        if (updates) {
+            // update the server
             var data = {
                 csrfmiddlewaretoken: csrf_token(),
-                json_data: JSON.stringify({
-                    interested: interested,
-                    not_interested: not_interested
-                })
+                json_data: JSON.stringify(updates)
             }
             var learn_url = program_base_url.replace(/^\/json/, '/learn');
             var url = learn_url + 'mark_classes_interested';
@@ -356,13 +356,24 @@ var CatalogViewModel = function () {
                 type: "POST",
                 url: url,
                 data: data,
-                error: function () {
-                    // update failed, re-queue
-                    ko.utils.arrayForEach(self.classesArray(), function (cls) {
-                        cls.dirty(true);
-                    });
+                success: function () {
+                    // update dirty bits
+                    var classes = self.classes();
+                    ko.utils.arrayForEach(updates.interested,
+                        function (cls_id) {
+                            var cls = classes[cls_id];
+                            cls.interested_saved(true);
+                        });
+                    ko.utils.arrayForEach(updates.not_interested,
+                        function (cls_id) {
+                            var cls = classes[cls_id];
+                            cls.interested_saved(false);
+                        });
                 },
-                complete: updateInterested // if dirty, update again!
+                complete: function () {
+                    // if dirty, update again!
+                    setTimeout(updateInterested, 1000);
+                }
             });
         }
         else {
@@ -372,7 +383,7 @@ var CatalogViewModel = function () {
     };
     updateInterested();
     window.onbeforeunload = function () {
-        if (getDirtyInterested().length > 0) {
+        if (getDirtyInterested()) {
             return 'Your preferences have not been saved.';
         }
     };
