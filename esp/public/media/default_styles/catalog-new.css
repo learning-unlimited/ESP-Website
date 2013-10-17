@@ -16,8 +16,17 @@
     text-decoration: none;
 }
 
+#catalog-sticky label {
+    display: inline;
+}
+
 #catalog-sticky .search-box, #catalog-sticky .filter-box {
     font-size: 13px;
+    line-height: normal;
+}
+
+#catalog-sticky .search-box input {
+    margin-bottom: 0;
 }
 
 #catalog-sticky .filter-box {
@@ -59,6 +68,7 @@
 }
 #catalog-new .catalog-entry-title {
     font-size: 1.15em;
+    line-height: normal;
     display: inline-block;
 }
 #catalog-new .catalog-entry-teachers {

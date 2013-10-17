@@ -3,6 +3,7 @@
     background-color: #DEF;
 }
 #catalog-new .mark-interested label {
+    display: inline;
     vertical-align: middle;
 }
 #catalog-new .mark-interested .star {
