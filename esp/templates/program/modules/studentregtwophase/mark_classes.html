@@ -15,7 +15,11 @@
 {% block catalog_sticky %}
 <div style="float: left"><h2>Step 1: Star Classes that Interest You</h2></div>
 <div style="float: right">
-  <a href="/learn/{{program.getUrlBase}}/studentreg" class="save">Save and go back</a>
+  <form data-bind="submit: submitInterested">
+    {% csrf_token %}
+    <input name="json_data" type="hidden" />
+    <input class="save" type="submit" value="Save and go back"/>
+  </form>
 </div>
 <hr>
 <div class="sticky-toggle">

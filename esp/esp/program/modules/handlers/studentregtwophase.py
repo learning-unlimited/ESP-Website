@@ -32,7 +32,7 @@ import datetime
 import simplejson
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
 
 from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
@@ -215,7 +215,10 @@ class StudentRegTwoPhase(ProgramModuleObj):
             subject__pk__in=json_data['not_interested'])
         to_expire.update(end_date=datetime.datetime.now())
 
-        return HttpResponse()
+        if request.is_ajax():
+            return HttpResponse()
+        else:
+            return self.goToCore(tl)
 
     @aux_call
     @needs_student
@@ -310,7 +313,8 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 relationship=rel)
             sr.save()
 
-        return HttpResponseRedirect('/learn/'+prog.getUrlBase()+'/studentreg')
+        return self.goToCore(tl)
+
 
     class Meta:
         abstract = True

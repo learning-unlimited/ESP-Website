@@ -317,6 +317,7 @@ var CatalogViewModel = function () {
         })();
     });
 
+    // get values that need to be updated to the server
     var getDirtyInterested = function () {
         var dirty = false;
         var interested = [];
@@ -342,6 +343,8 @@ var CatalogViewModel = function () {
             return false;
         }
     };
+
+    // background updates
     var updateInterested = function () {
         var updates = getDirtyInterested();
         if (updates) {
@@ -382,8 +385,30 @@ var CatalogViewModel = function () {
         }
     };
     updateInterested();
+
+    // submit handler for "save and exit" button
+    var saving = false;
+    self.submitInterested = function (form) {
+        var $form = $j(form);
+        var updates = getDirtyInterested();
+        var learn_url = program_base_url.replace(/^\/json/, '/learn');
+        if (updates) {
+            $form.find("input[name=json_data]").val(
+                JSON.stringify(updates));
+            $form.attr('action', learn_url + 'mark_classes_interested');
+            $form.attr('method', 'post');
+        }
+        else {
+            $form.attr('action', learn_url + 'studentreg');
+            $form.attr('method', 'get');
+        }
+        saving = true;
+        return true;
+    };
+
+    // warn user if leaving with unsaved changes
     window.onbeforeunload = function () {
-        if (getDirtyInterested()) {
+        if (!saving && getDirtyInterested()) {
             return 'Your preferences have not been saved.';
         }
     };
