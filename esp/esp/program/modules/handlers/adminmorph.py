@@ -75,7 +75,7 @@ class AdminMorph(ProgramModuleObj):
         self.program.setup_user_filters()
         for key in search_keys:
             user_list = getattr(self.program, key + 's')(QObjects=True)
-            saved_queries[key] = reduce(operator.or_, [user_list[user_type] for user_type in search_keys[key] if user_type in user_list])
+            saved_queries[key] = reduce(operator.or_, [user_list[user_type] for user_type in search_keys[key] if user_type in user_list], Q())
         saved_queries['program'] = reduce(operator.or_, saved_queries.values())
         saved_queries['all'] = Q()
         
