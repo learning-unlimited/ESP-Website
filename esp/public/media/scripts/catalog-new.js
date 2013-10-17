@@ -407,11 +407,14 @@ var CatalogViewModel = function () {
     };
 
     // warn user if leaving with unsaved changes
-    window.onbeforeunload = function () {
-        if (!saving && getDirtyInterested()) {
-            return 'Your preferences have not been saved.';
-        }
-    };
+    // TODO: figure out how to share this between phases 1 and 2
+    if (catalog_type == 'phase1') {
+        window.onbeforeunload = function () {
+            if (!saving && getDirtyInterested()) {
+                return 'Your preferences have not been saved.';
+            }
+        };
+    }
 };
 
 $j(function () {
