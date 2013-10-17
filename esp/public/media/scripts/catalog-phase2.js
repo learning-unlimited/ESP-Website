@@ -22,7 +22,7 @@ var error_and_quit = function(err) {
     window.location = '/learn/' + program_core_url + 'studentreg_2';
 };
 
-save_and_redirect = function() {
+build_json_data = function(form) {
     if (dirty) {
 	priorities = {}
 	$j('#catalog-sticky .pri-select').each(function() {
@@ -30,23 +30,11 @@ save_and_redirect = function() {
 	});
 	response = {};
 	response[timeslot_id] = priorities;
-	$j.ajax({
-	    type: 'POST',
-	    url: '/learn/' + program_core_url + 'save_priorities',
-	    data: {
-		'json_data': JSON.stringify(response),
-		'csrfmiddlewaretoken': csrf_token(),
-	    },
-	    dataType: 'json',
-	    async: false,
-	    error: function(jqxhr, status, error) {
-		error_and_quit(status + ":" + error)
-	    },
-	    success: function() {
-		dirty = false;
-	    }
-	});
+	json_data = JSON.stringify(response);
+	$input = $j('<input type="hidden"/>');
+	$input.attr('name', 'json_data');
+	$input.val(json_data);
+	console.log(form);
+	$j(form).append($input);
     }
-
-    window.location = '/learn/' + program_core_url + 'studentreg';
 };

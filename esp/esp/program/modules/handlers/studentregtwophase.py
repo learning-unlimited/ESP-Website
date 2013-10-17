@@ -283,7 +283,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 relationship=rel)
             sr.save()
 
-        return HttpResponse()
+        return HttpResponseRedirect('/learn/'+prog.getUrlBase()+'/studentreg')
 
     class Meta:
         abstract = True

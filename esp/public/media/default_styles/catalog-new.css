@@ -41,7 +41,7 @@
     vertical-align: top;
 }
 
-#catalog-sticky a.save {
+#catalog-sticky a.save,input.save {
     border: 1px solid black;
     background-color: #ccccff;
     font-weight: bold;
@@ -49,7 +49,7 @@
     font-size: 14px;
     padding: 2px 5px 2px 5px;
 }
-#catalog-sticky a.save:hover {
+#catalog-sticky a.save:hover,input.save:hover {
     background-color: #333399;
     color: #ccccff;
 }

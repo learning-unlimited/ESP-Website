@@ -21,7 +21,11 @@
 {% block catalog_sticky %}
 <div style="float: left"><h2>Step 2: Mark interested classes for {{ timeslot }}</h2></div>
 <div style="float: right">
-  <a href="javascript:void(0)" onclick="save_and_redirect();" class="save">Save and go back</a>
+  <form action="/learn/{{program.getUrlBase}}/save_priorities"
+	onsubmit="build_json_data(this)" method="post">
+    {% csrf_token %}
+    <input class="save" type="submit" value="Save and go back"/>
+  </form>
 </div>
 <hr>
 {% for pri in priorities %}
