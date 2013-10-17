@@ -7,7 +7,7 @@
 <script type="text/javascript">
   // Use phase2 rendering of the catalog template
   var catalog_type = "phase2";
-  var timeslot_id = "{{timeslot}}";
+  var timeslot_id = "{{timeslot.id}}";
   var num_priorities = "{{num_priorities}}";
 </script>
 {% endblock %}
@@ -19,7 +19,7 @@
 {% endblock %}
 
 {% block catalog_sticky %}
-<div style="float: left"><h2>Step 2: Mark interested classes for {{ timeslot }}</h2></div>
+<div style="float: left"><h2>Step 2: Rank classes starting at {{ timeslot.start }}</h2></div>
 <div style="float: right">
   <form action="/learn/{{program.getUrlBase}}/save_priorities"
 	onsubmit="build_json_data(this)" method="post">

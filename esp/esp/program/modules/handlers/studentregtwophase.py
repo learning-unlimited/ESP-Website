@@ -230,7 +230,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         """
         timeslot = Event.objects.get(pk=int(extra), program=prog)
         context = dict()
-        context['timeslot'] = timeslot.id
+        context['timeslot'] = timeslot
         context['num_priorities'] = prog.priorityLimit()
         context['priorities'] = range(1,prog.priorityLimit()+1)
 
