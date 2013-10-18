@@ -1,94 +1,80 @@
-#catalog table {
-   border: 1px solid #CCC;
-   border-width: 1px;
-   border-collapse: collapse;
+
+div .show_class {
+    padding: 0px;
+    background-color: #eeeeee;
+    border: 1px solid #cccccc;
 }
 
-#catalog th {
-   font-family: Arial, sans-serif;
-   padding: 5px;
-   font-size: 15px;
-   background-color: #c6def7;
-   color: #000;
+div .class_title {
+    background-color: #D9EDF7;
+    color: #004466;
+    font-size: 1.5em;
+    font-weight: bold;
+    padding: 0.6em;
 }
 
-#catalog th.materials {
-   font-family: Arial, sans-serif;
-   padding: 5px;
-   font-size: 12px;
-   font-weight: normal;
-   background-color: #c6def7;
-   color: #000;
+div .class_title a:hover {
+  text-decoration: none;
 }
 
-#catalog td {
-   font-family: serif;
-   font-size: 14px;
-   background-color: #ffffff;
-   color: #000;
+div .class_subtitle_row {
+    border: 1px solid #cccccc;
+    background-color: white;
+    min-height: 1.5em;
+    margin: -1px;
+    padding: 2px;
 }
 
-#catalog td.info {
-    padding: 5px;
+div .class_difficulty {
+    text-align: center;
+    width: 50%;
+    float: left;
 }
 
-.addbutton_error {
-    background-color: #ffcccc;
-    color: #000000;
-    border: 0px;
-    font-weight: normal;
-    font-size: 1.0em;
-    padding: 3px;
-    margin: 0px !important;
-    width: 100%;
-    font-family: Helvetica, Arial, sans-serif;
+div .class_teachers {
+    text-align: center;
+    width: 50%;
+    float: right;
 }
 
-.doclist {
-   font-family: sans-serif;
-   text-indent: 20px;
-   font-size: 12px;
-   color: #000;
+div .class_content {
+    padding: 8px;
 }
 
-p.category {
-   font-family: arial;
-   font-size: 2em;
-   text-align: center;
-   margin-bottom: 0;
-   font-weight: bold;
+div .class_meeting_times {
+    text-align: center;
 }
 
-.linktop {
-   font-family: serif;
-   font-size: 12px;
-   text-align: center;
-}
-.show_class table {
-   text-align: center;
-   margin: auto;
-   width: 560px;
-}
-.show_class th {
-   background-color: #a6cedf;
-   text-align: left;
-}
-.teachers {
-   font-size: 13px;
-   font-family: serif;
-   font-style: italic;
-   font-weight: normal;
-   text-align: right;
-}
-.show_class td {
-   text-align: center;
-   vertical-align: top;
-}
-.show_class td.info {
-   text-align: left;
+div .class_grades {
+    text-align: center;
 }
 
-.add_class td {
+div .class_doclist {
+   font-size: 0.9em;
+   color: #000000;
+   padding-left: 4px;
+}
+
+div .class_appquestions_list {
+   font-size: 0.9em;
+   color: #000000;
+   padding-left: 4px;
+}
+
+div .class_footer_row {
+    border: 1px solid #cccccc;
+    background-color: white;
+    margin: -1px;
+    padding: 2px;
+}
+
+div .class_buttons {
+    background-color: white;
+    margin: -1px;
+    border: 1px solid #CCCCCC;
+}
+
+div .add_class {
    text-align: center;
    vertical-align: top;
    color: #bccaf5;
@@ -97,24 +83,11 @@ p.category {
    margin: 0px;
 }
 
-#divmaintext h1 {
-  font-size: 22pt;
-  color: black;
-  font-family: arial;
-  text-align: center;
-  width: 100%;
-}
-
-.big {
-    font-size: 1.5em;
-}
-
-.classtitle {
-  color: black;
-}
-
-a.classtitle:hover {
-  text-decoration: none;
+div .addbutton_error {
+    text-align: center;
+    padding: 2px;
+    font-style: italic;
+    background-color: #F2DEDE;
 }
 
 input.button {
@@ -131,19 +104,12 @@ input.button:hover {
 }
 
 input.addbutton_hidden {
-    visibility: hidden;
-    height: 0px;
+    display: none;
 }
 
 input.addbutton_added {
     color: #ffffff;
     background-color: #990000;
-    border: 0px solid black;
-    font-weight: bold;
-    font-size: 0.9em;
-    padding: 3px;
-    width: 100%;
-    font-family: Helvetica, Arial, sans-serif;
 }
 
 img.LaTeX {
@@ -151,19 +117,20 @@ img.LaTeX {
 }
 
 input.addbutton {
-    background-color: #c6def7;
+    background-color: #D9EDF7;
     color: #000000;
-    border: 0px solid black;
+    border: 1px solid #CCCCCC;
     font-weight: bold;
-    font-size: 0.9em;
-    padding: 3px;
+    font-size: 1.2em;
+    padding: 8px;
+    margin-bottom: 0px;
     width: 100%;
     font-family: Helvetica, Arial, sans-serif;
+    border-radius: 0px;
 }
 
 input.addbutton:hover {
-    background-color: #333399;
-    color: #c6def7;
+    background-image: -moz-linear-gradient(center top , #D9EDF7, #DFF0D8);
 }
 
 input.addbutton_added {
@@ -184,6 +151,18 @@ input.addbutton_disabled {
     font-weight: bold;
     font-size: 0.9em;
     padding: 3px;
+    width: 100%;
+    font-family: Helvetica, Arial, sans-serif;
+}
+
+input .addbutton_error {
+    background-color: #ffcccc;
+    color: #000000;
+    border: 0px;
+    font-weight: normal;
+    font-size: 1.0em;
+    padding: 3px;
+    margin: 0px !important;
     width: 100%;
     font-family: Helvetica, Arial, sans-serif;
 }

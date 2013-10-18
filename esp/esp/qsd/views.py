@@ -53,6 +53,8 @@ from django.views.decorators.vary import vary_on_cookie
 from django.views.decorators.cache import cache_control
 from esp.cache.varnish import purge_page
 
+from django.conf import settings
+
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
 
@@ -107,7 +109,7 @@ def qsd(request, url):
 
             if (action == 'read'):
                 edit_link = '/' + base_url + '.edit.html'
-                return render_to_response('qsd/nopage_create.html', request, {'edit_link': edit_link}, use_request_context=False)
+                return render_to_response('qsd/nopage_create.html', request, {'edit_link': edit_link}, use_request_context=False)  
         else:
             if action == 'read':
                 raise Http404, 'This page does not exist.'
@@ -127,6 +129,7 @@ def qsd(request, url):
             'title': qsd_rec.title,
             'nav_category': qsd_rec.nav_category, 
             'content': qsd_rec.html(),
+            'settings': settings,
             'qsdrec': qsd_rec,
             'have_edit': True,  ## Edit-ness is determined client-side these days
             'edit_url': '/' + base_url + ".edit.html" }, use_request_context=False)
@@ -211,9 +214,8 @@ def qsd(request, url):
             'qsd'          : True,
             'missing_files': m.BrokenLinks(),
             'target_url'   : base_url.split("/")[-1] + ".edit.html",
-            'return_to_view': base_url.split("/")[-1] + ".html#refresh" },
-                                  use_request_context=False)
-
+            'return_to_view': base_url.split("/")[-1] + ".html#refresh" },  
+            use_request_context=False)  
     
     # Operation Complete!
     raise Http404('Unexpected QSD operation')

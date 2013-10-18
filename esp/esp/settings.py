@@ -67,10 +67,16 @@ SERVER_EMAIL = 'server@%s' % EMAIL_HOST_SENDER
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, MEDIA_ROOT_DIR)
 STATIC_ROOT = os.path.join(PROJECT_ROOT, STATIC_ROOT_DIR)
 
+#   Search directories for LESS (customizable stylesheet) files
+LESS_SEARCH_PATH = [
+    os.path.join(MEDIA_ROOT, 'less'),
+]
+
 MANAGERS = ADMINS
 
 TEMPLATE_DIRS = (
     os.path.join(PROJECT_ROOT, 'templates'),
+    
 )
 
 DEFAULT_HOST = SITE_INFO[1]

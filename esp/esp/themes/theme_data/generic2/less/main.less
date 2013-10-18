@@ -1,0 +1,390 @@
+
+body
+{
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0px;
+    padding-top: 0px;
+}
+
+#boxes_area
+{
+    clear: both;
+    float: left;
+    height: 500px;
+}
+
+#nav_area
+{
+    position: relative;
+    float: left;
+
+}
+
+#nav_buffer
+{
+    /*  Set this to whatever value is necessary depending on the logo height    */
+    height: 120px;
+    padding-left: 20px;
+    position: relative;
+}
+
+#nav_buffer_foreground
+{
+    text-align: center;
+    font-size: 1.1em;
+    color: @box_border_color;
+}
+
+#nav_buffer_background
+{
+    text-align: center;
+    font-size: 2.5em;
+    line-height: 1.2em;
+    color: @heading_background_color;
+    padding-top: 35px;
+}
+
+#primary_nav
+{
+    vertical-align: bottom;
+}
+
+#secondary_nav
+{
+    width: 680px;   /*  match width of #content_area    */
+    float: left;
+    vertical-align: bottom;
+    
+    border: 1px solid @content_border_color;
+
+    margin: 0px;
+    margin-left: 12px;
+
+    padding: 0px;
+
+    border-radius: @content_border_radius;
+    border-top-left-radius: 0px;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+}
+
+#bottom_area
+{
+    clear: both;
+}
+
+#logo_area
+{
+    padding: 10px;
+    float: left;
+    height: 150px;
+    width: 200px;
+}
+
+#logo_area img
+{
+    border: none;
+}
+
+#login_box
+{
+    font-size: 0.9em;
+}
+
+#login_box label
+{
+    font-size: 1.0em;
+}
+
+#login_box input {
+    border: 1px solid #999999;
+    margin: 2px 2px 2px 5px;
+    font-size: 0.9em;
+}
+
+#login_box input.gobutton
+{
+    border-radius: 2px;
+    background-color: #CCCCCC;
+    padding: 1px;
+}
+
+#top_area
+{
+    position: relative;
+}
+
+#main_logo
+{
+    padding-left: 10px;
+}
+
+#lu_logo
+{
+    float: left;
+    padding-left: 30px;
+}
+
+#logo_blurb
+{
+    font-style: italic;
+    font-size: 0.9em;
+    padding-left: 74px;
+    vertical-align: middle;
+}
+
+#content_area
+{
+    float: left;
+    font-family: Arial, Helvetica, sans-serif;
+    margin: 0px;
+    padding: 0px;
+    border: 1px solid @content_border_color;
+    border-top: none;
+    border-radius: @content_border_radius;
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+    min-height: 450px;
+    width: 680px;
+    margin-bottom: 20px;
+}
+
+#content_area h2, h3, p, form
+{
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+#content_area h2, h3, p, li
+{
+    font-size: 0.9em;
+}
+
+#footer
+{
+    clear: both;
+    font-style: italic;
+    padding: 10px;
+    border-top: 1px solid @content_border_color;
+}
+
+#footer p
+{
+    margin: 5px;
+}
+
+a
+{
+    text-decoration: none;
+    color: @linkColor;
+}
+
+a:hover
+{
+    text-decoration: underline;
+    color: @linkColorHover;
+}
+
+.box
+{
+    font-size: 0.9em;
+    line-height: 140%;
+    border: 1px solid @box_border_color;
+    padding: 5px;
+    margin: 10px;
+    margin-right: 24px;
+    margin-bottom: 16px;
+    width: 186px;
+    background-color: @box_background_color;
+    word-wrap: break-word;
+    border-radius: @content_border_radius;
+    background-image: -moz-linear-gradient(top,
+        hsla(0, 0%, 100%, 0.7),
+        hsla(0, 0%, 100%, 0)
+        40px);
+    background-image: -webkit-linear-gradient(top,
+        hsla(0, 0%, 100%, 0.7),
+        hsla(0, 0%, 100%, 0)
+        40px);
+    box-shadow: 1px 1px 3px hsla(0, 0%, 0%, 0.3);
+}
+
+.box_header
+{
+    text-align: right;
+    font-weight: 600;
+    padding-right: 6px;
+    padding-bottom: 4px;
+    font-size: 1.1em;
+    color: @accent_text_color;
+}
+
+.content_box
+{
+    background-color: @accent_background_color;
+    float: right;
+    padding: 8px;
+    width: 260px;
+    min-height: 50px;
+    overflow: auto;
+    text-align: right;
+}
+
+.content_box img
+{
+    box-shadow: 1px 1px 2px hsla(0, 0%, 0%, 0.4);
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+.toplevel_link a
+{
+    float: left;
+    margin: 5px;
+    margin-left: 12px;
+    margin-bottom: 0px;
+    padding: @nav_link_padding;
+    padding-left: @nav_link_padding + 2px;
+    font-weight: bold;
+    width: 130px;
+    font-size: 1.0em;
+    border: 1px solid @content_border_color;
+    background-color: #FFFFFF;
+    border-radius: @content_border_radius;
+    border-bottom-left-radius: 0px;
+    border-bottom-right-radius: 0px;
+    border-bottom: none;
+
+    /*  This may be useful for replicating Chicago's circular buttons...    
+    -moz-transform: rotate(5deg);   */
+}
+
+.toplevel_focus a
+{
+    background-color: @accent_background_color;
+}
+
+/*  How to get it to change background color of entire div rather than just what's behind text?  */
+.toplevel_link :hover
+{
+    background-color: @box_background_color;
+    background-image: -moz-linear-gradient(top,
+        hsla(0, 0%, 100%, 0.7),
+        hsla(0, 0%, 100%, 0)
+        40px);
+    background-image: -webkit-linear-gradient(top,
+        hsla(0, 0%, 100%, 0.7),
+        hsla(0, 0%, 100%, 0)
+        40px);
+    text-decoration: none;
+}
+
+#logo_image
+{
+    clear: both;
+    float: left;
+}
+
+#secondary_nav
+{
+    padding-top: @nav_link_padding;
+    padding-bottom: @nav_link_padding;
+}
+
+#secondary_nav .sublink a
+{
+    padding: 0px;
+    /*  Why does this need to be set so precisely for the background to line up?    */
+    /*  Note, top/bottom padding must be matched to that of #secondary_nav div above   */
+    padding-top: @nav_link_padding;
+    padding-left: @nav_link_padding * 1.5;
+    padding-right: @nav_link_padding * 1.5;
+    padding-bottom: @nav_link_padding - 2px;
+
+    margin: 0px;
+
+    font-size: 0.9em;
+
+}
+
+#secondary_nav .sublink a:hover
+{
+    background-color: @box_background_color;
+}
+
+.sublink_hidden
+{
+    display: none;
+}
+
+#content_area table
+{
+    width: 70%;
+    margin: 8px;
+    border: 1px solid @content_border_color;
+    box-shadow: 1px 1px 2px hsla(0, 0%, 0%, 0.2);
+}
+
+#content_area th
+{
+    background-color: #FFFFFF;
+}
+
+#content_area th.heading
+{
+    background-color: @accent_background_color;
+    padding: 7px;
+    background-image: -moz-linear-gradient(top,
+        hsla(0, 0%, 100%, 0.0),
+        hsla(0, 0%, 100%, 1.0)
+        30px);
+    background-image: -webkit-linear-gradient(top,
+        hsla(0, 0%, 100%, 0.0),
+        hsla(0, 0%, 100%, 1.0)
+        30px);
+}
+
+#content_area td
+{
+    padding: 5px;
+}
+
+#content_area td ul
+{
+    padding-left: 8px;
+    list-style-type: none;
+}
+
+#new_announcement_box .box_hidden
+{
+    display: none;
+}
+
+#new_announcement_box input
+{
+    border: 1px solid #999999;
+}
+
+#new_announcement_box textarea
+{
+    border: 1px solid #999999;
+    min-height: 100px;
+    font-family: "Bitstream Vera Sans Mono", "Monotype", "Lucida Console", monospaced;
+    font-size: 0.9em;
+}
+
+h1
+{
+    background-color: @heading_background_color;
+    margin: 0px;
+    margin-bottom: 10px;
+    color: @accent_text_color;
+    text-align: center;
+    font-size: 1.5em;
+}
+
+h2
+{
+    font-size: 1.2em !important;
+    color: @accent_text_color;
+}

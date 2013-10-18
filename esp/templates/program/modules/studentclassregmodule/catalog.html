@@ -3,6 +3,11 @@
 
 {% block title %}{{program.niceName}}{% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
+{% endblock %}
+
 {% block xtrajs %}
 {{ block.super }}
 <script language="javascript" src="/media/scripts/ajax_tools.js"></script>
@@ -45,11 +50,6 @@ document.getElementsByClassName = function(class_name) {
 
 {% block subsection %}
 {% autoescape off %}{{ "Course Catalog"|subsection }}{% endautoescape %}
-{% endblock %}
-
-{% block stylesheets %}
-{{ block.super }}
-<link rel="stylesheet" type="text/css" href="/media/styles/catalog.css" />
 {% endblock %}
 
 {% block content %}

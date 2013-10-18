@@ -219,13 +219,14 @@ INSTALLED_APPS = (
     'esp.cache',
     'esp.cache_loader',
     'esp.tagdict',
+    'esp.seltests',
+    'esp.dataviews',
+    'esp.themes',
     'django_extensions',
     'django_extensions.tests',
     'reversion',
     'south',
     'form_utils',
-    'esp.seltests',
-    'esp.dataviews',
     'django.contrib.redirects',
     'debug_toolbar',
 )
@@ -293,6 +294,10 @@ CONTACTFORM_EMAIL_CHOICES = (
 
 # corresponding email addresses - define these defaults in settings.py, since DEFAULT_EMAIL_ADDRESSES will be overwritten in local_settings.py
 CONTACTFORM_EMAIL_ADDRESSES = {}
+
+#   Certain media files can be served from LU's CDN.  The address of the CDN is here.
+#   It can be overridden by setting CDN_ADDRESS in local_settings.py.
+CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 
 DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.cache.CacheDebugPanel',

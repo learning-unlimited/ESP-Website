@@ -12,82 +12,75 @@
 <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
 {% endblock %}
 
-{% block stylesheets %}
-{{ block.super }}
-<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
-<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
-<style type="text/css">
-
-.required { border: 2px solid black; }
-
-.form_error { font-size: 80%; font-style: italic; color: #C00; }
-
-label { font-family: Arial, Lucida, Helvetica, sans-serif; font-size: 0.8em; font-weight: normal;}
-label.groupheader { font-size: 1.2em; font-weight: bold; }
-#divmaintext table td { vertical-align: top; }
-
-</style>
-{% endblock %}
-
 {% block content %}
-<h1>Your Profile Information</h1>
-{% load render_qsd %}
-{% inline_qsd_block "myesp/account_creation_basic_info" request.user %}
-<p>First, please tell us a bit about yourself!  The fields in red boxes are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
+<div class="row-fluid">
+  <div class="span10 offset1">
+    <h1>Your Profile Information</h1>
+  </div>
+  <div class="row-fluid">
+    <div class="span12 offset1">
+      {% load render_qsd %}
+      {% inline_qsd_block "account_creation_basic_info" %}
+      <p>First, please tell us a bit about yourself!  The fields in red boxes are required.  After you have filled out everything, click the "update" button at the bottom of the page to continue.</p>
 
-<p>E-mail addresses have a tendency to change regularly, so we are asking that you re-enter your e-mail address each time you visit this form.  Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
-{% end_inline_qsd_block %}
+      <p>E-mail addresses have a tendency to change regularly, so we are asking that you re-enter your e-mail address each time you visit this form.  Please take the time to also correct any other information that may be old or incorrect.  Thanks!</p>
+      {% end_inline_qsd_block %}
+    </div>
+  </div>
+</div>
+<div class="row-fluid">
+  <div class="span10 offset1">
+      {% if form.errors %}
+      <h4 style="color:red">Please fix the following error{{ form.errors|pluralize }} in the form.</h4>
+      <ul>
+	{% for error in form.errors.items %}
+	{% ifequal error.0 '__all__' %}
+	{{ error.1 }}
+	{% endifequal %}
+	{% endfor %}
+      </ul>
+      </br>
+      {% endif %}
 
-{% if form.errors %}
-<h4 style="color:red">Please fix the following error{{ form.errors|pluralize }} in the form.</h4>
-<ul>
-{% for error in form.errors.items %}
-{% if error.0 %}{% if error.0 == "__all__" %}General{% else %}{{ error.0 }}{% endif %}: {% endif %}{{ error.1 }}
-{% endfor %}
-</ul>
-{% endif %}
+    <form action="{{request.path}}" method="post" class="form-horizontal">
+	<fieldset>
+	<input type="hidden" name="profile_page" value="true" />
+	<input type="hidden" name="current_role" value="{{ profiletype }}" />
 
-<div id="program_form">
-<form action="{{request.path}}" method="post">
-<input type="hidden" name="profile_page" value="true" />
-<input type="hidden" name="current_role" value="{{ profiletype }}" />
-<table cellpadding="3" align="center" border="0" width="500">
 
-{% ifequal profiletype "student" %}
-  {% include "users/profiles/usercontact.html" %}
-  {% include "users/profiles/studentinfo.html" %}
-  {% include "users/profiles/guardiancontact.html" %}
-  {% include "users/profiles/emergencycontact.html" %}
-{% else %}
-{% ifequal profiletype "teacher" %}
-  {% include "users/profiles/usercontact.html" %}
-  {% include "users/profiles/teacherinfo.html" %}
-{% else %}
+	{% ifequal profiletype "student" %}
+	{% include "users/profiles/usercontact.html" %}
+	{% include "users/profiles/studentinfo.html" %}
+	{% include "users/profiles/guardiancontact.html" %}
+	{% include "users/profiles/emergencycontact.html" %}
+	{% else %}
+	{% ifequal profiletype "teacher" %}
+	{% include "users/profiles/usercontact.html" %}
+	{% include "users/profiles/teacherinfo.html" %}
+	{% else %}
 
-{% ifequal profiletype "educator" %}
-  {% include "users/profiles/usercontact.html" %}
-  {% include "users/profiles/educatorinfo.html" %}
-{% else %}
+	{% ifequal profiletype "educator" %}
+	{% include "users/profiles/usercontact.html" %}
+	{% include "users/profiles/educatorinfo.html" %}
+	{% else %}
 
-{% ifequal profiletype "guardian" %}
-  {% include "users/profiles/usercontact.html" %}
-  {% include "users/profiles/guardianinfo.html" %}
-{% else %}
+	{% ifequal profiletype "guardian" %}
+	{% include "users/profiles/usercontact.html" %}
+	{% include "users/profiles/guardianinfo.html" %}
+	{% else %}
 
-{{ form }}
+	{% include "../templates/themes/bs_form.html" %}
 
-{% endifequal %}
-{% endifequal %}
-{% endifequal %}
-{% endifequal %}
+	{% endifequal %}
+	{% endifequal %}
+	{% endifequal %}
+	{% endifequal %}
 
-</table>
+	<div class="form-actions"><input type="submit" class="btn btn-primary" value="Update your Information!" /></div>
 
-<br />
-<center><input type="submit" class="button" value="Update your Information!" /></center>
-
-<br />
-</form>
+	</fieldset>
+    </form>
+  </div>
 </div>
 
 {% endblock %}
