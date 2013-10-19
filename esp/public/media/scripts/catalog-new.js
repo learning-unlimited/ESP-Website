@@ -208,6 +208,9 @@ var CatalogViewModel = function () {
         self.prioritySelection = [];
         for (var i = 0; i < num_priorities; ++i) {
             self.prioritySelection[i] = ko.observable();
+            self.prioritySelection[i].subscribe(function() {
+                dirty_priorities = true;
+            });
         }
     }
 
@@ -443,10 +446,10 @@ var CatalogViewModel = function () {
         if (dirty_priorities) {
             var priorities = {};
             $j('#catalog-sticky .pri-select').each(function() {
-                self.prioritySelection[$j(this).data('pri')] = $j(this).val();
+                priorities[$j(this).data('pri')] = $j(this).val();
             });
             var response = {};
-            response[timeslot_id] = self.prioritySelection;
+            response[timeslot_id] = priorities;
             var json_data = JSON.stringify(response);
             $form.find("input[name=json_data]").val(json_data);
             $form.attr('action', learn_url + 'save_priorities');
@@ -459,15 +462,15 @@ var CatalogViewModel = function () {
 
         // Check for duplicate priority selections
         clses = {};
-        for (var key in self.prioritySelection) {
-            if (self.prioritySelection[key]() &&
-                self.prioritySelection[key]() in clses) {
+        for (var i = 0; i < num_priorities; ++i) {
+            if (self.prioritySelection[i]() &&
+                self.prioritySelection[i]() in clses) {
                 alert('You have listed ' +
-                      self.classes()[self.prioritySelection[key]()].fulltitle +
+                      self.classes()[self.prioritySelection[i]()].fulltitle +
                       ' multiple times. Please fix your preferences.');
                 return false;
             }
-            clses[self.prioritySelection[key]()] = true;
+            clses[self.prioritySelection[i]()] = true;
         }
         
         saving = true;
