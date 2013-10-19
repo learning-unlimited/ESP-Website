@@ -151,14 +151,17 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
         category_choices = []
         for category in prog.class_categories.all():
+            # FIXME(gkanwar): Make this less hacky, once #770 is resolved
+            if category.category == 'Lunch':
+                continue
             category_choices.append((category.id, category.category))
         context['category_choices'] = group_columns(category_choices)
 
-        grade_choices = []
-        grade_choices.append(('ALL', 'All'))
-        for grade in range(prog.grade_min, prog.grade_max + 1):
-            grade_choices.append((grade, grade))
-        context['grade_choices'] = group_columns(grade_choices)
+        # grade_choices = []
+        # grade_choices.append(('ALL', 'All'))
+        # for grade in range(prog.grade_min, prog.grade_max + 1):
+        #     grade_choices.append((grade, grade))
+        # context['grade_choices'] = group_columns(grade_choices)
 
         catalog_context = self.catalog_context(
             request, tl, one, two,module, extra, prog)
