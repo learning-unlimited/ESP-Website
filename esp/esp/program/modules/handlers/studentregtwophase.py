@@ -304,8 +304,8 @@ class StudentRegTwoPhase(ProgramModuleObj):
                     continue
                 # sanity checks
                 if not sec.status > 0 or not sec.parent_class.status > 0 \
-                   or not grade_min <= request.user.getGrade(prog) \
-                   or not grade_max >= request.user.getGrade(prog):
+                   or not sec.parent_class.grade_min <= request.user.getGrade(prog) \
+                   or not sec.parent_class.grade_max >= request.user.getGrade(prog):
                     # XXX: fail more loudly
                     continue
                 sr.section = sec
