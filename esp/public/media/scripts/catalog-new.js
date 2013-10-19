@@ -412,7 +412,7 @@ var CatalogViewModel = function () {
     self.submitInterested = function (form) {
         var $form = $j(form);
         var updates = getDirtyInterested();
-        var learn_url = program_base_url.replace(/^\/json/, '/learn');
+        var learn_url = '/learn/'+program_core_url;
         if (updates) {
             $form.find("input[name=json_data]").val(
                 JSON.stringify(updates));
@@ -428,8 +428,19 @@ var CatalogViewModel = function () {
     };
     self.submitPriorities = function(form) {
         var $form = $j(form);
-        var learn_url = program_base_url.replace(/^\/json/, '/learn');
-        if (dirty) {
+        var learn_url = '/learn/'+program_core_url;
+
+        // We need to deal with both interests and priorities
+        var updates = getDirtyInterested();
+        if (updates) {
+            // Just fire off the AJAX request, don't bother seeing if it
+            // passed or failed.
+            $j.post(learn_url+'mark_classes_interested', {
+                'json_data': JSON.stringify(updates),
+                'csrfmiddlewaretoken': csrf_token()
+            });
+        }
+        if (dirty_priorities) {
             var priorities = {};
             $j('#catalog-sticky .pri-select').each(function() {
                 self.prioritySelection[$j(this).data('pri')] = $j(this).val();
@@ -471,7 +482,7 @@ var CatalogViewModel = function () {
     }
     else if (catalog_type == 'phase2') {
         window.onbeforeunload = function() {
-            if (!saving && dirty_priorities) {
+            if (!saving && getDirtyInterested() && dirty_priorities) {
                 return ('Warning: You have unsaved changes. Please click save' +
                         ' and exit if you wish to preserve your changes.')
             }

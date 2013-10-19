@@ -128,3 +128,36 @@
 #search-spinner {
     display: inline-block;
 }
+
+#catalog-new .mark-interested {
+    padding: 0.3em 0.5em;
+    background-color: #DEF;
+}
+#catalog-new .mark-interested label {
+    display: inline;
+    vertical-align: middle;
+}
+#catalog-new .mark-interested .star {
+    text-decoration: none !important;
+    outline: none;
+    display: inline-block;
+    position: relative;
+    vertical-align: middle;
+}
+#catalog-new .mark-interested .star-outline {
+    color: #248;
+    position: relative;
+    left: 0;
+    top: 0;
+    z-index: 2;
+}
+#catalog-new .mark-interested .star-outline:hover {
+    color: #013;
+}
+#catalog-new .mark-interested .star-fill {
+    color: #FD7;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 1;
+}

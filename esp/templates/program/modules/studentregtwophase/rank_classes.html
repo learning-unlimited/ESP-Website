@@ -3,7 +3,6 @@
 {% block xtrajs %}
 {{ block.super }}
 <script type="text/javascript" src="/media/scripts/select2-3.4.3/select2.js"></script>
-<script type="text/javascript" src="/media/scripts/catalog-phase2.js"></script>
 <script type="text/javascript">
   // Use phase2 rendering of the catalog template
   var catalog_type = "phase2";
@@ -53,5 +52,15 @@
       <label>Show only starred clases</label>
     </div>
   </div>
+</div>
+{% endblock %}
+
+{% block class_action %}
+<div class="mark-interested">
+  <a class="star" href="javascript:void(0)" title="Click the star to mark this class as interested." data-bind="click: toggle_interested">
+    <i class="star-outline icon-2x icon-star-empty"></i>
+    <i class="star-fill icon-2x icon-star" data-bind="visible: interested"></i>
+  </a>
+  <label>Click the star to mark this class as interested.</label>
 </div>
 {% endblock %}
