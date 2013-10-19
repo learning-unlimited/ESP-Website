@@ -239,10 +239,10 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     @needs_student
     @cached_module_view
     def classes_timeslot(extra, prog):
-        if extra == None:
-            return HttpResponseBadRequest()
-        else:
+        try:
             timeslot_id = int(extra)
+        except (TypeError, ValueError):
+            raise Http404
 
         section_ids = []
         subject_ids = []

@@ -32,7 +32,7 @@ import datetime
 import simplejson
 
 from django.core.exceptions import ObjectDoesNotExist
-from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest
+from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest, Http404
 
 from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
@@ -237,7 +237,10 @@ class StudentRegTwoPhase(ProgramModuleObj):
         of the catalog lets the student order the top N priorities of classes
         for this particular timeslot. The timeslot is specified through extra.
         """
-        timeslot = Event.objects.get(pk=int(extra), program=prog)
+        try:
+            timeslot = Event.objects.get(pk=int(extra), program=prog)
+        except (TypeError, ValueError, Event.DoesNotExist) as e:
+            raise Http404
         context = dict()
         context['timeslot'] = timeslot
         context['num_priorities'] = prog.priorityLimit()
