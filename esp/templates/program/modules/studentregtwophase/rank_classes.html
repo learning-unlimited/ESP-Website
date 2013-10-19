@@ -19,29 +19,15 @@
 {% endblock %}
 
 {% block catalog_sticky %}
-<div style="float: left"><h2>Step 2: Rank classes starting at {{ timeslot.start }}</h2></div>
-<div style="float: right">
+<div class="save-button">
   <form data-bind="submit: build_json_data">
     {% csrf_token %}
     <input name="json_data" type="hidden" />
     <input class="save" type="submit" value="Save and go back"/>
   </form>
 </div>
+<div><h2>Step 2: Rank classes starting at {{ timeslot.start }}</h2></div>
 <hr>
-<div class="sticky-toggle">
-  <a href="javascript:void(0)"
-     data-bind="click: toggleFilter, text: showFilter() ? '(&ndash;)' : '(+)'">
-  </a>
-</div>
-<div class="filter-box" data-bind="visible: showFilter">
-  <div class="filter-column">
-    <div>
-      <input type="checkbox" value="true"
-             data-bind="checked: filterStarred"></input>
-      <label>Show only starred clases</label>
-    </div>
-  </div>
-</div>
 <div class="priority-box">
   {% for pri in priorities %}
   <div class="priority">
@@ -54,5 +40,14 @@
 		       optionsCaption: 'Select a class from below.'"></select>
   </div>
 {% endfor %}
+</div>
+<div class="filter-box" data-bind="visible: showFilter">
+  <div class="filter-column">
+    <div>
+      <input type="checkbox" value="true"
+             data-bind="checked: filterStarred"></input>
+      <label>Show only starred clases</label>
+    </div>
+  </div>
 </div>
 {% endblock %}

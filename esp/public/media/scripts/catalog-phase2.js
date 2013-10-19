@@ -1,7 +1,7 @@
 var dirty = false;
 
 $j(document).ready(function() {
-    $j('#catalog-sticky .pri-select').select2();
+    $j('#catalog-sticky .pri-select').select2({'width': '20em'});
     for (var i = 0; i < num_priorities; ++i) {
         catalog_view_model.prioritySelection[i].subscribe(function() {
             dirty = true;

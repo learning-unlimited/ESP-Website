@@ -1,9 +1,17 @@
 #catalog-sticky {
     width: 560px;
-    border-bottom: 1px solid #333;
-    padding: 0.5em 0;
-    background-color: #FFF;
+    border: 1px solid #777;
+    padding: 0.5em 0.25em;
+    margin-left: -0.25em;
+    background-color: #f7f7f7;
     z-index: 100;
+    position: relative;
+}
+
+#catalog-sticky .save-button {
+    position: absolute;
+    right: 0.1em;
+    top: 0.2em;
 }
 
 #catalog-sticky .sticky-toggle {
@@ -36,7 +44,10 @@
     margin-right: 2em;
 }
 #catalog-sticky .priority-box {
+    display: inline-block;
+    vertical-align: top;
     margin-top: 0.5em;
+    margin-right: 2em;
 }
 
 #catalog-sticky .filter-column {
@@ -45,7 +56,7 @@
 }
 
 #catalog-sticky a.save,input.save {
-    border: 1px solid black;
+    border: 2px solid #333;
     background-color: #ccccff;
     font-weight: bold;
     text-decoration: none;
