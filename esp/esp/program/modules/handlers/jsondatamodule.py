@@ -252,6 +252,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             parent_program=prog, sections__meeting_times__id__exact=timeslot_id)
         # Now select only classes that start at the given slot
         for cls in subjects:
+            added = False
             for sec in cls.get_sections():
                 meeting_times = sec.meeting_times.order_by('start')
                 if (meeting_times.count() > 0 and
