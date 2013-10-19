@@ -386,16 +386,16 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return HttpResponse('')
 
     def get_change_log(self, prog):
-		change_log = module_ext.AJAXChangeLog.objects.filter(program=prog)
+        change_log = module_ext.AJAXChangeLog.objects.filter(program=prog)
 
-		if change_log.count() == 0:
-			change_log = module_ext.AJAXChangeLog()
-			change_log.update(prog)
-			change_log.save()
-		else:
-			change_log = change_log[0]
+        if change_log.count() == 0:
+            change_log = module_ext.AJAXChangeLog()
+            change_log.update(prog)
+            change_log.save()
+        else:
+            change_log = change_log[0]
 
-		return change_log
+        return change_log
 
     @aux_call
     @needs_admin
