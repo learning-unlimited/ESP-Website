@@ -89,6 +89,8 @@ var CatalogViewModel = function () {
     self.sections = ko.observable({});
     self.teachers = ko.observable({});
     self.classesArray = ko.observableArray([]);
+    self.starredClasses = ko.observableArray([]);
+    self.unstarredClasses = ko.observableArray([]);
 
     // search spinner
     var searchSpinnerOn = function () {
@@ -287,10 +289,17 @@ var CatalogViewModel = function () {
             data.teachers[key] = new Teacher(data.teachers[key], self);
         }
         self.teachers(data.teachers);
-        // update classesArray
+        // update classesArray, starredClasses, unstarredClasses
         var classesQueue = [];
         for (var key in data.classes) {
-            classesQueue.push(data.classes[key]);
+            var cls = data.classes[key];
+            if (cls.interested()) {
+                self.starredClasses.push(cls);
+            }
+            else {
+                self.unstarredClasses.push(cls);
+            }
+            classesQueue.push(cls);
         }
         // sort the classesQueue in an order that is unique to every user
         var sortKey = function (c) {

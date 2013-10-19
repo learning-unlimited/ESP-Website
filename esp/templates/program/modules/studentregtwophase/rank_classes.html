@@ -33,11 +33,15 @@
   <div class="priority">
     <label>Priority {{pri}}</label>
     <select id="pri-{{pri}}" class="pri-select" data-pri="{{pri}}"
-	    data-bind="options: classesArray,
-		       optionsText: 'fulltitle',
-		       optionsValue: 'id',
-		       value: prioritySelection[{{pri}}-1],
-		       optionsCaption: 'Select a class from below.'"></select>
+	    data-bind="value: prioritySelection[{{pri}}-1]">
+      <option value="">Select a class from below.</option>
+      <optgroup label="Starred" data-bind="foreach: starredClasses">
+        <option data-bind="text: fulltitle, value: id"></option>
+      </optgroup>
+      <optgroup label="Normal" data-bind="foreach: unstarredClasses">
+        <option data-bind="text: fulltitle, value: id"></option>
+      </optgroup>
+    </select>
   </div>
 {% endfor %}
 </div>
