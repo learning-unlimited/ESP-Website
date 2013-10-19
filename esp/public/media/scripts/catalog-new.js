@@ -332,7 +332,7 @@ var CatalogViewModel = function () {
                 // set initial values for the phase2 dropdown
                 if (catalog_type == 'phase2') {
                     $j('#catalog-sticky .pri-select').change();
-                    dirty = false;
+                    dirty_priorities = false;
                 }
             }
         })();
@@ -456,9 +456,12 @@ var CatalogViewModel = function () {
             $form.attr('action', learn_url + 'studentreg');
             $form.attr('method', 'get');
         }
+
+        // Check for duplicate priority selections
         clses = {};
         for (var key in self.prioritySelection) {
-            if (self.prioritySelection[key]() in clses) {
+            if (self.prioritySelection[key]() &&
+                self.prioritySelection[key]() in clses) {
                 alert('You have listed ' +
                       self.classes()[self.prioritySelection[key]()].fulltitle +
                       ' multiple times. Please fix your preferences.');
@@ -500,7 +503,7 @@ $j(function () {
     });
 
     // enable select2
-    //$j('#catalog-sticky .pri-select').select2({'width': '20em'});
+    $j('#catalog-sticky .pri-select').select2({'width': '20em'});
 
     // bind viewmodel
     catalog_view_model = new CatalogViewModel();
