@@ -28,15 +28,31 @@
   </form>
 </div>
 <hr>
-{% for pri in priorities %}
-<div class="priority">
-  <label>Priority {{pri}}</label>
-  <select id="pri-{{pri}}" class="pri-select" data-pri="{{pri}}"
-	  data-bind="options: classesArray,
-		     optionsText: 'fulltitle',
-		     optionsValue: 'id',
-		     value: prioritySelection[{{pri}}-1],
-		     optionsCaption: 'Select a class from below.'"></select>
+<div class="sticky-toggle">
+  <a href="javascript:void(0)"
+     data-bind="click: toggleFilter, text: showFilter() ? '(&ndash;)' : '(+)'">
+  </a>
 </div>
+<div class="filter-box" data-bind="visible: showFilter">
+  <div class="filter-column">
+    <div>
+      <input type="checkbox" value="true"
+             data-bind="checked: filterStarred"></input>
+      <label>Show only starred clases</label>
+    </div>
+  </div>
+</div>
+<div class="priority-box">
+  {% for pri in priorities %}
+  <div class="priority">
+    <label>Priority {{pri}}</label>
+    <select id="pri-{{pri}}" class="pri-select" data-pri="{{pri}}"
+	    data-bind="options: classesArray,
+		       optionsText: 'fulltitle',
+		       optionsValue: 'id',
+		       value: prioritySelection[{{pri}}-1],
+		       optionsCaption: 'Select a class from below.'"></select>
+  </div>
 {% endfor %}
+</div>
 {% endblock %}

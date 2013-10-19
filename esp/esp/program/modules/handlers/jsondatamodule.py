@@ -233,6 +233,40 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
 
     @aux_call
     @json_response({
+            'subject': 'id',
+            'subject__sections': 'id',
+            })
+    @needs_student
+    @cached_module_view
+    def classes_timeslot(extra, prog):
+        if extra == None:
+            return HttpResponseBadRequest()
+        else:
+            timeslot_id = int(extra)
+
+        section_ids = []
+        subject_ids = []
+
+        # Filter for any classes that overlap this timeslot first
+        subjects = ClassSubject.objects.filter(
+            parent_program=prog, sections__meeting_times__id__exact=timeslot_id)
+        # Now select only classes that start at the given slot
+        for cls in subjects:
+            for sec in cls.get_sections():
+                meeting_times = sec.meeting_times.order_by('start')
+                if (meeting_times.count() > 0 and
+                    meeting_times[0].id == timeslot_id):
+                    section_ids.append({'id': sec.id})
+                    added = True
+            if added:
+                subject_ids.append({'id': cls.id})
+
+        return {'timeslot_sections': section_ids,
+                'timeslot_subjects': subject_ids}
+
+
+    @aux_call
+    @json_response({
             'id': 'id',
             'status': 'status',
             'category__symbol': 'category',

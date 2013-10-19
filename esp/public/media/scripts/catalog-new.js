@@ -130,12 +130,16 @@ var CatalogViewModel = function () {
     self.filterCategory = ko.observableArray();
     self.filterCategory.subscribe(searchSpinnerOn);
 
+    self.filterStarred = ko.observable(true);
+    self.filterStarred.subscribe(searchSpinnerOn);
+
     self.filterGrade = ko.observable("ALL");
     self.filterGrade.subscribe(searchSpinnerOn);
 
     self.filterCriteria = ko.computed(function () {
         return {
             'category': self.filterCategory(),
+            'starred': self.filterStarred(),
             'grade': self.filterGrade()
         }
     }).extend({ throttle: 100 });
@@ -184,7 +188,12 @@ var CatalogViewModel = function () {
             }
         }
 
-        return meets_category && meets_grade;
+        var meets_starred = true;
+        if (criteria.starred) {
+            meets_starred = cls.interested();
+        }
+
+        return meets_category && meets_grade && meets_starred;
     }
 
     self.showClass = function (cls) {
@@ -215,7 +224,8 @@ var CatalogViewModel = function () {
         json_views.push('interested_classes');
     }
     else if (catalog_type == 'phase2') {
-        json_views.push('interested_classes/'+timeslot_id);
+        json_views.push('interested_classes');
+        json_views.push('classes_timeslot/'+timeslot_id);
         json_views.push('lottery_preferences');
     }
     json_fetch(json_views, function (data) {
@@ -232,14 +242,15 @@ var CatalogViewModel = function () {
                 delete data.classes[key];
             }
             else if (catalog_type == 'phase2' &&
-                     !(key in data.interested_subjects)) {
-                // remove non-interested subjects
+                     !(key in data.timeslot_subjects)) {
+                // remove subjects out of this timeslot
                 delete data.classes[key];
             }
             else {
                 data.classes[key] = new ClassSubject(cls, self);
                 // if marked interested, reflect that.
-                if (key in data.interested_subjects) {
+                if (data.interested_subjects &&
+                    key in data.interested_subjects) {
                     data.classes[key].interested(true);
                     data.classes[key].interested_saved(true);
                 }
@@ -254,8 +265,8 @@ var CatalogViewModel = function () {
                 delete data.sections[key];
             }
             else if (catalog_type == 'phase2' &&
-                     !(key in data.interested_sections)) {
-                // remove non-interested sections
+                     !(key in data.timeslot_sections)) {
+                // remove sections out of this timeslot
                 delete data.sections[key];
             }
             else {
