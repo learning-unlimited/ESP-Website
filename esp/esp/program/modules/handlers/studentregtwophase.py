@@ -193,18 +193,21 @@ class StudentRegTwoPhase(ProgramModuleObj):
             return HttpResponseBadRequest('JSON data mis-formatted.')
 
         # Determine which of the given class ids are valid
-        valid_ids = ClassSubject.objects.filter(
+        valid_classes = ClassSubject.objects.filter(
             pk__in=json_data['interested'],
             parent_program=prog,
-            status__gte=0).values_list('pk', flat=True)
+            status__gte=0,
+            grade_min__lte=request.user.getGrade(prog),
+            grade_max__gte=request.user.getGrade(prog))
         # Unexpire any matching SSIs that exist already (to avoid
         # creating duplicate objects).
         to_unexpire = StudentSubjectInterest.objects.filter(
             user=request.user,
-            subject__pk__in=valid_ids)
+            subject__in=valid_classes)
         to_unexpire.update(end_date=None)
         # Determine which valid ids haven't had SSIs created yet
         # and bulk create those objects.
+        valid_ids = valid_classes.values_list('pk', flat=True)
         existing_ids = to_unexpire.values_list('subject__pk', flat=True)
         to_create_ids = set(valid_ids) - set(existing_ids)
         StudentSubjectInterest.objects.bulk_create([
@@ -255,64 +258,62 @@ class StudentRegTwoPhase(ProgramModuleObj):
         """
         Saves the priority preferences for student registration phase 2.
         """
-        data = simplejson.loads(request.POST['json_data']);
+        data = simplejson.loads(request.POST['json_data'])
         timeslot_id = data.keys()[0]
         priorities = data[timeslot_id]
-        rel_names = ['Priority/%s'%p for p in priorities.keys()]
-        # Pull up the registrations that exist (including expired ones)
-        srs = StudentRegistration.objects.filter(
-            user=request.user, section__parent_class__parent_program=prog,
-            relationship__name__in=rel_names,
-            section__meeting_times__id__exact=timeslot_id)
-        srs = srs.order_by('relationship__name')
-        # Modify the existing registrations as needed to ensure the section
-        # is correct, and they are unexpired
-        for (sr, p) in zip(srs, sorted(priorities.keys())):
-            # If blank, we are removing priority
-            if priorities[p] == '':
-                sr.expire()
-                continue
-            sec_id = int(priorities[p])
-
-            should_save = False
-            if sr.section.id != sec_id:
-                sr.section = ClassSection.objects.get(
-                    parent_class=sec_id,
-                    meeting_times__id__exact=timeslot_id)
-                should_save = True
-            if not sr.is_valid():
-                sr.unexpire(save=False)
-                should_save = True
-            if should_save:
-                sr.save()
-        # Create registrations that need to be created
-        rel_existing_names = srs.values_list('relationship__name', flat=True)
-        rel_existing = [r.split('/')[1]
-                        for r in rel_existing_names]
-        rel_create = set(priorities.keys()) - set(rel_existing)
-        for rel_index in rel_create:
+        for rel_index, cls_id in priorities.items():
+            rel_name = 'Priority/%s' % rel_index
             rel, created = RegistrationType.objects.get_or_create(
-                name='Priority/%s' % rel_index)
-            try:
-                sec = ClassSection.objects.get(
-                    parent_class=int(priorities[rel_index]),
-                    meeting_times__id__exact=timeslot_id)
-            except ValueError as e:
-                # Catch having an empty string for the priority
-                # (nothing selected)
-                continue
-            except ObjectDoesNotExist as e:
-                # TODO(gkanwar): Indicate to the caller what failed in some
-                # way that's better than silently ignoring them.
-                continue
-            sr = StudentRegistration(
+                name=rel_name)
+
+            # Pull up any registrations that exist (including expired ones)
+            srs = StudentRegistration.objects.filter(
                 user=request.user,
-                section=sec,
+                section__parent_class__parent_program=prog,
+                section__meeting_times__id__exact=timeslot_id,
                 relationship=rel)
+
+            if cls_id == '':
+                # Blank: nothing selected, expire existing registrations
+                for sr in srs:
+                    sr.expire()
+                continue
+            cls_id = int(cls_id)
+
+            if not srs.exists():
+                # Create a new registration
+                sr = StudentRegistration(
+                    user=request.user,
+                    relationship=rel)
+            else:
+                # XXX: we should never get more than 1, but you never know
+                # should handle that case more intelligently
+                sr = srs[0]
+
+            # Modify as needed to ensure the section is correct and
+            # expiration date is valid
+            if sr.section.parent_class.id != cls_id:
+                try:
+                    sec = ClassSection.objects.get(
+                        parent_class=cls_id,
+                        parent_class__parent_program=prog,
+                        meeting_times__id__exact=timeslot_id)
+                except (ClassSection.DoesNotExist,
+                        ClassSection.MultipleObjectsReturned):
+                    # XXX: what if a class has multiple sections in a timeblock?
+                    continue
+                # sanity checks
+                if not sec.status > 0 or not sec.parent_class.status > 0 \
+                   or not grade_min <= request.user.getGrade(prog) \
+                   or not grade_max >= request.user.getGrade(prog):
+                    # XXX: fail more loudly
+                    continue
+                sr.section = sec
+            if not sr.is_valid():
+                sr_unexpire(save=False)
             sr.save()
 
         return self.goToCore(tl)
-
 
     class Meta:
         abstract = True
