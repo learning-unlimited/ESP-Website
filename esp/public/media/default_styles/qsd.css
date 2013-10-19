@@ -1,14 +1,14 @@
 
-.admin_hidden {
+.hidden {
   display: none;
 }
-.logged_in_hidden {
+.hidden {
   display: none;
 }
-.not_logged_in_hidden {
+.hidden {
   display: none;
 }
-.unmorph_hidden {
+.hidden {
   display: none;
 }
 
@@ -46,7 +46,7 @@ div.qsd_edit_hidden
     visibility: hidden;
 }
 
-div.qsd_bits_hidden
+div.hidden
 {
     height: 0px;
     visibility: hidden;
