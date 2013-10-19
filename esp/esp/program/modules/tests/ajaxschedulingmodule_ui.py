@@ -1,12 +1,15 @@
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.tests.ajaxschedulingmodule import AJAXSchedulingModuleTestBase
+
+from django.test import LiveServerTestCase
+
 from selenium.webdriver.firefox.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
 import time
 
-class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase):
+class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase, LiveServerTestCase):
     def setUp(self, *args, **kwargs): 
          super(AJAXSchedulingModuleUITest, self).setUp(*args, **kwargs)
          self.browser = WebDriver()
