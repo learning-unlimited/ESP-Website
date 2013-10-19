@@ -292,7 +292,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
             # Modify as needed to ensure the section is correct and
             # expiration date is valid
-            if sr.section.parent_class.id != cls_id:
+            if sr.section_id is None or sr.section.parent_class.id != cls_id:
                 try:
                     sec = ClassSection.objects.get(
                         parent_class=cls_id,
