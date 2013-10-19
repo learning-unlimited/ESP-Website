@@ -503,7 +503,9 @@ $j(function () {
     });
 
     // enable select2
-    $j('#catalog-sticky .pri-select').select2({'width': '20em'});
+    if (catalog_type == 'phase2') {
+        $j('#catalog-sticky .pri-select').select2({'width': '20em'});
+    }
 
     // bind viewmodel
     catalog_view_model = new CatalogViewModel();
