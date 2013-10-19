@@ -506,11 +506,8 @@ class ProgramFrameworkTest(TestCase):
         from esp.web.models import NavBarCategory
         from datetime import datetime, timedelta
         from esp.program.modules.models import install as program_modules_install
-        
-        #   Force Datatree to not use transactions
-        import esp.datatree.sql.set_isolation_level
-        esp.datatree.sql.set_isolation_level.DISABLE_TRANSACTIONS = True
 
+        user_role_setup()
         program_modules_install()
         
         #   Default parameters
