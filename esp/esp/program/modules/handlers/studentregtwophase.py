@@ -313,7 +313,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
                     continue
                 sr.section = sec
             if not sr.is_valid():
-                sr_unexpire(save=False)
+                sr.unexpire(save=False)
             sr.save()
 
         return self.goToCore(tl)
