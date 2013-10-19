@@ -20,7 +20,7 @@
 
 {% block catalog_sticky %}
 <div class="save-button">
-  <form data-bind="submit: build_json_data">
+  <form data-bind="submit: submitPriorities">
     {% csrf_token %}
     <input name="json_data" type="hidden" />
     <input class="save" type="submit" value="Save and go back"/>

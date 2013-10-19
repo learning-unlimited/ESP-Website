@@ -203,6 +203,7 @@ var CatalogViewModel = function () {
     }
 
     // priority selection
+    var dirty_priorities = false;
     if (catalog_type == 'phase2') {
         self.prioritySelection = [];
         for (var i = 0; i < num_priorities; ++i) {
@@ -406,7 +407,7 @@ var CatalogViewModel = function () {
     };
     updateInterested();
 
-    // submit handler for "save and exit" button
+    // submit handlers for "save and exit" buttons
     var saving = false;
     self.submitInterested = function (form) {
         var $form = $j(form);
@@ -425,6 +426,39 @@ var CatalogViewModel = function () {
         saving = true;
         return true;
     };
+    self.submitPriorities = function(form) {
+        var $form = $j(form);
+        var learn_url = program_base_url.replace(/^\/json/, '/learn');
+        if (dirty) {
+            var priorities = {};
+            $j('#catalog-sticky .pri-select').each(function() {
+                self.prioritySelection[$j(this).data('pri')] = $j(this).val();
+            });
+            var response = {};
+            response[timeslot_id] = self.prioritySelection;
+            var json_data = JSON.stringify(response);
+            $form.find("input[name=json_data]").val(json_data);
+            $form.attr('action', learn_url + 'save_priorities');
+            $form.attr('method', 'post');
+        }
+        else {
+            $form.attr('action', learn_url + 'studentreg');
+            $form.attr('method', 'get');
+        }
+        clses = {};
+        for (var key in self.prioritySelection) {
+            if (self.prioritySelection[key]() in clses) {
+                alert('You have listed ' +
+                      self.classes()[self.prioritySelection[key]()].fulltitle +
+                      ' multiple times. Please fix your preferences.');
+                return false;
+            }
+            clses[self.prioritySelection[key]()] = true;
+        }
+        
+        saving = true;
+        return true;
+    };
 
     // warn user if leaving with unsaved changes
     // TODO: figure out how to share this between phases 1 and 2
@@ -435,7 +469,16 @@ var CatalogViewModel = function () {
             }
         };
     }
+    else if (catalog_type == 'phase2') {
+        window.onbeforeunload = function() {
+            if (!saving && dirty_priorities) {
+                return ('Warning: You have unsaved changes. Please click save' +
+                        ' and exit if you wish to preserve your changes.')
+            }
+        }
+    }
 };
+
 
 $j(function () {
     // make sticky bar stick
@@ -444,6 +487,9 @@ $j(function () {
             getWidthFrom: '#content'
         });
     });
+
+    // enable select2
+    //$j('#catalog-sticky .pri-select').select2({'width': '20em'});
 
     // bind viewmodel
     catalog_view_model = new CatalogViewModel();
