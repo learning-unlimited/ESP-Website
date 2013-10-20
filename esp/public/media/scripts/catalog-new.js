@@ -1,3 +1,6 @@
+//  Compensate for lack of Date.now() in IE8
+Date.now = Date.now || function() { return +new Date; };
+
 // ClassSubject model constructor
 var ClassSubject = function (data) {
     var self = this;
