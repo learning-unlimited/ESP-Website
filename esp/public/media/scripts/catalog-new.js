@@ -168,7 +168,7 @@ var CatalogViewModel = function () {
         }
 
         var meets_grade = false;
-        if (catalog_type == 'phase1') {
+        if (catalog_type == 'phase1' || catalog_type == 'phase2') {
             if (esp_user.cur_admin === "1") {
                 meets_grade = true;
             }
