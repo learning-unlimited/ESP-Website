@@ -189,6 +189,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'parent_class__category',
             'parent_class__sections',
             'parent_class__teachers',
+            'parent_class__parent_program',
             'meeting_times')
 
         for s in qs:
