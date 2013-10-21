@@ -206,6 +206,15 @@ var CatalogViewModel = function () {
         return self.searchPredicate(cls) && self.filterPredicate(cls);
     }
 
+    self.classesShowing = function () {
+        for (var i = 0; i < self.classesArray().length; ++i) {
+            if (self.showClass(self.classesArray()[i])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // priority selection
     var dirty_priorities = false;
     if (catalog_type == 'phase2') {
