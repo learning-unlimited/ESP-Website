@@ -173,15 +173,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         return {'timeslots': lunch_timeslots}
 
     @aux_call
-    @json_response({
-            'emailcode': 'emailcode',
-            'parent_class__title': 'title',
-            'parent_class__id': 'parent_class',
-            'parent_class__category__symbol': 'category',
-            'parent_class__category__id': 'category_id',
-            'parent_class__grade_max': 'grade_max',
-            'parent_class__grade_min': 'grade_min',
-            'enrolled_students': 'num_students'})
+    @json_response()
     @cached_module_view
     def sections(extra, prog):
         if extra == 'catalog':
@@ -192,37 +184,56 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             raise Http404
         teacher_dict = {}
         teachers = []
-        sections = list(prog.sections().values(
-                'id',
-                'status',
-                'parent_class__id',
-                'parent_class__category__symbol',
-                'parent_class__category__id',
-                'parent_class__grade_max',
-                'parent_class__grade_min',
-                'parent_class__title',
-                'enrolled_students'))
-        for section in sections:
-            s = ClassSection.objects.get(id=section['id'])
+        sections = []
+        qs = prog.sections().prefetch_related(
+            'parent_class__category',
+            'parent_class__sections',
+            'parent_class__teachers',
+            'parent_class__parent_program',
+            'meeting_times')
+
+        for s in qs:
+            section = {
+                'id': s.id,
+                'status': s.status,
+                'parent_class': s.parent_class.id,
+                'category': s.parent_class.category.symbol,
+                'category_id': s.parent_class.category.id,
+                'grade_max': s.parent_class.grade_max,
+                'grade_min': s.parent_class.grade_min,
+                'title': s.parent_class.title,
+                'num_students': s.enrolled_students
+            }
+            sections.append(section)
             section['index'] = s.index()
             section['emailcode'] = s.emailcode()
             section['length'] = float(s.duration)
             if catalog:
                 section['times'] = s.friendly_times_with_date()
                 section['capacity'] = s.capacity
-            section['teachers'] = [t.id for t in s.parent_class.get_teachers()]
-            for t in s.parent_class.get_teachers():
+            class_teachers = s.parent_class.get_teachers()
+            section['teachers'] = [t.id for t in class_teachers]
+            for t in class_teachers:
                 if teacher_dict.has_key(t.id):
+                    teacher_dict[t.id]['sections'].append(s.id)
                     continue
-                teacher_dict[t.id] = True
-                # Build up teacher availability
-                availabilities = UserAvailability.objects.filter(user__in=s.parent_class.get_teachers()).filter(event__program = prog).values('user_id', 'event_id')
-                avail_for_user = defaultdict(list)
-                for avail in availabilities:
-                    avail_for_user[avail['user_id']].append(avail['event_id'])
-                teachers.append({'id': t.id, 'first_name': t.first_name, 'last\
-_name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for x in t.getTaughtSectionsFromProgram(prog)]})
-    
+                teacher = {
+                    'id': t.id,
+                    'first_name': t.first_name,
+                    'last_name': t.last_name,
+                    'sections': [s.id]
+                }
+                teachers.append(teacher)
+                teacher_dict[t.id] = teacher
+
+        # Build up teacher availability
+        availabilities = UserAvailability.objects.filter(user__id__in=teacher_dict.keys()).filter(event__program=prog).values_list('user_id', 'event_id')
+        avail_for_user = defaultdict(list)
+        for user_id, event_id in availabilities:
+            avail_for_user[user_id].append(event_id)
+        for teacher in teachers:
+            teacher['availability'] = avail_for_user[teacher['id']]
+
         return {'sections': sections, 'teachers': teachers}
     sections.cached_function.depend_on_row(ClassSection, lambda sec: {'prog': sec.parent_class.parent_program})
     sections.cached_function.depend_on_row(ClassSubject, lambda subj: {'prog': subj.parent_program})
@@ -267,19 +278,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
 
 
     @aux_call
-    @json_response({
-            'id': 'id',
-            'status': 'status',
-            'category__symbol': 'category',
-            'category__id': 'category_id',
-            'grade_max': 'grade_max',
-            'grade_min': 'grade_min',
-            'emailcode': 'emailcode',
-            'title': 'title',
-            'class_info': 'class_info',
-            'hardness_rating': 'difficulty',
-            'prereqs': 'prereqs'
-            })
+    @json_response()
     @cached_module_view
     def class_subjects(extra, prog):
         if extra == 'catalog':
@@ -290,41 +289,51 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             raise Http404
         teacher_dict = {}
         teachers = []
-        attrs = [
-            'id',
-            'status',
-            'title',
-            'category__symbol',
-            'category__id',
-            'grade_max',
-            'grade_min']
-        if catalog:
-            attrs += [
-                'class_info',
-                'hardness_rating',
-                'prereqs']
+        classes = []
+        qs = prog.classes().prefetch_related(
+            'category', 'sections', 'teachers')
 
-        classes = list(prog.classes().values(*attrs))
-
-        for cls in classes:
-            c = ClassSubject.objects.get(id=cls['id'])
+        for c in qs:
             class_teachers = c.get_teachers()
+            cls = {
+                'id': c.id,
+                'status': c.status,
+                'title': c.title,
+                'category': c.category.symbol,
+                'category_id': c.category.id,
+                'grade_max': c.grade_max,
+                'grade_min': c.grade_min,
+            }
+            classes.append(cls)
+            if catalog:
+                cls['class_info'] = c.class_info
+                cls['difficulty'] = c.hardness_rating
+                cls['prereqs'] = c.prereqs
             cls['emailcode'] = c.emailcode()
             cls['length'] = float(c.duration)
             cls['sections'] = [s.id for s in c.sections.all()]
             cls['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
                 if teacher_dict.has_key(t.id):
+                    teacher_dict[t.id]['sections'] += cls['sections']
                     continue
-                teacher_dict[t.id] = True
-                # Build up teacher availability
-                availabilities = UserAvailability.objects.filter(user__in=class_teachers).filter(event__program=prog).values('user_id', 'event_id')
-                avail_for_user = defaultdict(list)
-                for avail in availabilities:
-                    avail_for_user[avail['user_id']].append(avail['event_id'])
-                teachers.append({'id': t.id, 'first_name': t.first_name, 'last\
-_name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for x in t.getTaughtSectionsFromProgram(prog)]})
-    
+                teacher = {
+                    'id': t.id,
+                    'first_name': t.first_name,
+                    'last_name': t.last_name,
+                    'sections': list(cls['sections'])
+                }
+                teachers.append(teacher)
+                teacher_dict[t.id] = teacher
+
+        # Build up teacher availability
+        availabilities = UserAvailability.objects.filter(user__in=teacher_dict.keys()).filter(event__program=prog).values_list('user_id', 'event_id')
+        avail_for_user = defaultdict(list)
+        for user_id, event_id in availabilities:
+            avail_for_user[user_id].append(event_id)
+        for teacher in teachers:
+            teacher['availability'] = avail_for_user[teacher['id']]
+
         return {'classes': classes, 'teachers': teachers}
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
@@ -338,27 +347,8 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     def interested_classes(self, request, tl, one, two, module, extra, prog):
         ssis = StudentSubjectInterest.valid_objects().filter(
             user=request.user)
-        # If a timeslot if given, return the classes that start in that timeslot
-        if extra != None:
-            subject_ids = []
-            section_ids = []
-            timeslot_id = int(extra)
-            ssis = ssis.filter(
-                subject__sections__meeting_times__id__exact=timeslot_id)
-            # Filter down to only the classes started in the chosen timeslot
-            for ssi in ssis:
-                added = False
-                for sec in ssi.subject.get_sections():
-                    meeting_times = sec.meeting_times.order_by('start')
-                    if (meeting_times.count() > 0 and
-                        meeting_times[0].id == timeslot_id):
-                        section_ids.append({'subject__sections': sec.id})
-                        added = True
-                if added:
-                    subject_ids.append({'subject': ssi.subject.id})
-        else:
-            subject_ids = ssis.values('subject')
-            section_ids = ssis.values('subject__sections')
+        subject_ids = ssis.values('subject')
+        section_ids = ssis.values('subject__sections')
         return {'interested_subjects': subject_ids,
                 'interested_sections': section_ids}
 
