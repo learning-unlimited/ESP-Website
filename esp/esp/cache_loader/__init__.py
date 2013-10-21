@@ -102,14 +102,18 @@ def new_create_many_related_manager(*args, **kwargs):
 related.create_many_related_manager = new_create_many_related_manager
 
 old_get = related.ManyRelatedObjectsDescriptor.__get__
-def new__get__(self, *args, **kwargs):
-    manager = old_get(self, *args, **kwargs)
+def new__get__(self, instance, instance_type=None):
+    if instance is None:
+        return self
+    manager = old_get(self, instance, instance_type)
     manager.field_name = self.related.get_accessor_name()
     manager.rev_field_name = self.related.field.name
     return manager
 related.ManyRelatedObjectsDescriptor.__get__ = new__get__
 old_rev_get = related.ReverseManyRelatedObjectsDescriptor.__get__
 def new__rev_get__(self, instance, instance_type=None):
+    if instance is None:
+        return self
     manager = old_rev_get(self, instance, instance_type)
     manager.field_name = self.field.name
 
