@@ -1,4 +1,5 @@
 {% extends "program/modules/studentregtwophase/catalog_new.html" %}
+{% load render_qsd %}
 
 {% block xtrajs %}
 {{ block.super }}
@@ -15,6 +16,14 @@
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/select2-3.4.3/select2.css" />
 <link rel="stylesheet" type="text/css" href="/media/styles/catalog-phase2.css" />
+{% endblock %}
+
+{% block catalog_intro %}
+{{ block.super }}
+{% inline_program_qsd_block program "learn:studentregtwophase/phase2-intro" request.user %}
+Rank your top classes for this time block. We highly recommend you mark a class
+for every priority slot to ensure a full schedule.
+{% end_inline_program_qsd_block %}
 {% endblock %}
 
 {% block catalog_sticky %}
