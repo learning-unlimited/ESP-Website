@@ -338,27 +338,8 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     def interested_classes(self, request, tl, one, two, module, extra, prog):
         ssis = StudentSubjectInterest.valid_objects().filter(
             user=request.user)
-        # If a timeslot if given, return the classes that start in that timeslot
-        if extra != None:
-            subject_ids = []
-            section_ids = []
-            timeslot_id = int(extra)
-            ssis = ssis.filter(
-                subject__sections__meeting_times__id__exact=timeslot_id)
-            # Filter down to only the classes started in the chosen timeslot
-            for ssi in ssis:
-                added = False
-                for sec in ssi.subject.get_sections():
-                    meeting_times = sec.meeting_times.order_by('start')
-                    if (meeting_times.count() > 0 and
-                        meeting_times[0].id == timeslot_id):
-                        section_ids.append({'subject__sections': sec.id})
-                        added = True
-                if added:
-                    subject_ids.append({'subject': ssi.subject.id})
-        else:
-            subject_ids = ssis.values('subject')
-            section_ids = ssis.values('subject__sections')
+        subject_ids = ssis.values('subject')
+        section_ids = ssis.values('subject__sections')
         return {'interested_subjects': subject_ids,
                 'interested_sections': section_ids}
 
