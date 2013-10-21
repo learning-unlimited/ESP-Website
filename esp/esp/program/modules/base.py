@@ -162,11 +162,6 @@ class ProgramModuleObj(models.Model):
     def findModuleObject(tl, call_txt, prog):
         """ This function caches the customized (augmented) program module object
             matching a particular view function and area. """
-        # Make sure all modules exist
-        modules = prog.program_modules.all()
-        for module in modules:
-            ProgramModuleObj.getFromProgModule(prog, module)
-
         #   Check for a module that has a matching main_call
         main_call_map = prog.getModuleViews(main_only=True)
         if (tl, call_txt) in main_call_map:
