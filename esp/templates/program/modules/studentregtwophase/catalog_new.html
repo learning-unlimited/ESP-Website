@@ -41,7 +41,8 @@
       <h2 class="catalog-entry-title" data-bind="text: fulltitle"></h2>
       <div class="catalog-entry-teachers" data-bind="foreach: teachers">
 	<!-- placeholder until teacher data is ready -->
-	<a href="/teach/teachers/bitdiddle/bio.html" title="The biography of Ben Bitdiddle" data-bind="text: name">
+	<a data-bind="text: name, attr: { href: '/teach/teachers/'+username+'/bio.html',
+                      title: 'The biography of '+name }">
 	</a><!-- ko if: $index() != $parent.teachers().length - 1 -->, <!-- /ko -->
       </div>
     </div>

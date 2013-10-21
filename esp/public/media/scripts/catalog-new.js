@@ -80,6 +80,7 @@ var Teacher = function (data) {
     var self = this;
     self.first_name = data.first_name;
     self.last_name  = data.last_name;
+    self.username = data.username;
 
     self.name = data.first_name + " " + data.last_name;
 };
