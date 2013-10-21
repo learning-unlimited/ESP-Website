@@ -525,8 +525,10 @@ class ClassSection(models.Model):
 
     def initial_rooms(self):
         from esp.resources.models import Resource
-        if len(self.get_meeting_times()) > 0:
-            return self.classrooms().filter(event=self.meeting_times.order_by('start')[0]).order_by('id')
+        meeting_times = self.get_meeting_times()
+        if len(meeting_times) > 0:
+            initial_time = min(meeting_times, key=lambda event: event.start)
+            return self.classrooms().filter(event=initial_time).order_by('id')
         else:
             return Resource.objects.none()
 
