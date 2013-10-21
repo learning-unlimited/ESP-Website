@@ -265,6 +265,13 @@ var CatalogViewModel = function () {
                 // remove subjects out of this timeslot
                 delete data.classes[key];
             }
+            else if ((catalog_type == 'phase1' ||
+                      catalog_type == 'phase2') &&
+                     !(cls.grade_min <= esp_user.cur_grade &&
+                       cls.grade_max >= esp_user.cur_grade)) {
+                // remove classes that aren't for the grade level
+                delete data.classes[key];
+            }
             else {
                 data.classes[key] = new ClassSubject(cls, self);
                 // if marked interested, reflect that.
