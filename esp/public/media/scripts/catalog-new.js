@@ -103,6 +103,20 @@ var CatalogViewModel = function () {
             return !cls.interested();
         });
     });
+    self.numStarred = ko.computed(function () {
+        return self.starredClasses().length;
+    });
+    self.starredIndicatorColor = ko.computed(function () {
+        if (self.numStarred() >= 10) {
+            return 'green';
+        }
+        else if (self.numStarred() >= 5) {
+            return 'orange';
+        }
+        else {
+            return 'red';
+        }
+    });
 
     // search spinner
     var searchSpinnerOn = function () {

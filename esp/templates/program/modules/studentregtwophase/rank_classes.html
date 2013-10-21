@@ -55,7 +55,8 @@ for every priority slot to ensure a full schedule.
 </div>
 <div class="filter-box" data-bind="visible: showFilter">
   <div class="filter-column">
-    <div>
+    <div style="width: 14em;">
+      <label>You have starred <strong data-bind="text: numStarred, style: { color: starredIndicatorColor }"></strong> classes for this timeblock.</label><br>
       <input type="checkbox" value="true"
              data-bind="checked: filterStarred"></input>
       <label>Show only starred classes</label>
