@@ -34,7 +34,7 @@ for every priority slot to ensure a full schedule.
     <input class="save" type="submit" value="Save and continue"/>
   </form>
 </div>
-<div><h2>Step 2: Rank classes starting at {{ timeslot.start }}</h2></div>
+<div><h2>Step 2: Rank and star classes starting at {{ timeslot.start|date:"D g A" }}</h2></div>
 <hr>
 <div class="priority-box">
   {% for pri in priorities %}
@@ -58,7 +58,7 @@ for every priority slot to ensure a full schedule.
     <div>
       <input type="checkbox" value="true"
              data-bind="checked: filterStarred"></input>
-      <label>Show only starred clases</label>
+      <label>Show only starred classes</label>
     </div>
   </div>
 </div>
