@@ -32,6 +32,7 @@ import datetime
 import simplejson
 
 from django.core.exceptions import ObjectDoesNotExist
+from django.db.models import Min
 from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadRequest, Http404
 
 from esp.cal.models import Event
@@ -263,6 +264,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         """
         data = simplejson.loads(request.POST['json_data'])
         timeslot_id = data.keys()[0]
+        timeslot = Event.objects.get(pk=timeslot_id)
         priorities = data[timeslot_id]
         for rel_index, cls_id in priorities.items():
             rel_name = 'Priority/%s' % rel_index
@@ -270,10 +272,12 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 name=rel_name)
 
             # Pull up any registrations that exist (including expired ones)
-            srs = StudentRegistration.objects.filter(
+            srs = StudentRegistration.objects.annotate(
+                Min('section__meeting_times__start'))
+            srs = srs.filter(
                 user=request.user,
                 section__parent_class__parent_program=prog,
-                section__meeting_times__id__exact=timeslot_id,
+                section__meeting_times__start__min=timeslot.start,
                 relationship=rel)
 
             if cls_id == '':
@@ -281,7 +285,23 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 for sr in srs:
                     sr.expire()
                 continue
+
             cls_id = int(cls_id)
+            sec = ClassSection.objects.annotate(Min('meeting_times__start'))
+            try:
+                sec = sec.get(parent_class=cls_id,
+                              parent_class__parent_program=prog,
+                              meeting_times__start__min=timeslot.start)
+            except (ClassSection.DoesNotExist,
+                    ClassSection.MultipleObjectsReturned):
+                # XXX: what if a class has multiple sections in a timeblock?
+                continue
+            # sanity checks
+            if (not sec.status > 0 or not sec.parent_class.status > 0
+                or not sec.parent_class.grade_min <= request.user.getGrade(prog)
+                or not sec.parent_class.grade_max >= request.user.getGrade(prog)):
+                # XXX: fail more loudly
+                continue
 
             if not srs.exists():
                 # Create a new registration
@@ -289,31 +309,16 @@ class StudentRegTwoPhase(ProgramModuleObj):
                     user=request.user,
                     relationship=rel)
             else:
-                # XXX: we should never get more than 1, but you never know
-                # should handle that case more intelligently
+                # Pull the first StudentRegistration, expire the others
+                for sr in srs[1:]:
+                    sr.expire()
                 sr = srs[0]
 
             # Modify as needed to ensure the section is correct and
             # expiration date is valid
             if sr.section_id is None or sr.section.parent_class.id != cls_id:
-                try:
-                    sec = ClassSection.objects.get(
-                        parent_class=cls_id,
-                        parent_class__parent_program=prog,
-                        meeting_times__id__exact=timeslot_id)
-                except (ClassSection.DoesNotExist,
-                        ClassSection.MultipleObjectsReturned):
-                    # XXX: what if a class has multiple sections in a timeblock?
-                    continue
-                # sanity checks
-                if not sec.status > 0 or not sec.parent_class.status > 0 \
-                   or not sec.parent_class.grade_min <= request.user.getGrade(prog) \
-                   or not sec.parent_class.grade_max >= request.user.getGrade(prog):
-                    # XXX: fail more loudly
-                    continue
                 sr.section = sec
-            if not sr.is_valid():
-                sr.unexpire(save=False)
+            sr.unexpire(save=False)
             sr.save()
 
         return self.goToCore(tl)
