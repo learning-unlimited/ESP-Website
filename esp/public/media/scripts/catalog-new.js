@@ -93,8 +93,16 @@ var CatalogViewModel = function () {
     self.sections = ko.observable({});
     self.teachers = ko.observable({});
     self.classesArray = ko.observableArray([]);
-    self.starredClasses = ko.observableArray([]);
-    self.unstarredClasses = ko.observableArray([]);
+    self.starredClasses = ko.computed(function () {
+        return ko.utils.arrayFilter(self.classesArray(), function (cls) {
+            return cls.interested();
+        });
+    });
+    self.unstarredClasses = ko.computed(function () {
+        return ko.utils.arrayFilter(self.classesArray(), function (cls) {
+            return !cls.interested();
+        });
+    });
 
     // search spinner
     var searchSpinnerOn = function () {
@@ -313,16 +321,10 @@ var CatalogViewModel = function () {
             data.teachers[key] = new Teacher(data.teachers[key], self);
         }
         self.teachers(data.teachers);
-        // update classesArray, starredClasses, unstarredClasses
+        // update classesArray
         var classesQueue = [];
         for (var key in data.classes) {
             var cls = data.classes[key];
-            if (cls.interested()) {
-                self.starredClasses.push(cls);
-            }
-            else {
-                self.unstarredClasses.push(cls);
-            }
             classesQueue.push(cls);
         }
         // sort the classesQueue in an order that is unique to every user
