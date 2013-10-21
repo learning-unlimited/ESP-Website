@@ -5,6 +5,7 @@ from math import ceil
 from esp.cal.models import *
 from datetime import date
 from esp.web.util.main import render_to_response
+from esp.users.models import ESPUser
 
 class SchedulingCheckModule(ProgramModuleObj):
 
@@ -165,6 +166,7 @@ class SchedulingCheckRunner:
              self.capacity_by_grade(),
              self.admins_teaching_per_timeblock(),
              self.teachers_who_like_running(),
+             self.hungry_teachers(),
           ]
 
      #################################################
@@ -281,6 +283,25 @@ class SchedulingCheckRunner:
                     if room.num_students < lower_reporting_ratio*cls.class_size_max or room.num_students > upper_reporting_ratio*cls.class_size_max:
                          l.append({"Section": str(s), "Class Max": cls.class_size_max, "Room Max": room.num_students})
           return self.formatter.format_table(l, "Class max size/room max size mismatches", {'headings': ["Section", "Class Max", "Room Max"]})
+
+     def hungry_teachers(self, ignore_open_classes=True):
+         lunches = self.lunch_blocks
+         if ignore_open_classes:
+             open_class_cat = self.p.open_class_category
+         bads = []
+         for lunch in lunches:
+             if lunch:
+                 q=ESPUser.objects.all()
+                 for block in lunch:
+                     q=q.filter(classsubject__sections__meeting_times=block)
+                 for t in q.distinct():
+                     classes = [ClassSection.objects.get(parent_class__teachers=t,meeting_times=block) for block in lunch]
+                     if open_class_cat.id not in [c.category.id for c in classes]:
+                         bads.append({
+                             'Teacher': t,
+                             'Classes over lunch': classes,
+                             })
+         return self.formatter.format_table(bads,"Hungry Teachers", {'headings': ['Teacher','Classes over lunch']})
 
      #for classes_by_category and capacity_by_category
      def _calculate_d_categories(self):
