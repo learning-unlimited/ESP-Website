@@ -267,19 +267,7 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
 
 
     @aux_call
-    @json_response({
-            'id': 'id',
-            'status': 'status',
-            'category__symbol': 'category',
-            'category__id': 'category_id',
-            'grade_max': 'grade_max',
-            'grade_min': 'grade_min',
-            'emailcode': 'emailcode',
-            'title': 'title',
-            'class_info': 'class_info',
-            'hardness_rating': 'difficulty',
-            'prereqs': 'prereqs'
-            })
+    @json_response()
     @cached_module_view
     def class_subjects(extra, prog):
         if extra == 'catalog':
@@ -290,41 +278,51 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             raise Http404
         teacher_dict = {}
         teachers = []
-        attrs = [
-            'id',
-            'status',
-            'title',
-            'category__symbol',
-            'category__id',
-            'grade_max',
-            'grade_min']
-        if catalog:
-            attrs += [
-                'class_info',
-                'hardness_rating',
-                'prereqs']
+        classes = []
+        qs = prog.classes().prefetch_related(
+            'category', 'sections', 'teachers')
 
-        classes = list(prog.classes().values(*attrs))
-
-        for cls in classes:
-            c = ClassSubject.objects.get(id=cls['id'])
+        for c in qs:
             class_teachers = c.get_teachers()
+            cls = {
+                'id': c.id,
+                'status': c.status,
+                'title': c.title,
+                'category': c.category.symbol,
+                'category_id': c.category.id,
+                'grade_max': c.grade_max,
+                'grade_min': c.grade_min,
+            }
+            classes.append(cls)
+            if catalog:
+                cls['class_info'] = c.class_info
+                cls['difficulty'] = c.hardness_rating
+                cls['prereqs'] = c.prereqs
             cls['emailcode'] = c.emailcode()
             cls['length'] = float(c.duration)
             cls['sections'] = [s.id for s in c.sections.all()]
             cls['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
                 if teacher_dict.has_key(t.id):
+                    teacher_dict[t.id]['sections'] += cls['sections']
                     continue
-                teacher_dict[t.id] = True
-                # Build up teacher availability
-                availabilities = UserAvailability.objects.filter(user__in=class_teachers).filter(event__program=prog).values('user_id', 'event_id')
-                avail_for_user = defaultdict(list)
-                for avail in availabilities:
-                    avail_for_user[avail['user_id']].append(avail['event_id'])
-                teachers.append({'id': t.id, 'first_name': t.first_name, 'last\
-_name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for x in t.getTaughtSectionsFromProgram(prog)]})
-    
+                teacher = {
+                    'id': t.id,
+                    'first_name': t.first_name,
+                    'last_name': t.last_name,
+                    'sections': list(cls['sections'])
+                }
+                teachers.append(teacher)
+                teacher_dict[t.id] = teacher
+
+        # Build up teacher availability
+        availabilities = UserAvailability.objects.filter(user__in=teacher_dict.keys()).filter(event__program=prog).values_list('user_id', 'event_id')
+        avail_for_user = defaultdict(list)
+        for user_id, event_id in availabilities:
+            avail_for_user[user_id].append(event_id)
+        for teacher in teachers:
+            teacher['availability'] = avail_for_user[teacher['id']]
+
         return {'classes': classes, 'teachers': teachers}
     class_subjects.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
