@@ -118,7 +118,7 @@ def new__rev_get__(self, instance, instance_type=None):
     manager.field_name = self.field.name
 
     # BAH...
-    rel_obj = related.RelatedObject(self.field.rel.to, instance_type, self.field)
+    rel_obj = related.RelatedObject(self.field.rel.to, instance.__class__, self.field)
     manager.rev_field_name = rel_obj.get_accessor_name()
 
     return manager
