@@ -452,7 +452,7 @@ class SchedulingCheckRunner:
                      time0 = sections[i].meeting_times.all().order_by('-end')[0]
                      room0 = sections[i].initial_rooms()[0]
                      room1 = sections[i+1].initial_rooms()[0]
-                     if (time1.start-time0.end).seconds < 1200 and sections[i].initial_rooms().count() + sections[i+1].initial_rooms().count() and room0.name != room1.name:
+                     if (time1.start-time0.end).total_seconds() < 1200 and sections[i].initial_rooms().count() + sections[i+1].initial_rooms().count() and room0.name != room1.name:
                          l.append({"Teacher": teacher, "Section 1": sections[i], "Section 2": sections[i+1], "Room 1": room0, "Room 2": room1})
                  except BaseException:
                      continue
