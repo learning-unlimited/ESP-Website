@@ -65,6 +65,8 @@ var ClassSubject = function (data) {
 // Section model constructor
 var ClassSection = function (data) {
     var self = this;
+    self.id = data.id;
+    self.parent_class_id = data.parent_class;
     self.index = data.index;
     self.times = data.times;
     self.num_students = data.num_students;
@@ -73,6 +75,14 @@ var ClassSection = function (data) {
     self.name = "Section " + data.index;
     self.time = data.times.join(", ");
     self.enrollment = data.num_students + "/" + data.capacity;
+
+    self.priority = {};
+    for (var attr in data) {
+        if (0 === attr.indexOf('Priority/')) {
+            var pri = parseInt(attr.substr(9), 10);
+            self.priority[pri] = data[attr];
+        }
+    }
 };
 
 // Teacher model constructor
@@ -318,14 +328,6 @@ var CatalogViewModel = function () {
                 delete data.sections[key];
             }
             else {
-                if (catalog_type == 'phase2') {
-                    for (var attr in sec) {
-                        if (attr.search('Priority/') == 0) {
-                            pri = parseInt(attr.substr(9), 10);
-                            self.prioritySelection[pri-1](sec.parent_class);
-                        }
-                    }
-                }
                 data.sections[key] = new ClassSection(sec, self);
             }
         }
@@ -370,6 +372,12 @@ var CatalogViewModel = function () {
                 $j('#catalog-spinner').spin(false);
                 // set initial values for the phase2 dropdown
                 if (catalog_type == 'phase2') {
+                    for (var key in data.sections) {
+                        var sec = data.sections[key];
+                        for (var pri in sec.priority) {
+                            self.prioritySelection[pri-1](sec.parent_class_id.toString());
+                        }
+                    }
                     $j('#catalog-sticky .pri-select').change();
                     dirty_priorities = false;
                 }
