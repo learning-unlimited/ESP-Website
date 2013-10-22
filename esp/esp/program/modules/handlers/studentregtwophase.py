@@ -76,9 +76,9 @@ class StudentRegTwoPhase(ProgramModuleObj):
         priority_regs = StudentRegistration.valid_objects().filter(
             user=request.user, relationship__name__startswith='Priority')
         priority_regs = priority_regs.values(
-            'relationship__name', 'section', 'section__parent_class__title')
+            'relationship__displayName', 'section', 'section__parent_class__title')
         for student_reg in priority_regs:
-            rel = student_reg['relationship__name']
+            rel = student_reg['relationship__displayName']
             title = student_reg['section__parent_class__title']
             sec = ClassSection.objects.get(pk=student_reg['section'])
             times = sec.meeting_times.all().order_by('start')
