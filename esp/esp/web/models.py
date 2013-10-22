@@ -34,20 +34,46 @@ Learning Unlimited, Inc.
 """
 from django.db import models
 from django.db.models.query import Q
-from esp.datatree.models import *
+
+from esp.datatree.models import DataTree
 from esp.lib.markdown import markdown
 from esp.db.fields import AjaxForeignKey  
 from esp.program.models import Program
+from esp.cache import cache_function
         
 class NavBarCategory(models.Model):
     anchor = AjaxForeignKey(DataTree, blank=True, null=True)
     include_auto_links = models.BooleanField()
     name = models.CharField(max_length=64)
-    path = models.CharField(max_length=64, default='')
+    path = models.CharField(max_length=64, default='', help_text='Matches the beginning of the URL (without the /).  Example: learn/splash')
     long_explanation = models.TextField()
 
     def get_navbars(self):
         return self.navbarentry_set.all().select_related('category').order_by('sort_rank')
+    
+    @cache_function
+    def from_request(section, path):
+        """ A function to guess the appropriate navigation category when one
+            is not provided in the context. """
+
+        if path:
+            #   See if there's a category whose path matches the desired URL.
+            categories = NavBarCategory.objects.extra(select={'length':'Length(path)'}).order_by('-length')
+            for cat in categories:
+                if cat.path and path.lower().startswith(cat.path.lower()):
+                    return cat
+
+        if section:
+            #   See if there's a category whose name matches the desired section.
+            categories = NavBarCategory.objects.filter(name=section)
+            if categories.count() > 0:
+                return categories[0]
+
+        #   If all else fails, make something up.
+        return NavBarCategory.default()
+
+    from_request.depend_on_model(lambda: NavBarCategory) 
+    from_request = staticmethod(from_request)
     
     @classmethod
     def default(cls):
@@ -97,3 +123,4 @@ def install():
     # Add a default nav bar category, to let QSD editing work.
     NavBarCategory.objects.get_or_create(name='default', defaults={ 'long_explanation':
         'The default category, to which new nav bars and QSD pages get assigned.'})
+
