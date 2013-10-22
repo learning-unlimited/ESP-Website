@@ -524,7 +524,7 @@ var CatalogViewModel = function () {
     }
     else if (catalog_type == 'phase2') {
         window.onbeforeunload = function() {
-            if (!saving && getDirtyInterested() && dirty_priorities) {
+            if (!saving && (dirty_priorities || getDirtyInterested())) {
                 return ('Warning: You have unsaved changes. Please click save' +
                         ' and exit if you wish to preserve your changes.')
             }
