@@ -543,7 +543,10 @@ $j(function () {
 
     // enable select2
     if (catalog_type == 'phase2') {
-        $j('#catalog-sticky .pri-select').select2({'width': '20em'});
+        $j('#catalog-sticky .pri-select').select2({
+            'width': '20em',
+            'allowClear': true
+        });
     }
 
     // bind viewmodel

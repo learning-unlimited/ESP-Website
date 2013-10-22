@@ -245,7 +245,11 @@ class StudentRegTwoPhase(ProgramModuleObj):
         context = dict()
         context['timeslot'] = timeslot
         context['num_priorities'] = prog.priorityLimit()
-        context['priorities'] = range(1,prog.priorityLimit()+1)
+        context['priorities'] = []
+        for i in range(1, prog.priorityLimit()+1):
+            priority_name = 'Priority/' + str(i)
+            priority = RegistrationType.objects.get(name=priority_name)
+            context['priorities'].append((i, priority.displayName))
 
         catalog_context = self.catalog_context(
             request, tl, one, two,module, extra, prog)

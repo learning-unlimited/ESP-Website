@@ -37,12 +37,13 @@ for every priority slot to ensure a full schedule.
 <div><h2>Step 2: Rank and star classes starting at {{ timeslot.start|date:"D g A" }}</h2></div>
 <hr>
 <div class="priority-box">
-  {% for pri in priorities %}
+  {% for pri, pri_display in priorities %}
   <div class="priority">
-    <label>Priority {{pri}}</label>
+    <label>{{pri}}.</label>
     <select id="pri-{{pri}}" class="pri-select" data-pri="{{pri}}"
-	    data-bind="value: prioritySelection[{{pri}}-1]">
-      <option value="">Select a class from below.</option>
+            data-bind="value: prioritySelection[{{pri}}-1]"
+            data-placeholder="Select a class below. ({{pri_display}})">
+      <option value=""></option>
       <optgroup label="Starred" data-bind="foreach: starredClasses">
         <option data-bind="text: fulltitle, value: id"></option>
       </optgroup>
