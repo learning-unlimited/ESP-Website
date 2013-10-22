@@ -248,7 +248,6 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'subject': 'id',
             'subject__sections': 'id',
             })
-    @needs_student
     @cached_module_view
     def classes_timeslot(extra, prog):
         # TODO: make the /timeslots view do what we want and kill this one
