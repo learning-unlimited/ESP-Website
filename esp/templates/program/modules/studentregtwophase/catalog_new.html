@@ -44,37 +44,36 @@
     <div class="catalog-entry-header">
       <h2 class="catalog-entry-title" data-bind="text: fulltitle"></h2>
       <div class="catalog-entry-teachers" data-bind="foreach: teachers">
-	<!-- placeholder until teacher data is ready -->
-	<a data-bind="text: name, attr: { href: '/teach/teachers/'+username+'/bio.html',
+        <a data-bind="text: name, attr: { href: '/teach/teachers/'+username+'/bio.html',
                       title: 'The biography of '+name }">
-	</a><!-- ko if: $index() != $parent.teachers().length - 1 -->, <!-- /ko -->
+        </a><!-- ko if: $index() != $parent.teachers().length - 1 -->, <!-- /ko -->
       </div>
     </div>
     {% block class_action %}{% endblock %}
     <div class="catalog-entry-body">
       <div class="catalog-entry-description" data-bind="text: class_info"></div>
       <dl>
-	<dt>Grades</dt> <dd data-bind="text: grade_range"></dd>
-	<dt>Difficulty</dt> <dd data-bind="text: difficulty"></dd>
+        <dt>Grades</dt> <dd data-bind="text: grade_range"></dd>
+        <dt>Difficulty</dt> <dd data-bind="text: difficulty"></dd>
         <!-- ko if: prereqs -->
-	<dt>Prerequisites</dt> <dd data-bind="text: prereqs"></dd>
+        <dt>Prerequisites</dt> <dd data-bind="text: prereqs"></dd>
         <!-- /ko -->
       </dl>
       <table>
-	<thead>
-	  <tr>
-	    <th>Section</th>
-	    <th>Meeting Time</th>
-	    <th>Enrollment</th>
-	  </tr>
-	</thead>
-	<tbody data-bind="foreach: sections">
-	  <tr>
-	    <td data-bind="text: name"></td>
-	    <td data-bind="text: time"></td>
-	    <td data-bind="text: enrollment"></td>
-	  </tr>
-	</tbody>
+        <thead>
+          <tr>
+            <th>Section</th>
+            <th>Meeting Time</th>
+            <th>Enrollment</th>
+          </tr>
+        </thead>
+        <tbody data-bind="foreach: sections">
+          <tr>
+            <td data-bind="text: name"></td>
+            <td data-bind="text: time"></td>
+            <td data-bind="text: enrollment"></td>
+          </tr>
+        </tbody>
       </table>
     </div>
   </div>
