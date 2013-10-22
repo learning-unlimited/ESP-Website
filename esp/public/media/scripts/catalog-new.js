@@ -359,7 +359,7 @@ var CatalogViewModel = function () {
                 // add a chunk of classes
                 var t = Date.now();
                 self.classesArray.push.apply(self.classesArray,
-                                             classesQueue.splice(-20).reverse());
+                                             classesQueue.splice(-20, 20).reverse());
                 var dt = Date.now() - t;
                 // wait awhile before adding more
                 setTimeout(dequeueClass, dt);
