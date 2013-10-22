@@ -129,6 +129,44 @@ class StudentRegTwoPhase(ProgramModuleObj):
         return context
 
     @aux_call
+    def view_classes(self, request, tl, one, two, module, extra, prog):
+        """
+        Displays a filterable catalog that anyone can view.
+        """
+        # get choices for filtering options
+        context = {}
+
+        def group_columns(items):
+            # collect into groups of 5
+            cols = []
+            for i, item in enumerate(items):
+                if i % 5 == 0:
+                    col = []
+                    cols.append(col)
+                col.append(item)
+            return cols
+
+        category_choices = []
+        for category in prog.class_categories.all():
+            # FIXME(gkanwar): Make this less hacky, once #770 is resolved
+            if category.category == 'Lunch':
+                continue
+            category_choices.append((category.id, category.category))
+        context['category_choices'] = group_columns(category_choices)
+
+        grade_choices = []
+        grade_choices.append(('ALL', 'All'))
+        for grade in range(prog.grade_min, prog.grade_max + 1):
+            grade_choices.append((grade, grade))
+        context['grade_choices'] = group_columns(grade_choices)
+
+        catalog_context = self.catalog_context(
+            request, tl, one, two,module, extra, prog)
+        context.update(catalog_context)
+
+        return render_to_response(self.baseDir() + 'view_classes.html', request, context)
+
+    @aux_call
     @needs_student
     @meets_grade
     @meets_deadline('/Classes/Lottery')
@@ -157,12 +195,6 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 continue
             category_choices.append((category.id, category.category))
         context['category_choices'] = group_columns(category_choices)
-
-        # grade_choices = []
-        # grade_choices.append(('ALL', 'All'))
-        # for grade in range(prog.grade_min, prog.grade_max + 1):
-        #     grade_choices.append((grade, grade))
-        # context['grade_choices'] = group_columns(grade_choices)
 
         catalog_context = self.catalog_context(
             request, tl, one, two,module, extra, prog)
