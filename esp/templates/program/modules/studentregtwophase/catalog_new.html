@@ -56,7 +56,9 @@
       <dl>
 	<dt>Grades</dt> <dd data-bind="text: grade_range"></dd>
 	<dt>Difficulty</dt> <dd data-bind="text: difficulty"></dd>
+        <!-- ko if: prereqs -->
 	<dt>Prerequisites</dt> <dd data-bind="text: prereqs"></dd>
+        <!-- /ko -->
       </dl>
       <table>
 	<thead>
