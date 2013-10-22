@@ -241,6 +241,10 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
 SESSION_ENGINE="django.contrib.sessions.backends.cached_db"
 
+# Dotted path to callable to be used as view when a request is
+# rejected by the CSRF middleware.
+CSRF_FAILURE_VIEW = 'esp.middleware.csrf.csrf_failure'
+
 TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this one after all branches are transitioned
                                'esp.context_processors.esp_user',
                                'esp.context_processors.current_site',
