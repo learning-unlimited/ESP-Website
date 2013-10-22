@@ -19,6 +19,7 @@
 }
 
 #catalog-sticky .sticky-toggle a {
+    font-size: 13px;
     color: inherit;
     outline: 0;
     text-decoration: none;
