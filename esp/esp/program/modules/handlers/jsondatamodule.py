@@ -248,9 +248,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'subject': 'id',
             'subject__sections': 'id',
             })
-    @needs_student
     @cached_module_view
     def classes_timeslot(extra, prog):
+        # TODO: make the /timeslots view do what we want and kill this one
         try:
             timeslot_id = int(extra)
         except (TypeError, ValueError):
@@ -276,6 +276,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
 
         return {'timeslot_sections': section_ids,
                 'timeslot_subjects': subject_ids}
+    classes_timeslot.cached_function.depend_on_model(Event)
+    classes_timeslot.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program, 'extra': str(event.id)})
 
 
     @aux_call

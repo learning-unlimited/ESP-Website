@@ -78,7 +78,7 @@ recommend you mark a class for every priority slot to ensure a full schedule.
         <td style="vertical-align: top !important;">
             <i>
             {% for verb,title in priority_list %}
-	        <span class="{{verb}}">{{verb}}</span>: {{title}}
+	        <span>{{verb}}</span>: {{title}}
                 {% if not forloop.last %}<br />{% endif %}
             {% endfor %}
             </i>

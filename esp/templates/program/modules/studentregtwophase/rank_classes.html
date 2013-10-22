@@ -34,15 +34,16 @@ for every priority slot to ensure a full schedule.
     <input class="save" type="submit" value="Save and continue"/>
   </form>
 </div>
-<div><h2>Step 2: Rank classes starting at {{ timeslot.start }}</h2></div>
+<div><h2>Step 2: Rank and star classes starting at {{ timeslot.start|date:"D g A" }}</h2></div>
 <hr>
 <div class="priority-box">
-  {% for pri in priorities %}
+  {% for pri, pri_display in priorities %}
   <div class="priority">
-    <label>Priority {{pri}}</label>
+    <label>{{pri}}.</label>
     <select id="pri-{{pri}}" class="pri-select" data-pri="{{pri}}"
-	    data-bind="value: prioritySelection[{{pri}}-1]">
-      <option value="">Select a class from below.</option>
+            data-bind="value: prioritySelection[{{pri}}-1]"
+            data-placeholder="Select a class below. ({{pri_display}})">
+      <option value=""></option>
       <optgroup label="Starred" data-bind="foreach: starredClasses">
         <option data-bind="text: fulltitle, value: id"></option>
       </optgroup>
@@ -55,10 +56,11 @@ for every priority slot to ensure a full schedule.
 </div>
 <div class="filter-box" data-bind="visible: showFilter">
   <div class="filter-column">
-    <div>
+    <div style="width: 14em;">
+      <label>You have starred <strong data-bind="text: numStarred, style: { color: starredIndicatorColor }"></strong> classes for this timeblock.</label><br>
       <input type="checkbox" value="true"
              data-bind="checked: filterStarred"></input>
-      <label>Show only starred clases</label>
+      <label>Show only starred classes</label>
     </div>
   </div>
 </div>

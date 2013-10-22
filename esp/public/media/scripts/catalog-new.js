@@ -65,6 +65,8 @@ var ClassSubject = function (data) {
 // Section model constructor
 var ClassSection = function (data) {
     var self = this;
+    self.id = data.id;
+    self.parent_class_id = data.parent_class;
     self.index = data.index;
     self.times = data.times;
     self.num_students = data.num_students;
@@ -73,6 +75,14 @@ var ClassSection = function (data) {
     self.name = "Section " + data.index;
     self.time = data.times.join(", ");
     self.enrollment = data.num_students + "/" + data.capacity;
+
+    self.priority = {};
+    for (var attr in data) {
+        if (0 === attr.indexOf('Priority/')) {
+            var pri = parseInt(attr.substr(9), 10);
+            self.priority[pri] = data[attr];
+        }
+    }
 };
 
 // Teacher model constructor
@@ -93,8 +103,30 @@ var CatalogViewModel = function () {
     self.sections = ko.observable({});
     self.teachers = ko.observable({});
     self.classesArray = ko.observableArray([]);
-    self.starredClasses = ko.observableArray([]);
-    self.unstarredClasses = ko.observableArray([]);
+    self.starredClasses = ko.computed(function () {
+        return ko.utils.arrayFilter(self.classesArray(), function (cls) {
+            return cls.interested();
+        });
+    });
+    self.unstarredClasses = ko.computed(function () {
+        return ko.utils.arrayFilter(self.classesArray(), function (cls) {
+            return !cls.interested();
+        });
+    });
+    self.numStarred = ko.computed(function () {
+        return self.starredClasses().length;
+    });
+    self.starredIndicatorColor = ko.computed(function () {
+        if (self.numStarred() >= 10) {
+            return 'green';
+        }
+        else if (self.numStarred() >= 5) {
+            return 'orange';
+        }
+        else {
+            return 'red';
+        }
+    });
 
     // search spinner
     var searchSpinnerOn = function () {
@@ -265,6 +297,13 @@ var CatalogViewModel = function () {
                 // remove subjects out of this timeslot
                 delete data.classes[key];
             }
+            else if ((catalog_type == 'phase1' ||
+                      catalog_type == 'phase2') &&
+                     !(cls.grade_min <= esp_user.cur_grade &&
+                       cls.grade_max >= esp_user.cur_grade)) {
+                // remove classes that aren't for the grade level
+                delete data.classes[key];
+            }
             else {
                 data.classes[key] = new ClassSubject(cls, self);
                 // if marked interested, reflect that.
@@ -289,14 +328,6 @@ var CatalogViewModel = function () {
                 delete data.sections[key];
             }
             else {
-                if (catalog_type == 'phase2') {
-                    for (var attr in sec) {
-                        if (attr.search('Priority/') == 0) {
-                            pri = parseInt(attr.substr(9), 10);
-                            self.prioritySelection[pri-1](sec.parent_class);
-                        }
-                    }
-                }
                 data.sections[key] = new ClassSection(sec, self);
             }
         }
@@ -306,16 +337,10 @@ var CatalogViewModel = function () {
             data.teachers[key] = new Teacher(data.teachers[key], self);
         }
         self.teachers(data.teachers);
-        // update classesArray, starredClasses, unstarredClasses
+        // update classesArray
         var classesQueue = [];
         for (var key in data.classes) {
             var cls = data.classes[key];
-            if (cls.interested()) {
-                self.starredClasses.push(cls);
-            }
-            else {
-                self.unstarredClasses.push(cls);
-            }
             classesQueue.push(cls);
         }
         // sort the classesQueue in an order that is unique to every user
@@ -336,7 +361,7 @@ var CatalogViewModel = function () {
                 // add a chunk of classes
                 var t = Date.now();
                 self.classesArray.push.apply(self.classesArray,
-                                             classesQueue.splice(-20).reverse());
+                                             classesQueue.splice(-20, 20).reverse());
                 var dt = Date.now() - t;
                 // wait awhile before adding more
                 setTimeout(dequeueClass, dt);
@@ -347,6 +372,12 @@ var CatalogViewModel = function () {
                 $j('#catalog-spinner').spin(false);
                 // set initial values for the phase2 dropdown
                 if (catalog_type == 'phase2') {
+                    for (var key in data.sections) {
+                        var sec = data.sections[key];
+                        for (var pri in sec.priority) {
+                            self.prioritySelection[pri-1](sec.parent_class_id.toString());
+                        }
+                    }
                     $j('#catalog-sticky .pri-select').change();
                     dirty_priorities = false;
                 }
@@ -501,7 +532,7 @@ var CatalogViewModel = function () {
     }
     else if (catalog_type == 'phase2') {
         window.onbeforeunload = function() {
-            if (!saving && getDirtyInterested() && dirty_priorities) {
+            if (!saving && (dirty_priorities || getDirtyInterested())) {
                 return ('Warning: You have unsaved changes. Please click save' +
                         ' and exit if you wish to preserve your changes.')
             }
@@ -520,7 +551,10 @@ $j(function () {
 
     // enable select2
     if (catalog_type == 'phase2') {
-        $j('#catalog-sticky .pri-select').select2({'width': '20em'});
+        $j('#catalog-sticky .pri-select').select2({
+            'width': '20em',
+            'allowClear': true
+        });
     }
 
     // bind viewmodel

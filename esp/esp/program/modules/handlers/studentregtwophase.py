@@ -76,9 +76,9 @@ class StudentRegTwoPhase(ProgramModuleObj):
         priority_regs = StudentRegistration.valid_objects().filter(
             user=request.user, relationship__name__startswith='Priority')
         priority_regs = priority_regs.values(
-            'relationship__name', 'section', 'section__parent_class__title')
+            'relationship__displayName', 'section', 'section__parent_class__title')
         for student_reg in priority_regs:
-            rel = student_reg['relationship__name']
+            rel = student_reg['relationship__displayName']
             title = student_reg['section__parent_class__title']
             sec = ClassSection.objects.get(pk=student_reg['section'])
             times = sec.meeting_times.all().order_by('start')
@@ -129,6 +129,44 @@ class StudentRegTwoPhase(ProgramModuleObj):
         return context
 
     @aux_call
+    def view_classes(self, request, tl, one, two, module, extra, prog):
+        """
+        Displays a filterable catalog that anyone can view.
+        """
+        # get choices for filtering options
+        context = {}
+
+        def group_columns(items):
+            # collect into groups of 5
+            cols = []
+            for i, item in enumerate(items):
+                if i % 5 == 0:
+                    col = []
+                    cols.append(col)
+                col.append(item)
+            return cols
+
+        category_choices = []
+        for category in prog.class_categories.all():
+            # FIXME(gkanwar): Make this less hacky, once #770 is resolved
+            if category.category == 'Lunch':
+                continue
+            category_choices.append((category.id, category.category))
+        context['category_choices'] = group_columns(category_choices)
+
+        grade_choices = []
+        grade_choices.append(('ALL', 'All'))
+        for grade in range(prog.grade_min, prog.grade_max + 1):
+            grade_choices.append((grade, grade))
+        context['grade_choices'] = group_columns(grade_choices)
+
+        catalog_context = self.catalog_context(
+            request, tl, one, two,module, extra, prog)
+        context.update(catalog_context)
+
+        return render_to_response(self.baseDir() + 'view_classes.html', request, context)
+
+    @aux_call
     @needs_student
     @meets_grade
     @meets_deadline('/Classes/Lottery')
@@ -157,12 +195,6 @@ class StudentRegTwoPhase(ProgramModuleObj):
                 continue
             category_choices.append((category.id, category.category))
         context['category_choices'] = group_columns(category_choices)
-
-        # grade_choices = []
-        # grade_choices.append(('ALL', 'All'))
-        # for grade in range(prog.grade_min, prog.grade_max + 1):
-        #     grade_choices.append((grade, grade))
-        # context['grade_choices'] = group_columns(grade_choices)
 
         catalog_context = self.catalog_context(
             request, tl, one, two,module, extra, prog)
@@ -245,7 +277,11 @@ class StudentRegTwoPhase(ProgramModuleObj):
         context = dict()
         context['timeslot'] = timeslot
         context['num_priorities'] = prog.priorityLimit()
-        context['priorities'] = range(1,prog.priorityLimit()+1)
+        context['priorities'] = []
+        for i in range(1, prog.priorityLimit()+1):
+            priority_name = 'Priority/' + str(i)
+            priority = RegistrationType.objects.get(name=priority_name)
+            context['priorities'].append((i, priority.displayName))
 
         catalog_context = self.catalog_context(
             request, tl, one, two,module, extra, prog)
