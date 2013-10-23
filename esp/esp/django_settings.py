@@ -299,6 +299,8 @@ CONTACTFORM_EMAIL_ADDRESSES = {}
 #   It can be overridden by setting CDN_ADDRESS in local_settings.py.
 CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 
+DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
+
 DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.cache.CacheDebugPanel',
     'debug_toolbar.panels.headers.HeaderDebugPanel',
