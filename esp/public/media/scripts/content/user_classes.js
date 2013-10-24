@@ -4,7 +4,7 @@ function update_user_classes() {
   }
   if (esp_user.cur_retTitle) {
     $j(".unmorph").removeClass("unmorph_hidden");
-    document.getElementById("unmorph_text").innerHTML = "Click above to return to your administrator account - " + esp_user.cur_retTitle;
+    $j("#unmorph_text").html("Click above to return to your administrator account - " + esp_user.cur_retTitle);
   }
   if (esp_user.cur_qsd_bits == "1") {
     $j(".qsd_bits").removeClass("qsd_bits_hidden");
