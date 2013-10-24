@@ -190,14 +190,12 @@ var CatalogViewModel = function () {
             meets_category = true;
         }
         else {
-            var categories = ko.utils.arrayMap(
-                criteria.category,
-                function (cat) {
-                    return parseInt(cat, 10);
-                });
-            if (-1 !== categories.indexOf(cls.category)) {
-                meets_category = true;
-            }
+            ko.utils.arrayForEach(criteria.category, function (cat) {
+                cat = parseInt(cat, 10);
+                if (cls.category == cat) {
+                    meets_category = true;
+                }
+            });
         }
 
         var meets_grade = false;
