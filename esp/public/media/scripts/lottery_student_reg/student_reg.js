@@ -270,7 +270,7 @@ get_walkin_html = function(class_data, timeslot_id){
     return template;
 };
 
-get_carryover_html = function(class_data, timeslot_id){
+get_carryover_html = function(class_data, add_link){
     // Create a carried-over class div using a template with keywords replaced below
     template = "<p>%CLASS_EMAILCODE%: %CLASS_TITLE% ";
     if (add_link){
@@ -282,7 +282,6 @@ get_carryover_html = function(class_data, timeslot_id){
     .replace(/%CLASS_ID%/g, class_data['id']);
     return template;
 };
-
 
 function submit_preferences(){
     $j("#submit_button").text("Submitting...");
