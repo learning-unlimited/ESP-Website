@@ -116,7 +116,6 @@ def lottery_student_reg_simple(request, program = None):
 
 #@transaction.commit_manually
 @login_required
-@needs_student
 def lsr_submit(request, program = None): 
     
     priority_limit = program.priorityLimit()
