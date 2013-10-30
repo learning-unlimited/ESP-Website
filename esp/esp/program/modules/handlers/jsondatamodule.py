@@ -202,6 +202,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'grade_max': s.parent_class.grade_max,
                 'grade_min': s.parent_class.grade_min,
                 'title': s.parent_class.title,
+                'class_size_max': s.parent_class.class_size_max,
                 'num_students': s.enrolled_students
             }
             sections.append(section)
