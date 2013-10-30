@@ -61,6 +61,7 @@ DEBUG = True
 DISPLAYSQL = True
 TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 
 ##############
 # Middleware #
