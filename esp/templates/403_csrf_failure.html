@@ -1,0 +1,100 @@
+{% extends "main.html" %}
+
+{% block title %}403 Forbidden{% endblock title %}
+
+{% block subsection_name %}CSRF verification failed. Request aborted.{% endblock subsection_name %}
+
+{% block meta %}
+  {{ block.super }}
+  <meta name="robots" content="NONE,NOARCHIVE">
+{% endblock meta %}
+
+{% block content %}
+<div id="summary">
+  <h1>Forbidden <span>(403)</span></h1>
+  <p>CSRF verification failed. Request aborted.</p>
+{% if no_referer %}
+  <p>You are seeing this message because this HTTPS site requires a 'Referer
+   header' to be sent by your Web browser, but none was sent. This header is
+   required for security reasons, to ensure that your browser is not being
+   hijacked by third parties.</p>
+
+  <p>If you have configured your browser to disable 'Referer' headers, please
+   re-enable them, at least for this site, or for HTTPS connections, or for
+   'same-origin' requests.</p>
+{% endif %}
+</div>
+<div id="info">
+  <h2>Help</h2>
+    {% if DEBUG and reason %}
+    <p>Reason given for failure:</p>
+    <pre>{{ reason }}</pre>
+    {% endif %}
+
+{% if DEBUG %}
+  <p>In general, this can occur when
+  there is a genuine Cross Site Request Forgery, or when
+  <a
+  href='http://docs.djangoproject.com/en/dev/ref/contrib/csrf/#ref-contrib-csrf'>Django's
+  CSRF mechanism</a>
+  Django's CSRF mechanism
+  has not been used correctly.  For POST forms, you need to
+  ensure:</p>
+{% else %}
+  <p>You need to ensure:</p>
+{% endif %}
+
+  <ul>
+    <li>Your browser is accepting cookies.</li>
+
+    <li>Your browser has Javascript enabled.</li>
+
+{% if DEBUG %}
+    <li>The view function uses <a
+    href='http://docs.djangoproject.com/en/dev/ref/templates/api/#subclassing-context-requestcontext'><code>RequestContext</code></a>
+    for the template, instead of <code>Context</code>.</li>
+
+    <li>In the template, there is a <code>{% templatetag openblock %} csrf_token
+    {% templatetag closeblock %}</code> template tag inside each POST form that
+    targets an internal URL.</li>
+
+    <li>If you are not using <code>CsrfViewMiddleware</code>, then you must use
+    <code>csrf_protect</code> on any views that use the <code>csrf_token</code>
+    template tag, as well as those that accept the POST data.</li>
+{% endif %}
+
+  </ul>
+
+  <p>
+   If you are certain you have done all of the above, this probably means we
+   messed up. Please email us at
+  </p>
+   <pre>{{ DEFAULT_EMAIL_ADDRESSES.support }}</pre>
+  <p>
+   explaining to us how you got this message, and we'll try to fix it.
+   Please copy-and-paste the following information into your e-mail:
+  </p>
+  <pre class="meta">{% if request %}Request Path: {{ request.path_info|escape }}
+Request Method: {{ request.META.REQUEST_METHOD }}
+Request URL: {{ request.build_absolute_uri|escape }}
+Request Referer: {% if request.META.HTTP_REFERER %}{{ request.META.HTTP_REFERER }}{% else %}None{% endif %}
+Request Protocol: {% if request.META.SERVER_PROTOCOL %}{{ request.META.SERVER_PROTOCOL }}{% else %}None{% endif %}
+Request User Agent: {% if request.META.HTTP_USER_AGENT %}{{ request.META.HTTP_USER_AGENT }}{% else %}None{% endif %}
+{% if request.user and request.user.username %}Username: {{ request.user.username }}{% endif %}{% endif %}</pre>
+   <p>
+   <em>Thank you and sorry for the inconvenience!
+   <br />
+    - Web Team
+   </em>
+  </p>
+
+{% if DEBUG %}
+  <p>You're seeing the verbose help section of this page because you have <code>DEBUG =
+  True</code> in your Django settings file. Change that to <code>False</code>,
+  and only the initial error message will be displayed.  </p>
+
+  <p>You can customize this page using the CSRF_FAILURE_VIEW setting.</p>
+{% endif %}
+</div>
+{% endblock content %}
+

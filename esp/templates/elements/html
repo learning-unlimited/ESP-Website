@@ -2,10 +2,12 @@
 <html>
   <head>
     <title>{% block fulltitle %}{% endblock %}</title>
+  {% block meta %}
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta name="description" content="{% block description %}{% endblock %}" />
     <meta name="keywords" content="{% block keywords %}{% endblock %}" lang="en-us" xml:lang="en-us" />
     <meta http-equiv="X-UA-Compatible" content="chrome=1"/>
+  {% endblock meta %}
 
     {% block stylesheets %}
     <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css"/> 
