@@ -18,6 +18,7 @@ import_location = 'esp.dbmail.receivers.'
 MAIL_PATH = '/usr/sbin/sendmail'
 server = smtplib.SMTP('localhost')
 ARCHIVE = settings.DEFAULT_EMAIL_ADDRESSES['archive']
+SUPPORT = settings.DEFAULT_EMAIL_ADDRESSES['support']
 
 DEBUG=True
 DEBUG=False
@@ -121,10 +122,10 @@ ESP MAIL SERVER
 
 Could not find user "%s"
 
-If you are experiencing difficulty, please email esp-webmasters@mit.edu.
+If you are experiencing difficulty, please email %s.
 
 -Educational Studies Program
 
 
-""" % user
+""" % (user, SUPPORT)
         sys.exit(1)
