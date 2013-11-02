@@ -162,13 +162,8 @@ class LotteryAssignmentController(object):
             d = date(ts.start.year, ts.start.month, ts.start.day)
             lunch_by_day[dates.index(d)].append(ts.id)
             self.lunch_schedule[self.timeslot_indices[ts.id]] = True
-        for i in range(len(lunch_by_day)):
-            if len(lunch_by_day[i]) > ts_count:
-                ts_count = len(lunch_by_day[i])
-        self.lunch_timeslots = numpy.zeros((len(lunch_by_day), ts_count), dtype=numpy.int32)
-        for i in range(len(lunch_by_day)):
-            self.lunch_timeslots[i, :len(lunch_by_day[i])] = numpy.array(lunch_by_day[i])
-
+        self.lunch_timeslots = numpy.array(lunch_by_day)
+        
         #   Populate interest matrix
         interest_regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Interested').values_list('user__id', 'section__id').distinct()
         ira = numpy.array(interest_regs, dtype=numpy.uint32)
@@ -178,13 +173,25 @@ class LotteryAssignmentController(object):
             pass
         
         #   Populate priority matrix
-        priority_regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Priority/1').values_list('user__id', 'section__id').distinct()
-        pra = numpy.array(priority_regs, dtype=numpy.uint32)
-        self.priority[self.student_indices[pra[:, 0]], self.section_indices[pra[:, 1]]] = True
+        priority_regs = [StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Priority/%s'%i).values_list('user__id', 'section__id').distinct() for i in range(self.priority_limit+1)]
+        if self.grade_range_exceptions:
+            priority_regs.append(StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='GradeRangeException').values_list('user__id', 'section__id').distinct())
+            self.priority_limit += 1
+        pra = [numpy.array(priority_regs[i], dtype=numpy.uint32) for i in range(self.priority_limit+1)]
+        for i in range(1,self.priority_limit+1):
+            try:
+                self.priority[i][self.student_indices[pra[i][:, 0]], self.section_indices[pra[i][:, 1]]] = True
+            except IndexError:
+                pass
+        if self.options['use_student_apps']:
+            for i in range(1,self.priority_limit+1):
+                for (student_id,section_id) in priority_regs[i]:
+                    self.ranks[self.student_indices[student_id],self.section_indices[section_id]] = ESPUser.getRankInClass(student_id,self.parent_classes[self.section_indices[section_id]])
+            for (student_id,section_id) in interest_regs:
+                self.ranks[self.student_indices[student_id],self.section_indices[section_id]] = ESPUser.getRankInClass(student_id,self.parent_classes[self.section_indices[section_id]])
         
         #   Set student utility weights. Counts number of classes that students selected. Used only for computing the overall_utility stat
-        #   NOTE: Uses fixed (interest + priority) formula, needs attention when multiple priority levels are merged.
-        self.student_utility_weights = numpy.sum(self.interest.astype(float), 1) + numpy.sum(self.priority.astype(float), 1)
+        self.student_utility_weights = numpy.sum(self.interest.astype(float), 1) + sum([numpy.sum(self.priority[i].astype(float), 1) for i in range(1,self.priority_limit+1)])
 
         #   Populate section schedule
         section_times = numpy.array(self.sections.values_list('id', 'meeting_times__id'))
@@ -483,7 +490,11 @@ class LotteryAssignmentController(object):
         print '%6d sections were filled to capacity' % stats['num_full_classes']
 
         print 'Ratios:'
-        print '%2.2f%% of priority classes were enrolled' % (stats['overall_priority_ratio'] * 100.0)
+        if self.priority_limit>1:
+            for i in range(1,self.priority_limit+1):
+                print '%2.2f%% of priority classes were enrolled' % (stats['overall_priority_%s_ratio' % i] * 100.0)
+        else:
+            print '%2.2f%% of priority classes were enrolled' % (stats['overall_priority_ratio'] * 100.0)
         print '%2.2f%% of interested classes were enrolled' % (stats['overall_interest_ratio'] * 100.0)
         """
         print 'Example results:'
