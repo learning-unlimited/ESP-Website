@@ -40,7 +40,7 @@ from datetime import date, datetime
 
 from esp.cal.models import Event
 from esp.users.models import ESPUser, StudentInfo
-from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, ClassSection
+from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile, ClassSection
 from esp.program.models.class_ import ClassCategories
 from esp.mailman import add_list_member, remove_list_member, list_contents
 
@@ -164,11 +164,17 @@ class LotteryAssignmentController(object):
             self.lunch_schedule[self.timeslot_indices[ts.id]] = True
         self.lunch_timeslots = numpy.array(lunch_by_day)
         
-        #   Populate interest matrix
-        interest_regs = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Interested').values_list('user__id', 'section__id').distinct()
-        ira = numpy.array(interest_regs, dtype=numpy.uint32)
+        #   Populate interest matrix; this uses both the StudentRegistrations (which apply to a particular section) and StudentSubjectIntegests (which apply to all sections of the class)
+        interest_regs_sr = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Interested').values_list('user__id', 'section__id').distinct()
+        interest_regs_ssi = StudentSubjectInterest.valid_objects().filter(subject__parent_program=self.program).values_list('user__id', 'subject__sections__id').distinct()
+        ira_sr = numpy.array(interest_regs_sr, dtype=numpy.uint32)
+        ira_ssi = numpy.array(interest_regs_ssi, dtype=numpy.uint32)
         try:
-            self.interest[self.student_indices[ira[:, 0]], self.section_indices[ira[:, 1]]] = True
+            self.interest[self.student_indices[ira_sr[:, 0]], self.section_indices[ira_sr[:, 1]]] = True
+        except IndexError:
+            pass
+        try:
+            self.interest[self.student_indices[ira_ssi[:, 0]], self.section_indices[ira_ssi[:, 1]]] = True
         except IndexError:
             pass
         
