@@ -67,8 +67,12 @@ class LotteryAssignmentController(object):
 
         self.program = program
         students = self.program.students()
-        if 'twophase_lotteried_students' in students:
-            self.lotteried_students = students['twophase_lotteried_students']
+        if 'twophase_star_students' in students:
+            # We can't do the join in SQL, because the query generated takes at leas half an hour.  So do it in python.
+            stars = set(students['twophase_star_students'].values_list('id',flat=True))
+            prioritys = set(students['twophase_priority_students'].values_list('id',flat=True))
+            self.lotteried_students = list(stars|prioritys)
+
         elif 'lotteried_students' in students:
             self.lotteried_students = students['lotteried_students']
         else:
@@ -113,7 +117,11 @@ class LotteryAssignmentController(object):
     def get_ids_and_indices(self, qs):
         """ Get a tuple of the IDs and lookup indices of the objects stored in the QuerySet qs. """
         
-        a1 = numpy.array(qs.order_by('id').values_list('id', flat=True))
+        if 'order_by' in dir(qs):
+            # We have a QuerySet.
+            a1 = numpy.array(qs.order_by('id').values_list('id', flat=True))
+        else:
+            a1 = numpy.array(qs)
         a2 = self.get_index_array(a1)
         return (a1, a2)
         
