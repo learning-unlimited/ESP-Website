@@ -49,11 +49,11 @@ class StudentRegTwoPhase(ProgramModuleObj):
         q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration') 
         q_ssi = Q(studentsubjectinterest__subject__parent_program=self.program) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest') 
         if QObject:
-            return {'twophase_star_students': q_sr,
-                    'twophase_priority_students' : q_ssi}
+            return {'twophase_star_students': q_ssi,
+                    'twophase_priority_students' : q_sr}
         else:
-            return {'twophase_star_students': ESPUser.objects.filter(q).distinct(),
-                    'twophase_priority_students': ESPUser.objects.filter(q).distinct()}
+            return {'twophase_star_students': ESPUser.objects.filter(q_ssi).distinct(),
+                    'twophase_priority_students': ESPUser.objects.filter(q_sr).distinct()}
 
     def studentDesc(self):
         return {'twophase_star_students': "Students who have starred classes in the two-phase lottery",
