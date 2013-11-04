@@ -655,7 +655,7 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
                                                program=request.program)
             #   For now, allow an exception if the user is of the wrong type
             #   This is because we are used to UserBits having a null user affecting everyone, regardless of user type.
-            if not canView and Permission.objects.filter(permission_type=perm_name, program=request.program, user__isnull=True).exists():
+            if not canView and Permission.valid_objects().filter(permission_type=perm_name, program=request.program, user__isnull=True).exists():
                 canView = True
 
     return (canView, response)
