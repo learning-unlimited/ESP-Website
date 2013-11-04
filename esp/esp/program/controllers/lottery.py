@@ -64,11 +64,15 @@ class LotteryAssignmentController(object):
     def __init__(self, program, **kwargs):
         """ Set constant parameters for a lottery assignment. """
         
-        if 'lotteried_students' not in program.students():
-            raise Exception('Cannot retrive lottery preferences for program, please ensure that it has the lottery module.')
 
         self.program = program
-        self.lotteried_students = self.program.students()['lotteried_students']
+        students = self.program.students()
+        if 'twophase_lotteried_students' in students:
+            self.lotteried_students = students['twophase_lotteried_students']
+        elif 'lotteried_students' in students:
+            self.lotteried_students = students['lotteried_students']
+        else:
+            raise Exception('Cannot retrive lottery preferences for program, please ensure that it has the lottery module.')
         self.sections = self.program.sections().filter(status__gt=0, parent_class__status__gt=0, registration_status=0, meeting_times__isnull=False).order_by('id').select_related('parent_class','parent_class__parent_program','meeting_times').distinct()
         self.timeslots = self.program.getTimeSlots()
         self.num_timeslots = len(self.timeslots)

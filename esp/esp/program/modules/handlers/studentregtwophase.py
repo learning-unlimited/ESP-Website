@@ -44,6 +44,18 @@ from esp.web.util import render_to_response
 
 class StudentRegTwoPhase(ProgramModuleObj):
 
+    def students(self, QObject = False):
+        q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration') 
+        q_ssi = Q(studentsubjectinterest__section__parent_program=self.program) & nest_Q(StudentSubjectInterest.is_valid_qobject(), 'studentsubjectinterest') 
+        q = q_sr | q_ssi
+        if QObject:
+            return {'twophase_lotteried_students': q}
+        else:
+            return {'twophase_lotteried_students': ESPUser.objects.filter(q).distinct()}
+
+    def studentDesc(self):
+        return {'twophase_lotteried_students': "Students who have entered the two-phase lottery"}
+
     def isCompleted(self):
         records = Record.objects.filter(user=get_current_request().user,
                                         event="twophase_reg_done",
