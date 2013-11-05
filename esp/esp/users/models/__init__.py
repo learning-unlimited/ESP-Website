@@ -1638,6 +1638,34 @@ class PersistentQueryFilter(models.Model):
 
         return QObj
 
+    def set_Q(self, q_filter, item_model=None, description='', should_save=True, restrict_to_active=True):
+        """
+        q_filter - The new filter to set.
+        item_model - The new item model, or None if it should stay the same.
+        description - The new filter description.
+        should_save - If True (default), this PQF will be saved after setting the new filter.
+        restrict_to_active - If True (default) and the filter is on users, automatically add an is_active=True filter.
+        """
+        if item_model is None:
+            item_model = self.item_model
+        self.item_model = str(item_model)
+
+        if restrict_to_active and (self.item_model.find('auth.models.User') >= 0 or self.item_model.find('esp.users.models.ESPUser') >= 0):
+            q_filter = q_filter & Q(is_active=True)
+
+        import hashlib
+        dumped_filter = pickle.dumps(q_filter)
+        sha1_hash = hashlib.sha1(dumped_filter).hexdigest()
+
+        self.q_filter = dumped_filter
+        self.sha1_hash = sha1_hash
+        self.useful_name = description
+
+        if should_save:
+            self.save()
+
+        return self
+
     def getList(self, module):
         """ This will actually return the list generated from the filter applied
             to the live database. You must supply the model. If the model is not matched,
