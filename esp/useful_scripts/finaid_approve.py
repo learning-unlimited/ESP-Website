@@ -16,7 +16,7 @@ import re
 
 
 # CONFIGURATION
-PROGRAM = "Splash! 2013"  # Splash! 2012
+PROGRAM = "Splash! 2013"
 PROGRAM_COST = 40
 
 
