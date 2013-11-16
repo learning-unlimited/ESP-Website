@@ -263,13 +263,16 @@ LIMIT 1
 
         try:
             user = int(request.GET.get('user', None))
+            user_obj = ESPUser.objects.get(id=user)
         except:
             result['message'] = "Could not find user %s." % request.GET.get('user', None)
             
-        if user:
-            user_obj = ESPUser.objects.get(id=user)
-            PrintRequest.objects.create(user=user_obj, printer=request.GET.get('printer', None))
-            result['message'] = "Submitted %s's schedule for printing." % (user_obj.name())
+        printer = request.GET.get('printer',None)
+        if printer is not None:
+            # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
+            printer = Printer.objects.get(name=printer)
+        PrintRequest.objects.create(user=user_obj, printer=printer)
+        result['message'] = "Submitted %s's schedule for printing." % (user_obj.name())
 
         simplejson.dump(result, resp)
         return resp

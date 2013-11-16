@@ -188,10 +188,12 @@ function print_schedule()
 {
     printer_name = $j("#printer_selector").attr("value");
     printing_url = program_base_url + "printschedule_status";
+    data = { 'user' : state.student_id }
     if (printer_name)
-        printing_url = printing_url + "/" + printer_name; 
+        data.printer = printer_name
     result = $j.ajax({
-        url: printing_url + "?user=" + state.student_id,
+        url: printing_url,
+        data: data,
         async: false
     });
     add_message(JSON.parse(result.responseText).message);
