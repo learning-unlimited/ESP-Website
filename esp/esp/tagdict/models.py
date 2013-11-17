@@ -59,7 +59,7 @@ class Tag(models.Model):
         """
         res = None
         if program is not None:
-            res = cls.getTag(key, target=program, default=None, )
+            res = cls.getTag(key, target=program, default=default, )
         if res is None:
             res = cls.getTag(key, target=None, default=default, )
         return res
@@ -69,14 +69,13 @@ class Tag(models.Model):
         """ A variant of getProgramTag that returns boolean values.
             The default argument should also be boolean. """
             
-        tag_val = Tag.getProgramTag(key, program)
-        if tag_val is None:
-            return default
+        tag_val = Tag.getProgramTag(key, program, default)
+        if isinstance(tag_val,bool):
+            return tag_val
+        elif tag_val.strip().lower() == 'true' or tag_val.strip() == '1':
+            return True
         else:
-            if tag_val.strip().lower() == 'true' or tag_val.strip() == '1':
-                return True
-            else:
-                return False
+            return False
     
     @classmethod
     def setTag(cls, key, target=None, value=EMPTY_TAG):
