@@ -60,7 +60,7 @@ class Tag(models.Model):
         res = None
         if program is not None:
             res = cls.getTag(key, target=program, default=default, )
-        if res is None:
+        if res is default:
             res = cls.getTag(key, target=None, default=default, )
         return res
     
@@ -70,7 +70,7 @@ class Tag(models.Model):
             The default argument should also be boolean. """
             
         tag_val = Tag.getProgramTag(key, program, default)
-        if isinstance(tag_val,bool):
+        if tag_val is default:
             return tag_val
         elif tag_val.strip().lower() == 'true' or tag_val.strip() == '1':
             return True
