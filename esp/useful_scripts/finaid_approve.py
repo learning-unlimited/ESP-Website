@@ -21,7 +21,9 @@ PROGRAM_COST = 40
 
 
 # ITERATE & APPROVE REQUESTS
-reqs = FinancialAidRequest.objects.filter(program__name=PROGRAM)
+reqs = FinancialAidRequest.objects.filter(done = False, program__name=PROGRAM).exclude(household_income = None, extra_explaination = None)
+
+print reqs.count()
 
 print "New Approvals:"
 approved_any = False
@@ -30,12 +32,15 @@ emails = []
 errors = []
 
 for req in reqs:
-    if (req.household_income is None or re.match(r'^(\s)*$', req.household_income)) and \
-        (req.extra_explaination is None or re.match(r'(\s)*$', req.extra_explaination)):
+#    if (req.household_income is None or re.match(r'^(\s)*$', req.household_income)) and \
+#        (req.extra_explaination is None or re.match(r'(\s)*$', req.extra_explaination)):
 
-       continue
-   
-    if req.financialaidgrant_set.all().count != 0 : continue
+#    if req.household_income is None and req.extra_explaination is None:
+#       continue
+
+    print req.user
+
+    if req.financialaidgrant_set.all().count() != 0 : continue
 
     e = req.user.email
     print e
