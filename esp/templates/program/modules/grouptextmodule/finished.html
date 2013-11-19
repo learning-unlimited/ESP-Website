@@ -1,0 +1,37 @@
+{% extends "main.html" %}
+
+{% block title %}Group Texting Portal{% endblock %}
+
+{% block subsection_name %}Group Texting Portal{% endblock %}
+
+{% block xtrajs %}
+{{block.super}}
+<script type="text/javascript">
+<!--
+
+//-->
+</script>
+{% endblock %}
+{% block stylesheets %}
+{{block.super}}
+{% endblock %}
+
+{% block content %}
+
+
+<h1>Communications Portal</h1>
+<br />
+<h2>FINISHED!</h2>
+
+<br />
+<p>
+Congratulations!<br />
+<br />
+The texts are in the process of being sent. It will take approximately <strong>{{time}}</strong> seconds to text everyone on the list, so please be patient!
+
+<br />
+</p>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}
