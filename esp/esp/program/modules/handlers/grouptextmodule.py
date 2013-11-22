@@ -72,7 +72,7 @@ class GroupTextModule(ProgramModuleObj):
 
 
         if not ('base_list' in data and 'recipient_type' in data):
-            raise ESPError(), "Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it."
+            raise ESPError(), "Corrupted POST data!  Please contact us at "+settings.DEFAULT_EMAIL_ADDRESSES['support']+" and tell us how you got this error, and we'll look into it."
 
         filterObj = UserSearchController().filter_from_postdata(prog, data)
 
@@ -96,29 +96,7 @@ class GroupTextModule(ProgramModuleObj):
         context = {}
         context['program'] = prog
 
-        #   If list information was submitted, continue to prepare a message
-        # if request.method == 'POST':
-        #     #   Turn multi-valued QueryDict into standard dictionary
-        #     data = {}
-        #     for key in request.POST:
-        #         data[key] = request.POST[key]
-
-        #     ##  Handle normal list selecting submissions
-        #     if ('base_list' in data and 'recipient_type' in data) or ('combo_base_list' in data):
-        #         filterObj = usc.filter_from_postdata(prog, data)
-
-        #         context['filterid'] = filterObj.id
-        #         context['listcount'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
-        #         return render_to_response(self.baseDir()+'write.html', request, (prog, tl), context)
-        #     else:
-        #         raise ESPError(True), 'What do I do without knowing what kind of users to look for?'
-
-        #   Otherwise, render a page that shows the list selection options
         context.update(usc.prepare_context(prog))
-        #contextLists = context['lists']
-        #for userType in contextLists.keys():
-        #    print userType
-        #    print [lst['name'] for lst in context['lists'][userType]]
         context['lists'] = context['lists']['Student']
 
         # care about enrolled students, students in specific classes, and not really anyone else
@@ -131,9 +109,6 @@ class GroupTextModule(ProgramModuleObj):
 
     def sendMessages(self, filterobj, body):
         from twilio.rest import TwilioRestClient
-        from django.conf import settings
-        account_sid = settings.TWILIO_ACCOUNT_SID
-        auth_token = settings.TWILIO_AUTH_TOKEN
 
         users = filterobj.getList(ESPUser)
         try:
@@ -141,7 +116,13 @@ class GroupTextModule(ProgramModuleObj):
         except:
             pass
 
+        account_sid = settings.TWILIO_ACCOUNT_SID
+        auth_token = settings.TWILIO_AUTH_TOKEN
         ourNumbers = settings.TWILIO_ACCOUNT_NUMBERS
+
+        if not account_sid or not auth_token or not ourNumbers:
+          raise ESPError(), "You must configure the Twilio account settings before attempting to send texts using this module"
+
         numberIndex = 0
 
         for user in users:
@@ -149,6 +130,7 @@ class GroupTextModule(ProgramModuleObj):
 
             contactInfo = None
             try:
+                # TODO: handle multiple ContactInfo objects per user
                 contactInfo = ContactInfo.objects.get(user=user)
             except ContactInfo.DoesNotExist:
                 pass
