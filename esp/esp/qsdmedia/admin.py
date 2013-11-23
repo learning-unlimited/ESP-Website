@@ -38,5 +38,7 @@ from esp.admin import admin_site
 from esp.qsdmedia.models import Media
 
 class MediaAdmin(admin.ModelAdmin):
-    pass
+    list_display = ['owner_type', 'owner_id', 'friendly_name', 'target_file', ]
+    list_display_links = ['friendly_name']
+    search_fields = ['friendly_name', 'owner_id', ]
 admin_site.register(Media, MediaAdmin)
