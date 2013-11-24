@@ -3,10 +3,9 @@ from esp.users.views.registration import *
 from esp.users.views.password_reset import *
 from esp.users.views.emailpref import *
 from esp.users.views.make_admin import *
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, admin_required
 
 from esp.program.models import Program
-from esp.program.modules.base import needs_admin
 
 from django.http import HttpResponseRedirect, HttpResponse
 from django.template import RequestContext
@@ -165,6 +164,7 @@ def disable_account(request):
         
     return render_to_response('users/disable_account.html', request, context)
 
+@admin_required
 def morph_into_user(request):
     morph_user = ESPUser.objects.get(id=request.GET[u'morph_user'])
     try:
