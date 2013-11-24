@@ -5,6 +5,7 @@ from esp.users.views.emailpref import *
 from esp.users.views.make_admin import *
 from esp.users.models import ESPUser
 
+from esp.program.models import Program
 from esp.program.modules.base import needs_admin
 
 from django.http import HttpResponseRedirect, HttpResponse
@@ -166,10 +167,17 @@ def disable_account(request):
 
 def morph_into_user(request):
     morph_user = ESPUser.objects.get(id=request.GET[u'morph_user'])
+    try:
+        onsite = Program.objects.get(id=request.GET[u'onsite'])
+    except (KeyError, ValueError, Program.DoesNotExist):
+        onsite = None
     request.user.switch_to_user(request,
                                 morph_user,
                                 '/manage/userview?username=' + morph_user.username,
                                 'User Search for '+morph_user.name(),
-                                False)
+                                onsite is not None)
 
-    return HttpResponseRedirect('/')
+    if onsite is not None:
+        return HttpResponseRedirect('/learn/%s/studentreg' % onsite.getUrlBase())
+    else:
+        return HttpResponseRedirect('/')
