@@ -2,7 +2,7 @@
   float: right;
 }
 
-a#morphlink:link, a#onsitelink:link {
+a.sidelink:link {
   text-decoration: none;
   
   display: block;
@@ -16,7 +16,7 @@ a#morphlink:link, a#onsitelink:link {
   margin-top: 5px;
 }
 
-a#morphlink:hover, a#onsitelink:hover {
+a.sidelink:hover {
   color: #ffffff;
   background-color: #3366cc;
 }
