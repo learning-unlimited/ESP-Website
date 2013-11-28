@@ -1,0 +1,29 @@
+{% extends "main.html" %}
+
+{% block title %}Medical and Emergency Contact Information for {{program.niceName}}{% endblock %}
+
+{% block content %}
+<h1>Med-liab Override for Paper Forms</h1>
+
+<p>Enter a username to allow them to bypass the online medical form.</p>
+
+<form method="POST">{% csrf_token %}
+Username:
+<input type="text" name="username" />
+<input type="submit" value="Submit" />
+</form>
+
+{% if status == 'invalid user' %}
+<p style="color:#f00">Invalid user.</p>
+{% endif %}
+{% if status == 'bypass bit exists' %}
+<p style="color:#f00">Bypass userbit already exists.</p>
+{% endif %}
+{% if status == 'reg bit exists' %}
+<p style="color:#f00">User has already submitted form.</p>
+{% endif %}
+{% if status == 'success' %}
+<p style="color:#070">Userbit added successfully.</p>
+{% endif %}
+
+{% endblock %}

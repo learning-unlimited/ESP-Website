@@ -482,6 +482,7 @@ def newprogram(request):
         line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
 
         template_prog["base_cost"] = int(sum(x["amount_dec"] for x in line_items))
+        template_prog["sibling_discount"] = tprogram.sibling_discount_tag
 
     if 'checked' in request.GET:
         # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
@@ -499,7 +500,7 @@ def newprogram(request):
             new_prog.save()
             pcf.save_m2m()
             
-            commit_program(new_prog, context['perms'], context['modules'], context['cost'])
+            commit_program(new_prog, context['perms'], context['modules'], context['cost'], context['sibling_discount'])
 
             # Create the default resource types now
             default_restypes = Tag.getProgramTag('default_restypes', program=new_prog)
@@ -547,7 +548,7 @@ def newprogram(request):
             #   Save the form's raw data instead of the form itself, or its clean data.
             #   Unpacking of the data happens at the next step.
 
-            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost']})
+            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
             request.session['context_str'] = context_pickled
             
             return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'perms':perms, 'modules': modules})
@@ -637,7 +638,7 @@ def manage_pages(request):
         elif request.GET['cmd'] == 'delete':
             #   Mark as inactive all QSD pages matching the one with ID request.GET['id']
             if data['sure'] == 'True':
-                all_qsds = QuasiStaticData.objects.filter(path=qsd.path, name=qsd.name)
+                all_qsds = QuasiStaticData.objects.filter(url=qsd.url, name=qsd.name)
                 for q in all_qsds:
                     q.disabled = True
                     q.save()
@@ -650,7 +651,7 @@ def manage_pages(request):
             return render_to_response('qsd/delete_confirm.html', request, {'qsd': qsd})
         elif request.GET['cmd'] == 'undelete':
             #   Make all the QSDs enabled and return to viewing the list
-            all_qsds = QuasiStaticData.objects.filter(path=qsd.path, name=qsd.name)
+            all_qsds = QuasiStaticData.objects.filter(url=qsd.url, name=qsd.name)
             for q in all_qsds:
                 q.disabled = False
                 q.save()

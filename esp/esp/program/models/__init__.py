@@ -1044,8 +1044,39 @@ class Program(models.Model, CustomFormsLinkModel):
         return {}
     by_prog_inst.depend_on_row(lambda: DataTree, program_selector)
     by_prog_inst = classmethod(by_prog_inst)
-    
-    
+
+    def _sibling_discount_get(self):
+        """
+        Memoizes and returns the amount of the sibling_discount Tag, defaulting
+        to 0.00.
+        """
+        if hasattr(self, "_sibling_discount"):
+            return self._sibling_discount
+        self._sibling_discount = Decimal(Tag.getProgramTag('sibling_discount', program=self, default='0.00'))
+        return self._sibling_discount
+
+    def _sibling_discount_set(self, value):
+        if value is not None:
+            self._sibling_discount = Decimal(value)
+            Tag.setTag('sibling_discount', target=self, value=self._sibling_discount)
+        else:
+            self._sibling_discount = Decimal('0.00')
+            Tag.objects.filter(key='sibling_discount', object_id=self.id).delete()
+
+    sibling_discount = property(_sibling_discount_get, _sibling_discount_set)
+
+    @property
+    def splashinfo_objects(self):
+        """
+        Memoizes and returns the dictionary of students who have sibling
+        discounts for this program.
+        """
+        if hasattr(self, "_splashinfo_objects"):
+            return self._splashinfo_objects
+        self._splashinfo_objects = dict(SplashInfo.objects.filter(program=self, siblingdiscount=True).distinct().values_list('student', 'siblingdiscount'))
+        return self._splashinfo_objects
+
+
 class SplashInfo(models.Model):
     """ A model that can be used to track additional student preferences specific to
         a program.  Stanford has used this for lunch selection and a sibling discount.
@@ -1793,6 +1824,16 @@ class StudentRegistration(ExpirableModel):
     
     def __unicode__(self):
         return u'%s %s in %s' % (self.user, self.relationship, self.section)
+
+class StudentSubjectInterest(ExpirableModel):
+    """
+    Model indicating a student interest in a class section.
+    """
+    subject = AjaxForeignKey('ClassSubject')
+    user = AjaxForeignKey(ESPUser)
+
+    def __unicode__(self):
+        return u'%s interest in %s' % (self.user, self.subject)
     
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *

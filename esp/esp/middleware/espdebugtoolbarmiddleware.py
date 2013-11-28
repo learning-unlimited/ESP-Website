@@ -44,8 +44,12 @@ class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):
         from django.conf import settings
 
         # Always show toolbar when debugging,
-        # or when given a special GET param.
-        # Require the user to be an admin.
-        return request.user.isAdmin() and \
-            (settings.DEBUG or request.GET.get('debug_toolbar', None) == 't')
+        # or when given a special GET param
+        # while logged in as an admin.
+        # NOTE (jmoldow): The ordering is intentional. It takes advantage of
+        # short-circuiting to only call request.user.isAdmin() when necessary,
+        # because calling request.user.isAdmin() sets Vary:Cookie and prevents
+        # proxy caching. See Github issue #739.
+        return settings.DEBUG or \
+                (request.GET.get('debug_toolbar', None) == 't' and request.user.isAdmin())
 

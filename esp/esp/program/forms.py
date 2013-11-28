@@ -60,6 +60,7 @@ class ProgramCreationForm(BetterModelForm):
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
+    sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None, help_text='The amount of the sibling discount. Leave blank to disable sibling discounts.')
     program_type      = forms.CharField(label = "Program Type")
     program_modules   = forms.MultipleChoiceField(choices = [], label = 'Program Modules')
 
@@ -87,7 +88,7 @@ class ProgramCreationForm(BetterModelForm):
 ('Program Title', {'fields': ['term', 'term_friendly'] }),
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['admins','director_email']}),
-                     ('Financial Details' ,{'fields':['base_cost']}),
+                     ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
                      ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories']}),
                      ('Registrations Date',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
 
@@ -114,6 +115,7 @@ ProgramCreationForm.base_fields['publish_start'].line_group = 1
 ProgramCreationForm.base_fields['publish_end'].line_group = 1
 
 ProgramCreationForm.base_fields['base_cost'].line_group = 4
+ProgramCreationForm.base_fields['sibling_discount'].line_group = 4
 '''
 
 class StatisticsQueryForm(forms.Form):

@@ -36,9 +36,10 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 from esp.qsd.models import QuasiStaticData, ESPQuotations
+import reversion
 
-class QuasiStaticDataAdmin(admin.ModelAdmin):
-    search_fields = ['title','name','keywords','description']
+class QuasiStaticDataAdmin(reversion.VersionAdmin):
+    search_fields = ['title','name','keywords','description','url']
 admin_site.register(QuasiStaticData, QuasiStaticDataAdmin)
 
 admin_site.register(ESPQuotations)
