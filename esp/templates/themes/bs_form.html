@@ -1,0 +1,32 @@
+<script type="text/javascript"> 
+	  $j(document).ready(function(){
+	      $j('label').each(function(index) {
+		  if ($j(this).attr('for') != undefined) {
+		      $j(this).addClass('control-label');
+		  }
+	      });
+	      $j('div.control-group span.help-inline').each(function(index){$j(this).parent().parent().addClass('error');});
+	  });
+</script>
+
+{% for field in form.hidden_fields %}
+{{ field }}
+{% endfor %}
+		      
+{% for field in form.visible_fields %}
+
+<div class="control-group">
+  <label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+  <div class="controls">
+    {{ field }}
+  {% if field.errors %}
+  <span class="help-inline">
+    {% for error in field.errors %}
+    {{error}}
+    {% endfor %}
+  </span>
+  {% endif %}
+  </div>
+</div>
+
+{% endfor %}

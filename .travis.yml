@@ -19,3 +19,5 @@ before_script:
 script: 
   - cd esp
   - ./manage.py test
+notifications:
+  email: false  # disable emails until we configure the tests

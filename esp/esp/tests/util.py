@@ -7,7 +7,6 @@ import pickle
 import string
 import random
 
-
 class CacheFlushTestCase(TestCase):
     """ Flush the cache at the start and end of this test case """
     def _flush_cache(self):

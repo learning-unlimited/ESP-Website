@@ -7,7 +7,9 @@ from django import forms
 from django.forms import widgets
 from django.utils.safestring import mark_safe
 import django.utils.formats
+from django.template import Template, Context
 
+import simplejson as json
 import datetime
 import time
 
@@ -76,6 +78,19 @@ class DateTimeWidget(forms.widgets.TextInput):
                 continue
         return None
 
+class ClassAttrMergingSelect(forms.Select):
+
+    def build_attrs(self, extra_attrs=None, **kwargs):
+        attrs = dict(self.attrs, **kwargs)
+        #   Merge 'class' attributes - this is the difference from Django's default implementation
+        if extra_attrs:
+            if 'class' in attrs and 'class' in extra_attrs \
+                    and isinstance(extra_attrs['class'], basestring):
+                attrs['class'] += ' ' + extra_attrs['class']
+                del extra_attrs['class']
+            attrs.update(extra_attrs)
+        return attrs
+
 # TODO: Make this not suck
 class SplitDateWidget(forms.MultiWidget):
     """ A date widget that separates days, etc. """
@@ -98,10 +113,10 @@ class SplitDateWidget(forms.MultiWidget):
                    'day'  : [('',' ')] + zip(range(1, 32), day_choices)
                    }
 
-        year_widget = forms.Select(choices=choices['year'])
-        month_widget = forms.Select(choices=choices['month'])
-        day_widget = forms.Select(choices=choices['day'])
-
+        year_widget = ClassAttrMergingSelect(choices=choices['year'], attrs={'class': 'input-small'})
+        month_widget = ClassAttrMergingSelect(choices=choices['month'], attrs={'class': 'input-medium'})
+        day_widget = ClassAttrMergingSelect(choices=choices['day'], attrs={'class': 'input-mini'})
+        
         widgets = (month_widget, day_widget, year_widget)
         super(SplitDateWidget, self).__init__(widgets, attrs)
 
@@ -124,15 +139,10 @@ class SplitDateWidget(forms.MultiWidget):
             except:
                 return None
 
-    # Put labels in
+    #   Format output
+    #   (labels are now aggregated at beginning of line, as if this is a single control)
     def format_output(self, rendered_widgets):
-        output = u'\n<label for="dob_0">Month:</label>\n'
-        output += rendered_widgets[0]
-        output += u'\n<label for="dob_1">Day:</label>\n'
-        output += rendered_widgets[1]
-        output += u'\n<label for="dob_2">Year:</label>\n'
-        output += rendered_widgets[2]
-        return output
+        return '\n'.join(rendered_widgets)
 
 class CaptchaWidget(forms.widgets.TextInput):
     request = None
@@ -212,3 +222,127 @@ class DummyWidget(widgets.Input):
             output += attrs['text']
         return mark_safe(output)
 
+class NavStructureWidget(forms.Widget):
+    template_text = """
+<input type="hidden" id="id_{{ name }}" name="{{ name }}" value="{{ value }}" />
+<div id="{{ name }}_options">
+<ul id="{{ name }}_entries"></ul>
+</div>
+<script type="text/javascript">
+function {{ name }}_delete_link(event)
+{
+    event.preventDefault();
+    $j(this).parent().detach();
+}
+
+function {{ name }}_delete_tab(event)
+{
+    event.preventDefault();
+    $j(this).parent().detach();
+}
+
+function {{ name }}_add_link(obj, data)
+{
+    var entry_list = obj.children("ul");
+    entry_list.append($j("<li />"));
+    var entry = entry_list.children().last();
+    entry.append($j("<span>Text: </span>"));
+    entry.append($j("<input class='data_text nav_secondary_field input-small' type='text' value='" + data.text + "' />"));
+    entry.append($j("<span>Link: </span>"));
+    entry.append($j("<input class='data_link nav_secondary_field' type='text' value='" + data.link + "' />"));
+    
+    var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete link</button>");
+    delete_button.click({{ name }}_delete_link);
+    entry.append(delete_button);
+}
+
+function {{ name }}_add_tab(obj, data)
+{
+    //  obj.children("li").last().after($j("<li />"));
+    obj.append($j("<li />"));
+    var category_li = obj.children("li").last();
+    category_li.append($j("<span>Header text: </span>"));
+    category_li.append($j("<input class='data_header nav_header_field input-mini' type='text' value='" + data.header + "' />"));
+    category_li.append($j("<span>Header link: </span>"));
+    category_li.append($j("<input class='data_header_link nav_header_field' type='text' value='" + data.header_link + "' />"));
+    var delete_button = $j("<button class='btn btn-mini btn-danger'>Delete tab</button>");
+    delete_button.click({{ name }}_delete_tab);
+    category_li.append(delete_button);
+    
+    category_li.append($j("<ul />"));
+    var entry_list = category_li.children("ul");
+    
+    //  console.log("Links: ");
+    for (var j = 0; j < data.links.length; j++)
+    {
+        {{ name }}_add_link(category_li, {text: data.links[j].text, link: data.links[j].link})
+    }
+    var add_button = $j("<button class='btn btn-mini'>Add link</button>");
+    add_button.click(function (event) {
+        event.preventDefault();
+        {{ name }}_add_link($j(this).parent(), {text: "", link: ""});
+    });
+    category_li.append(add_button);
+}
+
+function {{ name }}_save()
+{
+    var result = $j("#{{ name }}_entries").children("li").map(function (index, element) {
+        return {
+            header: $j(element).children(".data_header").val(),
+            header_link: $j(element).children(".data_header_link").val(),
+            links: $j(element).children("ul").children("li").map(function (index, element) {
+                return {
+                    link: $j(element).children(".data_link").val(),
+                    text: $j(element).children(".data_text").val()
+                };
+            }).get()
+        };
+    }).get();
+    $j("input[name={{ name }}]").val(JSON.stringify(result));
+    return result;
+}
+
+function {{ name }}_setup()
+{
+    var {{ name }}_data = JSON.parse($j("#id_{{ name }}").val());
+    var anchor_ul = $j("#{{ name }}_entries");
+    for (var i = 0; i < {{ name }}_data.length; i++)
+    {
+        {{ name }}_add_tab(anchor_ul, {{ name }}_data[i]);
+    }
+    var add_button = $j("<button class='btn btn-mini btn-primary'>Add tab</button>");
+    add_button.click(function (event) {
+        event.preventDefault();
+        {{ name }}_add_tab(anchor_ul, {header: "", header_link: "", links: [{text: "", link: ""}]});
+    });
+    anchor_ul.parent().append(add_button);
+    
+    anchor_ul.parents("form").submit({{ name }}_save);
+}
+
+$j(document).ready({{ name }}_setup);
+</script>
+<style type="text/css">
+#{{ name }}_entries {
+    font-size: 0.9em;
+}
+#{{ name }}_entries input {
+    font-size: 1.0em;
+    margin-right: 5px;
+}
+</style>
+"""
+
+    def render(self, name, value, attrs=None):
+        if value is None: value = ''
+        final_attrs = self.build_attrs(attrs, name=name)
+        context = {}
+        context['name'] = name
+        context['value'] = json.dumps(value)
+        template = Template(NavStructureWidget.template_text)
+        return template.render(Context(context))
+
+    def value_from_datadict(self, data, files, name):
+        result = json.loads(data[name])
+        return result

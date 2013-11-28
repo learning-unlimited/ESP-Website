@@ -35,6 +35,10 @@ Learning Unlimited, Inc.
 from django.contrib import admin
 from esp.admin import admin_site
 from esp.web.models import NavBarEntry, NavBarCategory
-        
-admin_site.register(NavBarEntry)
+
+class NavBarEntryAdmin(admin.ModelAdmin):
+    list_display = ('category', 'sort_rank', 'text', 'link')
+    list_filter = ('category',)
+
+admin_site.register(NavBarEntry, NavBarEntryAdmin)
 admin_site.register(NavBarCategory)
