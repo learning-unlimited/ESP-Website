@@ -22,6 +22,7 @@
     {% if teacherbio.picture %}<img src="{{ teacherbio.picture.url }}" title="Picture of {{ user.first_name }} {{ user.last_name }}"
         alt="Picture of {{ user.first_name }} {{ user.last_name }}" class="biophoto" />{% endif %}
     <a id="morphlink" href="/myesp/morph?morph_user={{profile.user.id}}">Morph into this user</a>
+    <a id="onsitelink" href="/myesp/morph?morph_user={{profile.user.id}}&onsite={{profile.program.id}}">Onsite for {{profile.program.niceName}}</a>
 </div>
 
 <table class="dottedtable">
