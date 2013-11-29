@@ -244,14 +244,14 @@ class AvailabilityModule(ProgramModuleObj):
         marked_available = set(teacher.getAvailableTimes(self.program, True))
 
         # Now get times that teacher is teaching
-        # This is breaking right now
-        # Maybe I want to show what class it is?
+        # Also keep track of what class it is
         teaching_sections = teacher.getTaughtSections(self.program)
-        teaching_times = []
+        teaching_times = {}
         for s in teaching_sections:
             sec_times = s.get_meeting_times()
             for t in sec_times:
-                teaching_times.append(t)
+                teaching_times[t]=s.parent_class.emailcode() + ': ' +s.parent_class.title
+
 
         # Check the availability and teaching status of each timeslot, and mark in tuple accordingly as (start time, end time, available, teaching)
         available = []
@@ -259,16 +259,16 @@ class AvailabilityModule(ProgramModuleObj):
         for t in timeslots:
             if t in teaching_times:
                 if t in marked_available:
-                    available.append((t.start, t.end, True, True))
+                    available.append((t.start, t.end, True, True, teaching_times.get(t)))
                 else:
-                    available.append((t.start, t.end, False, True))
+                    available.append((t.start, t.end, False, True, teaching_times.get(t)))
             else:
                 if t in marked_available:
-                    available.append((t.start, t.end, True, False))
+                    available.append((t.start, t.end, True, False, teaching_times.get(t)))
                 else:
-                    available.append((t.start, t.end, False, False))
+                    available.append((t.start, t.end, False, False, teaching_times.get(t)))
 
-        context = {'available': available, 'teacher_name': teacher.first_name + ' ' + teacher.last_name, 'edit_path': '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.username) }
+        context = {'available': available, 'teacher_name': teacher.first_name + ' ' + teacher.last_name, 'teaching_times': teaching_times, 'edit_path': '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.username) }
         return render_to_response(self.baseDir()+'check_availability.html', request, context)
 
     @aux_call
