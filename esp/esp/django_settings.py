@@ -219,13 +219,14 @@ INSTALLED_APPS = (
     'esp.cache',
     'esp.cache_loader',
     'esp.tagdict',
+    'esp.seltests',
+    'esp.dataviews',
+    'esp.themes',
     'django_extensions',
     'django_extensions.tests',
     'reversion',
     'south',
     'form_utils',
-    'esp.seltests',
-    'esp.dataviews',
     'django.contrib.redirects',
     'debug_toolbar',
 )
@@ -239,6 +240,10 @@ for app in ('django_evolution', 'django_command_extensions'):
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
 SESSION_ENGINE="django.contrib.sessions.backends.cached_db"
+
+# Dotted path to callable to be used as view when a request is
+# rejected by the CSRF middleware.
+CSRF_FAILURE_VIEW = 'esp.web.views.csrf.csrf_failure'
 
 TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this one after all branches are transitioned
                                'esp.context_processors.esp_user',
@@ -293,6 +298,12 @@ CONTACTFORM_EMAIL_CHOICES = (
 
 # corresponding email addresses - define these defaults in settings.py, since DEFAULT_EMAIL_ADDRESSES will be overwritten in local_settings.py
 CONTACTFORM_EMAIL_ADDRESSES = {}
+
+#   Certain media files can be served from LU's CDN.  The address of the CDN is here.
+#   It can be overridden by setting CDN_ADDRESS in local_settings.py.
+CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
+
+DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
 
 DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.cache.CacheDebugPanel',

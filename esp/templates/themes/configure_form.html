@@ -1,0 +1,28 @@
+{% extends "main.html" %}
+{% block title %}Theme Selector{% endblock %}
+{% block content %}
+
+<h1>Themes - Setup Theme</h1>
+<h2>Current theme: {{ theme_name }} </h2>
+
+{% if form %}
+<p>The templates used by this theme require some setup in order to display properly.  Please specify the settings for your site in the form below.  If you do not know what the appropriate parameters are, you can leave them blank and return here later to update them.</p>
+
+<p>These settings primarily affect the information that is displayed on your site.  For control over the appearance, you will want to use the <a href="/themes/customize/">theme editor</a>.</p>
+
+<p>
+<form id="theme_setup_form" method="POST" action="/themes/setup/">
+    {{ form }}
+<br />
+<br />
+<center>
+<button class="btn btn-large btn-block btn-primary" type="submit">Save</button>
+</center>
+</form>
+</p>
+
+{% else %}
+There is nothing to set up for this theme.  Please <a href="/themes/">return to the main theme page</a>.
+{% endif %}
+
+{% endblock %}

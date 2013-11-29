@@ -1,63 +1,64 @@
 <!-- Begin Guardian Contact Info -->
 
-<tr>
- <th colspan="2">Parent/Guardian</th>
-</tr>
+<h3>Parent/Guardian Contact</h3>
 
-<tr>
- <td><label for="id_guard_first_name">First Name:</label></td>
- <td>{{ form.guard_first_name }} {% if form.guard_first_name.errors %}
+<div class="control-group">
+ <label class="control-label" for="id_guard_first_name">First Name:</label>
+ <div class="controls">
+ {{ form.guard_first_name }} {% if form.guard_first_name.errors %}
    <br /><span class="form_error">{{ form.guard_first_name.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 
-<tr>
- <td><label for="id_guard_last_name">Last Name:</label></td>
- <td>{{ form.guard_last_name }} {% if form.guard_last_name.errors %}
+<div class="control-group">
+ <label class="control-label" for="id_guard_last_name">Last Name:</label>
+ <div class="controls">
+ {{ form.guard_last_name }} {% if form.guard_last_name.errors %}
    <br /><span class="form_error">{{ form.guard_last_name.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 
-<tr>
- <td><label for="id_guard_e_mail">E-mail address:</label></td>
- <td>{{ form.guard_e_mail }} {% if form.guard_e_mail.errors %}
+<div class="control-group">
+ <label class="control-label" for="id_guard_e_mail">E-mail address:</label>
+ <div class="controls">
+ {{ form.guard_e_mail }} {% if form.guard_e_mail.errors %}
    <br /><span class="form_error">{{ form.guard_e_mail.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 
 {% if form.guard_no_e_mail %}
-<tr>
- <td></td>
- <td>{{ form.guard_no_e_mail }} 
+<div class="control-group">
+ <div class="controls">
+ {{ form.guard_no_e_mail }} 
  <br />Check this box if your parent/guardian does not have access to e-mail.
-    {% if form.guard_e_mail.errors %}
-   <br /><span class="form_error">{{ form.guard_e_mail.errors|join:", " }}</span>
+    {% if form.guard_no_e_mail.errors %}
+   <br /><span class="form_error">{{ form.guard_no_e_mail.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 {% endif %}
 
-<tr>
- <td><label>Phone numbers:</label></td>
- <td>&nbsp;</td>
-</tr>
+<h4>Phone numbers:</h4>
 
-<tr>
- <td align='right'><small><i><label for="id_phone_day"> home </label></i></small></td>
-  <td>{{ form.guard_phone_day }} {% if form.guard_phone_day.errors %}
+<div class="control-group">
+ <small><i><label class="control-label" for="id_guard_phone_day">home</label></i></small>
+ <div class="controls">
+ {{ form.guard_phone_day }} {% if form.guard_phone_day.errors %}
    <br /><span class="form_error">{{ form.guard_phone_day.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 
-<tr>
- <td align='right'><small><i><label for="id_phone_cell">cell</label></i></small></td>
- <td>{{ form.guard_phone_cell }} {% if form.guard_phone_cell.errors %}
+<div class="control-group">
+ <small><i><label class="control-label" for="id_guard_phone_cell">cell</label></i></small>
+ <div class="controls">
+ {{ form.guard_phone_cell }} {% if form.guard_phone_cell.errors %}
    <br /><span class="form_error">{{ form.guard_phone_cell.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
+
 <!-- End Guardian Contact Info -->

@@ -9,12 +9,12 @@
 <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
 <script type="text/javascript" src="/media/scripts/jquery.ui.button.js"></script>
 <script type="text/javascript">
-<!--
+  <!--
 
-function updateDocs(docs) {
-   document.getElementById('adminhelp').innerHTML = docs;
-}
-//-->
+      function updateDocs(docs) {
+      document.getElementById('adminhelp').innerHTML = docs;
+      }
+      //-->
 </script>
 
 <script language="JavaScript">
@@ -64,14 +64,14 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     </div>
     <div class="module_group_body">
         <div style="display: inline-block;">
-        <a href="/manage/{{ program.getUrlBase }}/resources"><div class="module_link_large">
+        <a href="/manage/{{ program.getUrlBase }}/resources"><button type="button" class="module_link_large btn btn-lg">
             <div class="module_link_main">Resources</div>
             <div class="module_link_caption">timeslots, classrooms</div>
-        </div></a>
-        <a href="/manage/{{ program.getUrlBase }}/deadlines"><div class="module_link_large">
+        </button></a>
+        <a href="/manage/{{ program.getUrlBase }}/deadlines"><button type="button" class="module_link_large btn btn-lg">
             <div class="module_link_main">Deadlines</div>
             <div class="module_link_caption">open/close registration</div>
-        </div></a>
+        </button></a>
         </div>
         <div style="display: inline-block;">
         <ul>
@@ -89,14 +89,14 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     </div>
     <div class="module_group_body">
     <div style="display: inline-block;">
-        <a href="/manage/{{ program.getUrlBase }}/commpanel"><div class="module_link_large">
+        <a href="/manage/{{ program.getUrlBase }}/commpanel"><button type="button" class="module_link_large btn btn-lg">
             <div class="module_link_main">E-mail</div>
             <div class="module_link_caption">communications panel</div>
-        </div></a>
-        <a href="/manage/{{ program.getUrlBase }}/admin_morph"><div class="module_link_large">
+        </button></a>
+        <a href="/manage/{{ program.getUrlBase }}/admin_morph"><button type="button" class="module_link_large btn btn-lg">
             <div class="module_link_main">Morph into User</div>
             <div class="module_link_caption">&nbsp;</div>
-        </div></a>
+        </button></a>
     </div>
     </div>
 </div>
@@ -107,24 +107,24 @@ Welcome to the administrative home page for {{ program.niceName }}.  This page l
     </div>
     <div class="module_group_body">
         <div style="display: inline-block;">
-        <a href="/manage/{{ program.getUrlBase }}/dashboard"><div class="module_link_large">
+        <a href="/manage/{{ program.getUrlBase }}/dashboard"><button type="button" class="module_link_large btn btn-lg">
             <div class="module_link_main">Dashboard</div>
             <div class="module_link_caption">review classes and stats</div>
-        </div></a>
-        <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><div class="module_link_large">
+        </button></a>
+        <a href="/manage/{{ program.getUrlBase }}/ajax_scheduling"><button type="button" class="module_link_large btn btn-lg">
             <div class="module_link_main">Scheduling</div>
             <div class="module_link_caption">assign rooms and times</div>
-        </div></a>
+        </button></a>
         </div>
         <div style="display: inline-block;">
-        <a href="/manage/{{ program.getUrlBase }}/get_materials"><div class="module_link_large">
+        <a href="/manage/{{ program.getUrlBase }}/get_materials"><button type="button" class="module_link_large btn btn-lg">
             <div class="module_link_main">Documents</div>
             <div class="module_link_caption">upload and view files</div>
-        </div></a>
-        <a href="/manage/{{ program.getUrlBase }}/volunteering"><div class="module_link_large">
+        </button></a>
+        <a href="/manage/{{ program.getUrlBase }}/volunteering"><button type="button" class="module_link_large btn btn-lg">
             <div class="module_link_main">Volunteers</div>
             <div class="module_link_caption">create shifts, view signups</div>
-        </div></a>
+        </button></a>
         </div>
     </div>
 </div>
@@ -212,3 +212,6 @@ Please select an option to the left to continue, or look down below to select fu
 </td>
 
 {% endblock %}
+
+
+

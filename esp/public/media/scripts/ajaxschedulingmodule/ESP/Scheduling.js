@@ -1,11 +1,52 @@
+var load = function() {
+    json_data = {}
+    var data = {}
+    json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections', 'lunch_timeslots', 'resource_types'];
+    json_fetch(json_components, function(d) {
+	debug_log(d)
+	for (var i in d) {
+	    // Deal with prototype failing
+	    if (typeof d[i] === 'function') { continue; }
+	    data[i] = d[i];
+	}
+	
+	ESP.Scheduling.init(data);
+    }, json_data);
+};
+
 /*
  * the main application class
  */
 ESP.Scheduling = function(){
     function init(test_data_set){
         $j('#body').hide()
+
         // ensure event manager is empty before we begin setting up
         ESP.Utilities.evm.unbind();
+
+	//Add debug features
+	if (debug_on && !ESP.Scheduling.hasOwnProperty('debug_features_added')){
+	    $j('#body').append(
+		$j("<input/>")
+		    .attr({type: "button", value: "Fetch Updates", id: "fetch_updates"})
+		    .click(ESP.Scheduling.fetch_updates)
+	    );
+
+	    //for testing log clearing behavior
+	    $j('#body').append(
+		$j("<input/>")
+		    .attr({type: "button", value: "Clear update log", id: "clear_log"})
+		    .click(function(e) {
+			req = { csrfmiddlewaretoken: csrf_token() }
+
+			$j.post('ajax_clear_change_log', req).success(function(data, status){
+			    console.log("log cleared");
+			})
+		    })
+	    );
+
+	    ESP.Scheduling['debug_features_added'] = true;
+	}
     
         ESP.Scheduling.classes_by_time_type = null;
         ESP.Scheduling.ms_classes_by_time = null;
@@ -20,37 +61,30 @@ ESP.Scheduling = function(){
             this.status = this._status.setStatus.bind(this._status);
             this.status('success','Welcome to the scheduling app!');
         }
-        
-        if(this.roomfilter)
-            this.roomfilter.save();
-        
-        this.matrix = new ESP.Scheduling.Widgets.Matrix(pd.times, pd.rooms, pd.blocks);
-        $j('#matrix-target').text('');
-        $j('#matrix-target').append((new Date()).getMilliseconds());
-        $j('#matrix-target').append(this.matrix.el);
-        if(!this.roomfilter)
-            this.roomfilter = new ESP.Scheduling.Widgets.RoomFilter(this.matrix);
-        else
-            this.roomfilter.restore(this.matrix);
+
+        this.matrix = new ESP.Scheduling.Widgets.Matrix(pd.times, pd.rooms, pd.blocks)
+        this.roomfilter = new ESP.Scheduling.Widgets.RoomFilter(this.matrix);
         this.garbage   = new ESP.Scheduling.Widgets.GarbageBin();
-        $j('#directory-target').text('');
-        $j('#directory-target').append(this.searchbox.el);
-        $j('#directory-target').append(this.garbage.el.addClass('float-right'));
-        $j('#directory-target').append(this.directory.el);
-    
+
+	//TODO:  add directory contents
+
         ESP.Utilities.evm.bind('drag_dropped', function(event, data){
             var extra = {
                 blocks:data.blocks, section:data.section
             };
-            ESP.Utilities.evm.fire('block_section_unassignment_request',{ section: data.section, blocks: data.section.blocks || [] });
-            ESP.Utilities.evm.fire('block_section_assignment_request',extra);
+            //in the past, we've done block_section_assignment_request firing immediately after block_section_unassignment_request here
+            //now we let Matrix.js call block_section_assignment_request with the 'recurse' data after the unassignment HTTP request completes
+            ESP.Utilities.evm.fire('block_section_unassignment_request',{ section: data.section, blocks: data.section.blocks || [], recurse: extra });
+            if(data.section.blocks !== undefined && data.section.blocks[0] !== undefined && extra.blocks[0] !== undefined) {
+            	console.log("Rescheduling [" + data.section.text + "] from " + data.section.blocks[0].time.text + " in " + data.section.blocks[0].room.text + " to " + extra.blocks[0].time.text + " in " + extra.blocks[0].room.text);
+            } else if(extra.blocks[0] !== undefined) {
+            	console.log("Rescheduling [" + data.section.text + "] to " + extra.blocks[0].time.text + " in " + extra.blocks[0].room.text);
+            }
         });
         ESP.Utilities.evm.bind('block_section_assignment_request', function(event, data){
-            //alert('[' + data.block.uid + '] : [' + data.section.uid + ']');
             ESP.Utilities.evm.fire('block_section_assignment',data);
         });
         ESP.Utilities.evm.bind('block_section_unassignment_request', function(event, data){
-            //alert('[' + data.block.uid + '] : [' + data.section.uid + ']');
             ESP.Utilities.evm.fire('block_section_unassignment',data);
         });
 
@@ -63,25 +97,53 @@ ESP.Scheduling = function(){
         ESP.Utilities.evm.bind('block_section_assignment_success', function(event, data){
             dir.filter();
         });
+	window_height = window.innerHeight - $j('#statusbar-wrapper').height() - 60;
         $j('#body').show()
+	
+	//size some things
+	$j('.directory-table-wrapper').css("max-width", window.innerWidth - 50);
+	$j('.directory-table-wrapper').css("min-width", 50);
 
-        console.log("Classes of each type in each timeblock:");
+	$j('#directory-accordion').height(window_height);
+	$j("#directory-target").css("max-width", window.innerWidth-$j('.matrix').width() - 60);
+	$j("#directory-target").css("min-width", 50);
+	$j('#directory-accordion').accordion({fillSpace: "true"});
+
+	//make matrixx resizeable
+	$j('.matrix').resizable({handles: "e"})
+	$j('.matrix').css("max-width", window.innerWidth - 50);
+	$j('.matrix').css("min-width", 50);
+	$j('.matrix').height(window_height);
+	$j('.matrix-body').height($j('.matrix').height()-$j('.matrix-column-header-box').height()-2);
+
+        //make matrix header fixed to the top
+        $j('.matrix').scroll(function (event) {
+            $j('.matrix-header').css('top', $j('.matrix').scrollTop());
+            $j('.matrix-row-header-box').css('left', $j('.matrix').scrollLeft());
+            $j('td.matrix-corner-box').css('left', $j('.matrix').scrollLeft());
+        });
+
+	//set last_fetched_index to the initial age
+	if(!ESP.Scheduling.hasOwnProperty('last_fetched_index')) {
+	ESP.Scheduling.last_fetched_index = 0
+	}
+
+	//TODO:  add verbose mode here
+        //console.log("Classes of each type in each timeblock:");
         for (var time in ESP.Scheduling.classes_by_time_type) {
             for (var type in ESP.Scheduling.classes_by_time_type[time]) {
-                console.log("-- " + time + ",\t" + type + ":\t" + ESP.Scheduling.classes_by_time_type[time][type]);
+                //console.log("-- " + time + ",\t" + type + ":\t" + ESP.Scheduling.classes_by_time_type[time][type]);
             }
         }
     
-        console.log("Middle-School Classes of each type in each timeblock:");
+        //console.log("Middle-School Classes of each type in each timeblock:");
         for (var time in ESP.Scheduling.ms_classes_by_time) {
-            console.log("-- " + time + ":\t" + ESP.Scheduling.ms_classes_by_time[time]);
+            //console.log("-- " + time + ":\t" + ESP.Scheduling.ms_classes_by_time[time]);
         }
     };
     
     // process data
     function process_data(data){
-	console.log("Processing raw data");
-	console.log(data);
         var processed_data = {
             times: [],
             rooms: [],
@@ -118,7 +180,6 @@ ESP.Scheduling = function(){
             processed_data.times.push(r =
                     Resources.create('Time',
 				     { uid: t.id, text: t.short_description, start: start, end: end, length: end - start + 15*60000, is_lunch: t.is_lunch?t.is_lunch:false }));
-            // console.log("Added block " + r.text + " (" + r.length + " ms)");
         }
         processed_data.times.sort(function(x,y){
             return x.start - y.start;
@@ -304,6 +365,7 @@ ESP.Scheduling = function(){
             class_info: false,
             class_size_info: false,
             class_admin_info: false,
+	    class_size_max: c.class_size_max,
             block_contents: ESP.Utilities.genPopup("s-" + c.id, c.emailcode, {}, onHoverHandler, null, false),
             category: c.category,
             length: Math.round(c.length*10)*3600000/10 + 600000, // convert hr to ms
@@ -337,56 +399,86 @@ ESP.Scheduling = function(){
 	    });
 	}
 
-	console.log("Final processed data");
-	console.log(processed_data);
         return processed_data;
     };
-    
+   
+    var fetch_updates = function()  {
+	$j.getJSON('ajax_change_log', {'last_fetched_index': ESP.Scheduling.last_fetched_index}, function(d, status) {
+	    //if we need to reload
+	    if (d['other'] && d['other'][0]['command'] == "reload"){
+		    console.log("reloading")
+		    load()
+		}
+	    else{
+		apply_existing_classes(d.changelog, this.data)
+		//update last change time with received indices
+		for(var i = 0; i < d.changelog.length; i++){
+			if(d.changelog[i].index > ESP.Scheduling.last_fetched_index) {
+		    	ESP.Scheduling.last_fetched_index = d.changelog[i].index
+		    }
+		}
+	    }
+	});
+    };
+
     var apply_existing_classes = function(assignments, data) {
         var Resources = ESP.Scheduling.Resources;
         var rsrc_sec = {}
         var sa;
 
-        for (var i in data.schedule_assignments) {
+        for (var i in assignments) {
 	    // Handles prototype being angry
-	    if (typeof data.schedule_assignments[i] === 'function') {continue;}
-            sa = data.schedule_assignments[i];
+	    if (typeof assignments[i] === 'function') {continue;}
 
-            if (!(rsrc_sec[sa.id])) {
-                rsrc_sec[sa.id] = [];
-            }
+            sa = assignments[i];
+	    debug_log (sa);
 
+	    //create a list or erase previous assignment
+            rsrc_sec[sa.id] = [];
 	    for (var j = 0; j < sa.timeslots.length; j++)
 	    {
-		rsrc_sec[sa.id].push(Resources.get('Block', [sa.timeslots[j],sa.room_name]));
+	    resource = Resources.get('Block', [sa.timeslots[j],sa.room_name]);
+	    if(resource !== undefined) {
+			rsrc_sec[sa.id].push(resource);
+		}
 	    }
         }
 
         var Section;
         var sec_id;
-        for (var i = 0; i < data.sections.length; i++) {
-            sec_id = data.sections[i].uid;
+        for (var i = 0; i < ESP.Scheduling.data.sections.length; i++) {
+            sec_id = ESP.Scheduling.data.sections[i].uid;
+
             if (rsrc_sec[sec_id]) {
-                ESP.Utilities.evm.fire('block_section_assignment_request', { 
-                    section: Resources.get('Section', sec_id), 
-                    blocks: rsrc_sec[sec_id],
-                    nowriteback: true /* Don't tell the server about this assignment */
-                });
+		//unschedule
+		ESP.Utilities.evm.fire('block_section_unassignment_request', { 
+		    section: Resources.get('Section', sec_id),
+		    blocks: [],
+		    nowriteback: true /* Don't tell the server about this assignment */
+		});
+		//reschedule if we have no blocks
+		if (rsrc_sec[sec_id].length > 0){ 
+		    ESP.Utilities.evm.fire('block_section_assignment_request', { 
+			section: Resources.get('Section', sec_id), 
+			blocks: rsrc_sec[sec_id],
+			nowriteback: true /* Don't tell the server about this assignment */
+		    });
+		}
             }
-	    else {
-		// TODO: Fire an AJAX reqeuest for class_info for all unscheduled classes
-	    }
         }
+
+	//update directory (sometimes this happens correctly without this call, and sometimes it doesn't
+	ESP.Scheduling.directory.filter()
     }
 
     var validate_block_assignment = function(block, section, str_err) {
         // check status
         if (block.status != ESP.Scheduling.Resources.BlockStatus.AVAILABLE) {
-            // console.log("Room " + block.room + " at " + block.time + " is not available"); 
+            //console.log("Room " + block.room + " at " + block.time + " is not available"); 
             return false;
         }
 
-        var time = block.time;
+        var time = block.time;	
 
         for (var i = 0; i < section.teachers.length; i++) {
             var valid = false;
@@ -399,8 +491,8 @@ ESP.Scheduling = function(){
             }
             if (!valid)
             {
-            // console.log("Teacher '" + section.teachers[i].text + "' not available at time '" + time.text + "'");
-            return (str_err ? "Teacher '" + section.teachers[i].text + "' not available at time '" + time.text + "'" : false);
+		//console.log("Teacher '" + section.teachers[i].text + "' not available at time '" + time.text + "'");
+		return (str_err ? "Teacher '" + section.teachers[i].text + "' not available at time '" + time.text + "'" : false);
             }
         }
 
@@ -465,7 +557,7 @@ ESP.Scheduling = function(){
                 }
             }
             if (!found_resource) {
-                console.log("Class '" + section.text + "' requested a resource ('" + section.resource_requests[j].text + "') not available in room '" + block.room.text + "' (note that the website's resource tracker is not fully functional at this time!)");
+                //console.log("Class '" + section.text + "' requested a resource ('" + section.resource_requests[j].text + "') not available in room '" + block.room.text + "' (note that the website's resource tracker is not fully functional at this time!)");
                 return (str_err ? "Class '" + section.text + "' requested a resource ('" + section.resource_requests[j].text + "') not available in room '" + block.room.text + "' (note that the website's resource tracker is not fully functional at this time!)" : true);
             }
         }
@@ -498,22 +590,15 @@ ESP.Scheduling = function(){
     };
     
     var validate_start_time = function(time, section, str_err) {
-	var length = 0;
-	if (section.blocks && (section.blocks.length > 0)) {
-	    length = section.blocks.length;
-	}
-	else if (section.length_hr > 0) {
-	    length = Math.ceil(section.length_hr);
-	}
-	else {
+	var length = Math.ceil(section.length_hr);
+	if (!length || length == 0){
 	    return (str_err ? "No length defined!" : false)
 	}
-
 	    
         //  Check for not scheduling across a contiguous group of lunch periods - check start block only
         var test_time = time;
         var covered_lunch_start = false;
-	
+
 	// Start with the proposed start time and iterate over all time blocks the section will need
 	for (var i = 0; i < length; i++)
 	{
@@ -530,6 +615,8 @@ ESP.Scheduling = function(){
 	    
 	    //  If this is the last timeslot of the program, don't sweat it... this assignment
 	    //  is invalid anyway.
+	    //TODO!!!!!!!!!!!!!
+	    //  This generally does not work correctly when you have classes with non-integer hour lengths.
 	    if (!test_time.seq && i != length - 1)
 	    {
 		return (str_err ? "Section " + section.code + " has an invalid assignment" : false);
@@ -537,7 +624,7 @@ ESP.Scheduling = function(){
 	    
 	    //  But, if our class period overlapped with the beginning of the lunch sequence
 	    //  and now also overlaps with the end of the lunch sequence, that's a conflict.
-	    if (covered_lunch_start && !(test_time.seq.is_lunch))
+	    if (covered_lunch_start && test_time.seq && !(test_time.seq.is_lunch))
 	    {
 		return (str_err ? "Section " + section.code + " starting at " + time.text + " would conflict with a group of lunch periods" : false);
 	    }
@@ -552,8 +639,11 @@ ESP.Scheduling = function(){
     var self = {
         init: init,
         validate_block_assignment: validate_block_assignment,
-        validate_start_time: validate_start_time
+        validate_start_time: validate_start_time,
+	fetch_updates: fetch_updates,
+	//data: data
     };
+
     return self;
 }();
 
@@ -567,40 +657,33 @@ $j(function(){
     $j.getJSON('ajax_schedule_last_changed', function(d, status) {
         if (status == "success") {
             ESP.version_uuid = d['val'];
+            ESP.Scheduling.last_fetched_index = d['latest_index'];
         }
     });
 
-    var data = {};
-    var json_components = ['timeslots', 'schedule_assignments', 'rooms', 'sections', 'lunch_timeslots', 'resource_types'];
+    //json_fetch_data(json_components, json_data);
+    load()
 
-    var json_data = {};
-    // Fetch regular JSON components
-    var json_fetch_data = function(json_components, json_data) {
-	json_fetch(json_components, function(d) {
-	    for (var i in d) {
-		// Deal with prototype failing
-		if (typeof d[i] === 'function') { continue; }
-		data[i] = d[i];
-	    }
-	    
-	    ESP.Scheduling.init(data);
-	}, json_data);
-    };
-    json_fetch_data(json_components, json_data);
+    //if we're in debug mode, we can use the button at the top to get updates
+    if (!debug_on){
+	setInterval(function() {
+            $j.getJSON('ajax_schedule_last_changed', function(d, status) {
+		if (status == "success") {
+                    if (d['val'] != ESP.version_uuid) {
+			ESP.version_uuid = d['val'];
+			//location.reload(true);
+			ESP.Scheduling.fetch_updates();
+                    } else {
+			ESP.Scheduling.last_fetched_index = d['latest_index'];
+                    }
+		} else {
+                    ESP.Scheduling.status('error','Unable to refresh data from server.');
+		}
+            });
+	}, 10000);
 
-    setInterval(function() {
-        ESP.Scheduling.status('warning','Pinging server...');
-        $j.getJSON('ajax_schedule_last_changed', function(d, status) {
-            if (status == "success") {
-                ESP.Scheduling.status('success','Refreshed data from server.');
-                if (d['val'] != ESP.version_uuid) {
-                    ESP.version_uuid = d['val'];
-                    json_data = {};
-		    json_fetch_data(json_components, json_data);
-                }
-            } else {
-                ESP.Scheduling.status('error','Unable to refresh data from server.');
-            }
-        });
-    }, 300000);
+	setInterval(function() {
+	    load()
+	}, 600000);
+    }
 });

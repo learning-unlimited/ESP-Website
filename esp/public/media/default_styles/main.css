@@ -128,13 +128,13 @@ table.loginform {
   margin: 15px;
 }
 
-#nav_buttons {
+/*#nav_buttons {
   background: #00003C;
   width: 600px;
   height: 40px;
   float: right;
   text-align: center;
-}
+}*/
 
 a.navbutton {
     padding: 4px;
