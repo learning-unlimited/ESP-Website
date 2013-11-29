@@ -250,7 +250,7 @@ class AvailabilityModule(ProgramModuleObj):
         for s in teaching_sections:
             sec_times = s.get_meeting_times()
             for t in sec_times:
-                teaching_times[t]=(s.parent_class.id, s.parent_class.emailcode(), s.parent_class.title)
+                teaching_times[t]=(s.parent_class.id, s.emailcode(), s.parent_class.title)
 
 
         # Check the availability and teaching status of each timeslot, and mark in tuple accordingly as (start time, end time, available, teaching)
