@@ -37,6 +37,7 @@ from esp.users.views import search_for_user
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, needs_onsite, main_call, aux_call
 from esp.program.modules.handlers.programprintables import ProgramPrintables
 from esp.users.models import ESPUser
+from esp.utils.models import Printer, PrintRequest
 from esp.datatree.models import *
 from datetime         import datetime, timedelta
 
@@ -53,9 +54,10 @@ class OnsiteClassSchedule(ProgramModuleObj):
     @aux_call
     @needs_student
     def printschedule(self, request, tl, one, two, module, extra, prog):#(self, request, *args, **kwargs):
-        printer = None
-        if extra and Printer.objects.filter(name=extra).exists():
-            printer = Printer.objects.filter(name=extra)[0]
+        printer = request.GET.get('printer',None)
+        if printer is not None:
+            # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
+            printer = Printer.objects.get(name=printer)
         PrintRequest.objects.create(user=request.user, printer=printer)
         return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
 

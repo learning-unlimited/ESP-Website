@@ -13,7 +13,7 @@
 <br />
 {% if printers %}
 {% for printer in printers %}
-<a href="/onsite/{{program.getUrlBase}}/printschedule/{{ printer }}">Print Student Schedule to {{ printer }}</a><br />
+<a href="/onsite/{{program.getUrlBase}}/printschedule?printer={{ printer }}">Print Student Schedule to {{ printer }}</a><br />
 {% endfor %}
 {% else %}
 <a href="/onsite/{{program.getUrlBase}}/printschedule">Print Student Schedule</a>

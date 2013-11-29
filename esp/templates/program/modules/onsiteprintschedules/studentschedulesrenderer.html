@@ -18,8 +18,14 @@ function reset_reload()
 function plain_refresh()
 {
     var auto_reload_img = document.getElementById("auto_reload_img");
-    auto_reload_img.src = '?gen_img&q='+ new Date().getTime();
-    reset_reload();
+    if (!auto_reload_img.complete) {
+        // if the image hasn't finished loading yet, postpone the next reload another 2s.
+        // note: we can't wait for img.onload because that does not fire if the response was empty
+        reset_reload();
+    } else {
+        auto_reload_img.src = '?gen_img&q='+ new Date().getTime();
+        reset_reload();
+    }
 }
 
 function printself() {
