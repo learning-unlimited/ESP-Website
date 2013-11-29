@@ -288,7 +288,7 @@ class Program(models.Model, CustomFormsLinkModel):
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule)
     class_categories = models.ManyToManyField('ClassCategories')
-    flag_types = models.ManyToManyField('ClassFlagType',blank=True)
+    flag_types = models.ManyToManyField('ClassFlagType',blank=True) #so we don't have to delete old ones and don't end up with 3 seemingly-identical flags in the same program.
     
     documents = generic.GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 

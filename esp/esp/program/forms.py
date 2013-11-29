@@ -38,8 +38,7 @@ import unicodedata
 
 from esp.users.models import ESPUser, StudentInfo, K12School
 from esp.datatree.models import *
-from esp.program.models import Program, ProgramModule
-from esp.program.models.flags import ClassFlag
+from esp.program.models import Program, ProgramModule, ClassFlag
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.utils.widgets import DateTimeWidget
 from esp.users.models import ESPUser
@@ -111,7 +110,7 @@ class ProgramCreationForm(BetterModelForm):
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['admins','director_email']}),
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
-                     ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories']}),
+                     ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
                      ('Registrations Date',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
 
 
