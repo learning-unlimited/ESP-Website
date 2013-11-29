@@ -250,7 +250,12 @@ class AvailabilityModule(ProgramModuleObj):
         for s in teaching_sections:
             sec_times = s.get_meeting_times()
             for t in sec_times:
-                teaching_times[t]=(s.parent_class.id, s.emailcode(), s.parent_class.title)
+                rooms = ""
+                for r in s.prettyrooms():
+                    rooms = rooms + r
+                    if r != s.prettyrooms()[-1]:
+                        rooms = rooms + ", "
+                teaching_times[t]=(s.parent_class.id, s.emailcode(), s.parent_class.title, rooms)
 
 
         # Check the availability and teaching status of each timeslot, and mark in tuple accordingly as (start time, end time, available, teaching)
@@ -260,15 +265,17 @@ class AvailabilityModule(ProgramModuleObj):
             if t in teaching_times:
                 if t in marked_available:
                     available.append((t.start, t.end, True, True, teaching_times.get(t)[0], \
-                                          teaching_times.get(t)[1], teaching_times.get(t)[2]))
+                                          teaching_times.get(t)[1], teaching_times.get(t)[2], \
+                                          teaching_times.get(t)[3]))
                 else:
                     available.append((t.start, t.end, False, True, teaching_times.get(t)[0], \
-                                          teaching_times.get(t)[1], teaching_times.get(t)[2]))
+                                          teaching_times.get(t)[1], teaching_times.get(t)[2], \
+                                          teaching_times.get(t)[3]))
             else:
                 if t in marked_available:
-                    available.append((t.start, t.end, True, False, None, None, None))
+                    available.append((t.start, t.end, True, False, None, None, None, None))
                 else:
-                    available.append((t.start, t.end, False, False, None, None, None))
+                    available.append((t.start, t.end, False, False, None, None, None, None))
 
         context = {'available': available, 'teacher_name': teacher.first_name + ' ' + teacher.last_name, 'teaching_times': teaching_times, 'edit_path': '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.username) }
         return render_to_response(self.baseDir()+'check_availability.html', request, context)

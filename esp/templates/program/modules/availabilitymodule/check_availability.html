@@ -14,7 +14,7 @@
 
 <dl>
 {% for t in available %}
-<dt><font color={% if t.2 and t.3 %}"black"{% elif t.2 and not t.3 %}"blue"{% elif t.3 and not t.2 %}"orange"{% else %}"silver"{% endif %}>{{ t.0 }} to {{ t.1 }}{% if t.3 %} </dt><dd><a href="/manage/{{ program.getUrlBase }}/manageclass/{{ t.4 }}">{{ t.5 }}: {{ t.6 }}</a></dd>{% else %}</dt>{% endif %}</font>
+<dt><font color={% if t.2 and t.3 %}"black"{% elif t.2 and not t.3 %}"blue"{% elif t.3 and not t.2 %}"orange"{% else %}"silver"{% endif %}>{{ t.0 }} to {{ t.1 }}{% if t.3 %} </dt><dd><a href="/manage/{{ program.getUrlBase }}/manageclass/{{ t.4 }}">{{ t.5 }}: {{ t.6 }} ({{ t.7 }})</a></dd>{% else %}</dt>{% endif %}</font>
 {% endfor %}
 </dl>
 <br /><br />
