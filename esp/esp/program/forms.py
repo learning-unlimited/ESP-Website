@@ -39,6 +39,7 @@ import unicodedata
 from esp.users.models import ESPUser, StudentInfo, K12School
 from esp.datatree.models import *
 from esp.program.models import Program, ProgramModule
+from esp.program.models.flags import ClassFlag
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.utils.widgets import DateTimeWidget
 from esp.users.models import ESPUser
@@ -348,3 +349,8 @@ class StatisticsQueryForm(forms.Form):
                 result.append(field_name)
         return result
 
+
+class ClassFlagForm(forms.ModelForm):
+    class Meta:
+        model = ClassFlag
+        fields = ['subject','flag_type','comment']

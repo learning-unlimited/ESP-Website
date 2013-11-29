@@ -288,6 +288,7 @@ class Program(models.Model, CustomFormsLinkModel):
     program_allow_waitlist = models.BooleanField(default=False)
     program_modules = models.ManyToManyField(ProgramModule)
     class_categories = models.ManyToManyField('ClassCategories')
+    flag_types = models.ManyToManyField('ClassFlagType',blank=True)
     
     documents = generic.GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 
@@ -1883,6 +1884,7 @@ class StudentSubjectInterest(ExpirableModel):
     
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
+from esp.program.models.flags import *
 
 # The following are only so that we can refer to them in caching Program.getModules.
 from esp.program.modules.base import ProgramModuleObj
