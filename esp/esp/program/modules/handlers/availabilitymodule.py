@@ -238,32 +238,49 @@ class AvailabilityModule(ProgramModuleObj):
         except:
             raise ESPError(False), "That username does not appear to exist!"
 
-        # Get the times that the teacher marked they were available
-        resources = UserAvailability.objects.filter(user=teacher, event__program=prog)
+        timeslots = self.program.getTimeSlotList()
+
+        # Get the times that the teacher is marked as available
+        marked_available = set(teacher.getAvailableTimes(self.program, True))
 
         # Now get times that teacher is teaching
-        classes = [cls for cls in teacher.getTaughtClasses() if cls.parent_program.id == prog.id ]
-        times = set()
-        
-        for cls in classes:
-            cls_secs = ClassSection.objects.filter(parent_class=cls)
-            
-            for cls_sec in cls_secs:
-                sec_times = Event.objects.filter(meeting_times=cls_sec)
-                
-                for time in sec_times:
-                    times.add(time)
-        
-        # Check which are truly available and mark in tuple as True, otherwise as False (will appear red)
+        # Also keep track of what class it is
+        teaching_sections = teacher.getTaughtSections(self.program)
+        teaching_times = {}
+        unscheduled_classes = []
+        for s in teaching_sections:
+            sec_times = s.get_meeting_times()
+            if len(sec_times) == 0:
+                unscheduled_classes.append((s.parent_class.id, s.emailcode(), s.parent_class.title, s.prettyDuration()))
+            for t in sec_times:
+                rooms = ""
+                for r in s.prettyrooms():
+                    rooms = rooms + r
+                    if r != s.prettyrooms()[-1]:
+                        rooms = rooms + ", "
+                teaching_times[t]=(s.parent_class.id, s.emailcode(), s.parent_class.title, rooms)
+
+
+        # Check the availability and teaching status of each timeslot, and mark in tuple accordingly as (start time, end time, available, teaching)
         available = []
         
-        for resource in resources:
-            if resource.event not in times:
-                available.append((resource.event.start, resource.event.end, True))
+        for t in timeslots:
+            if t in teaching_times:
+                if t in marked_available:
+                    available.append((t.start, t.end, True, True, teaching_times.get(t)[0], \
+                                          teaching_times.get(t)[1], teaching_times.get(t)[2], \
+                                          teaching_times.get(t)[3]))
+                else:
+                    available.append((t.start, t.end, False, True, teaching_times.get(t)[0], \
+                                          teaching_times.get(t)[1], teaching_times.get(t)[2], \
+                                          teaching_times.get(t)[3]))
             else:
-                available.append((resource.event.start, resource.event.end, False))
+                if t in marked_available:
+                    available.append((t.start, t.end, True, False, None, None, None, None))
+                else:
+                    available.append((t.start, t.end, False, False, None, None, None, None))
 
-        context = {'available': available, 'teacher_name': teacher.first_name + ' ' + teacher.last_name, 'edit_path': '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.username) }
+        context = {'available': available, 'unscheduled': unscheduled_classes, 'teacher_name': teacher.first_name + ' ' + teacher.last_name, 'teaching_times': teaching_times, 'edit_path': '/manage/%s/%s/edit_availability?user=%s' % (one, two, teacher.username) }
         return render_to_response(self.baseDir()+'check_availability.html', request, context)
 
     @aux_call
