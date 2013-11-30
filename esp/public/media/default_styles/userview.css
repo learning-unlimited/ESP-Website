@@ -2,7 +2,7 @@
   float: right;
 }
 
-a.sidelink:link {
+#user-sidebar a.sidelink:link {
   text-decoration: none;
   
   display: block;
@@ -16,7 +16,7 @@ a.sidelink:link {
   margin-top: 5px;
 }
 
-a.sidelink:hover {
+#user-sidebar a.sidelink:hover {
   color: #ffffff;
   background-color: #3366cc;
 }
