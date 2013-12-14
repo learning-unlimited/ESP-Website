@@ -75,8 +75,8 @@ class InlineQSDNode(template.Node):
             
             if getattr(user, 'id', False):
                 new_qsd.author = user
-                new_qsd.save()
 
+            new_qsd.save()
             qsd_obj = new_qsd
 
         return render_to_response("inclusion/qsd/render_qsd_inline.html", {'qsdrec': qsd_obj, 'edit_bits': edit_bits}, context_instance=context).content
