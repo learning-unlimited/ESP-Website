@@ -17,95 +17,95 @@ class Migration(DataMigration):
             return date
 
         #Administer
-        adm_bits=UserBit.objects.filter(verb__uri="V/Administer",qsc__uri__startswith="Q/Programs")
+        adm_bits=orm['users.UserBit'].objects.filter(verb__uri="V/Administer",qsc__uri__startswith="Q/Programs")
         for bit in adm_bits:
             try:
-                p=Program.objects.get(anchor=bit.qsc)
-            except Program.DoesNotExist:
+                p=orm['program.Program'].objects.get(anchor=bit.qsc)
+            except orm['program.Program'].DoesNotExist:
                 continue
-            Permission(permission_type="Administer", program=p, user=bit.user, startdate=bit.startdate, enddate=end(bit)).save()
+            orm['users.Permission'](permission_type="Administer", program=p, user=bit.user, startdate=bit.startdate, enddate=end(bit)).save()
 
         # Administer all programs, but with an enddate.
         # Adds users that we didn't add to the Administrator group in 0019_userrole.
-        for bit in UserBit.objects.filter(verb__uri="V/Administer", qsc__uri="Q", user__isnull=False, enddate__lt=datetime.datetime(3000,1,1)):
-            Permission(permission_type="Administer", program=None, user=bit.user, startdate=bit.startdate, enddate=end(bit)).save()
+        for bit in orm['users.UserBit'].objects.filter(verb__uri="V/Administer", qsc__uri="Q", user__isnull=False, enddate__lt=datetime.datetime(3000,1,1)):
+            orm['users.Permission'](permission_type="Administer", program=None, user=bit.user, startdate=bit.startdate, enddate=end(bit)).save()
 
         #view programs
-        program_anchors=Program.objects.all().values_list("anchor",flat=True)
-        view_program_bits=UserBit.objects.filter(verb__uri="V/Flags/Public", qsc__id__in=program_anchors)
+        program_anchors=orm['program.Program'].objects.all().values_list("anchor",flat=True)
+        view_program_bits=orm['users.UserBit'].objects.filter(verb__uri="V/Flags/Public", qsc__id__in=program_anchors)
         for bit in view_program_bits:
             try:
-                p=Program.objects.get(anchor=bit.qsc)
-            except Program.DoesNotExist:
+                p=orm['program.Program'].objects.get(anchor=bit.qsc)
+            except orm['program.Program'].DoesNotExist:
                 continue
             if bit.user is not None:
-                Permission(permission_type=bit.verb.uri[24:],
+                orm['users.Permission'](permission_type=bit.verb.uri[24:],
                            user=bit.user,
                            program=p, 
                            startdate=bit.startdate,
                            enddate=end(bit)).save()
             else: 
                 for x in ESPUser.getTypes():
-                    Permission(permission_type=bit.verb.uri[24:],
-                               role=Group.objects.get(name=x),
+                    orm['users.Permission'](permission_type=bit.verb.uri[24:],
+                               role=orm['auth.Group'].objects.get(name=x),
                                program=p,
                                startdate=bit.startdate,
                                enddate=end(bit)).save()
                                
         #gradeoverride
-        go_bits=UserBit.objects.filter(verb__uri="V/Flags/Registration/GradeOverride",qsc__uri__startswith="Q/Programs")
+        go_bits=orm['users.UserBit'].objects.filter(verb__uri="V/Flags/Registration/GradeOverride",qsc__uri__startswith="Q/Programs")
         for bit in go_bits:
             try:
-                p=Program.objects.get(anchor=bit.qsc)
-            except Program.DoesNotExist:
+                p=orm['program.Program'].objects.get(anchor=bit.qsc)
+            except orm['program.Program'].DoesNotExist:
                 continue
-            Permission(permission_type="GradeOverride", program=p,user=bit.user, startdate=bit.startdate, enddate=end(bit)).save()
+            orm['users.Permission'](permission_type="GradeOverride", program=p,user=bit.user, startdate=bit.startdate, enddate=end(bit)).save()
 
         #onsite
-        onsite_bits=UserBit.objects.filter(verb__uri="V/Registration/Onsite")
+        onsite_bits=orm['users.UserBit'].objects.filter(verb__uri="V/Registration/Onsite")
         for bit in onsite_bits:
             try:
-                p=Program.objects.get(anchor=bit.qsc)
-            except Program.DoesNotExist:
+                p=orm['program.Program'].objects.get(anchor=bit.qsc)
+            except orm['program.Program'].DoesNotExist:
                 continue
-            Permission(permission_type="Onsite",
+            orm['users.Permission'](permission_type="Onsite",
                        user=bit.user,
                        program=p, 
                        startdate=bit.startdate,
                        enddate=end(bit)).save()
 
         #deadlines
-        deadline_bits = UserBit.objects.filter(verb__uri__startswith="V/Deadline/Registration")
+        deadline_bits = orm['users.UserBit'].objects.filter(verb__uri__startswith="V/Deadline/Registration")
         for bit in deadline_bits:
             try:
-                p=Program.objects.get(anchor=bit.qsc)
-            except Program.DoesNotExist:
+                p=orm['program.Program'].objects.get(anchor=bit.qsc)
+            except orm['program.Program'].DoesNotExist:
                 continue
             
             name = bit.verb.uri[24:]
             if bit.recursive and bit.verb.name in ["Classes", "Teacher", "Student"]:
                 name += "/All"
             if bit.user is not None:
-                Permission(permission_type=name,
+                orm['users.Permission'](permission_type=name,
                            user=bit.user,
                            program=p, 
                            startdate=bit.startdate,
                            enddate=end(bit)).save()
             elif bit.verb.uri[24:31]=="Teacher":
-                Permission(permission_type=name,
-                           role=Group.objects.get(name="Teacher"),
+                orm['users.Permission'](permission_type=name,
+                           role=orm['auth.Group'].objects.get(name="Teacher"),
                            program=p, 
                            startdate=bit.startdate,
                            enddate=end(bit)).save()
             elif bit.verb.uri[24:31]=="Student":
-                Permission(permission_type=name,
-                           role=Group.objects.get(name="Student"),
+                orm['users.Permission'](permission_type=name,
+                           role=orm['auth.Group'].objects.get(name="Student"),
                            program=p, 
                            startdate=bit.startdate,
                            enddate=end(bit)).save()
 
     def backwards(self, orm):
-        Permission.objects.all().delete()
+        orm['users.Permission'].objects.all().delete()
 
     models = {
         'auth.group': {
