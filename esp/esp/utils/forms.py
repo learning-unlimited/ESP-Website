@@ -89,8 +89,11 @@ class FormWithRequiredCss(forms.Form):
         super(FormWithRequiredCss, self).__init__(*args, **kwargs)
         for field in self.fields.itervalues():
             if field.required:
-                field.widget.attrs['class'] = 'required'
-
+                if 'class' in field.widget.attrs:
+                    field.widget.attrs['class'] += ' required'
+                else:
+                    field.widget.attrs['class'] = 'required'
+                    
 class FormWithTagInitialValues(forms.Form):
     def __init__(self, *args, **kwargs):
     

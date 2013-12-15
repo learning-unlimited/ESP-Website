@@ -1,24 +1,23 @@
 <!-- Begin Guardian Info Portion -->
 
-<tr>
- <th colspan="2">Guardian Information</th>
-</tr>
+<h3>Guardian Information</h3>
 
-<tr>
- <td><label for="id_year_finished">Est. year finished with ESP<br /> (if applicable):</label></td>
- <td>{{ form.year_finished }} {% if form.year_finished.errors %}
+<div class="control-group">
+ <label for="id_year_finished" class="control-label">Est. year finished with ESP<br /> (if applicable):</label>
+ <div class="controls">
+ {{ form.year_finished }} {% if form.year_finished.errors %}
    <br /><span class="form_error">{{ form.year_finished.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 
-<tr>
- <td><label for="id_num_kids">Number of Kids (to be involved in ESP):</label></td>
- <td>{{ form.num_kids }} {% if form.num_kids.errors %}
+<div class="control-group">
+ <label for="id_num_kids" class="control-label">Number of Kids (to be involved in ESP):</label>
+ <div class="controls">
+ {{ form.num_kids }} {% if form.num_kids.errors %}
    <br /><span class="form_error">{{ form.num_kids.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
-
+</div>
+</div>
 
 <!-- End Guardian Info Portion -->

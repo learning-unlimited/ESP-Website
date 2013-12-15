@@ -1,0 +1,404 @@
+{% extends "main.html" %}
+
+{#  Override the way jQuery is loaded so that Popovers can be included  #}
+{% block jquery %}
+    <script src="{{ settings.CDN_ADDRESS }}/jquery/jquery-1.7.2.js" type="text/javascript"> </script>
+    <script src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-tooltip.js" type="text/javascript"></script>
+    <script src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-popover.js" type="text/javascript"></script>
+    <script src="/media/scripts/jquery.cookie.js" type="text/javascript"> </script>
+    <script language="JavaScript">
+        $j = $.noConflict();
+    </script>
+{% endblock %}
+
+{% block xtrajs %}
+<script src="/media/theme_editor/spectrum.js" type="text/javascript"></script>
+<script language="JavaScript">
+var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last %},{% endif %} {% endfor %}];
+</script>
+<link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/css/bootstrap.css" type="text/css" />
+<link href="/media/theme_editor/spectrum.css" rel="stylesheet" />
+<script src="/media/theme_editor/css_auto-reload.js" rel="text/javascript"></script>
+<script type="text/javascript">
+  document.styleSheets.reload()
+</script>
+<style>
+  form.centered-form div.control-group {
+      margin-left:20%;
+  }
+  div.form-actions {
+      border-top:None;
+  }
+  h5 {
+  margin-left:3%;
+  }
+</style>
+{% endblock %}
+{% block title %}Theme Editor{% endblock %}
+{% block content %} 
+<div class="row-fluid">
+
+<div class="span7 offset1">
+  <h1>Theme Editor</h1>
+  <div class="alert alert-info">
+    <p>New to the theme editor? <a href="#help-modal" data-toggle="modal">Click here</a>.</p>
+  </div>
+  <div id="help-modal" class="modal hide fade">
+    <div class="modal-header">
+      <button type="button" class="close" data-dismiss="modal">x</button>
+      <h3>Welcome to the theme editor! It's easy to get started</h3>
+    </div>
+    <div class="modal-body">
+      <ol>
+	<li><strong>Add colors</strong> to your Palette.</li>
+	<li>Dive into the sections and <strong>customize</strong> at will. Press <strong>Test</strong> often to see your changes in action.</li>
+	<li>When you're happy with your changes, just enter a name under Theme Properties and press <strong>Save</strong>!</li>
+      </ol>
+      <p>For even more <strong>color picking power</strong>, we recommend using a full featured colour picker like <a href='http://colorschemedesigner.com' target="_blank">this one</a> to decide your colours, and enter the hex values when adding to your palette.</p>
+    </div>
+    
+    <div class="modal-footer"></div>
+  </div>
+</p>
+</div>
+
+<br />
+<div class="row-fluid">
+  <div class="span7 offset1">
+    <form class="well form-horizontal centered-form" method="post" action="/themes/customize/">
+      {% csrf_token %} 
+      <div class="accordion">
+
+	<div class="accordion-group">
+	  <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#theme_palette" data-content="Your theme palette holds the colors that are used in your theme. Use this to control the colors available to you in the other sections." data-original-title="Theme Palette" rel="popover">Palette</h3></div>
+
+	  <div class="collapse" id="theme_palette">
+
+	    <div class="control-group">
+	      <div id="palette_div">
+		{% for color in palette %}
+		<input type="text" name="palette" class="palette" value="{{color}}" />
+		{% endfor %}
+	      </div>
+	    </div>
+	    <div class="controls">
+	      <button type="button" class="btn" id="addToPalette">Add Another Color</button>
+	      <button type="button" class="btn" id="removeFromPalette">Remove Last Color</button>
+	      <button type="submit" class="btn btn-primary" name="apply" value="apply">Update Palette</button> 
+	    </div>
+	  </div>
+	</div>
+
+	<div class="accordion-group">
+	  <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#scaffolding" rel="popover" data-original-title="Scaffolding" data-content="Use this section to change the color of the text and background." >Scaffolding</h3></div>
+
+	  <div class="collapse" id="scaffolding">
+
+	    <div class="control-group">
+	      <label class="control-label" for="bodybg">Background :  </label>
+	      <div class="controls">
+		<input type="text" id="bodybg" name="bodyBackground" class="color" value="{{bodyBackground}}" />
+	      </div>
+	    </div>
+
+	    <div class="control-group">
+	      <label class="control-label" for="wellbg">Well Background:  </label>
+	      <div class="controls">
+		<input type="text" id="wellbg" name="wellBackground" class="color" value="{{wellBackground}}" />
+	      </div>
+	    </div>
+
+	    <div class="control-group">
+	      <label class="control-label" for="heroUnitBackground">Hero Unit Background:  </label>
+	      <div class="controls">
+		<input type="text" id="heroUnitBackground" name="heroUnitBackground" class="color" value="{{heroUnitBackground}}" />
+	      </div>
+	    </div>
+
+	    <div class="control-group">
+	      <label class="control-label" for="textColor">Text :  </label>
+	      <div class="controls">
+		<input type="text" class="color" id="textColor" name="textColor" value="{{ textColor }}"/>
+	      </div>
+	    </div>
+
+	  </div>
+	</div>
+      
+	
+	<div class="accordion-group">
+	  <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#links" rel="popover" data-original-title="Links" data-content="Use this section to control the color of links normally, and when you hover on them.">Links</h3></div>
+	  <div class="collapse" id="links">
+	    <div class="control-group">
+	      <label class="control-label" for="linkColor">Links :  </label>
+	      <div class="controls">
+		<input type="text" class="color" id="linkColor" name="linkColor" value="{{ linkColor }}"/>
+	      </div>
+	    </div>
+
+	    <div class="control-group">
+	      <label class="control-label" for="linkColorHover">Link Hover Effect:  </label>
+	      <div class="controls">
+		<input type="text" class="color" id="linkColorHover" name="linkColorHover" value="{{ linkColorHover }}"/>
+	      </div>
+	    </div>
+	  </div>
+	</div>
+	
+
+	<div class="accordion-group">
+	  <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#typography" rel="popover" data-original-title="Typography" data-content="Use this section to control the size (base font size), and the font family of your text.">Typography</h3></div>
+	  <div class="collapse" id="typography">
+	    <div class="control-group">
+	      <label class="control-label" for="baseFontSize">Font Size:  </label>
+	      <div class="controls">
+		<select id="baseFontSize" name="baseFontSize">
+		  <option value="{{ baseFontSize }}">Current: {{ baseFontSize }}</option>
+		  <option value="10px">10</option>
+		  <option value="11px">11</option>
+		  <option value="12px">12</option>
+		  <option value="13px">13</option>
+		  <option value="14px">14</option>
+		  <option value="15px">15</option>
+		  <option value="16px">16</option>
+		  <option value="17px">17</option>
+		  <option value="18px">18</option>
+		</select>
+	      </div>
+	    </div>
+
+	    <div class="control-group">
+	      <label class="control-label" for="sansFontFamily">Font Family:  </label>
+	      <div class="controls">
+		<select id="sansFontFamily" name="sansFontFamily" type="text">
+		  <option value="{{ sansFontFamily }}">Current: {{sansFontFamily}}</option>
+		  {% for family_name, family in sans_fonts %}
+		  <option value="{{family}}">{{family_name}}</option>
+		  {% endfor %}
+		</select>
+	      </div>
+	    </div>
+	  </div>
+	  </div>
+
+	  <div class="accordion-group">
+	    <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#navbar_edit_group" rel="popover" data-original-title="Navbar" data-content="Use this section to control the colors for the various elements of the navigation bar. The background fades into the highlight.">Navbar</h3></div>
+	    <div class="collapse" id="navbar_edit_group">
+
+	      <div class="control-group">
+		<label class="control-label" for="navbarBackground">Background :  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarBackground" name="navbarBackground" value="{{ navbarBackground }}"/>
+		</div>
+	      </div>
+
+	      <div class="control-group">
+		<label class="control-label" for="navbarBackgroundHighlight">Highlight :  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarBackgroundHighlight" name="navbarBackgroundHighlight" value="{{ navbarBackgroundHighlight }}"/>
+		</div>
+	      </div>
+
+	      <div class="control-group">
+		<label class="control-label" for="navbarText">Text :  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarText" name="navbarText" value="{{ navbarText }}"/>
+		</div>
+	      </div>
+
+	      <div class="control-group">
+		<label class="control-label" for="navbarLinkColor">Links :  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
+		</div>
+	      </div>
+
+	      <div class="control-group">
+		<label class="control-label" for="navbarLinkColorHover">Link Hover:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
+		</div>
+	      </div>
+	    </div>
+	  </div>
+
+	  <div class="accordion-group">
+	    <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#sidebar_theme" rel="popover" data-original-title="Sidebar" data-content="Use this section to control the colors used in the sidebar elements. A link is active in the sidebar when it points to the currently loaded page.">Sidebar</h3></div>
+	    <div class="collapse" id="sidebar_theme">
+
+
+
+
+	      <div class="control-group">
+		<label class="control-label" for="sidebarLink">Links:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarLink" name="sidebarLink" value="{{ sidebarLink }}"/>
+		</div>
+	      </div>
+
+	      <div class="control-group">
+		<label class="control-label" for="sidebarHeader">Headers:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarHeader" name="sidebarHeader" value="{{ sidebarHeader }}"/>
+		</div>
+	      </div>
+
+	      <div class="control-group">
+		<label class="control-label" for="sidebarBackground">Background :  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarBackground" name="sidebarBackground" value="{{ sidebarBackground }}"/>
+		</div>
+	      </div>
+
+	      <h5>Hover</h5>
+
+	      <div class="control-group">
+		<label class="control-label" for="sidebarLinkHover">Links:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarLinkHover" name="sidebarLinkHover" value="{{ sidebarLinkHover }}"/>
+		</div>
+	      </div>
+	      
+	      <div class="control-group">
+		<label class="control-label" for="sidebarHover">Background:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarHover" name="sidebarHover" value="{{ sidebarHover }}"/>
+		</div>
+	      </div>
+
+
+
+	      <h5>Active</h5>
+	      
+	      <div class="control-group">
+		<label class="control-label" for="sidebarActive">Links:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarActive" name="sidebarActive" value="{{ sidebarActive }}"/>
+		</div>
+	      </div>
+
+	      <div class="control-group">
+		<label class="control-label" for="sidebarActiveBackground">Background:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="sidebarActiveBackground" name="sidebarActiveBackground" value="{{ sidebarActiveBackground }}"/>
+		</div>
+	      </div>
+
+
+
+{% comment %}
+	      <div class="control-group">
+		<label class="control-label" for="navbarLinkColor">Links :  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarLinkColor" name="navbarLinkColor" value="{{ navbarLinkColor }}"/>
+		</div>
+	      </div>
+
+	      <div class="control-group">
+		<label class="control-label" for="navbarLinkColorHover">Link Hover:  </label>
+		<div class="controls">
+		  <input type="text" class="color" id="navbarLinkColorHover" name="navbarLinkColorHover" value="{{ navbarLinkColorHover }}"/>
+		</div>
+	      </div>
+{% endcomment %}
+	    </div>
+	  </div>
+
+	  <div class="accordion-group">
+	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#buttons" rel="popover" data-original-title="Buttons" data-content="Buttons come in three types. You can see the normal and primary buttons at the end of this form, and the inverse buttons in the navbar.">Buttons</h3></div>
+	      <div class="collapse" id="buttons">
+
+
+		<div class="control-group">
+		  <label class="control-label" for="btnBackground">Buttons:  </label>
+		  <div class="controls">
+		    <input type="text" class="color" id="btnBackground" name="btnBackground" value="{{ btnBackground }}"/>
+		  </div>
+		</div>
+
+		<div class="control-group">
+		  <label class="control-label" for="btnPrimaryBackground">Primary Buttons:  </label>
+		  <div class="controls">
+		    <input type="text" class="color" id="btnPrimaryBackground" name="btnPrimaryBackground" value="{{ btnPrimaryBackground }}"/>
+		  </div>
+		</div>
+
+		<div class="control-group">
+		  <label class="control-label" for="btnInverseBackground">Inverse Buttons:  </label>
+		  <div class="controls">
+		    <input type="text" class="color" id="btnInverseBackground" name="btnInverseBackground" value="{{ btnInverseBackground }}"/>
+		  </div>
+		</div>
+	      </div>
+	    </div>
+
+        <div class="accordion-group">
+	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" rel="popover" data-original-title="Advanced" data-content="These are additional parameters specific to the currently selected theme.">Advanced</h3></div>
+	      <div class="collapse" id="advanced">
+        {% for category, data in adv_vars.items %}
+        {% if not data|length_is:0 %}<h3>Category: {{ category }}<hr /></h3>{% endif %}
+        {% for varname, varitem in data.items %}
+		<div class="control-group">
+		  <label class="control-label" for="{{ varname }}">{{ varname }}:  </label>
+		  <div class="controls">
+		    <input type="text" class="{{ varitem.0 }}" id="id_{{ varname }}" name="{{ varname }}" value="{{ varitem.1 }}"/>
+		  </div>
+		</div>
+        {% endfor %}
+        {% endfor %}
+	      </div>
+	    </div>
+
+	    <div class="accordion-group">
+	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#theme-properties" rel='popover' data-original-title="Saved Settings" data-content="When you're finished making changes, enter a name and press Save! Enter the name of an existing configuration to overwrite it. If you just want to see your changes in action, you're probably looking for the Test button. You can also load or delete saved settings, or revert to the last configuration.">Theme Properties</h3></div>
+	      <div class="in collapse" id="theme-properties">
+
+		<div class="control-group">
+		  <input id="save" type="text" value="" name="saveThemeName" placeholder="Current: {{ last_used_setting }}" />
+		  <button type="submit" class="btn btn-primary" name="save" value="save"> Save </button> 
+
+		  <br />
+		  <br />
+
+		  <select name="loadThemeName" >
+		    <option value="">Select from saved settings...</option> 
+		    <optgroup label="---------">
+		      {% for theme in available_themes %}
+		      <option value="{{theme}}"> {{theme}} </option>
+		      {% endfor %}
+		    </optgroup>
+		    <optgroup>
+		      <option value="{{last_used_settings}}"> Last used settings... </option>
+		    </optgroup>
+		  </select>
+		  <button type="submit" class="btn" name="load" value="load"> Load </button> 
+		  <button type="submit" class="btn" name="delete" value="delete"> Delete </button> 
+		</div>
+	      </div>
+	    </div>
+
+
+      <div class="form-actions" style="text-align:center;">
+	<button type="submit" class="btn btn-primary" name="apply" value="apply"> Test </button>
+
+	<button type="submit" class="btn" name="reset" value="reset"> Reset Without Saving </button>
+      </div>
+    </form>
+  </div>
+  <div align="center">
+    <a href="/themes/">
+    <button type="button" class="btn btn-large btn-primary">Return to themes page</button>
+    </a>
+    <a href="/">
+    <button type="button" class="btn btn-large btn-inverse">Return to home page</button>
+    </a>
+    <br /><br />
+  </div>
+</div>
+
+{% endblock %}  
+
+{% block javascript_footer %}
+{{ block.super }}
+    <script src="/media/theme_editor/theme_editor.js" type="text/javascript"></script>
+{% endblock %}

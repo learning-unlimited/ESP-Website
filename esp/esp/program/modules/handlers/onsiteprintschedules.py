@@ -74,17 +74,11 @@ class OnsitePrintSchedules(ProgramModuleObj):
         if extra and Printer.objects.filter(name=extra).exists():
             requests = requests.filter(printer__name=extra)
 
-        for req in requests:
+        if requests.exists():
+            req = requests[0]
             req.time_executed = datetime.now()
             req.save()
-
-        # get students
-        old_students = set([ ESPUser(req.user) for req in requests ])
-
-        if len(old_students) > 0:
-            response = ProgramPrintables.get_student_schedules(request, list(old_students), prog, onsite=True)       
-        # set the refresh rate
-        #response['Refresh'] = '2'
+            response = ProgramPrintables.get_student_schedules(request, [req.user], prog, onsite=True)       
             return response
         else:
             # No response if no users

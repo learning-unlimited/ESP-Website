@@ -8,6 +8,8 @@ esp/public/media/subsection_images/*
 esp/public/media/latex/*
 esp/public/media/email_images/*
 esp/public/media/uploaded/*
+esp/public/media/styles
+esp/public/media/images
 esp/file_cache/*
 esp/file_db/*
 esp/esp/database_settings.py.chicago

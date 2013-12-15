@@ -46,7 +46,7 @@ class ClassCreationController(object):
 
         reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
 
-        self.require_teacher_has_time(user, reg_form._get_total_time_requested())
+        self.require_teacher_has_time(user, user, reg_form._get_total_time_requested())
 
         cls = ClassSubject()
         self.attach_class_to_program(cls)
@@ -59,7 +59,7 @@ class ClassCreationController(object):
         return cls
 
     @transaction.commit_on_success
-    def editclass(self, user, reg_data, clsid, form_class=TeacherClassRegForm):
+    def editclass(self, current_user, reg_data, clsid, form_class=TeacherClassRegForm):
         
         reg_form, resource_formset, restype_formset = self.get_forms(reg_data, form_class=form_class)
 
@@ -69,12 +69,11 @@ class ClassCreationController(object):
             raise ESPError(False), "The class you're trying to edit (ID %s) does not exist!" % (repr(clsid))
 
         extra_time = reg_form._get_total_time_requested() - cls.sections.count() * float(cls.duration)
-        self.require_teacher_has_time(user, extra_time)
+        for teacher in cls.get_teachers():
+            self.require_teacher_has_time(teacher, current_user, extra_time)
 
-        self.make_class_happen(cls, user, reg_form, resource_formset, restype_formset, editing=True)
+        self.make_class_happen(cls, None, reg_form, resource_formset, restype_formset, editing=True)
         
-        self.force_availability(user)  ## So the default DB state reflects the default form state of "all times work"
-
         self.send_class_mail_to_directors(cls)
 
         return cls
@@ -105,7 +104,7 @@ class ClassCreationController(object):
         self.update_class_sections(cls, int(reg_form.cleaned_data['num_sections']))
 
         #   Associate current user with class if it is being created.
-        if not editing:
+        if user and not editing:
             self.associate_teacher_with_class(cls, user)
 
         self.add_rsrc_requests_to_class(cls, resource_formset, restype_formset)
@@ -186,9 +185,12 @@ class ClassCreationController(object):
         return (user.getTaughtTime(self.program, include_scheduled=True) + timedelta(hours=hours) \
                 <= self.program.total_duration())
 
-    def require_teacher_has_time(self, user, hours):
+    def require_teacher_has_time(self, user, current_user, hours):
         if not self.teacher_has_time(user, hours):
-            raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
+            if user == current_user:
+                raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
+            else:
+                raise ESPError(False), "%(teacher_full)s doesn't have enough free time to teach a class of this length.  Please go back to the class editing page and reduce the duration, or have %(teacher_first)s remove or shorten other classes to make room for this one." % {'teacher_full': user.name(), 'teacher_first': user.first_name}
 
     def add_teacher_to_program_mailinglist(self, user):
         add_list_member("%s_%s-teachers" % (self.program.program_type, self.program.program_instance), user)

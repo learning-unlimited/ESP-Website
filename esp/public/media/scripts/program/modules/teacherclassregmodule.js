@@ -40,3 +40,16 @@ function setup_autocomplete()
 	}
     });
 }
+$j(document).ready(function() {
+	$j("#clsform").submit(function() {
+		$j(this).submit(function() {
+		    return false;
+		});
+
+		if($j(this).hasClass("grade_range_popup")) {
+			return check_grade_range($j(this), $j(this).attr("grademin"), $j(this).attr("grademax"));
+		} else {
+			return true;
+		}
+	});
+});

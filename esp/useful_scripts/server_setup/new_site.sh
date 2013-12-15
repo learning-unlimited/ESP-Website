@@ -305,6 +305,7 @@ DEBUG = False
 DISPLAYSQL = False
 TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
+DEBUG_TOOLBAR = True # set to False to globally disable the debug toolbar
 
 # Database
 DEFAULT_CACHE_TIMEOUT = 120

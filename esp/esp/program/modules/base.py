@@ -162,11 +162,6 @@ class ProgramModuleObj(models.Model):
     def findModuleObject(tl, call_txt, prog):
         """ This function caches the customized (augmented) program module object
             matching a particular view function and area. """
-        # Make sure all modules exist
-        modules = prog.program_modules.all()
-        for module in modules:
-            ProgramModuleObj.getFromProgModule(prog, module)
-
         #   Check for a module that has a matching main_call
         main_call_map = prog.getModuleViews(main_only=True)
         if (tl, call_txt) in main_call_map:
@@ -347,7 +342,7 @@ class ProgramModuleObj(models.Model):
                 (self.get_full_path(tl=self.module.module_type), self.module.link_title, self.module.link_title)
         else:
             link = u'<a href="%s" title="%s" onmouseover="updateDocs(\'<p>%s</p>\');" class="vModuleLink" >%s</a>' % \
-               (self.get_full_path(), self.module.link_title, self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title)
+               (self.get_full_path('manage'), self.module.link_title, self.docs().replace("'", "\\'").replace('\n','<br />\\n').replace('\r', ''), self.module.link_title)
 
         return mark_safe(link)
 
@@ -655,7 +650,7 @@ def _checkDeadline_helper(method, extension, moduleObj, request, tl, *args, **kw
                                                program=request.program)
             #   For now, allow an exception if the user is of the wrong type
             #   This is because we are used to UserBits having a null user affecting everyone, regardless of user type.
-            if not canView and Permission.objects.filter(permission_type=perm_name, program=request.program, user__isnull=True).exists():
+            if not canView and Permission.valid_objects().filter(permission_type=perm_name, program=request.program, user__isnull=True).exists():
                 canView = True
 
     return (canView, response)

@@ -56,6 +56,7 @@ from esp.program.models import Program, TeacherBio, RegistrationType, ClassSecti
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import CompletedTransactionException
@@ -426,6 +427,7 @@ def userview(request):
         'teacherbio': teacherbio,
         'domain': settings.SITE_INFO[1],
         'change_grade_form': change_grade_form,
+        'printers': StudentRegCore.printer_names(),
     }
     return render_to_response("users/userview.html", request, context )
 
@@ -638,7 +640,7 @@ def manage_pages(request):
         elif request.GET['cmd'] == 'delete':
             #   Mark as inactive all QSD pages matching the one with ID request.GET['id']
             if data['sure'] == 'True':
-                all_qsds = QuasiStaticData.objects.filter(path=qsd.path, name=qsd.name)
+                all_qsds = QuasiStaticData.objects.filter(url=qsd.url, name=qsd.name)
                 for q in all_qsds:
                     q.disabled = True
                     q.save()
@@ -651,7 +653,7 @@ def manage_pages(request):
             return render_to_response('qsd/delete_confirm.html', request, {'qsd': qsd})
         elif request.GET['cmd'] == 'undelete':
             #   Make all the QSDs enabled and return to viewing the list
-            all_qsds = QuasiStaticData.objects.filter(path=qsd.path, name=qsd.name)
+            all_qsds = QuasiStaticData.objects.filter(url=qsd.url, name=qsd.name)
             for q in all_qsds:
                 q.disabled = False
                 q.save()

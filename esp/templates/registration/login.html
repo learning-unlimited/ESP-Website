@@ -7,94 +7,75 @@
 {% autoescape off %}{{ "Welcome Back"|subsection }}{% endautoescape %}
 {% endblock %}
 
-{% block stylesheets %}
-{{ block.super }}
-<link rel="stylesheet" href="/media/styles/forms.css" type="text/css" />
-{% endblock %}
-
 {% block content %}
-<h1>Log back in to ESP</h1>
+<h1>Please log in</h1>
 
 {% if next %}
 
 <p>
-You need to log in before you can access <tt>{{ next }}</tt>.<br />
-Please log in below.
+You need to log in before you can access <tt>{{ next }}</tt>.
 </p>
 
-<div class="info">
-  Both the username and password are <b>case-sensitive</b>:
-  capitalization matters!
+{% endif %}
+
+<div class="row-fluid">
+<div class="alert span10">
+Both the username and password are <b>case-sensitive</b>: capitalization matters!
 </div>
 
-{% endif %}
+<div class="well span10">
 
+<form action="{{ request.action }}" class="form-horizontal" method="post">
 
-<div id="login_form">
-<form action="{{ request.action }}" method="post">
-<table cellpadding="2" align="center">
-<thead>
-<tr>
- <th colspan="2">Login</th>
-</tr>
-<tr>
- <td colspan="2">
-{% if form.username.errors %}
-   <div class="errors">
-     {{ form.username.errors|last }}
-   </div>
-{% endif %}
-</thead>
-<tbody>
-<tr>
- <th><label class="required" for="id_username">Username:</label></th>
- <td>
-   {{ form.username }}
- </td>
-</tr>
+<div class="control-group">
+    {% if form.username.errors %}
+       <div class="errors">
+            {{ form.username.errors|last }}
+       </div>
+    {% endif %}
 
-<tr>
- <th><label class="required" for="id_password">Password:</label></th>
- <td>
-   {% if form.password.errors %}
-   <ul class="errorlist">
-     {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
-   </ul>
-   {% endif %}
-   {{ form.password }}
- </td>
-</tr>
+    <label class="control-label required" for="id_username">Username:</label>
 
-<tr>
-  <th colspan="2" class="submit">
-    <input type="submit" value="- Login -" />
-  </th>
-</tr>
+    <div class="controls">
+    {{ form.username }}
+    </div>
+</div>
 
-<tr>
-  <td colspan="2">
-    <p>
-      Forgot your password? Head on over to the <a href="/myesp/passwdrecover/"
-       title="Click for account recovery">Account Recovery Page</a>.
-    </p>
-  </td>
-</tr>
+<div class="control-group">
+    {% if form.password.errors %}
+        <ul class="errorlist">
+            {% for error in form.password.errors %}<li>{{ error }}</li>{% endfor %}
+        </ul>
+    {% endif %}
 
-</tbody>
-</table>
+    <label class="control-label required" for="id_password">Password:</label>
+   
+    <div class="controls">
+    {{ form.password }}
+    </div>
+    
+</div>
 
+<div class="form-actions">
 <input type="hidden" name="next" value="{{ next }}" />
-</form>
+<input type="submit" class="btn btn-primary btn-large" value="- Login -" />
 </div>
+
+</form>
 
 <script type="text/javascript">
 <!--
 document.getElementById('id_username').focus();
 //-->
 </script>
-<br />
 
-<h2>
-  Don't already have an account?  <a href="/myesp/register/">Click here</a> to create one!
-</h2>
+</div>
+
+<br />
+<div class="alert alert-info span10">
+Don't already have an account?  <a href="/myesp/register/">Click here to create one</a>. <br />
+Forgot your password? <a href="/myesp/passwdrecover/" title="Click for account recovery">Head on over to the Account Recovery Page</a>.
+</div>
+</div>
+
 {% endblock %}

@@ -6,39 +6,16 @@
 {% block subsection %}{% autoescape off %}{{ "Teacher Registration"|subsection }}{% endautoescape %}
 {% endblock %}
 
-{% block stylesheets %}
-{{ block.super }}
-<link rel="stylesheet" href="/media/styles/catalog.css" type="text/css">
-<style type="text/css">
-.nocheckmark { border: 1px solid black; }
-#divmaintext .mainstats, #divmaintext .mainstats th, #divmaintext .mainstats td
-  { border: 1px solid black; border-collapse: collapse; 
-    vertical-align: baseline;}
-#divmaintext .blogentry { border: 2px solid black; }
-#divmaintext .blogentry .heading { background-color: #d7eeff; padding: 5px; }
-#divmaintext .blogentry .title { font-weight: bolder; }
-#divmaintext .blogentry .date { font-style: italic; margin: 0 5px 0 0;  }
-#divmaintext .blogentry .contents { margin: 0 0 0 30px; }
-</style>
-{% endblock %}
-
 {% block content %}
 
-<h2>Teacher registration for {{program.niceName}} </h2>
-<br />
+<h1>Teacher registration for {{program.niceName}}</h1>
+
 {% load render_qsd %}
-{% render_inline_program_qsd program "teach:teacherreg" %}
-
-<br />
-
-<div id="catalog">
+{% inline_qsd_block "teach:teacherreg" %}
 <p>
-Please complete the following steps to teach for {{ program.niceName }}.  When each step is completed, the corresponding box in the right-hand column will be "checked off."
-<p>
-
-<p>
-We appreciate your interest!  If you have any questions, please <a href="mailto:{{ program.director_email}}">contact the program directors</a>.
+Please complete the following steps to teach for {{ program.niceName }}.  When each step is completed, the corresponding box in the right-hand column will be "checked off."  If you have any questions, please <a href="mailto:{{ program.director_email}}">contact the program directors</a>.
 </p>
+{% end_inline_qsd_block %}
 
 {% ifequal options.progress_mode 1 %}
     {% include "program/modules/checkboxes.html" %}
