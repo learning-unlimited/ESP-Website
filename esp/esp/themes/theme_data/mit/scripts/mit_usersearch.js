@@ -55,6 +55,6 @@ content_html:
     });
 
 ESP.registerAdminModule({
-    content_html: '    <a href="/themes/">Theme Settings</a><br /><a href="/admin/">DB Admin pages</a>',
+    content_html: '    <a href="/themes/">Theme Settings</a><br /><a href="/admin/">DB Admin pages</a><br /><a href="/admin/filebrowser/browse/">Manage media files</a>',
     name: 'Links'
     });    
