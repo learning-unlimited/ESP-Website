@@ -193,6 +193,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
+    'grappelli',
+    'filebrowser',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'esp.datatree',
@@ -357,4 +359,8 @@ DEBUG_TOOLBAR_CONFIG = {
     'ENABLE_STACKTRACES' : True,
     'CONDITIONAL_PANELS': conditional_panels,
 }
+
+#   Allow Filebrowser to edit anything under media/
+#   (not just '/media/uploads/' which is the default)
+FILEBROWSER_DIRECTORY = ''
 
