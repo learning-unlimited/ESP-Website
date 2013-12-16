@@ -5,7 +5,8 @@ from esp.survey.models import *
 from django.db.models import Model
 from django.db.models.related import RelatedObject
 from django.db.models.fields.related import RelatedField, ForeignKey, ManyToManyField
-from django.db.models.sql.constants import QUERY_TERMS, LOOKUP_SEP
+from django.db.models.sql.constants import QUERY_TERMS
+from django.db.models.constants import LOOKUP_SEP
 from django.forms.forms import pretty_name
 from django.utils.safestring import mark_safe
 from inspect import isclass

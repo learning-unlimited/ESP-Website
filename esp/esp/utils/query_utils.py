@@ -1,6 +1,6 @@
 from django.db.models.query_utils import Q
 from django.utils.tree import Node
-from django.db.models.sql.constants import LOOKUP_SEP
+from django.db.models.constants import LOOKUP_SEP
 
 from copy import deepcopy
 
