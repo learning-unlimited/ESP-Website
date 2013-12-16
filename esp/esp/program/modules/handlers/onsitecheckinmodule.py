@@ -46,7 +46,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template.loader import render_to_string, select_template
 from esp.users.views    import search_for_user
 
-import simplejson as json
+import json
 
 
 class OnSiteCheckinModule(ProgramModuleObj):

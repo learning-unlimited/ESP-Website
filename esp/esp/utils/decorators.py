@@ -41,7 +41,7 @@ from django.db.models import Model
 
 from inspect import getargspec
 from functools import wraps
-import simplejson
+import json
 
 class OptionalDecorator(object):
     """ A simple decorator to turn a function into a no-op.  If the argument evaluates
@@ -100,7 +100,7 @@ def json_response(field_map={}):
                         new_list.append(map_fields(item))
                     new_result[key] = new_list
                 resp = HttpResponse(mimetype='application/json')
-                simplejson.dump(new_result, resp)
+                json.dump(new_result, resp)
                 return resp
                 
         return _evaluate

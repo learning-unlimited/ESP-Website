@@ -38,7 +38,7 @@ from esp.program.tests import ProgramFrameworkTest
 
 from django_selenium.testcases import SeleniumTestCase
 import random
-import simplejson as json
+import json
 
 #from esp.utils.selenium_auto import selenium_test
 

@@ -49,7 +49,7 @@ from Cookie import SimpleCookie
 
 import datetime
 import re
-from django.utils import simplejson as json
+import json
 
 from esp.web.models import NavBarCategory
 from esp.web.util.main import render_to_response

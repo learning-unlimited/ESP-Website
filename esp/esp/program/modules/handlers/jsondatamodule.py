@@ -57,7 +57,7 @@ from django.db.models.query import Q
 from collections import defaultdict
 from datetime import datetime
 import operator
-import simplejson as json
+import json
 
 class JSONDataModule(ProgramModuleObj, CoreModule):
     """ A program module dedicated to returning program-specific data in JSON form. """

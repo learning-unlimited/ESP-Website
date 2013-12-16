@@ -1,7 +1,7 @@
 import os
 import tarfile
 from django.core import serializers
-from django.utils import simplejson as json
+import json
 from customforms.models import *
 from customforms.useful import *
 

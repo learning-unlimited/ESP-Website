@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.tests import ProgramFrameworkTest
-from django.utils import simplejson as json
+import json
 import time
 
 class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):

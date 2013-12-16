@@ -92,7 +92,7 @@ class DependenciesTestCase(unittest.TestCase):
         self.tryImport("PIL._imaging")  # Internal PIL module; PIL will import without it, but it won't have a lot of the functionality that we need
         self.tryImport("pylibmc")  # We currently depend specifically on the "pylibmc" Python<->memcached interface library.
         self.tryImport("DNS")  # Used for validating e-mail address hostnames.  Imports as DNS, but the package and egg are named "pydns".
-        self.tryImport("simplejson")  # Used for some of our AJAX magic
+        self.tryImport("json")  # Used for some of our AJAX magic
         self.tryImport("icalendar")  # Currently not significantly used, but we have some hanging imports.  Originally used for exporting .ics calendar files, usable by many calendaring applications; we may do this again at some point.
         self.tryImport("twill")  # Used for unit testing against an actual server
         self.tryImport("flup")  # Used for interfacing with lighttpd via FastCGI

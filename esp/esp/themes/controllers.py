@@ -49,7 +49,7 @@ import re
 import subprocess
 import tempfile
 import distutils.dir_util
-import simplejson as json
+import json
 
 THEME_PATH = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data')
 

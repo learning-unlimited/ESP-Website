@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-import simplejson
+import json
 import colorsys
 from datetime import datetime, timedelta
 
@@ -102,7 +102,7 @@ class OnSiteClassList(ProgramModuleObj):
             'timeslots': list(prog.getTimeSlots().extra({'label': """to_char("start", 'Dy HH:MI -- ') || to_char("end", 'HH:MI AM')"""}).values_list('id', 'label')),
             'categories': list(prog.class_categories.all().order_by('-symbol').values('id', 'symbol', 'category')),
         }
-        simplejson.dump(data, resp)
+        json.dump(data, resp)
         return resp
     
     @aux_call
@@ -110,7 +110,7 @@ class OnSiteClassList(ProgramModuleObj):
     def enrollment_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         data = StudentRegistration.valid_objects().filter(section__status__gt=0, section__parent_class__status__gt=0, section__parent_class__parent_program=prog, relationship__name='Enrolled').values_list('user__id', 'section__id')
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
     
     @aux_call
@@ -135,7 +135,7 @@ LIMIT 1
             students_Q = students_Q | students_dict[student_type]
         students = ESPUser.objects.filter(students_Q).distinct()
         data = students.extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
     
     @aux_call
@@ -143,7 +143,7 @@ LIMIT 1
     def checkin_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         data = ESPUser.objects.filter(record__event="attended", record__program=prog).distinct().values_list('id')
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
         
     @aux_call
@@ -151,7 +151,7 @@ LIMIT 1
     def counts_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).values_list('id', 'enrolled_students')
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
     
     @aux_call    
@@ -159,7 +159,7 @@ LIMIT 1
     def rooms_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
         data = ClassSection.objects.filter(status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog).select_related('resourceassignment__resource__name').values_list('id', 'resourceassignment__resource__name', 'resourceassignment__resource__num_students')
-        simplejson.dump(list(data), resp)
+        json.dump(list(data), resp)
         return resp
     
     @aux_call
@@ -173,7 +173,7 @@ LIMIT 1
             result['messages'].append('Error: no user specified.')
         if result['user']:
             result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
-        simplejson.dump(result, resp)
+        json.dump(result, resp)
         return resp
         
     @aux_call
@@ -187,7 +187,7 @@ LIMIT 1
             user = None
             result['messages'].append('Error: could find user %s' % request.GET.get('user', None))
         try:
-            desired_sections = simplejson.loads(request.GET['sections'])
+            desired_sections = json.loads(request.GET['sections'])
         except:
             result['messages'].append('Error: could not parse requested sections %s' % request.GET.get('sections', None))
             desired_sections = None
@@ -248,7 +248,7 @@ LIMIT 1
             result['user'] = user.id
             result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
         
-        simplejson.dump(result, resp)
+        json.dump(result, resp)
         return resp
         
     
@@ -274,7 +274,7 @@ LIMIT 1
         PrintRequest.objects.create(user=user_obj, printer=printer)
         result['message'] = "Submitted %s's schedule for printing." % (user_obj.name())
 
-        simplejson.dump(result, resp)
+        json.dump(result, resp)
         return resp
 
     @aux_call
@@ -287,7 +287,7 @@ LIMIT 1
         
         open_class_category = prog.open_class_category
         open_class_category = dict( [ (k, getattr( open_class_category, k )) for k in ['id','symbol','category'] ] )
-        context['open_class_category'] = mark_safe(simplejson.dumps(open_class_category))
+        context['open_class_category'] = mark_safe(json.dumps(open_class_category))
         
         return render_to_response(self.baseDir()+'ajax_status.html', request, context)
 

@@ -37,7 +37,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, date
 from decimal import Decimal
 import random
-import simplejson as json
+import json
 
 from django.conf import settings
 from django.contrib.auth.models import User, AnonymousUser

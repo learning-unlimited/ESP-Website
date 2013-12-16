@@ -67,7 +67,7 @@ from esp.tagdict.models import Tag
 from django.conf import settings
 import pickle
 import operator
-import simplejson as json
+import json
 import re
 import unicodedata
 from collections import defaultdict

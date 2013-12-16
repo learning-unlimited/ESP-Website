@@ -299,7 +299,7 @@ class AjaxExistenceChecker(TestCase):
         if (not hasattr(self, 'path')) or (not hasattr(self, 'keys')):
             return
         
-        import simplejson as json
+        import json
         response = self.client.get(self.path)
         self.assertEqual(response.status_code, 200)
         content = json.loads(response.content)

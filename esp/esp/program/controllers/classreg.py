@@ -14,7 +14,7 @@ from django.db import transaction
 
 from datetime import timedelta, datetime
 from decimal import Decimal
-import simplejson as json
+import json
 from django.conf import settings
 
 def get_custom_fields():

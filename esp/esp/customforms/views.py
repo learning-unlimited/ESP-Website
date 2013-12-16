@@ -1,9 +1,11 @@
+import json
+
 from django.db import transaction
 from django.shortcuts import redirect, HttpResponse
 from django.http import Http404,HttpResponseRedirect
 from django.template import RequestContext
 from django.db import connection
-from django.utils import simplejson as json
+
 from customforms.models import *
 from esp.program.models import Program
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH

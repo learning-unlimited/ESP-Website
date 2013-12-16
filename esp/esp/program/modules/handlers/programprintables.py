@@ -51,7 +51,7 @@ from django.template.loader import select_template, render_to_string
 from django.utils.encoding import smart_str
 
 from decimal import Decimal
-import simplejson as json
+import json
 
 class ProgramPrintables(ProgramModuleObj):
     """ This is extremely useful for printing a wide array of documents for your program.

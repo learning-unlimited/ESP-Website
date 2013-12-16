@@ -43,7 +43,7 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.conf import settings
 
 from datetime import datetime
-import simplejson as json
+import json
 import random
 import string
 import os.path

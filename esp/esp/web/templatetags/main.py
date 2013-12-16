@@ -3,7 +3,7 @@ from esp.themes.controllers import ThemeController
 from django import template
 
 import os.path
-import simplejson as json
+import json
 
 register = template.Library()
 

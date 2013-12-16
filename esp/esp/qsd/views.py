@@ -222,7 +222,7 @@ def qsd(request, url):
 
 def ajax_qsd(request):
     """ Ajax function for in-line QSD editing.  """
-    from django.utils import simplejson
+    import json
     from esp.lib.templatetags.markdown import markdown
 
     result = {}
@@ -259,4 +259,4 @@ def ajax_qsd(request):
         result['content'] = markdown(qsd.content)
         result['id'] = qsd.id
     
-    return HttpResponse(simplejson.dumps(result))
+    return HttpResponse(json.dumps(result))

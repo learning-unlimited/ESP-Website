@@ -48,7 +48,7 @@ from django.template.loader import render_to_string, select_template
 from django.db.models.aggregates import Min
 from datetime import datetime, timedelta
 
-import simplejson as json
+import json
 
 
 class TeacherCheckinModule(ProgramModuleObj):

@@ -58,7 +58,7 @@ from esp.mailman                 import add_list_member
 from django.http                 import HttpResponseRedirect
 from django.db                   import models
 from esp.middleware.threadlocalrequest import get_current_request
-import simplejson as json
+import json
 from copy import deepcopy
 
 class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):

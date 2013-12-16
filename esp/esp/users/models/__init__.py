@@ -34,7 +34,7 @@ Learning Unlimited, Inc.
 
 from collections import defaultdict
 from datetime import datetime, timedelta
-import simplejson as json
+import json
 
 from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
 from django import forms

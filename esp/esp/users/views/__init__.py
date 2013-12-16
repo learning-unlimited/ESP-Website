@@ -96,7 +96,7 @@ def login_checked(request, *args, **kwargs):
     return reply
 
 def ajax_login(request, *args, **kwargs):
-    import simplejson as json
+    import json
     from django.contrib.auth import authenticate
     from django.template.loader import render_to_string
 
