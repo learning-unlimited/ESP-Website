@@ -4,6 +4,8 @@ from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
+from esp.web.management import update_all_esp_contenttypes
+
 
 class Migration(SchemaMigration):
 
@@ -19,6 +21,8 @@ class Migration(SchemaMigration):
 
         # Deleting model 'SATPrepRegInfo'
         db.delete_table('program_satprepreginfo')
+
+        update_all_esp_contenttypes(content_type_class=orm['contenttypes.ContentType'])
 
 
     def backwards(self, orm):
@@ -66,6 +70,8 @@ class Migration(SchemaMigration):
             ('diag_math_score', self.gf('django.db.models.fields.IntegerField')(null=True, blank=True)),
         ))
         db.send_create_signal('program', ['SATPrepRegInfo'])
+
+        update_all_esp_contenttypes(content_type_class=orm['contenttypes.ContentType'])
 
 
     models = {
@@ -501,3 +507,4 @@ class Migration(SchemaMigration):
     }
 
     complete_apps = ['program']
+
