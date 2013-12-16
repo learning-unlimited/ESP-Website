@@ -32,6 +32,9 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
+
+import time
+from datetime import timedelta
 from django.db import models
 from esp.datatree.models import *
 from esp.program.modules.base import ProgramModuleObj
@@ -65,6 +68,7 @@ class StudentClassRegModuleInfo(models.Model):
     #     b = class_cap_offset
     class_cap_multiplier = models.DecimalField(max_digits=3, decimal_places=2, default='1.00', help_text='A multiplier for class capacities (set to 0.5 to cap all classes at half their stored capacity).')
     class_cap_offset    = models.IntegerField(default=0, help_text='Offset for class capacities (this number is added to the original capacity of every class).')
+    apply_multiplier_to_room_cap = models.BooleanField(default=False, help_text='Apply class cap multipler and offset to room capacity instead of class capacity.)')
     
     #   This points to the tree node that is used for the verb when a student is added to a class.
     #   Only 'Enrolled' actually puts them on the class roster.  Other verbs may be used to
@@ -387,3 +391,104 @@ class CreditCardSettings(models.Model):
     post_url = models.CharField(max_length=255, default='')
     offer_donation = models.BooleanField(default=False)
     invoice_prefix = models.CharField(max_length=80, default=settings.INSTITUTION_NAME.lower())
+
+class AJAXChangeLogEntry(models.Model):
+
+    # unique index in change_log of this entry
+    index = models.IntegerField()
+
+    # comma-separated list of integer timeslots
+    timeslots = models.CharField(max_length=256)
+
+    # name of the room involved in scheduling update
+    room_name = models.CharField(max_length=256)
+
+    # class ID to update
+    cls_id = models.IntegerField()
+
+    # user responsible for this entry
+    user = AjaxForeignKey(ESPUser, blank=True, null=True)
+
+    # time we entered this
+    time = models.FloatField()
+
+    def update(self, index, timeslots, room_name, cls_id):
+        self.index = index
+        self.timeslots = ','.join([str(x) for x in timeslots])
+        self.room_name = room_name
+        self.cls_id = cls_id
+
+    def save(self, *args, **kwargs):
+        self.time = time.time()
+        super(AJAXChangeLogEntry, self).save(*args, **kwargs)
+
+    def getTimeslots(self):
+        return self.timeslots.split(',')
+
+    def getUserName(self):
+        if self.user:
+            return self.user.username
+        else:
+            return "unknown"
+
+class AJAXChangeLog(models.Model):
+    # program this change log stores changes for
+    program = AjaxForeignKey(Program)
+
+    # many to many for entries in this change log
+    entries = models.ManyToManyField(AJAXChangeLogEntry)
+
+    # log entries older than this are deleted
+    max_log_age = timedelta(hours=12).total_seconds()
+
+    def update(self, program):
+        self.program = program
+        self.age = time.time()
+
+    def prune(self):
+        max_time = time.time() - self.max_log_age
+        self.entries.filter(time__lte=max_time).delete()
+        self.save()
+
+    def append(self, timeslots, room_name, cls_id, user=None):
+        next_index = self.get_latest_index() + 1
+
+        entry = AJAXChangeLogEntry()
+        entry.update(next_index, timeslots, room_name, cls_id)
+
+        if user:
+        	entry.user = user
+
+        entry.save()
+        self.save()
+        self.entries.add(entry)
+        self.save()
+
+    def get_latest_index(self):
+        index = self.entries.all().aggregate(models.Max('index'))['index__max']
+
+        if index is None:
+            index = 0
+
+        return index
+
+    def get_earliest_index(self):
+        return self.entries.all().aggregate(models.Min('index'))['index__min']
+
+        if index is None:
+            index = 0
+
+        return index
+
+    def get_log(self, last_index):
+        new_entries = self.entries.filter(index__gt=last_index).order_by('index')
+        entry_list = list()
+
+        for entry in new_entries:
+            entry_list.append( {	'index'     : entry.index,
+                                    'room_name' : entry.room_name,
+                                    'id'    : entry.cls_id,
+                                    'timeslots' : entry.getTimeslots(),
+                                    'user'      : entry.getUserName() })
+
+        return entry_list

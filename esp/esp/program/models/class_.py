@@ -75,6 +75,8 @@ from esp.cache                   import cache_function
 from esp.cache.key_set           import wildcard
 from esp.utils.derivedfield      import DerivedField
 
+from esp.users.models import ESPUser
+
 from esp.middleware.threadlocalrequest import get_current_request
 
 from esp.customforms.linkfields import CustomFormsLinkModel
@@ -407,6 +409,10 @@ class ClassSection(models.Model):
         for r in rooms:
             rc += r.num_students
 
+        options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        if options.apply_multiplier_to_room_cap:
+            rc = int(rc * options.class_cap_multiplier + options.class_cap_offset)
+
         return rc
 
     @cache_function
@@ -437,9 +443,10 @@ class ClassSection(models.Model):
             else: 
                 ans = 0
             
+        options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+
         #   Apply dynamic capacity rule
-        if not ignore_changes:
-            options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        if not (ignore_changes or options.apply_multiplier_to_room_cap):
             return int(ans * options.class_cap_multiplier + options.class_cap_offset)
         else:
             return int(ans)
@@ -722,7 +729,6 @@ class ClassSection(models.Model):
             
         return (status, errors)
     
-    @cache_function
     def viable_times(self, ignore_classes=False):
         """ Return a list of Events for which all of the teachers are available. """
         
@@ -767,14 +773,6 @@ class ClassSection(models.Model):
                     viable_list.append(timegroup[i])
 
         return viable_list
-    #   Dependencies: 
-    #   - teacher availability
-    #   - teachers of the class
-    #   - the target section and its meeting times
-    viable_times.depend_on_model(lambda:UserAvailability)   #   To do: Make this more specific (so the cache doesn't get flushed so often)
-    viable_times.depend_on_m2m(lambda:ClassSection, 'meeting_times', lambda sec, event: {'self': sec})
-    viable_times.depend_on_m2m(lambda:ClassSubject, 'teachers', lambda subj, teacher: [{'self': sec} for sec in subj.get_sections()])
-    viable_times.depend_on_row(lambda:ClassSection, lambda sec: {'self': sec})
 
     @cache_function
     def viable_rooms(self):
@@ -919,8 +917,6 @@ class ClassSection(models.Model):
         """Return a scheduling conflict if one exists, or None."""
         from esp.users.models import ESPUser
         user = ESPUser(teacher)
-        if user.getTaughtClasses().count() == 0:
-            return None
         if meeting_times is None:
             meeting_times = self.meeting_times.all()
         for sec in user.getTaughtSections(self.parent_program).exclude(id=self.id):
@@ -937,18 +933,17 @@ class ClassSection(models.Model):
         Assumes meeting_times is a sorted QuerySet of correct length.
 
         """
-        if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
+        #if meeting_times[0] not in self.viable_times(ignore_classes=ignore_classes):
             # This set of error messages deserves a better home
-            for t in self.teachers:
-                available = t.getAvailableTimes(self.parent_program, ignore_classes=False)
-                for e in meeting_times:
-                    if e not in available:
-                        return "The teacher %s has not indicated availability during %s." % (t.name(), e.pretty_time())
-                conflicts = self.conflicts(t, meeting_times)
-                if conflicts:
-                    return "The teacher %s is teaching %s during %s." % (t.name(), conflicts[0].emailcode(), conflicts[1].pretty_time())
+        for t in self.teachers:
+            available = t.getAvailableTimes(self.parent_program, ignore_classes=True)
+            for e in meeting_times:
+                if e not in available:
+                    return "The teacher %s has not indicated availability during %s." % (t.name(), e.pretty_time())
+            conflicts = self.conflicts(t, meeting_times)
+            if conflicts:
+                return "The teacher %s is teaching %s during %s." % (t.name(), conflicts[0].emailcode(), conflicts[1].pretty_time())
             # Fallback in case we couldn't come up with details
-            return "Some of the teachers (could not determine which) are unavailable at this time."
         return False
 
     #   If the values returned by this function are ever needed in QuerySet form,
@@ -1681,11 +1676,8 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
         return ResourceRequest.objects.filter(target__parent_class=self)
 
     def conflicts(self, teacher):
-        from esp.users.models import ESPUser
         from datetime import timedelta
         user = ESPUser(teacher)
-        if user.getTaughtClasses().count() == 0:
-            return False
         
         for cls in user.getTaughtClasses().filter(parent_program = self.parent_program):
             for section in cls.get_sections():

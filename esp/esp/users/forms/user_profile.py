@@ -91,8 +91,8 @@ class UserContactForm(FormUnrestrictedOtherUser, FormWithTagInitialValues):
     receive_txt_message = forms.BooleanField(required=False)
     address_street = StrippedCharField(length=40, max_length=100)
     address_city = StrippedCharField(length=20, max_length=50)
-    address_state = forms.ChoiceField(choices=zip(_states,_states))
-    address_zip = StrippedCharField(length=5, max_length=5)
+    address_state = forms.ChoiceField(choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
+    address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def __init__(self, *args, **kwargs):
@@ -123,8 +123,8 @@ class EmergContactForm(FormUnrestrictedOtherUser):
     emerg_phone_cell = USPhoneNumberField(required=False)
     emerg_address_street = StrippedCharField(length=40, max_length=100)
     emerg_address_city = StrippedCharField(length=20, max_length=50)
-    emerg_address_state = forms.ChoiceField(choices=zip(_states,_states))
-    emerg_address_zip = StrippedCharField(length=5, max_length=5)
+    emerg_address_state = forms.ChoiceField(choices=zip(_states,_states), widget=forms.Select(attrs={'class': 'input-mini'}))
+    emerg_address_zip = StrippedCharField(length=5, max_length=5, widget=forms.TextInput(attrs={'class': 'input-small'}))
     emerg_address_postal = forms.CharField(required=False, widget=forms.HiddenInput())
 
     def clean(self):
@@ -291,7 +291,6 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
                     self.fields['graduation_year'].required = False
                     self.fields['dob'].widget.attrs['disabled'] = "true"
                     self.fields['dob'].required = False
-                    
 
         #   Add schoolsystem fields if directed by the Tag
         if Tag.getTag('schoolsystem'):

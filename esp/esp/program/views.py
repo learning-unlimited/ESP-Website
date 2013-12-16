@@ -57,6 +57,7 @@ from esp.program.modules.base import needs_student
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import CompletedTransactionException
@@ -424,6 +425,7 @@ def userview(request):
         'teacherbio': teacherbio,
         'domain': settings.SITE_INFO[1],
         'change_grade_form': change_grade_form,
+        'printers': StudentRegCore.printer_names(),
     }
     return render_to_response("users/userview.html", request, context )
 

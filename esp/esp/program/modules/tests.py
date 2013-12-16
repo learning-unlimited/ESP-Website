@@ -34,3 +34,13 @@ Learning Unlimited, Inc.
 
 from esp.program.modules.handlers import *
 
+    
+#define test suite for program modules
+#scrapes modules/tests directory
+def suite():
+    s = unittest.TestSuite()
+    # Scan this file for TestCases
+    s.addTest(unittest.defaultTestLoader.discover(program.modules.tests))
+
+    return s
+
