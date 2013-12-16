@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import *
+from django.conf.urls import *
 from dataviews.views import wizard_view, mode_view, doc_view, path_view
 from dataviews import useful_models
 

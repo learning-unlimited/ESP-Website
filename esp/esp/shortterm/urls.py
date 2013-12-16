@@ -1,4 +1,4 @@
-from django.conf.urls.defaults import *
+from django.conf.urls import *
 
 urlpatterns = patterns('esp.shortterm.views',
                        (r'^school_response/?', 'school_response_form'),
