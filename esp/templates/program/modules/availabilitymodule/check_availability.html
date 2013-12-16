@@ -31,54 +31,10 @@
 <br /><br />
 {% endif %}
 
-<form method="GET" action="{{ request.path }}">
-User: <input type="text" id="id_user" name="user_raw" value="" />
-<input type="hidden" id="id_user_data" name="user" />
-
+<form method="POST" action="{{ request.path }}">
+{{ form.as_p }}
 <input type="submit" value="Search" />
 </form>
-
-<script type="text/javascript">
-<!--
-
-$j("#id_user").val("");
-$j("#id_user_data").val("");
-$j("#id_user").change(function () {
-    //  Clear current result and copy value to shadow field whenever text changes
-    $j("#id_user_data").val(null);
-    $j("#id_None").val($j("#id_user").val());
-});
-$j("#id_user").autocomplete({
-    source: function(request, response) {
-        $j.ajax({
-            url: "/admin/ajax_autocomplete/",
-            dataType: "json",
-            data: {
-                model_module: "esp.users.models",
-                model_name: "ESPUser",
-                ajax_func: "ajax_autocomplete",
-                ajax_data: request.term
-            },
-            success: function(data) {
-                var output = $j.map(data.result, function(item) {
-                    return {
-                        label: item.ajax_str,
-                        value: item.ajax_str,
-                        id: item.id
-                    };
-                });
-                response(output);
-            }
-        });
-    },
-    select: function(event, ui) {
-        $j("#id_user_data").val(ui.item.id);
-        
-    }
-});
-
-//-->
-</script>
 
 {% include "program/modules/admincore/returnlink.html" %}
 
