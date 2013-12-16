@@ -1,7 +1,7 @@
 from django import forms
 from django.forms.models import fields_for_model
 from django.db.models.loading import get_models
-from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
+from localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.customforms.forms import NameField, AddressField
 from esp.utils.forms import DummyField
 

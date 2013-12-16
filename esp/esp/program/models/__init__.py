@@ -42,7 +42,7 @@ import simplejson as json
 from django.conf import settings
 from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.contenttypes import generic
-from django.contrib.localflavor.us.models import PhoneNumberField
+from localflavor.us.models import PhoneNumberField
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Count

@@ -40,8 +40,8 @@ from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
 from django import forms
 from django.conf import settings
 from django.contrib.auth.models import User, AnonymousUser, Group
-from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
-from django.contrib.localflavor.us.forms import USStateSelect
+from localflavor.us.models import USStateField, PhoneNumberField
+from localflavor.us.forms import USStateSelect
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
