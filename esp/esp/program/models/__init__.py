@@ -743,7 +743,10 @@ class Program(models.Model, CustomFormsLinkModel):
         return result
     
     def date_range(self):
+        """ Returns string range from earliest timeslot to latest timeslot, or NoneType if no timeslots set """
         dates = self.getTimeSlots()
+
+        if dates:
         d1 = min(dates).start
         d2 = max(dates).end
         if d1.year == d2.year:
@@ -756,6 +759,8 @@ class Program(models.Model, CustomFormsLinkModel):
                 return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
         else:
             return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
+        else:
+            return None
 
     def getResourceTypes(self, include_classroom=False, include_global=None):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
@@ -1008,10 +1013,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def incrementGrade(self): 
-        incrementTag = Tag.getProgramTag('increment_default_grade_levels', self)
-        if incrementTag: 
-            return 1
-        return 0
+        return int(Tag.getBooleanTag('increment_default_grade_levels', self, False))
     incrementGrade.depend_on_row(lambda: Tag, lambda tag: {'self' :  tag.target})
     
     def priorityLimit(self):
@@ -1020,6 +1022,13 @@ class Program(models.Model, CustomFormsLinkModel):
             return studentregmodule.priority_limit
         else: 
             return 1
+    
+    def useGradeRangeExceptions(self):
+        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        if studentregmodule:
+            return studentregmodule.use_grade_range_exceptions
+        else:
+            return False
     
     def getDirectorCCEmail(self):
         if self.director_cc_email:

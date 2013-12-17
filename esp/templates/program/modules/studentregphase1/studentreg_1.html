@@ -1,0 +1,70 @@
+{% extends "program/modules/studentclassregmodule/catalog_new.html" %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript">
+  var catalog_type = "phase1";
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog-phase1.css" />
+{% endblock %}
+
+{% block catalog_sticky %}
+<h2>Step 1: Star Classes that Interest You</h2>
+<hr>
+<div class="sticky-toggle">
+  <a href="javascript:void(0)"
+     data-bind="click: toggleFilter, text: showFilter() ? '(&ndash;)' : '(+)'">
+  </a>
+</div>
+<div class="search-box">
+  <label>Search:</label>
+  <input type="text" data-bind="value: search, valueUpdate: 'afterkeydown'"></input>
+  <div id="search-spinner">&nbsp;</div>
+</div>
+<div class="filter-box" data-bind="visible: showFilter">
+  <label>Category:</label>
+  <br>
+  {% for column in category_choices %}
+  <div class="filter-column">
+    {% for value, label in column %}
+    <div>
+      <input type="checkbox" value="{{ value }}"
+             data-bind="checked: filterCategory"></input>
+      <label>{{ label }}</label>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% if grade_choices %}
+<div class="filter-box" data-bind="visible: showFilter">
+  <label>Grade:</label>
+  <br>
+  {% for column in grade_choices %}
+  <div class="filter-column">
+    {% for value, label in column %}
+    <div>
+      <input type="radio" value="{{ value }}"
+             data-bind="checked: filterGrade"></input>
+      <label>{{ label }}</label>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block class_action %}
+<div class="mark-interested">
+  <a class="star" href="javascript:void(0)" title="Click the star to mark this class as interested." data-bind="click: toggle_interested">
+    <i class="star-outline icon-2x icon-star-empty"></i>
+    <i class="star-fill icon-2x icon-star" data-bind="visible: interested"></i>
+  </a>
+  <label>Click the star to mark this class as interested.</label>
+</div>
+{% endblock %}

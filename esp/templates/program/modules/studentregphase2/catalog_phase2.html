@@ -1,0 +1,40 @@
+{% extends "program/modules/studentclassregmodule/catalog_new.html" %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript" src="/media/scripts/select2-3.4.3/select2.js"></script>
+<script type="text/javascript" src="/media/scripts/catalog-phase2.js"></script>
+<script type="text/javascript">
+  // Use phase2 rendering of the catalog template
+  var catalog_type = "phase2";
+  var timeslot_id = "{{timeslot}}";
+  var num_priorities = "{{num_priorities}}";
+</script>
+{% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/select2-3.4.3/select2.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/catalog-phase2.css" />
+{% endblock %}
+
+{% block catalog_sticky %}
+<h2>Step 2: Mark interested classes for {{ timeslot }}</h2>
+<hr>
+<a href="javascript:void(0)" onclick="save_and_redirect();">
+<div class="save">
+Save and exit >>
+</div>
+</a>
+{% for pri in priorities %}
+<div class="priority">
+  <label>Priority {{pri}}</label>
+  <select id="pri-{{pri}}" class="pri-select" data-pri="{{pri}}"
+	  data-bind="options: classesArray,
+		     optionsText: 'fulltitle',
+		     optionsValue: 'id',
+		     value: prioritySelection[{{pri}}-1],
+		     optionsCaption: 'Select a class from below.'"></select>
+</div>
+{% endfor %}
+{% endblock %}

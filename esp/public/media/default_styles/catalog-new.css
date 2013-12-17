@@ -1,0 +1,106 @@
+#catalog-sticky {
+    width: 560px;
+    border-bottom: 1px solid #333;
+    padding: 0.5em 0;
+    background-color: #FFF;
+    z-index: 100;
+}
+
+#catalog-sticky .sticky-toggle {
+    float: right;
+}
+
+#catalog-sticky .sticky-toggle a {
+    color: inherit;
+    outline: 0;
+    text-decoration: none;
+}
+
+#catalog-sticky .search-box, #catalog-sticky .filter-box {
+    font-size: 13px;
+}
+
+#catalog-sticky .filter-box {
+    display: inline-block;
+    vertical-align: top;
+    margin-top: 0.5em;
+    margin-right: 2em;
+}
+
+#catalog-sticky .filter-column {
+    display: inline-block;
+    vertical-align: top;
+}
+
+#catalog-sticky a.save {
+    border: 1px solid black;
+    background-color: #ccccff;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 2px 5px 2px 5px;
+}
+#catalog-sticky a.save:hover {
+    background-color: #333399;
+    color: #ccccff;
+}
+
+#catalog-new {
+    font-size: 13px;
+}
+#catalog-new .catalog-entry {
+    border: 2px solid #9BF;
+    margin: 1em 0;
+    overflow: hidden;
+}
+#catalog-new .catalog-entry-header {
+    padding: 0.5em;
+    background-color: #CDF;
+}
+#catalog-new .catalog-entry-title {
+    font-size: 1.15em;
+    display: inline-block;
+}
+#catalog-new .catalog-entry-teachers {
+    font-style: italic;
+    display: inline-block;
+    margin-left: 1em;
+}
+#catalog-new .catalog-entry-body {
+    padding: 0.5em;
+    font-family: serif;
+}
+#catalog-new .catalog-entry-description {
+    white-space: pre-wrap;
+    margin: 0.5em 0;
+}
+#catalog-new .catalog-entry dl {
+    display: table;
+    margin: 0.5em 0;
+}
+#catalog-new .catalog-entry dl > dt {
+    clear: left;
+    float: left;
+    margin: 0;
+    padding: 0 0.4em 0.4em 0;
+    font-weight: bold;
+}
+#catalog-new .catalog-entry dl > dt:after {
+    content: ": ";
+}
+#catalog-new .catalog-entry dl > dd {
+    float: left;
+    margin: 0;
+    padding: 0 0.4em 0.4em 0;
+}
+#catalog-new .catalog-entry table {
+    margin: 0.5em 0;
+}
+#catalog-new .catalog-entry th, #catalog-new .catalog-entry td {
+    text-align: center;
+    padding: 0 1em;
+}
+
+#search-spinner {
+    display: inline-block;
+}

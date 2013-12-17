@@ -33,31 +33,30 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, main_call, aux_call
-from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
-from esp.program.modules.forms.splashinfo import SplashInfoForm
-from esp.program.models import SplashInfo
-from esp.users.models import UserAvailability
-from esp.cal.models import Event
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories
-from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
-from esp.datatree.models import *
-from esp.dbmail.models import MessageRequest
-from esp.tagdict.models import Tag
-
-from esp.utils.decorators import cached_module_view, json_response
-from esp.utils.no_autocookie import disable_csrf_cookie_update
-
-from esp.middleware import ESPError
-
-from django.views.decorators.cache import cache_control
-from django.db.models import Count, Sum
-from django.db.models.query import Q
-
 from collections import defaultdict
 from datetime import datetime
 import operator
 import simplejson as json
+
+from django.views.decorators.cache import cache_control
+from django.db.models import Count, Sum
+from django.db.models.query import Q
+from django.http import Http404
+
+from esp.cal.models import Event
+from esp.datatree.models import *
+from esp.dbmail.models import MessageRequest
+from esp.middleware import ESPError
+from esp.program.models import SplashInfo
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest
+from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, main_call, aux_call
+from esp.program.modules.forms.splashinfo import SplashInfoForm
+from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
+from esp.resources.models import Resource, ResourceAssignment, ResourceRequest, ResourceType
+from esp.tagdict.models import Tag
+from esp.users.models import UserAvailability
+from esp.utils.decorators import cached_module_view, json_response
+from esp.utils.no_autocookie import disable_csrf_cookie_update
 
 class JSONDataModule(ProgramModuleObj, CoreModule):
     """ A program module dedicated to returning program-specific data in JSON form. """
@@ -185,7 +184,13 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'parent_class__class_size_max': 'class_size_max',
             'enrolled_students': 'num_students'})
     @cached_module_view
-    def sections(prog):
+    def sections(extra, prog):
+        if extra == 'catalog':
+            catalog = True
+        elif extra == None:
+            catalog = False
+        else:
+            raise Http404
         teacher_dict = {}
         teachers = []
         sections = list(prog.sections().values(
@@ -204,6 +209,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             section['index'] = s.index()
             section['emailcode'] = s.emailcode()
             section['length'] = float(s.duration)
+            if catalog:
+                section['times'] = s.friendly_times_with_date()
+                section['capacity'] = s.capacity
             section['teachers'] = [t.id for t in s.parent_class.get_teachers()]
             for t in s.parent_class.get_teachers():
                 if teacher_dict.has_key(t.id):
@@ -230,22 +238,40 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             'id': 'id',
             'status': 'status',
             'category__symbol': 'category',
+            'category__id': 'category_id',
             'grade_max': 'grade_max',
             'grade_min': 'grade_min',
             'emailcode': 'emailcode',
             'title': 'title',
+            'class_info': 'class_info',
+            'hardness_rating': 'difficulty',
+            'prereqs': 'prereqs'
             })
     @cached_module_view
-    def class_subjects(prog):
+    def class_subjects(extra, prog):
+        if extra == 'catalog':
+            catalog = True
+        elif extra == None:
+            catalog = False
+        else:
+            raise Http404
         teacher_dict = {}
         teachers = []
-        classes = list(prog.classes().values(
-                'id',
-                'status',
-                'title',
-                'category__symbol',
-                'grade_max',
-                'grade_min'))
+        attrs = [
+            'id',
+            'status',
+            'title',
+            'category__symbol',
+            'category__id',
+            'grade_max',
+            'grade_min']
+        if catalog:
+            attrs += [
+                'class_info',
+                'hardness_rating',
+                'prereqs']
+
+        classes = list(prog.classes().values(*attrs))
 
         for cls in classes:
             c = ClassSubject.objects.get(id=cls['id'])
@@ -271,9 +297,31 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
     class_subjects.cached_function.depend_on_cache(ClassSubject.get_teachers, lambda cls=wildcard, **kwargs: {'prog': cls.parent_program})
 
     @aux_call
+    @json_response({
+            'subject': 'id',
+            'subject__sections': 'id',
+            })
+    @needs_student
+    def interested_classes(self, request, tl, one, two, module, extra, prog):
+        ssis = StudentSubjectInterest.valid_objects().filter(
+            user=request.user)
+        if extra != None:
+            timeslot_id = int(extra)
+            ssis = ssis.filter(
+                subject__sections__meeting_times__id__exact=timeslot_id)
+        subject_ids = ssis.values('subject')
+        section_ids = ssis.values('subject__sections')
+        return {'interested_subjects': subject_ids,
+                'interested_sections': section_ids}
+
+
+    @aux_call
     @json_response()
     @needs_student
-    def lottery_preferences(self, request, tl, one, two, module, extra, prog):
+    def lottery_preferences(self, request, tl, one, two, module, extra, prog):        
+        if prog.priorityLimit() > 1:
+            return self.lottery_preferences_usepriority(request, prog)
+ 
         sections = list(prog.sections().values('id'))
         sections_interested = StudentRegistration.valid_objects().filter(relationship__name='Interested', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
         sections_priority = StudentRegistration.valid_objects().filter(relationship__name='Priority/1', user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
@@ -287,6 +335,19 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             else:
                 item['lottery_priority'] = False
         return {'sections': sections}
+
+    def lottery_preferences_usepriority(self, request, prog): 
+        sections = list(prog.sections().values('id'))
+        for i in range(1, prog.priorityLimit()+1, 1):
+            priority_name = 'Priority/' + str(i)
+            sections_priority = StudentRegistration.valid_objects().filter(relationship__name=priority_name, user=request.user, section__parent_class__parent_program=prog).select_related('section__id').values_list('section__id', flat=True).distinct()
+            for item in sections:
+                if item['id'] in sections_priority:
+                    item[priority_name] = True
+                #else:
+                #   item['lottery_priority'] = False
+        return {'sections': sections}
+        
         
     @aux_call
     @cache_control(public=True, max_age=300)
