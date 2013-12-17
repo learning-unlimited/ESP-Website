@@ -217,6 +217,8 @@ class TextOfEmail(models.Model):
     msgtext = models.TextField() # Message body; plain text
     sent = models.DateTimeField(blank=True, null=True)
     sent_by = models.DateTimeField(null=True, default=None, db_index=True) # When it should be sent by.
+    locked = models.BooleanField(default=False)
+    tries = models.IntegerField(default=0) # Number of times we attempted to send this message and failed
 
     def __unicode__(self):
         return unicode(self.subject) + ' <' + (self.send_to) + '>'
@@ -224,10 +226,6 @@ class TextOfEmail(models.Model):
     def send(self):
         """ Take the e-mail data contained within this class, put it into a MIMEMultipart() object, and send it """
 
-        # this might be the source of trouble
-        #if self.sent != None:
-        #    return False
-        
         parent_request = None
         if self.emailrequest_set.count() > 0:
             parent_request = self.emailrequest_set.all()[0].msgreq
@@ -243,24 +241,6 @@ class TextOfEmail(models.Model):
                   self.send_to,
                   False,
                   extra_headers=extra_headers)
-
-        #send_mail(str(self.subject),
-        #          str(self.msgtext),
-        #          str(self.send_from),
-        #          [ str(self.send_to) ],
-        #          fail_silently=False )
-        
-        #message = MIMEMultipart()
-        #message['To'] = str(self.send_to)
-        #message['From'] = str(self.send_from)
-        #message['Date'] = formatdate(localtime=True, timeval=now)
-        #message['Subject'] = str(self.subject)
-        #message.attach( MIMEText(str(self.msgtext)) )
-        #print str(self.send_from) + ' | ' + str(self.send_to) + ' | ' + message.as_string() + "\n"
-        # aseering: Code currently commented out because we're debugging this.  It might break and, say, spam esp-webmasters.  That would be bad.
-        #sendvia_smtp = smtplib.SMTP(smtp_server)
-        #sendvia_smtp.sendmail(str(self.send_from), str(self.send_to), message.as_string())
-        #sendvia_smtp.close()
 
         self.sent = now
         self.save()
