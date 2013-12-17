@@ -12,12 +12,12 @@ class Migration(DataMigration):
     def forwards(self, orm):
         #probably not the fastest way to do this migration, but it works
 
-        #   Find a list of program anchors - these are the only valid places for UserBits to
-        #   be attached if we want to convert them to Records
-        program_anchors = Program.objects.all().values_list('anchor__id', flat=True)
+        #   Find a list of program anchors - these are the only valid places for orm['users.UserBit']s to
+        #   be attached if we want to convert them to orm['users.Record']s
+        program_anchors = orm["program.Program"].objects.all().values_list('anchor__id', flat=True)
         program_map = {}
         for id in program_anchors:
-            program_map[id] = Program.objects.get(anchor__id=id)
+            program_map[id] = orm["program.Program"].objects.get(anchor__id=id)
 
         verbs = {"V/Flags/Survey/Filed":"student_survey",
                  "V/Flags/TeacherSurvey/Filed":"teacher_survey",
@@ -31,24 +31,24 @@ class Migration(DataMigration):
                  "V/Flags/Registration/Confirmed":"reg_confirmed",#this one is out-of-date but there might be some leftover
                  }
         for verb, event in verbs.items():
-            bits = UserBit.objects.filter(verb__uri=verb, qsc__in=program_anchors).filter(enddate__gte=datetime.datetime.now())
+            bits = orm['users.UserBit'].objects.filter(verb__uri=verb, qsc__in=program_anchors).filter(enddate__gte=datetime.datetime.now())
             for bit in bits:
-                Record.objects.create(user=bit.user, event=event,
+                orm['users.Record'].objects.create(user=bit.user, event=event,
                                       program=program_map[bit.qsc.id],
                                       time=bit.startdate)
 
         #Reg confirmed
-        for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Confirmation", qsc__parent__in=program_anchors).filter(enddate__gte=datetime.datetime.now()).select_related('qsc__parent'):
-            Record.objects.create(user=bit.user,event="reg_confirmed",
+        for bit in orm['users.UserBit'].objects.filter(verb__uri="V/Flags/Public",qsc__name="Confirmation", qsc__parent__in=program_anchors).filter(enddate__gte=datetime.datetime.now()).select_related('qsc__parent'):
+            orm['users.Record'].objects.create(user=bit.user,event="reg_confirmed",
                                   program=program_map[bit.qsc.parent.id], time=bit.startdate)
 
         #Waitlisted
-        for bit in UserBit.objects.filter(verb__uri="V/Flags/Public",qsc__name="Waitlist", qsc__parent__in=program_anchors).filter(enddate__gte=datetime.datetime.now()).select_related('qsc__parent'):
-            Record.objects.create(user=bit.user,event="waitlist",
+        for bit in orm['users.UserBit'].objects.filter(verb__uri="V/Flags/Public",qsc__name="Waitlist", qsc__parent__in=program_anchors).filter(enddate__gte=datetime.datetime.now()).select_related('qsc__parent'):
+            orm['users.Record'].objects.create(user=bit.user,event="waitlist",
                                   program=program_map[bit.qsc.parent.id], time=bit.startdate)
 
     def backwards(self, orm):
-        Record.objects.all().delete()
+        orm['users.Record'].objects.all().delete()
 
     models = {
         'auth.group': {
