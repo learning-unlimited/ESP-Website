@@ -57,10 +57,10 @@ class Tag(models.Model):
         Given a key and program, return the corresponding value as string.
         If the program does not have the tag set, return the global value.
         """
-        res = None
+        res = default
         if program is not None:
             res = cls.getTag(key, target=program, default=default, )
-        if res is default:
+        if res == default: #We might like to use `is` instead of ==, but that will not work if getTag is returning a cached value.
             res = cls.getTag(key, target=None, default=default, )
         return res
     
@@ -70,7 +70,7 @@ class Tag(models.Model):
             The default argument should also be boolean. """
             
         tag_val = Tag.getProgramTag(key, program, default)
-        if tag_val is default:
+        if tag_val == default: #We might like to use `is` instead of ==, but that will not work if getTag is returning a cached value.
             return tag_val
         elif tag_val.strip().lower() == 'true' or tag_val.strip() == '1':
             return True
@@ -93,7 +93,7 @@ class Tag(models.Model):
             ct = ContentType.objects.get_for_model(target)
             tag, created = cls.objects.get_or_create(key=key, content_type=ct, object_id=target.id)
         else:
-            tag, created = cls.objects.get_or_create(key=key)
+            tag, created = cls.objects.get_or_create(key=key, content_type=None, object_id=None)
 
         if created or (tag.value != value):
             tag.value = value
