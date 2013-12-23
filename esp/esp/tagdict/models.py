@@ -57,21 +57,28 @@ class Tag(models.Model):
         Given a key and program, return the corresponding value as string.
         If the program does not have the tag set, return the global value.
         """
-        res = default
+        res = None
+        # We use None, rather than default, as our default so that we hit the
+        # same getTag cache independently of the default.  Since getTag should
+        # always return either a string if a tag was found, and None otherwise,
+        # this works.
         if program is not None:
-            res = cls.getTag(key, target=program, default=default, )
-        if res == default: #We might like to use `is` instead of ==, but that will not work if getTag is returning a cached value.
-            res = cls.getTag(key, target=None, default=default, )
-        return res
+            res = cls.getTag(key, target=program)
+        if res is None:
+            res = cls.getTag(key)
+        if res is None:
+            return default
+        else:
+            return res
     
     @classmethod
     def getBooleanTag(cls, key, program=None, default=None):
         """ A variant of getProgramTag that returns boolean values.
             The default argument should also be boolean. """
             
-        tag_val = Tag.getProgramTag(key, program, default)
-        if tag_val == default: #We might like to use `is` instead of ==, but that will not work if getTag is returning a cached value.
-            return tag_val
+        tag_val = Tag.getProgramTag(key, program)
+        if tag_val is None: #See the comment in getProgramTag for why we're using None rather than passing the default through.
+            return default
         elif tag_val.strip().lower() == 'true' or tag_val.strip() == '1':
             return True
         else:
