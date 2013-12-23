@@ -1,6 +1,8 @@
 from django.db import models
 from django.test import TestCase
 
+import unittest
+
 from esp.cache import registry
 from esp.cache.argcache import cache_function
 from esp.cache.key_set import wildcard
@@ -32,6 +34,11 @@ class Article(models.Model):
     def num_comments(self):
         return self.comments.count()
     num_comments.depend_on_row(lambda: Comment, lambda comment: {'self': comment.article})
+
+    @cache_function
+    def num_comments_with_dummy(self, dummy):
+        return self.comments.count()
+    num_comments_with_dummy.depend_on_row(lambda: Comment, lambda comment: {'self': comment.article})
 
     def __unicode__(self):
         return self.headline
@@ -65,6 +72,16 @@ class Reporter(models.Model):
     articles_with_hashtag.depend_on_row(Article, lambda article: {'self': article.reporter})
     articles_with_hashtag.depend_on_m2m(Article, 'hashtags', lambda article, hashtag: {'self': article.reporter, 'hashtag': hashtag.label})
 
+    @cache_function
+    def articles_with_headline(self, headline):
+        return list(self.articles.filter(headline=headline).values_list('content', flat=True))
+    articles_with_headline.depend_on_row(Article, lambda article: {'self': article.reporter, 'headline': article.headline})
+
+    @cache_function
+    def articles_with_headline_and_dummy(self, dummy, headline):
+        return list(self.articles.filter(headline=headline).values_list('content', flat=True))
+    articles_with_headline_and_dummy.depend_on_row(Article, lambda article: {'self': article.reporter, 'headline': article.headline})
+
     def __unicode__(self):
         return self.full_name()
 
@@ -78,8 +95,10 @@ class CacheTests(TestCase):
         # create initial objects
         reporter1 = Reporter.objects.create(pk=1, first_name='John', last_name='Doe')
         reporter2 = Reporter.objects.create(pk=2, first_name='Jane', last_name='Roe')
+        reporter3 = Reporter.objects.create(pk=3, first_name='Jim', last_name='Poe')
         article1 = Article.objects.create(pk=1, headline='Breaking News', content='Lorem ipsum dolor sit amet', reporter=reporter1)
         article2 = Article.objects.create(pk=2, headline='Article II', content='The executive Power shall be vested in a President', reporter=reporter1)
+        article3 = Article.objects.create(pk=3, headline='Article II', content='He shall hold his Office during the Term', reporter=reporter3)
         comment1 = Comment.objects.create(pk=1, article=article1)
         comment2 = Comment.objects.create(pk=2, article=article1)
         hashtag1 = HashTag.objects.create(pk=1, label='#hashtag')
@@ -205,6 +224,164 @@ class CacheTests(TestCase):
         with self.assertNumQueries(0):
             cnt3 = article.num_comments()
         self.assertEqual(cnt3, cnt2)
+
+    @unittest.skip("Known issue, see Github #866")
+    def test_depend_on_row_with_dummy(self):
+        """
+        depend_on_row still works correctly when there are other arguments to the function.
+        """
+        # call the function, update the model, call the function again
+        # should result in a cache miss
+        article = Article.objects.get(pk=1)
+        cnt1 = article.num_comments()
+        article.comments.create(pk=3)
+        with self.assertNumQueries(1):
+            cnt2 = article.num_comments_with_dummy(None)
+        self.assertEqual(cnt2, cnt1 + 1)
+
+        # unrelated DB updates should not affect the cache
+        article2 = Article.objects.get(pk=2)
+        article2.comments.create(pk=4)
+        with self.assertNumQueries(0):
+            cnt3 = article.num_comments_with_dummy(None)
+        self.assertEqual(cnt3, cnt2)
+
+    def test_depend_on_row_multiple_arguments(self):
+        '''Tests that depend_on_row works properly with multiple arguments (in this case, where all are used).'''
+        reporter1 = Reporter.objects.get(pk=1)
+        reporter3 = Reporter.objects.get(pk=3)
+        # The first time around, each one should hit the cache.
+        with self.assertNumQueries(1):
+            arts1a = reporter1.articles_with_headline('Breaking News')
+        with self.assertNumQueries(1):
+            arts2a = reporter1.articles_with_headline('Article II')
+        with self.assertNumQueries(1):
+            arts3a = reporter3.articles_with_headline('Article II')
+        
+        # There were no updates, so we shouldn't hit the cache.
+        with self.assertNumQueries(0):
+            arts1b = reporter1.articles_with_headline('Breaking News')
+            self.assertEqual(arts1a,arts1b)
+        with self.assertNumQueries(0):
+            arts2b = reporter1.articles_with_headline('Article II')
+            self.assertEqual(arts2a,arts2b)
+        with self.assertNumQueries(0):
+            arts3b = reporter3.articles_with_headline('Article II')
+            self.assertEqual(arts3a,arts3b)
+
+        article1 = Article.objects.get(pk=1)
+        article1.content = 'The news is broken.'
+        article1.save()
+
+        # The first query should be affected by the update, but the latter two shouldn't.
+        with self.assertNumQueries(1):
+            arts1c = reporter1.articles_with_headline('Breaking News')
+            self.assertNotEqual(arts1b,arts1c)
+        with self.assertNumQueries(0):
+            arts2c = reporter1.articles_with_headline('Article II')
+            self.assertEqual(arts2b,arts2c)
+        with self.assertNumQueries(0):
+            arts3c = reporter3.articles_with_headline('Article II')
+            self.assertEqual(arts3b,arts3c)
+
+        article2 = Article.objects.get(pk=2)
+        article2.content = 'The executive Power shall be vested in a Prime Minister'
+        article2.save()
+
+        # Now only the second should be affected.
+        with self.assertNumQueries(0):
+            arts1d = reporter1.articles_with_headline('Breaking News')
+            self.assertEqual(arts1c,arts1d)
+        with self.assertNumQueries(1):
+            arts2d = reporter1.articles_with_headline('Article II')
+            self.assertNotEqual(arts2c,arts2d)
+        with self.assertNumQueries(0):
+            arts3d = reporter3.articles_with_headline('Article II')
+            self.assertEqual(arts3c,arts3d)
+
+        article3 = Article.objects.get(pk=3)
+        article3.content = 'He shall hold his Office forever'
+        article3.save()
+
+        # Now only the third should be affected.
+        with self.assertNumQueries(0):
+            arts1e = reporter1.articles_with_headline('Breaking News')
+            self.assertEqual(arts1d,arts1e)
+        with self.assertNumQueries(0):
+            arts2e = reporter1.articles_with_headline('Article II')
+            self.assertEqual(arts2d,arts2e)
+        with self.assertNumQueries(1):
+            arts3e = reporter3.articles_with_headline('Article II')
+            self.assertNotEqual(arts3d,arts3e)
+
+    @unittest.skip("Known issue, see Github #866")
+    def test_depend_on_row_multiple_arguments_with_dummy(self):
+        '''Tests for a bug when more than one but less than all of the arguments to the function are used in a depend_on_row.'''
+        reporter1 = Reporter.objects.get(pk=1)
+        reporter3 = Reporter.objects.get(pk=3)
+        # The first time around, each one should hit the cache.
+        with self.assertNumQueries(1):
+            arts1a = reporter1.articles_with_headline_and_dummy(None, 'Breaking News')
+        with self.assertNumQueries(1):
+            arts2a = reporter1.articles_with_headline_and_dummy(None, 'Article II')
+        with self.assertNumQueries(1):
+            arts3a = reporter3.articles_with_headline_and_dummy(None, 'Article II')
+        
+        # There were no updates, so we shouldn't hit the cache.
+        with self.assertNumQueries(0):
+            arts1b = reporter1.articles_with_headline_and_dummy(None, 'Breaking News')
+            self.assertEqual(arts1a,arts1b)
+        with self.assertNumQueries(0):
+            arts2b = reporter1.articles_with_headline_and_dummy(None, 'Article II')
+            self.assertEqual(arts2a,arts2b)
+        with self.assertNumQueries(0):
+            arts3b = reporter3.articles_with_headline_and_dummy(None, 'Article II')
+            self.assertEqual(arts3a,arts3b)
+
+        article1 = Article.objects.get(pk=1)
+        article1.content = 'The news is broken.'
+        article1.save()
+
+        # The first query should be affected by the update, but the latter two shouldn't.
+        with self.assertNumQueries(1):
+            arts1c = reporter1.articles_with_headline_and_dummy(None, 'Breaking News')
+            self.assertNotEqual(arts1b,arts1c)
+        with self.assertNumQueries(0):
+            arts2c = reporter1.articles_with_headline_and_dummy(None, 'Article II')
+            self.assertEqual(arts2b,arts2c)
+        with self.assertNumQueries(0):
+            arts3c = reporter3.articles_with_headline_and_dummy(None, 'Article II')
+            self.assertEqual(arts3b,arts3c)
+
+        article2 = Article.objects.get(pk=2)
+        article2.content = 'The executive Power shall be vested in a Prime Minister'
+        article2.save()
+
+        # Now only the second should be affected.
+        with self.assertNumQueries(0):
+            arts1d = reporter1.articles_with_headline_and_dummy(None, 'Breaking News')
+            self.assertEqual(arts1c,arts1d)
+        with self.assertNumQueries(1):
+            arts2d = reporter1.articles_with_headline_and_dummy(None, 'Article II')
+            self.assertNotEqual(arts2c,arts2d)
+        with self.assertNumQueries(0):
+            arts3d = reporter3.articles_with_headline_and_dummy(None, 'Article II')
+            self.assertEqual(arts3c,arts3d)
+
+        article3 = Article.objects.get(pk=3)
+        article3.content = 'He shall hold his Office forever'
+        article3.save()
+
+        # Now only the third should be affected.
+        with self.assertNumQueries(0):
+            arts1e = reporter1.articles_with_headline_and_dummy(None, 'Breaking News')
+            self.assertEqual(arts1d,arts1e)
+        with self.assertNumQueries(0):
+            arts2e = reporter1.articles_with_headline_and_dummy(None, 'Article II')
+            self.assertEqual(arts2d,arts2e)
+        with self.assertNumQueries(1):
+            arts3e = reporter3.articles_with_headline_and_dummy(None, 'Article II')
+            self.assertNotEqual(arts3d,arts3e)
 
     def test_depend_on_cache(self):
         """
