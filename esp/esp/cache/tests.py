@@ -59,7 +59,7 @@ class Reporter(models.Model):
     top_article.depend_on_cache(Article.num_comments, lambda self=wildcard: {'self': self.reporter})
 
     @cache_function
-    def articles_with_hashtag(self, hashtag):
+    def articles_with_hashtag(self, hashtag='#hashtag'):
         return list(self.articles.filter(hashtags__label=hashtag).values_list('headline', flat=True))
     articles_with_hashtag.depend_on_model(HashTag)
     articles_with_hashtag.depend_on_row(Article, lambda article: {'self': article.reporter})
@@ -173,6 +173,18 @@ class CacheTests(TestCase):
             with_hashtag2_kwargs = reporter.articles_with_hashtag(**kwargs)
         self.assertEqual(with_hashtag2, with_hashtag2_args)
         self.assertEqual(with_hashtag2, with_hashtag2_kwargs)
+
+    def test_optional_args(self):
+        """
+        Cached functions handle optional arguments as expected.
+        """
+        reporter = Reporter.objects.get(pk=1)
+        # with positional arg
+        with_hashtag1 = reporter.articles_with_hashtag('#hashtag')
+        with self.assertNumQueries(0):
+            # omitting optional arg (defaulting to '#hashtag')
+            with_hashtag1_again = reporter.articles_with_hashtag()
+        self.assertEqual(with_hashtag1, with_hashtag1_again)
 
     def test_depend_on_row(self):
         """
