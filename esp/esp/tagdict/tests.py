@@ -9,8 +9,8 @@ class TagTest(TestCase):
     def testTagGetSet(self):
         """
         Test that the get and set methods for tags, work.
-        Note that at this time, I assume that GenericForeignKeys and the caching API
-        work as specified, and are invoked correctly on this class.
+        Note that at this time, I assume that GenericForeignKeys work
+        and are invoked correctly on this class.
         """
         # Dump any existing Tag cache
         Tag.getTag.delete_all()
@@ -38,6 +38,7 @@ class TagTest(TestCase):
         self.assertNotEqual(Tag.getTag("test",default="the default"),"the default","If the tag is set, even to EMPTY_TAG, we shouldn't return the default.")
 
     def testTagWithTarget(self):
+        '''Test getting and setting of tags with targets.'''
         # Delete any existing tags that might interfere
         Tag.objects.filter(key="test").delete()
         # Dump any existing Tag cache
@@ -54,6 +55,7 @@ class TagTest(TestCase):
         self.failIf(Tag.getTag("test", user), "unSetTag() didn't work for per-row tags!")
 
     def testTagCaching(self):
+        '''Test that tag values are being cached.'''
         # Delete any existing tags that might interfere
         Tag.objects.filter(key="test").delete()
         # Dump any existing Tag cache
@@ -173,6 +175,8 @@ class TagTest(TestCase):
 
 class ProgramTagTest(ProgramFrameworkTest):
     def testProgramTag(self):
+        '''Test the logic of getProgramTag in a bunch of different conditions.'''
+
         # Delete any existing tags that might interfere
         Tag.objects.filter(key="test").delete()
         # Dump any existing Tag cache
@@ -308,6 +312,7 @@ class ProgramTagTest(ProgramFrameworkTest):
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"the default")
 
     def testBooleanTag(self):
+        '''Test the logic of getBooleanTag in a bunch of different conditions, assuming that the underlying getProgramTag works.'''
         # Delete any existing tags that might interfere
         Tag.objects.filter(key="test").delete()
         # Dump any existing Tag cache
