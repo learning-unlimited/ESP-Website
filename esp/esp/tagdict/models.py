@@ -58,11 +58,18 @@ class Tag(models.Model):
         If the program does not have the tag set, return the global value.
         """
         res = None
+        # We use None, rather than default, as our default so that we hit the
+        # same getTag cache independently of the default.  Since getTag should
+        # always return either a string if a tag was found, and None otherwise,
+        # this works.
         if program is not None:
-            res = cls.getTag(key, target=program, default=None, )
+            res = cls.getTag(key, target=program)
         if res is None:
-            res = cls.getTag(key, target=None, default=default, )
-        return res
+            res = cls.getTag(key)
+        if res is None:
+            return default
+        else:
+            return res
     
     @classmethod
     def getBooleanTag(cls, key, program=None, default=None):
@@ -70,13 +77,12 @@ class Tag(models.Model):
             The default argument should also be boolean. """
             
         tag_val = Tag.getProgramTag(key, program)
-        if tag_val is None:
+        if tag_val is None: #See the comment in getProgramTag for why we're using None rather than passing the default through.
             return default
+        elif tag_val.strip().lower() == 'true' or tag_val.strip() == '1':
+            return True
         else:
-            if tag_val.strip().lower() == 'true' or tag_val.strip() == '1':
-                return True
-            else:
-                return False
+            return False
     
     @classmethod
     def setTag(cls, key, target=None, value=EMPTY_TAG):
@@ -94,7 +100,7 @@ class Tag(models.Model):
             ct = ContentType.objects.get_for_model(target)
             tag, created = cls.objects.get_or_create(key=key, content_type=ct, object_id=target.id)
         else:
-            tag, created = cls.objects.get_or_create(key=key)
+            tag, created = cls.objects.get_or_create(key=key, content_type=None, object_id=None)
 
         if created or (tag.value != value):
             tag.value = value
