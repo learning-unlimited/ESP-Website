@@ -68,8 +68,6 @@ from django.conf import settings
 import pickle
 import operator
 import simplejson as json
-import re
-import unicodedata
 from collections import defaultdict
 from decimal import Decimal
 
@@ -493,14 +491,7 @@ def newprogram(request):
         pcf = ProgramCreationForm(context['prog_form_raw'])
         if pcf.is_valid():
 
-            new_prog = pcf.save(commit = False) # don't save, we need to fix it up:
-            
-            #   Filter out unwanted characters from program type to form URL
-            ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
-            new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
-            new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
-            new_prog.save()
-            pcf.save_m2m()
+            new_prog = pcf.save(commit = True)
             
             commit_program(new_prog, context['perms'], context['modules'], context['cost'], context['sibling_discount'])
 
