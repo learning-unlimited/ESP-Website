@@ -5,5 +5,5 @@ On {{ curtime|date:"l M d Y" }} at {{ curtime|date:"h:i A" }}, teacher {{ teache
 {% if note %}
 Additional comments: {{ note }}{% endif %}
 
-- {{ program.anchor.parent.name }} Registration System
+- {{ program.program_type }} Registration System
   Contact the directors: {{ program.director_email }}
