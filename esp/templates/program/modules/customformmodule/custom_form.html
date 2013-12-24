@@ -11,7 +11,7 @@
 <div id="program_form">
 
 {% load render_qsd %}
-{% render_inline_program_qsd prog "{{ tl }}:customform_header" %}
+{% render_inline_program_qsd prog qsd_name %}
 
 {% if form.errors %}
 Some of your responses are incorrect!  Please consult our instructions and fill in the right answers.
