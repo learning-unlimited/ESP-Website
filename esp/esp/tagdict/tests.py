@@ -183,26 +183,12 @@ class ProgramTagTest(ProgramFrameworkTest):
         Tag.getTag.delete_all()
 
         #Caching is hard, so what the hell, let's run every assertion twice.
-        self.failIf(Tag.getTag("test",target=self.program))
-        self.failIf(Tag.getTag("test",target=self.program))
         self.failIf(Tag.getProgramTag("test",program=self.program))
         self.failIf(Tag.getProgramTag("test",program=self.program))
-        self.failIf(Tag.getTag("test"))
-        self.failIf(Tag.getTag("test"))
-        self.failIf(Tag.getTag("test",target=None))
-        self.failIf(Tag.getTag("test",target=None))
         self.failIf(Tag.getProgramTag("test",program=None))
         self.failIf(Tag.getProgramTag("test",program=None))
-
-
-        self.assertEqual(Tag.getTag("test",target=self.program,default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",target=self.program,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=self.program,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=self.program,default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",target=None,default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",target=None,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"the default")
 
@@ -210,27 +196,12 @@ class ProgramTagTest(ProgramFrameworkTest):
         # Set the program-specific tag
         Tag.setTag("test",target=self.program,value="program tag value")
 
-
-        self.failIf(Tag.getTag("test"))
-        self.failIf(Tag.getTag("test"))
-        self.failIf(Tag.getTag("test",target=None))
-        self.failIf(Tag.getTag("test",target=None))
         self.failIf(Tag.getProgramTag("test",program=None))
         self.failIf(Tag.getProgramTag("test",program=None))
-        self.assertEqual(Tag.getTag("test",default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",target=None,default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",target=None,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"the default")
-
-
-        self.assertEqual(Tag.getTag("test",target=self.program),"program tag value")
-        self.assertEqual(Tag.getTag("test",target=self.program),"program tag value")
         self.assertEqual(Tag.getProgramTag("test",program=self.program),"program tag value")
         self.assertEqual(Tag.getProgramTag("test",program=self.program),"program tag value")
-        self.assertEqual(Tag.getTag("test",target=self.program,default="the default"),"program tag value")
-        self.assertEqual(Tag.getTag("test",target=self.program,default="the default"),"program tag value")
         self.assertEqual(Tag.getProgramTag("test",program=self.program,default="the default"),"program tag value")
         self.assertEqual(Tag.getProgramTag("test",program=self.program,default="the default"),"program tag value")
 
@@ -238,25 +209,12 @@ class ProgramTagTest(ProgramFrameworkTest):
         # Now set the general tag
         Tag.setTag("test",target=None,value="general tag value")
 
-
-        self.assertEqual(Tag.getTag("test"),"general tag value")
-        self.assertEqual(Tag.getTag("test"),"general tag value")
-        self.assertEqual(Tag.getTag("test",target=None),"general tag value")
-        self.assertEqual(Tag.getTag("test",target=None),"general tag value")
         self.assertEqual(Tag.getProgramTag("test",program=None),"general tag value")
         self.assertEqual(Tag.getProgramTag("test",program=None),"general tag value")
-        self.assertEqual(Tag.getTag("test",default="the default"),"general tag value")
-        self.assertEqual(Tag.getTag("test",default="the default"),"general tag value")
-        self.assertEqual(Tag.getTag("test",target=None,default="the default"),"general tag value")
-        self.assertEqual(Tag.getTag("test",target=None,default="the default"),"general tag value")
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"general tag value")
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"general tag value")
-        self.assertEqual(Tag.getTag("test",target=self.program),"program tag value")
-        self.assertEqual(Tag.getTag("test",target=self.program),"program tag value")
         self.assertEqual(Tag.getProgramTag("test",program=self.program),"program tag value")
         self.assertEqual(Tag.getProgramTag("test",program=self.program),"program tag value")
-        self.assertEqual(Tag.getTag("test",target=self.program,default="the default"),"program tag value")
-        self.assertEqual(Tag.getTag("test",target=self.program,default="the default"),"program tag value")
         self.assertEqual(Tag.getProgramTag("test",program=self.program,default="the default"),"program tag value")
         self.assertEqual(Tag.getProgramTag("test",program=self.program,default="the default"),"program tag value")
 
@@ -264,22 +222,10 @@ class ProgramTagTest(ProgramFrameworkTest):
         # Now unset the program-specific tag
         Tag.unSetTag("test",target=self.program)
 
-        self.assertEqual(Tag.getTag("test"),"general tag value")
-        self.assertEqual(Tag.getTag("test"),"general tag value")
-        self.assertEqual(Tag.getTag("test",target=None),"general tag value")
-        self.assertEqual(Tag.getTag("test",target=None),"general tag value")
         self.assertEqual(Tag.getProgramTag("test",program=None),"general tag value")
         self.assertEqual(Tag.getProgramTag("test",program=None),"general tag value")
-        self.assertEqual(Tag.getTag("test",default="the default"),"general tag value")
-        self.assertEqual(Tag.getTag("test",default="the default"),"general tag value")
-        self.assertEqual(Tag.getTag("test",target=None,default="the default"),"general tag value")
-        self.assertEqual(Tag.getTag("test",target=None,default="the default"),"general tag value")
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"general tag value")
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"general tag value")
-        self.failIf(Tag.getTag("test",target=self.program))
-        self.failIf(Tag.getTag("test",target=self.program))
-        self.assertEqual(Tag.getTag("test",target=self.program,default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",target=self.program,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=self.program),"general tag value")
         self.assertEqual(Tag.getProgramTag("test",program=self.program),"general tag value")
         self.assertEqual(Tag.getProgramTag("test",program=self.program,default="the default"),"general tag value")
@@ -288,26 +234,12 @@ class ProgramTagTest(ProgramFrameworkTest):
         #just to clean up
         Tag.unSetTag("test",target=None)
 
-        self.failIf(Tag.getTag("test",target=self.program))
-        self.failIf(Tag.getTag("test",target=self.program))
         self.failIf(Tag.getProgramTag("test",program=self.program))
         self.failIf(Tag.getProgramTag("test",program=self.program))
-        self.failIf(Tag.getTag("test"))
-        self.failIf(Tag.getTag("test"))
-        self.failIf(Tag.getTag("test",target=None))
-        self.failIf(Tag.getTag("test",target=None))
         self.failIf(Tag.getProgramTag("test",program=None))
         self.failIf(Tag.getProgramTag("test",program=None))
-
-
-        self.assertEqual(Tag.getTag("test",target=self.program,default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",target=self.program,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=self.program,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=self.program,default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",target=None,default="the default"),"the default")
-        self.assertEqual(Tag.getTag("test",target=None,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"the default")
         self.assertEqual(Tag.getProgramTag("test",program=None,default="the default"),"the default")
 
