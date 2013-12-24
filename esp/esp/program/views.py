@@ -484,7 +484,7 @@ def newprogram(request):
         line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
 
         template_prog["base_cost"] = int(sum(x["amount_dec"] for x in line_items))
-        template_prog["sibling_discount"] = tprogram.sibling_discount_tag
+        template_prog["sibling_discount"] = tprogram.sibling_discount
 
     if 'checked' in request.GET:
         # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
