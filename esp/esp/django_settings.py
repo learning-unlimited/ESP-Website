@@ -179,7 +179,7 @@ MIDDLEWARE_GLOBAL = [
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
     (1600, 'reversion.middleware.RevisionMiddleware'),
-    (9000, 'esp.middleware.PatchedRedirectFallbackMiddleware'),
+    (9000, 'esp.middleware.patchedredirect.PatchedRedirectFallbackMiddleware'),
 ]
 
 ROOT_URLCONF = 'esp.urls'
