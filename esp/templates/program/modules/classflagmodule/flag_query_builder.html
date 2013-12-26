@@ -1,0 +1,79 @@
+{% extends "main.html" %}
+
+{% block title %}Manage Class Flags for {{ prog.niceName}}{% endblock %}
+
+{% block subsection_name %}Resource Management{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/flags.css"/>
+{% endblock %}
+
+{% block xtrajs %}
+    <script type="text/javascript" src="/media/scripts/flag-query-builder.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Class Flags for {{ prog.niceName }}</h1>
+
+<p>
+If you don't see the flag you're looking for, <a href="/admin/program/classflagtype/">add it</a> and enable it for <a href="/admin/program/program/{{prog.id}}/#add_id_flag_types">this program</a> from the admin panel.
+</p>
+
+<div class="flag-query-builder">
+    <div class="fqb-initial-line">
+        List all classes with...<br/>
+        <select class="fqb-type">
+            <option selected="selected" value=""></option>
+            <option value="all">all of...</option>
+            <option value="any">any of...</option>
+            <option value="not all">not all of...</option>
+            <option value="none">none of...</option>
+            <option value="flag">the flag</option>
+            <option value="not flag">not the flag</option>
+        </select>
+        <select class="fqb-flags" style="display: none;">
+            <option selected="selected" value=""></option>
+            {% for flag in flag_types %}
+            <option value="{{flag.id}}">{{flag.name}}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="fqb-extra" style="display: none;">
+        <ul>
+            <li class="fqb-line">
+                <select class="fqb-type">
+                    <option selected="selected" value=""></option>
+                    <option value="all">all of...</option>
+                    <option value="any">any of...</option>
+                    <option value="not all">not all of...</option>
+                    <option value="none">none of...</option>
+                    <option value="flag">the flag</option>
+                    <option value="not flag">not the flag</option>
+                </select>
+                <select class="fqb-flags" style="display: none;">
+                        <option selected="selected" value=""></option>
+                    {% for flag in flag_types %}
+                        <option value="{{flag.id}}">{{flag.name}}</option>
+                    {% endfor %}
+                </select>
+                <button class="fqb-delete" type="submit">-</button>
+            </li>
+            <li class="fqb-add-line">
+                <button class="fqb-add" type="submit">+</button>
+            </li>
+        </ul>
+    </div>
+
+    <div class="fqb-form">
+        <form method="post" action="">{% csrf_token %}
+            <input type="hidden" class="query-json" value="" name="query-json"></input>
+            <button type="submit" class="btn btn-primary">Find classes</button>
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}

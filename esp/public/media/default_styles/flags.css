@@ -1,0 +1,11 @@
+button.fqb-delete {
+    float: right;
+}
+
+select.fqb-type {
+    width: 8em;
+}
+
+.bad-node {
+    border: 1px solid #ff0000;
+}

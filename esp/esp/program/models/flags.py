@@ -36,8 +36,10 @@ from django.db import models
 
 from esp.db.fields import AjaxForeignKey
 from esp.middleware.threadlocalrequest import get_current_request
+from esp.cache import cache_function
 
 from esp.users.models import ESPUser
+from esp.program.models import Program
 
 class ClassFlagType(models.Model):
     name = models.CharField(max_length=255)
@@ -49,6 +51,21 @@ class ClassFlagType(models.Model):
 
     def __unicode__(self):
         return self.name
+
+@cache_function
+def flag_types(program=None, scheduler=False, dashboard=False):
+    '''Gets all flag types associated with a given program.  If program is None, gets all flag types.  scheduler=True and dashboard=True return only flag types that should be shown in those interfaces.'''
+    if program is None:
+        base = ClassFlagType.objects.all()
+    else:
+        base = program.flag_types.all()
+    if scheduler:
+        base = base.filter(show_in_scheduler=True)
+    if dashboard:
+        base = base.filter(show_in_dashboard=True)
+    return base
+flag_types.depend_on_model(lambda: ClassFlagType)
+flag_types.depend_on_m2m(lambda: Program, 'flag_types', lambda prog, flag_type: {'program': prog})
 
 class ClassFlag(models.Model):
     subject = AjaxForeignKey('ClassSubject')
@@ -69,7 +86,7 @@ class ClassFlag(models.Model):
         return "%s flag on %s: %s" % (self.flag_type, self.subject.emailcode(), self.subject.title)
 
     def save(self, *args, **kwargs):
-        # Overridden to populate created_by and modified_by.  I'm not crazy about this method as it mixes models and requests, but I think it's worth it to save having to pass it around manually everywhere the thing gets touched.  Note that the creation and modification times already get autocreated by django.
+        # Overridden to populate created_by and modified_by.  I'm not crazy about this method as it mixes models and requests, but I think it's worth it to save having to pass it around manually everywhere the thing gets touched.  Note that the creation and modification times already get autocreated by django.  If you're saving ClassFlags outside of a request somehow, make sure you manually populate this stuff.
         request = get_current_request()
         if request is not None:
             self.modified_by = request.user
