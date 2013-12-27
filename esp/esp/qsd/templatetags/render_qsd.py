@@ -75,6 +75,8 @@ class InlineQSDNode(template.Node):
             
             if getattr(user, 'id', False):
                 new_qsd.author = user
+            else:
+                new_qsd.author = context['request'].user
 
             new_qsd.save()
             qsd_obj = new_qsd
