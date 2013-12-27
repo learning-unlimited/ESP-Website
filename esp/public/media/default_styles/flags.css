@@ -9,3 +9,30 @@ select.fqb-type {
 .bad-node {
     border: 1px solid #ff0000;
 }
+
+#content th {
+    padding-top: 0;
+    padding-right: 20px;
+}
+
+.fqr-class {
+    margin: 5px;
+    border: 1px solid lightgray;
+}
+
+.fqr-class-header {
+    background: #c6def7;
+    font-size: 1.2em;
+}
+
+.fqr-class-flags {
+    padding: 1px 0px
+}
+
+.fqr-flag-name {
+    margin: 1px;
+}
+
+.fqr-flag-detail > table {
+    padding-left: 3em;
+}

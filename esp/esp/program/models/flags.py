@@ -42,15 +42,26 @@ from esp.users.models import ESPUser
 from esp.program.models import Program
 
 class ClassFlagType(models.Model):
-    name = models.CharField(max_length=255)
+    name = models.CharField(max_length=255, unique=True)
     show_in_scheduler = models.BooleanField(default=False)
     show_in_dashboard = models.BooleanField(default=False)
+    seq = models.SmallIntegerField(default=0, help_text='Flag types will be ordered by this.  Smaller is earlier; the default is 0.')
+    color = models.CharField(blank=True, max_length=20, help_text='A color for displaying this flag type.  Should be a valid CSS color, for example "red", "#ff0000", or "rgb(255, 0, 0)".  If blank, an arbitrary one will be chosen.')
 
     class Meta:
         app_label='program'
+        ordering=['seq']
 
     def __unicode__(self):
         return self.name
+
+    def getColor(self):
+        '''Get the display color for the flag type.'''
+        if self.color:
+            return self.color
+        else:
+            # Choose a random one from the hash.
+            return "#"+hex(hash(self.name))[-6:]
 
 @cache_function
 def flag_types(program=None, scheduler=False, dashboard=False):
@@ -80,6 +91,8 @@ class ClassFlag(models.Model):
 
     class Meta:
         app_label='program'
+        ordering=['flag_type']
+        unique_together=('subject','flag_type')
 
 
     def __unicode__(self):
@@ -93,5 +106,5 @@ class ClassFlag(models.Model):
             if self.id is None:
                 #We are creating, rather than modifying, so we don't yet have an id.
                 self.created_by = request.user
-        super(ClassFlag, self).save(self, *args, **kwargs)
+        super(ClassFlag, self).save(*args, **kwargs)
 

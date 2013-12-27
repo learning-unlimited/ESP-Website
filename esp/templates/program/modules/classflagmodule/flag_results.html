@@ -1,0 +1,95 @@
+{% extends "main.html" %}
+
+{% block title %}Manage Class Flags for {{ prog.niceName}}{% endblock %}
+
+{% block subsection_name %}Class Flag Management{% endblock %}
+
+{% block stylesheets %}
+    {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/flags.css"/>
+{% endblock %}
+
+{% block xtrajs %}
+    <script type="text/javascript" src="/media/scripts/flag-results-page.js"></script>
+{% endblock %}
+
+{% block content %}
+
+<h1>Manage Class Flags for {{ prog.niceName }}</h1>
+
+<p>
+You asked for for classes with {{english}}.  Click on a class or flag to see more detail.
+</p>
+
+<div class="flag-query-results">
+    {% for class in queryset %}
+        <div class="fqr-class" id="fqr-class-{{class.id}}">
+            <div class="fqr-class-header" onclick="$j(this).siblings('.fqr-class-detail').toggle('blink');">
+                {{class.emailcode}}: {{class.title}} <br/>
+            </div>
+            <div class="fqr-class-flags">
+                Flags: 
+                {% for flag in class.classflag_set.all %}
+                <span class="fqr-flag-name" id="fqr-flag-header-{{flag.id}}" style="background: {{flag.flag_type.getColor}};" onclick="$j('#fqr-flag-detail-{{flag.id}}').toggle('blink');">
+                        {{flag.flag_type.name}}
+                    </span>
+                {% endfor %}
+            </div>
+            <div class="fqr-class-buttons">
+                <button class="btn btn-default" onclick="manage({{class.id}});">manage</button>
+                <button class="btn btn-default" onclick="edit({{class.id}});">edit</button>
+                <button class="btn btn-default" onclick="approve({{class.id}});">approve</button>
+                <button class="btn btn-default" onclick="unreview({{class.id}});">unreview</button>
+                <button class="btn btn-default" onclick="reject({{class.id}});">reject</button>
+                <button class="btn btn-default" onclick="deleteClass({{class.id}}, '{{class.title}}');">delete</button>
+            </div>
+            <div class="fqr-class-detail" style="display: none;">
+                <table>
+                    <tbody>
+                        <tr>
+                            <th>Teachers:</th>
+                            <td>
+                                {% for teacher in class.teachers.all %}
+                                    {{teacher.name}}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Grades:</th>
+                            <td>
+                                {{class.grade_min}}&ndash;{{class.grade_max}}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="fqr-class-flags-detail">
+                {% for flag in class.classflag_set.all %}
+                    <div class="fqr-flag-detail" id="fqr-flag-detail-{{flag.id}}" style="display: none;">
+                        <div class="fqr-flag-name" style="background: {{flag.flag_type.getColor}};">{{flag.flag_type.name}}</div>
+                        <table>
+                            <tbody>
+                                <tr>
+                                    <th> Last modified: </th>
+                                    <td> {{flag.modified_by.name}} on {{flag.modified_time.date}} at {{flag.modified_time.time}} </td>
+                                </tr>
+                                <tr>
+                                    <th> Last created: </th>
+                                    <td> {{flag.created_by.name}} on {{flag.created_time.date}} at {{flag.created_time.time}} </td>
+                                </tr>
+                                <tr>
+                                    <th> Comment: </th>
+                                    <td> {{flag.comment}} </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% empty %}
+        No classes were found.  <a href="">Search again?</a>
+    {% endfor %}
+</div>
+
+{% endblock %}
