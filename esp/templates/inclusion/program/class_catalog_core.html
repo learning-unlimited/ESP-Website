@@ -43,7 +43,7 @@
     
     <div class="class_footer_row">
     <div class="row-fluid">
-        <div class="span4 class_meeting_times">
+        <div class="span6 class_meeting_times">
         {% if show_meeting_times %}
         <strong>Meeting Time{{ class.friendly_times|pluralize }}</strong>
         <br />
@@ -54,8 +54,8 @@
         {% endif %}
       </div>
 
-      <div class="span4 class_grades">
-         <strong>Grades:</strong>
+      <div class="span6 class_grades">
+         <strong>Grades</strong><br />
            <span class="gradelisting grademin" id="class_{{ class.id }}_grade_min">
            {% if not class.parent_program.incrementGrade %}
            {{ class.grade_min }}</span> -
