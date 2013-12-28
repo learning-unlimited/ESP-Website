@@ -1,5 +1,6 @@
-<!DOCTYPE html>
-<html>
+<?xml version="1.0" encoding="utf-8"?>
+{% block doctype %}<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">{% endblock doctype %}
+<html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <title>{% block fulltitle %}{% endblock %}</title>
   {% block meta %}
@@ -16,7 +17,9 @@
     <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>
 
     <link rel="stylesheet" type="text/css" href="/media/styles/user_visibility.css" media="all" />
+    {% block jquery_ui_stylesheet_version %}
     <link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
+    {% endblock jquery_ui_stylesheet_version %}
     {% endblock %}
 
     {% block javascript %}
@@ -26,10 +29,12 @@
     {% endblock js0 %}
 
     {% block jquery %}
+    {% block jquery_version %}
     <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/jquery/jquery-1.7.2.js"> </script>
-    <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
-    <script type="text/javascript" src="/media/scripts/jquery-ui.timepicker.js"></script>
+    {% endblock jquery_version %}
+    {% block jquery_cookie_version %}
     <script type="text/javascript" src="/media/scripts/jquery.cookie.js"> </script>
+    {% endblock %}
     {% block jquery_ui_version %}
     <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
     <script type="text/javascript" src="/media/scripts/jquery-ui.timepicker.js"></script>
@@ -65,6 +70,7 @@
     {% endblock js1 %}
 
 
+    {% block user_classes %}
     <script type="text/javascript">
       /* <![CDATA[ */
       $j(document).ready(function() {
@@ -72,13 +78,11 @@
       });
       /* ]]> */
     </script>
+    {% endblock user_classes %}
 
     {% block xtrajs %}{% endblock xtrajs %}
 
     {% endblock javascript %}
-{% block jquery_ui_stylesheet_version %}
-<link rel="stylesheet" type="text/css" href="/media/styles/jquery-ui/jquery-ui.css" />
-{% endblock %}
   </head>
   
   <body>
