@@ -53,6 +53,8 @@ from django.views.decorators.vary import vary_on_cookie
 from django.views.decorators.cache import cache_control
 from esp.cache.varnish import purge_page
 
+from django.conf import settings
+
 # default edit permission
 EDIT_PERM = 'V/Administer/Edit'
 
@@ -107,7 +109,7 @@ def qsd(request, url):
 
             if (action == 'read'):
                 edit_link = '/' + base_url + '.edit.html'
-                return render_to_response('qsd/nopage_create.html', request, {'edit_link': edit_link}, use_request_context=False)
+                return render_to_response('qsd/nopage_create.html', request, {'edit_link': edit_link}, use_request_context=False)  
         else:
             if action == 'read':
                 raise Http404, 'This page does not exist.'
@@ -127,6 +129,7 @@ def qsd(request, url):
             'title': qsd_rec.title,
             'nav_category': qsd_rec.nav_category, 
             'content': qsd_rec.html(),
+            'settings': settings,
             'qsdrec': qsd_rec,
             'have_edit': True,  ## Edit-ness is determined client-side these days
             'edit_url': '/' + base_url + ".edit.html" }, use_request_context=False)
@@ -148,23 +151,23 @@ def qsd(request, url):
         if not have_edit:
             raise Http403, "Sorry, you do not have permission to edit this page."
         
-        # Arguably, this should retrieve the DB object, use the .copy()
-        # method, and then update it. Doing it this way saves a DB call
-        # (and requires me to make fewer changes).
-        qsd_rec_new = QuasiStaticData()
-        qsd_rec_new.url = base_url
-        qsd_rec_new.author = request.user
-        qsd_rec_new.nav_category = NavBarCategory.objects.get(id=request.POST['nav_category'])
-        qsd_rec_new.content = request.POST['content']
-        qsd_rec_new.title = request.POST['title']
-        qsd_rec_new.description = request.POST['description']
-        qsd_rec_new.keywords    = request.POST['keywords']
-        qsd_rec_new.save()
+        nav_category_target = NavBarCategory.objects.get(id=request.POST['nav_category'])
 
-        # We should also purge the cache
-        purge_page(qsd_rec_new.url+".html")
+        # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
+        # The revision will automatically be created upon calling the save function of the model object
+        if qsd_rec.url != base_url or qsd_rec.nav_category != nav_category_target or qsd_rec.content != request.POST['content'] or qsd_rec.description != request.POST['description'] or qsd_rec.keywords != request.POST['keywords']:
+            qsd_rec.url = base_url
+            qsd_rec.nav_category = NavBarCategory.objects.get(id=request.POST['nav_category'])
+            qsd_rec.content = request.POST['content']
+            qsd_rec.title = request.POST['title']
+            qsd_rec.description = request.POST['description']
+            qsd_rec.keywords    = request.POST['keywords']
 
-        qsd_rec = qsd_rec_new
+            qsd_rec.load_cur_user_time(request)
+            qsd_rec.save()
+
+            # We should also purge the cache
+            purge_page(qsd_rec.url+".html")
 
         # If any files were uploaded, save them
         for name, file in request.FILES.iteritems():
@@ -211,9 +214,8 @@ def qsd(request, url):
             'qsd'          : True,
             'missing_files': m.BrokenLinks(),
             'target_url'   : base_url.split("/")[-1] + ".edit.html",
-            'return_to_view': base_url.split("/")[-1] + ".html#refresh" },
-                                  use_request_context=False)
-
+            'return_to_view': base_url.split("/")[-1] + ".html#refresh" },  
+            use_request_context=False)  
     
     # Operation Complete!
     raise Http404('Unexpected QSD operation')
@@ -229,14 +231,20 @@ def ajax_qsd(request):
     if ( request.user.id is None ):
         return HttpResponse(content='Oops! Your session expired!\nPlease open another window, log in, and try again.\nYour changes will not be lost if you keep this page open.', status=500)
     if post_dict['cmd'] == "update":
-        qsdold = QuasiStaticData.objects.get(id=post_dict['id'])
-        if not Permission.user_can_edit_qsd(request.user, qsdold.url):
+        qsd = QuasiStaticData.objects.get(id=post_dict['id'])
+        if not Permission.user_can_edit_qsd(request.user, qsd.url):
             return HttpResponse(content='Sorry, you do not have permission to edit this page.', status=500)
-        qsd = qsdold.copy()
-        qsd.content = post_dict['data']
-        qsd.load_cur_user_time(request, )
-        # Local change here, to enable QSD editing.
-        qsd.save()
+
+        # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
+        # The revision will automatically be created upon calling the save function of the model object
+        if qsd.content != post_dict['data']:
+            qsd.content = post_dict['data']
+            qsd.load_cur_user_time(request, )
+            qsd.save()
+
+            # We should also purge the cache
+            purge_page(qsd.url+".html")
+
         result['status'] = 1
         result['content'] = markdown(qsd.content)
         result['id'] = qsd.id

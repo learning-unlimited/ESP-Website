@@ -1,0 +1,62 @@
+#user-sidebar {
+  float: right;
+}
+
+#user-sidebar a.sidelink:link {
+  text-decoration: none;
+  
+  display: block;
+  border: 1px solid #3366cc;
+  border-right: none;
+  
+  padding: 7px;
+  margin-right: -20px;
+  padding-right: 27px;
+  padding-left: 10px;
+  margin-top: 5px;
+}
+
+#user-sidebar a.sidelink:hover {
+  color: #ffffff;
+  background-color: #3366cc;
+}
+
+#content h2 {
+  margin-top: 2em;
+  margin-bottom: 0.25em;
+}
+
+table.dottedtable {
+  border-spacing: 0;
+  border-collapse: collapse;
+}
+
+table.dottedtable tr {
+  border-bottom: 1px dotted #444;
+}
+
+table.dottedtable td {
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+table.dottedtable .key {
+  font-size: 90%;
+  color: #444;
+  width: 150px;
+  padding-right: 20px;
+  
+  vertical-align: top;
+}
+
+table.dottedtable.long td:nth-child(even) {
+  min-width: 210px;
+}
+
+.yes {
+  color: green;
+}
+
+.no {
+  color: red;
+}

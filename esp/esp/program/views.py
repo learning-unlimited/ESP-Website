@@ -56,6 +56,7 @@ from esp.program.models import Program, TeacherBio, RegistrationType, ClassSecti
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
@@ -66,8 +67,6 @@ from django.conf import settings
 import pickle
 import operator
 import simplejson as json
-import re
-import unicodedata
 from collections import defaultdict
 from decimal import Decimal
 
@@ -425,6 +424,7 @@ def userview(request):
         'teacherbio': teacherbio,
         'domain': settings.SITE_INFO[1],
         'change_grade_form': change_grade_form,
+        'printers': StudentRegCore.printer_names(),
     }
     return render_to_response("users/userview.html", request, context )
 
@@ -481,6 +481,7 @@ def newprogram(request):
         line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
 
         template_prog["base_cost"] = int(sum(x["amount_dec"] for x in line_items))
+        template_prog["sibling_discount"] = tprogram.sibling_discount
 
     if 'checked' in request.GET:
         # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
@@ -489,16 +490,9 @@ def newprogram(request):
         pcf = ProgramCreationForm(context['prog_form_raw'])
         if pcf.is_valid():
 
-            new_prog = pcf.save(commit = False) # don't save, we need to fix it up:
+            new_prog = pcf.save(commit = True)
             
-            #   Filter out unwanted characters from program type to form URL
-            ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
-            new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
-            new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
-            new_prog.save()
-            pcf.save_m2m()
-            
-            commit_program(new_prog, context['perms'], context['modules'], context['cost'])
+            commit_program(new_prog, context['perms'], context['modules'], context['cost'], context['sibling_discount'])
 
             # Create the default resource types now
             default_restypes = Tag.getProgramTag('default_restypes', program=new_prog)
@@ -546,7 +540,7 @@ def newprogram(request):
             #   Save the form's raw data instead of the form itself, or its clean data.
             #   Unpacking of the data happens at the next step.
 
-            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost']})
+            context_pickled = pickle.dumps({'prog_form_raw': form.data, 'perms': perms, 'modules': modules, 'cost': form.cleaned_data['base_cost'], 'sibling_discount': form.cleaned_data['sibling_discount']})
             request.session['context_str'] = context_pickled
             
             return render_to_response('program/newprogram_review.html', request, {'prog': temp_prog, 'perms':perms, 'modules': modules})
@@ -636,7 +630,7 @@ def manage_pages(request):
         elif request.GET['cmd'] == 'delete':
             #   Mark as inactive all QSD pages matching the one with ID request.GET['id']
             if data['sure'] == 'True':
-                all_qsds = QuasiStaticData.objects.filter(path=qsd.path, name=qsd.name)
+                all_qsds = QuasiStaticData.objects.filter(url=qsd.url, name=qsd.name)
                 for q in all_qsds:
                     q.disabled = True
                     q.save()
@@ -649,7 +643,7 @@ def manage_pages(request):
             return render_to_response('qsd/delete_confirm.html', request, {'qsd': qsd})
         elif request.GET['cmd'] == 'undelete':
             #   Make all the QSDs enabled and return to viewing the list
-            all_qsds = QuasiStaticData.objects.filter(path=qsd.path, name=qsd.name)
+            all_qsds = QuasiStaticData.objects.filter(url=qsd.url, name=qsd.name)
             for q in all_qsds:
                 q.disabled = False
                 q.save()

@@ -56,9 +56,7 @@ class CreditCardViewer_Cybersource(ProgramModuleObj):
     @needs_admin
     def viewpay_cybersource(self, request, tl, one, two, module, extra, prog):
         pac = ProgramAccountingController(prog)
-        transfers = pac.all_transfers()
-
-        student_list = ESPUser.objects.filter(id__in=transfers.values('user').distinct())
+        student_list = list(pac.all_students())
         payment_table = []
         
         for student in student_list:

@@ -1,13 +1,12 @@
 <!-- Begin Student Info Portion -->
-<tr>
- <th colspan="2">Student Information</th> {{ form.errors }}
-</tr>
+<h3>Student Information</h3>
+
+{{ form.errors }}
 
 {% if not form.allow_change_grade_level %}
-<tr>
-<td colspan="2"> 
-<div class="info">
-PLEASE NOTE: You will only be able to set your age and grade level ONCE. 
+<div class="alert">
+<button type="button" class="close" data-dismiss="alert">x</button>
+You will only be able to set your age and grade level ONCE. 
 After you click "Update Your Information!" below, or if you've already
 done so in the past, you will not be able to change your age or grade level. 
 <br /> <br />
@@ -24,165 +23,178 @@ take a year off, please email us and we will fix your grade. For a more
 detailed explanation of our age and grade level policy, please click 
 <a href="/learn/parents/agelimit.html">here</a>.
 </div>
-</td>
-</tr>
 {% endif %}
 
-<tr>
- <td><label for="id_dob">Date of Birth.:</label></td>
- <td>{{ form.dob }} {% if form.dob.errors %}
-   <br /><span class="form_error">{{ form.dob.errors|join:", " }}</span>
-   {% endif %}
+<div class="control-group">
+    <label for="id_dob_0" class="control-label">Date of Birth:</label>
+    <div class="controls controls-row">
+    {{ form.dob }} {% if form.dob.errors %}
+    <br /><span class="form_error">{{ form.dob.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
 
- </td>
-</tr>
-
-<tr>
- <td><label for="id_graduation_year">Grade / Graduation Year:</label></td>
- <td>{{ form.graduation_year }} {% if form.graduation_year.errors %}
-   <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+<div class="control-group">
+    <label for="id_graduation_year" class="control-label">Grade / Graduation Year:</label>
+    <div class="controls">
+    {{ form.graduation_year }} {% if form.graduation_year.errors %}
+    <br /><span class="form_error">{{ form.graduation_year.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
 
 {% if form.gender %}
-<tr>
- <td><label for="id_dob">Gender:</label></td>
- <td>{{ form.gender }} {% if form.gender.errors %}
-   <br /><span class="form_error">{{ form.gender.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+<div class="control-group">
+    <label for="id_dob">Gender:</label>
+    <div class="controls">
+    {{ form.gender }} {% if form.gender.errors %}
+    <br /><span class="form_error">{{ form.gender.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
 {% endif %}
 
-<tr>
- <td><label for="id_k12school">School:</label>
- <br /><span style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school when it comes up.)</span></td>
- <td>{{ form.k12school }} {% if form.k12school.errors %}
-   <br /><span class="form_error">{{ form.k12school.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+<div class="control-group">
+    <label for="id_k12school" class="control-label">School:</label>
+    <div class="controls controls-row">
+    <span style="font-size: 0.8em; font-style: italic;">(Begin to type your school's name and select your school when it comes up.)</span>
+    {{ form.k12school }} {% if form.k12school.errors %}
+    <br /><span class="form_error">{{ form.k12school.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
 
 {% if form.unmatched_school %}
-<tr>
- <td><label for="id_unmatched_school"></label>
- </td>
- <td>{{ form.unmatched_school }} {% if form.unmatched_school.errors %}
-   <br /><span class="form_error">{{ form.unmatched_school.errors|join:", " }}</span>
-   {% endif %}
-   <span style="font-size: 0.8em;">Check this box only if you've tried searching but could not find your school.</span>
- </td>
-</tr>
+<div class="control-group">
+    <label for="id_unmatched_school" class="control-label"></label>
+    <div class="controls">
+    {{ form.unmatched_school }} {% if form.unmatched_school.errors %}
+    <br /><span class="form_error">{{ form.unmatched_school.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+    <span style="font-size: 0.8em;">Check this box only if you've tried searching but could not find your school.</span>
+</div>
 {% endif %}
 
 {% if form.schoolsystem_id %}
-<tr>
- <td><label for="id_schoolsystem_id">{% if form.fields.schoolsystem_id.label %}{{ form.fields.schoolsystem_id.label }}{% else %}School system ID{% endif %}:</label></td>
- <td>{{ form.schoolsystem_id }} {% if form.schoolsystem_id.errors %}
-   <br /><span class="form_error">{{ form.schoolsystem_id.errors|join:", " }}</span>
-   {% endif %} 
-   {% if form.fields.schoolsystem_id.help_text %}
-   <br />{% autoescape off %}{{ form.schoolsystem_id.help_text }}{% endautoescape %}
-   <br />{{ form.schoolsystem_optout }}
+<div class="control-group">
+    <label for="id_schoolsystem_id" class="control-label">{% if form.fields.schoolsystem_id.label %}{{ form.fields.schoolsystem_id.label }}{% else %}School system ID{% endif %}:</label>
+    <div class="controls">
+    {{ form.schoolsystem_id }} {% if form.schoolsystem_id.errors %}
+    <br /><span class="form_error">{{ form.schoolsystem_id.errors|join:", " }}</span>
+    {% endif %} 
+    {% if form.fields.schoolsystem_id.help_text %}
+    <br />{% autoescape off %}{{ form.schoolsystem_id.help_text }}{% endautoescape %}
+    <br />{{ form.schoolsystem_optout }}
     <br />{% autoescape off %}{{ form.schoolsystem_optout.help_text }}{% endautoescape %}
-   {% endif %}
- </td>
-</tr>
+    {% endif %}
+    </div>
+</div>
 {% endif %}
 
-<tr>
- <td><label for="id_heardofesp">How did you hear of this program?</label></td>
- <td>{{ form.heard_about }} {% if form.heard_about.errors %}
-   <br /><span class="form_error">{{ form.heard_about.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+<div class="control-group">
+    <label for="id_heardofesp" class="control-label">How did you hear of this program?
+    </label>
+    <div class="controls controls-row">
+    <span style="font-size: 0.8em; font-style: italic;">(If you select "Other," please explain in the right-hand box.)</span><br />
+    {{ form.heard_about }} {% if form.heard_about.errors %}
+    <br /><span class="form_error">{{ form.heard_about.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
 
-{% if form.fields.studentrep %}<tr>
- <td>
-<label for="id_studentrep">I want to be a <a href="/getinvolved/studentreps.html" target="_blank">Student Rep</a>:</label></td>
- <td>
-   {{ form.studentrep }} 
-{% if form.studentrep.errors %}
-   <br /><span class="form_error">{{ form.studentrep.errors|join:", " }}</span>
-   {% endif %}
-</td></tr>
-{% if form.fields.studentrep_expl %}<tr><td><i>For new student reps:</i></td>
-<td>Please enter a short explanation of why you would <br />
-like to be a student representative and any ideas you <br />
-may have for us.  Our membership coordinator will <br />
-contact you soon! <br />
-{{ form.studentrep_expl }}
-{% if form.studentrep_expl.errors %}
-   <br /><span class="form_error">{{ form.studentrep_expl.errors|join:", " }}</span>
+{% if form.fields.studentrep %}
+<div class="control-group">
+    <label for="id_studentrep" class="control-label">I want to be a <a href="/getinvolved/studentreps.html" target="_blank">Student Rep</a>:</label>
+    <div class="controls">
+    {{ form.studentrep }} 
+    {% if form.studentrep.errors %}
+    <br /><span class="form_error">{{ form.studentrep.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+    {% if form.fields.studentrep_expl %}
+    <i>For new student reps:</i>
+    Please enter a short explanation of why you would <br />
+    like to be a student representative and any ideas you <br />
+    may have for us.  Our membership coordinator will <br />
+    contact you soon! <br />
+    <div class="controls">
+    {{ form.studentrep_expl }}
+    {% if form.studentrep_expl.errors %}
+    <br /><span class="form_error">{{ form.studentrep_expl.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+    {% endif %}
+</div>
 {% endif %}
- </td>
-</tr>{% endif %}{% endif %}
 
 {% if form.food_preference %}
-<tr>
- <td><label for="id_food_preference">Food preference: </label></td>
- <td>{{ form.food_preference }} {% if form.food_preference.errors %}
-   <br /><span class="form_error">{{ form.food_preference.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+<div class="control-group">
+    <label for="id_food_preference" class="control-label">Food preference: </label>
+    <div class="controls">
+    {{ form.food_preference }} {% if form.food_preference.errors %}
+    <br /><span class="form_error">{{ form.food_preference.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
 {% endif %}
 
 {% if form.shirt_size %}
-<tr>
- <td colspan="2"><p>
-    <div class="info">T-shirts are available at some ESP programs. When you reserve a t-shirt, this is the shirt size and type that will be ordered. Note that choosing a shirt size and type here does <b>not</b> reserve a t-shirt for you!</div>
- </p></td>
-</tr>
+<div class="alert">
+<button type="button" class="close" data-dismiss="alert">x</button>
+T-shirts are available at some of our programs. When you reserve a t-shirt, this is the shirt size and type that will be ordered. Note that choosing a shirt size and type here does <b>not</b> reserve a t-shirt for you!
+</div>
 
-<tr>
- <td><label for="id_shirt_size">Shirt size:</label></td>
- <td>{{ form.shirt_size }} {% if form.shirt_size.errors %}
-   <br /><span class="form_error">{{ form.shirt_size.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+<div class="control-group">
+    <label for="id_shirt_size" class="control-label">Shirt size:</label>
+    <div class="controls">
+    {{ form.shirt_size }} {% if form.shirt_size.errors %}
+    <br /><span class="form_error">{{ form.shirt_size.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div> 
 
-<tr>
- <td><label for="id_shirt_type">Shirt type:</label></td>
- <td>{{ form.shirt_type }} {% if form.shirt_type.errors %}
-   <br /><span class="form_error">{{ form.shirt_type.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+<div class="control-group">
+    <label for="id_shirt_type" class="control-label">Shirt type:</label>
+    <div class="controls">
+    {{ form.shirt_type }} {% if form.shirt_type.errors %}
+    <br /><span class="form_error">{{ form.shirt_type.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
 {% endif %}
 
 {% if form.medical_needs %}
-<tr>
- <td><label for="id_medical_needs">(Optional) Medical needs:</label></td>
- <td>{{ form.medical_needs }} {% if form.medical_needs.errors %}
-   <br /><span class="form_error">{{ form.medical_needs.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+<div class="control-group">
+    <label for="id_medical_needs" class="control-label">(Optional) Medical needs:</label>
+    <div class="controls">
+    {{ form.medical_needs }} {% if form.medical_needs.errors %}
+    <br /><span class="form_error">{{ form.medical_needs.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
 {% endif %}
 
 {% if form.post_hs %}
-<tr>
- <td><label for="id_post_hs">What are your plans after you graduate from high school?</label></td>
- <td>{{ form.post_hs }} {% if form.post_hs.errors %}
-   <br /><span class="form_error">{{ form.post_hs.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+<div class="control-group">
+    <label for="id_post_hs" class="control-label">What are your plans after you graduate from high school?</label>
+    <div class="controls">
+    {{ form.post_hs }} {% if form.post_hs.errors %}
+    <br /><span class="form_error">{{ form.post_hs.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
 {% endif %}
 
 {% if form.transportation %}
-<tr>
- <td><label for="id_transportation">How do you plan to get to/from the program?</label></td>
- <td>{{ form.transportation }} {% if form.transportation.errors %}
-   <br /><span class="form_error">{{ form.transportation.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+<div class="control-group">
+    <label for="id_transportation" class="control-label">How do you plan to get to/from the program?</label>
+    <div class="controls">
+    {{ form.transportation }} {% if form.transportation.errors %}
+    <br /><span class="form_error">{{ form.transportation.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
 {% endif %}
-
 
 <!-- End Student Info Portion -->

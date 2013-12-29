@@ -1,26 +1,38 @@
 {% extends "main.html" %}
 
-{% block title %}Teacher availability: {{ teacher_name }}{% endblock %}
+{% block title %}{% if teacher_name %}Teacher availability: {{ teacher_name }}{% else %}Check teacher availability{% endif %}{% endblock %}
+{% block subsection_name %}{% if teacher_name %}{{ teacher_name }}: availability in {{program.niceName}}{% else %}Check teacher availability{% endif %}{% endblock %}
 
-{% block subsection_name %}{{ teacher_name }}: availability in {{program.niceName}}{% endblock %}
 {% block content %}
 
 {% load main %}
 
+{% if teacher_name %}
 <h1>{{ teacher_name }}: availability in {{ program.niceName }}</h1>
+{% else %}
+<h1>Check teacher availability</h1>
+{% endif %}
 
-<p>All times listed below are times that the teacher has indicated availability for. Additionally, <font color="red">all timeslots colored red are times during which the teacher is scheduled to teach.</font></p>
+{% if teacher_name %}
+<p>Below is a list of all timeslots in this program. <font color="blue">Blue</font> indicates that the teacher is available. <font color="black">Black</font> indicates that the teacher is marked as available and scheduled to teach. <font color="orange">Orange</font> indicates that the teacher is scheduled to teach, but not marked as available. <font color="silver">Gray</font> indicates that the teacher is not available.</p>
 <p><a href="{{ edit_path }}">Click here to edit teacher availability.</a></p>
 
-<ul>
+<dl>
 {% for t in available %}
-<li>{% if not t.2 %}<font color="red">{% endif %}{{ t.0 }} to {{ t.1 }}{% if not t.2 %} (scheduled to teach)</font>{% endif %}</li>
+<dt><font color={% if t.2 and t.3 %}"black"{% elif t.2 and not t.3 %}"blue"{% elif t.3 and not t.2 %}"orange"{% else %}"silver"{% endif %}>{{ t.0 }} to {{ t.1 }}{% if t.3 %} </dt><dd><a href="/manage/{{ program.getUrlBase }}/manageclass/{{ t.4 }}">{{ t.5 }}: {{ t.6 }} ({{ t.7 }})</a></dd>{% else %}</dt>{% endif %}</font>
 {% endfor %}
-</ul>
+<br><br>
+<dl>
+<dt>Unscheduled classes</dt>
+{% for s in unscheduled %}
+<dd><a href="/manage/{{ program.getUrlBase }}/manageclass/{{ s.0 }}">{{ s.1 }}: {{ s.2 }} ({{ s.3 }})</a></dd>
+{% endfor %}
+</dl>
 <br /><br />
+{% endif %}
 
-<form method="GET" action="{{ request.path }}">
-Username: <input type="text" name="user" />
+<form method="POST" action="{{ request.path }}">
+{{ form.as_p }}
 <input type="submit" value="Search" />
 </form>
 

@@ -24,16 +24,14 @@ class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):
         if callable(CONDITIONAL_PANELS):
             CONDITIONAL_PANELS(request)
 
-        if hasattr(request.META, 'HTTP_REFERER'):
-            # Reconstruct the QueryDict from the query string of the referer
-            # URL. Keep any that start with 'debug_toolbar'. That way, any
-            # conditional debug_toolbar settings get carried over when
-            # navigating around the site.
-            if '?' in request.META.HTTP_REFERER:
-                query = request.META.HTTP_REFERER.split('?',1)[1]
-                query = http.QueryDict(query, encoding=settings.DEFAULT_CHARSET)
-                for q in filter(lambda q: 'debug_toolbar' in q[0], query.items()):
-                    request.GET[q[0]] = q[1]
+        # The debug toolbar can be enabled or disabled on the page with the
+        # 'debug_toolbar' GET param.  If present, the value of this param is
+        # stored in the session, so that the toolbar stays enabled or disabled
+        # while navigating.
+        param = request.GET.get('debug_toolbar')
+        if param is not None:
+            request.session['debug_toolbar'] = param
+
         super(ESPDebugToolbarMiddleware, self).process_request(request)
 
     @staticmethod
@@ -43,9 +41,17 @@ class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):
         """
         from django.conf import settings
 
-        # Always show toolbar when debugging,
-        # or when given a special GET param.
-        # Require the user to be an admin.
-        return request.user.isAdmin() and \
-            (settings.DEBUG or request.GET.get('debug_toolbar', None) == 't')
+        # settings.DEBUG_TOOLBAR must be True to enable the toolbar.
+        # Assuming this is set:
+        #   - Always show toolbar when debugging,
+        #     unless request.session['debug_toolbar'] == 'f'.
+        #   - Show toolbar when request.session['debug_toolbar'] == 't'
+        #     while logged in as an admin.
+        # NOTE (jmoldow): The ordering is intentional. It takes advantage of
+        # short-circuiting to only call request.user.isAdmin() when necessary,
+        # because calling request.user.isAdmin() sets Vary:Cookie and prevents
+        # proxy caching. See Github issue #739.
+        return settings.DEBUG_TOOLBAR and \
+                ((settings.DEBUG and not request.session.get('debug_toolbar') == 'f') or \
+                (request.session.get('debug_toolbar') == 't' and request.user.isAdmin()))
 

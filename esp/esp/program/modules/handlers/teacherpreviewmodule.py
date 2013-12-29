@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 from django.http                 import Http404
-from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call
+from esp.program.modules.base    import ProgramModuleObj, main_call, aux_call, needs_account
 from esp.middleware              import ESPError
 from esp.program.models          import ClassSubject, ClassSection
 from datetime                    import timedelta
@@ -62,7 +62,10 @@ class TeacherPreviewModule(ProgramModuleObj):
         pmos = ProgramModuleObj.objects.filter(program=prog,module__handler__icontains='printables')
         if pmos.count() == 1:
             pmo = ProgramPrintables(pmos[0])
-            teacher = ESPUser(request.user)
+            if ESPUser(request.user).isAdmin() and 'user' in request.GET:
+                teacher = ESPUser.objects.get(id=request.GET['user'])
+            else:
+                teacher = ESPUser(request.user)
             scheditems = []
             for cls in teacher.getTaughtClasses().filter(parent_program = self.program):
                 if cls.isAccepted():
@@ -75,12 +78,14 @@ class TeacherPreviewModule(ProgramModuleObj):
             raise ESPError(False), 'No printables module resolved, so this document cannot be generated.  Consult the webmasters.' 
 
     @aux_call
-    # No need for needs_teacher, since it depends on request.user
+    # No need for needs_teacher, since it depends on request.user, and onsite may want to use it (with ?user=foo).
+    @needs_account
     def teacherschedule(self, request, tl, one, two, module, extra, prog):
         return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='teacherschedule.html')
 
     @aux_call
-    # No need for needs_teacher, since it depends on request.user
+    # No need for needs_teacher, since it depends on request.user, and onsite may want to use it (with ?user=foo).
+    @needs_account
     def classroster(self, request, tl, one, two, module, extra, prog):
         return self.teacherhandout(request, tl, one, two, module, extra, prog, template_file='classrosters.html')
 

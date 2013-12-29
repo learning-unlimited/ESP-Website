@@ -1,21 +1,15 @@
 <!-- Begin Emergency Contact -->
-<tr>
- <th colspan="2">Emergency Contact</th>
-</tr>
+<h3>Emergency Contact</h3>
 
-<tr style="display: none;" id="id_copy_parent_info">
- <td colspan="2">
-  <div class="info">
+<div class="alert" id="id_copy_parent_info">
+<button type="button" class="close" data-dismiss="alert">x</button>
 In the unlikely event of an emergency, we need to know who we should contact first, to let
-them know that you're safe (or that you need help).<br />
-Often, this is just your parents.  However, if your parents will be out of town or unavailable,
-this might be a family friend or nearby relative.<br />
+them know that you're safe (or that you need help). Often, this is just your parents.  However, if your parents will be out of town or unavailable,
+this might be a family friend or nearby relative.<br /><br />
 Please either click below to copy your home address and your
-parents' contact information into this form, or give contact information for someone else you know and trust.
+parents' contact information into this form, or give contact information for someone else that you know and trust.
+<p><center><input type="button" class="btn span4" onclick="javascript:copy_parent_info();" value="Use my parents as my emergency contact" /></center></p>
 </div>
-  <p><center><input type="button" onclick="javascript:copy_parent_info();" value="Use my parents as my emergency contact" /></center></p>
- </td> 
-</tr>
 
 <script language="JavaScript">
 if (document.getElementById("id_phone_cell") && document.getElementById("id_guard_phone_cell")) {
@@ -34,97 +28,83 @@ function copy_parent_info() {
 }
 </script>
 
-<tr>
- <td><label for="id_emerg_first_name">First Name:</label></td>
- <td>{{ form.emerg_first_name }} {% if form.emerg_first_name.errors %}
+<div class="control-group">
+ <label class="control-label" for="id_emerg_first_name">First Name:</label>
+ <div class="controls">
+ {{ form.emerg_first_name }} {% if form.emerg_first_name.errors %}
    <br /><span class="form_error">{{ form.emerg_first_name.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 
-<tr>
- <td><label for="id_emerg_last_name">Last Name:</label></td>
- <td>{{ form.emerg_last_name }} {% if form.emerg_last_name.errors %}
+<div class="control-group">
+ <label class="control-label" for="id_emerg_last_name">Last Name:</label>
+ <div class="controls">
+ {{ form.emerg_last_name }} {% if form.emerg_last_name.errors %}
    <br /><span class="form_error">{{ form.emerg_last_name.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 
-
-<tr>
- <td><label for="id_emerg_e_mail">Email:</label></td>
- <td>{{ form.emerg_e_mail}} {% if form.emerg_e_mail.errors %}
+<div class="control-group">
+ <label class="control-label" for="id_emerg_e_mail">E-mail address:</label>
+ <div class="controls">
+ {{ form.emerg_e_mail }} {% if form.emerg_e_mail.errors %}
    <br /><span class="form_error">{{ form.emerg_e_mail.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 
-<tr>
-  <td colspan="2"><label>Address:</label></td>
-</tr>
+<h4>Address:</h4>
 
-<tr>
- <td align='right'><label for="id_emerg_address_street">
-                       <small><i>street</i></small>
-		   </label>
- </td>
- <td>{{ form.emerg_address_street }} {% if form.emerg_address_street.errors %}
-   <br /><span class="form_error">{{ form.emerg_address_street.errors|join:", " }}</span>
-   {% endif %}
- </td>
-</tr>
+<div class="control-group">
+    <label class="control-label" for="id_emerg_address_street">
+    <small><i>street</i></small>
+    </label>
+    <div class="controls">
+    {{ form.emerg_address_street }} {% if form.emerg_address_street.errors %}
+    <br /><span class="form_error">{{ form.emerg_address_street.errors|join:", " }}</span>
+    {% endif %}
+    </div>
+</div>
 
-<tr>
- <td align="right"><label for="id_emerg_address_city">
-                        <small><i>city</i></small>
-                   </label></td>
- <td>
- <table class="plain" border="0" cellspacing="0" cellpadding="0" width="100%">
- <tr>
- 
- <td>
-  {{ form.emerg_address_city }} {% if form.emerg_address_city.errors %}
-   <br /><span class="form_error">{{ form.emerg_address_city.errors|join:", " }}</span>
-   {% endif %}
- </td>
- <td style="padding-left: 6px;">{{ form.emerg_address_state }} {% if form.emerg_address_state.errors %}
-   <br /><span class="form_error">{{ form.emerg_address_state.errors|join:", " }}</span>
-   {% endif %}
- </td>
+<div class="control-group">
+    <label class="control-label" for="id_emerg_address_city">
+    <small><i>city/state/zip</i></small>
+    </label>
+    <div class="controls controls-row">
+        {{ form.emerg_address_city }} {% if form.emerg_address_city.errors %}
+        <br /><span class="form_error">{{ form.emerg_address_city.errors|join:", " }}</span>
+        {% endif %}
 
- <td align="right"><label for="id_emerg_address_zip">
-                       <small><i>&nbsp;&nbsp;zip</i></small>
-                   </label>
- 
- </td>
-   <td>
-  {{ form.emerg_address_zip }} {% if form.emerg_address_zip.errors %}
-   <br /><span class="form_error">{{ form.emerg_address_zip.errors|join:", " }}</span>
-   {% endif %}
-   </td> 
- </tr>
- </table>
- </td>
-</tr>
+        {{ form.emerg_address_state }} {% if form.emerg_address_state.errors %}
+        <br /><span class="form_error">{{ form.emerg_address_state.errors|join:", " }}</span>
+        {% endif %}
+        
+        {{ form.emerg_address_zip }} {% if form.emerg_address_zip.errors %}
+        <br /><span class="form_error">{{ form.emerg_address_zip.errors|join:", " }}</span>
+        {% endif %}
+    </div>
+</div>
 
-<tr>
- <td><label>Phone numbers:</label></td>
- <td>&nbsp;</td>
-</tr>
+<h4>Phone numbers:</h4>
 
-<tr>
- <td align='right'><small><i><label for="id_phone_day">home</label></i></small></td>
- <td>{{ form.emerg_phone_day }} {% if form.emerg_phone_day.errors %}
+<div class="control-group">
+ <small><i><label class="control-label" for="id_emerg_phone_day">home</label></i></small>
+ <div class="controls">
+ {{ form.emerg_phone_day }} {% if form.emerg_phone_day.errors %}
    <br /><span class="form_error">{{ form.emerg_phone_day.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 
-<tr>
- <td align='right'><small><i><label for="id_phone_cell">cell</label></i></small></td>
- <td>{{ form.emerg_phone_cell }} {% if form.emerg_phone_cell.errors %}
+<div class="control-group">
+ <small><i><label class="control-label" for="id_emerg_phone_cell">cell</label></i></small>
+ <div class="controls">
+ {{ form.emerg_phone_cell }} {% if form.emerg_phone_cell.errors %}
    <br /><span class="form_error">{{ form.emerg_phone_cell.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
+
 <!-- End Emergency Contact -->

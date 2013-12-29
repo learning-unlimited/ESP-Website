@@ -36,8 +36,10 @@ Learning Unlimited, Inc.
 from esp.accounting.models import Transfer, Account, FinancialAidGrant, LineItemType, LineItemOptions
 from esp.program.models import FinancialAidRequest, Program, SplashInfo
 from esp.users.models import ESPUser
+from esp.tagdict.models import Tag
+from esp.utils.query_utils import nest_Q
 
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.template.defaultfilters import slugify
 
 from decimal import Decimal
@@ -117,7 +119,7 @@ class ProgramAccountingController(BaseAccountingController):
         #   For now, just create a single account for the program.  In the
         #   future we may want finer grained accounting per program.
         program = self.program
-        (account, created) = Account.objects.get_or_create(name=slugify(program.name), description='Main account for %s' % program.niceName(), program=program)
+        (account, created) = Account.objects.get_or_create(name=slugify(program.name), description='Main account', program_id=program.id)
         return account
 
     def setup_lineitemtypes(self, base_cost, optional_items=None, select_items=None):
@@ -203,20 +205,47 @@ class ProgramAccountingController(BaseAccountingController):
     def default_siblingdiscount_lineitemtype(self):
         return LineItemType.objects.filter(program=self.program, for_finaid=True, text='Sibling discount').order_by('-id')[0]
 
-    def get_lineitemtypes(self, required_only=False, optional_only=False, payment_only=False):
+    def get_lineitemtypes_Q(self, required_only=False, optional_only=False, payment_only=False):
+        q_object = Q(program=self.program)
         if required_only:
-            qs = LineItemType.objects.filter(program=self.program, required=True, for_payments=False, for_finaid=False)
+            q_object &= Q(required=True, for_payments=False, for_finaid=False)
         elif optional_only:
-            qs = LineItemType.objects.filter(program=self.program, required=False, for_payments=False, for_finaid=False)
+            q_object &= Q(required=False, for_payments=False, for_finaid=False)
         elif payment_only:
-            qs = LineItemType.objects.filter(program=self.program, required=False, for_payments=True, for_finaid=False) 
-        else:
-            qs = LineItemType.objects.filter(program=self.program)
-            
+            q_object &= Q(required=False, for_payments=True, for_finaid=False)
+        return q_object
+
+    def get_lineitemtypes(self, **kwargs):
+        qs = LineItemType.objects.filter(self.get_lineitemtypes_Q(**kwargs))
         return qs.order_by('text', '-id').distinct('text')
 
+    def all_transfers_Q(self, **kwargs):
+        """
+        Returns a Q object that applies all wanted constraints on the related
+        line_item objects.
+        """
+        q_object = self.get_lineitemtypes_Q(**kwargs)
+        return nest_Q(q_object, 'line_item')
+
     def all_transfers(self, **kwargs):
-        return Transfer.objects.filter(line_item__in=self.get_lineitemtypes(**kwargs))
+        # Avoids a subquery by constructing a Q object, in all_transfers_Q(),
+        # that applies all the wanted constraints on the related line_item
+        # objects.
+        return Transfer.objects.filter(self.all_transfers_Q(**kwargs)).distinct()
+
+    def all_students_Q(self, **kwargs):
+        """
+        The students we want to query have registered for this program and have
+        a transfer object that has the constraints we want.
+        """
+        q_object = self.all_transfers_Q(**kwargs)
+        return Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(q_object, 'transfer')
+
+    def all_students(self, **kwargs):
+        # Avoids a subquery by constructing a Q object, in all_students_Q(),
+        # that applies all the wanted constraints on the related transfer
+        # objects.
+        return ESPUser.objects.filter(self.all_students_Q(**kwargs)).distinct()
 
     def all_accounts(self):
         return Account.objects.filter(program=self.program)
@@ -229,9 +258,10 @@ class ProgramAccountingController(BaseAccountingController):
         for grant in FinancialAidGrant.objects.filter(request__program=self.program, request__user__in=users):
             grant.finalize()
 
-        #   Execute sibling discounts for these users
-        for splashinfo in SplashInfo.objects.filter(program=self.program, student__in=users):
-            splashinfo.execute_sibling_discount()
+        if self.program.sibling_discount:
+            #   Execute sibling discounts for these users
+            for splashinfo in SplashInfo.objects.filter(program=self.program, student__in=users):
+                splashinfo.execute_sibling_discount()
 
         #   Execute transfers for these users
         self.execute_transfers(Transfer.objects.filter(user__in=users, line_item__program=self.program))
@@ -255,12 +285,18 @@ class IndividualAccountingController(ProgramAccountingController):
         source_account = self.default_source_account()
         line_items = self.get_lineitemtypes(required_only=True)
 
-        #   Clear existing transfers
-        Transfer.objects.filter(user=self.user, line_item__in=line_items, executed=False).delete()
+        #   Clear existing transfers that are not executed
+        unexecuted_items = Transfer.objects.filter(user=self.user, line_item__in=line_items, executed=False)
+        unexecuted_items.delete()
 
-        #   Create transfers for required line item types
+        #   Identify item types that have been executed
+        executed_items = Transfer.objects.filter(user=self.user, line_item__in=line_items, executed=True)
+        executed_item_types = executed_items.values_list('line_item__id', flat=True)
+
+        #   Create transfers for required line item types that have not already been executed
         for lit in line_items:
-            result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=lit.amount_dec))
+            if lit.id not in executed_item_types:
+                result.append(Transfer.objects.create(source=source_account, destination=program_account, user=self.user, line_item=lit, amount_dec=lit.amount_dec))
         return result
 
     def apply_preferences(self, optional_items):
@@ -418,11 +454,10 @@ class IndividualAccountingController(ProgramAccountingController):
                 aid_amount += discount_aid_amount
 
         return aid_amount
-    
+
     def amount_siblingdiscount(self):
-        #   Hard-coded $20 discount for now; could be made into a Tag in the future
-        if SplashInfo.objects.filter(program=self.program, student=self.user, siblingdiscount=True).exists():
-            return Decimal('20.00')
+        if (not self.program.sibling_discount) or self.program.splashinfo_objects.get(self.user.id):
+            return self.program.sibling_discount
         else:
             return Decimal('0')
     

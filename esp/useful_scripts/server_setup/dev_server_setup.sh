@@ -342,6 +342,7 @@ then
     done
 
     #    Install python libraries
+    sudo pip install "virtualenv>=1.10"
     virtualenv $BASEDIR/env
     source $BASEDIR/env/bin/activate
     pip install -r $BASEDIR/esp/requirements.txt
@@ -411,6 +412,7 @@ DEBUG = True
 DISPLAYSQL = False
 TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
+DEBUG_TOOLBAR = True # set to False to globally disable the debug toolbar
 
 # Database
 DEFAULT_CACHE_TIMEOUT = 120

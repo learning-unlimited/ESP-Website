@@ -33,6 +33,9 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+import re
+import unicodedata
+
 from esp.users.models import ESPUser, StudentInfo, K12School
 from esp.datatree.models import *
 from esp.program.models import Program, ProgramModule
@@ -60,6 +63,7 @@ class ProgramCreationForm(BetterModelForm):
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
+    sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None, help_text='The amount of the sibling discount. Leave blank to disable sibling discounts.')
     program_type      = forms.CharField(label = "Program Type")
     program_modules   = forms.MultipleChoiceField(choices = [], label = 'Program Modules')
 
@@ -74,6 +78,24 @@ class ProgramCreationForm(BetterModelForm):
         self.fields['program_size_max'].required = True
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
 
+    def save(self, commit=True):
+        '''
+        Takes the program creation form's program_type, term, and term_friendly
+        fields, and constructs the url and name fields on the Program instance;
+        then calls the superclass's save() method.
+        '''
+        #   Filter out unwanted characters from program type to form URL
+        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
+        self.instance.url = u'%(type)s/%(instance)s' \
+            % {'type': ptype_slug
+              ,'instance': self.cleaned_data['term']
+              }
+        self.instance.name = u'%(type)s %(instance)s' \
+            % {'type': self.cleaned_data['program_type']
+              ,'instance': self.cleaned_data['term_friendly']
+              }
+        return super(ProgramCreationForm, self).save(commit=commit)
+
         #self.fields.keyOrder = ['term','term_friendly','grade_min','grade_max','class_size_min','class_size_max','director_email','program_modules']
     def load_program(self, program):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
@@ -87,7 +109,7 @@ class ProgramCreationForm(BetterModelForm):
 ('Program Title', {'fields': ['term', 'term_friendly'] }),
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['admins','director_email']}),
-                     ('Financial Details' ,{'fields':['base_cost']}),
+                     ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
                      ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories']}),
                      ('Registrations Date',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
 
@@ -114,6 +136,7 @@ ProgramCreationForm.base_fields['publish_start'].line_group = 1
 ProgramCreationForm.base_fields['publish_end'].line_group = 1
 
 ProgramCreationForm.base_fields['base_cost'].line_group = 4
+ProgramCreationForm.base_fields['sibling_discount'].line_group = 4
 '''
 
 class StatisticsQueryForm(forms.Form):

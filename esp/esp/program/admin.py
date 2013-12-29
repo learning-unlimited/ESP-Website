@@ -44,7 +44,7 @@ from esp.program.models import VolunteerRequest, VolunteerOffer
 
 from esp.program.models import BooleanToken, BooleanExpression, ScheduleConstraint, ScheduleTestOccupied, ScheduleTestCategory, ScheduleTestSectionList
 
-from esp.program.models import RegistrationType, StudentRegistration
+from esp.program.models import RegistrationType, StudentRegistration, StudentSubjectInterest
 
 from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
@@ -169,6 +169,12 @@ class StudentRegistrationAdmin(admin.ModelAdmin):
     actions = [ expire_student_registrations, ]
     search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
+
+class StudentSubjectInterestAdmin(admin.ModelAdmin):
+    list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
+    actions = [ expire_student_registrations, ]
+    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
+admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
 
 def sec_classrooms(obj):
     return list(set([(x.name, str(x.num_students) + " students") for x in obj.classrooms()]))

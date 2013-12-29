@@ -41,6 +41,7 @@ from django.contrib.auth.models import AnonymousUser
 from esp.program.models import Program
 from esp.qsd.models import ESPQuotations
 from esp.middleware import ESPError
+from esp.themes.controllers import ThemeController
 from django.conf import settings
 import django.shortcuts
 
@@ -82,6 +83,9 @@ def render_to_response(template, request, context, prog=None, auto_per_program_t
         template = [_per_program_template_name(prog[0], t) for t in template] + template
 
     section = request.path.split('/')[1]
+    tc = ThemeController()
+    context['theme'] = tc.get_template_settings()
+    context['settings'] = settings
 
     # create nav bar list
     if not context.has_key('navbar_list'):

@@ -36,9 +36,9 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 import simplejson as json
 
+from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
 from django import forms
 from django.conf import settings
-from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import User, AnonymousUser, Group
 from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
 from django.contrib.localflavor.us.forms import USStateSelect
@@ -48,7 +48,7 @@ from django.core.mail import send_mail
 from django.db import models
 from django.db.models.base import ModelState
 from django.db.models.query import Q, QuerySet
-from django.http import HttpRequest
+from django.http import HttpRequest, HttpResponseRedirect
 from django.template import loader, Context as DjangoContext
 from django.template.defaultfilters import urlencode
 
@@ -65,6 +65,9 @@ from esp.middleware.threadlocalrequest import get_current_request, AutoRequestCo
 from esp.tagdict.models import Tag
 from esp.utils.expirable_model import ExpirableModel
 from esp.utils.widgets import NullRadioSelect, NullCheckboxSelect
+from esp.utils.query_utils import nest_Q
+
+from urllib import quote
 
 try:
     import cPickle as pickle
@@ -90,7 +93,9 @@ def user_get_key(user):
 
 def admin_required(func):
     def wrapped(request, *args, **kwargs):
-        if not request.user or not request.user.is_authenticated() or not ESPUser(request.user).isAdministrator():
+        if not request.user or not request.user.is_authenticated():
+            return HttpResponseRedirect('%s?%s=%s' % (settings.LOGIN_URL, REDIRECT_FIELD_NAME, quote(request.get_full_path())))
+        elif not ESPUser(request.user).isAdministrator():
             raise PermissionDenied
         return func(request, *args, **kwargs)
     return wrapped
@@ -556,17 +561,15 @@ class ESPUser(User, AnonymousUser):
         here's a slightly more general function for finding who belongs where. """
         from esp.program.models import ClassSection, RegistrationType
         
-        now = datetime.now()
-        
         if verbs:
             rts = RegistrationType.objects.filter(name__in=verbs)
         else:
             rts = RegistrationType.objects.all()
 
         if program:
-            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(relationship__in=rts, start_date__lte=now, end_date__gte=now).values_list('section', flat=True)).filter(parent_class__parent_program=program)
+            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(StudentRegistration.is_valid_qobject(), relationship__in=rts).values_list('section', flat=True)).filter(parent_class__parent_program=program)
         else:
-            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(relationship__in=rts, start_date__lte=now, end_date__gte=now).values_list('section', flat=True))
+            return ClassSection.objects.filter(id__in=self.studentregistration_set.filter(StudentRegistration.is_valid_qobject(), relationship__in=rts).values_list('section', flat=True))
 
     def getSectionsFromProgram(self, program, verbs=None):
         return self.getSections(program, verbs=verbs)
@@ -743,18 +746,9 @@ class ESPUser(User, AnonymousUser):
 
     @cache_function
     def getAllUserTypes():
-        tag_data = Tag.getTag('user_types')
-        result = DEFAULT_USER_TYPES
-        result_labels = [x[0] for x in result]
-        if tag_data:
-            print tag_data
-            json_data = json.loads(tag_data)
-            for entry in json_data:
-                if entry[0] not in result_labels:
-                    result.append(entry)
-                else:
-                    result[result_labels.index(entry[0])][1] = entry[1]
-        return result
+        #   Allow Tag to remove user types as well as adding/updating them.
+        #   So, if you set the Tag, be sure to include all of the user types you want.
+        return json.loads(Tag.getTag('user_types', default=json.dumps(DEFAULT_USER_TYPES)))
     getAllUserTypes.depend_on_model(Tag)
     getAllUserTypes = staticmethod(getAllUserTypes)
 
@@ -770,7 +764,7 @@ class ESPUser(User, AnonymousUser):
         """
         def _new_method(user):
             return user.is_user_type(user_class)
-        _new_method.__name__    = 'is%s' % user_class
+        _new_method.__name__    = 'is%s' % str(user_class)
         _new_method.__doc__     = "Returns ``True`` if the user is a %s and False otherwise." % user_class
         return _new_method
 
@@ -1647,6 +1641,34 @@ class PersistentQueryFilter(models.Model):
 
         return QObj
 
+    def set_Q(self, q_filter, item_model=None, description='', should_save=True, restrict_to_active=True):
+        """
+        q_filter - The new filter to set.
+        item_model - The new item model, or None if it should stay the same.
+        description - The new filter description.
+        should_save - If True (default), this PQF will be saved after setting the new filter.
+        restrict_to_active - If True (default) and the filter is on users, automatically add an is_active=True filter.
+        """
+        if item_model is None:
+            item_model = self.item_model
+        self.item_model = str(item_model)
+
+        if restrict_to_active and (self.item_model.find('auth.models.User') >= 0 or self.item_model.find('esp.users.models.ESPUser') >= 0):
+            q_filter = q_filter & Q(is_active=True)
+
+        import hashlib
+        dumped_filter = pickle.dumps(q_filter)
+        sha1_hash = hashlib.sha1(dumped_filter).hexdigest()
+
+        self.q_filter = dumped_filter
+        self.sha1_hash = sha1_hash
+        self.useful_name = description
+
+        if should_save:
+            self.save()
+
+        return self
+
     def getList(self, module):
         """ This will actually return the list generated from the filter applied
             to the live database. You must supply the model. If the model is not matched,
@@ -1852,9 +1874,9 @@ class EmailPref(models.Model):
         app_label = 'users'
 
 class Record(models.Model):
-    #To make these better to work with in the admin panel, and to have a 
+    #To make these better to work with in the admin panel, and to have a
     #well defined set of possibilities, we'll use a set of choices
-    #if you want to use this model for an additional thing, 
+    #if you want to use this model for an additional thing,
     #add it as a choice
     EVENT_CHOICES=(
         ("student_survey", "Completed student survey"),
@@ -1865,6 +1887,7 @@ class Record(models.Model):
         ("teacher_quiz_done","Completed teacher quiz"),
         ("paid","Paid for program"),
         ("med","Submitted medical form"),
+        ("med_bypass","Recieved medical bypass"),
         ("liab","Submitted liability form"),
         ("onsite","Registered for program on-site"),
         ("schedule_printed","Printed student schedule on-site"),
@@ -1890,6 +1913,9 @@ class Record(models.Model):
         else:
             return cls.objects.filter(user=user, event=event, program=program).count()>0
 
+    def __unicode__(self):
+        return unicode(self.user) + " has completed " + self.event + " for " + unicode(self.program)
+        
 #helper method for designing implications
 def flatten(choices):
     l=[]
@@ -2038,14 +2064,11 @@ class Permission(ExpirableModel):
         """Find all program that user has perm"""
         implies = [perm]
         implies+=[x for x,y in cls.implications.items() if perm in y]
-        now=datetime.now()
-        qstart = Q(permission__start_date=None) | Q(permission__start_date__lte=now)
-        qend = Q(permission__end_date=None) | Q(permission__end_date__gte=now)
 
-        direct = Program.objects.filter(qstart & qend,
+        direct = Program.objects.filter(nest_Q(Permission.is_valid_qobject(), 'permission'),
                                        permission__user=user,
                                        permission__permission_type__in=implies)
-        role = Program.objects.filter(qstart & qend,
+        role = Program.objects.filter(nest_Q(Permission.is_valid_qobject(), 'permission'),
                                       permission__permission_type__in=implies,
                                       permission__user__isnull=True,
                                       permission__role__in=user.groups.all())
@@ -2053,7 +2076,8 @@ class Permission(ExpirableModel):
 
     @staticmethod
     def user_can_edit_qsd(user,url):
-        #the logic here is as follow:
+        #the logic here is as follows:
+        #  -you must be logged in to edit qsd
         #  -admins can edit any qsd
         #  -admins of a program can edit qsd of the form
         #      /section/<Program.url>/<any url>.html
@@ -2061,6 +2085,8 @@ class Permission(ExpirableModel):
         #      /section/<Program.url>/Classes/<x>/<any url>.html
         if url.endswith(".html"):
             url = url[-5]
+        if user is None:
+            return False
         if user.isAdmin():
             return True
         import re
@@ -2085,13 +2111,21 @@ class Permission(ExpirableModel):
                 if user in cls.get_teachers(): return True
 
         return False
-    
+
+def install_groups(additional_names=None):
+    """
+    Installs the initial Groups.
+    """
+    if additional_names is None:
+        additional_names = []
+    for user_type in (list(ESPUser.getTypes()) + ["StudentRep", "Administrator"] + additional_names):
+        Group.objects.get_or_create(name=user_type)
+
 def install():
     """
     Installs some initial users and permissions.
     """    
-    for user_type in (list(ESPUser.getTypes()) + ["StudentRep", "Administrator"]):
-        Group.objects.get_or_create(name=user_type)
+    install_groups()
     if ESPUser.objects.count() == 1: # We just did a syncdb;
                                      # the one account is the admin account
         user = ESPUser.objects.all()[0]
@@ -2106,6 +2140,6 @@ def install():
 from esp.users.models.userbits import UserBit
 from esp.users.models.forwarder import UserForwarder
 from esp.cal.models import Event
-from esp.program.models import ClassSubject, ClassSection, Program
+from esp.program.models import ClassSubject, ClassSection, Program, StudentRegistration
 from esp.resources.models import Resource
 

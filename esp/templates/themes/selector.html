@@ -1,0 +1,50 @@
+{% extends "main.html" %}
+{% block title %}Theme Selector{% endblock %}
+{% block content %}
+
+<h1>Themes - Select a Theme</h1>
+
+<h2>Current theme: {{ theme_name }} </h2>
+
+<div class="span5 offset2 well">
+    <center>
+    
+    <form method="post" action="/themes/select/">
+    <input name="action" type="hidden" value="select" />
+    <h3>Select a theme:</h3>
+    <select name="theme" id="id_theme">
+    {% for theme in themes %}
+        <option name="{{ theme }}"{% if theme == theme_name %} selected{% endif %}>{{ theme }}{% if theme == theme_name %} (current){% endif %}</option>
+    {% endfor %}
+    </select>
+    <br />
+    <button class="btn btn-large btn-block btn-primary" type="submit">Apply</button>
+    </form>
+    
+    </center>
+    <p>A new theme will be displayed initially without any customization, but you can apply saved customizations in the theme editor.</p>
+</div>
+
+<div class="span5 offset2 well">
+    <center>
+    <form method="post" action="/themes/select/">
+    <input name="action" type="hidden" value="clear" />
+    <h3>Or, remove the current theme.</h3>
+    <button class="btn btn-large btn-block btn-primary" type="submit">Clear Theme</button>
+    </form>
+    <p>
+    Do this if you're customizing the appearance manually using template overrides and stylesheets. 
+    </p>
+</div>
+
+<div align="center">
+    <a href="/themes/">
+        <button type="button" class="btn btn-large btn-primary">Return to themes page</button>
+    </a>
+    <a href="/">
+        <button type="button" class="btn btn-large btn-inverse">Return to home page</button>
+    </a>
+    <br />
+</div>
+
+{% endblock %}
