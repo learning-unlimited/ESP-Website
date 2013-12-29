@@ -40,12 +40,17 @@ from django.conf import settings
 import os.path
 
 
-def qsdmedia2(request, url):
+def qsdmedia2(request, url, ignored_part=None):
     """ Download a media file """
 
     try:
+        # the default format url=hashed_name/friendly_name
+        #  the old format is url=hashed_name
+        #  we only care about the part before the slash, if there is a slash
+        #  so just look at url (since ignored_part is the second part if set)
         media_rec = Media.objects.get(hashed_name=url)
     except Media.DoesNotExist:
+        # if the hashed name check failed, we may want to download based on the actual friendly filename
         try:
             media_rec = Media.objects.get(file_name=url)
         except Media.DoesNotExist:
@@ -55,7 +60,7 @@ def qsdmedia2(request, url):
     except MultipleObjectsReturned: # If there exist multiple Media entries, we want the first one
         media_rec = Media.objects.filter(hashed_name=url).latest('id')
 
-    file_name = os.path.join(settings.MEDIA_ROOT, "..", media_rec.target_file.url.lstrip('/'))
+    file_name = media_rec.get_uploaded_filename()
     f = open(file_name, 'rb')
     response = HttpResponse(f.read(), content_type=media_rec.mime_type)
     response['Content-Disposition'] = 'attachment; filename="' + media_rec.file_name + '"'
