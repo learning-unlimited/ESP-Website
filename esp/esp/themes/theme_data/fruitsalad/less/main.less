@@ -256,18 +256,19 @@ position: relative;
 
 #body {
     line-height: normal;
-    font-size: 12pt;
+    font-size: 13px;
 
     width: 640px;
     margin-left: 130px;
     position: relative;
     border-bottom-left-radius: @rounding_radius; 
     border-bottom-right-radius: @rounding_radius;
+    
+    font: Arial, Helvetica, sans-serif;
 }
 
 #footer {
 text-align: center;
-font-size: smaller;
 color: white;
 padding-top: 10px;
 padding-bottom: 10px;
@@ -344,24 +345,27 @@ margin-bottom: 10px;
  */
 
 #cross_link {
-position: absolute;
-right: 210px; top: -22px;
-height: 22px;
-line-height: 22px;
-font-size: smaller;
-font-weight: bold;
+    position: absolute;
+    right: 210px; 
+    top: -22px;
+    height: 22px;
+    line-height: 22px;
+    font-size: 1.0em;
+    font-weight: bold;
 }
 
 #cross_link a {
-display: inline-block;
-text-align: center;
-padding-left: 0px; width: 94px; height: 22px;
-border-top-right-radius: @rounding_radius;
-text-decoration: none;
-background-repeat: no-repeat;
-color: #fff;
-font-weight: bold;
-font-variant: small-caps;
+    display: inline-block;
+    text-align: center;
+    padding-left: 0px; 
+    width: 94px; 
+    vertical-align: middle;
+    border-top-right-radius: @rounding_radius;
+    text-decoration: none;
+    background-repeat: no-repeat;
+    color: #fff;
+    font-weight: bold;
+    font-variant: small-caps;
 }
 
 #cross_link .leftedge a {
@@ -373,7 +377,8 @@ font-variant: small-caps;
     border-top-color: white;
     border-left-color: white;
     border-top-right-radius: 0px;
-    margin: -4px 0px -6.5px 5px;
+    margin: 0px;
+    top: 0.0em;
 }
 
 #search_box .leftedge {
@@ -449,7 +454,7 @@ width: 20px;
  * Login
  */
 #login_box {
-font-size: smaller;
+font-size: 1.0em;
 position: absolute;
 width: 245px;
 height: 70px;
@@ -461,7 +466,7 @@ top: 15px;
 position: absolute;
 top: 9px; left: 8px;
 width: 110px;
-font-size: 0.9em;
+font-size: 1.0em;
 padding: 1px;
 height: 15px;
 font-size: 12px;
@@ -471,7 +476,7 @@ font-size: 12px;
 position: absolute;
 top: 40px; left: 8px;
 width: 110px;
-font-size: 0.9em;
+font-size: 1.0em;
 padding: 1px;
 height: 15px;
 font-size: 12px;
@@ -481,7 +486,7 @@ font-size: 12px;
 position: absolute;
 top: 9px; right: 48px;
 height: 21px; width: 45px;
-font-size: 0.8em;
+font-size: 0.9em;
 padding-right: 10px;
 border-radius: 0px;
 color: white;
@@ -512,7 +517,7 @@ position: absolute;
 top: 9px; right: 8px;
 height: 17px; width: 40px; padding-top: 4px;
 color: white;
-font-size: 0.8em;
+font-size: 0.9em;
 text-decoration: none;
 border: none;
 }
@@ -520,7 +525,7 @@ border: none;
 #login_help {
 position: absolute;
 top: 34px; right: 25px;
-font-size: smaller;
+font-size: 0.9em;
 }
 /*#login_help {
 text-decoration: none;
@@ -565,7 +570,6 @@ margin: 0; padding: 0 10px;
 line-height: 35px;
 //height: 35px;
 width: 580px;
-font-size: smaller;
 background: #ccc;
 position: relative;
 }
@@ -683,7 +687,6 @@ padding: 6px 10px 15px;
 
 #content p {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.83em;
   line-height: 160%;
   color: #000000;
   margin-top: 0px;
@@ -691,25 +694,21 @@ padding: 6px 10px 15px;
 
 #content li {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.8em;
   line-height: 140%;
   color: #000000;
   margin-top: 0px;
 }
 
-#content pre {
-  font-size: .9em;
-}
 #content h1 {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: .92em;
+  font-size: 1.2em;
   font-weight: bold;
   color: #3366cc;
   margin-top: 0px;
 }
 #content h2 {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: .9em;
+  font-size: 1.1em;
   font-weight: bold;
   color: #000000;
   margin-top: 0px;
@@ -717,7 +716,7 @@ padding: 6px 10px 15px;
 }
 #content h3 {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: .85em;
+  font-size: 1.0em;
   font-weight: bold;
   color: #000000;
   margin-top: 0px;
@@ -725,7 +724,7 @@ padding: 6px 10px 15px;
 }
 #content h4 {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.75em;
+  font-size: 0.9em;
   font-weight: bold;
   font-style: italic;
   color: #000000;
@@ -794,7 +793,6 @@ table.plaintable th {
   padding: 0px 6px 10px 0px;
 
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: .85em;
   color: #000000;
   line-height: 100%;
   margin: 0px;
@@ -804,7 +802,7 @@ table.plaintable th {
 /* input box */
 .inputbox {
   font-family: Arial, Lucida, Helvetica, sans-serif;
-  font-size: 0.75em;
+  font-size: 0.9em;
   width: 92px;
   border: solid 2px #000000;
   margin: 0px;
@@ -842,7 +840,6 @@ div.code {
 
 div.note, div.info, div.errormsg, div.question { 
   text-align: left;
-  font-size: .8em;
   font-style: italic;
   font-family: arial;
   padding: 5px 0px 5px 38px;

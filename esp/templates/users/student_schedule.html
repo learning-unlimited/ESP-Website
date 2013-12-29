@@ -96,10 +96,10 @@ you arrive.
 </tr>
 {% for timeslot in timeslots %}
     {% ifchanged timeslot.0.start.day %}
-        <tr><th class="small" colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.0.pretty_date }}</th></tr>
+        <tr><th colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.0.pretty_date }}</th></tr>
     {% endifchanged %}
     {% ifchanged timeslot.2 %}
-        <tr><th class="small" colspan="3" height="3">Block {{ timeslot.2 }}</th></tr>
+        <tr><th colspan="3" height="3">Block {{ timeslot.2 }}</th></tr>
     {% endifchanged %}
     {% ifequal timeslot.0.event_type.description "Compulsory" %}
         <td width="25%" valign="top" align="center" class="compulsory_event_time">{{ timeslot.0.short_description }}</td>
