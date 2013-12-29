@@ -1,4 +1,3 @@
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -74,7 +73,7 @@ class QuasiStaticData(models.Model):
     objects = QSDManager(8, 'QuasiStaticData')
 
     url = models.CharField(max_length=256, help_text="Full url, without the trailing .html")
-    name = models.SlugField()
+    name = models.SlugField(blank=True)
     title = models.CharField(max_length=256)
     content = models.TextField()
     

@@ -409,6 +409,10 @@ class ClassSection(models.Model):
         for r in rooms:
             rc += r.num_students
 
+        options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        if options.apply_multiplier_to_room_cap:
+            rc = int(rc * options.class_cap_multiplier + options.class_cap_offset)
+
         return rc
 
     @cache_function
@@ -439,9 +443,10 @@ class ClassSection(models.Model):
             else: 
                 ans = 0
             
+        options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+
         #   Apply dynamic capacity rule
-        if not ignore_changes:
-            options = self.parent_program.getModuleExtension('StudentClassRegModuleInfo')
+        if not (ignore_changes or options.apply_multiplier_to_room_cap):
             return int(ans * options.class_cap_multiplier + options.class_cap_offset)
         else:
             return int(ans)

@@ -8,7 +8,7 @@ from django.contrib.auth.models import Group
 
 class Migration(SchemaMigration):
 
-    depends_on = ( ("cal", "0003_datatree_removal"), )
+    depends_on = ( ("cal", "0003_datatree_removal"), ("program", "0039_add_alt_program_director_contacts"), )
 
     def forwards(self, orm):
         ua_map = {}
@@ -25,7 +25,8 @@ class Migration(SchemaMigration):
         db.add_column('users_useravailability', 'role', self.gf('django.db.models.fields.related.ForeignKey')(to=orm['auth.Group'],default=orm['auth.Group'].objects.all()[0].id), keep_default=False)
 
         for a in UserAvailability.objects.all():
-            (a.role, created) = Group.objects.get_or_create(name=ua_map[a.id])
+            (x,  created) = Group.objects.get_or_create(name=ua_map[a.id])
+            a.role_id = x.id
             a.save()
 
     def backwards(self, orm):

@@ -276,7 +276,7 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
 
         # Schedule one class.
         (s1, times, rooms) = self.scheduleClass()
-        teacher = s1.parent_class.teachers()[0]
+        teacher = s1.parent_class.get_teachers()[0]
 
         #choose another section taught by the same teacher
         sections = [s2 for s2 in teacher.getTaughtSections() if s2.id != s1.id]

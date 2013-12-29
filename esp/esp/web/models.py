@@ -37,7 +37,7 @@ from django.db.models.query import Q
 
 from esp.datatree.models import DataTree
 from esp.lib.markdown import markdown
-from esp.db.fields import AjaxForeignKey  
+from esp.db.fields import AjaxForeignKey
 from esp.program.models import Program
 from esp.cache import cache_function
         
@@ -84,10 +84,7 @@ class NavBarCategory(models.Model):
         return cls._default
     
     def __unicode__(self):
-        if self.anchor:
-            return u'%s at %s' % (self.name, unicode(self.anchor))
-        else:
-            return u'%s' % self.name
+        return u'%s' % self.name
 
 class NavBarEntry(models.Model):
     """ An entry for the secondary navigation bar """

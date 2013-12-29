@@ -1,4 +1,8 @@
+from esp.themes.controllers import ThemeController
+
 from django import template
+
+import os.path
 import simplejson as json
 
 register = template.Library()
@@ -46,36 +50,43 @@ def bool_or(obj1,obj2):
 def bool_and(obj1,obj2):
     #print str(obj1) + " and " + str(obj2) + " --> " + str(obj1 and obj2)
     return obj1 and obj2
-#theme would serve as a default template scheme
-theme = {
-    '': 'yellowgreen',
-    'Splash': 'blue',
-    'Spark': 'purple',
-    'HSSP': 'red',
-    'SATPrep': 'orange',
-    'Junction': 'yellow',
-    'Delve': 'lightgreen',
-    'ProveIt': 'darkgreen',
-
-    #'myesp': 'grey',
-    'manage': 'black'
-}
-
-#provide a {{ '{ "":"color1","Splash":"color2","Spark":"color3"}'|get_colors}} in the template override 
-@register.filter
-def get_colors(json_str):
-    try:
-        json_arr=json.loads(json_str)
-        for i in json_arr.keys():
-            theme[i]=str(json_arr[i])
-    except:
-        pass
     
 @register.filter
 def extract_theme(str):
-    str = (str + '//').split('/')
-    return theme.get(str[2],False) or theme.get(str[1],False) or 'yellowgreen'
+    #   Get the appropriate color scheme out of the Tag that controls nav structure
+    #   (specific to MIT theme)
+    tab_index = 0
+    tc = ThemeController()
+    settings = tc.get_template_settings()
+    for category in settings['nav_structure']:
+        if category['header_link'][:5] == str[:5]:
+            i = 1
+            for item in category['links']:
+                if str == item['link']:
+                    tab_index = i
+                    break
+                path_current = os.path.dirname(str)
+                path_tab = os.path.dirname(item['link'])
+                if len(path_current) > len(path_tab) and path_current.startswith(path_tab):
+                    tab_index = i
+                    break
+                i += 1
+    return 'tabcolor%d' % tab_index
 
+@register.filter
+def get_nav_category(path):
+    tc = ThemeController()
+    settings = tc.get_template_settings()
+                #   Search for current nav category based on request path
+    first_level = ''.join(path.lstrip('/').split('/')[:1])
+    for category in settings['nav_structure']:
+        if category['header_link'].lstrip('/').startswith(first_level):
+            return category
+    #   Search failed - use default nav category
+    default_nav_category = 'learn'
+    for category in settings['nav_structure']:
+        if category['header_link'].lstrip('/').startswith(default_nav_category):
+            return category
 
 @register.filter
 def truncatewords_char(value, arg):

@@ -54,12 +54,18 @@ class OnsiteClassSchedule(ProgramModuleObj):
     @aux_call
     @needs_student
     def printschedule(self, request, tl, one, two, module, extra, prog):#(self, request, *args, **kwargs):
+        '''Sends a schedule printing request to the schedule-printing script.  Defaults to the current (probably onsite-morphed) user, but can take a GET parameter instead.'''
         printer = request.GET.get('printer',None)
         if printer is not None:
             # we could check that it exists and is unique first, but if not, that should be an error anyway, and it isn't the user's fault unless they're trying to mess with us, so a 500 is reasonable and gives us better debugging output.
             printer = Printer.objects.get(name=printer)
-        PrintRequest.objects.create(user=request.user, printer=printer)
-        return HttpResponseRedirect('/learn/%s/studentreg' % self.program.getUrlBase())
+        if 'user' in request.GET:
+            user = ESPUser.objects.get(id=request.GET['user'])
+        else:
+            user = request.user
+        redirectURL = request.GET.get('next', '/learn/%s/studentreg' % self.program.getUrlBase())
+        PrintRequest.objects.create(user=user, printer=printer)
+        return HttpResponseRedirect(redirectURL)
 
     @aux_call
     @needs_student
@@ -68,17 +74,21 @@ class OnsiteClassSchedule(ProgramModuleObj):
         format = 'pdf'
         if 'format' in request.GET:
             format = request.GET['format'].lower()
+        if 'user' in request.GET:
+            user = ESPUser.objects.get(id=request.GET['user'])
+        else:
+            user = request.user
         request.GET = {'op':'usersearch',
-                       'userid': str(request.user.id) }
+                       'userid': str(user.id) }
 
         module = [module for module in self.program.getModules('manage')
                   if type(module) == ProgramPrintables        ][0]
 
-        module.user = request.user
+        module.user = user
         module.program = self.program
         
         #  onsite=False since we probably want a PDF
-        return ProgramPrintables.get_student_schedules(request, [request.user], self.program, onsite=False)
+        return ProgramPrintables.get_student_schedules(request, [user], self.program, onsite=False)
 
 
     @main_call

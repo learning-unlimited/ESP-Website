@@ -743,19 +743,24 @@ class Program(models.Model, CustomFormsLinkModel):
         return result
     
     def date_range(self):
+        """ Returns string range from earliest timeslot to latest timeslot, or NoneType if no timeslots set """
         dates = self.getTimeSlots()
-        d1 = min(dates).start
-        d2 = max(dates).end
-        if d1.year == d2.year:
-            if d1.month == d2.month:
-                if d1.day == d2.day:
-                    return '%s' % d1.strftime('%b. %d, %Y')
+
+        if dates:
+            d1 = min(dates).start
+            d2 = max(dates).end
+            if d1.year == d2.year:
+                if d1.month == d2.month:
+                    if d1.day == d2.day:
+                        return '%s' % d1.strftime('%b. %d, %Y')
+                    else:
+                        return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
                 else:
-                    return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
+                    return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
             else:
-                return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
+                return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
         else:
-            return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
+            return None
 
     def getResourceTypes(self, include_classroom=False, include_global=None):
         #   Show all resources pertaining to the program that aren't these two hidden ones.

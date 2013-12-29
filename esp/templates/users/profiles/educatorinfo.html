@@ -1,41 +1,41 @@
 <!-- Begin Educator Info Portion -->
 
-<tr>
- <th colspan="2">Educator Information</th>
-</tr>
+<h3>Educator Information</h3>
 
-<tr>
- <td><label for="id_position">Position: <br /> <small>(e.g. teacher,principal)</small></label></td>
- <td>{{ form.position }} {% if form.position.errors %}
+<div class="control-group">
+ <label for="id_position" class="control-label">Position: <br /> <small>(e.g. teacher, principal)</small></label>
+ <div class="controls">
+ {{ form.position }} {% if form.position.errors %}
    <br /><span class="form_error">{{ form.position.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 
-<tr>
- <td><label for="id_subject_taught">Subject Taught: <br /> <small>(if applicable)</small></label></td>
- <td>{{ form.subject_taught }} {% if form.subject_taught.errors %}
+<div class="control-group">
+ <label for="id_subject_taught" class="control-label">Subject Taught: <br /> <small>(if applicable)</small></label>
+ <div class="controls">
+ {{ form.subject_taught }} {% if form.subject_taught.errors %}
    <br /><span class="form_error">{{ form.subject_taught.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 
-
-<tr>
- <td><label for="id_grades_taught">Grades Taught: <br /> <small>(e.g. 9-12)</small></label></td>
- <td>{{ form.grades_taught }} {% if form.grades_taught.errors %}
+<div class="control-group">
+ <label for="id_grades_taught" class="control-label">Grades Taught: <br /> <small>(e.g. 9-12)</small></label>
+ <div class="controls">
+ {{ form.grades_taught }} {% if form.grades_taught.errors %}
    <br /><span class="form_error">{{ form.grades_taught.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 
-
-<tr>
- <td><label for="id_college">School Name:</label></td>
- <td>{{ form.school }} {% if form.school.errors %}
+<div class="control-group">
+ <label for="id_college" class="control-label">School Name:</label>
+ <div class="controls">
+ {{ form.school }} {% if form.school.errors %}
    <br /><span class="form_error">{{ form.school.errors|join:", " }}</span>
    {% endif %}
- </td>
-</tr>
+</div>
+</div>
 
 <!-- End Educator Info Portion -->

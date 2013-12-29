@@ -1,12 +1,15 @@
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.tests.ajaxschedulingmodule import AJAXSchedulingModuleTestBase
+
+from django.test import LiveServerTestCase
+
 from selenium.webdriver.firefox.webdriver import WebDriver
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.action_chains import ActionChains
 import time
 
-class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase):
+class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase, LiveServerTestCase):
     def setUp(self, *args, **kwargs): 
          super(AJAXSchedulingModuleUITest, self).setUp(*args, **kwargs)
          self.browser = WebDriver()
@@ -133,9 +136,12 @@ class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase):
     #####################################################################################
 
     def filter_directory(self, label, value):
+        #   Expand the filtering accordiion
+        self.browser.find_element_by_id("filtering_header").click()
+        time.sleep(1.0)
+        #   Type into the desired filtering element
         f = self.browser.find_element_by_id("filter_"+label)
         f.send_keys(value + "\n")
-        print value
         time.sleep(self.filter_interval)
 
     def testTitleFilter(self):
@@ -143,7 +149,7 @@ class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase):
         
         section = self.program.sections()[0]
 
-        self.filter_directory(self, "Title", section.title())
+        self.filter_directory("Title", section.title())
 
         for s in self.program.sections():
             if(s == section):
@@ -170,7 +176,8 @@ class AJAXSchedulingModuleUITest(AJAXSchedulingModuleTestBase):
         self.loadAjax()
         self.clearScheduleAvailability()
         
-        (section, rooms, times) = self.scheduleClass()         
+        (section, rooms, times) = self.scheduleClass()
+        self.browser.find_element_by_id("filtering_header").click()
         title_filter = self.browser.find_element_by_id("filter_ID")
         title_filter.send_keys("xuoeahtuoeathsnuoeathns\n")#something I'm pretty sure won't appear in an id
         time.sleep(self.update_interval)

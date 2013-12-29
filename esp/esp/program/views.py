@@ -57,6 +57,7 @@ from esp.program.modules.base import needs_student
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
+from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
 from esp.accounting_core.models import CompletedTransactionException
@@ -68,8 +69,6 @@ from django.conf import settings
 import pickle
 import operator
 import simplejson as json
-import re
-import unicodedata
 from collections import defaultdict
 from decimal import Decimal
 
@@ -423,6 +422,7 @@ def userview(request):
         'teacherbio': teacherbio,
         'domain': settings.SITE_INFO[1],
         'change_grade_form': change_grade_form,
+        'printers': StudentRegCore.printer_names(),
     }
     return render_to_response("users/userview.html", request, context )
 
@@ -479,7 +479,7 @@ def newprogram(request):
         line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
 
         template_prog["base_cost"] = int(sum(x["amount_dec"] for x in line_items))
-        template_prog["sibling_discount"] = tprogram.sibling_discount_tag
+        template_prog["sibling_discount"] = tprogram.sibling_discount
 
     if 'checked' in request.GET:
         # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
@@ -488,14 +488,7 @@ def newprogram(request):
         pcf = ProgramCreationForm(context['prog_form_raw'])
         if pcf.is_valid():
 
-            new_prog = pcf.save(commit = False) # don't save, we need to fix it up:
-            
-            #   Filter out unwanted characters from program type to form URL
-            ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
-            new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
-            new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
-            new_prog.save()
-            pcf.save_m2m()
+            new_prog = pcf.save(commit = True)
             
             commit_program(new_prog, context['perms'], context['modules'], context['cost'], context['sibling_discount'])
 

@@ -2,6 +2,7 @@ Django==1.4.8
 pillow==2.2.1
 South==0.8.1
 argparse==1.2.1
+cssutils==0.9.10
 django-extensions==1.1.1
 django-form-utils==0.3.1
 # django-reversion==1.7.1
@@ -27,3 +28,6 @@ twill==0.9
 wsgiref==0.1.2
 xlwt==0.7.5
 django-debug-toolbar==0.9.4
+django-grappelli==2.4.8
+django-filebrowser==3.5.2
+werkzeug

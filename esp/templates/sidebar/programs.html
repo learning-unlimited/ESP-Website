@@ -1,0 +1,4 @@
+{% if not theme.featured_programs|length_is:0 %}<li class="nav-header">Featured Programs</li>{% endif %}
+{% for program in theme.featured_programs %}
+<li><a href="/learn/{{ program.url }}/studentreg">{{ program.name }}</a></li>
+{% endfor %}
