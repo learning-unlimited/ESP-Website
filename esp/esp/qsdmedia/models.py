@@ -108,10 +108,6 @@ class Media(models.Model):
     # returns an absolute path to this file
     def test_upload_filename(self):
         return not os.path.isfile(os.path.join(settings.MEDIA_ROOT, root_file_path, self.hashed_name))
-    
-    # returns a download link
-    def get_download_url(self):
-        pass
 
     def delete(self, *args, **kwargs):
         """ Delete entry; provide hack to fix old absolute-path-storing. """
