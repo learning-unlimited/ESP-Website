@@ -43,3 +43,5 @@ class ConfigForm(ThemeConfigurationForm):
     full_group_name = forms.CharField()
     contact_info = forms.CharField(widget=forms.Textarea)
     nav_structure = forms.Field(widget=NavStructureWidget)
+    facebook_link = forms.URLField(required=False, help_text='Leave blank to avoid including a Facebook link.')
+    
