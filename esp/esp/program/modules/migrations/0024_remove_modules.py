@@ -6,6 +6,7 @@ from django.db import models
 
 from esp.program.models import ProgramModule
 from esp.program.modules.base import ProgramModuleObj
+from esp.web.management import update_all_esp_contenttypes
 
 class Migration(SchemaMigration):
 
@@ -22,6 +23,8 @@ class Migration(SchemaMigration):
         #   Delete database tables
         db.delete_table('modules_satprepadminmoduleinfo')
 
+        update_all_esp_contenttypes()
+
     def backwards(self, orm):
         # Adding model 'SATPrepAdminModuleInfo'
         db.create_table('modules_satprepadminmoduleinfo', (
@@ -30,6 +33,8 @@ class Migration(SchemaMigration):
             ('num_divisions', orm['modules.SATPrepAdminModuleInfo:num_divisions']),
         ))
         db.send_create_signal('modules', ['SATPrepAdminModuleInfo'])
+
+        update_all_esp_contenttypes()
 
 
     models = {

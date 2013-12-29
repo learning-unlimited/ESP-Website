@@ -167,11 +167,16 @@ def gen_latex(texcode, type='pdf', landscape=False):
 
     if type != 'log':
         try:
-            new_file     = open(file_base+'.'+type, 'rb')
+            if type is 'png' and not os.path.isfile(file_base+'.'+type):
+                #If the schedule is multiple pages (such as a schedule if the program is using barcode check-in), ImageMagick will generate files of the form file_base-n.png.  In this case, we will just return the first page.  Most of the time, if we expect something multi-page, we won't use PNG anyway; this is mostly for the benefit of the schedule printing script.
+                out_file = file_base + '-0.png'
+            else:
+                out_file = file_base + '.' + type
+            new_file     = open(out_file, 'rb')
             new_contents = new_file.read()
             new_file.close()
             if remove_files:
-                os.remove(file_base+'.'+type)
+                os.remove(out_file)
                 os.remove(file_base+TEX_EXT)
         
         except:

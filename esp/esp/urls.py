@@ -39,6 +39,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.generic.base import RedirectView
+from filebrowser.sites import site as filebrowser_site
 import debug_toolbar.urls
 
 autodiscover(admin_site)
@@ -55,6 +56,8 @@ urlpatterns += patterns('',
                      (r'^admin/doc/', include('django.contrib.admindocs.urls')),
                      (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
+                     (r'^grappelli/', include('grappelli.urls')),
+                     (r'^admin/filebrowser/', include(filebrowser_site.urls)),
                      (r'^admin/', include(admin_site.urls)),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
                      #(r'^learn/Junction/2007_Spring/catalog/?$',RedirectView.as_view(url='/learn/Junction/2007_Summer/catalog/')),

@@ -201,7 +201,7 @@
       {% with request.path|split:"/"|index:1 as split_url %}
       {% if program and split_url|notequal:"manage" %}
       <div class="admin hidden" id="admin_link">
-	<a href="/manage/{{ program.anchor.parent.name }}/{{ program.anchor.name }}/dashboard">Administer this program</a>
+	<a href="/manage/{{ program.getUrlBase }}/dashboard">Administer this program</a>
       </div>
       {% endif %}
       {% endwith %}

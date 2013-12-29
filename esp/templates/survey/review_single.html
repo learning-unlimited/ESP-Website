@@ -47,7 +47,7 @@ This is the anonymous survey response of a single student at {{ program.niceName
     <center>
     {% endif %}
     {% for answer in answers %}
-        {% ifchanged answer.anchor %}{% if not forloop.first or classes_only %}
+        {% ifchanged answer.object_id %}{% if not forloop.first or classes_only %}
             <table class="fullwidth">
             <tr>
                 <th>Responses for Class {{ answer.target.emailcode }}: {{ answer.target.title }}</th>

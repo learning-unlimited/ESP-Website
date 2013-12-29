@@ -33,6 +33,9 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+import re
+import unicodedata
+
 from esp.users.models import ESPUser, StudentInfo, K12School
 from esp.datatree.models import *
 from esp.program.models import Program, ProgramModule
@@ -74,6 +77,24 @@ class ProgramCreationForm(BetterModelForm):
         #   Enable validation on other fields
         self.fields['program_size_max'].required = True
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
+
+    def save(self, commit=True):
+        '''
+        Takes the program creation form's program_type, term, and term_friendly
+        fields, and constructs the url and name fields on the Program instance;
+        then calls the superclass's save() method.
+        '''
+        #   Filter out unwanted characters from program type to form URL
+        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
+        self.instance.url = u'%(type)s/%(instance)s' \
+            % {'type': ptype_slug
+              ,'instance': self.cleaned_data['term']
+              }
+        self.instance.name = u'%(type)s %(instance)s' \
+            % {'type': self.cleaned_data['program_type']
+              ,'instance': self.cleaned_data['term_friendly']
+              }
+        return super(ProgramCreationForm, self).save(commit=commit)
 
         #self.fields.keyOrder = ['term','term_friendly','grade_min','grade_max','class_size_min','class_size_max','director_email','program_modules']
     def load_program(self, program):

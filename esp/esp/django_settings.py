@@ -173,13 +173,12 @@ MIDDLEWARE_GLOBAL = [
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),
-    (1200, 'django.middleware.gzip.GZipMiddleware'),
     (1250, 'esp.middleware.espdebugtoolbarmiddleware.ESPDebugToolbarMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
     (1600, 'reversion.middleware.RevisionMiddleware'),
-    (9000, 'django.contrib.redirects.middleware.RedirectFallbackMiddleware'),
+    (9000, 'esp.middleware.patchedredirect.PatchedRedirectFallbackMiddleware'),
 ]
 
 ROOT_URLCONF = 'esp.urls'
@@ -193,6 +192,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
+    'grappelli',
+    'filebrowser',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'esp.datatree',
@@ -240,6 +241,10 @@ for app in ('django_evolution', 'django_command_extensions'):
 SESSION_EXPIRE_AT_BROWSER_CLOSE=True
 
 SESSION_ENGINE="django.contrib.sessions.backends.cached_db"
+
+# Dotted path to callable to be used as view when a request is
+# rejected by the CSRF middleware.
+CSRF_FAILURE_VIEW = 'esp.web.views.csrf.csrf_failure'
 
 TEMPLATE_CONTEXT_PROCESSORS = ('esp.context_processors.media_url', # remove this one after all branches are transitioned
                                'esp.context_processors.esp_user',
@@ -299,6 +304,8 @@ CONTACTFORM_EMAIL_ADDRESSES = {}
 #   It can be overridden by setting CDN_ADDRESS in local_settings.py.
 CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 
+DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
+
 DEBUG_TOOLBAR_PANELS = (
     'debug_toolbar.panels.cache.CacheDebugPanel',
     'debug_toolbar.panels.headers.HeaderDebugPanel',
@@ -351,4 +358,8 @@ DEBUG_TOOLBAR_CONFIG = {
     'ENABLE_STACKTRACES' : True,
     'CONDITIONAL_PANELS': conditional_panels,
 }
+
+#   Allow Filebrowser to edit anything under media/
+#   (not just '/media/uploads/' which is the default)
+FILEBROWSER_DIRECTORY = ''
 
