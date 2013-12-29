@@ -8,7 +8,7 @@ env: DJANGO_SETTINGS_MODULE=esp.settings
 before_install:
   - sudo apt-get update
 install: 
-  - sudo apt-get install -y $(< esp/packages.txt)
+  - sudo apt-get install -y $(< esp/packages_base.txt)
   - pip install -r esp/requirements.txt --use-mirrors
 before_script:
   - cp esp/esp/local_settings.py.travis esp/esp/local_settings.py

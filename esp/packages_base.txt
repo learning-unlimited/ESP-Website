@@ -10,9 +10,6 @@ postgresql-9.1
 libevent-dev
 python-dev
 zlib1g-dev
-libapache2-mod-wsgi
-libapache2-svn
-libapache2-mod-rpaf
 inkscape
 wamerican-large
 wget
@@ -23,9 +20,4 @@ libcurl4-openssl-dev
 libjpeg-dev
 nodejs
 node-less
-exim4-config
-exim4-base
-exim4-daemon-heavy
 javascript-common
-nagios3
-
