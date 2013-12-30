@@ -93,6 +93,47 @@ div.nav_button :hover {
     -webkit-transform-style: preserve-3d; 
 }
 
+.hide_mixin (@hide) when (@hide) {
+    visibility: hidden;
+}
+.hide_mixin (@hide) when not (@hide) {
+    visibility: visible;
+}
+
+.visible_mixin (@vis) when not (@vis) {
+    visibility: hidden;
+}
+.visible_mixin (@vis) when (@vis) {
+    visibility: visible;
+}
+
+.fill_color_mixin (@invert) when (@invert) {
+    fill: white;
+}
+.fill_color_mixin (@invert) when not (@invert) {
+    fill: black;
+}
+
+.fill_color_mixin_rev (@invert) when (@invert) {
+    fill: black;
+}
+.fill_color_mixin_rev (@invert) when not (@invert) {
+    fill: white;
+}
+
+.nav_button_mask {
+    fill: white;
+}
+
+.nav_button_circle {
+    .visible_mixin(@show_circles);
+    .fill_color_mixin_rev(@show_circles);
+}
+
+.nav_button_text {
+    .fill_color_mixin(@show_circles);
+}
+
 .nav_button_rect {
     fill: @nav_button_background;
 }
