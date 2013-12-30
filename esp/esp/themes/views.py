@@ -178,6 +178,10 @@ def editor(request):
                 initial_val = context[key]
             if initial_val.startswith('#'):
                 category_vars.append((key, 'color', initial_val))
+            elif 'color' in key:
+                #   This is a nontrivial color value.  However, we only allow overriding
+                #   these variables with specific colors.
+                category_vars.append((key, 'color', ''))
             elif initial_val.endswith('px') or initial_val.endswith('em'):
                 category_vars.append((key, 'length', initial_val))
             else:
