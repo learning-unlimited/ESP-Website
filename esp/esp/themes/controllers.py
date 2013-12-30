@@ -53,7 +53,6 @@ import simplejson as json
 
 THEME_PATH = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data')
 
-
 class ThemeController(object):
     """
     This is a controller for manipulating the currently selected theme.
@@ -168,6 +167,11 @@ class ThemeController(object):
         return results
         
     def compile_css(self, theme_name, variable_data, output_filename):
+        #   Hack to make things work on Windows systems
+        INCLUDE_PATH_SEP = ':'
+        if os.name == 'nt':
+            INCLUDE_PATH_SEP = ';'
+    
         #   Load LESS files in order of search path
         less_data = ''
         for filename in self.get_less_names(theme_name):
@@ -201,7 +205,7 @@ class ThemeController(object):
         if themes_settings.THEME_DEBUG: print 'Wrote %d bytes to LESS file %s' % (len(less_data), less_output_filename)
         less_output_file.close()
 
-        less_search_path = ':'.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
+        less_search_path = INCLUDE_PATH_SEP.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
         if themes_settings.THEME_DEBUG: print 'LESS search path is "%s"' % less_search_path
 
         #   Compile to CSS
