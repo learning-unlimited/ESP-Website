@@ -168,18 +168,20 @@ def editor(request):
     context['adv_vars'] = {}
     for filename in adv_vars:
         category_name = os.path.basename(filename)[:-5]
-        category_vars = {}
-        for key in adv_vars[filename]:
+        category_vars = []
+        keys = adv_vars[filename].keys()
+        keys.sort()
+        for key in keys:
             #   Detect type of variable based on default value
             initial_val = adv_vars[filename][key]
             if key in context:
                 initial_val = context[key]
             if initial_val.startswith('#'):
-                category_vars[key] = ('color', initial_val)
+                category_vars.append((key, 'color', initial_val))
             elif initial_val.endswith('px') or initial_val.endswith('em'):
-                category_vars[key] = ('length', initial_val)
+                category_vars.append((key, 'length', initial_val))
             else:
-                category_vars[key] = ('text', initial_val)
+                category_vars.append((key, 'text', initial_val))
         context['adv_vars'][category_name] = category_vars
 
     return render_to_response('themes/editor.html', request, context)

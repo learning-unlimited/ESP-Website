@@ -337,11 +337,11 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
 	      <div class="collapse" id="advanced">
         {% for category, data in adv_vars.items %}
         {% if not data|length_is:0 %}<h3>Category: {{ category }}<hr /></h3>{% endif %}
-        {% for varname, varitem in data.items %}
+        {% for item in data %}
 		<div class="control-group">
-		  <label class="control-label" for="{{ varname }}">{{ varname }}:  </label>
+		  <label class="control-label" for="{{ item.0 }}">{{ item.0 }}:  </label>
 		  <div class="controls">
-		    <input type="text" class="{{ varitem.0 }}" id="id_{{ varname }}" name="{{ varname }}" value="{{ varitem.1 }}"/>
+		    <input type="text" class="{{ item.1 }}" id="id_{{ item.0 }}" name="{{ item.0 }}" value="{{ item.2 }}"/>
 		  </div>
 		</div>
         {% endfor %}
