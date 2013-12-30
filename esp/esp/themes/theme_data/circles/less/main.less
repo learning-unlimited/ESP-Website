@@ -57,64 +57,74 @@ body {
   float: left;
 }
 
-#nav_buttons {
-  background: #00003C;
-  float: none;
+/*  Nav buttons - rendered via SVG masking  */
+
+div.nav_button {
+    width: 140px;
+    height: 180px;
+    float: left;
+    
+    /*  Backup for browsers without SVG support */
+    color: @nav_button_background;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 30px;
+    line-height: 40px;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
-#nav_button1 {
-  width: 165px;
-  height: 180px;
-  background-image: url(/media/images/theme/linkf_01.gif); 
-  float: left;
+div.nav_button_spacer {
+    width: 40px;
+    height: 180px;
+    float: left;
+    background: @nav_button_background;
 }
-  
-#nav_button1:hover {
-  background-image: url(/media/images/theme/linkr_01.gif);
+
+div.nav_button :hover {
+    background: white;
 }
-  
-#nav_button2 {
-  width: 137px;
-  height: 180px;
-  background-image: url(/media/images/theme/linkf_02.gif); 
-  float: left;
+
+.nav_button_text {
+    font-size: 26px;
+    font-family: Arial, Helvetica, sans-serif;
+    text-anchor: middle;
+    text-rendering: geometricPrecision;
+    -webkit-backface-visibility: hidden;
+    -webkit-transform-style: preserve-3d; 
 }
-  
-#nav_button2:hover {
-  background-image: url(/media/images/theme/linkr_02.gif);
+
+.nav_button_rect {
+    fill: @nav_button_background;
 }
-  
-#nav_button3 {
-  width: 137px;
-  height: 180px;
-  background-image: url(/media/images/theme/linkf_03.gif); 
-  float: left;
+
+#nav_button_learn {
+    background: @nav_button_learn;
 }
-  
-#nav_button3:hover {
-  background-image: url(/media/images/theme/linkr_03.gif);
+
+#nav_button_teach {
+    background: @nav_button_teach;
 }
-  
-#nav_button4 {
-  width: 161px;
-  height: 180px;
-  background-image: url(/media/images/theme/linkf_04.gif); 
-  float: right;
+
+#nav_button_helpout {
+    background: @nav_button_helpout;
 }
-  
-#nav_button4:hover {
-  background-image: url(/media/images/theme/linkr_04.gif);
+
+#nav_button_moreinfo {
+    background: @nav_button_moreinfo;
 }
-  
+
 #navbar_header {
-  background: #BCCAF5;
+  background: @left_bar_header;
   float: left;
+  text-align: center;
+  vertical-align: middle;
   width: 200px;
   height: 30px;
+  line-height: 30px;
 }
 
 #chicago_main_header {
-  background: #497CCA;
+  background: @content_header;
   float: right;
   width: 600px;
   min-height: 30px;
@@ -130,7 +140,7 @@ body {
 #navbar {
   float: left;  
   width: 200px;
-  background: #141414;
+  background: @left_bar_background;
 /*
   margin-bottom: -250cm;
   padding-bottom: 250cm;
@@ -201,7 +211,7 @@ body {
 
 #navbar {
   color: #FFFFFF;
-  font-size: 80%;
+  font-size: 90%;
   line-height: 130%;
 }
 
