@@ -142,27 +142,34 @@
 
 {% with taught_classes as classes %}{% if classes %}
 <h2>Classes Taught (or signed up to teach)</h2>
+<br />
 {% for class in classes %}
 {% ifchanged class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_program.niceName }}<br /><ul>{% endifchanged %}
-<li>{{ class }}</li>
+{% with show_class_details="True" %}
+{% include "users/userview_class_entry.html" %}
+{% endwith %}
 {% if forloop.last %}</ul>{% endif %}
 {% endfor %}
 {% endif %}{% endwith %}
 
 {% with enrolled_classes as classes %}{% if classes %}
 <h2>Classes Enrolled In (currently or previously):</h2>
+<br />
 {% for class in classes %}
 {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
-<li>{{ class }}</li>
+{% with show_class_details="True" %}
+{% include "users/userview_class_entry.html" %}
+{% endwith %}
 {% if forloop.last %}</ul>{% endif %}
 {% endfor %}
 {% endif %}{% endwith %}
 
 {% with taken_classes as classes %}{% if classes %}
 <h2>Classes Taken Or Applied For:</h2>
+<br />
 {% for class in classes %}
 {% ifchanged class.parent_class.parent_program %}{% if not forloop.first %}</ul>{% endif %}{{ class.parent_class.parent_program.niceName }}<br /><ul>{% endifchanged %}
-<li>{{ class }}</li>
+{% include "users/userview_class_entry.html" %}
 {% if forloop.last %}</ul>{% endif %}
 {% endfor %}
 {% endif %}{% endwith %}
