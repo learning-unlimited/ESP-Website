@@ -214,7 +214,7 @@ class ThemeController(object):
         css_data = lessc_process.communicate()[0]
 
         if lessc_process.returncode != 0:
-            raise ESPError(True)('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support']))
+            raise ESPError(True)('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />File name was: %s' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], less_output_filename))
 
         output_file = open(output_filename, 'w')
         output_file.write(css_data)
