@@ -4,7 +4,7 @@ from django.core.cache import cache
 from esp.users.models import Permission
 from esp.web.util.template import cache_inclusion_tag, DISABLED
 from esp.qsd.models import QuasiStaticData
-from esp.qsd.models import qsd_cache_key
+from esp.qsd.models import qsd_cache_key, qsd_edit_id
 from urllib import quote
 
 register = template.Library()
@@ -18,7 +18,7 @@ render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qs
 def render_inline_qsd(url):
     qsd_obj = QuasiStaticData.objects.get_by_url(url)
     if qsd_obj is None:
-        return {'url':url}
+        return {'url': url, 'edit_id': qsd_edit_id(url)}
     
     return {'qsdrec': qsd_obj}
 render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'url':qsd.url})
@@ -31,7 +31,7 @@ def render_inline_program_qsd(program, name):
     url = QuasiStaticData.prog_qsd_url(program, name)
     qsd_obj = QuasiStaticData.objects.get_by_url(url)
     if qsd_obj is None:
-        return {'url':url}
+        return {'url': url, 'edit_id': qsd_edit_id(url)}
 
     return {'qsdrec': qsd_obj}
 render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'url':qsd.url})
@@ -70,15 +70,14 @@ class InlineQSDNode(template.Node):
         if qsd_obj == None:
             new_qsd = QuasiStaticData()
             new_qsd.url = url
+            new_qsd.name = url.split('/')[0]
             new_qsd.title = url
             new_qsd.content = self.nodelist.render(context)
             
             if getattr(user, 'id', False):
                 new_qsd.author = user
-            else:
-                new_qsd.author = context['request'].user
+                new_qsd.save()
 
-            new_qsd.save()
             qsd_obj = new_qsd
 
         return render_to_response("inclusion/qsd/render_qsd_inline.html", {'qsdrec': qsd_obj, 'edit_bits': edit_bits}, context_instance=context).content

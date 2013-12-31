@@ -231,7 +231,7 @@ def ajax_qsd(request):
     if ( request.user.id is None ):
         return HttpResponse(content='Oops! Your session expired!\nPlease open another window, log in, and try again.\nYour changes will not be lost if you keep this page open.', status=500)
     if post_dict['cmd'] == "update":
-        qsd = QuasiStaticData.objects.get(id=post_dict['id'])
+        qsd = QuasiStaticData.objects.get(url=post_dict['url'])
         if not Permission.user_can_edit_qsd(request.user, qsd.url):
             return HttpResponse(content='Sorry, you do not have permission to edit this page.', status=500)
 
@@ -247,7 +247,8 @@ def ajax_qsd(request):
 
         result['status'] = 1
         result['content'] = markdown(qsd.content)
-        result['id'] = qsd.id
+        result['url'] = qsd.url
+
     if post_dict['cmd'] == "create":
         if not Permission.user_can_edit_qsd(request.user, post_dict['url']):
             return HttpResponse(content="Sorry, you do not have permission to edit this page.", status=500)
@@ -257,6 +258,6 @@ def ajax_qsd(request):
         qsd.save()
         result['status'] = 1
         result['content'] = markdown(qsd.content)
-        result['id'] = qsd.id
+        result['url'] = qsd.url
     
     return HttpResponse(simplejson.dumps(result))

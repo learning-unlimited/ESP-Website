@@ -67,6 +67,15 @@ class QSDManager(FileDBManager):
     def __repr__(self):
         return "QSDManager()"
 
+def qsd_edit_id(val):
+    """ A short hex string summarizing the QSD's URL. """
+    hash = 0
+    for i in range(len(val)):
+        character = ord(val[i])
+        hash = ((hash << 5) - hash) + character
+        hash = hash & ((1 << 31) - 1)
+    return '%08x' % hash
+
 class QuasiStaticData(models.Model):
     """ A Markdown-encoded web page """
 
@@ -84,6 +93,9 @@ class QuasiStaticData(models.Model):
     disabled = models.BooleanField(default=False)
     keywords = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
+
+    def edit_id(self):
+        return qsd_edit_id(self.url)
 
     def get_file_id(self):
         """Get the file_id of the object.
