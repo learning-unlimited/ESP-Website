@@ -69,12 +69,7 @@ class QSDManager(FileDBManager):
 
 def qsd_edit_id(val):
     """ A short hex string summarizing the QSD's URL. """
-    hash = 0
-    for i in range(len(val)):
-        character = ord(val[i])
-        hash = ((hash << 5) - hash) + character
-        hash = hash & ((1 << 31) - 1)
-    return '%08x' % hash
+    return hashlib.sha1(val).hexdigest()[:8]
 
 class QuasiStaticData(models.Model):
     """ A Markdown-encoded web page """
