@@ -578,6 +578,18 @@ len(teachers[key])))
         annotated_categories = ClassCategories.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections'), num_class_hours=Sum('cls__sections__duration')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'num_class_hours', 'category').distinct()
         dictOut["stats"].append({"id": "categories", "data": filter(lambda x: x['id'] in program_categories, annotated_categories)})
 
+        ## Calculate the grade data:
+        grades = [i for i in range(prog.grade_min, prog.grade_max+1)]
+        grades_annotated = []
+        # I should keep trying to make this nicer, but leaving it for now
+        for g in grades:
+            grade_classes = classes.filter(status__gte=0, grade_min__lte=g, grade_max__gte=g)
+            grade_sections = prog.sections().filter(status__gte=0, parent_class__grade_min__lte=g, parent_class__grade_max__gte=g)
+            # This only works if the school year hasn't changed
+            grade_students = filter(lambda x: x.getGrade(prog)==g, students['enrolled'])
+            grades_annotated.append({'grade': g, 'num_subjects': grade_classes.count(), 'num_sections': grade_sections.count(), 'num_students': len(grade_students)})
+        dictOut["stats"].append({"id": "grades", "data": grades_annotated})
+
         #   Add SplashInfo statistics if our program has them
         splashinfo_data = {}
         splashinfo_modules = filter(lambda x: isinstance(x, SplashInfoModule), prog.getModules('learn'))
