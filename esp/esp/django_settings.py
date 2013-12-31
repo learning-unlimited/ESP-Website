@@ -363,3 +363,7 @@ DEBUG_TOOLBAR_CONFIG = {
 #   (not just '/media/uploads/' which is the default)
 FILEBROWSER_DIRECTORY = ''
 
+#   Default imports for shell_plus, for convenience.
+SHELL_PLUS_POST_IMPORTS = (
+        ('esp.utils.shell_utils', '*'),
+        )
