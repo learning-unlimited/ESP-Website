@@ -36,10 +36,13 @@ summarized below.
 a) Libraries obtained from the Internet
 
 If you use Ubuntu, a list of required system packages can be found in
-`packages.txt` in this directory; you can install them all at once
-with "apt-get install -y $(< packages.txt)". Note that if you use this
+`packages_base.txt` in this directory; you can install them all at once
+with "apt-get install -y $(< packages_base.txt)". Note that if you use this
 approach, you still must download selenium-server-standalone
 separately.
+
+Packages useful for a production server are listed in a separate file.
+To install those, use "apt-get install -y $(< packages_prod.txt)".
 
 Library name    Type    Version         Ubuntu package name or download location
 ------------    ----    -------         -------------------
@@ -142,18 +145,7 @@ using the site.
 
 d) Set up media files
 
-If your organization has already customized the look and feel of their site,
-you will want to add their images and stylesheets to your working copy.  
-Often these are stored in a shared filesystem such as a Dropbox.  Obtain
-a copy of these files and then link them into the publicly served media
-directory as follows:
-
-$ cd ./public/media
-$ ln -s [path to Dropbox]/media/images images
-$ ln -s [path to Dropbox]/media/styles styles
-
-If, instead, you are starting from scratch, copy the provided generic images
-and stylesheets to the active folders:
+Link the provided generic images and stylesheets to the active folders:
 
 $ cd ./public/media
 $ ln -s default_images images
