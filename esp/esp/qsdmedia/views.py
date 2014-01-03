@@ -55,7 +55,7 @@ def qsdmedia2(request, url, ignored_part=None):
             media_rec = Media.objects.get(file_name=url)
         except Media.DoesNotExist:
             raise Http404
-        except MultipleObjectsreturned:
+        except MultipleObjectsReturned:
             media_rec = Media.objects.filter(file_name=url).latest('id')
     except MultipleObjectsReturned: # If there exist multiple Media entries, we want the first one
         media_rec = Media.objects.filter(hashed_name=url).latest('id')
