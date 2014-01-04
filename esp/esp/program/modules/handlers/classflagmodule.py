@@ -32,6 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 from django.db.models.query import Q
+from django.http import HttpResponseBadRequest, HttpResponse
 
 import json
 import operator
@@ -41,6 +42,7 @@ from esp.cache           import cache_function
 from esp.web.util        import render_to_response
 
 from esp.program.models import ClassSubject, ClassFlag, ClassFlagType, flag_types
+from esp.program.forms import ClassFlagForm
 from esp.users.models import ESPUser
 
 class ClassFlagModule(ProgramModuleObj):
@@ -61,7 +63,7 @@ class ClassFlagModule(ProgramModuleObj):
         flag_types = flag_types(self.program)
         t = {}
         for flag_type in flag_types:
-            q = Q(classsubject__classflag__flag_type=flag_type.id)
+            q = Q(classsubject__flags__flag_type=flag_type.id)
             if QObject:
                 t['flag_%s' % flag_type.id] = q
             else:
@@ -78,7 +80,7 @@ class ClassFlagModule(ProgramModuleObj):
     def jsonToQuerySet(self, j):
         '''Takes a dict decoded from the json sent by the javascript in /manage///classflags/ and converts it to QuerySet.'''
         base = ClassSubject.objects.filter(parent_program=self.program)
-        lookup = 'classflag__flag_type'
+        lookup = 'flags__flag_type'
         t = j['type']
         v = j['value']
         if t=='flag':
@@ -118,9 +120,53 @@ class ClassFlagModule(ProgramModuleObj):
         elif request.method == 'POST':
             # They've sent a query, let's process it.
             decoded = json.loads(request.POST['query-json'])
-            queryset = self.jsonToQuerySet(decoded).distinct().order_by('id').prefetch_related('classflag_set', 'classflag_set__flag_type', 'teachers') # The prefetch lets us do basically all of the processing on the template level.
+            queryset = self.jsonToQuerySet(decoded).distinct().order_by('id').prefetch_related('flags', 'flags__flag_type', 'teachers') # The prefetch lets us do basically all of the processing on the template level.
             english = self.jsonToEnglish(decoded)
             context = { 'queryset' : queryset, 'english' : english, 'prog': self.program }
             return render_to_response(self.baseDir()+'flag_results.html', request, context)
 
 
+    @aux_call
+    @needs_admin
+    def editflag(self, request, tl, one, two, module, extra, prog):
+        '''Given a post request, take extra as the id of the flag, update its comment using the post data, and return its new detail display.'''
+        if not extra or request.method != 'POST' or 'comment' not in request.POST:
+            return HttpResponseBadRequest('')
+        results = ClassFlag.objects.filter(id=extra)
+        if not len(results): #Use len() since we will evaluate it anyway
+            return HttpResponseBadRequest('')
+        flag = results[0]
+        flag.comment = request.POST['comment']
+        flag.save()
+        context = { 'flag' : flag }
+        return render_to_response(self.baseDir()+'flag_detail.html', request, context)
+
+    @aux_call
+    @needs_admin
+    def newflag(self, request, tl, one, two, module, extra, prog):
+        '''Create a flag from the POST data, and return its detail display.'''
+        if request.method != 'POST':
+            print "not a post"
+            return HttpResponseBadRequest('')
+        form = ClassFlagForm(request.POST)
+        if form.is_valid():
+            flag = form.save()
+            context = { 'flag' : flag }
+            return render_to_response(self.baseDir()+'flag_detail.html', request, context)
+        else:
+            # The user shouldn't be able to get here unless they're doing something really weird, so let's not bother to try to tell them where the error was; since this is asynchronous that would be a bit tricky.
+            print form, form.errors
+            return HttpResponseBadRequest('')
+
+    @aux_call
+    @needs_admin
+    def deleteflag(self, request, tl, one, two, module, extra, prog):
+        '''Given a post request with the ID, delete the flag.'''
+        if request.method != 'POST' or 'id' not in request.POST:
+            return HttpResponseBadRequest('')
+        results = ClassFlag.objects.filter(id=request.POST['id'])
+        if not len(results): #Use len() since we will evaluate it anyway
+            return HttpResponseBadRequest('')
+        flag = results[0]
+        flag.delete()
+        return HttpResponse('')

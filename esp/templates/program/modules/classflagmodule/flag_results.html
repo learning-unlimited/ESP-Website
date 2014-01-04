@@ -1,27 +1,29 @@
 {% extends "main.html" %}
 
-{% block title %}Manage Class Flags for {{ prog.niceName}}{% endblock %}
+{% block title %}Manage Class Flags for {{ program.niceName}}{% endblock %}
 
 {% block subsection_name %}Class Flag Management{% endblock %}
 
 {% block stylesheets %}
     {{ block.super }}
+    <link rel="stylesheet" type="text/css" href="/media/styles/forms.css"/>
     <link rel="stylesheet" type="text/css" href="/media/styles/flags.css"/>
 {% endblock %}
 
 {% block xtrajs %}
     <script type="text/javascript" src="/media/scripts/flag-results-page.js"></script>
+    <script type="text/javascript" src="/media/scripts/flag-edit.js"></script>
 {% endblock %}
 
 {% block content %}
 
-<h1>Manage Class Flags for {{ prog.niceName }}</h1>
+<h1>Manage Class Flags for {{ program.niceName }}</h1>
 
 <p>
 You asked for for classes with {{english}}.  Click on a class or flag to see more detail.
 </p>
 
-<div class="flag-query-results">
+<div class="flag-query-results" id="program_form">
     {% for class in queryset %}
         <div class="fqr-class" id="fqr-class-{{class.id}}">
             <div class="fqr-class-header" onclick="$j(this).siblings('.fqr-class-detail').toggle('blink');">
@@ -29,8 +31,8 @@ You asked for for classes with {{english}}.  Click on a class or flag to see mor
             </div>
             <div class="fqr-class-flags">
                 Flags: 
-                {% for flag in class.classflag_set.all %}
-                <span class="fqr-flag-name" id="fqr-flag-header-{{flag.id}}" style="background: {{flag.flag_type.getColor}};" onclick="$j('#fqr-flag-detail-{{flag.id}}').toggle('blink');">
+                {% for flag in class.flags.all %}
+                <span class="flag-name" id="fqr-flag-header-{{flag.id}}" style="background: {{flag.flag_type.getColor}};" onclick="$j('#flag-detail-{{flag.id}}').toggle('blink');">
                         {{flag.flag_type.name}}
                     </span>
                 {% endfor %}
@@ -64,26 +66,8 @@ You asked for for classes with {{english}}.  Click on a class or flag to see mor
                 </table>
             </div>
             <div class="fqr-class-flags-detail">
-                {% for flag in class.classflag_set.all %}
-                    <div class="fqr-flag-detail" id="fqr-flag-detail-{{flag.id}}" style="display: none;">
-                        <div class="fqr-flag-name" style="background: {{flag.flag_type.getColor}};">{{flag.flag_type.name}}</div>
-                        <table>
-                            <tbody>
-                                <tr>
-                                    <th> Last modified: </th>
-                                    <td> {{flag.modified_by.name}} on {{flag.modified_time.date}} at {{flag.modified_time.time}} </td>
-                                </tr>
-                                <tr>
-                                    <th> Last created: </th>
-                                    <td> {{flag.created_by.name}} on {{flag.created_time.date}} at {{flag.created_time.time}} </td>
-                                </tr>
-                                <tr>
-                                    <th> Comment: </th>
-                                    <td> {{flag.comment}} </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
+                {% for flag in class.flags.all %}
+                    {% include "program/modules/classflagmodule/flag_detail.html" %}
                 {% endfor %}
             </div>
         </div>

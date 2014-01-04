@@ -65,7 +65,7 @@ class ClassFlagType(models.Model):
 
 @cache_function
 def flag_types(program=None, scheduler=False, dashboard=False):
-    '''Gets all flag types associated with a given program.  If program is None, gets all flag types.  scheduler=True and dashboard=True return only flag types that should be shown in those interfaces.'''
+    '''Gets all flag types associated with a given program, in a cached fashion.  If program is None, gets all flag types.  scheduler=True and dashboard=True return only flag types that should be shown in those interfaces.'''
     if program is None:
         base = ClassFlagType.objects.all()
     else:
@@ -79,7 +79,7 @@ flag_types.depend_on_model(lambda: ClassFlagType)
 flag_types.depend_on_m2m(lambda: Program, 'flag_types', lambda prog, flag_type: {'program': prog})
 
 class ClassFlag(models.Model):
-    subject = AjaxForeignKey('ClassSubject')
+    subject = AjaxForeignKey('ClassSubject', related_name='flags')
     flag_type = models.ForeignKey(ClassFlagType)
     comment = models.TextField(blank=True)
 

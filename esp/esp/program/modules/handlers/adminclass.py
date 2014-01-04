@@ -37,7 +37,7 @@ from esp.program.modules import module_ext
 from esp.program.controllers.consistency import ConsistencyChecker
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
-from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem
+from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem, flag_types
 from esp.users.models import ESPUser, User
 from esp.datatree.models import *
 from esp.cal.models              import Event
@@ -397,6 +397,10 @@ class AdminClass(ProgramModuleObj):
         for section in sections:
             context['errors'] += consistency_checker.check_expected_duration(section)
             context['errors'] += consistency_checker.check_resource_consistency(section)
+
+        if self.program.program_modules.filter(handler='ClassFlagModule').exists():
+            context['show_flags'] = True
+            context['flag_types'] = flag_types(self.program)
             
         context['class'] = cls
         context['sections'] = sections

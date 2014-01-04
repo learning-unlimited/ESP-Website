@@ -29,10 +29,22 @@ select.fqb-type {
     padding: 1px 0px
 }
 
-.fqr-flag-name {
+.flag-name {
     margin: 1px;
 }
 
-.fqr-flag-detail > table {
+.flag-detail table, form {
     padding-left: 3em;
+    width: 100%;
+}
+
+.class-flag-list {
+    width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+input#flag-submit-new {
+    margin-left: auto;
+    margin-right: 0px;
 }

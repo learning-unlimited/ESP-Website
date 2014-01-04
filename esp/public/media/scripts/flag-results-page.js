@@ -36,3 +36,7 @@ function deleteClass (id, name) {
         });
     }
 }
+
+$j(document).ready(function () {
+    $j(".flag-detail").hide();
+});

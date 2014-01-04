@@ -6,6 +6,10 @@
 {% block stylesheets %}
     {{ block.super }}
     <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+    <link rel="stylesheet" type="text/css" href="/media/styles/flags.css" />
+{% endblock %}
+{% block xtrajs %}
+    <script type="text/javascript" src="/media/scripts/flag-edit.js"></script>
 {% endblock %}
 {% block content %}
 
@@ -129,6 +133,49 @@
 
 <br />
 <br />
+
+{% if show_flags %}
+    <div class="class-flags">
+    {% if flag_types %}
+        <h3>Manage class flags</h3>
+        <div class="class-flag-list">
+            {% for flag in class.flags.all %}
+                {% include "program/modules/classflagmodule/flag_detail.html" %}
+            {% endfor %}
+            <button class="add-flag btn btn-default">Add flag</button>
+            <div class="flag-detail" id="flag-extra" style="display: none;">
+                <div style="background: gray;">New Flag</div>
+                <form method="post" class="flag-form" action="/manage/{{program.getUrlBase}}/newflag/">{% csrf_token %}<input type="hidden" name="subject" value="{{class.id}}"></input>
+                    <table>
+                        <tbody>
+                            <tr>
+                                <th> Flag type: </th>
+                                <td>
+                                    <select name="flag_type">
+                                        <option selected="selected" value=""></option>
+                                        {% for flag in flag_types %}
+                                            <option value="{{flag.id}}">{{flag.name}}</option>
+                                        {% endfor %}
+                                    </select>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th> Comment: </th>
+                                <td>
+                                    <textarea id="flag-comment-{{flag.id}}" name="comment" rows="4" cols="60">{{flag.comment}}</textarea>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <input type="submit" id="flag-submit-new" class="btn btn-default" value="Save"></input>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        You need to enable some flags for this program in the <a href="/admin/program/program/{{program.id}}/#add_id_flag_types">admin panel</a> before you can edit them.
+    {% endif %}
+    </div>
+{% endif %}
 
 <p>The table below allows you to cancel the class or any one of its sections.  Cancelling the class will cancel all of its sections.  It is recommended that you enter an explanation (which can be brief, such as "Teacher schedule conflict" or "No appropriate rooms available") to be included in an e-mail to the students.</p>
 
