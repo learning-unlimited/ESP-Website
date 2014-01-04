@@ -148,6 +148,27 @@ class QuasiStaticData(models.Model):
         else:
             return "/".join(["programs", prog.url, name])
 
+    @staticmethod
+    def program_from_url(url):
+        """ If the QSD pertains to a program, figure out which one,
+            and return a tuple of the Program object and the QSD name.
+            Otherwise return None.  """
+        from esp.program.models import Program
+        
+        url_parts = url.split('/')
+        #   The first part url_parts[0] could be anything, since prog_qsd_url()
+        #   takes whatever was specified in the old qsd name 
+        #   (e.g. 'learn:extrasteps' results in a URL starting with 'learn/', 
+        #   but you could also have 'foo:extrasteps' etc.)
+        #   So, allow any QSD with a program URL in the right place to match.
+        if len(url_parts) > 3 and len(url_parts[3]) > 0:
+            prog_url = '/'.join(url_parts[1:3])
+            progs = Program.objects.filter(url=prog_url)
+            if progs.count() == 1:
+                return (progs[0], '/'.join(url_parts[3:]))
+            
+        return None
+
 def qsd_cache_key(path, user=None,):
     # IF you change this, update qsd/models.py's QSDManager class
     # Otherwise, the wrong cache path will be invalidated

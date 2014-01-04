@@ -33,7 +33,14 @@ def render_inline_program_qsd(program, name):
         return {'url': url, 'edit_id': qsd_edit_id(url)}
 
     return {'qsdrec': qsd_obj}
-render_inline_program_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'url':qsd.url})
+def program_qsd_key_set(qsd):
+    prog_and_name = QuasiStaticData.program_from_url(qsd.url)
+    if prog_and_name is None:
+        return None
+    else:
+        (program, name) = prog_and_name
+        return {'program': program, 'name': name}
+render_inline_program_qsd.cached_function.depend_on_row(QuasiStaticData, program_qsd_key_set)
     
 
 class InlineQSDNode(template.Node):
