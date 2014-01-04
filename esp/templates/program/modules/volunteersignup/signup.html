@@ -10,10 +10,7 @@
 {% block content %}
 
 {% load render_qsd %}
-{% inline_program_qsd_block program "volunteer_signup" request.user %}
-<p>
-</p>
-{% end_inline_program_qsd_block %}
+{% render_inline_program_qsd program "volunteer_signup" %}
 
 {% if complete %}
 <h3>Thanks!</h3>
@@ -22,10 +19,7 @@ Thank you, {{ complete_name }}, for volunteering! You will receive reminder emai
 </p>
 <p>If you would like to change your volunteer commitments, please fill out the form below again.</p>
 {% load render_qsd %}
-{% inline_program_qsd_block program "volunteer_complete" request.user %}
-<p>
-</p>
-{% end_inline_program_qsd_block %}
+{% render_inline_program_qsd program "volunteer_complete" %}
 {% endif %}
 
 <div id="program_form">
