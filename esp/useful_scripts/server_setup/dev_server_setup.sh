@@ -15,7 +15,7 @@ LENGTH="8"
 CURDIR=`pwd`
 
 # Parse options
-OPTSETTINGS=`getopt -o 'ah' -l 'all,reset,deps,git,settings,db,dropbox,apache,help' -- "$@"`
+OPTSETTINGS=`getopt -o 'ahp' -l 'all,prod,reset,deps,git,settings,db,dropbox,apache,help' -- "$@"`
 E_OPTERR=65
 if [ "$#" -eq 0 ]
 then   # Script needs at least one command-line argument.
@@ -31,8 +31,10 @@ do
   case "$1" in
     -a) MODE_ALL=true;;
     -h) MODE_USAGE=true;;
+    -p) MODE_PROD=true;;
     --all) MODE_ALL=true;;
     --help) MODE_USAGE=true;;
+    --prod) MODE_PROD=true;;
     --reset) MODE_RESET=true;;
     --deps) MODE_DEPS=true;;
     --dropbox) MODE_DROPBOX=true;;
@@ -58,6 +60,7 @@ Example:
 Options:
     -a, --all:  Do everything
     -h, --help: Print this help
+    -p, --prod: Install a production server
     --reset:    Reset settings that have been entered (can be used with others)
     --deps:     Install software dependencies
     --git:      Check out a copy of the code
@@ -318,7 +321,12 @@ then
     cd $DEPDIR
 
     #    Get what we can using Ubuntu's package manager
-    sudo apt-get install -y $(< $BASEDIR/esp/packages.txt)
+    sudo apt-get install -y $(< $BASEDIR/esp/packages_base.txt)
+
+    if [[ "$MODE_PROD" ]]
+    then
+        sudo apt-get install -y $(< $BASEDIR/esp/packages_prod.txt)
+    fi
 
     #    Fetch and extract files
     if [[ ! -d selenium-server-standalone-2.9.0 ]]
