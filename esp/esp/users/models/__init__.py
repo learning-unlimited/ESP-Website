@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import simplejson as json
 
 from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
@@ -817,15 +817,19 @@ are a teacher of the class"""
         return len(User.objects.filter(username=username.lower()).values('id')[:1]) > 0
 
     @staticmethod
-    def current_schoolyear():
-        now = datetime.now()
+    def current_schoolyear(program=None):
+        if program == None:
+            now = date.today()
+        else:
+            # "now" is actually whenever the program ran or will run
+            now = program.dates()[0]
         curyear = now.year
         # Changed from 6/1 to 5/1 rollover so as not to affect start of Summer HSSP registration
         # - Michael P 5/24/2010
         # Changed from 5/1 to 7/31 rollover to as to neither affect registration starts nor occur prior to graduation.
         # Adam S 8/1/2010
         #if datetime(curyear, 6, 1) > now:
-        if datetime(curyear, 7, 31) > now:
+        if date(curyear, 7, 31) > now:
             schoolyear = curyear
         else:
             schoolyear = curyear + 1
@@ -833,7 +837,7 @@ are a teacher of the class"""
 
     @cache_function
     def getGrade(self, program = None):
-        if hasattr(self, '_grade'):
+        if hasattr(self, '_grade') and not program:
             return self._grade
         grade = 0
         if self.isStudent():
@@ -844,29 +848,22 @@ are a teacher of the class"""
                 regProf = RegistrationProfile.getLastForProgram(self,program)
             if regProf and regProf.student_info:
                 if regProf.student_info.graduation_year:
+                    grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year, ESPUser.current_schoolyear(program))
                     if program:
-                        from datetime import date
-                        yog = regProf.student_info.graduation_year
-                        prog_date = program.dates()[0]
-                        if date(prog_date.year, 7, 31) > prog_date:
-                            schoolyear = prog_date.year
-                        else:
-                            schoolyear = prog_date.year + 1
-                        grade = schoolyear + 12 - yog
                         grade += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
-                    else:
-                        grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year)
 
-        self._grade = int(grade)
+        if not program:
+            self._grade = grade
 
-        return int(grade)
+        return grade
     #   The cache will need to be cleared once per academic year.
     getGrade.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
     getGrade.depend_on_row(lambda: Tag, lambda tag: {'program' :  tag.target})
 
     @staticmethod
-    def gradeFromYOG(yog):
-        schoolyear = ESPUser.current_schoolyear()
+    def gradeFromYOG(yog, schoolyear=None):
+        if schoolyear == None:
+            schoolyear = ESPUser.current_schoolyear()
         try:
             yog        = int(yog)
         except:
