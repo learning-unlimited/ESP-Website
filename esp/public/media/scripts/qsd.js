@@ -23,7 +23,7 @@ function qsd_inline_edit(qsd_url, edit_id)
     //  Switch the visibility of the edit and view areas.
     document.getElementById("inline_edit_" + edit_id).className = "qsd_edit_visible";
     document.getElementById("qsd_content_" + edit_id).focus();
-    document.getElementById("inline_qsd_" + edit_id).className = "qsd_view_hidden";
+    document.getElementById("inline_qsd_" + edit_id).className = "hidden";
 }
 
 function qsd_send_command(qsd_url, edit_id, postdata)
@@ -56,7 +56,7 @@ function qsd_send_command(qsd_url, edit_id, postdata)
 function qsd_inline_upload(qsd_url, edit_id)
 {
     //  Switch the visibility of the edit and view areas.
-    document.getElementById("inline_edit_" + edit_id).className = "qsd_edit_hidden";
+    document.getElementById("inline_edit_" + edit_id).className = "hidden";
     document.getElementById("inline_qsd_" + edit_id).className = "qsd_view_visible";
 
     var content = document.getElementById("qsd_content_" + edit_id).value;
@@ -67,7 +67,7 @@ function qsd_inline_upload(qsd_url, edit_id)
 function qsd_inline_create(qsd_url, edit_id)
 {
     //  Switch the visibility of the edit and view areas.
-    document.getElementById("inline_edit_" + edit_id).className = "qsd_edit_hidden";
+    document.getElementById("inline_edit_" + edit_id).className = "hidden";
     document.getElementById("inline_qsd_" + edit_id).className = "qsd_view_visible";
 
     var content = document.getElementById("qsd_content_" + edit_id).value;
@@ -78,7 +78,6 @@ function qsd_inline_create(qsd_url, edit_id)
 function qsd_inline_update(qsd_url, edit_id, data)
 {
     var postdata = JSON.parse(data);
-    console.log("received update");
     document.getElementById("inline_qsd_" + edit_id).innerHTML = postdata.content;
 }
 
