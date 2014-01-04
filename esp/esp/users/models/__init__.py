@@ -844,20 +844,25 @@ are a teacher of the class"""
                 regProf = RegistrationProfile.getLastForProgram(self,program)
             if regProf and regProf.student_info:
                 if regProf.student_info.graduation_year:
-                    grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year)
                     if program:
+                        from datetime import date
+                        yog = regProf.student_info.graduation_year
+                        prog_date = program.dates()[0]
+                        if date(prog_date.year, 7, 31) > prog_date:
+                            schoolyear = prog_date.year
+                        else:
+                            schoolyear = prog_date.year + 1
+                        grade = schoolyear + 12 - yog
                         grade += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
-                        
+                    else:
+                        grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year)
 
-        self._grade = grade
+        self._grade = int(grade)
 
-        return grade
+        return int(grade)
     #   The cache will need to be cleared once per academic year.
     getGrade.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
     getGrade.depend_on_row(lambda: Tag, lambda tag: {'program' :  tag.target})
-
-    def currentSchoolYear(self):
-        return ESPUser.current_schoolyear()-1
 
     @staticmethod
     def gradeFromYOG(yog):
