@@ -5,7 +5,6 @@
 
 # Parameters
 GIT_REPO="https://github.com/learning-unlimited/ESP-Website.git"
-DROPBOX_STARTUP_SCRIPT="/etc/rc.local"
 
 # Stuff for random password generation
 MATRIX="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
@@ -15,7 +14,7 @@ LENGTH="8"
 CURDIR=`pwd`
 
 # Parse options
-OPTSETTINGS=`getopt -o 'ahp' -l 'all,prod,reset,deps,git,settings,db,dropbox,apache,help' -- "$@"`
+OPTSETTINGS=`getopt -o 'ahp' -l 'all,prod,reset,deps,git,settings,db,apache,help' -- "$@"`
 E_OPTERR=65
 if [ "$#" -eq 0 ]
 then   # Script needs at least one command-line argument.
@@ -37,7 +36,6 @@ do
     --prod) MODE_PROD=true;;
     --reset) MODE_RESET=true;;
     --deps) MODE_DEPS=true;;
-    --dropbox) MODE_DROPBOX=true;;
     --git) MODE_GIT=true;;
     --db) MODE_DB=true;;
     --settings) MODE_SETTINGS=true;;
@@ -64,7 +62,6 @@ Options:
     --reset:    Reset settings that have been entered (can be used with others)
     --deps:     Install software dependencies
     --git:      Check out a copy of the code
-    --dropbox:  Create a Dropbox share for the site's media files
     --db:       Set up a PostgreSQL database
     --settings: Write settings files
     --apache:   Set up Apache to serve the site using mod_wsgi
@@ -146,7 +143,6 @@ while [[ ! -n $DEPDIR ]]; do
 done
 echo "Using dependencies temp directory: $DEPDIR"
 echo "DEPDIR=\"$DEPDIR\"" >> $BASEDIR/.espsettings
-DROPBOX_PATH=${DEPDIR}/dropbox
 
 while [[ ! -n $ESPHOSTNAME ]]; do 
     echo
@@ -200,18 +196,6 @@ while [[ ! -n $ADMINEMAIL ]]; do
 done
 echo "Selected admin e-mail: $ADMINEMAIL"
 echo "ADMINEMAIL=\"$ADMINEMAIL\"" >> $BASEDIR/.espsettings
-
-while [[ ! -n $DROPBOX_BASE_DIR ]]; do
-    echo 
-    echo "Please enter a directory path reserved for Dropbox storage"
-    echo "  (default = `dirname $BASEDIR`/dropboxes). This site's Dropbox "
-    echo "  share will be mounted as '$SITENAME' within that directory ."
-    echo -n "  --> "
-    read DROPBOX_BASE_DIR
-    DROPBOX_BASE_DIR=${DROPBOX_BASE_DIR:-`dirname $BASEDIR`/dropboxes}
-done
-echo "Selected Dropbox storage path: $DROPBOX_BASE_DIR"
-echo "DROPBOX_BASE_DIR=\"$DROPBOX_BASE_DIR\"" >> $BASEDIR/.espsettings
 
 while [[ ! -n $LOGDIR ]]; do
     echo 
@@ -336,18 +320,6 @@ then
         wget http://selenium.googlecode.com/files/selenium-server-standalone-2.9.0.jar
         cd $DEPDIR
     fi
-    while [[ ! -d dropbox ]]
-    do
-        rm -f dropbox.tar.gz
-        if [[ `uname -a | grep "_64" | wc -l` != "0" ]]
-        then
-            wget -O dropbox.tar.gz http://www.dropbox.com/download/?plat=lnx.x86_64
-        else
-            wget -O dropbox.tar.gz http://www.dropbox.com/download/?plat=lnx.x86
-        fi
-        tar -xzf dropbox.tar.gz
-        mv .dropbox-dist dropbox
-    done
 
     #    Install python libraries
     sudo pip install "virtualenv>=1.10"
@@ -461,95 +433,6 @@ EOF
     echo "  ${BASEDIR}/esp/esp/database_settings.py"
 
     echo "Settings have been generated.  Please check them by looking over the"
-    echo -n "output above, then press enter to continue or Ctrl-C to quit."
-    read THROWAWAY
-
-fi
-
-# Dropbox setup
-# To reset: 
-# - remove line from /etc/rc.local
-# - stop Dropbox process from selected home directory
-# - remove links to images, styles, uploaded in esp/public/media
-# - remove link esp/public/custom_media
-# - remove Dropbox folder
-if [[ "$MODE_DROPBOX" || "$MODE_ALL" ]]
-then
-
-    echo "Would you like this dev server to mirror a production site's media files?"
-    echo "If yes, we will set up Dropbox and you will need to enter the account "
-    echo "information for your chapter's Web site Dropbox when prompted."
-    echo "Answer no if you are not mirroring a production site or you would like"
-    echo "to skip the Dropbox setup."
-    echo -n "  Mirror an existing Dropbox for media files (y/N)? --> "
-    read DROPBOX_MIRROR
-    DROPBOX_MIRROR=${DROPBOX_MIRROR:-N}
-
-    MEDIADIR=$BASEDIR/esp/public/media
-    DJANGO_DIR=`python -c "import django; print django.__path__[0]"`
-
-    if [[ "$DROPBOX_MIRROR" == "y" ]]
-    then
-        #   Set up Dropbox
-
-        if [[ ! -e ${DROPBOX_PATH}/dropbox ]]
-        then
-            echo "Dropbox executable could not be found."
-            echo "Expected path was: ${DROPBOX_PATH}/dropbox"
-            echo "Please install dependencies using the --deps option."
-            exit 1
-        fi
-
-        echo "A Dropbox instance will now be created for this site's media."
-        echo "You may be prompted to link this machine to a Dropbox account."
-        echo -n "Once this is complete, type 'ok' and hit enter"
-        mkdir -p ${DROPBOX_BASE_DIR}/${SITENAME}
-        HOME=${DROPBOX_BASE_DIR}/$SITENAME ${DROPBOX_PATH}/dropbox -i start &
-
-        while [[ $THROWAWAY != "ok" ]]
-        do
-            echo -n " --> "
-            read THROWAWAY
-        done
-        kill $!
-
-        FILENAME=${DROPBOX_STARTUP_SCRIPT}
-        MATCH_TEXT="exit 0"
-        INSERT_TEXT="HOME=${DROPBOX_BASE_DIR}/$SITENAME ${DROPBOX_PATH}/dropboxd &"
-        TEMPFILE=`mktemp`
-
-        cp $FILENAME $TEMPFILE
-        TOTAL_LINES=`cat $FILENAME | wc -l`
-        LINES=`grep -n "$MATCH_TEXT" $FILENAME | tail -n 1 | cut -f 1 -d ':'`
-        head -n $((LINES - 1)) $TEMPFILE > $FILENAME
-        echo $INSERT_TEST >> $FILENAME
-        tail -n $((TOTAL_LINES - LINES + 1)) $TEMPFILE >> $FILENAME
-
-        echo "Dropbox for $SITENAME will run on startup from now on."
-        echo "To change, edit ${DROPBOX_STARTUP_SCRIPT}."
-
-        HOME=${DROPBOX_BASE_DIR}/$SITENAME nohup ${DROPBOX_PATH}/dropboxd &
-        echo "Dropbox has also been started for the current session."
-
-        mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/images
-        mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/styles
-        mkdir -p ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media/uploaded
-
-        ln -sf ${DROPBOX_BASE_DIR}/$SITENAME/Dropbox/media $BASEDIR/esp/public/custom_media
-        ln -sf $BASEDIR/esp/public/custom_media/images $BASEDIR/esp/public/media/images
-        ln -sf $BASEDIR/esp/public/custom_media/styles $BASEDIR/esp/public/media/styles
-        echo "Dropbox-hosted directories have been linked into the site's media directories."
-    else
-        #   Set up default media directories
-        ln -sf $MEDIADIR/default_styles $MEDIADIR/styles
-        ln -sf $MEDIADIR/default_images $MEDIADIR/images
-        echo "Default media files have been linked into the site's media directories."
-    fi
-
-    mkdir -p $MEDIADIR/uploaded/bio_pictures
-    chmod -R 777 $MEDIADIR
-
-    echo "Media directories have been set up.  Please check them by looking over the"
     echo -n "output above, then press enter to continue or Ctrl-C to quit."
     read THROWAWAY
 
