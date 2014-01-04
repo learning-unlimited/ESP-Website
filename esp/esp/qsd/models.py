@@ -165,7 +165,10 @@ class QuasiStaticData(models.Model):
             prog_url = '/'.join(url_parts[1:3])
             progs = Program.objects.filter(url=prog_url)
             if progs.count() == 1:
-                return (progs[0], '/'.join(url_parts[3:]))
+                if url_parts[0] == 'programs':
+                    return (progs[0], '/'.join(url_parts[3:]))
+                else:
+                    return (progs[0], '%s:' % url_parts[0] + '/'.join(url_parts[3:]))
             
         return None
 
