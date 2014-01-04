@@ -57,7 +57,7 @@ function fill_class_popup(clsid, classes_data) {
   var status_string = status_details['text'];
 
   class_desc_popup
-    .dialog('option', 'title', class_info.title)
+    .dialog('option', 'title', class_info.emailcode + ": " +class_info.title)
     .dialog('option', 'width', 600)
     .dialog('option', 'height', 400)
     .dialog('option', 'position', 'center')
@@ -82,6 +82,7 @@ function fill_class_popup(clsid, classes_data) {
       }])
     .html('')
     .append("<p><b>Status:</b> " + status_string + "</p>")
+    .append("<p><b>Teachers:</b> " + class_info.teacher_names + "</p>")
     .append("<p><b>Sections:</b> " + class_info.sections.length + "</p>")
     .append("<p><b>Max Size:</b> " + class_info.class_size_max + "</p>")
     .append("<p><b>Duration:</b> " + class_info.duration + "</p>")
@@ -91,6 +92,9 @@ function fill_class_popup(clsid, classes_data) {
     //.append("<p>Difficulty: " + class_info.difficulty + "</p>")
     .append("<p><b>Prereqs:</b> " + class_info.prereqs + "</p>")
     .append("<p><b>Description:</b> " + class_info.class_info + "</p>")
+    .append("<p><b>Requests:</b> " + class_info.special_requests + "</p>")
+    .append("<p><b>Planned Purchases:</b> " + class_info.purchases + "</p>")
+    .append("<p><b>Comments:</b> " + class_info.comments + "</p>")
     .attr('clsid', clsid);
 }
 
@@ -99,9 +103,9 @@ function show_approve_class_popup(clsid) {
   show_loading_class_popup();
 
   // Load the class data and fill the popup using it
-  json_get('class_info', {'class_id': clsid},
+    json_get('class_admin_info', {'class_id': clsid},
     function(data) {
-       fill_class_popup(clsid, data);
+	fill_class_popup(clsid, data);
     },
     function(jqXHR, status, errorThrown) {
       if (errorThrown == "NOT FOUND") {
@@ -115,6 +119,7 @@ function show_approve_class_popup(clsid) {
         }]);
       }
     });
+
 }
 
 // status should be the status integer

@@ -386,10 +386,11 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         
         return {return_key: [return_dict]}
             
-
+    # This is separate from class_info because students shouldn't see it
     @aux_call
     @cache_control(public=True, max_age=300)
     @json_response()
+    @needs_admin
     def class_admin_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
         if 'return_key' in request.GET:
@@ -401,11 +402,11 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             if return_key == 'sections':
                 section = ClassSection.objects.get(pk=section_id)
             else:
-                target_qs = ClassSubject.objects.filter(sections=section_id)
+                matching_classes = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
             if return_key == None: return_key = 'classes'
             class_id = int(request.GET['class_id'])
-            target_qs = ClassSubject.objects.filter(id=class_id)
+            matching_classes = ClassSubject.objects.filter(id=class_id)
         else:
             raise ESPError(False), 'Need a section or subject ID to fetch catalog info'
 
@@ -416,7 +417,6 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         if return_key == 'sections':
             cls = section.parent_class
         else:
-            matching_classes = ClassSubject.objects.catalog_cached(prog, initial_queryset=target_qs)
             assert(len(matching_classes) == 1)
             cls = matching_classes[0]
 
@@ -430,8 +430,23 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
 
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
+            'status': cls.status,
+            'emailcode': cls.emailcode(),
+            'title': cls.title,
+            'class_info': cls.class_info, 
+            'category': cls.category.category, 
+            'difficulty': cls.hardness_rating,
+            'prereqs': cls.prereqs, 
+            'sections': [x.id for x in cls.sections.all()],
+            'class_size_max': cls.class_size_max,
+            'duration': cls.prettyDuration(),
+            'location': ", ".join(cls.prettyrooms()),
+            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
+            'teacher_names': cls.pretty_teachers(),
             'resource_requests': rrequest_dict,
             'comments': cls.message_for_directors,
+            'special_requests': cls.requested_special_resources,
+            'purchases': cls.purchase_requests
         }
 
         return {return_key: [return_dict]}
