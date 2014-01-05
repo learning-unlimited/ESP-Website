@@ -174,9 +174,24 @@ class ESPUser(User, AnonymousUser):
 
         self.other_user = False
 
-        if not hasattr(ESPUser, 'isOfficer'):
-            for user_type in ESPUser.getTypes() + ['Officer']:
-                setattr(ESPUser, 'is%s' % user_type, ESPUser.create_membership_method(user_type))
+        self.create_membership_methods()
+
+    @classmethod
+    def create_membership_methods(cls):
+        """
+        Setup for the ESPUser membership methods
+        """
+        if not hasattr(cls, 'isOfficer'):
+            for user_type in cls.getTypes(use_tag=False):
+                # Make sure that all of the default user types have membership
+                # methods defined, because some (such as isStudent()) are used
+                # in the code even if that user type isn't included in the Tag
+                # override. Start by defining all the membership methods for
+                # the default types as returning False, and then overwrite them
+                # as necessary.
+                setattr(cls, 'is%s' % user_type, lambda user: False)
+            for user_type in cls.getTypes() + ['Officer']:
+                setattr(cls, 'is%s' % user_type, cls.create_membership_method(user_type))
 
     def is_anonymous(self):
         return self._is_anonymous
@@ -429,10 +444,15 @@ class ESPUser(User, AnonymousUser):
         return users[num]
 
     @cache_function
-    def getTypes():
-        """ Get a list of the different roles an ESP user can have. By default there are five roles,
-            but there can be more. (Returns ['Student','Teacher','Educator','Guardian','Volunteer'] by default. """
-        return [x[0] for x in ESPUser.getAllUserTypes()]
+    def getTypes(use_tag=True):
+        """
+        Get a list of the different roles an ESP user can have. By default
+        there are five roles, but there can be more. Returns
+        ['Student','Teacher','Educator','Guardian','Volunteer'] by default. If
+        use_tag is False, always returns the default roles, and ignores the Tag
+        override.
+        """
+        return [x[0] for x in ESPUser.getAllUserTypes(use_tag=use_tag)]
     getTypes.depend_on_model(Tag)
     getTypes = staticmethod(getTypes)
 
@@ -745,10 +765,21 @@ class ESPUser(User, AnonymousUser):
     isAdmin = isAdministrator
 
     @cache_function
-    def getAllUserTypes():
-        #   Allow Tag to remove user types as well as adding/updating them.
-        #   So, if you set the Tag, be sure to include all of the user types you want.
-        return json.loads(Tag.getTag('user_types', default=json.dumps(DEFAULT_USER_TYPES)))
+    def getAllUserTypes(use_tag=True):
+        """
+        Get the list of all user types, along with their metadata (label and
+        profile form). By default returns DEFAULT_USER_TYPES. Allow user_types
+        Tag to override this struct. The Tag can remove user types as well as
+        adding/updating them. So, if you set the Tag, be sure to include all
+        of the user types you want.
+
+        If use_tag is False, always returns DEFAULT_USER_TYPES, and ignores the
+        Tag override.
+        """
+        user_types = DEFAULT_USER_TYPES
+        if use_tag:
+            user_types = json.loads(Tag.getTag('user_types', default=json.dumps(user_types)))
+        return user_types
     getAllUserTypes.depend_on_model(Tag)
     getAllUserTypes = staticmethod(getAllUserTypes)
 
