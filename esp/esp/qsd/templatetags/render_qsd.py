@@ -61,7 +61,7 @@ class InlineQSDNode(template.Node):
         if program is not None:
             title += ' - ' + unicode(program)
 
-        qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, name='', title=title, content=self.nodelist.render(context))
+        qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, {'name': '', 'title': title, 'content': self.nodelist.render(context)})
         return render_to_response("inclusion/qsd/render_qsd_inline.html", {'qsdrec': qsd_obj}, context_instance=context).content
 
 @register.tag
