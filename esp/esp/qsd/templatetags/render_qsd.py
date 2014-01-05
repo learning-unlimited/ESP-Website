@@ -15,10 +15,7 @@ render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qs
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html')
 def render_inline_qsd(url):
-    qsd_obj = QuasiStaticData.objects.get_by_url(url)
-    if qsd_obj is None:
-        return {'url': url, 'edit_id': qsd_edit_id(url)}
-    
+    qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url)
     return {'qsdrec': qsd_obj}
 render_inline_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'url':qsd.url})
 
@@ -28,10 +25,7 @@ def render_inline_program_qsd(program, name):
     #we could attempt to construct the url in the template
     #or just do this
     url = QuasiStaticData.prog_qsd_url(program, name)
-    qsd_obj = QuasiStaticData.objects.get_by_url(url)
-    if qsd_obj is None:
-        return {'url': url, 'edit_id': qsd_edit_id(url)}
-
+    qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url)
     return {'qsdrec': qsd_obj}
 def program_qsd_key_set(qsd):
     prog_and_name = QuasiStaticData.program_from_url(qsd.url)
@@ -63,16 +57,11 @@ class InlineQSDNode(template.Node):
             url = url_resolved
         #probably should have an error message if variable was not None and prog was
 
-        qsd_obj = QuasiStaticData.objects.get_by_url(url)
-        if qsd_obj is None:
-            title = self.url
-            if program is not None:
-                title += ' - ' + unicode(program)
-            qsd_obj = QuasiStaticData(url=url,
-                                      name='',
-                                      title=title,
-                                      content=self.nodelist.render(context))
+        title = self.url
+        if program is not None:
+            title += ' - ' + unicode(program)
 
+        qsd_obj = QuasiStaticData.objects.get_by_url_else_init(url, name='', title=title, content=self.nodelist.render(context))
         return render_to_response("inclusion/qsd/render_qsd_inline.html", {'qsdrec': qsd_obj}, context_instance=context).content
 
 @register.tag

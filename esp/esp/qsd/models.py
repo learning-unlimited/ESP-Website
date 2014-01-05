@@ -61,6 +61,19 @@ class QSDManager(FileDBManager):
             return None
     get_by_url.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'url': qsd.url})
 
+    @cache_function
+    def get_by_url_else_init(self, url, **defaults):
+        """
+        Tries looking up a QSD object by url, using self.get_by_url(). If this
+        fails because the url does not have a saved QSD object yet, initializes
+        and returns a new QSD object, without saving it to the database.
+        """
+        qsd_obj = self.get_by_url(url)
+        if qsd_obj is None:
+            qsd_obj = QuasiStaticData(url=url, **defaults)
+        return qsd_obj
+    get_by_url_else_init.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'url': qsd.url})
+
     def __str__(self):
         return "QSDManager()"
 

@@ -64,17 +64,6 @@ function qsd_inline_upload(qsd_url, edit_id)
     qsd_send_command(qsd_url, edit_id, postdata);
 }
 
-function qsd_inline_create(qsd_url, edit_id)
-{
-    //  Switch the visibility of the edit and view areas.
-    document.getElementById("inline_edit_" + edit_id).className = "hidden";
-    document.getElementById("inline_qsd_" + edit_id).className = "qsd_view_visible";
-
-    var content = document.getElementById("qsd_content_" + edit_id).value;
-    var postdata = {cmd: "create", url: qsd_url, data: content};
-    qsd_send_command(qsd_url, edit_id, postdata);
-}
-
 function qsd_inline_update(qsd_url, edit_id, data)
 {
     var postdata = JSON.parse(data);
