@@ -11,7 +11,8 @@
   {% endblock meta %}
 
     {% block stylesheets %}
-    <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css"/> 
+    <link rel="stylesheet" type="text/css" href="/media/styles/theme_compiled.css"/>
+    <link rel="stylesheet" type="text/css" href="/media/styles/qsd.css" />
 
     <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/css/bootstrap-responsive.css" rel="stylesheet"/>
     <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/google-code-prettify/prettify.css" rel="stylesheet"/>
@@ -63,6 +64,8 @@
       });
     </script>
 
+    <script type="text/javascript" src="/media/scripts/json2.js"></script>
+    <script type="text/javascript" src="/media/scripts/qsd.js"></script>
     <script type="text/javascript" src="/media/scripts/jsprettify-all-latest.js"></script>
     <script language="JavaScript"> window.jsprettify.run(); </script>
     {% endblock js1 %}
