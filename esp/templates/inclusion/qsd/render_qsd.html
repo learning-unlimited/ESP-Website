@@ -11,7 +11,7 @@
     {% autoescape off %}{{ qsdrec.content|markdown }}{% endautoescape %}
 </div>
 
-<script language="JavaScript">
+<script type="text/javascript">
 $j(document).ready(function() {
   if (esp_user.cur_admin != "1") {
     $j(".qsd_view_visible").removeClass("qsd_view_visible");
