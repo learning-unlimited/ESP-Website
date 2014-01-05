@@ -189,3 +189,9 @@ def editor(request):
 
     return render_to_response('themes/editor.html', request, context)
 
+@admin_required
+def recompile(request):
+    tc = ThemeController()
+    tc.recompile_theme()
+    return HttpResponseRedirect('/themes/')
+

@@ -95,6 +95,13 @@ class ThemeController(object):
         initial_data.update({'mtime': mtime})
         Tag.setTag('theme_template_control', value=json.dumps(initial_data))
 
+    def update_template_settings(self):
+        """
+        Refreshes the template settings, possibly updating some values (such as
+        the mtime).
+        """
+        self.set_template_settings(self.get_template_settings())
+
     def base_dir(self, theme_name):
         return os.path.join(THEME_PATH, theme_name)
 
@@ -231,6 +238,26 @@ class ThemeController(object):
         output_file.write(css_data)
         output_file.close()
         if themes_settings.THEME_DEBUG: print 'Wrote %.1f KB CSS output to %s' % (len(css_data) / 1000., output_filename)
+
+    def recompile_theme(self, theme_name=None, customization_name=None):
+        """
+        Reloads the theme (possibly updating the template overrides with recent
+        code changes), then recompiles the customizations.
+        """
+        if theme_name is None:
+            theme_name = self.get_current_theme()
+        if (customization_name is None) or (customization_name == "None"):
+            customization_name = self.get_current_customization()
+        self.clear_theme()
+        self.load_theme(theme_name)
+        self.update_template_settings()
+        if customization_name == "None":
+            return
+        (vars, palette) = self.load_customizations(customization_name)
+        if vars:
+            self.customize_theme(vars)
+        if palette:
+            self.set_palette(palette)
 
     def clear_theme(self, theme_name=None):
     
