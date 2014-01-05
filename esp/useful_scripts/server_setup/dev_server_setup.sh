@@ -124,6 +124,29 @@ echo "#!/bin/bash" > $BASEDIR/.espsettings
 
 # Collect settings
 # To manually reset: Remove '.espsettings' file in site directory
+
+if [[ ! "$MODE_PROD" ]]
+then
+    echo
+    echo "Is this a production site?"
+    echo -n " (y/[n]) --> "
+    read MODE_PROD_STRING
+    if [[ "$MODE_PROD_STRING" == "y" ]]
+    then
+        MODE_PROD=true
+    else
+        MODE_PROD=false
+    fi
+fi
+if [[ $MODE_PROD ]]
+then
+	echo "MODE_PROD=true" >> $BASEDIR/.espsettings
+	echo "Installing production site"
+else
+	echo "MODE_PROD=false" >> $BASEDIR/.espsettings
+	echo "Installing development site"
+fi
+
 while [[ ! -n $SITENAME ]]; do 
     echo 
     echo "Enter a label for this site"
