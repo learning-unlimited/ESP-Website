@@ -257,7 +257,7 @@ class ThemeController(object):
             template_file = open(template_filename, 'r')
             to.content = template_file.read()
             
-            #   Add an HTML comment indicating theme type to the main.html override (for tests)
+            #   Add a Django template comment tag indicating theme type to the main.html override (for tests)
             if to.name == 'main.html':
                 to.content += ('\n{%% comment %%} Theme: %s {%% endcomment %%}\n' % theme_name)
             
