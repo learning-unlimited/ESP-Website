@@ -44,6 +44,7 @@ from django.template.loader import render_to_string
 
 from string import Template
 import cStringIO
+import datetime
 import os
 import re
 import subprocess
@@ -78,6 +79,11 @@ class ThemeController(object):
         #   Merge with the existing settings so you don't forget anything
         initial_data = self.get_template_settings()
         initial_data.update(data)
+        now = datetime.datetime.now()
+        mtime = {'year': now.year, 'month': now.month, 'day': now.day,
+                 'hour': now.hour, 'minute': now.minute,
+                 'second': now.second, 'microsecond': now.microsecond}
+        initial_data.update({'mtime': mtime})
         Tag.setTag('theme_template_control', value=json.dumps(initial_data))
 
     def base_dir(self, theme_name):

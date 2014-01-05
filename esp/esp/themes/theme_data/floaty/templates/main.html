@@ -111,7 +111,7 @@
     {% endblock %}
 
     <div id="footer">
-        <p>Copyright 2013, {{ settings.ORGANIZATION_SHORT_NAME }} at {{ settings.INSTITUTION_NAME }} - <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.default }}">E-mail us</a> - <a href="/contact/contact/">Contact Form</a></p>
+        <p>Copyright {{ theme.mtime.year }}, {{ settings.ORGANIZATION_SHORT_NAME }} at {{ settings.INSTITUTION_NAME }} - <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.default }}">E-mail us</a> - <a href="/contact/contact/">Contact Form</a></p>
         <p>Site hosted by Learning Unlimited - <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.support }}">E-mail technical support</a></p>
     </div>
 </div>
