@@ -64,7 +64,16 @@ class ThemeController(object):
         
     def get_current_theme(self):
         return Tag.getTag('current_theme_name', default='default')
-        
+
+    def get_current_customization(self):
+        return Tag.getTag('prev_theme_customization', default='None')
+
+    def set_current_customization(self, theme_name):
+        Tag.setTag('prev_theme_customization', value=theme_name)
+
+    def unset_current_customization(self):
+        Tag.unSetTag('prev_theme_customization')
+
     def get_current_params(self):
         return json.loads(Tag.getTag('current_theme_params', default='{}'))
 
@@ -250,7 +259,7 @@ class ThemeController(object):
         Tag.unSetTag('current_theme_name')
         Tag.unSetTag('current_theme_params')
         Tag.unSetTag('current_theme_palette')
-        Tag.unSetTag('prev_theme_customization')
+        self.unset_current_customization()
 
     def load_theme(self, theme_name, **kwargs):
     
@@ -290,7 +299,7 @@ class ThemeController(object):
         Tag.setTag('current_theme_name', value=theme_name)
         Tag.setTag('current_theme_params', value='{}')
         Tag.unSetTag('current_theme_palette')
-        Tag.unSetTag('prev_theme_customization')
+        self.unset_current_customization()
 
     def customize_theme(self, vars):
         if themes_settings.THEME_DEBUG: print 'Customizing theme with variables: %s' % vars
@@ -349,6 +358,8 @@ class ThemeController(object):
         palette = []
         for match in re.findall(r'palette:(#?\w+?);', data):
             palette.append(match)
+
+        self.set_current_customization(save_name)
 
         if themes_settings.THEME_DEBUG: print (vars, palette)
         return (vars, palette)
