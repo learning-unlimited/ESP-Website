@@ -72,15 +72,3 @@ virtualenv "$BASEDIR/env"
 source "$BASEDIR/env/bin/activate"
 pip install -r "$BASEDIR/esp/requirements.txt"
 
-cat >/tmp/esp.wsgi <<EOF
-try:
-    # activate virtualenv
-    activate_this = '$BASEDIR/env/bin/activate_this.py'
-    execfile(activate_this, dict(__file__=activate_this))
-except IOError:
-    pass
-
-EOF
-
-cat "$BASEDIR/esp.wsgi" >>/tmp/esp.wsgi
-mv /tmp/esp.wsgi "$BASEDIR/esp.wsgi"
