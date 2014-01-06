@@ -56,6 +56,16 @@ function fill_class_popup(clsid, classes_data) {
   var status_details = getStatusDetails(class_info.status);
   var status_string = status_details['text'];
 
+  var sections_list = $j('<ul>')
+  for (var i = 0; i < class_info.sections.length; i++)
+  {
+    var sec = class_info.sections[i];
+    if (sec.time.length > 0)
+        sections_list.append($j('<li>').html(sec.time + " in " + sec.room + ": " + sec.num_students_priority + " priority, " + sec.num_students_interested + " interested, " + sec.num_students_enrolled + " enrolled"));
+    else
+        sections_list.append($j('<li>').html('Section ' + (i + 1) + ': not scheduled'));
+  }
+
   class_desc_popup
     .dialog('option', 'title', class_info.title)
     .dialog('option', 'width', 600)
@@ -83,6 +93,7 @@ function fill_class_popup(clsid, classes_data) {
     .html('')
     .append("<p><b>Status:</b> " + status_string + "</p>")
     .append("<p><b>Sections:</b> " + class_info.sections.length + "</p>")
+    .append(sections_list)
     .append("<p><b>Max Size:</b> " + class_info.class_size_max + "</p>")
     .append("<p><b>Duration:</b> " + class_info.duration + "</p>")
     .append("<p><b>Location:</b> " + class_info.location + "</p>")

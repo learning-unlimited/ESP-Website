@@ -424,6 +424,16 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         else:
             cls = matching_classes[0]
 
+        section_info = []
+        for sec in cls.get_sections():
+            section_info.append({
+                'num_students_priority': sec.num_students(['Priority/1']),
+                'num_students_interested': sec.num_students(['Interested']),
+                'num_students_enrolled': sec.num_students(['Enrolled']),
+                'time': ', '.join(sec.friendly_times()),
+                'room': ' and '.join(sec.prettyrooms()),
+            })
+
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
             'status': cls.status,
@@ -433,7 +443,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'category': cls.category.category, 
             'difficulty': cls.hardness_rating,
             'prereqs': cls.prereqs, 
-            'sections': [x.id for x in cls.sections.all()],
+            'sections': section_info,
             'class_size_max': cls.class_size_max,
             'duration': cls.prettyDuration(),
             'location': ", ".join(cls.prettyrooms()),

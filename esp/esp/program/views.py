@@ -60,7 +60,6 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
-from esp.accounting_core.models import CompletedTransactionException
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
 from esp.resources.models import ResourceType
