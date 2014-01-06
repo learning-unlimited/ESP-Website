@@ -60,9 +60,9 @@ class ClassFlagModule(ProgramModuleObj):
         abstract = True
     
     def teachers(self, QObject = False):
-        flag_types = flag_types(self.program)
+        fts = flag_types(self.program)
         t = {}
-        for flag_type in flag_types:
+        for flag_type in fts:
             q = Q(classsubject__flags__flag_type=flag_type.id)
             if QObject:
                 t['flag_%s' % flag_type.id] = q
@@ -71,9 +71,9 @@ class ClassFlagModule(ProgramModuleObj):
         return t
     
     def teacherDesc(self):
-        flag_types = flag_types(self.program)
+        fts = flag_types(self.program)
         descs = {}
-        for flag_type in flag_types:
+        for flag_type in fts:
             descs['flag_%s' % flag_type.id] = """Teachers who have a class with the "%s" flag.""" % flag_type.name
         return descs
 
