@@ -609,7 +609,7 @@ len(teachers[key])))
         # I should keep trying to make this nicer, but leaving it for now
         for g in grades:
             grade_classes = classes.filter(status__gte=0, grade_min__lte=g, grade_max__gte=g)
-            grade_sections = prog.sections().filter(status__gte=0, parent_class__grade_min__lte=g, parent_class__grade_max__gte=g)
+            grade_sections = prog.sections().filter(status__gte=0, parent_class__in=grade_classes)
             # This only works if the school year hasn't changed
             grade_students = filter(lambda x: x.getGrade(prog)==g, students['enrolled'])
             grades_annotated.append({'grade': g, 'num_subjects': grade_classes.count(), 'num_sections': grade_sections.count(), 'num_students': len(grade_students)})
