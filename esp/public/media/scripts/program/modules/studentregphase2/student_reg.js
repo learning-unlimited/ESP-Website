@@ -121,7 +121,7 @@ function submit_preferences(){
 		window.location = "studentreg";
 	     },
 	     data: {'json_data': submit_data_string },
-	     headers: {'X-CSRFToken': $j.cookie("csrftoken")}
+	     headers: {'X-CSRFToken': $j.cookie("esp_csrftoken")}
      });
 };
 
