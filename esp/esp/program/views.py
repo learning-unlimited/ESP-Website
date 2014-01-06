@@ -590,7 +590,7 @@ def submit_transaction(request):
         tl = 'learn'
         one, two = iac.program.url.split('/')
 
-        return HttpResponseRedirect("http://%s/%s/%s/%s/confirmreg" % (request.META['HTTP_HOST'], tl, one, two))
+        return HttpResponseRedirect("http://%s/%s/%s/%s/studentreg" % (request.META['HTTP_HOST'], tl, one, two))
 
     return render_to_response( 'accounting_docs/credit_rejected.html', request, {} )
 
