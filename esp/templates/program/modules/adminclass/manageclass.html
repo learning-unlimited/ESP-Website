@@ -25,57 +25,8 @@
     <tr>
         <th colspan="2" align="center">Information about {{ class.emailcode }}: {{ class.title }}</th>
     </tr>
-    <tr>
-        <th class="smaller">Teachers:</th>
-        <td>{{ class.getTeacherNames|join:", " }}<br />
-        <a href="/manage/{{ program.getUrlBase }}/coteachers?clsid={{ class.id }}">
-        Edit Teacher List </a>
-        </td>
-    </tr>
-    <tr>
-        <th class="smaller">Reviewing Status:<br />
-            (Unreviewed, Accepted, or Rejected)
-        </th>
-        <td>{% if class.isReviewed %}{% if class.isAccepted %}
-            <span style="font-weight: bold; color: #0C0;">Accepted</span>
-            {% else %}
-            <span style="font-weight: bold; color: #C00;">Rejected</span>
-            {% endif %}
-            {% else %}
-            <span style="font-weight: bold; color: #00C;">Unreviewed (<a href="/manage/{{ program.getUrlBase }}/approveclass/{{ class.id }}">Approve Now</a>)</span>
-            {% endif %}
-        </td>
-    </tr>
-    <tr>
-        <th class="smaller">Course Description:</th>
-        <td>
-            {{ class.class_info }}
-        </td>
-    </tr>
-    <tr>
-        <th class="smaller">Prerequisites:</th>
-        <td>
-            {{ class.prereqs }}
-        </td>
-    </tr>
-    <tr>
-        <th class="smaller">Room Request:</th>
-        <td>
-            {{ class.requested_room }}
-        </td>
-    </tr>
-    <tr>
-        <th class="smaller">Planned Purchases:</th>
-        <td>
-            {{ class.purchase_requests }}
-        </td>
-    </tr>
-    <tr>
-        <th class="smaller">Comments for Directors:</th>
-        <td>
-            {{ class.message_for_directors }}
-        </td>
-    </tr>
+    {% comment %} Broke these fields into a separate template fragment so they can be reproduced elsewhere without code duplication.{% endcomment %}
+    {% include "program/modules/adminclass/manageclass_class_info.html" %}
     <tr>
         <th class="smaller">Number of Students: </th>
         <td>

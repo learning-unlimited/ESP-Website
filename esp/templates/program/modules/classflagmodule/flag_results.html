@@ -49,19 +49,30 @@ You asked for for classes with {{english}}.  Click on a class or flag to see mor
                 <table>
                     <tbody>
                         <tr>
-                            <th>Teachers:</th>
+                            <th class="smaller">Sections:</th>
                             <td>
-                                {% for teacher in class.teachers.all %}
-                                    {{teacher.name}}{% if not forloop.last %}, {% endif %}
-                                {% endfor %}
+                                {{class.sections.count}}
                             </td>
                         </tr>
                         <tr>
-                            <th>Grades:</th>
+                            <th class="smaller">Grades:</th>
+                            <td>{{class.grade_min}}&ndash;{{class.grade_max}}</td>
+                        </tr>
+                        <tr>
+                            <th class="smaller">Class capacity:</th>
                             <td>
-                                {{class.grade_min}}&ndash;{{class.grade_max}}
+                                {% if class.class_size_min %}
+                                    {{class.class_size_min}} (minimum) <br/>
+                                {% endif %}
+                                {% if class.class_size_optimal %}
+                                    {{class.class_size_optimal}} (optimal) <br/>
+                                {% endif %}
+                                {% if class.class_size_max %}
+                                    {{class.class_size_max}} (maximum) <br/>
+                                {% endif %}
                             </td>
                         </tr>
+                        {% include "program/modules/adminclass/manageclass_class_info.html" %}
                     </tbody>
                 </table>
             </div>

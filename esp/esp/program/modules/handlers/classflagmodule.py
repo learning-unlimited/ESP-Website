@@ -112,6 +112,9 @@ class ClassFlagModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def classflags(self, request, tl, one, two, module, extra, prog):
+        '''An interface to query for some boolean expression of flags.  The front-end javascript will allow the user to build a query, then POST it in the form of a json.  The response to said post should be the list of classes matching the flag query.
+
+        The json should be a single object, which should have two keys: "type" and "value".  The value of the "type" key should be a string, one of the set ["the flag", "not the flag", "all", "any", "not all", "none"].  In the first two cases, the value of the "value" key should be the id of a flag.  In the latter four cases, it should be a list of objects of the same form.'''
         if request.method == 'GET':
             # We should display the query builder interface.
             fts = flag_types(self.program)

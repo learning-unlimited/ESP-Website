@@ -6,25 +6,27 @@ function edit (id) {
     window.open("editclass/"+id);
 }
 
-function review (id, stat) {
+function review (id, stat, text, color) {
     $j.post("reviewClass",
             {
                 "class_id": id,
                 "review_status": stat.toUpperCase(),
                 "csrfmiddlewaretoken": csrf_token(),
+            }, function () {
+                $j("#fqr-class-"+id+" .class-status").html(text).css("color",color);
             });
 }
 
 function approve (id) {
-    review(id, "accept");
+    review(id, "accept", "Accepted", "#0C0");
 }
 
 function unreview (id) {
-    review(id, "unreview");
+    review(id, "unreview", "Unreviewed", "#00C");
 }
 
 function reject (id) {
-    review(id, "reject");
+    review(id, "reject", "Rejected", "#C00");
 }
 
 function deleteClass (id, name) {
@@ -39,4 +41,5 @@ function deleteClass (id, name) {
 
 $j(document).ready(function () {
     $j(".flag-detail").hide();
+    $j(".manage-approve-link").hide();
 });
