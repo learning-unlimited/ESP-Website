@@ -589,8 +589,9 @@ def submit_transaction(request):
 
         tl = 'learn'
         one, two = iac.program.url.split('/')
+        destination = Tag.getTag("cc_redirect", default="confirmreg")
 
-        return HttpResponseRedirect("http://%s/%s/%s/%s/studentreg" % (request.META['HTTP_HOST'], tl, one, two))
+        return HttpResponseRedirect("http://%s/%s/%s/%s/%s" % (request.META['HTTP_HOST'], tl, one, two, destination))
 
     return render_to_response( 'accounting_docs/credit_rejected.html', request, {} )
 
