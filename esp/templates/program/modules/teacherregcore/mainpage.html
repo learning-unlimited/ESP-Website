@@ -11,11 +11,11 @@
 <h1>Teacher registration for {{program.niceName}}</h1>
 
 {% load render_qsd %}
-{% inline_qsd_block "teach:teacherreg" %}
+{% inline_program_qsd_block program "teach:teacherreg" %}
 <p>
 Please complete the following steps to teach for {{ program.niceName }}.  When each step is completed, the corresponding box in the right-hand column will be "checked off."  If you have any questions, please <a href="mailto:{{ program.director_email}}">contact the program directors</a>.
 </p>
-{% end_inline_qsd_block %}
+{% end_inline_program_qsd_block %}
 
 {% ifequal options.progress_mode 1 %}
     {% include "program/modules/checkboxes.html" %}
