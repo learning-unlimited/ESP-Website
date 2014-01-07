@@ -58,7 +58,7 @@ REG_VERB_BASE = 'V/Flags/Registration'
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
-    module               = models.ForeignKey(ProgramModuleObj)
+    module               = models.ForeignKey(ProgramModuleObj, editable=False)
     
     #   Set to true to prevent students from registering from full classes.
     enforce_max          = models.BooleanField(default=True, help_text='Check this box to prevent students from signing up for full classes.')
