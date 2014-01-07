@@ -837,8 +837,6 @@ are a teacher of the class"""
 
     @cache_function
     def getGrade(self, program = None):
-        if hasattr(self, '_grade') and not program:
-            return self._grade
         grade = 0
         if self.isStudent():
             if program is None:
@@ -851,9 +849,6 @@ are a teacher of the class"""
                     grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year, ESPUser.current_schoolyear(program))
                     if program:
                         grade += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
-
-        if not program:
-            self._grade = grade
 
         return grade
     #   The cache will need to be cleared once per academic year.
