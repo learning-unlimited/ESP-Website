@@ -595,7 +595,7 @@ def submit_transaction(request):
             pass
         else:
             # simple urls like 'confirmreg' are relative to the program
-            destination = "http://%s/%s/%s/%s/%s" % (request.META['HTTP_HOST'], tl, one, two, destination)
+            destination = "/%s/%s/%s/%s" % (tl, one, two, destination)
 
         return HttpResponseRedirect(destination)
 
