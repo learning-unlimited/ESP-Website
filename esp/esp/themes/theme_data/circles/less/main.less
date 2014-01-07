@@ -65,7 +65,7 @@ div.nav_button {
     float: left;
     
     /*  Backup for browsers without SVG support */
-    color: @nav_button_background;
+    color: @navbarBackground;
     text-align: center;
     vertical-align: middle;
     font-size: 30px;
@@ -77,7 +77,7 @@ div.nav_button_spacer {
     width: 40px;
     height: 180px;
     float: left;
-    background: @nav_button_background;
+    background: @navbarBackground;
 }
 
 div.nav_button :hover {
@@ -135,7 +135,7 @@ div.nav_button :hover {
 }
 
 .nav_button_rect {
-    fill: @nav_button_background;
+    fill: @navbarBackground;
 }
 
 #nav_button_learn {
@@ -155,7 +155,7 @@ div.nav_button :hover {
 }
 
 #navbar_header {
-  background: @left_bar_header;
+  background: @sidebarHeader;
   float: left;
   text-align: center;
   vertical-align: middle;
@@ -181,7 +181,7 @@ div.nav_button :hover {
 #navbar {
   float: left;  
   width: 200px;
-  background: @left_bar_background;
+  background: @sidebarBackground;
 /*
   margin-bottom: -250cm;
   padding-bottom: 250cm;
@@ -229,7 +229,7 @@ div.nav_button :hover {
 
 
 #chicago_main {
-  background: white;
+  background: @bodyBackground;
   float: right;
   width: 600px;
 /*
@@ -244,7 +244,7 @@ div.nav_button :hover {
 }
 
 .announcementlink_title {
-  color: #BCCAF5;
+  color: @sidebarActive;
   font-size: 11pt;
   line-height: 140%;
   font-weight: bold;
@@ -263,36 +263,16 @@ div.nav_button :hover {
 }
 
 #navbar a:link {
-  color: #BCCAF5;
+  color: @sidebarLink;
   text-decoration: none;
 }
 
 #navbar a:visited {
-  color: #BCCAF5;
+  color: @sidebarLink;
 }
 
 #navbar a:hover {
-  color: #497CCA;
-}
-
-#navbar a:active {
-  color: #BCCAF5;
-}
-
-.learn {
-  color: #4DCE3D;
-}
-
-.teach {
-  color: #FCD221;
-}
-
-.volunteer {
-  color: #ED1C24;
-}
-
-.more_info {
-  color: #CC66FF;
+  color: @sidebarLinkHover;
 }
 
 div .emailwarning
