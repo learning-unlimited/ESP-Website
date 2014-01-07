@@ -306,6 +306,7 @@ DISPLAYSQL = False
 TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = True # set to False to globally disable the debug toolbar
+USE_PROFILER = False
 
 # Database
 DEFAULT_CACHE_TIMEOUT = 120
@@ -451,33 +452,6 @@ fi
 # To reset: remove appropriate section from Apache config
 if [[ "$MODE_APACHE" || "$MODE_ALL" ]]
 then
-    cat >$BASEDIR/esp.wsgi <<EOF
-import os
-import sys
-
-os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
-
-# Path for ESP code
-sys.path.insert(0, '/lu/sites/$SITENAME/esp')
-
-import django.core.handlers.wsgi
-django_application = django.core.handlers.wsgi.WSGIHandler()
-
-USE_PROFILER = False
-
-if USE_PROFILER:
-    from repoze.profile.profiler import AccumulatingProfileMiddleware
-    application = AccumulatingProfileMiddleware(
-      django_application,
-      log_filename='/tmp/djangoprofile.log',
-      discard_first_request=True,
-      flush_at_shutdown=True,
-      path='/__profile__')
-else:
-    application = django_application
-
-EOF
-
     cat >>$APACHE_CONF_FILE <<EOF
 #   $INSTITUTION $GROUPNAME (automatically generated)
 WSGIDaemonProcess $SITENAME processes=1 threads=1 maximum-requests=1000

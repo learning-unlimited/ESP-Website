@@ -413,6 +413,7 @@ DISPLAYSQL = False
 TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = True # set to False to globally disable the debug toolbar
+USE_PROFILER = False
 
 # Database
 DEFAULT_CACHE_TIMEOUT = 120
@@ -619,40 +620,6 @@ fi
 if [[ "$MODE_APACHE" || "$MODE_ALL" ]]
 then
     APACHE_CONF_DIR=/etc/apache2/conf.d
-
-    tee $BASEDIR/esp.wsgi <<EOF
-try:
-    # activate virtualenv
-    activate_this = '$BASEDIR/env/bin/activate_this.py'
-    execfile(activate_this, dict(__file__=activate_this))
-except IOError:
-    pass
-
-import os
-import sys
-
-os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
-
-# Path for ESP code
-sys.path.insert(0, '$BASEDIR/esp')
-
-import django.core.handlers.wsgi
-django_application = django.core.handlers.wsgi.WSGIHandler()
-
-USE_PROFILER = False
-
-if USE_PROFILER:
-    from repoze.profile.profiler import AccumulatingProfileMiddleware
-    application = AccumulatingProfileMiddleware(
-      django_application,
-      log_filename='/tmp/djangoprofile.log',
-      discard_first_request=True,
-      flush_at_shutdown=True,
-      path='/__profile__')
-else:
-    application = django_application
-
-EOF
 
     sudo tee $APACHE_CONF_DIR/enable_vhosts <<EOF
 NameVirtualHost *:80
