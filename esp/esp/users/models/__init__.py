@@ -112,6 +112,7 @@ class UserAvailability(models.Model):
     priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
 
     class Meta:
+        app_label = 'users'
         db_table = 'users_useravailability'
 
     def __unicode__(self):
@@ -1906,6 +1907,9 @@ class Record(models.Model):
 
     time = models.DateTimeField(blank=True, default = datetime.now)
 
+    class Meta:
+        app_label = 'users'
+
     @classmethod
     def user_completed(cls, user, event, program=None):
         if program is None:
@@ -2000,6 +2004,9 @@ class Permission(ExpirableModel):
     #their classes
     #it may, however, be the case that this model is not general enough,
     #in which case program may need to be replaced by a generic foreignkey
+
+    class Meta:
+        app_label = 'users'
 
     @classmethod
     def user_has_perm(self, user, name, program=None, when=None):
