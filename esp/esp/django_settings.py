@@ -230,6 +230,7 @@ INSTALLED_APPS = (
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
+    'esp.formstack',
 )
 
 import os
