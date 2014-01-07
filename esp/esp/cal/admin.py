@@ -39,7 +39,7 @@ from esp.cal.models import EventType, Event, EmailReminder
 admin_site.register(EventType)
 
 class EventAdmin(admin.ModelAdmin):
-    list_display = ('id', 'program', 'name', 'title', 'short_description')
+    list_display = ('id', 'program', 'name', 'short_description')
     list_filter = ('start', 'end')
 
 admin_site.register(Event, EventAdmin)
