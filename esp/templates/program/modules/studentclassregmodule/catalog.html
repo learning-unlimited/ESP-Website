@@ -10,11 +10,11 @@
 
 {% block xtrajs %}
 {{ block.super }}
-<script language="javascript" src="/media/scripts/ajax_tools.js"></script>
+<script type="text/javascript" src="/media/scripts/ajax_tools.js"></script>
 <!-- Include Prototype for its document.getElementsByClassName reimplementation; it's many times faster than the version below, at least on IE 6. -->
-<script language="javascript" src="/media/scripts/ajaxschedulingmodule/prototype.js"></script>
+<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/prototype.js"></script>
 
-<script language="javascript">
+<script type="text/javascript">
 <!--
 {% include "program/modules/studentclassregmodule/common-js.html.js" %}
 
@@ -95,7 +95,7 @@ Viewing classes for: {{ timeslot.friendly_name }}
 {% load render_qsd %}
 {% render_inline_program_qsd program "learn:catalog" %}
 
-<script language="javascript">
+<script type="text/javascript">
 <!--
 if (document.getElementById("student_schedule")) {
    register_fragment({id: "student_schedule_html", url: "/learn/{{ program.getUrlBase }}/ajax_schedule"});
@@ -106,7 +106,7 @@ if (document.getElementById("student_schedule")) {
 {% autoescape off %}{{ class_descs }}{% endautoescape %}
 </div>
 
-<script language="JavaScript">
+<script type="text/javascript">
 function hideClassesOutOfGradeRange(stu_grade) {
   if (student_grade == "") {
     return;
@@ -159,7 +159,7 @@ function hideClassesOutOfGradeRange(stu_grade) {
 hideClassesOutOfGradeRange(student_grade);
 </script>
 
-<script language="JavaScript">
+<script type="text/javascript">
 function configure_addbuttons()
 {
     {% if register_from_catalog %}
