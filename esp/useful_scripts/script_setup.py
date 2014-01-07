@@ -24,3 +24,4 @@ from django.conf import settings as S
 for m in get_models():
     globals()[m.__name__] = m
 
+from esp.utils.shell_utils import *
