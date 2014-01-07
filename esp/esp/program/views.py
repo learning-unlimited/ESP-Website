@@ -589,8 +589,15 @@ def submit_transaction(request):
 
         tl = 'learn'
         one, two = iac.program.url.split('/')
+        destination = Tag.getProgramTag("cc_redirect", iac.program, default="confirmreg")
 
-        return HttpResponseRedirect("http://%s/%s/%s/%s/studentreg" % (request.META['HTTP_HOST'], tl, one, two))
+        if destination.startswith('/') or '//' in destination:
+            pass
+        else:
+            # simple urls like 'confirmreg' are relative to the program
+            destination = "http://%s/%s/%s/%s/%s" % (request.META['HTTP_HOST'], tl, one, two, destination)
+
+        return HttpResponseRedirect(destination)
 
     return render_to_response( 'accounting_docs/credit_rejected.html', request, {} )
 
