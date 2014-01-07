@@ -39,9 +39,7 @@
     <script type="text/javascript" src="/media/scripts/jquery-ui.js"></script>
     <script type="text/javascript" src="/media/scripts/jquery-ui.timepicker.js"></script>
     {% endblock %}
-    <script language="JavaScript">
-      $j = $.noConflict();
-    </script>
+    <script type="text/javascript" src="/media/scripts/common.js"></script>
     {% endblock jquery %}
 
     {% block js1 %}
