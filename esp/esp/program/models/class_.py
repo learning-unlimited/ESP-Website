@@ -852,7 +852,7 @@ class ClassSection(models.Model):
                     return "You can't remove this class from your schedule because it would violate the requirement that you %s.  You can go back and correct this." % exp.requirement.label
         return False
 
-    def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True):
+    def cannotAdd(self, user, checkFull=True, autocorrect_constraints=True, ignore_constraints=False):
         """ Go through and give an error message if this user cannot add this section to their schedule. """
 
         # Check if section is full
@@ -861,8 +861,10 @@ class ClassSection(models.Model):
             return scrmi.temporarily_full_text
 
         # Test any scheduling constraints
-        relevantConstraints = self.parent_program.getScheduleConstraints()
-        #   relevantConstraints = ScheduleConstraint.objects.none()
+        if ignore_constraints:
+            relevantConstraints = ScheduleConstraint.objects.none()
+        else:
+            relevantConstraints = self.parent_program.getScheduleConstraints()
 
         if relevantConstraints:
             # Set up a ScheduleMap; fake-insert this class into it
@@ -1613,7 +1615,7 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             teachers.append(name)
         return teachers
 
-    def cannotAdd(self, user, checkFull=True):
+    def cannotAdd(self, user, checkFull=True, which_section=None):
         """ Go through and give an error message if this user cannot add this class to their schedule. """
         if not user.isStudent() and not Tag.getTag("allowed_student_types", target=self.parent_program):
             return 'You are not a student!'
@@ -1647,10 +1649,13 @@ class ClassSubject(models.Model, CustomFormsLinkModel):
             if user.isEnrolledInClass(section):
                 return 'You are already signed up for a section of this class!'
         
-        res = False
+        if which_section:
+            sections = [which_section]
+        else:
+            sections = self.get_sections()
         # check to see if there's a conflict with each section of the subject, or if the user
         # has already signed up for one of the sections of this class
-        for section in self.get_sections():
+        for section in sections:
             res = section.cannotAdd(user, checkFull, autocorrect_constraints=False)
             if not res: # if any *can* be added, then return False--we can add this class
                 return res
