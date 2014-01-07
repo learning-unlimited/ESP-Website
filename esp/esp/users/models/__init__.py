@@ -995,7 +995,7 @@ class StudentInfo(models.Model):
             
         studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
         studentInfo.dob             = new_data['dob']
-        studentInfo.gender          = new_data['gender']
+        studentInfo.gender          = new_data.get('gender', None)
         
         studentInfo.heard_about      = new_data.get('heard_about', '')
 
