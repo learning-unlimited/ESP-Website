@@ -190,5 +190,5 @@ urlpatterns +=patterns('esp.customforms.views',
 
 #   Theme editor
 urlpatterns += patterns('', 
-                        (r'^themes/', include('esp.themes.urls')) 
+                        (r'^themes', include('esp.themes.urls')) 
                        )
