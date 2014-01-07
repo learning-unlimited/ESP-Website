@@ -572,11 +572,11 @@ def submit_transaction(request):
             from django.conf import settings
             recipient_list = [contact[1] for contact in settings.ADMINS]
             recipient_list.append(settings.DEFAULT_EMAIL_ADDRESSES['treasury']) 
-            refs = 'Cybersource request ID: %s' % post_id
+            refs = 'Cybersource request ID: %s' % post_identifier
 
             subject = 'Possible Duplicate Postback/Payment'
-            refs = 'User: %s (%d); Program: %s (%d)' % (iac.user.name(), iac.user.id, self.program.niceName(), self.program.id)
-            refs += '\n\nPrevious payments\' Transfer IDs: ' + ( u', '.join([x.id for x in prev_payments]) )
+            refs = 'User: %s (%d); Program: %s (%d)' % (iac.user.name(), iac.user.id, iac.program.niceName(), iac.program.id)
+            refs += '\n\nPrevious payments\' Transfer IDs: ' + ( u', '.join([str(x.id) for x in prev_payments]) )
 
             # Send mail!
             send_mail('[ ESP CC ] ' + subject + ' by ' + iac.user.first_name + ' ' + iac.user.last_name, \
