@@ -300,16 +300,15 @@ class Program(models.Model, CustomFormsLinkModel):
     USER_TYPE_LIST_NUM_FUNCS    = ['num_'+user_type for user_type in USER_TYPE_LIST_FUNCS]  # the names of the num methods, e.g. num_students(), num_teachers()
     USER_TYPE_LIST_DESC_FUNCS   = [user_type.lower()+'Desc' for user_type in USER_TYPES_WITH_LIST_FUNCS]    # the names of the description methods, e.g. studentDesc(), teacherDesc()
 
-    def __init__(self, *args, **kwargs):
-        super(Program, self).__init__(*args, **kwargs)
-        self.setup_user_filters()
-
-    def setup_user_filters(self):
-        # Setup for the ProgramModule user filters
-        if not hasattr(Program, Program.USER_TYPE_LIST_FUNCS[0]):
-            for i, user_type in enumerate(Program.USER_TYPE_LIST_FUNCS):
-                setattr(Program, user_type, Program.get_users_from_module(user_type))
-                setattr(Program, Program.USER_TYPE_LIST_NUM_FUNCS[i], Program.counts_from_query_dict(getattr(Program, user_type)))
+    @classmethod
+    def setup_user_filters(cls):
+        """
+        Setup for the ProgramModule user filters
+        """
+        if not hasattr(cls, cls.USER_TYPE_LIST_FUNCS[0]):
+            for i, user_type in enumerate(cls.USER_TYPE_LIST_FUNCS):
+                setattr(cls, user_type, cls.get_users_from_module(user_type))
+                setattr(cls, cls.USER_TYPE_LIST_NUM_FUNCS[i], cls.counts_from_query_dict(getattr(cls, user_type)))
 
     @cache_function
     def isUsingStudentApps(self):
@@ -1080,6 +1079,8 @@ class Program(models.Model, CustomFormsLinkModel):
             return self._splashinfo_objects
         self._splashinfo_objects = dict(SplashInfo.objects.filter(program=self, siblingdiscount=True).distinct().values_list('student', 'siblingdiscount'))
         return self._splashinfo_objects
+
+Program.setup_user_filters()
 
 
 class SplashInfo(models.Model):
