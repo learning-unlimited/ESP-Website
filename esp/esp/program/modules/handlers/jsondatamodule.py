@@ -396,10 +396,11 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         
         return {return_key: [return_dict]}
             
-
+    # This is separate from class_info because students shouldn't see it
     @aux_call
     @cache_control(public=True, max_age=300)
     @json_response()
+    @needs_admin
     def class_admin_info(self, request, tl, one, two, module, extra, prog):
         return_key = None
         if 'return_key' in request.GET:
@@ -411,11 +412,11 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
             if return_key == 'sections':
                 section = ClassSection.objects.get(pk=section_id)
             else:
-                target_qs = ClassSubject.objects.filter(sections=section_id)
+                matching_classes = ClassSubject.objects.filter(sections=section_id)
         elif 'class_id' in request.GET:
             if return_key == None: return_key = 'classes'
             class_id = int(request.GET['class_id'])
-            target_qs = ClassSubject.objects.filter(id=class_id)
+            matching_classes = ClassSubject.objects.filter(id=class_id)
         else:
             raise ESPError(False), 'Need a section or subject ID to fetch catalog info'
 
@@ -426,7 +427,6 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         if return_key == 'sections':
             cls = section.parent_class
         else:
-            matching_classes = ClassSubject.objects.catalog_cached(prog, initial_queryset=target_qs)
             assert(len(matching_classes) == 1)
             cls = matching_classes[0]
 
@@ -438,10 +438,35 @@ _name': t.last_name, 'availability': avail_for_user[t.id], 'sections': [x.id for
         for r in rrequests:
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
 
+        section_info = []
+        for sec in cls.get_sections():
+            section_info.append({
+                'num_students_priority': sec.num_students(['Priority/1']),
+                'num_students_interested': sec.num_students(['Interested']),
+                'num_students_enrolled': sec.num_students(['Enrolled']),
+                'time': ', '.join(sec.friendly_times()),
+                'room': ' and '.join(sec.prettyrooms()),
+            })
+
         return_dict = {
             'id': cls.id if return_key == 'classes' else section_id,
+            'status': cls.status,
+            'emailcode': cls.emailcode(),
+            'title': cls.title,
+            'class_info': cls.class_info, 
+            'category': cls.category.category, 
+            'difficulty': cls.hardness_rating,
+            'prereqs': cls.prereqs, 
+            'sections': section_info,
+            'class_size_max': cls.class_size_max,
+            'duration': cls.prettyDuration(),
+            'location': ", ".join(cls.prettyrooms()),
+            'grade_range': str(cls.grade_min) + "th to " + str(cls.grade_max) + "th grades" ,
+            'teacher_names': cls.pretty_teachers(),
             'resource_requests': rrequest_dict,
             'comments': cls.message_for_directors,
+            'special_requests': cls.requested_special_resources,
+            'purchases': cls.purchase_requests
         }
 
         return {return_key: [return_dict]}
@@ -585,8 +610,19 @@ len(teachers[key])))
             Q_categories |= Q(pk=prog.open_class_category.pk)
         #   Introduce a separate query to get valid categories, since the single query seemed to introduce duplicates
         program_categories = ClassCategories.objects.filter(Q_categories).distinct().values_list('id', flat=True)
-        annotated_categories = ClassCategories.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'category').distinct()
+        annotated_categories = ClassCategories.objects.filter(cls__parent_program=prog, cls__status__gte=0).annotate(num_subjects=Count('cls', distinct=True), num_sections=Count('cls__sections'), num_class_hours=Sum('cls__sections__duration')).order_by('-num_subjects').values('id', 'num_sections', 'num_subjects', 'num_class_hours', 'category').distinct()
         dictOut["stats"].append({"id": "categories", "data": filter(lambda x: x['id'] in program_categories, annotated_categories)})
+
+        ## Calculate the grade data:
+        grades = [i for i in range(prog.grade_min, prog.grade_max+1)]
+        grades_annotated = []
+        # I should keep trying to make this nicer, but leaving it for now
+        for g in grades:
+            grade_classes = classes.filter(status__gte=0, grade_min__lte=g, grade_max__gte=g)
+            grade_sections = prog.sections().filter(status__gte=0, parent_class__in=grade_classes)
+            grade_students = filter(lambda x: x.getGrade(prog)==g, students['enrolled'])
+            grades_annotated.append({'grade': g, 'num_subjects': grade_classes.count(), 'num_sections': grade_sections.count(), 'num_students': len(grade_students)})
+        dictOut["stats"].append({"id": "grades", "data": grades_annotated})
 
         #   Add SplashInfo statistics if our program has them
         splashinfo_data = {}
