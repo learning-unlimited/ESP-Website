@@ -167,6 +167,34 @@ class Account(models.Model):
     @property
     def description_contents(self):
         return '\n'.join(self.description.split('\n')[1:])
+
+    def balance_breakdown(self):
+        transfers_in = Transfer.objects.filter(destination=self).values('source').annotate(amount = Sum('amount_dec'))
+        transfers_out = Transfer.objects.filter(source=self).values('destination').annotate(amount = Sum('amount_dec'))
+        transfers = []
+
+        for transfer in transfers_in:
+            target_name = "unknown"
+            target_title = "Unknown"
+            
+            if transfer['source'] is not None:
+                target = Account.objects.get(id=transfer['source'])
+                target_name = target.name
+                target_title = target.description_title
+            
+            transfers.append({'amount': transfer['amount'], 'target_type': 'source', 'target_name': target_name, 'target_title': target_title})
+        for transfer in transfers_out:
+            target_name = "unknown"
+            target_title = "Unknown"
+            
+            if transfer['destination'] is not None:
+                target = Account.objects.get(id=transfer['destination'])
+                target_name = target.name
+                target_title = target.description_title
+            
+            transfers.append({'amount': transfer['amount'], 'target_type': 'destination', 'target_name': target_name, 'target_title': target_title})
+        
+        return transfers
         
     def __unicode__(self):
         return self.name

@@ -13,6 +13,13 @@
     <br />
     {{ account.description_contents|linebreaksbr }}
     <ul>
+    {% for transfer in account.balance_breakdown %}
+    	{% if transfer.target_type == 'destination' %}
+    		<li>Transferred to {{ transfer.target_title }} ({{ transfer.target_name }}): -${{ transfer.amount }}</li>
+    	{% elif transfer.target_type == 'source' %}
+    		<li>Transferred from {{ transfer.target_title }} ({{ transfer.target_name }}): +${{ transfer.amount }}</li>
+    	{% endif %}
+    {% endfor %}
         <li>Balance: ${{ account.balance }}</li>
         <li>Value of pending transactions: ${{ account.pending_balance }} (included in balance)</li>
     </ul>
