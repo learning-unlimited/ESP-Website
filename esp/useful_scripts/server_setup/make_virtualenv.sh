@@ -54,18 +54,40 @@
 # if present (or to your global site-packages otherwise). You should
 # do this whenever requirements.txt changes.
 
+# Parse options
+OPTSETTINGS=`getopt -o 'pc' -l 'prod,usecwd' -- "$@"`
+
+eval set -- "$OPTSETTINGS"
+
+while [ ! -z "$1" ]
+do
+  case "$1" in
+    -p) MODE_PROD=true;;
+    -c) BASEDIR=$PWD;;
+    --prod) MODE_PROD=true;;
+    --usepwd) BASEDIR=$PWD;;
+     *) break;;
+  esac
+
+  shift
+done
+
 while [[ ! -n "$BASEDIR" ]]; do
     echo -n "Enter the root directory path of this site install (it should include a .git file) --> "
     read BASEDIR
 done
-if [[ ! -f "$BASEDIR/esp/packages.txt" || ! -f "$BASEDIR/esp/requirements.txt" ]]; then
+if [[ ! -f "$BASEDIR/esp/packages_base.txt" || ! -f "$BASEDIR/esp/packages_prod.txt" || ! -f "$BASEDIR/esp/requirements.txt" ]]; then
     echo "Couldn't find requirements files for site install at $BASEDIR"
     exit 1
 fi
 FULLPATH=$(mkdir -p "$BASEDIR"; cd "$BASEDIR"; pwd)
 BASEDIR=$(echo "$FULLPATH" | sed -e "s/\/*$//")
 
-sudo apt-get install $(< "$BASEDIR/esp/packages.txt")
+sudo apt-get install -y $(< "$BASEDIR/esp/packages_base.txt")
+if [[ "$MODE_PROD" ]]
+then
+    sudo apt-get install -y $(< "$BASEDIR/esp/packages_prod.txt")
+fi
 
 sudo pip install "virtualenv>=1.10"
 virtualenv "$BASEDIR/env"
