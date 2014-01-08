@@ -235,6 +235,13 @@ class ESPUser(User, AnonymousUser):
            return cmp(self.first_name.upper(), other.first_name.upper())
         return lastname
 
+    def __eq__(self, other):
+        """Extends equality to support User object == ESPUser object."""
+        if type(other) == User:
+            return self.getOld() == other or self.id == other.id
+        else:
+            return super(ESPUser, self).__eq__(other)
+
     def is_authenticated(self):
         return self.getOld().is_authenticated()
 
