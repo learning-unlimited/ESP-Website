@@ -159,7 +159,10 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['user'].id, self.user.id)
-        self.assert_(self.admin.first_name in response.content)
+        self.assert_(self.user.username in response.content)
+        self.assert_(self.user.first_name in response.content)
+        self.assert_(self.user.last_name in response.content)
+        self.assert_(str(self.user.id) in response.content)
 
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
