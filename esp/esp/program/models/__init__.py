@@ -300,16 +300,15 @@ class Program(models.Model, CustomFormsLinkModel):
     USER_TYPE_LIST_NUM_FUNCS    = ['num_'+user_type for user_type in USER_TYPE_LIST_FUNCS]  # the names of the num methods, e.g. num_students(), num_teachers()
     USER_TYPE_LIST_DESC_FUNCS   = [user_type.lower()+'Desc' for user_type in USER_TYPES_WITH_LIST_FUNCS]    # the names of the description methods, e.g. studentDesc(), teacherDesc()
 
-    def __init__(self, *args, **kwargs):
-        super(Program, self).__init__(*args, **kwargs)
-        self.setup_user_filters()
-
-    def setup_user_filters(self):
-        # Setup for the ProgramModule user filters
-        if not hasattr(Program, Program.USER_TYPE_LIST_FUNCS[0]):
-            for i, user_type in enumerate(Program.USER_TYPE_LIST_FUNCS):
-                setattr(Program, user_type, Program.get_users_from_module(user_type))
-                setattr(Program, Program.USER_TYPE_LIST_NUM_FUNCS[i], Program.counts_from_query_dict(getattr(Program, user_type)))
+    @classmethod
+    def setup_user_filters(cls):
+        """
+        Setup for the ProgramModule user filters
+        """
+        if not hasattr(cls, cls.USER_TYPE_LIST_FUNCS[0]):
+            for i, user_type in enumerate(cls.USER_TYPE_LIST_FUNCS):
+                setattr(cls, user_type, cls.get_users_from_module(user_type))
+                setattr(cls, cls.USER_TYPE_LIST_NUM_FUNCS[i], cls.counts_from_query_dict(getattr(cls, user_type)))
 
     @cache_function
     def isUsingStudentApps(self):
@@ -1085,6 +1084,8 @@ class Program(models.Model, CustomFormsLinkModel):
         self._splashinfo_objects = dict(SplashInfo.objects.filter(program=self, siblingdiscount=True).distinct().values_list('student', 'siblingdiscount'))
         return self._splashinfo_objects
 
+Program.setup_user_filters()
+
 
 class SplashInfo(models.Model):
     """ A model that can be used to track additional student preferences specific to
@@ -1454,6 +1455,9 @@ class BooleanToken(models.Model):
     text = models.TextField(help_text='Boolean value, or text needed to compute it', default='', blank=True)
     seq = models.IntegerField(help_text='Location of this token on the expression stack (larger numbers are higher)', default=0)
 
+    class Meta:
+        app_label = 'program'
+
     def get_expr(self):
         return self.exp.subclass_instance()
     #   Renamed to expr to avoid conflicting with Django SQL evaluator "expression"
@@ -1514,6 +1518,10 @@ class BooleanExpression(models.Model):
         Arbitrary arguments can be supplied to the evaluate function in order
         to help subclassed tokens do their thing.
     """
+
+    class Meta:
+        app_label = 'program'
+
     label = models.CharField(max_length=80, help_text='Description of the expression')
 
     def __unicode__(self):
@@ -1622,6 +1630,9 @@ class ScheduleConstraint(models.Model):
     requirement = models.ForeignKey(BooleanExpression, related_name='requirement_constraint')
     #   This is a function of one argument, schedule_map, which returns an updated schedule_map.
     on_failure = models.TextField()
+
+    class Meta:
+        app_label = 'program'
     
     def __unicode__(self):
         return '%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
@@ -1667,10 +1678,16 @@ class ScheduleTestTimeblock(BooleanToken):
     """
     timeblock = models.ForeignKey(Event, help_text='The timeblock that this schedule test pertains to')
 
+    class Meta:
+        app_label = 'program'
+
 class ScheduleTestOccupied(ScheduleTestTimeblock):
     """ Boolean value testing: Does the schedule contain at least one
         section at the specified time?
     """
+    class Meta:
+        app_label = 'program'
+
     def boolean_value(self, *args, **kwargs):
         timeblock_id = self.timeblock.id
         user_schedule = kwargs['map']
@@ -1692,12 +1709,19 @@ class ScheduleTestCategory(ScheduleTestTimeblock):
                 if sec.category == self.category:
                     return True
         return False
+
+    class Meta:
+        app_label = 'program'
             
 class ScheduleTestSectionList(ScheduleTestTimeblock):
     """ Boolean value testing: Does the schedule contain one of the specified
         sections at the specified time?
     """
     section_ids = models.TextField(help_text='A comma separated list of ClassSection IDs that can be selected for this timeblock')
+
+    class Meta:
+        app_label = 'program'
+    
     def boolean_value(self, *args, **kwargs):
         timeblock_id = self.timeblock.id
         user_schedule = kwargs['map']
@@ -1730,6 +1754,9 @@ class VolunteerRequest(models.Model):
     program = models.ForeignKey(Program)
     timeslot = models.ForeignKey('cal.Event')
     num_volunteers = models.PositiveIntegerField()
+
+    class Meta:
+        app_label = 'program'
     
     def num_offers(self):
         return self.volunteeroffer_set.count()
@@ -1756,6 +1783,9 @@ class VolunteerOffer(models.Model):
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
     
     comments = models.TextField(blank=True, null=True)
+
+    class Meta:
+        app_label = 'program'
     
     def __unicode__(self):
         return u'%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)
@@ -1791,6 +1821,7 @@ class RegistrationType(models.Model):
     
     class Meta:
         unique_together = (("name", "category"),)
+        app_label = 'program'
     
     @cache_function
     def get_cached(name, category):
@@ -1830,6 +1861,9 @@ class StudentRegistration(ExpirableModel):
     section = AjaxForeignKey('ClassSection')
     user = AjaxForeignKey(ESPUser)
     relationship = models.ForeignKey(RegistrationType)
+
+    class Meta:
+        app_label = 'program'
     
     def __unicode__(self):
         return u'%s %s in %s' % (self.user, self.relationship, self.section)
@@ -1840,6 +1874,9 @@ class StudentSubjectInterest(ExpirableModel):
     """
     subject = AjaxForeignKey('ClassSubject')
     user = AjaxForeignKey(ESPUser)
+
+    class Meta:
+        app_label = 'program'
 
     def __unicode__(self):
         return u'%s interest in %s' % (self.user, self.subject)

@@ -32,5 +32,5 @@ function force_refresh_csrf_cookie()
 }
 
 $j(document).ready(function() {
-    $j.getScript("/media/scripts/csrf_check.js", set_onsubmit);
+    $j.getScriptWithCaching("/media/scripts/csrf_check.js", set_onsubmit);
 });

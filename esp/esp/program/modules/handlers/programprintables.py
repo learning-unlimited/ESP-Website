@@ -879,18 +879,15 @@ Volunteer schedule for %s:
             students = list(ESPUser.objects.filter(filterObj.get_Q(restrict_to_active=False)).distinct())
 
         students.sort()
-        
         return ProgramPrintables.get_student_schedules(request, students, prog, extra, onsite)
 
     @staticmethod
     def get_student_schedules(request, students, prog, extra='', onsite=False):
         """ generate student schedules """
- 
         context = {}
  
         scheditems = []
         
-        all_events = Event.objects.filter(program=prog).order_by('start')
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
@@ -917,6 +914,9 @@ Volunteer schedule for %s:
             min_index = 0
             times_compulsory = Event.objects.filter(program=prog, event_type__description='Compulsory').order_by('start')
             for t in times_compulsory:
+                t.friendly_times = [t.pretty_time()]
+                t.initial_rooms = []
+                
                 i = min_index
                 while i < len(classes):
                     if classes[i].start_time().start > t.start:
@@ -943,6 +943,7 @@ Volunteer schedule for %s:
             student.classes = classes
             
         context['students'] = students
+        context['program'] = prog
 
         if extra:
             file_type = extra.strip()

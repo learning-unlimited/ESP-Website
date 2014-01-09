@@ -74,6 +74,7 @@ DISPLAYSQL = False
 TEMPLATE_DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
+USE_PROFILER = False
 
 INTERNAL_IPS = (
     '127.0.0.1',
@@ -230,6 +231,7 @@ INSTALLED_APPS = (
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
+    'esp.formstack',
 )
 
 import os

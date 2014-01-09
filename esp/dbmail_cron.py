@@ -11,5 +11,5 @@ os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 from esp import cache_loader
 from esp.dbmail.cronmail import process_messages, send_email_requests
 
-msgs = process_messages()
-send_email_requests(msgs)
+process_messages()
+send_email_requests()

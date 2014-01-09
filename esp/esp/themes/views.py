@@ -53,7 +53,7 @@ def landing(request):
     context = {}
     tc = ThemeController()
     context['theme_name'] = tc.get_current_theme()
-    context['last_customization_name'] = Tag.getTag('prev_theme_customization', default='None')
+    context['last_customization_name'] = tc.get_current_customization()
     return render_to_response('themes/landing.html', request, context)
 
 @admin_required
@@ -124,7 +124,7 @@ def editor(request):
 
         if 'save' in request.POST:
             if request.POST['saveThemeName'] == '':
-                theme_name = Tag.getTag('prev_theme_customization', default='None')
+                theme_name = tc.get_current_customization()
                 if theme_name == 'None':
                     #   Generate a temporary theme name
                     random_slug  = ''.join(random.choice(string.lowercase) for i in range(4))
@@ -134,10 +134,9 @@ def editor(request):
             vars = request.POST.dict()
             palette = request.POST.getlist('palette')
             tc.save_customizations(theme_name, vars=vars, palette=palette)
-            Tag.setTag('prev_theme_customization', value=theme_name)
+            tc.set_current_customization(theme_name)
         elif 'load' in request.POST:
             (vars, palette) = tc.load_customizations(request.POST['loadThemeName'])
-            Tag.setTag('prev_theme_customization', value=request.POST['loadThemeName'])
         elif 'delete' in request.POST:
             tc.delete_customizations(request.POST['loadThemeName'])
         elif 'apply' in request.POST:
@@ -158,7 +157,7 @@ def editor(request):
 
     #   Get list of available customizations
     context['available_themes'] = tc.get_customization_names()
-    context['last_used_setting'] = Tag.getTag('prev_theme_customization', default='None')
+    context['last_used_setting'] = tc.get_current_customization()
 
     #   Load a bunch of preset fonts
     context['sans_fonts'] = sorted(themes_settings.sans_serif_fonts.iteritems())
@@ -189,4 +188,10 @@ def editor(request):
         context['adv_vars'][category_name] = category_vars
 
     return render_to_response('themes/editor.html', request, context)
+
+@admin_required
+def recompile(request):
+    tc = ThemeController()
+    tc.recompile_theme()
+    return HttpResponseRedirect('/themes/')
 
