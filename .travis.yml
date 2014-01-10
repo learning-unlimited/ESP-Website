@@ -8,7 +8,7 @@ env: DJANGO_SETTINGS_MODULE=esp.settings
 before_install:
   - sudo apt-get update
 install: 
-  - sudo apt-get install -y $(cat esp/packages.txt | grep -v node)
+  - sudo apt-get install -y $(cat esp/packages_base.txt | grep -v node)
   # Fiddle with packages to get node and LESS set up
   - wget http://mirrors.kernel.org/ubuntu/pool/universe/libv/libv8/libv8-3.8.9.20_3.8.9.20-2_amd64.deb -O libv8.deb
   - sudo dpkg -i libv8.deb

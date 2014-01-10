@@ -18,7 +18,7 @@ from esp.utils import captcha
 # DATETIMEWIDGET
 calEnable = u"""
 <script type="text/javascript">
-    $j("#%s").datetimepicker({
+    $j("#%s").%s({
         showOn: 'button',
         buttonImage: '%simages/calbutton_tight.png',
         buttonImageOnly: true,
@@ -41,8 +41,9 @@ class DateTimeWidget(forms.widgets.TextInput):
         js = ('scripts/jquery-ui.js',
               'scripts/jquery-ui.timepicker.js')
     
-    def render(self, name, value, attrs=None):
-        
+    def prepare_render_attrs(self, name, value, attrs=None):
+        """ Base function for preparing information needed to render the widget. """
+
         if value is None: value = ''
         final_attrs = self.build_attrs(attrs, type=self.input_type, name=name)
         
@@ -55,10 +56,13 @@ class DateTimeWidget(forms.widgets.TextInput):
         if not final_attrs.has_key('id'):
             final_attrs['id'] = u'%s_id' % (name)
         id = final_attrs['id']
+        return final_attrs
         
-        cal = calEnable % (id, settings.MEDIA_URL, self.dformat, self.tformat)
-        a = u'<input%s />%s' % (forms.util.flatatt(final_attrs), cal)
-        return a
+    def render(self, name, value, attrs=None):
+        final_attrs = self.prepare_render_attrs(name, value, attrs)
+        id = final_attrs['id']
+        cal = calEnable % (id, 'datetimepicker', settings.MEDIA_URL, self.dformat, self.tformat)
+        return u'<input%s />%s' % (forms.util.flatatt(final_attrs), cal)
 
     def value_from_datadict(self, data, files, name):
         dtf = django.utils.formats.get_format('DATETIME_INPUT_FORMATS')
@@ -77,7 +81,17 @@ class DateTimeWidget(forms.widgets.TextInput):
             except ValueError:
                 continue
         return None
+        
+class DateWidget(DateTimeWidget):
+    """ A stripped down version of the DateTimeWidget that uses jQuery UI's
+        built in datepicker. """
 
+    def render(self, name, value, attrs=None):
+        final_attrs = self.prepare_render_attrs(name, value, attrs)
+        id = final_attrs['id']
+        cal = calEnable % (id, 'datepicker', settings.MEDIA_URL, self.dformat, self.tformat)
+        return u'<input%s />%s' % (forms.util.flatatt(final_attrs), cal)
+        
 class ClassAttrMergingSelect(forms.Select):
 
     def build_attrs(self, extra_attrs=None, **kwargs):

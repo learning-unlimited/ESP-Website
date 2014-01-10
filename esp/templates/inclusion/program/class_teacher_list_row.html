@@ -1,5 +1,5 @@
 {# expects program, class, and teacherclsmodule (ClassRegModuleInfo) #}
-<tr>
+<tr{% if not cls.isReviewed %} style="color: gray"{% endif %}{% if cls.isRejected or cls.isCancelled %} style="color: red"{% endif %}>
   {% block cls_title %}
   <td class="clsleft classname bordertop2" colspan="2">
     <span title="{{cls}}">
@@ -27,12 +27,14 @@
   </td>
 
   <td class="clsright bordertop2">
+    {% if not cls.isRejected and not cls.isCancelled %}
     {% if cls.got_index_qsd %}
     <a class="abutton" href="/learn/{{ cls.url }}/index.html"
        title="{{ cls }}...">Visit web page</a>
     {% else %}
     <a class="abutton" href="/learn/{{ cls.url }}/index.edit.html"
        title="Create `{{ cls }}'...">Create web page</a>
+    {% endif %}
     {% endif %}
   </td>
   {% endblock %}
@@ -51,10 +53,12 @@
   </td>
   {% block cls_row_2_buttons %}
   <td class="clsright" colspan="1">
+    {% if cls.isAccepted %}
     <a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}" 
        title="View Class' Students" class="abutton">
       View Students
     </a>
+    {% endif %}
   </td>
   {% endblock %}
 </tr>
@@ -86,6 +90,7 @@
 </tr>
 {% endif %}
 
+{% if cls.isAccepted %}
 {% for sec in cls.sections.all %}
 <tr>
   <td class="clsleft" valign="top"><i>Section {{ sec.index }}</i> <br />
@@ -107,3 +112,4 @@
   {% endblock %}
 </tr>
 {% endfor %}
+{% endif %}

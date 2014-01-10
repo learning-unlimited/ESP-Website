@@ -3,7 +3,7 @@ pillow==2.2.1
 South==0.8.1
 argparse==1.2.1
 cssutils==0.9.10
-django-extensions==1.1.1
+django-extensions==1.2.5
 django-form-utils==0.3.1
 # django-reversion==1.7.1
 git+https://github.com/etianen/django-reversion.git@a5a9c59582329af1b8dc8218f72b3e0021a44aed

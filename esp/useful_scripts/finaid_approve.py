@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 #
 # Approve Financial Aid Requests
 # 
@@ -5,8 +6,8 @@
 # and prints the email address of these users to the screen. Make sure to configure
 # PROGRAM_ID and PROGRAM_COST (in dollars) below.
 #
-# This script should be run from the manage.py shell
-#
+
+from script_setup import *
 
 from esp.program.models import FinancialAidRequest
 from datetime import datetime

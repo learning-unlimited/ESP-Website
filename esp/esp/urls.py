@@ -164,12 +164,16 @@ urlpatterns += patterns('',
     (r'^dataviews/', include('esp.dataviews.urls')) )
     
 urlpatterns += patterns('esp.qsdmedia.views', 
-    (r'^download\/([^/]+)/?$', 'qsdmedia2') )
+    (r'^download\/([^/]+)/?$', 'qsdmedia2'), 
+    (r'^download\/([^/]+)\/([^/]+)/?$', 'qsdmedia2') )
 
 urlpatterns += patterns('', 
     (r'^accounting/', include('esp.accounting.urls')) )
 
 urlpatterns += debug_toolbar.urls.urlpatterns
+
+urlpatterns += patterns('esp.formstack.views',
+    (r'^medicalsyncapi$', 'medicalsyncapi'),)
 
 urlpatterns +=patterns('esp.customforms.views',
 	(r'^customforms/$','landing'),
