@@ -108,7 +108,6 @@ class ThemesTest(TestCase):
                 
                 #   If theme setup succeeded, we will be redirected to the landing page.
                 response = self.client.post('/themes/setup/', settings_dict, follow=True)
-                print "Theme setup response: ", response.redirect_chain
                 self.assertTrue(('http://testserver/themes/', 302) in response.redirect_chain)
                 
             #   Check that the CSS stylesheet has been included in the page.

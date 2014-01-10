@@ -74,7 +74,6 @@ class DashboardTest(ProgramFrameworkTest):
         for key in students_dict.iterkeys():
             student_display_dict[student_labels_dict.get(key, key)] = students_dict[key]
 
-        print "testStudentStats", self.stats_response
         for query_label, query in student_display_dict.iteritems():
             value = query.count()
             json_str = "[\"%s\", %d]" % (query_label, value)
@@ -100,8 +99,6 @@ class DashboardTest(ProgramFrameworkTest):
         ## Make sure all classes are listed
         json_classes = json.loads(str(self.classes_response.content))
         classes = ClassSubject.objects.filter(parent_program=self.program)
-        print "testClasses"
-        print self.classes_response
         self.assertEquals(len(json_classes["classes"]), classes.count())
         
         json_classes_dict = dict()
