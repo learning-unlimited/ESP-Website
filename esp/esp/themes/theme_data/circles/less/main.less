@@ -57,64 +57,115 @@ body {
   float: left;
 }
 
-#nav_buttons {
-  background: #00003C;
-  float: none;
+/*  Nav buttons - rendered via SVG masking  */
+
+div.nav_button {
+    width: 140px;
+    height: 180px;
+    float: left;
+    
+    /*  Backup for browsers without SVG support */
+    color: @navbarBackground;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 30px;
+    line-height: 40px;
+    font-family: Arial, Helvetica, sans-serif;
 }
 
-#nav_button1 {
-  width: 165px;
-  height: 180px;
-  background-image: url(/media/images/theme/linkf_01.gif); 
-  float: left;
+div.nav_button_spacer {
+    width: 40px;
+    height: 180px;
+    float: left;
+    background: @navbarBackground;
 }
-  
-#nav_button1:hover {
-  background-image: url(/media/images/theme/linkr_01.gif);
+
+div.nav_button :hover {
+    background: white;
 }
-  
-#nav_button2 {
-  width: 137px;
-  height: 180px;
-  background-image: url(/media/images/theme/linkf_02.gif); 
-  float: left;
+
+.nav_button_text {
+    font-size: 26px;
+    font-family: Arial, Helvetica, sans-serif;
+    text-anchor: middle;
+    text-rendering: geometricPrecision;
+    -webkit-backface-visibility: hidden;
+    -webkit-transform-style: preserve-3d; 
 }
-  
-#nav_button2:hover {
-  background-image: url(/media/images/theme/linkr_02.gif);
+
+.hide_mixin (@hide) when (@hide) {
+    visibility: hidden;
 }
-  
-#nav_button3 {
-  width: 137px;
-  height: 180px;
-  background-image: url(/media/images/theme/linkf_03.gif); 
-  float: left;
+.hide_mixin (@hide) when not (@hide) {
+    visibility: visible;
 }
-  
-#nav_button3:hover {
-  background-image: url(/media/images/theme/linkr_03.gif);
+
+.visible_mixin (@vis) when not (@vis) {
+    visibility: hidden;
 }
-  
-#nav_button4 {
-  width: 161px;
-  height: 180px;
-  background-image: url(/media/images/theme/linkf_04.gif); 
-  float: right;
+.visible_mixin (@vis) when (@vis) {
+    visibility: visible;
 }
-  
-#nav_button4:hover {
-  background-image: url(/media/images/theme/linkr_04.gif);
+
+.fill_color_mixin (@invert) when (@invert) {
+    fill: white;
 }
-  
+.fill_color_mixin (@invert) when not (@invert) {
+    fill: black;
+}
+
+.fill_color_mixin_rev (@invert) when (@invert) {
+    fill: black;
+}
+.fill_color_mixin_rev (@invert) when not (@invert) {
+    fill: white;
+}
+
+.nav_button_mask {
+    fill: white;
+}
+
+.nav_button_circle {
+    .visible_mixin(@show_circles);
+    .fill_color_mixin_rev(@show_circles);
+}
+
+.nav_button_text {
+    .fill_color_mixin(@show_circles);
+}
+
+.nav_button_rect {
+    fill: @navbarBackground;
+}
+
+#nav_button_learn {
+    background: @nav_button_learn;
+}
+
+#nav_button_teach {
+    background: @nav_button_teach;
+}
+
+#nav_button_helpout {
+    background: @nav_button_helpout;
+}
+
+#nav_button_moreinfo {
+    background: @nav_button_moreinfo;
+}
+
 #navbar_header {
-  background: #BCCAF5;
+  background: @sidebarHeader;
   float: left;
+  text-align: center;
+  vertical-align: middle;
   width: 200px;
   height: 30px;
+  line-height: 30px;
 }
 
 #chicago_main_header {
-  background: #497CCA;
+  background: @content_header;
   float: right;
   width: 600px;
   min-height: 30px;
@@ -130,7 +181,7 @@ body {
 #navbar {
   float: left;  
   width: 200px;
-  background: #141414;
+  background: @sidebarBackground;
 /*
   margin-bottom: -250cm;
   padding-bottom: 250cm;
@@ -178,7 +229,7 @@ body {
 
 
 #chicago_main {
-  background: white;
+  background: @bodyBackground;
   float: right;
   width: 600px;
 /*
@@ -193,7 +244,7 @@ body {
 }
 
 .announcementlink_title {
-  color: #BCCAF5;
+  color: @sidebarActive;
   font-size: 11pt;
   line-height: 140%;
   font-weight: bold;
@@ -201,7 +252,7 @@ body {
 
 #navbar {
   color: #FFFFFF;
-  font-size: 80%;
+  font-size: 90%;
   line-height: 130%;
 }
 
@@ -212,36 +263,16 @@ body {
 }
 
 #navbar a:link {
-  color: #BCCAF5;
+  color: @sidebarLink;
   text-decoration: none;
 }
 
 #navbar a:visited {
-  color: #BCCAF5;
+  color: @sidebarLink;
 }
 
 #navbar a:hover {
-  color: #497CCA;
-}
-
-#navbar a:active {
-  color: #BCCAF5;
-}
-
-.learn {
-  color: #4DCE3D;
-}
-
-.teach {
-  color: #FCD221;
-}
-
-.volunteer {
-  color: #ED1C24;
-}
-
-.more_info {
-  color: #CC66FF;
+  color: @sidebarLinkHover;
 }
 
 div .emailwarning
