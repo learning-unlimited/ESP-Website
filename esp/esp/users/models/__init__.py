@@ -33,7 +33,7 @@ Learning Unlimited, Inc.
 """
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import simplejson as json
 
 from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
@@ -112,6 +112,7 @@ class UserAvailability(models.Model):
     priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
 
     class Meta:
+        app_label = 'users'
         db_table = 'users_useravailability'
 
     def __unicode__(self):
@@ -174,9 +175,24 @@ class ESPUser(User, AnonymousUser):
 
         self.other_user = False
 
-        if not hasattr(ESPUser, 'isOfficer'):
-            for user_type in ESPUser.getTypes() + ['Officer']:
-                setattr(ESPUser, 'is%s' % user_type, ESPUser.create_membership_method(user_type))
+        self.create_membership_methods()
+
+    @classmethod
+    def create_membership_methods(cls):
+        """
+        Setup for the ESPUser membership methods
+        """
+        if not hasattr(cls, 'isOfficer'):
+            for user_type in cls.getTypes(use_tag=False):
+                # Make sure that all of the default user types have membership
+                # methods defined, because some (such as isStudent()) are used
+                # in the code even if that user type isn't included in the Tag
+                # override. Start by defining all the membership methods for
+                # the default types as returning False, and then overwrite them
+                # as necessary.
+                setattr(cls, 'is%s' % user_type, lambda user: False)
+            for user_type in cls.getTypes() + ['Officer']:
+                setattr(cls, 'is%s' % user_type, cls.create_membership_method(user_type))
 
     def is_anonymous(self):
         return self._is_anonymous
@@ -429,10 +445,15 @@ class ESPUser(User, AnonymousUser):
         return users[num]
 
     @cache_function
-    def getTypes():
-        """ Get a list of the different roles an ESP user can have. By default there are five roles,
-            but there can be more. (Returns ['Student','Teacher','Educator','Guardian','Volunteer'] by default. """
-        return [x[0] for x in ESPUser.getAllUserTypes()]
+    def getTypes(use_tag=True):
+        """
+        Get a list of the different roles an ESP user can have. By default
+        there are five roles, but there can be more. Returns
+        ['Student','Teacher','Educator','Guardian','Volunteer'] by default. If
+        use_tag is False, always returns the default roles, and ignores the Tag
+        override.
+        """
+        return [x[0] for x in ESPUser.getAllUserTypes(use_tag=use_tag)]
     getTypes.depend_on_model(Tag)
     getTypes = staticmethod(getTypes)
 
@@ -745,10 +766,21 @@ class ESPUser(User, AnonymousUser):
     isAdmin = isAdministrator
 
     @cache_function
-    def getAllUserTypes():
-        #   Allow Tag to remove user types as well as adding/updating them.
-        #   So, if you set the Tag, be sure to include all of the user types you want.
-        return json.loads(Tag.getTag('user_types', default=json.dumps(DEFAULT_USER_TYPES)))
+    def getAllUserTypes(use_tag=True):
+        """
+        Get the list of all user types, along with their metadata (label and
+        profile form). By default returns DEFAULT_USER_TYPES. Allow user_types
+        Tag to override this struct. The Tag can remove user types as well as
+        adding/updating them. So, if you set the Tag, be sure to include all
+        of the user types you want.
+
+        If use_tag is False, always returns DEFAULT_USER_TYPES, and ignores the
+        Tag override.
+        """
+        user_types = DEFAULT_USER_TYPES
+        if use_tag:
+            user_types = json.loads(Tag.getTag('user_types', default=json.dumps(user_types)))
+        return user_types
     getAllUserTypes.depend_on_model(Tag)
     getAllUserTypes = staticmethod(getAllUserTypes)
 
@@ -817,15 +849,19 @@ are a teacher of the class"""
         return len(User.objects.filter(username=username.lower()).values('id')[:1]) > 0
 
     @staticmethod
-    def current_schoolyear():
-        now = datetime.now()
+    def current_schoolyear(program=None):
+        if program == None:
+            now = date.today()
+        else:
+            # "now" is actually whenever the program ran or will run
+            now = program.dates()[0]
         curyear = now.year
         # Changed from 6/1 to 5/1 rollover so as not to affect start of Summer HSSP registration
         # - Michael P 5/24/2010
         # Changed from 5/1 to 7/31 rollover to as to neither affect registration starts nor occur prior to graduation.
         # Adam S 8/1/2010
         #if datetime(curyear, 6, 1) > now:
-        if datetime(curyear, 7, 31) > now:
+        if date(curyear, 7, 31) > now:
             schoolyear = curyear
         else:
             schoolyear = curyear + 1
@@ -833,8 +869,6 @@ are a teacher of the class"""
 
     @cache_function
     def getGrade(self, program = None):
-        if hasattr(self, '_grade'):
-            return self._grade
         grade = 0
         if self.isStudent():
             if program is None:
@@ -844,24 +878,19 @@ are a teacher of the class"""
                 regProf = RegistrationProfile.getLastForProgram(self,program)
             if regProf and regProf.student_info:
                 if regProf.student_info.graduation_year:
-                    grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year)
+                    grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year, ESPUser.current_schoolyear(program))
                     if program:
                         grade += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
-                        
-
-        self._grade = grade
 
         return grade
     #   The cache will need to be cleared once per academic year.
     getGrade.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
     getGrade.depend_on_row(lambda: Tag, lambda tag: {'program' :  tag.target})
 
-    def currentSchoolYear(self):
-        return ESPUser.current_schoolyear()-1
-
     @staticmethod
-    def gradeFromYOG(yog):
-        schoolyear = ESPUser.current_schoolyear()
+    def gradeFromYOG(yog, schoolyear=None):
+        if schoolyear == None:
+            schoolyear = ESPUser.current_schoolyear()
         try:
             yog        = int(yog)
         except:
@@ -891,6 +920,7 @@ class StudentInfo(models.Model):
     k12school = AjaxForeignKey('K12School', help_text='Begin to type your school name and select your school if it comes up.', blank=True, null=True)
     school = models.CharField(max_length=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
+    gender = models.CharField(max_length=32,blank=True,null=True)
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     heard_about = models.TextField(blank=True, null=True)
@@ -949,6 +979,7 @@ class StudentInfo(models.Model):
             form_dict['k12school']   = self.school
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
+        form_dict['gender']          = self.gender
         if Tag.getTag('studentinfo_shirt_options'):
             form_dict['shirt_size']      = self.shirt_size
             form_dict['shirt_type']      = self.shirt_type
@@ -993,6 +1024,7 @@ class StudentInfo(models.Model):
             
         studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
         studentInfo.dob             = new_data['dob']
+        studentInfo.gender          = new_data.get('gender', None)
         
         studentInfo.heard_about      = new_data.get('heard_about', '')
 
@@ -1903,6 +1935,9 @@ class Record(models.Model):
 
     time = models.DateTimeField(blank=True, default = datetime.now)
 
+    class Meta:
+        app_label = 'users'
+
     @classmethod
     def user_completed(cls, user, event, program=None):
         if program is None:
@@ -1997,6 +2032,9 @@ class Permission(ExpirableModel):
     #their classes
     #it may, however, be the case that this model is not general enough,
     #in which case program may need to be replaced by a generic foreignkey
+
+    class Meta:
+        app_label = 'users'
 
     @classmethod
     def user_has_perm(self, user, name, program=None, when=None):
@@ -2134,7 +2172,7 @@ def install():
         print 'Created onsite user, please set their password in the admin interface.'
 
 # We can't import these earlier because of circular stuff...
-from esp.users.models.userbits import UserBit
+from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
 from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, Program, StudentRegistration

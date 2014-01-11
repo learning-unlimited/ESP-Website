@@ -172,6 +172,9 @@ urlpatterns += patterns('',
 
 urlpatterns += debug_toolbar.urls.urlpatterns
 
+urlpatterns += patterns('esp.formstack.views',
+    (r'^medicalsyncapi$', 'medicalsyncapi'),)
+
 urlpatterns +=patterns('esp.customforms.views',
 	(r'^customforms/$','landing'),
 	(r'^customforms/create/$','formBuilder'),

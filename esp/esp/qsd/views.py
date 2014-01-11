@@ -231,9 +231,10 @@ def ajax_qsd(request):
     if ( request.user.id is None ):
         return HttpResponse(content='Oops! Your session expired!\nPlease open another window, log in, and try again.\nYour changes will not be lost if you keep this page open.', status=500)
     if post_dict['cmd'] == "update":
-        qsd = QuasiStaticData.objects.get(id=post_dict['id'])
-        if not Permission.user_can_edit_qsd(request.user, qsd.url):
+        if not Permission.user_can_edit_qsd(request.user, post_dict['url']):
             return HttpResponse(content='Sorry, you do not have permission to edit this page.', status=500)
+
+        qsd, created = QuasiStaticData.objects.get_or_create(url=post_dict['url'], defaults={'author': request.user})
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
@@ -247,16 +248,6 @@ def ajax_qsd(request):
 
         result['status'] = 1
         result['content'] = markdown(qsd.content)
-        result['id'] = qsd.id
-    if post_dict['cmd'] == "create":
-        if not Permission.user_can_edit_qsd(request.user, post_dict['url']):
-            return HttpResponse(content="Sorry, you do not have permission to edit this page.", status=500)
-        qsd, created = QuasiStaticData.objects.get_or_create(url=post_dict['url'],defaults={'author': request.user})
-        qsd.content = post_dict['data']
-        qsd.author = request.user
-        qsd.save()
-        result['status'] = 1
-        result['content'] = markdown(qsd.content)
-        result['id'] = qsd.id
-    
+        result['url'] = qsd.url
+
     return HttpResponse(simplejson.dumps(result))

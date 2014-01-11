@@ -59,7 +59,6 @@ from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
-from esp.accounting_core.models import CompletedTransactionException
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
 from esp.resources.models import ResourceType
@@ -573,11 +572,11 @@ def submit_transaction(request):
             from django.conf import settings
             recipient_list = [contact[1] for contact in settings.ADMINS]
             recipient_list.append(settings.DEFAULT_EMAIL_ADDRESSES['treasury']) 
-            refs = 'Cybersource request ID: %s' % post_id
+            refs = 'Cybersource request ID: %s' % post_identifier
 
             subject = 'Possible Duplicate Postback/Payment'
-            refs = 'User: %s (%d); Program: %s (%d)' % (iac.user.name(), iac.user.id, self.program.niceName(), self.program.id)
-            refs += '\n\nPrevious payments\' Transfer IDs: ' + ( u', '.join([x.id for x in prev_payments]) )
+            refs = 'User: %s (%d); Program: %s (%d)' % (iac.user.name(), iac.user.id, iac.program.niceName(), iac.program.id)
+            refs += '\n\nPrevious payments\' Transfer IDs: ' + ( u', '.join([str(x.id) for x in prev_payments]) )
 
             # Send mail!
             send_mail('[ ESP CC ] ' + subject + ' by ' + iac.user.first_name + ' ' + iac.user.last_name, \
@@ -590,8 +589,15 @@ def submit_transaction(request):
 
         tl = 'learn'
         one, two = iac.program.url.split('/')
+        destination = Tag.getProgramTag("cc_redirect", iac.program, default="confirmreg")
 
-        return HttpResponseRedirect("http://%s/%s/%s/%s/confirmreg" % (request.META['HTTP_HOST'], tl, one, two))
+        if destination.startswith('/') or '//' in destination:
+            pass
+        else:
+            # simple urls like 'confirmreg' are relative to the program
+            destination = "/%s/%s/%s/%s" % (tl, one, two, destination)
+
+        return HttpResponseRedirect(destination)
 
     return render_to_response( 'accounting_docs/credit_rejected.html', request, {} )
 
