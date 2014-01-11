@@ -1,6 +1,6 @@
 {% extends "elements/html" %}
 
-{% block fulltitle %}MIT ESP - {% block title %}Home{% endblock %}{% endblock %}
+{% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}Home{% endblock %}{% endblock %}
 {% block stylesheets %}
 {% comment %}
 {% if request.user.is_authenticated %}

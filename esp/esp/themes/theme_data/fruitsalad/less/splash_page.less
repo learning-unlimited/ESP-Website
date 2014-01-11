@@ -51,41 +51,30 @@ top: 311px; left: 275px;
 #remember_label {
 position: absolute;
 top: 310px; left: 300px;
-color: #3f7a00;
+color: @tabcolor0_accent2_color;
 }
 
 #orbox {
 position: absolute;
 top: 343px; left: 340px;
-/*color: #3f7a00;*/
+/*color: @tabcolor0_accent2_color;*/
 }
 
 #login_box_index {
 position: absolute;
 top: 380px; left: 220px;
 width: 265px; height: 70px;
-background: #56a900;
+background: @tabcolor0_accent1_color;
 padding: 6px;
+border-radius: @rounding_radius;
 }
 
-
-#login_box_index .corners div {
-position: absolute;
-width: 6px;
-height: 6px;
-background-image: url(/media/images/theme/corners_6_gw.png);
-}
-
-.corners .ul { left: 0;  top: 0; background-position: 0px 0px; }
-.corners .ur { right: 0; top: 0; background-position: 0px 12px; }
-.corners .dl { left: 0;  bottom: 0; background-position: 0px 18px; }
-.corners .dr { right: 0; bottom: 0; background-position: 0px 6px; }
 
 #login_div_index {
 position: absolute;
 width: 265px;
 height: 70px;
-background: #88cf00;
+background: @tabcolor0_base_color;
 }
 
 #login_user_index {
@@ -95,7 +84,7 @@ padding: 1px;
 height: 15px;
 font-size: 12px;
 width: 110px;
-/*border: 1px #88cf00 inset;*/
+/*border: 1px @tabcolor0_base_color inset;*/
 }
 
 #login_pswd_index {
@@ -105,14 +94,14 @@ padding: 1px;
 height: 15px;
 font-size: 12px;
 width: 110px;
-/*border: 1px #88cf00 inset;*/
+/*border: 1px @tabcolor0_base_color inset;*/
 }
 
 #login_submit_index {
 position: absolute;
 top: 12px; right: 48px;
 height: 21px; width: 50px;
-background: #56a900 url(/media/images/theme/yg_login.png) no-repeat 0% 0% scroll;
+background: @tabcolor0_accent1_color url(/media/images/theme/yg_login.png) no-repeat 0% 0% scroll;
 color: transparent;
 border: none;
 cursor: pointer;
@@ -123,7 +112,7 @@ position: absolute;
 position: absolute;
 top: 12px; right: 8px;
 height: 21px; width: 40px;
-background: #56a900 url(/media/images/theme/yg_signup.png) no-repeat 0% 0% scroll;
+background: @tabcolor0_accent1_color url(/media/images/theme/yg_signup.png) no-repeat 0% 0% scroll;
 color: transparent;
 border: none;
 }
@@ -135,5 +124,5 @@ font-size: smaller;
 }
 
 #login_box_index a {
-color: #3f7a00;
+color: @tabcolor0_accent2_color;
 }
