@@ -135,7 +135,7 @@ then
     then
         MODE_PROD=true
     else
-        MODE_PROD=false
+        MODE_PROD=
     fi
 fi
 if [[ $MODE_PROD ]]
@@ -143,7 +143,7 @@ then
 	echo "MODE_PROD=true" >> $BASEDIR/.espsettings
 	echo "Installing production site"
 else
-	echo "MODE_PROD=false" >> $BASEDIR/.espsettings
+	echo "MODE_PROD=" >> $BASEDIR/.espsettings
 	echo "Installing development site"
 fi
 
