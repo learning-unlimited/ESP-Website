@@ -229,20 +229,24 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
     #   Changelog tests
     #
     #############################################################
+    #TODO:  is there a reason we send the time back?
+    #TODO:  make the system handle last fetched index 0
+    #TODO:  think about test cleanup.
     def testChangeLog(self):
         self.clearScheduleAvailability()
+        # the following is a hack to get around the fact that 
+        # the system doesn't return the changelog if you give
+        # 0 as a last fetched index
+        self.unschedule_class(self.scheduleClass()[0].id)
+        last_fetched_index = json.loads(self.client.get(self.changelog_url, {'last_fetched_index': 1 }).content)["changelog"][-1]["index"]
 
-        #make sure that the change log is at least 
-        (section, rooms, times) = self.scheduleClass()
-        self.unschedule_class(section.id)
-
-        beforeSchedule = self.changelog.get_latest_index()
-        # Schedule one class.
+        #put something in the changelog to fetch
         self.scheduleClass()
 
         #fetch the changelog
-        changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': beforeSchedule })
+        changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': last_fetched_index })
         self.failUnless(changelog_response.status_code == 200, "Changelog not successfully retreieved")
+
         changelog = json.loads(changelog_response.content)["changelog"]
         self.failUnless(len(changelog) == 1, "Change log does not contain exactly one class: " + str(changelog) )
 
