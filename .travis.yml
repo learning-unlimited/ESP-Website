@@ -18,6 +18,7 @@ before_script:
   - psql -c "CREATE DATABASE test_django OWNER testuser;" -U postgres
 script: 
   - cd esp
+  - ./manage.py collectstatic --noinput
   - ./manage.py test
 notifications:
   email: false  # disable emails until we configure the tests
