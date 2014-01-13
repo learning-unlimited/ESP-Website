@@ -87,7 +87,10 @@ class ThemeController(object):
         in the theme_template_control Tag.
         """
         form_class = self.get_config_form_class(self.get_current_theme())
-        data = form_class.initial_data()
+        if form_class is not None:
+            data = form_class.initial_data()
+        else:
+            data = {}
         data.update(json.loads(Tag.getTag('theme_template_control', default='{}')))
         return data
 
