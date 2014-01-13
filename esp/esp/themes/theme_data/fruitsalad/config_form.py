@@ -51,7 +51,7 @@ class ConfigForm(ThemeConfigurationForm):
                                     ('qsdfront.html','QSD')),
                            initial='qsdfront.html',
                            help_text='Choose the style of the front page of ' +
-                           '<a href="%(host)s">%(host)s</a>. "Bubbles" is a ' +
+                           '<a href="https://%(host)s">%(host)s</a>. "Bubbles" is a ' +
                            # %(host)s is filled in by __init__()
                            'graphical landing page (see for example ' +
                            '<a href="https://esp.mit.edu">esp.mit.edu</a>), ' +
