@@ -38,6 +38,7 @@ from esp.utils.widgets import NavStructureWidget
 from esp.middleware.threadlocalrequest import get_current_request
 
 from django import forms
+from django.conf import settings
 
 class ConfigForm(ThemeConfigurationForm):
     titlebar_prefix = forms.CharField()
@@ -62,7 +63,11 @@ class ConfigForm(ThemeConfigurationForm):
         super(ConfigForm, self).__init__(*args, **kwargs)
 
         # fill in %(host)s for front_page_style.help_text
-        host = get_current_request().META['HTTP_HOST']
+        request = get_current_request()
+        if request is not None:
+            host = request.META['HTTP_HOST']
+        else:
+            host = settings.SITE_INFO[1]
         self.fields['front_page_style'].help_text = \
             self.fields['front_page_style'].help_text % {'host': host}
 
