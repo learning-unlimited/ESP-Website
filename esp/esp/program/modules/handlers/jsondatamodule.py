@@ -316,7 +316,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 cls['difficulty'] = c.hardness_rating
                 cls['prereqs'] = c.prereqs
             cls['emailcode'] = c.emailcode()
-            cls['length'] = float(c.duration)
+            if c.duration:
+                cls['length'] = float(c.duration)
             cls['sections'] = [s.id for s in c.sections.all()]
             cls['teachers'] = [t.id for t in class_teachers]
             for t in class_teachers:
