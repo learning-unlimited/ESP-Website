@@ -370,7 +370,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         #check whether we have a log entry at least as old as the last fetched time
         #if not, we return a command to reload instead of the log
         #note: negative number implies we want to debug dump changelog
-        if cl.get_earliest_index() is not None and cl.get_earliest_index() > last_fetched_index:
+        if cl.get_earliest_index() is not None and last_fetched_index !=0 and cl.get_earliest_index() > last_fetched_index:
             return { "other" : [ { 'command' : "reload", 'earliest_index' : cl.get_earliest_index(), 'latest_index' : cl.get_latest_index(), 'time' : time.time() } ] }
 
         return { "changelog" : cl.get_log(last_fetched_index), 'other' : [ { 'time': time.time() } ] }
