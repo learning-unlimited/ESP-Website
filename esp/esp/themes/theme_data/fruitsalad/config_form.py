@@ -48,6 +48,7 @@ class ConfigForm(ThemeConfigurationForm):
     front_page_style = forms.ChoiceField(
                            choices=(('bubblesfront.html','Bubbles'),
                                     ('qsdfront.html','QSD')),
+                           initial='qsdfront.html',
                            help_text='Choose the style of the front page of ' +
                            '<a href="%(host)s">%(host)s</a>. "Bubbles" is a ' +
                            # %(host)s is filled in by __init__()
