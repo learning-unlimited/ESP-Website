@@ -35,6 +35,7 @@ Learning Unlimited, Inc.
 
 from esp.themes.forms import ThemeConfigurationForm
 from esp.utils.widgets import NavStructureWidget
+from esp.middleware.threadlocalrequest import get_current_request
 
 from django import forms
 
@@ -44,4 +45,23 @@ class ConfigForm(ThemeConfigurationForm):
     contact_info = forms.CharField(widget=forms.Textarea)
     nav_structure = forms.Field(widget=NavStructureWidget)
     facebook_link = forms.URLField(required=False, help_text='Leave blank to avoid including a Facebook link.')
-    front_page_style = forms.ChoiceField(choices=(('bubblesfront.html', 'Bubbles'), ('qsdfront.html', 'QSD')))
+    front_page_style = forms.ChoiceField(
+                           choices=(('bubblesfront.html','Bubbles'),
+                                    ('qsdfront.html','QSD')),
+                           help_text='Choose the style of the front page of ' +
+                           '<a href="%(host)s">%(host)s</a>. "Bubbles" is a ' +
+                           # %(host)s is filled in by __init__()
+                           'graphical landing page (see for example ' +
+                           '<a href="https://esp.mit.edu">esp.mit.edu</a>), ' +
+                           'and "QSD" is a standard page of editable ' +
+                           'content (see for example ' +
+                           '<a href="https://yale.learningu.org">yale.learningu.org</a>).')
+
+    def __init__(self, *args, **kwargs):
+        super(ConfigForm, self).__init__(*args, **kwargs)
+
+        # fill in %(host)s for front_page_style.help_text
+        host = get_current_request().META['HTTP_HOST']
+        self.fields['front_page_style'].help_text = \
+            self.fields['front_page_style'].help_text % {'host': host}
+
