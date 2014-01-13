@@ -199,7 +199,7 @@ class ResourceModule(ProgramModuleObj):
             time_delta = start_date - prev_timeslots[0].start.date()
             for orig_timeslot in prev_timeslots:
                 new_timeslot = Event(
-                    anchor = self.program.anchor,
+                    program = self.program,
                     event_type = orig_timeslot.event_type,
                     short_description = orig_timeslot.short_description,
                     description = orig_timeslot.description,
@@ -208,7 +208,7 @@ class ResourceModule(ProgramModuleObj):
                     end   = orig_timeslot.end + time_delta,
                 )
                 #   Save the new timeslot only if it doesn't duplicate an existing one
-                if import_mode == 'save' and not Event.objects.filter(anchor=new_timeslot.anchor, start=new_timeslot.start, end=new_timeslot.end).exists():
+                if import_mode == 'save' and not Event.objects.filter(program=new_timeslot.program, start=new_timeslot.start, end=new_timeslot.end).exists():
                     new_timeslot.save()
                 new_timeslots.append(new_timeslot)
             
@@ -218,7 +218,7 @@ class ResourceModule(ProgramModuleObj):
             context['new_timeslots'] = new_timeslots
             if import_mode == 'preview':
                 context['prog'] = self.program
-                response = render_to_response(self.baseDir()+'timeslot_import.html', request, (prog, tl), context)
+                response = render_to_response(self.baseDir()+'timeslot_import.html', request, context, prog)
             else:
                 extra = 'timeslot'
         
