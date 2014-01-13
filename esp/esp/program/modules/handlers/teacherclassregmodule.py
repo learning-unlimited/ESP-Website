@@ -57,6 +57,7 @@ from datetime                    import timedelta
 from esp.mailman                 import add_list_member
 from django.http                 import HttpResponseRedirect
 from django.db                   import models
+from django.forms.util           import ErrorDict
 from esp.middleware.threadlocalrequest import get_current_request
 import simplejson as json
 from copy import deepcopy
@@ -760,13 +761,26 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     current_data['optimal_class_size_range'] = newclass.optimal_class_size_range.id
                 if newclass.allowable_class_size_ranges.all():
                     current_data['allowable_class_size_ranges'] = list(newclass.allowable_class_size_ranges.all().values_list('id', flat=True))
+                # Handle grade ranges outside program range by making them blank
+                # so the user must specify them
+                if 'grade_min' in current_data and (
+                    current_data['grade_min'] < self.program.grade_min or
+                    current_data['grade_min'] > self.program.grade_max):
+                    current_data['grade_min'] = None
+                if 'grade_max' in current_data and (
+                    current_data['grade_max'] < self.program.grade_min or
+                    current_data['grade_max'] > self.program.grade_max):
+                    current_data['grade_max'] = None
+
                 if not populateonly:
                     context['class'] = newclass
 
                 if action=='edit':
                     reg_form = TeacherClassRegForm(self, current_data)
+                    if populateonly: reg_form._errors = ErrorDict()
                 elif action=='editopenclass':
                     reg_form = TeacherOpenClassRegForm(self, current_data)
+                    if populateonly: reg_form._errors = ErrorDict()
                 
                 #   Todo...
                 ds = newclass.default_section()
