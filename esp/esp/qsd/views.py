@@ -197,9 +197,9 @@ def qsd(request, url):
         if not have_edit:
             raise ESPError(False), "You don't have permission to edit this page."
 
-        m = ESPMarkdown(qsd_rec.content, media={})
+        m = ESPMarkdown(media={})
 
-        m.toString()
+        m.convert(qsd_rec.content)
 #        assert False, m.BrokenLinks()
         
         # Render an edit form

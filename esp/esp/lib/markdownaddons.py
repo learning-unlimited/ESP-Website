@@ -1,4 +1,5 @@
-from esp.lib.markdown import ImagePattern, LinkPattern, Markdown, LINK_RE, LINK_ANGLED_RE, IMAGE_LINK_RE
+from markdown import Markdown
+from markdown.inlinepatterns import ImagePattern, LinkPattern, LINK_RE, IMAGE_LINK_RE
 
 class ESPImagePattern (ImagePattern):
     """ Track if detected images are known or unknown to media{} """
@@ -76,7 +77,7 @@ class ESPMarkdown(Markdown):
         return used_links
         
 
-    def __init__(self, source=None, media=None):
+    def __init__(self, media=None, **kwargs):
         """ Handle objects that have been overloaded to deal with the media dictionary """
         if media is None: media = {}
         self.media = media
@@ -84,12 +85,10 @@ class ESPMarkdown(Markdown):
 
         self.IMAGE_LINK_PATTERN = ESPImagePattern(IMAGE_LINK_RE)
         self.LINK_PATTERN = ESPLinkPattern(LINK_RE)
-        self.LINK_ANGLED_PATTERN = ESPLinkPattern(LINK_ANGLED_RE)
 
         for i in [ self.IMAGE_LINK_PATTERN,
-                   self.LINK_PATTERN,
-                   self.LINK_ANGLED_PATTERN ]:
+                   self.LINK_PATTERN ]:
             i.media_src = self
 
 
-        super(ESPMarkdown, self).__init__(source)
+        super(ESPMarkdown, self).__init__(**kwargs)
