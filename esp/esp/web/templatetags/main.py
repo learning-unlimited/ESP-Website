@@ -52,22 +52,20 @@ def bool_and(obj1,obj2):
     return obj1 and obj2
     
 @register.filter
-def extract_theme(str):
+def extract_theme(url):
     #   Get the appropriate color scheme out of the Tag that controls nav structure
     #   (specific to MIT theme)
     tab_index = 0
     tc = ThemeController()
     settings = tc.get_template_settings()
+    url_dir = os.path.dirname(url)
     for category in settings['nav_structure']:
-        if category['header_link'][:5] == str[:5]:
+        category_dir = os.path.dirname(category['header_link'])
+        if url_dir.startswith(category_dir):
             i = 1
             for item in category['links']:
-                if str == item['link']:
-                    tab_index = i
-                    break
-                path_current = os.path.dirname(str)
-                path_tab = os.path.dirname(item['link'])
-                if len(path_current) > len(path_tab) and path_current.startswith(path_tab):
+                item_dir = os.path.dirname(item['link'])
+                if url_dir.startswith(item_dir):
                     tab_index = i
                     break
                 i += 1
