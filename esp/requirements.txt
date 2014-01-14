@@ -5,8 +5,7 @@ argparse==1.2.1
 cssutils==0.9.10
 django-extensions==1.2.5
 django-form-utils==0.3.1
-# django-reversion==1.7.1
-git+https://github.com/etianen/django-reversion.git@a5a9c59582329af1b8dc8218f72b3e0021a44aed
+django-reversion==1.8.0
 django-selenium==0.9.6
 flup==1.0.2
 icalendar==3.5
