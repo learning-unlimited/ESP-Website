@@ -63,6 +63,7 @@ admin_site.register(ESPUser, ESPUserAdmin)
 
 class RecordAdmin(admin.ModelAdmin):
     list_display = ['id', 'user', 'event', 'program']
+    list_filter = ['event', 'program', ]
     search_fields = ['user__username', 'user__first_name', 'user__last_name']
 admin_site.register(Record, RecordAdmin)
 
