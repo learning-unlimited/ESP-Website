@@ -761,16 +761,18 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     current_data['optimal_class_size_range'] = newclass.optimal_class_size_range.id
                 if newclass.allowable_class_size_ranges.all():
                     current_data['allowable_class_size_ranges'] = list(newclass.allowable_class_size_ranges.all().values_list('id', flat=True))
-                # Handle grade ranges outside program range by making them blank
-                # so the user must specify them
-                if 'grade_min' in current_data and (
-                    current_data['grade_min'] < self.program.grade_min or
-                    current_data['grade_min'] > self.program.grade_max):
-                    current_data['grade_min'] = None
-                if 'grade_max' in current_data and (
-                    current_data['grade_max'] < self.program.grade_min or
-                    current_data['grade_max'] > self.program.grade_max):
-                    current_data['grade_max'] = None
+
+                # Makes importing a class from a previous program work
+                # These are the only three fields that can currently be hidden
+                # If another one is added later, this will need to be changed
+                hidden_fields = Tag.getProgramTag('teacherreg_hide_fields', prog)
+                if hidden_fields:
+                    if 'grade_min' in hidden_fields:
+                        current_data['grade_min'] = Tag.getProgramTag('teacherreg_default_min_grade', prog)
+                    if 'grade_max' in hidden_fields:
+                        current_data['grade_max'] = Tag.getProgramTag('teacherreg_default_max_grade', prog)
+                    if 'class_size_max' in hidden_fields:
+                        current_data['class_size_max'] = Tag.getProgramTag('teacherreg_default_class_size_max', prog)
 
                 if not populateonly:
                     context['class'] = newclass
