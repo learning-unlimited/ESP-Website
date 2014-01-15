@@ -141,7 +141,7 @@ def signout(request):
     request._cached_user = request.user
 
     redirect_path = request.GET.get('redirect')
-    if request.GET.get('redirect'):
+    if redirect_path:
         return HttpResponseRedirect(redirect_path)
     
     return render_to_response('registration/logged_out.html', request, {})
