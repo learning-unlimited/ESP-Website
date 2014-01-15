@@ -1,21 +1,20 @@
-from esp.users.views.usersearch import *
-from esp.users.views.registration import *
-from esp.users.views.password_reset import *
-from esp.users.views.emailpref import *
-from esp.users.views.make_admin import *
-from esp.users.models import ESPUser, admin_required
-
-from esp.program.models import Program
-
+from django.contrib.auth import login as auth_login, logout as auth_logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.views import login
 from django.http import HttpResponseRedirect, HttpResponse
 from django.template import RequestContext
-from esp.web.util.main import render_to_response
-from django.contrib.auth import login as auth_login, logout as auth_logout
-from django.contrib.auth.views import login
-from django.contrib.auth.decorators import login_required
 
+from esp.program.models import Program
 from esp.tagdict.models import Tag
+from esp.users.models import ESPUser, admin_required
 from esp.users.models.forwarder import UserForwarder
+from esp.users.views.emailpref import *
+from esp.users.views.make_admin import *
+from esp.users.views.password_reset import *
+from esp.users.views.registration import *
+from esp.users.views.usersearch import *
+from esp.web.util.main import render_to_response
+
 
 def filter_username(username, password):
     #   Allow login by e-mail address if so specified
@@ -43,6 +42,7 @@ def HttpMetaRedirect(location='/'):
     </html>
     """ % (location, location)
     return response
+
 
 def login_checked(request, *args, **kwargs):
     if request.user.is_authenticated():
@@ -95,6 +95,7 @@ def login_checked(request, *args, **kwargs):
 
     return reply
 
+
 def ajax_login(request, *args, **kwargs):
     import simplejson as json
     from django.contrib.auth import authenticate
@@ -132,14 +133,19 @@ def ajax_login(request, *args, **kwargs):
 
     return HttpResponse(json.dumps(result_dict))
 
+
 def signout(request):
     """ This view merges Django's logout view with our own "Goodbye" message. """
     auth_logout(request)
-    
     #   Tag the (now anonymous) user object so our middleware knows to delete cookies
     request._cached_user = request.user
+
+    redirect_path = request.GET.get('redirect')
+    if request.GET.get('redirect'):
+        return HttpResponseRedirect(redirect_path)
     
     return render_to_response('registration/logged_out.html', request, {})
+
 
 def signed_out_message(request):
     """ If the user is indeed logged out, show them a "Goodbye" message. """
@@ -147,7 +153,8 @@ def signed_out_message(request):
         return HttpResponseRedirect('/')
 
     return render_to_response('registration/logged_out.html', request, {})
-                              
+            
+
 @login_required
 def disable_account(request):
     
@@ -163,6 +170,7 @@ def disable_account(request):
     context = {'user': curUser}
         
     return render_to_response('users/disable_account.html', request, context)
+
 
 @admin_required
 def morph_into_user(request):
