@@ -79,8 +79,8 @@ class CustomFormModule(ProgramModuleObj):
         return Record.objects.filter(user=get_current_request().user, program=self.program, event=self.event).exists()
 
     @main_call
+    @usercheck_usetl
     def extraform(self, request, tl, one, two, module, extra, prog):
-    
         custom_form_id = Tag.getProgramTag('%s_extraform_id' % tl, prog, None)
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
