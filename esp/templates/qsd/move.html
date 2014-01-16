@@ -13,19 +13,6 @@
 
 <h1>Static Page Management</h1>
 
-<p>The URL of a static page comes from two parts: the 'path' and the 'name.'  The path is the location in the ESP data tree where the page is anchored.  The name is the 'filename' of the page.  For example, the following parameters...</p>
-<ul>
-<li><b>Path:</b> Q/Web/about
-<li><b>Name:</b> oobleck
-</ul>
-<p>
-will translate to the URL /about/oobleck.html.
-</p>
-
-<p>
-With the form below, you can reassign those components in order to move the page.
-</p>
-
 <div id="program_form">
 <form method="post" action="{{ request.path }}?cmd=move&id={{ qsd.id }}">
 <table align="center" cellpadding="0" cellspacing="0" width="450"> 

@@ -9,7 +9,7 @@ from esp.tagdict.models import Tag
 class Migration(DataMigration):
 
     def forwards(self, orm):
-        for cls in ClassSubject.objects.all():
+        for cls in orm['program.ClassSubject'].objects.all():
             cls.title = cls.anchor.friendly_name
             cls.save()
 
@@ -23,7 +23,7 @@ class Migration(DataMigration):
             prog.save()
 
     def backwards(self, orm):
-        for cls in ClassSubject.objects.all():
+        for cls in orm['program.ClassSubject'].objects.all():
             cls.title = ""
             cls.save()
 

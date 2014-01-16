@@ -61,11 +61,28 @@ class QSDManager(FileDBManager):
             return None
     get_by_url.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'url': qsd.url})
 
+    @cache_function
+    def get_by_url_else_init(self, url, defaults={}):
+        """
+        Tries looking up a QSD object by url, using self.get_by_url(). If this
+        fails because the url does not have a saved QSD object yet, initializes
+        and returns a new QSD object, without saving it to the database.
+        """
+        qsd_obj = self.get_by_url(url)
+        if qsd_obj is None:
+            qsd_obj = QuasiStaticData(url=url, **defaults)
+        return qsd_obj
+    get_by_url_else_init.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'url': qsd.url})
+
     def __str__(self):
         return "QSDManager()"
 
     def __repr__(self):
         return "QSDManager()"
+
+def qsd_edit_id(val):
+    """ A short hex string summarizing the QSD's URL. """
+    return hashlib.sha1(val).hexdigest()[:8]
 
 class QuasiStaticData(models.Model):
     """ A Markdown-encoded web page """
@@ -84,6 +101,9 @@ class QuasiStaticData(models.Model):
     disabled = models.BooleanField(default=False)
     keywords = models.TextField(blank=True, null=True)
     description = models.TextField(blank=True, null=True)
+
+    def edit_id(self):
+        return qsd_edit_id(self.url)
 
     def get_file_id(self):
         """Get the file_id of the object.
@@ -140,6 +160,30 @@ class QuasiStaticData(models.Model):
             return "/".join([parts[0], prog.url, ":".join(parts[1:])])
         else:
             return "/".join(["programs", prog.url, name])
+
+    @staticmethod
+    def program_from_url(url):
+        """ If the QSD pertains to a program, figure out which one,
+            and return a tuple of the Program object and the QSD name.
+            Otherwise return None.  """
+        from esp.program.models import Program
+        
+        url_parts = url.split('/')
+        #   The first part url_parts[0] could be anything, since prog_qsd_url()
+        #   takes whatever was specified in the old qsd name 
+        #   (e.g. 'learn:extrasteps' results in a URL starting with 'learn/', 
+        #   but you could also have 'foo:extrasteps' etc.)
+        #   So, allow any QSD with a program URL in the right place to match.
+        if len(url_parts) > 3 and len(url_parts[3]) > 0:
+            prog_url = '/'.join(url_parts[1:3])
+            progs = Program.objects.filter(url=prog_url)
+            if progs.count() == 1:
+                if url_parts[0] == 'programs':
+                    return (progs[0], '/'.join(url_parts[3:]))
+                else:
+                    return (progs[0], '%s:' % url_parts[0] + '/'.join(url_parts[3:]))
+            
+        return None
 
 def qsd_cache_key(path, user=None,):
     # IF you change this, update qsd/models.py's QSDManager class

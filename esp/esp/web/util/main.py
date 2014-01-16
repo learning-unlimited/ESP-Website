@@ -92,7 +92,7 @@ def render_to_response(template, request, context, prog=None, auto_per_program_t
         category = None
         if context.has_key('nav_category'):
             category = context['nav_category']
-        context['navbar_list'] = makeNavBar(section, category)
+        context['navbar_list'] = makeNavBar(section, category, path=request.path[1:])
 
     if not use_request_context:
         context['request'] = request

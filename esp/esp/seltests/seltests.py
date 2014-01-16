@@ -64,7 +64,7 @@ class CsrfTestCase(SeleniumTestCase):
         self.failUnless(self.is_text_present('Student Student'))
         logout(self)
 
-        self.delete_cookie("csrftoken")
+        self.delete_cookie("esp_csrftoken")
 
         try_ajax_login(self, "student", "student")
         self.failUnless(self.is_text_present('Student Student'))
@@ -79,7 +79,7 @@ class CsrfTestCase(SeleniumTestCase):
         self.failUnless(self.is_text_present('Student Student'))
         logout(self)
 
-        self.delete_cookie("csrftoken")
+        self.delete_cookie("esp_csrftoken")
 
         try_normal_login(self, "student", "student")
         self.failUnless(self.is_text_present('Student Student'))

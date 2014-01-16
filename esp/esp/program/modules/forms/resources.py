@@ -5,7 +5,7 @@ from datetime import timedelta
 from esp.resources.models import ResourceType, Resource, ResourceAssignment
 from esp.cal.models import EventType, Event
 from esp.program.models import Program
-from esp.utils.widgets import DateTimeWidget
+from esp.utils.widgets import DateTimeWidget, DateWidget
 
 class TimeslotForm(forms.Form):
     id = forms.IntegerField(required=False, widget=forms.HiddenInput)
@@ -196,7 +196,6 @@ class ClassroomForm(forms.Form):
                 f.delete()
             rm.delete()
 
-        
         #   Sync existing rooms
         for room in rooms_to_keep:
             room.num_students = self.cleaned_data['num_students']
@@ -220,4 +219,8 @@ class ClassroomForm(forms.Form):
 
 class ClassroomImportForm(forms.Form):
     program = forms.ModelChoiceField(queryset=Program.objects.all())
+    complete_availability = forms.BooleanField(required=False, help_text='Check this box if you would like the new classrooms to be available at all times during the program, rather than attempting to replicate their availability from the previous program.')
     
+class TimeslotImportForm(forms.Form):
+    program = forms.ModelChoiceField(queryset=Program.objects.all())
+    start_date = forms.DateField(label='First Day of New Program', widget=DateWidget)

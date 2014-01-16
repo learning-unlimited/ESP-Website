@@ -4,7 +4,7 @@ function makeCsrfAlert()
     if(!$j.ui)
     {
 	// Load the appropriate javascript and css
-	$j.getScript('/media/scripts/jquery-ui.js', makeCsrfAlert);
+	$j.getScriptWithCaching('/media/scripts/jquery-ui.js', makeCsrfAlert);
 	if (document.createStylesheet)
 	{
 	    document.createStylesheet('/media/styles/jquery-ui/jquery-ui.css');
@@ -60,7 +60,7 @@ var check_csrf_cookie = function(form)
     //Check it
     var csrf_token = $j(form.csrfmiddlewaretoken).val();
     //  console.log(csrf_token);
-    csrf_cookie = $j.cookie("csrftoken");
+    csrf_cookie = $j.cookie("esp_csrftoken");
     if (csrf_cookie == null)
     {
 	if(!csrfAlert)

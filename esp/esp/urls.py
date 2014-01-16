@@ -39,6 +39,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.generic.base import RedirectView
+from filebrowser.sites import site as filebrowser_site
 import debug_toolbar.urls
 
 autodiscover(admin_site)
@@ -55,6 +56,8 @@ urlpatterns += patterns('',
                      (r'^admin/doc/', include('django.contrib.admindocs.urls')),
                      (r'^admin/ajax_qsd/?', 'esp.qsd.views.ajax_qsd'),
                      (r'^admin/ajax_autocomplete/?', 'esp.db.views.ajax_autocomplete'),
+                     (r'^grappelli/', include('grappelli.urls')),
+                     (r'^admin/filebrowser/', include(filebrowser_site.urls)),
                      (r'^admin/', include(admin_site.urls)),
                      (r'^accounts/login/$', 'esp.users.views.login_checked',),
                      #(r'^learn/Junction/2007_Spring/catalog/?$',RedirectView.as_view(url='/learn/Junction/2007_Summer/catalog/')),
@@ -161,12 +164,16 @@ urlpatterns += patterns('',
     (r'^dataviews/', include('esp.dataviews.urls')) )
     
 urlpatterns += patterns('esp.qsdmedia.views', 
-    (r'^download\/([^/]+)/?$', 'qsdmedia2') )
+    (r'^download\/([^/]+)/?$', 'qsdmedia2'), 
+    (r'^download\/([^/]+)\/([^/]+)/?$', 'qsdmedia2') )
 
 urlpatterns += patterns('', 
     (r'^accounting/', include('esp.accounting.urls')) )
 
 urlpatterns += debug_toolbar.urls.urlpatterns
+
+urlpatterns += patterns('esp.formstack.views',
+    (r'^medicalsyncapi$', 'medicalsyncapi'),)
 
 urlpatterns +=patterns('esp.customforms.views',
 	(r'^customforms/$','landing'),
@@ -186,5 +193,5 @@ urlpatterns +=patterns('esp.customforms.views',
 
 #   Theme editor
 urlpatterns += patterns('', 
-                        (r'^themes/', include('esp.themes.urls')) 
+                        (r'^themes', include('esp.themes.urls')) 
                        )

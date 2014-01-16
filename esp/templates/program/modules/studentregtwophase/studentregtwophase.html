@@ -1,0 +1,100 @@
+{% extends "main.html" %}
+{% load render_qsd %}
+
+{% block title %} Student Registration for {{program.niceName}} {% endblock %}
+
+{% block stylesheets %}
+{{ block.super }}
+<link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<style>
+.button {
+  border: 2px solid #333;
+  background-color: #ccf;
+  color: #333;
+  font-weight: bold;
+  padding: 2px 5px;
+  text-decoration: none;
+}
+</style>
+{% endblock %}
+
+{% load subsection %}
+{% block subsection %}
+{% autoescape off %}{{ "Student Registration"|subsection }}{% endautoescape %}{% endblock %}
+
+{% block content %}
+<h1>Student Registration for {{program.niceName}}</h1>
+{% inline_program_qsd_block program "learn:studentregtwophase/top" request.user %}
+Welcome to the registration lottery for {{program.niceName}}. Please complete all of the steps below to select your class preferences. You may come back to this page to update your preferences at any time before the deadline.
+{% end_inline_program_qsd_block %}
+
+<hr>
+
+<h1>Step 1 &ndash; Mark all classes you are interested in taking</h1>
+{% inline_program_qsd_block program "learn:studentregtwophase/step1" request.user %}
+<p>
+Follow the link below to star classes you would consider taking for {{program.niceName}}.
+These classes don't necessarily have to be your top choices. They should be anything you
+would be willing to have in your schedule.
+</p>
+{% end_inline_program_qsd_block %}
+<center><a href="/learn/{{program.getUrlBase}}/mark_classes" class="button" style="border: 2px solid #333; font-weight: bold; padding: 2px 5px; text-decoration: none">
+View the classes >>
+</a></center>
+
+<br>
+<hr>
+
+<h1>Step 2 &ndash; Rank the top {{num_priority}} classes for each time</h1>
+{% inline_program_qsd_block program "learn:studentregtwophase/step2" request.user %}
+<p>
+Rank your preferences for each time block during {{program.niceName}}. We highly
+recommend you mark a class for every priority slot to ensure a full schedule.
+</p>
+{% end_inline_program_qsd_block %}
+<div id="program_form">
+<table cellpadding="3" class="fullwidth">
+<tr>
+    <th colspan="3">
+    Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}
+    </th>
+</tr>
+{% for timeslot, priority_list, blockCount in timeslots %}
+    {% ifchanged timeslot.start.day %}
+        <tr><th class="small" colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.pretty_date }}</th></tr>
+    {% endifchanged %}
+    {% ifchanged blockCount %}
+        <tr><th class="small" colspan="3" height="3">Block {{ blockCount }}</th></tr>
+    {% endifchanged %}
+    {% ifequal timeslot.event_type.description "Compulsory" %}
+        <td width="25%" valign="top" align="center" class="compulsory_event_time">{{ timeslot.short_description }}</td>
+        <td colspan="2" class="compulsory_event_desc">{{ timeslot.description }}</td>
+    </tr>
+    {% else %}
+    <tr>
+    <tr>
+        <td width="25%" valign="top" align="center">{{ timeslot.short_description }}</td>
+
+        <td style="vertical-align: top !important;">
+            <i>
+            {% for verb,title in priority_list %}
+	        <span>{{verb}}</span>: {{title}}
+                {% if not forloop.last %}<br />{% endif %}
+            {% endfor %}
+            </i>
+            {% if priority_list|length_is:0 %}
+                Nothing Selected
+            {% endif %}
+        </td>
+
+        {%comment%}{% if module.deadline_met %}{%endcomment%}
+        <td width='25%' align='center' style="vertical-align: top !important;">
+            <a href="/learn/{{program.getUrlBase}}/rank_classes/{{timeslot.id}}">[edit rankings]</a>
+        </td>
+        {%comment%}{% endif %}{%endcomment%}
+    </tr>
+    {% endifequal %}
+{% endfor %}
+</table>
+</div>
+{% endblock %}

@@ -74,6 +74,7 @@ DISPLAYSQL = False
 TEMPLATE_DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
+USE_PROFILER = False
 
 INTERNAL_IPS = (
     '127.0.0.1',
@@ -173,13 +174,12 @@ MIDDLEWARE_GLOBAL = [
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),
-    (1200, 'django.middleware.gzip.GZipMiddleware'),
     (1250, 'esp.middleware.espdebugtoolbarmiddleware.ESPDebugToolbarMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
     (1600, 'reversion.middleware.RevisionMiddleware'),
-    (9000, 'django.contrib.redirects.middleware.RedirectFallbackMiddleware'),
+    (9000, 'esp.middleware.patchedredirect.PatchedRedirectFallbackMiddleware'),
 ]
 
 ROOT_URLCONF = 'esp.urls'
@@ -193,6 +193,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
+    'grappelli',
+    'filebrowser',
     'django.contrib.admin',
     'django.contrib.admindocs',
     'esp.datatree',
@@ -229,6 +231,7 @@ INSTALLED_APPS = (
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
+    'esp.formstack',
 )
 
 import os
@@ -358,3 +361,11 @@ DEBUG_TOOLBAR_CONFIG = {
     'CONDITIONAL_PANELS': conditional_panels,
 }
 
+#   Allow Filebrowser to edit anything under media/
+#   (not just '/media/uploads/' which is the default)
+FILEBROWSER_DIRECTORY = ''
+
+#   Default imports for shell_plus, for convenience.
+SHELL_PLUS_POST_IMPORTS = (
+        ('esp.utils.shell_utils', '*'),
+        )

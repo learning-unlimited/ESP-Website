@@ -1,0 +1,123 @@
+{% extends "elements/html" %}
+
+{% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}{% endblock %}{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/theme/main.js"></script>
+{% endblock %}
+
+{% block body %}
+
+{% block main %}
+
+<div id="top_area">
+<div id="logo_area">
+    <div id="main_logo"><a href="/"><img src="/media/images/theme/generic_logo_short.png"/></a></div>
+    <div id="lu_logo"><a href="http://www.learningu.org/"><img src="/media/images/theme/lu_logo_mini.png"/></a></div>
+    <div id="logo_blurb">
+        Supported by <br /><a href="http://www.learningu.org/">Learning Unlimited</a>
+    </div>
+</div>
+
+<div id="nav_area">
+    <div id="nav_buffer">
+        <div id="nav_buffer_background">{{ theme.title_text }}</div>
+        <div id="nav_buffer_foreground">{{ theme.subtitle_text }}</div>
+    </div>
+    
+    <div id="primary_nav">
+        {% for category in theme.nav_structure %}
+        <div class="toplevel_link{% if request.path|slice:":5" == category.header_link|slice:":5" %} toplevel_focus{% endif %}">
+            <a href="{{ category.header_link }}">{{ category.header }}</a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <br />
+
+    <div id="secondary_nav">
+        {% for category in theme.nav_structure %}
+        <div class="sublink">
+        {% for item in category.links %}
+        <a href="{{ item.link }}">{{ item.text }}</a>
+        {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+</div>
+
+<div id="bottom_area">
+<div id="boxes_area">
+    <!-- Login -->
+    <div class="box" style="text-align: right;">
+    {% include "users/loginbox_content.html" %}
+    </div>
+    
+    <!-- Announcements -->
+    {% load preview %}
+    {% if request.path == "/teach/index.html" %}
+        {% miniblog_for_user AnonymousUser as announcements teach 3 %}
+    {% else %}
+        {% miniblog_for_user AnonymousUser as announcements learn 3 %}
+    {% endif %}
+
+    {% if not announcements.announcementList|length_is:0 %}
+    {% load markdown %}
+    {% for announce in announcements.announcementList %}
+    <div class="box">
+        {% if announce.makeUrl %}
+        <div class="box_header"><a href="{{ announce.makeUrl }}">{{ announce.makeTitle }}</a></div>
+        {% else %}
+        <div class="box_header">{{ announce.makeTitle }}</div>{{ announce.content }}
+        {% endif %}
+    </div>
+    {% endfor %}
+    {% if announcements.overflowed %}
+    <div class="box" id="divannouncemore">
+        <div class="box_header"><a href="/myesp/home/">More Notices...</a></div>
+    </div>
+    {% endif %}
+    {% endif %}
+    
+    <!-- Admin -->
+    <div class="box admin hidden">
+    <div class="box_header"> Admin</div>	
+    <ul>
+    <li class="admin hidden"><a href="/admin/"><i class="icon-tasks"></i>Administration pages</a>
+        <ul>
+            <li class="admin hidden"><a href="/admin/miniblog/entry/">Sidebar messages</a></li>
+            <li class="admin hidden"><a href="/admin/miniblog/announcementlink/">Sidebar links</a></li>
+        </ul>
+    </li>
+	<li class="admin hidden"><a href="/manage/programs/"><i class="icon-th-large"></i> Manage programs</a></li>
+    <li class="admin hidden"><a href="/admin/filebrowser/browse/"><i class="icon-tasks"></i> Manage media files</a>
+	<li class="admin hidden"><a href="/themes/"><i class="icon-pencil"></i> Theme settings</a></li>
+    <li class="unmorph hidden"><a href="/myesp/switchback/">Unmorph to <script type="text/javascript">document.write(esp_user.cur_retTitle);</script></a></li>
+    </ul>
+    </div>
+
+    <!-- Onsite -->
+    <div class="box onsite hidden">
+    <div class="box_header"><a href="/myesp/onsite/">On-site registration</a></div>
+    </div>
+
+</div>
+
+<div id="content_area">
+
+    {% block content %}
+    {% endblock %}
+
+    <div id="footer">
+        <p>Copyright {{ theme.mtime.year }}, {{ settings.ORGANIZATION_SHORT_NAME }} at {{ settings.INSTITUTION_NAME }} - <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">E-mail us</a> - <a href="/contact/contact/">Contact Form</a></p>
+        <p>Site hosted by Learning Unlimited - <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.support }}">E-mail technical support</a></p>
+    </div>
+</div>
+
+</div>
+
+{% endblock %} {# endblock main #}
+
+{% endblock %} {# endblock body #}

@@ -39,7 +39,7 @@ class ThemesTest(TestCase):
         """ Check that the ThemeController says we have the themes we expect to have. """
         
         tc = ThemeController()
-        names_ref = ['generic1', 'generic2', 'chicago', 'mit']
+        names_ref = ['barebones', 'circles', 'floaty', 'fruitsalad']
         names_tc = tc.get_theme_names()
         self.assertEqual(set(names_ref), set(names_tc))
 
@@ -124,7 +124,7 @@ class ThemesTest(TestCase):
             """
             
             #   Check that the template override is marked with the theme name.
-            self.assertTrue(('<!-- Theme: %s -->' % theme_name) in response.content)
+            self.assertTrue(('{%% comment %%} Theme: %s {%% endcomment %%}' % theme_name) in response.content)
         
         #   Test that the theme can be cleared and the home page reverts.
         response = self.client.post('/themes/select/', {'action': 'clear'})

@@ -71,16 +71,16 @@ def get_visible_announcements(user, limit, tl):
 	if tl:
 	    result = result.filter(section=tl)
 
-    if limit:
-        overflowed = ((len(result) - limit) > 0)
-        total = len(result)
-        result = result[:limit]
-    else:
-        overflowed = False
-        total = len(result)
+        if limit:
+            overflowed = ((len(result) - limit) > 0)
+            total = len(result)
+            result = result[:limit]
+        else:
+            overflowed = False
+            total = len(result)
 
-    results += result
-    grand_total += total
+        results += result
+        grand_total += total
 
     return {'announcementList': results,
               'overflowed':       overflowed,
