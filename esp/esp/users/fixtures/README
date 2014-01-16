@@ -1,0 +1,7 @@
+initial_zipcode_data.json is installed by the install_initial_zipcode_data
+migration.
+
+It is purposely not named initial_data.json. If it were, then it would
+installed on every syncdb and migration, which is undesirable since it takes a
+few minutes to install.
+
