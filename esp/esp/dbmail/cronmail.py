@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 import time
 
 from esp.cal.models import Event
-from esp.dbmail.models import MessageRequest, EmailRequest, send_mail, TextOfEmail
+from esp.dbmail.models import MessageRequest, EmailRequest, send_mail, TextOfEmail, can_process_and_send
 from esp.datatree.models import *
 from datetime import datetime, timedelta
 from django.db.models.query import Q
@@ -57,6 +57,10 @@ def process_messages():
     my_pid = os.getpid()
     now = datetime.now()
     target_time = now + timedelta(seconds=10)
+
+    if not can_process_and_send():
+        return []
+
     MessageRequest.objects.filter(Q(processed_by__lte=now) | Q(processed_by__isnull=True)).filter(processed=False).update(processed_by=target_time)
     
     #   Identify the messages we just claimed.
@@ -77,7 +81,10 @@ def process_messages():
 @transaction.autocommit
 def send_email_requests():
     """ Go through all email requests that aren't sent and send them. """
-    
+
+    if not can_process_and_send():
+        return
+
     if hasattr(settings, 'EMAILRETRIES') and settings.EMAILRETRIES is not None:
         retries = settings.EMAILRETRIES
     else:

@@ -37,6 +37,7 @@ import sys
 from django.db import models
 from django.db.models import Q
 from django.contrib.auth.models import User
+from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.middleware import ESPError
 from datetime import datetime
@@ -52,6 +53,8 @@ from django.conf import settings
 from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
+
+from south.models import MigrationHistory
 
 
 
@@ -91,6 +94,24 @@ def expire_unsent_emails(orm=None):
         orm = sys.modules[__name__]
     TextOfEmail.expireUnsentEmails(orm_class=orm.TextOfEmail)
     MessageRequest.expireUnprocessedRequests(orm_class=orm.MessageRequest)
+
+@cache_function
+def can_process_and_send():
+    """
+    Returns True if the dbmail cronmail script is allowed to process and send
+    emails, and False otherwise.
+
+    Currently, this function asserts that the expire_unsent_emails migration
+    has been run. If it hasn't, it is possible that there are old, unsent
+    messages from before 6e350a3735 that should not be sent because they are
+    out-of-date. This requirement can be removed after the full deployment of
+    stable release 4.
+    """
+    now = datetime.now()
+    return MigrationHistory.objects.filter(app_name='dbmail',
+                                migration__contains='expire_unsent_emails',
+                                applied__lt=now).exists()
+can_process_and_send.depend_on_model(MigrationHistory)
 
 
 
