@@ -37,7 +37,7 @@ a) Libraries obtained from the Internet
 
 If you use Ubuntu, a list of required system packages can be found in
 `packages_base.txt` in this directory; you can install them all at once with
-"apt-get install -y $(< packages_base.txt) && bash packages_base_manual_install.sh".
+"./update_deps.sh".
 Note that if you use this approach, you still must download
 selenium-server-standalone separately.
 

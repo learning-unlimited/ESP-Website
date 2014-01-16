@@ -13,7 +13,7 @@ install:
   - wget http://mirrors.kernel.org/ubuntu/pool/universe/libv/libv8/libv8-3.8.9.20_3.8.9.20-2_amd64.deb -O libv8.deb
   - sudo dpkg -i libv8.deb
   - sudo apt-get install libc-ares2 libev4
-  - sudo bash esp/packages_base_manual_install.sh
+  - esp/packages_base_manual_install.sh
   - pip install -r esp/requirements.txt --use-mirrors
 before_script:
   - cp esp/esp/local_settings.py.travis esp/esp/local_settings.py
