@@ -36,21 +36,26 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 import simplejson as json
 
-from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
 from django import forms
 from django.conf import settings
+from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group
-from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
 from django.contrib.localflavor.us.forms import USStateSelect
+from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
+from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
 from django.core.mail import send_mail
 from django.db import models
 from django.db.models.base import ModelState
-from django.db.models.query import Q, QuerySet
+from django.db.models.query import Q
 from django.http import HttpRequest, HttpResponseRedirect
 from django.template import loader, Context as DjangoContext
 from django.template.defaultfilters import urlencode
+from django.template.loader import render_to_string
+from django_extensions.db.models import TimeStampedModel
+
+
 
 from esp.cal.models import Event
 from esp.cache import cache_function, wildcard
@@ -2135,6 +2140,48 @@ def install():
     if not ESPUser.onsite_user():
         ESPUser.objects.create(username='onsite', first_name='Onsite', last_name='User')
         print 'Created onsite user, please set their password in the admin interface.'
+
+
+
+class GradeChangeRequest(TimeStampedModel):
+    """ 
+        A grade change request is issued by a student when it is felt
+        that the current grade is incorrect.
+    """
+    
+    #I am making an assumption about the allowable values for this field. Needs to be confirmed
+    claimed_grade = models.PositiveIntegerField(choices = zip(range(7, 13), range(7, 13)))
+    reason = models.TextField()
+    approved_time = models.DateTimeField(blank=True, null=True)
+    
+    requesting_student = models.ForeignKey(ESPUser, related_name='requesting_student_set')
+    approved_by = models.ForeignKey(ESPUser, blank=True, null=True)
+
+
+    def is_approved(self):
+        return self.approved_time is not None
+
+
+    def send_confirmation_email(self):
+        """
+        Sends a confirmation email to the requesting student.
+        This email is sent when the administrator confirms a change grade change request.
+        """
+        context = {'student': self.requesting_student,
+                  'site': Site.objects.get_current()}
+
+        subject = render_to_string('users/emails/grade_change_confirmation_email_subject.txt',
+                                   context)
+        subject = ''.join(subject.splitlines())
+
+        message = render_to_string('users/emails/grade_change_confirmation_email_message.txt',
+                                   context)
+
+        #TODO - Ask someone or research whether email correspondence needs to be persistent
+        send_mail(subject,
+                  message,
+                  settings.DEFAULT_FROM_EMAIL,
+                  [self.requesting_student.email, ])
 
 # We can't import these earlier because of circular stuff...
 from esp.users.models.userbits import UserBit

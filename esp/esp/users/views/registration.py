@@ -1,22 +1,27 @@
-from esp.users.models import ESPUser_Profile, ESPUser
-from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm
-from esp.web.util.main import render_to_response
-from esp.mailman import add_list_member
-from esp.middleware.esperrormiddleware import ESPError
-from esp.tagdict.models import Tag
-from django.contrib.auth import login, authenticate
-from django.contrib.auth.models import Group
-from django.http import HttpResponseRedirect
-from django.template import loader
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
-from esp.dbmail.models import send_mail
-from django.contrib.sites.models import Site
-from django.core.urlresolvers import reverse
 import hashlib
 import random
 import urllib
+
 from django.conf import settings
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.models import Group
+from django.contrib.sites.models import Site
+from django.core.urlresolvers import reverse
+from django.http import HttpResponseRedirect
+from django.template import loader
 from django.utils.datastructures import MultiValueDictKeyError
+from django.views.generic.base import TemplateView
+
+
+from esp.dbmail.models import send_mail
+from esp.mailman import add_list_member
+from esp.middleware.esperrormiddleware import ESPError
+from esp.middleware.threadlocalrequest import AutoRequestContext as Context
+from esp.tagdict.models import Tag
+from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
+from esp.users.models import ESPUser_Profile, ESPUser
+from esp.web.util.main import render_to_response
+
 
 __all__ = ['join_emaillist','user_registration_phase1', 'user_registration_phase2','resend_activation_view']
 
@@ -225,3 +230,24 @@ def resend_activation_view(request):
         form=AwaitingActivationEmailForm()
         return render_to_response('registration/resend.html',request,
                                   {'form':form, 'site': Site.objects.get_current()})
+
+
+class GradeChangeRequestView(TemplateView):
+    """
+    Handles Display of Grade Change Request Form
+    """
+    template_name = 'users/profiles/gradechangerequestform.html'
+
+    def render_to_response(self, context, **response_kwargs):
+        return super(TemplateView, self).render_to_response(context, **response_kwargs)
+
+    def get_context_data(self, **kwargs):
+        context = super(GradeChangeRequestView, self).get_context_data(**kwargs)
+        context.update({
+            'form':GradeChangeRequestForm()
+        })
+        return context
+
+    #@method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(GradeChangeRequestView, self).dispatch(*args, **kwargs)

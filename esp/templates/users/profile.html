@@ -39,7 +39,7 @@
 	{% endifequal %}
 	{% endfor %}
       </ul>
-      </br>
+      <br />
       {% endif %}
 
     <form action="{{request.path}}" method="post" class="form-horizontal">
@@ -53,6 +53,8 @@
 	{% include "users/profiles/studentinfo.html" %}
 	{% include "users/profiles/guardiancontact.html" %}
 	{% include "users/profiles/emergencycontact.html" %}
+	{% include "users/profiles/gradechangerequestinfo.html" %}
+
 	{% else %}
 	{% ifequal profiletype "teacher" %}
 	{% include "users/profiles/usercontact.html" %}
