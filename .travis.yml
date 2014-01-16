@@ -8,15 +8,12 @@ env: DJANGO_SETTINGS_MODULE=esp.settings
 before_install:
   - sudo apt-get update
 install: 
-  - sudo apt-get install -y $(cat esp/packages_base.txt | grep -v node)
+  - sudo apt-get install -y $(< esp/packages_base.txt)
   # Fiddle with packages to get node and LESS set up
   - wget http://mirrors.kernel.org/ubuntu/pool/universe/libv/libv8/libv8-3.8.9.20_3.8.9.20-2_amd64.deb -O libv8.deb
   - sudo dpkg -i libv8.deb
   - sudo apt-get install libc-ares2 libev4
-  - wget http://mirrors.kernel.org/ubuntu/pool/universe/n/nodejs/nodejs_0.6.19~dfsg1-5ubuntu1_amd64.deb -O nodejs.deb
-  - sudo dpkg -i nodejs.deb
-  - wget http://mirrors.kernel.org/ubuntu/pool/universe/l/less.js/node-less_1.3.1~20121105-1_all.deb -O node-less.deb
-  - sudo dpkg -i node-less.deb
+  - sudo bash esp/packages_base_manual_install.sh
   - pip install -r esp/requirements.txt --use-mirrors
 before_script:
   - cp esp/esp/local_settings.py.travis esp/esp/local_settings.py

@@ -330,6 +330,8 @@ then
     #    Get what we can using Ubuntu's package manager
     sudo apt-get install -y $(< $BASEDIR/esp/packages_base.txt)
 
+    sudo bash $BASEDIR/esp/packages_base_manual_install.sh
+
     if [[ "$MODE_PROD" ]]
     then
         sudo apt-get install -y $(< $BASEDIR/esp/packages_prod.txt)

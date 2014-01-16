@@ -36,10 +36,10 @@ summarized below.
 a) Libraries obtained from the Internet
 
 If you use Ubuntu, a list of required system packages can be found in
-`packages_base.txt` in this directory; you can install them all at once
-with "apt-get install -y $(< packages_base.txt)". Note that if you use this
-approach, you still must download selenium-server-standalone
-separately.
+`packages_base.txt` in this directory; you can install them all at once with
+"apt-get install -y $(< packages_base.txt) && bash packages_base_manual_install.sh".
+Note that if you use this approach, you still must download
+selenium-server-standalone separately.
 
 Packages useful for a production server are listed in a separate file.
 To install those, use "apt-get install -y $(< packages_prod.txt)".

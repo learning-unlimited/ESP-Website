@@ -76,7 +76,7 @@ while [[ ! -n "$BASEDIR" ]]; do
     echo -n "Enter the root directory path of this site install (it should include a .git file) --> "
     read BASEDIR
 done
-if [[ ! -f "$BASEDIR/esp/packages_base.txt" || ! -f "$BASEDIR/esp/packages_prod.txt" || ! -f "$BASEDIR/esp/requirements.txt" ]]; then
+if [[ ! -f "$BASEDIR/esp/packages_base.txt" || ! -f "$BASEDIR/esp/packages_base_manual_install.sh" || ! -f "$BASEDIR/esp/packages_prod.txt" || ! -f "$BASEDIR/esp/requirements.txt" ]]; then
     echo "Couldn't find requirements files for site install at $BASEDIR"
     exit 1
 fi
@@ -84,6 +84,7 @@ FULLPATH=$(mkdir -p "$BASEDIR"; cd "$BASEDIR"; pwd)
 BASEDIR=$(echo "$FULLPATH" | sed -e "s/\/*$//")
 
 sudo apt-get install -y $(< "$BASEDIR/esp/packages_base.txt")
+sudo bash $BASEDIR/esp/packages_base_manual_install.sh
 if [[ "$MODE_PROD" ]]
 then
     sudo apt-get install -y $(< "$BASEDIR/esp/packages_prod.txt")
