@@ -38,7 +38,7 @@ a shared database backend (so that a change on one server does mean that all
 other servers need to regenerate their corresponding cached content).
 """
 
-from django.core.cache.backends.base import BaseCache
+from django.core.cache.backends.base import BaseCache, DEFAULT_TIMEOUT
 from django.core.cache.backends.memcached import PyLibMCCache as MemcacheCacheClass
 from django.conf import settings
 
@@ -60,7 +60,7 @@ class CacheClass(BaseCache):
         """ Remove the CACHE_PREFIX prefix from a key """
         return key[len(settings.CACHE_PREFIX):]
     
-    def add(self, key, value, timeout=0, version=None):
+    def add(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
         # Update all caches that we're keeping up-to-date
         # But, don't bother doing anything to remote caches if we don't actually add anything locally
         retVal = self._wrapped_caches[0].add(self.make_key(key), value, timeout=timeout, version=version)
@@ -79,7 +79,7 @@ class CacheClass(BaseCache):
         # No need to touch remote caches here
         return self._wrapped_caches[0].get(self.make_key(key), default=default, version=version)
 
-    def set(self, key, value, timeout=0, version=None):
+    def set(self, key, value, timeout=DEFAULT_TIMEOUT, version=None):
         # Set this key in all caches that we're keeping up-to-date
         for wrapped_cache in self._wrapped_caches:
             wrapped_cache.set(self.make_key(key), value, timeout=timeout, version=version)
