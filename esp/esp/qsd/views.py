@@ -41,7 +41,6 @@ from esp.web.models import NavBarEntry, NavBarCategory
 from esp.web.util.main import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.qsdmedia.models import Media
-from esp.lib.markdownaddons import ESPMarkdown
 from os.path import basename, dirname
 from datetime import datetime
 from django.core.cache import cache
@@ -169,25 +168,6 @@ def qsd(request, url):
             # We should also purge the cache
             purge_page(qsd_rec.url+".html")
 
-        # If any files were uploaded, save them
-        for name, file in request.FILES.iteritems():
-            m = Media()
-
-            # Strip "media/" from FILE, and strip the file name; just return the path
-            path = dirname(name[9:])
-                
-            # Do we want a better/manual mechanism for setting friendly_name?
-            m.friendly_name = basename(name)
-            
-            m.format = ''
-
-            local_filename = name
-            if name[:9] == 'qsdmedia/':
-                local_filename = name[9:]
-                    
-            m.handle_file(file, local_filename)
-            m.save()
-
 
     # Detect the edit verb
     if action == 'edit':
@@ -197,11 +177,6 @@ def qsd(request, url):
         if not have_edit:
             raise ESPError(False), "You don't have permission to edit this page."
 
-        m = ESPMarkdown(qsd_rec.content, media={})
-
-        m.toString()
-#        assert False, m.BrokenLinks()
-        
         # Render an edit form
         return render_to_response('qsd/qsd_edit.html', request, {
             'title'        : qsd_rec.title,
@@ -212,7 +187,6 @@ def qsd(request, url):
             'nav_categories': NavBarCategory.objects.all(),
             'qsdrec'       : qsd_rec,
             'qsd'          : True,
-            'missing_files': m.BrokenLinks(),
             'target_url'   : base_url.split("/")[-1] + ".edit.html",
             'return_to_view': base_url.split("/")[-1] + ".html#refresh" },  
             use_request_context=False)  
@@ -223,7 +197,7 @@ def qsd(request, url):
 def ajax_qsd(request):
     """ Ajax function for in-line QSD editing.  """
     from django.utils import simplejson
-    from esp.lib.templatetags.markdown import markdown
+    from markdown import markdown
 
     result = {}
     post_dict = request.POST.copy()

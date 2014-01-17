@@ -38,7 +38,7 @@ from django.db import models
 from django.core.cache import cache
 from django.contrib.auth.models import User
 
-from esp.lib.markdown import markdown
+from markdown import markdown
 from esp.db.fields import AjaxForeignKey
 from esp.db.file_db import *
 from esp.cache import cache_function

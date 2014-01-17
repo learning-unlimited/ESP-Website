@@ -64,7 +64,6 @@
     {% endif %}
 
     {% if not announcements.announcementList|length_is:0 %}
-    {% load markdown %}
     {% for announce in announcements.announcementList %}
     <div class="box">
         {% if announce.makeUrl %}
