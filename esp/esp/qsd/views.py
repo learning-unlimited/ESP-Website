@@ -197,7 +197,7 @@ def qsd(request, url):
 def ajax_qsd(request):
     """ Ajax function for in-line QSD editing.  """
     from django.utils import simplejson
-    from esp.lib.templatetags.markdown import markdown
+    from markdown import markdown
 
     result = {}
     post_dict = request.POST.copy()
