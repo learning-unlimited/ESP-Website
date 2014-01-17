@@ -1,20 +1,25 @@
-from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
+import datetime
+
 from django import forms
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission
-from esp.users.forms.user_reg import ValidHostEmailField
-from esp.program.tests import ProgramFrameworkTest
+from django.core import mail
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import Group
-from esp.middleware import ESPError
-from esp.users.views import make_user_admin
-from django.core import mail
+from django.test.client import RequestFactory
+from django.http import HttpRequest
+
+from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission
 from esp.program.models import RegistrationProfile, Program
-import datetime
-import esp.users.views as views
 from esp.tagdict.models import Tag
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
+from esp.users.views import make_user_admin
+import esp.users.views as views
+from esp.users.forms.user_reg import ValidHostEmailField
+from esp.program.tests import ProgramFrameworkTest
+from esp.middleware import ESPError
 
 class ESPUserTest(TestCase):
     def setUp(self):
+        self.factory = RequestFactory()
         user_role_setup()
 
     def testInit(self):
@@ -37,23 +42,18 @@ class ESPUserTest(TestCase):
         self.failUnless( Permission.objects.filter(user=uid).count() == 0 )
 
     def testMorph(self):
-        class scratchCls(object):
-            pass
         class scratchDict(dict):
             def cycle_key(self):
                 pass
             def flush(self):
                 for i in self.keys():
                     del self[i]
-
+    
         # Make up a fake request object
-        # This definitely doesn't meet the spec of the real request object;
-        # if tests fail as a result in the future, it'll need to be fixed.
-        request = scratchCls()
-
+        request = self.factory.get('/')
+        request.session = scratchDict()
         request.backend = 'django.contrib.auth.backends.ModelBackend'
         request.user = None
-        request.session = scratchDict()
 
         # Create a couple users and give them roles
         self.user, created = ESPUser.objects.get_or_create(username='forgetful')
