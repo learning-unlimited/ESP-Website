@@ -445,7 +445,7 @@ class ProgramHappenTest(TestCase):
         sec.assignClassRoom(self.classroom)
         
         # shortcut student profile creation -- presumably we're also testing this elsewhere
-        thisyear = datetime.now().year
+        thisyear = ESPUser.current_schoolyear(self.prog)
         prof = RegistrationProfile.getLastForProgram(self.student, self.prog)
         prof.contact_user = ContactInfo.objects.create( user=self.student, first_name=self.student.first_name, last_name=self.student.last_name, e_mail=self.student.email )
         prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=thisyear+2, dob=datetime(thisyear-15, 1, 1) )
