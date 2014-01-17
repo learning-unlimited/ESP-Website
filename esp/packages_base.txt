@@ -6,6 +6,7 @@ dvipng
 python
 python-setuptools
 python-pip
+python-twill
 postgresql-9.1
 libevent-dev
 python-dev
