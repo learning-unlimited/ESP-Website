@@ -357,18 +357,18 @@ class ProgramHappenTest(TestCase):
             'message_for_directors': 'Hi chairs!',
             'class_reg_page': '1',
             'hardness_rating': '**',
-        }
-        """
             #   Additional keys to test resource forms:
             'request-TOTAL_FORMS': '2',
             'request-INITIAL_FORMS': '2',
+            'request-MAX_NUM_FORMS': '1000',
             'request-0-resource_type': str(ResourceType.get_or_create('Classroom').id),
             'request-0-desired_value': 'Lecture',
             'request-1-resource_type': str(ResourceType.get_or_create('A/V').id),
             'request-1-desired_value': 'LCD projector',
             'restype-TOTAL_FORMS': '0',
             'restype-INITIAL_FORMS': '0',
-        """
+            'restype-MAX_NUM_FORMS': '1000',
+        }
         
         #   Fill in required fields from any custom forms used by the program
         #   This should be improved in the future (especially if we have dynamic forms)
