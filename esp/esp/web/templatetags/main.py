@@ -7,6 +7,16 @@ import simplejson as json
 
 register = template.Library()
 
+def count_matching_chars(str1, str2):
+    """ Determines the length of the common substring at the beginning of 
+        str1 and str2.  Used to identify the best matching tab based on
+        link URLs in the extract_theme filter below.
+    """
+    for i in range(len(str1)):
+        if i < len(str2) and str1[i] != str2[i]:
+            return i
+    return min(len(str1), len(str2))
+
 @register.filter
 def mux_tl(str,type):
     splitstr = str.split("/") # String should be of the format "/learn/foo/bar/index.html"
@@ -58,16 +68,16 @@ def extract_theme(url):
     tab_index = 0
     tc = ThemeController()
     settings = tc.get_template_settings()
-    url_dir = os.path.dirname(url)
+    max_chars_matched = 0
     for category in settings['nav_structure']:
         category_dir = os.path.dirname(category['header_link'])
-        if url_dir.startswith(category_dir):
+        if url.startswith(category_dir):
             i = 1
             for item in category['links']:
-                item_dir = os.path.dirname(item['link'])
-                if url_dir.startswith(item_dir):
+                num_chars_matched = count_matching_chars(url, item['link'])
+                if num_chars_matched > max_chars_matched:
+                    max_chars_matched = num_chars_matched
                     tab_index = i
-                    break
                 i += 1
     return 'tabcolor%d' % tab_index
 
