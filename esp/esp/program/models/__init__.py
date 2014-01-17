@@ -855,8 +855,10 @@ class Program(models.Model, CustomFormsLinkModel):
         return li_types
 
     @cache_function
-    def getModules_cached(self, tl = None):
-        """ Gets a list of modules for this program. """
+    def getModules_base(self, tl = None):
+        """ Gets a list of modules for this program. 
+            For caching purposes, these are returned in the original
+            ProgramModuleObj form.  """
         from esp.program.modules import base
 
         def cmpModules(mod1, mod2):
@@ -866,21 +868,26 @@ class Program(models.Model, CustomFormsLinkModel):
             except AttributeError:
                 return 0
         if tl:
-            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
+            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module, convert=False)
                  for module in self.program_modules.filter(module_type = tl) ]
         else:
-            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module)
+            modules =  [ base.ProgramModuleObj.getFromProgModule(self, module, convert=False)
                  for module in self.program_modules.all()]
 
         modules.sort(cmpModules)
         return modules
-    getModules_cached.depend_on_row(lambda: Program, lambda prog: {'self': prog})
-    getModules_cached.depend_on_model(lambda: ProgramModule)
-    getModules_cached.depend_on_row(lambda: ProgramModuleObj, lambda mod: {'self': mod.program})
+    getModules_base.depend_on_row(lambda: Program, lambda prog: {'self': prog})
+    getModules_base.depend_on_model(lambda: ProgramModule)
+    getModules_base.depend_on_row(lambda: ProgramModuleObj, lambda mod: {'self': mod.program})
     # I've only included the module extensions we still seem to use.
     # Feel free to adjust. -ageng 2010-10-23
-    getModules_cached.depend_on_row(lambda: ClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
-    getModules_cached.depend_on_row(lambda: StudentClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
+    getModules_base.depend_on_row(lambda: ClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
+    getModules_base.depend_on_row(lambda: StudentClassRegModuleInfo, lambda modinfo: {'self': modinfo.module.program})
+
+    def getModules_cached(self, tl=None):
+        """ Take the cached ProgramModuleObj list returned by getModules_base
+            and convert it to the expected list of modules having different types """
+        return [x.toHandlerClass() for x in self.getModules_base(tl)]
 
     def getModules(self, user = None, tl = None):
         """ Gets modules for this program, optionally attaching a user. """
@@ -895,19 +902,25 @@ class Program(models.Model, CustomFormsLinkModel):
         return modules
 
     @cache_function
-    def getModuleViews(self, main_only=False, tl=None):
+    def getModuleViews_cached(self, main_only=False, tl=None):
         modules = self.getModules_cached(tl)
         result = {}
         for mod in modules:
             tl = mod.module.module_type
             if main_only:
                 if mod.main_view:
-                    result[(tl, mod.main_view)] = mod
+                    result[(tl, mod.main_view)] = mod.toBaseClass()
             else:
                 for view in mod.views:
-                    result[(tl, view)] = mod
+                    result[(tl, view)] = mod.toBaseClass()
         return result
-    getModuleViews.depend_on_cache(lambda: Program.getModules_cached, lambda **kwargs: {})
+    getModuleViews_cached.depend_on_cache(lambda: Program.getModules_base, lambda **kwargs: {})
+    
+    def getModuleViews(self, main_only=False, tl=None):
+        view_dict = self.getModuleViews_cached(main_only, tl)
+        for key in view_dict:
+            view_dict[key] = view_dict[key].toHandlerClass()
+        return view_dict
     
     def getModuleExtension(self, ext_name_or_cls, module_id=None):
         """ Get the specified extension (e.g. ClassRegModuleInfo) for a program.
