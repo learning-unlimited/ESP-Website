@@ -3,7 +3,7 @@
 # This script will install the package dependencies for this website install
 # that cannot be installed via apt-get.
 
-if [ -z $(which node) ]
+if [ -z $(which nodejs) ]
 then
     wget http://mirrors.kernel.org/ubuntu/pool/universe/n/nodejs/nodejs_0.6.19~dfsg1-5ubuntu1_amd64.deb -O nodejs.deb
     sudo dpkg -i nodejs.deb
