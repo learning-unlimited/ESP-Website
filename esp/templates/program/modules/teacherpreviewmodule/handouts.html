@@ -6,7 +6,7 @@
     </tr>
     {% if prog.documents.count > 0 %}
     <tr>
-        <th class="materials">Informational documents for {{ prog.anchor.parent.friendly_name }}</th>
+        <th class="materials">Informational documents for {{ prog.program_type }}</th>
     </tr>
     {% for doc in prog.getDocuments %}
     <tr>
@@ -27,3 +27,4 @@
 </table>
 </div>
 {% endif %}
+

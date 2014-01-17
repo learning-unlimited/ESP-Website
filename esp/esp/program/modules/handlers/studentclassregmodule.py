@@ -665,7 +665,19 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
     def catalog(self, request, tl, one, two, module, extra, prog, timeslot=None):
         """ Check user role and maybe return the program class catalog """
         return self.catalog_render(request, tl, one, two, module, extra, prog, timeslot)
-            
+
+    @disable_csrf_cookie_update
+    @aux_call
+    @cache_control(public=True, max_age=120)
+    def catalog_pdf(self, request, tl, one, two, module, extra, prog):
+        #   Get the ProgramPrintables module for the program
+        from esp.program.modules.handlers.programprintables import ProgramPrintables
+        for module in prog.getModules():
+            if isinstance(module, ProgramPrintables):
+                #   Use it to generate a PDF catalog with the default settings
+                return module.coursecatalog(request, tl, one, two, module, extra, prog)
+        raise ESPError(False)('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.')
+
     @aux_call
     @needs_student
     def class_docs(self, request, tl, one, two, module, extra, prog):

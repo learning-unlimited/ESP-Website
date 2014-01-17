@@ -81,7 +81,7 @@ class StudentLunchSelectionForm(forms.Form):
         if int(self.cleaned_data['timeslot']) != -1:
             sections = list(ClassSection.objects.filter(parent_class__parent_program=self.program, parent_class__category__category='Lunch', meeting_times=self.cleaned_data['timeslot']))
             if len(sections) > 0:
-                ca_msg = sections[0].cannotAdd(self.user)
+                ca_msg = sections[0].cannotAdd(self.user, ignore_constraints=True)
                 if ca_msg:
                     result = False
                 else:

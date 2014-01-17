@@ -159,7 +159,10 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['user'].id, self.user.id)
-        self.assert_(self.admin.first_name in response.content)
+        self.assert_(self.user.username in response.content)
+        self.assert_(self.user.first_name in response.content)
+        self.assert_(self.user.last_name in response.content)
+        self.assert_(str(self.user.id) in response.content)
 
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
@@ -646,7 +649,7 @@ class ProgramFrameworkTest(TestCase):
                                               title=new_prog.niceName(),
                                               content="Welcome to %s!  Click <a href='studentreg'>here</a> to go to Student Registration.  Click <a href='catalog'>here</a> to view the course catalog.",
                                               author=self.admins[0],
-                                              nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="")[0])
+                                              nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="", include_auto_links=False)[0])
 
     #   Helper function to give the program a schedule.
     #   Does not get called by default, but subclasses can call it.

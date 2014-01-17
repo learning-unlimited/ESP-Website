@@ -57,6 +57,7 @@ from datetime                    import timedelta
 from esp.mailman                 import add_list_member
 from django.http                 import HttpResponseRedirect
 from django.db                   import models
+from django.forms.util           import ErrorDict
 from esp.middleware.threadlocalrequest import get_current_request
 import json
 from copy import deepcopy
@@ -760,13 +761,28 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     current_data['optimal_class_size_range'] = newclass.optimal_class_size_range.id
                 if newclass.allowable_class_size_ranges.all():
                     current_data['allowable_class_size_ranges'] = list(newclass.allowable_class_size_ranges.all().values_list('id', flat=True))
+
+                # Makes importing a class from a previous program work
+                # These are the only three fields that can currently be hidden
+                # If another one is added later, this will need to be changed
+                hidden_fields = Tag.getProgramTag('teacherreg_hide_fields', prog)
+                if hidden_fields:
+                    if 'grade_min' in hidden_fields:
+                        current_data['grade_min'] = Tag.getProgramTag('teacherreg_default_min_grade', prog)
+                    if 'grade_max' in hidden_fields:
+                        current_data['grade_max'] = Tag.getProgramTag('teacherreg_default_max_grade', prog)
+                    if 'class_size_max' in hidden_fields:
+                        current_data['class_size_max'] = Tag.getProgramTag('teacherreg_default_class_size_max', prog)
+
                 if not populateonly:
                     context['class'] = newclass
 
                 if action=='edit':
                     reg_form = TeacherClassRegForm(self, current_data)
+                    if populateonly: reg_form._errors = ErrorDict()
                 elif action=='editopenclass':
                     reg_form = TeacherOpenClassRegForm(self, current_data)
+                    if populateonly: reg_form._errors = ErrorDict()
                 
                 #   Todo...
                 ds = newclass.default_section()

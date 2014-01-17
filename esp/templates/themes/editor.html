@@ -6,14 +6,12 @@
     <script src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-tooltip.js" type="text/javascript"></script>
     <script src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/bootstrap-popover.js" type="text/javascript"></script>
     <script src="/media/scripts/jquery.cookie.js" type="text/javascript"> </script>
-    <script language="JavaScript">
-        $j = $.noConflict();
-    </script>
+    <script src="/media/scripts/common.js" type="text/javascript"> </script>
 {% endblock %}
 
 {% block xtrajs %}
 <script src="/media/theme_editor/spectrum.js" type="text/javascript"></script>
-<script language="JavaScript">
+<script type="text/javascript">
 var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last %},{% endif %} {% endfor %}];
 </script>
 <link href="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/css/bootstrap.css" type="text/css" />
@@ -38,7 +36,7 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
 {% block content %} 
 <div class="row-fluid">
 
-<div class="span7 offset1">
+<div class="span12">
   <h1>Theme Editor</h1>
   <div class="alert alert-info">
     <p>New to the theme editor? <a href="#help-modal" data-toggle="modal">Click here</a>.</p>
@@ -64,7 +62,7 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
 
 <br />
 <div class="row-fluid">
-  <div class="span7 offset1">
+  <div class="span12">
     <form class="well form-horizontal centered-form" method="post" action="/themes/customize/">
       {% csrf_token %} 
       <div class="accordion">
@@ -335,17 +333,31 @@ var palette_list = [{% for color in palette %} "{{color}}"{% if not forloop.last
         <div class="accordion-group">
 	      <div class="accordion-heading"><h3 class="accordion-toggle" data-toggle="collapse" href="#advanced" rel="popover" data-original-title="Advanced" data-content="These are additional parameters specific to the currently selected theme.">Advanced</h3></div>
 	      <div class="collapse" id="advanced">
-        {% for category, data in adv_vars.items %}
-        {% if not data|length_is:0 %}<h3>Category: {{ category }}<hr /></h3>{% endif %}
-        {% for varname, varitem in data.items %}
-		<div class="control-group">
-		  <label class="control-label" for="{{ varname }}">{{ varname }}:  </label>
-		  <div class="controls">
-		    <input type="text" class="{{ varitem.0 }}" id="id_{{ varname }}" name="{{ varname }}" value="{{ varitem.1 }}"/>
-		  </div>
+        {% for category, data in adv_vars.items %}{% if not data|length_is:0 %}
+        <div id="adv_category_{{ forloop.counter0 }}">
+        <h3>Category: {{ category }}<hr /></h3>
+        <!-- Dropdown box for adding an optional variable override that is not yet defined -->
+        <div class="control-group opt_var_div hidden">
+            <label class="control-label" for="new_opt_var_{{ forloop.counter0 }}">Add a variable: </label>
+            <div class="controls">
+                <select id="new_opt_var_{{ forloop.counter0 }}" name="new_opt_var_{{ forloop.counter0 }}" class="select_opt_var">
+                {% for item in data %}{% if not item.2 %}
+                    <option value="{{ item.0 }}">{{ item.0 }}</option>
+                {% endif %}{% endfor %}
+                </select>
+                <button class="btn add_opt_var_button" id="add_opt_var_{{ forloop.counter0 }}">Add</button>
+            </div>
+        </div>
+        {% for item in data %}{% if item.2 %}
+		<div class="control-group" id="ctlgrp_{{ item.0 }}">
+            <label class="control-label" for="{{ item.0 }}">{{ item.0 }}: </label>
+            <div class="controls">
+                <input type="text" class="{{ item.1 }}" id="id_{{ item.0 }}" name="{{ item.0 }}" value="{{ item.2 }}"/>
+            </div>
 		</div>
-        {% endfor %}
-        {% endfor %}
+        {% endif %}{% endfor %}
+        </div>
+        {% endif %}{% endfor %}
 	      </div>
 	    </div>
 

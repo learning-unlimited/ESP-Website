@@ -156,7 +156,7 @@ $j(document).ready(function() {
 	    }
 
 	    if (!safeMethod(settings.type) && sameOrigin(settings.url)) {
-	        xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+	        xhr.setRequestHeader("X-CSRFToken", getCookie('esp_csrftoken'));
 	    }
 	});
 	//end of csrf stuff

@@ -118,6 +118,7 @@ legend{display:block;width:100%;padding:0;margin-bottom:2.25em;font-size:19.5px;
 label,input,button,select,textarea{font-size:13px;font-weight:normal;line-height:1.5em;}
 input,button,select,textarea{font-family:Arial,Helvetica,sans-serif,"Copperplate Gothic Light","Helvetica Neue",Helvetica,Arial,sans-serif;}
 label{display:block;margin-bottom:5px;color:#333333;}
+input[type="radio"]+label,input[type="checkbox"]+label{display:inline;} /* labels following radio buttons or checkboxes should be on the same line */
 input,textarea,select,.uneditable-input{display:inline-block;width:210px;height:1.5em;padding:4px;margin-bottom:9px;font-size:13px;line-height:1.5em;color:#555555;background-color:#ffffff;border:1px solid #cccccc;-webkit-border-radius:3px;-moz-border-radius:3px;border-radius:3px;}
 .uneditable-textarea{width:auto;height:auto;}
 label input,label textarea,label select{display:block;}

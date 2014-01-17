@@ -119,7 +119,7 @@ class ProgramAccountingController(BaseAccountingController):
         #   For now, just create a single account for the program.  In the
         #   future we may want finer grained accounting per program.
         program = self.program
-        (account, created) = Account.objects.get_or_create(name=slugify(program.name), description='Main account for %s' % program.niceName(), program=program)
+        (account, created) = Account.objects.get_or_create(name=slugify(program.name), description='Main account', program_id=program.id)
         return account
 
     def setup_lineitemtypes(self, base_cost, optional_items=None, select_items=None):

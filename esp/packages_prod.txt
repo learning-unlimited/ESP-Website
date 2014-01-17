@@ -1,0 +1,7 @@
+libapache2-mod-wsgi
+libapache2-svn
+libapache2-mod-rpaf
+exim4-config
+exim4-base
+exim4-daemon-heavy
+nagios3

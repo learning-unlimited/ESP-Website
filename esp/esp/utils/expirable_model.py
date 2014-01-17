@@ -47,13 +47,15 @@ class ExpirableModel(models.Model):
     end_date = models.DateTimeField(blank=True, null=True, default=None,
                                     help_text="If blank, never ends.")
 
-    def expire(self):
+    def expire(self, save=True):
         self.end_date = datetime.now()
-        self.save()
+        if save:
+            self.save()
 
-    def unexpire(self):
+    def unexpire(self, save=True):
         self.end_date = None
-        self.save()
+        if save:
+            self.save()
 
     def is_valid(self, when=None):
         if when is None:

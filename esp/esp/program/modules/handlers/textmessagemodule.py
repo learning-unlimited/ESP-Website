@@ -36,11 +36,11 @@ Learning Unlimited, Inc.
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call
 from django.http import HttpResponseRedirect
 from django import forms
-from esp.users.forms.user_profile import PhoneNumberField
+from localflavor.us.forms import USPhoneNumberField
 from esp.program.models import RegistrationProfile
 from esp.middleware.threadlocalrequest import get_current_request
 class TextMessageForm(forms.Form):
-    phone_number = PhoneNumberField(local_areacode='773')
+    phone_number = USPhoneNumberField()
 
 class TextMessageModule(ProgramModuleObj):
     @classmethod

@@ -4,12 +4,16 @@ from south.db import db
 from south.v2 import SchemaMigration
 from django.db import models
 
+from esp.web.management import update_all_esp_contenttypes
+
 
 class Migration(SchemaMigration):
 
     def forwards(self, orm):
         # Deleting model 'Series'
         db.delete_table('cal_series')
+
+        update_all_esp_contenttypes()
 
     def backwards(self, orm):
         # Adding model 'Series'
@@ -19,6 +23,8 @@ class Migration(SchemaMigration):
             ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
         ))
         db.send_create_signal('cal', ['Series'])
+
+        update_all_esp_contenttypes()
 
     models = {
         'auth.group': {
