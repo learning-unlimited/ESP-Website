@@ -218,7 +218,8 @@ if MultihostCacheClass:
             #   This is kind of a hack; this test case doesn't know about the Django configuration,
             #   but the Django configuration controls what keys actually get sent to the
             #   cache backend.  Here we're assuming that Django is running on defaults.
-            return default_key_func(settings.CACHE_PREFIX + key, '', '1')
+            key_val = default_key_func(settings.CACHE_PREFIX + key, '', '1')
+            return str(key_val)
         
         def validate_inAllClients(self, key, value):
             """ Validate that the given key is set in all clients to the given value """
