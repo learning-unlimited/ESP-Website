@@ -649,7 +649,7 @@ class ProgramFrameworkTest(TestCase):
                                               title=new_prog.niceName(),
                                               content="Welcome to %s!  Click <a href='studentreg'>here</a> to go to Student Registration.  Click <a href='catalog'>here</a> to view the course catalog.",
                                               author=self.admins[0],
-                                              nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="")[0])
+                                              nav_category=NavBarCategory.objects.get_or_create(name="learn", long_explanation="", include_auto_links=False)[0])
 
     #   Helper function to give the program a schedule.
     #   Does not get called by default, but subclasses can call it.
