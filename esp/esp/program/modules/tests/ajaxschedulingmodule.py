@@ -33,7 +33,8 @@ Learning Unlimited, Inc.
 """
 
 from esp.program.tests import ProgramFrameworkTest
-from django.utils import simplejson as json
+from esp.program.modules.module_ext import AJAXChangeLog
+import json
 import time
 
 class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
@@ -120,6 +121,10 @@ class AJAXSchedulingModuleTestBase(ProgramFrameworkTest):
         assert resp.status_code == 200 #successful deleting of class
         
 class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):        
+
+    def setUp(self, *args, **kwargs):
+        super(AJAXSchedulingModuleTest, self).setUp(*args, **kwargs)
+        self.changelog, created = AJAXChangeLog.objects.get_or_create(program=self.program)
 
     def testModelAPI(self):
         """Schedule classes using the on-model methods."""
@@ -231,12 +236,12 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         (section, rooms, times) = self.scheduleClass()
         self.unschedule_class(section.id)
 
-        beforeSchedule = time.time()
+        beforeSchedule = self.changelog.get_latest_index()
         # Schedule one class.
         self.scheduleClass()
 
         #fetch the changelog
-        changelog_response = self.client.get(self.changelog_url, {'last_fetched_time': beforeSchedule })
+        changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': beforeSchedule })
         self.failUnless(changelog_response.status_code == 200, "Changelog not successfully retreieved")
         changelog = json.loads(changelog_response.content)["changelog"]
         self.failUnless(len(changelog) == 1, "Change log does not contain exactly one class: " + str(changelog) )
@@ -246,10 +251,10 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         
         # Schedule one class.
         self.scheduleClass()
-        afterSchedule = time.time()
+        afterSchedule = self.changelog.get_latest_index()
 
         #change log should truncate at last requested time
-        changelog_response = self.client.get(self.changelog_url, {'last_fetched_time': afterSchedule })
+        changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': afterSchedule })
         changelog = json.loads(changelog_response.content)["changelog"]
         self.failUnless(len(changelog) == 0, "Change log contained content from before last_fetched_time: " + str(changelog) )
     
@@ -259,13 +264,13 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         # Schedule one class.
         (section, times, rooms) = self.scheduleClass()
 
-        beforeUnschedule = time.time()
+        beforeUnschedule = self.changelog.get_latest_index()
 
         #unschedule a class
         self.unschedule_class(section.id)
 
         #change log should include unscheduled classes 
-        changelog_response = self.client.get(self.changelog_url, {'last_fetched_time': beforeUnschedule })
+        changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': beforeUnschedule })
         changelog = json.loads(changelog_response.content)["changelog"]
 
         self.failUnless(len(changelog) == 1, "Change log did not contain the unscheduled class: " + str(changelog))
@@ -285,11 +290,11 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         s2 = sections[0]
         
         #schedule it
-        beforeSchedule = time.time()
+        beforeSchedule = self.changelog.get_latest_index()
         self.scheduleClass(section=s2, timeslots=times, rooms=rooms, shouldFail=True)
 
         #change log should not include it
-        changelog_response = self.client.get(self.changelog_url, {'last_fetched_time': beforeSchedule })
+        changelog_response = self.client.get(self.changelog_url, {'last_fetched_index': beforeSchedule })
         changelog = json.loads(changelog_response.content)["changelog"]
         self.failUnless(len(changelog) == 0, "Change log shows unsuccessfully scheduled class: " + str(changelog))
  
@@ -298,11 +303,11 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         # Schedule class
         (s1, times, rooms) = self.scheduleClass()
         #time before the changelog was deleted
-        beforeDelete = time.time()
+        beforeDelete = self.changelog.get_latest_index()
         # delete change log
         self.client.post('/manage/%s/ajax_clear_change_log' % self.program.getUrlBase(), {})
         #request change log
-        response = self.client.get(self.changelog_url, {'last_fetched_time': beforeDelete })
+        response = self.client.get(self.changelog_url, {'last_fetched_index': beforeDelete })
         response = json.loads(response.content)
         self.failUnless(response["other"] == [{"command" : "reload"}], "Was not asked to reload after the change log was destroyed: " +
                         str(response["other"]))
