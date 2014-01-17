@@ -19,7 +19,4 @@ libpq-dev
 libcurl4-openssl-dev
 libjpeg-dev
 javascript-common
-libc-ares2
-libev4
-libv8-3.8.9.20
 

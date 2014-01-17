@@ -9,10 +9,6 @@ before_install:
   - sudo apt-get update
 install: 
   - sudo apt-get install -y $(< esp/packages_base.txt)
-  # Fiddle with packages to get node and LESS set up
-  - wget http://mirrors.kernel.org/ubuntu/pool/universe/libv/libv8/libv8-3.8.9.20_3.8.9.20-2_amd64.deb -O libv8.deb
-  - sudo dpkg -i libv8.deb
-  - sudo apt-get install libc-ares2 libev4
   - esp/packages_base_manual_install.sh
   - pip install -r esp/requirements.txt --use-mirrors
 before_script:
