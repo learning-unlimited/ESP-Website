@@ -81,7 +81,18 @@ class ThemeController(object):
             if os.path.isdir(os.path.join(THEME_PATH, name))]
 
     def get_template_settings(self):
-        return json.loads(Tag.getTag('theme_template_control', default='{}'))
+        """
+        Get the current template settings. The base settings are the initial
+        values of the configuration form fields, which are overriden by values
+        in the theme_template_control Tag.
+        """
+        form_class = self.get_config_form_class(self.get_current_theme())
+        if form_class is not None:
+            data = form_class.initial_data()
+        else:
+            data = {}
+        data.update(json.loads(Tag.getTag('theme_template_control', default='{}')))
+        return data
 
     def set_template_settings(self, data):
         #   Merge with the existing settings so you don't forget anything

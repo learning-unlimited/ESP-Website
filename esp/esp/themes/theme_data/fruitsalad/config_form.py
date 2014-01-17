@@ -38,6 +38,8 @@ from esp.utils.widgets import NavStructureWidget
 from esp.middleware.threadlocalrequest import get_current_request
 
 from django import forms
+from django.conf import settings
+from django.core.urlresolvers import reverse
 
 class ConfigForm(ThemeConfigurationForm):
     titlebar_prefix = forms.CharField()
@@ -48,8 +50,9 @@ class ConfigForm(ThemeConfigurationForm):
     front_page_style = forms.ChoiceField(
                            choices=(('bubblesfront.html','Bubbles'),
                                     ('qsdfront.html','QSD')),
+                           initial='qsdfront.html',
                            help_text='Choose the style of the front page of ' +
-                           '<a href="%(host)s">%(host)s</a>. "Bubbles" is a ' +
+                           '<a href="%(home)s">%(host)s</a>. "Bubbles" is a ' +
                            # %(host)s is filled in by __init__()
                            'graphical landing page (see for example ' +
                            '<a href="https://esp.mit.edu">esp.mit.edu</a>), ' +
@@ -61,7 +64,12 @@ class ConfigForm(ThemeConfigurationForm):
         super(ConfigForm, self).__init__(*args, **kwargs)
 
         # fill in %(host)s for front_page_style.help_text
-        host = get_current_request().META['HTTP_HOST']
+        request = get_current_request()
+        if request is not None:
+            host = request.META['HTTP_HOST']
+        else:
+            host = settings.SITE_INFO[1]
         self.fields['front_page_style'].help_text = \
-            self.fields['front_page_style'].help_text % {'host': host}
+            self.fields['front_page_style'].help_text % \
+                {'home': reverse('esp.web.views.main.home'), 'host': host}
 

@@ -1,7 +1,7 @@
 <div id="loginbox">
 
   {% if login_result %}
-  <div class="navbar">{{ login_result }}</div>
+    <div class="navbar">{{ login_result }}</div>
   {% endif %}
 
 
@@ -9,16 +9,18 @@
     <ul class="nav">
       <li><a id="loginbox_user_name"></a></li>
       <li><form class="navbar-form form-inline" action="/myesp/signout">
-	<button class="btn btn-inverse" href="/myesp/signout" style="margin-right:0px;">Logout</button>
-	<button class="btn btn-inverse dropdown-toggle" data-toggle="dropdown" style="margin-left:0px;">
-	<span class="caret"></span>
-      </button>
-      
-      <ul class="dropdown-menu">
-	<li><a href="/myesp/passwd/">Change Password</a></li>
-	<li><a href="/myesp/profile/">Profile</a></li>
-	<li><a href="/myesp/loginhelp.html">Help</a></li>
-      </ul>
+        <a href="/myesp/signout"><button class="btn btn-inverse" style="margin-right:0px;">Logout</button></a>
+        <span class="dropdown">
+          <button class="btn btn-inverse dropdown-toggle" data-toggle="dropdown" style="margin-left:0px;">
+            <span class="caret"></span>
+          </button>
+
+          <ul class="dropdown-menu">
+            <li><a href="/myesp/passwd/">Change Password</a></li>
+            <li><a href="/myesp/profile/">Profile</a></li>
+            <li><a href="/myesp/loginhelp.html">Help</a></li>
+          </ul>
+        </span>
 
       </form></li>
     </ul>
@@ -34,18 +36,20 @@
       <input type="password" name="password" id="pass" size="8" value="" placeholder="Password" maxlength="255" class="inputbox" />
 
       <button class="btn btn-inverse" id="gologin" type="submit" style="margin-right:0px;"> Login </button>
-      <button class="btn btn-inverse dropdown-toggle" data-toggle="dropdown" style="margin-left:0px;">
-	<span class="caret"></span>
-      </button>
-      
-      <ul class="dropdown-menu">
-	<li><a href="/myesp/register">Register</a></li>
-	<li><a href="/myesp/passwdrecover/">Forgot Password</a></li>
-	<li><a href="/myesp/loginhelp.html">Help</a></li>
-      </ul>
+      <span class="dropdown">
+        <button class="btn btn-inverse dropdown-toggle" data-toggle="dropdown" style="margin-left:0px;">
+          <span class="caret"></span>
+        </button>
 
-  </form>          
-</div>
+        <ul class="dropdown-menu">
+          <li><a href="/myesp/register">Register</a></li>
+          <li><a href="/myesp/passwdrecover/">Forgot Password</a></li>
+          <li><a href="/myesp/loginhelp.html">Help</a></li>
+        </ul>
+      </span>
+
+    </form>
+  </div>
 </div>
 
 

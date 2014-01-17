@@ -74,11 +74,11 @@ urlpatterns += patterns('',
 
 # generic stuff
 urlpatterns += patterns('esp.web.views.main',
-                        (r'^$', 'home'), # index
                         (r'^error_reporter', 'error_reporter'),
                         (r'^web$', 'home'), # index
                         (r'^esp_web', 'home'), # index
                         (r'.php$', 'home'), # index
+                        (r'^$', 'home'), # index
                         (r'^set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
                         )
 
