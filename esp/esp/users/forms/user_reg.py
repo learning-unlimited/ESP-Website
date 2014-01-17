@@ -5,7 +5,7 @@ from django.db.models.query import Q
 
 from esp.users.models import ESPUser
 from esp.utils.forms import CaptchaForm, StrippedCharField
-from django.contrib.localflavor.us.forms import USPhoneNumberField
+from localflavor.us.forms import USPhoneNumberField
 
 class ValidHostEmailField(forms.EmailField):
     """ An EmailField that runs a DNS query to make sure the host is valid. """
