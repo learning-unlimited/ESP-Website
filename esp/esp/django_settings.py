@@ -369,3 +369,7 @@ FILEBROWSER_DIRECTORY = ''
 SHELL_PLUS_POST_IMPORTS = (
         ('esp.utils.shell_utils', '*'),
         )
+
+#   Set test runner to behave like pre-1.6 versions of Django
+TEST_RUNNER = 'django.test.simple.DjangoTestSuiteRunner'
+
