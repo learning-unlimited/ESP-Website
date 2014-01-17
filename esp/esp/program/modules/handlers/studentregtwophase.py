@@ -29,7 +29,7 @@ Email: web@esp.mit.edu
 """
 
 import datetime
-import simplejson
+import json
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Min, Q
@@ -233,7 +233,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         if not 'json_data' in request.POST:
             return HttpResponseBadRequest('JSON data not included in request.')
         try:
-            json_data = simplejson.loads(request.POST['json_data'])
+            json_data = json.loads(request.POST['json_data'])
         except ValueError:
             return HttpResponseBadRequest('JSON data mis-formatted.')
         if not isinstance(json_data.get('interested'), list) or \
@@ -313,7 +313,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         """
         Saves the priority preferences for student registration phase 2.
         """
-        data = simplejson.loads(request.POST['json_data'])
+        data = json.loads(request.POST['json_data'])
         timeslot_id = data.keys()[0]
         timeslot = Event.objects.get(pk=timeslot_id)
         priorities = data[timeslot_id]
