@@ -377,10 +377,7 @@ class DBOpsTestCase(DjangoTestCase):
     def testSyncdb(self):
         loading.cache.loaded = False
         call_command('syncdb', verbosity=0)
-    def testMigrate(self):
-        loading.cache.loaded = False
-        call_command('migrate', verbosity=0)
-        
+
 class TemplateOverrideTest(DjangoTestCase):
     def get_response_for_template(self, template_name):
         template = loader.get_template(template_name)
