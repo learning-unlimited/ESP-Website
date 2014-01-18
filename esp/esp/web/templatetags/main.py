@@ -70,15 +70,17 @@ def extract_theme(url):
     settings = tc.get_template_settings()
     max_chars_matched = 0
     for category in settings['nav_structure']:
-        category_dir = os.path.dirname(category['header_link'])
-        if url.startswith(category_dir):
-            i = 1
-            for item in category['links']:
-                num_chars_matched = count_matching_chars(url, item['link'])
-                if num_chars_matched > max_chars_matched:
-                    max_chars_matched = num_chars_matched
-                    tab_index = i
-                i += 1
+        num_chars_matched = count_matching_chars(url, category['header_link'])
+        if num_chars_matched > max_chars_matched:
+            max_chars_matched = num_chars_matched
+            tab_index = 0
+        i = 1
+        for item in category['links']:
+            num_chars_matched = count_matching_chars(url, item['link'])
+            if num_chars_matched > max_chars_matched:
+                max_chars_matched = num_chars_matched
+                tab_index = i
+            i += 1
     return 'tabcolor%d' % tab_index
 
 @register.filter
