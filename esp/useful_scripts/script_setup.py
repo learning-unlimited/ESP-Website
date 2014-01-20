@@ -2,18 +2,14 @@
 
 import os, sys
 
-project = os.path.dirname(os.path.realpath(__file__))
-root = os.path.dirname(project)
-sys.path.append(root)
+useful_scripts = os.path.dirname(os.path.realpath(__file__))
+project = os.path.dirname(useful_scripts)
+sys.path.append(project)
 
-try:
-    # activate virtualenv
-    envroot = os.path.dirname(root)
-    activate_this = os.path.join(envroot, 'env', 'bin', 'activate_this.py')
-    execfile(activate_this, dict(__file__=activate_this))
-except IOError:
-    print "virtualenv loading failed"
-    pass
+# activate virtualenv
+envroot = os.path.dirname(project)
+activate_this = os.path.join(envroot, 'env', 'bin', 'activate_this.py')
+execfile(activate_this, dict(__file__=activate_this))
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "esp.settings")
 
