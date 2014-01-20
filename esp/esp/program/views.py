@@ -53,6 +53,7 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration
+from esp.program.modules.base import needs_student
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
@@ -116,10 +117,6 @@ def lottery_student_reg_simple(request, program = None):
 def lsr_submit(request, program = None): 
     
     priority_limit = program.priorityLimit()
-
-    # First check whether the user is actually a student.
-    if not request.user.isStudent():
-        raise ESPError(False), "You must be a student in order to access student registration."
 
     data = json.loads(request.POST['json_data'])
     

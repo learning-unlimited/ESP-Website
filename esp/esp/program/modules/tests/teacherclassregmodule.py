@@ -32,16 +32,19 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+import random
+
 from django.db import transaction
-from esp.users.models import ESPUser, Permission
+
+from esp.cal.models import Event
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
 from esp.program.models import ClassSubject, RegistrationType
 from esp.program.setup import prepare_program, commit_program
 from esp.program.forms import ProgramCreationForm
-from esp.tagdict.models import Tag
 from esp.resources.models import ResourceType, ResourceRequest
-import random
+from esp.tagdict.models import Tag
+from esp.users.models import ESPUser, Permission
 
 class TeacherClassRegTest(ProgramFrameworkTest):
     def setUp(self, *args, **kwargs):
@@ -56,12 +59,25 @@ class TeacherClassRegTest(ProgramFrameworkTest):
         other_teachers.remove(self.other_teacher1)
         self.other_teacher2 = random.choice(other_teachers)
 
-        self.free_teacher1, created = ESPUser.objects.get_or_create(username='freeteacher1')
+        self.free_teacher1, created = ESPUser.objects.get_or_create(
+            username='freeteacher1',
+            first_name='Free',
+            last_name='Teacher1',
+            email='freeteacher1@example.com')
         self.free_teacher1.set_password('password')
         self.free_teacher1.save()
-        self.free_teacher2, created = ESPUser.objects.get_or_create(username='freeteacher2')
+        self.free_teacher2, created = ESPUser.objects.get_or_create(
+            username='freeteacher2',
+            first_name='Free',
+            last_name='Teacher2',
+            email='freeteacher2@example.com')
         self.free_teacher2.set_password('password')
         self.free_teacher2.save()
+
+        # Make the teachers available all the time
+        for ts in self.program.getTimeSlots():
+            self.free_teacher1.addAvailableTime(self.program, ts)
+            self.free_teacher2.addAvailableTime(self.program, ts)
         # Make the primary teacher an admin of the class
 
         # Get and remember the instance of TeacherClassRegModule
@@ -75,14 +91,14 @@ class TeacherClassRegTest(ProgramFrameworkTest):
 
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
-        self.failUnless("check_grade_range" in response.content)
+        self.failUnless("grade_range_popup" in response.content)
 
         # Add a tag that specifically removes this functionality
         Tag.setTag('grade_range_popup', self.program, 'False')
 
         # Try editing the class
         response = self.client.get('%smakeaclass' % self.program.get_teach_url())
-        self.failUnless(not "check_grade_range" in response.content)
+        self.failUnless(not "grade_range_popup" in response.content)
 
         # Change the grade range of the program and reset the tag
         self.program.grade_min = 7

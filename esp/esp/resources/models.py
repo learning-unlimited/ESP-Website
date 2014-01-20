@@ -110,8 +110,12 @@ class ResourceType(models.Model):
             self.attributes_pickled = pickle.dumps(self._attributes_cached)
         super(ResourceType, self).save(*args, **kwargs)
 
-    @staticmethod
-    def get_or_create(label, program=None):
+    _get_or_create_cache = {}
+    @classmethod
+    def get_or_create(cls, label, program=None):
+        if (label, program) in cls._get_or_create_cache:
+            return cls._get_or_create_cache[(label, program)]
+
         if program:
             base_q = Q(program=program)
             if Tag.getTag('allow_global_restypes'):
@@ -120,7 +124,7 @@ class ResourceType(models.Model):
             base_q = Q(program__isnull=True)
         current_type = ResourceType.objects.filter(base_q).filter(name__icontains=label)
         if len(current_type) != 0:
-            return current_type[0]
+            ret = current_type[0]
         else:
             nt = ResourceType()
             nt.name = label
@@ -129,7 +133,10 @@ class ResourceType(models.Model):
             nt.program = program
             nt.autocreated = True
             nt.save()
-            return nt
+            ret = nt
+
+        cls._get_or_create_cache[(label, program)] = ret
+        return ret
         
     @staticmethod
     def global_types():

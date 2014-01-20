@@ -23,15 +23,74 @@
 <div id="topleft"><a href="/"><img src="/media/images/theme/splogo.gif" alt="{{ theme.titlebar_prefix }}" /></a></div>
 
 <div id="nav_buttons">
-<a href="/learn/index.html"><div id="nav_button1"></div></a>
-<a href="/teach/index.html"><div id="nav_button2"></div></a>
-<a href="/volunteer/index.html"><div id="nav_button3"></div></a>
-<a href="/more_info/index.html"><div id="nav_button4"></div></a>
+<div id="nav_button_spacer" class="nav_button_spacer">&nbsp;</div>
+<a href="/learn/index.html">
+<div id="nav_button_learn" class="nav_button">
+  <svg width="141" height="180">
+    <defs>
+      <mask id="nav_button_learn_mask">
+        <rect width="100%" height="100%" class="nav_button_mask" />
+        <circle cx="70" cy="90" r="55" class="nav_button_circle" />
+        <text transform="rotate(10, 70, 90)" x="70" y="99" class="nav_button_text">LEARN</text>
+      </mask>
+    </defs>
+    <rect width="100%" height="100%" mask="url(#nav_button_learn_mask)" class="nav_button_rect" />
+  </svg>
+</div>
+</a>
+
+<a href="/teach/index.html">
+<div id="nav_button_teach" class="nav_button">
+  <svg width="141" height="180">
+    <defs>
+      <mask id="nav_button_teach_mask">
+        <rect width="100%" height="100%" class="nav_button_mask" />
+        <circle cx="70" cy="90" r="55" class="nav_button_circle" />
+        <text transform="rotate(-10, 70, 90)" x="70" y="99" class="nav_button_text">TEACH</text>
+      </mask>
+    </defs>
+    <rect width="100%" height="100%" mask="url(#nav_button_teach_mask)" class="nav_button_rect" />
+  </svg>
+</div>
+</a>
+
+<a href="/volunteer/index.html">
+<div id="nav_button_helpout" class="nav_button">
+  <svg width="141" height="180">
+    <defs>
+      <mask id="nav_button_helpout_mask">
+        <rect width="100%" height="100%" class="nav_button_mask" />
+        <circle cx="70" cy="90" r="55" class="nav_button_circle" />
+        <text transform="rotate(10, 70, 90)" x="70" y="87" class="nav_button_text">HELP</text>
+        <text transform="rotate(10, 70, 90)" x="70" y="117" class="nav_button_text">OUT</text>
+      </mask>
+    </defs>
+    <rect width="100%" height="100%" mask="url(#nav_button_helpout_mask)" class="nav_button_rect" />
+  </svg>
+</div>
+</a>
+
+<a href="/more_info/index.html">
+<div id="nav_button_moreinfo" class="nav_button">
+  <svg width="141" height="180">
+    <defs>
+      <mask id="nav_button_moreinfo_mask">
+        <rect width="100%" height="100%" class="nav_button_mask" />
+        <circle cx="70" cy="90" r="55" class="nav_button_circle" />
+        <text transform="rotate(-10, 70, 90)" x="70" y="85" class="nav_button_text">MORE</text>
+        <text transform="rotate(-10, 70, 90)" x="70" y="115" class="nav_button_text">INFO</text>
+      </mask>
+    </defs>
+    <rect width="100%" height="100%" mask="url(#nav_button_moreinfo_mask)" class="nav_button_rect" />
+  </svg>
+</div>
+</a>
+
 </div>
 
 <div id="navbar">
 
-<div id="navbar_header"><img src="/media/images/theme/news.gif" alt="RECENT NEWS" /></div>
+<div id="navbar_header">RECENT NEWS</div>
 
 <div id="navbar_content">
 
@@ -39,7 +98,7 @@
 {% include "users/loginbox.html" %}
 {% endblock %}
 
-<div class="admin admin_hidden">
+<div class="admin hidden">
 <div id="usersearchform">
 <h3>Search for User</h3>
 <p>
@@ -56,7 +115,7 @@
 {% load preview %}
 {% miniblog_for_user None as announcements 6 %}
 
-{% load markdown %}
+{% load markup %}
 {% for announce in announcements.announcementList %}
 <p>
 <span class="announcementlink_title{% if announce.section %} {{ announce.section }}{% endif %}">{{ announce.makeTitle }}</span><br />
@@ -86,3 +145,4 @@
 
 </div>
 {% endblock %}
+

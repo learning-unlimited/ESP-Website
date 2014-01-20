@@ -251,6 +251,13 @@ class ESPUser(User, AnonymousUser):
            return cmp(self.first_name.upper(), other.first_name.upper())
         return lastname
 
+    def __eq__(self, other):
+        """Extends equality to support User object == ESPUser object."""
+        if type(other) == User:
+            return self.getOld() == other or self.id == other.id
+        else:
+            return super(ESPUser, self).__eq__(other)
+
     def is_authenticated(self):
         return self.getOld().is_authenticated()
 
@@ -906,6 +913,30 @@ are a teacher of the class"""
             return 0
 
         return schoolyear + 12 - grade
+
+    @staticmethod
+    def getRankInClass(student, subject, default=10):
+        from esp.program.models.app_ import StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication
+        from esp.program.models import StudentRegistration
+        if isinstance(subject, int):
+            subject = ClassSubject.objects.get(id=subject)
+        if not StudentAppQuestion.objects.filter(subject=subject).count():
+            return 10
+        elif StudentRegistration.objects.filter(section__parent_class=subject, relationship__name="Rejected",end_date__gte=datetime.now(),user=student).exists() or not StudentApplication.objects.filter(user=student, program__classsubject = subject).exists() or not StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student).exists():
+            return 1
+        for sar in StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student):
+            if not len(sar.response.strip()):
+                return 1
+        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, studentapplication__program__classsubject=subject, reviewer__in=subject.teachers()).values_list('score', flat=True)) + [-1])
+        if rank == -1:
+            rank = default
+        return rank
+
+    @staticmethod
+    def getRankInSection(student, section, default=10):
+        if isinstance(section, int):
+            section = ClassSection.objects.get(id=section)
+        return getRankInClass(student, section.parent_class, default)
 
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
@@ -1927,6 +1958,7 @@ class Record(models.Model):
         ("interview","Teacher-interviewed for a program"),
         ("teacher_training","Attended teacher-training for a program"),
         ("teacher_checked_in", "Teacher checked in for teaching on the day of the program"),
+        ("twophase_reg_done", "Completed two-phase registration"),
     )
         
     event = models.CharField(max_length=80,choices=EVENT_CHOICES)

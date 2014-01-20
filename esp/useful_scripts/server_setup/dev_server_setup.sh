@@ -135,7 +135,7 @@ then
     then
         MODE_PROD=true
     else
-        MODE_PROD=false
+        MODE_PROD=
     fi
 fi
 if [[ $MODE_PROD ]]
@@ -143,7 +143,7 @@ then
 	echo "MODE_PROD=true" >> $BASEDIR/.espsettings
 	echo "Installing production site"
 else
-	echo "MODE_PROD=false" >> $BASEDIR/.espsettings
+	echo "MODE_PROD=" >> $BASEDIR/.espsettings
 	echo "Installing development site"
 fi
 
@@ -327,12 +327,11 @@ then
     mkdir -p $DEPDIR
     cd $DEPDIR
 
-    #    Get what we can using Ubuntu's package manager
-    sudo apt-get install -y $(< $BASEDIR/esp/packages_base.txt)
-
     if [[ "$MODE_PROD" ]]
     then
-        sudo apt-get install -y $(< $BASEDIR/esp/packages_prod.txt)
+        $BASEDIR/esp/update_deps.sh --prod
+    else
+        $BASEDIR/esp/update_deps.sh
     fi
 
     #    Fetch and extract files
@@ -343,12 +342,6 @@ then
         wget http://selenium.googlecode.com/files/selenium-server-standalone-2.9.0.jar
         cd $DEPDIR
     fi
-
-    #    Install python libraries
-    sudo pip install "virtualenv>=1.10"
-    virtualenv $BASEDIR/env
-    source $BASEDIR/env/bin/activate
-    pip install -r $BASEDIR/esp/requirements.txt
 
     cd $CURDIR
 

@@ -54,7 +54,6 @@ import simplejson as json
 
 THEME_PATH = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data')
 
-
 class ThemeController(object):
     """
     This is a controller for manipulating the currently selected theme.
@@ -82,7 +81,18 @@ class ThemeController(object):
             if os.path.isdir(os.path.join(THEME_PATH, name))]
 
     def get_template_settings(self):
-        return json.loads(Tag.getTag('theme_template_control', default='{}'))
+        """
+        Get the current template settings. The base settings are the initial
+        values of the configuration form fields, which are overriden by values
+        in the theme_template_control Tag.
+        """
+        form_class = self.get_config_form_class(self.get_current_theme())
+        if form_class is not None:
+            data = form_class.initial_data()
+        else:
+            data = {}
+        data.update(json.loads(Tag.getTag('theme_template_control', default='{}')))
+        return data
 
     def set_template_settings(self, data):
         #   Merge with the existing settings so you don't forget anything
@@ -191,6 +201,11 @@ class ThemeController(object):
         return results
         
     def compile_css(self, theme_name, variable_data, output_filename):
+        #   Hack to make things work on Windows systems
+        INCLUDE_PATH_SEP = ':'
+        if os.name == 'nt':
+            INCLUDE_PATH_SEP = ';'
+    
         #   Load LESS files in order of search path
         less_data = ''
         for filename in self.get_less_names(theme_name):
@@ -224,7 +239,7 @@ class ThemeController(object):
         if themes_settings.THEME_DEBUG: print 'Wrote %d bytes to LESS file %s' % (len(less_data), less_output_filename)
         less_output_file.close()
 
-        less_search_path = ':'.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
+        less_search_path = INCLUDE_PATH_SEP.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
         if themes_settings.THEME_DEBUG: print 'LESS search path is "%s"' % less_search_path
 
         #   Compile to CSS
@@ -233,7 +248,7 @@ class ThemeController(object):
         css_data = lessc_process.communicate()[0]
 
         if lessc_process.returncode != 0:
-            raise ESPError(True)('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support']))
+            raise ESPError(True)('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />LESS compile command was: <pre>%s</pre>' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], ' '.join(lessc_args)))
 
         output_file = open(output_filename, 'w')
         output_file.write(css_data)

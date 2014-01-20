@@ -48,7 +48,6 @@ Customize your title formatting here.  For example:
       {% if not announcements.announcementList|length_is:0 %}
       <ul class="nav nav-list sidebar">
         <li class="nav-header"> Announcements</li>
-        {% load markdown %}
         {% for announce in announcements.announcementList %}
         <li>
             {% if announce.makeUrl %}

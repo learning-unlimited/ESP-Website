@@ -1012,10 +1012,7 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def incrementGrade(self): 
-        incrementTag = Tag.getProgramTag('increment_default_grade_levels', self)
-        if incrementTag: 
-            return 1
-        return 0
+        return int(Tag.getBooleanTag('increment_default_grade_levels', self, False))
     incrementGrade.depend_on_row(lambda: Tag, lambda tag: {'self' :  tag.target})
     
     def priorityLimit(self):
@@ -1024,6 +1021,13 @@ class Program(models.Model, CustomFormsLinkModel):
             return studentregmodule.priority_limit
         else: 
             return 1
+    
+    def useGradeRangeExceptions(self):
+        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        if studentregmodule:
+            return studentregmodule.use_grade_range_exceptions
+        else:
+            return False
     
     def getDirectorCCEmail(self):
         if self.director_cc_email:
