@@ -369,3 +369,7 @@ FILEBROWSER_DIRECTORY = ''
 SHELL_PLUS_POST_IMPORTS = (
         ('esp.utils.shell_utils', '*'),
         )
+
+#   Exclude apps from testing
+TEST_RUNNER = 'utils.testing.ExcludeTestSuiteRunner'
+TEST_EXCLUDE = ('grappelli')
