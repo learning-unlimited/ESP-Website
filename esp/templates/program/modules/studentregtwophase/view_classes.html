@@ -10,7 +10,7 @@
 
 {% block catalog_intro %}
 {{ block.super }}
-{% inline_program_qsd_block program "learn:studentregtwophase/catalog-intro" request.user %}
+{% inline_program_qsd_block program "learn:studentregtwophase/catalog-intro" %}
 Below is the class listing for {{program.niceName}}. If you have trouble viewing this page, try our <a href="/learn/{{program.getUrlBase}}/catalog">basic catalog</a>.
 {% end_inline_program_qsd_block %}
 {% endblock %}
