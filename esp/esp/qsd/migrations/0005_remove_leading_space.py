@@ -8,9 +8,10 @@ class Migration(DataMigration):
 
     def forwards(self, orm):
         """ Remove leading space from QSD content. """
-        for q in orm.QuasiStaticData.objects.filter(content__startswith=' '):
-            q.content = q.content.lstrip()
-            q.save()
+        for q in orm.QuasiStaticData.objects.all():
+            if q.content != q.content.lstrip():
+                q.content = q.content.lstrip()
+                q.save()
 
     def backwards(self, orm):
         pass
