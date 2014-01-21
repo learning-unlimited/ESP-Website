@@ -1,16 +1,22 @@
 {% extends "main.html" %}
-
 {% load i18n %}
-{% load subsection %}
-
+{% load bootstrap %}
 
 {% block title %}{% trans "Grade Change Request Form" %}{% endblock %}
 
 {% block content %}
 <div class="row">
 	<div class="span6">
-		<form id="id-grade-change-request-form" action="." method="get" accept-charset="utf-8">
+
+		<form id="id-grade-change-request-form" action="{% url grade_change_request %}" method="post" accept-charset="utf-8">
+			     {% csrf_token %}
 			<h3>{% trans "Grade Change Request" %}</h3>
+			{% if messages %}
+				{% for message in messages %}
+				<div class="alert alert-{% if message.SUCCESS %}success{% else %}success{% endif %}"> <strong>{{ message.type }}{{ message }}</strong>
+				</div>
+				{% endfor %}
+		    {% else %}
 			<div class="alert" id="id-grade-change-request-info">
 				<p>
 					{% blocktrans %}
@@ -18,10 +24,10 @@
 					{% endblocktrans %}
 				</p>
 			</div>
-			{{ form.as_p }}
+			{% endif %}
+			{{ form|bootstrap }}
 			
 			<div class="form-actions"><input type="submit" class="btn btn-primary" value="{% trans "Send Request" %}" /></div>
-	
 		</form>
 	</div>
 </div>

@@ -1,0 +1,3 @@
+Dear {{ student.name }},
+
+We have received your grade change request

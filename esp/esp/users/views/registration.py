@@ -1,7 +1,12 @@
 import hashlib
+import logging
 import random
 import urllib
 
+log = logging.getLogger(__name__)
+
+
+from vanilla import CreateView
 from django.conf import settings
 from django.contrib.auth import login, authenticate
 from django.contrib.auth.models import Group
@@ -10,8 +15,10 @@ from django.core.urlresolvers import reverse
 from django.http import HttpResponseRedirect
 from django.template import loader
 from django.utils.datastructures import MultiValueDictKeyError
-from django.views.generic.base import TemplateView
+from django.core.urlresolvers import reverse_lazy
 
+
+#from django.views.generic.base import TemplateView
 
 from esp.dbmail.models import send_mail
 from esp.mailman import add_list_member
@@ -21,6 +28,7 @@ from esp.tagdict.models import Tag
 from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
 from esp.users.models import ESPUser_Profile, ESPUser
 from esp.web.util.main import render_to_response
+from django.contrib import messages
 
 
 __all__ = ['join_emaillist','user_registration_phase1', 'user_registration_phase2','resend_activation_view']
@@ -232,22 +240,22 @@ def resend_activation_view(request):
                                   {'form':form, 'site': Site.objects.get_current()})
 
 
-class GradeChangeRequestView(TemplateView):
+class GradeChangeRequestView(CreateView):
     """
-    Handles Display of Grade Change Request Form
+    Handles Display of Grade Change Request Form and dispatching of request.
     """
     template_name = 'users/profiles/gradechangerequestform.html'
+    form_class = GradeChangeRequestForm
+    success_url = reverse_lazy('grade_change_request')
 
-    def render_to_response(self, context, **response_kwargs):
-        return super(TemplateView, self).render_to_response(context, **response_kwargs)
+    def form_valid(self, form):
+        change_request = form.save(commit=False)
+        change_request.requesting_student = self.request.user
+        change_request.save()
+        messages.add_message(self.request, messages.SUCCESS, "Your grade change request was sent!")
+        
+        log.info('grade change request sent by user %s'%(self.request.user,))
 
-    def get_context_data(self, **kwargs):
-        context = super(GradeChangeRequestView, self).get_context_data(**kwargs)
-        context.update({
-            'form':GradeChangeRequestForm()
-        })
-        return context
+        return HttpResponseRedirect(self.success_url)
 
-    #@method_decorator(login_required)
-    def dispatch(self, *args, **kwargs):
-        return super(GradeChangeRequestView, self).dispatch(*args, **kwargs)
+

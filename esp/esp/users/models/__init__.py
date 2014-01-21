@@ -54,6 +54,7 @@ from django.template import loader, Context as DjangoContext
 from django.template.defaultfilters import urlencode
 from django.template.loader import render_to_string
 from django_extensions.db.models import TimeStampedModel
+from django.core import urlresolvers
 
 
 
@@ -2148,25 +2149,57 @@ class GradeChangeRequest(TimeStampedModel):
         A grade change request is issued by a student when it is felt
         that the current grade is incorrect.
     """
-    
     #I am making an assumption about the allowable values for this field. Needs to be confirmed
+    #TODO - Investigate way to generate a better list of values
     claimed_grade = models.PositiveIntegerField(choices = zip(range(7, 13), range(7, 13)))
     reason = models.TextField()
-    approved_time = models.DateTimeField(blank=True, null=True)
+    approved = models.NullBooleanField()
+    acknowledged_time = models.DateTimeField(blank=True, null=True)
     
     requesting_student = models.ForeignKey(ESPUser, related_name='requesting_student_set')
-    approved_by = models.ForeignKey(ESPUser, blank=True, null=True)
+    acknowledged_by = models.ForeignKey(ESPUser, blank=True, null=True)
+
+    class Meta:
+        ordering = ['-acknowledged_time','-created']
+
+    def save(self, **kwargs):
+        is_new = self.id is None
+        super(GradeChangeRequest, self).save(**kwargs)
+
+        if is_new:
+            self.send_request_email()
+            return
+            
+        if self.approved is not None and not self.acknowledged_time:
+            self.acknowledged_time = datetime.now()
+            self.send_confirmation_email()
 
 
-    def is_approved(self):
-        return self.approved_time is not None
-
-
-    def send_confirmation_email(self):
+    def _request_email_content(self):
         """
-        Sends a confirmation email to the requesting student.
-        This email is sent when the administrator confirms a change grade change request.
+        Returns the email content for the grade change request email.
         """
+        context = {'student': self.requesting_student,
+                    'grade_change_request':self,
+                    'site': Site.objects.get_current()}
+
+        subject = render_to_string('users/emails/grade_change_request_email_subject.txt',
+                                   context)
+        subject = ''.join(subject.splitlines())
+
+        message = render_to_string('users/emails/grade_change_request_email_message.txt',
+                                   context)
+        return subject, message
+
+    def send_request_email(self):
+        """ Sends the the email for the change request to the LU admin email address"""
+        subject, message = self._request_email_content()
+        send_mail(subject,
+                  message,
+                  settings.DEFAULT_FROM_EMAIL,
+                  [self.requesting_student.email, ])
+
+    def _confirmation_email_content(self):
         context = {'student': self.requesting_student,
                   'site': Site.objects.get_current()}
 
@@ -2176,12 +2209,25 @@ class GradeChangeRequest(TimeStampedModel):
 
         message = render_to_string('users/emails/grade_change_confirmation_email_message.txt',
                                    context)
+        return subject, message
 
+    def send_confirmation_email(self):
+        """
+        Sends a confirmation email to the requesting student.
+        This email is sent when the administrator confirms a change grade change request.
+        """
+        subject, message = self._confirmation_email_content()
         #TODO - Ask someone or research whether email correspondence needs to be persistent
         send_mail(subject,
                   message,
                   settings.DEFAULT_FROM_EMAIL,
                   [self.requesting_student.email, ])
+
+    def get_admin_url(self):
+        return urlresolvers.reverse("admin:%s_%s_change" %
+        (self._meta.app_label, self._meta.module_name), args=(self.id,))
+
+
 
 # We can't import these earlier because of circular stuff...
 from esp.users.models.userbits import UserBit

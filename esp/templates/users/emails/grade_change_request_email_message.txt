@@ -1,0 +1,3 @@
+A grade change request was received from:  {{ student.name }}
+Please review the request here: {{site}}{{ grade_change_request.get_admin_url }}
+
