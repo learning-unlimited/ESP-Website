@@ -78,7 +78,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @classmethod
     def extensions(cls):
-        return [module_ext.ClassRegModuleInfo]
+        return {'crmi': module_ext.ClassRegModuleInfo}
 
 
     def prepare(self, context={}):
@@ -743,7 +743,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # durations when every interface assumes they're identical?
                 current_duration = current_data['duration'] or newclass.sections.all()[0].duration
                 rounded_duration = 0
-                for k, v in self.getDurations() + [(0,'')]:
+                for k, v in self.crmi.getDurations() + [(0,'')]:
                     new_delta = abs( k - current_duration )
                     if old_delta is None or new_delta < old_delta:
                         old_delta = new_delta
