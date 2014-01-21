@@ -62,7 +62,7 @@ class CreditCardModule_FirstData(ProgramModuleObj):
 
     @classmethod
     def extensions(cls):
-        extensions = [module_ext.CreditCardSettings]
+        return [module_ext.CreditCardSettings]
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
