@@ -679,5 +679,5 @@ class AdminClass(ProgramModuleObj):
 
 
     class Meta:
-        abstract = True
+        proxy = True
 

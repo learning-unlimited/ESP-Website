@@ -81,6 +81,10 @@ class ProgramModuleObj(models.Model):
     def __unicode__(self):
         return '"%s" for "%s"' % (self.module.admin_title, str(self.program))
 
+    def get_program(self):
+        """ Backward compatibility; see ClassRegModuleInfo.get_program """
+        return self.program
+
     def get_views_by_call_tag(self, tags):
         """ We define decorators below (aux_call, main_call, etc.) which allow
             methods within the ProgramModuleObj subclass to be tagged with
@@ -282,10 +286,9 @@ class ProgramModuleObj(models.Model):
         old_id = self.id
         old_module = self.module
         if self.program:
-            for x in self._meta.parents:
-                if x != ProgramModuleObj:
-                    new_dict = self.program.getModuleExtension(x, module_id=old_id).__dict__
-                    self.__dict__.update(new_dict)
+            for x in self.extensions():
+                new_dict = self.program.getModuleExtension(x, module_id=old_id).__dict__
+                self.__dict__.update(new_dict)
             self.id = old_id
             self.module = old_module
 
@@ -421,7 +424,8 @@ class ProgramModuleObj(models.Model):
     def isStep(self):
         return True
 
-    def extensions(self):
+    @classmethod
+    def extensions(cls):
         return []
 
     @classmethod

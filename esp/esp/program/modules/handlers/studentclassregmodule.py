@@ -127,7 +127,7 @@ def json_encode(obj):
 
 
 # student class picker module
-class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleInfo):
+class StudentClassRegModule(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return [ {
@@ -139,9 +139,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             "required": True,
             }]
 
-    def extensions(self):
-        """ This function gives all the extensions...that is, models that act on the join of a program and module."""
-        return []#(., module_ext.StudentClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+    @classmethod
+    def extensions(cls):
+        return [module_ext.StudentClassRegModuleInfo]
 
 
     def students(self, QObject = False):
@@ -770,5 +770,5 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         return None
 
     class Meta:
-        abstract = True
+        proxy = True
 

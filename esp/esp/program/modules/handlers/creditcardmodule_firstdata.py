@@ -50,7 +50,7 @@ from django.conf import settings
 
 from decimal import Decimal
 
-class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings):
+class CreditCardModule_FirstData(ProgramModuleObj):
     @classmethod
     def module_properties(cls):
         return {
@@ -59,6 +59,10 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
             "module_type": "learn",
             "seq": 10000,
             }
+
+    @classmethod
+    def extensions(cls):
+        return [module_ext.CreditCardSettings]
 
     def isCompleted(self):
         """ Whether the user has paid for this program or its parent program. """
@@ -171,5 +175,5 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
 
     class Meta:
-        abstract = True
+        proxy = True
 

@@ -306,4 +306,4 @@ class TeacherCheckinModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'missingteachers.html', request, context)
     
     class Meta:
-        abstract = True
+        proxy = True

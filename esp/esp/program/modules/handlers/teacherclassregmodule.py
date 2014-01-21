@@ -64,7 +64,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 import simplejson as json
 from copy import deepcopy
 
-class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
+class TeacherClassRegModule(ProgramModuleObj):
     """ This program module allows teachers to register classes, and for them to modify classes/view class statuses
         as the program goes on. It is suggested, though not required, that this module is used in conjunction with
         StudentClassRegModule. Please be mindful of all the options of this module. """
@@ -78,9 +78,9 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             "inline_template": "listclasses.html",
             }
 
-    def extensions(self):
-        """ This function gives all the extensions...that is, models that act on the join of a program and module."""
-        return []#(., module_ext.ClassRegModuleInfo)] # ClassRegModuleInfo has important information for this module
+    @classmethod
+    def extensions(cls):
+        return [module_ext.ClassRegModuleInfo]
 
 
     def prepare(self, context={}):
@@ -988,5 +988,5 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         return 'No classes.'
 
     class Meta:
-        abstract = True
+        proxy = True
 

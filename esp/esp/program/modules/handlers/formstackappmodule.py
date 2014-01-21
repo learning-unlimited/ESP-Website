@@ -41,7 +41,7 @@ from esp.users.models    import ESPUser
 from esp.application.models import FormstackStudentProgramApp
 from urllib import urlencode
 
-class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
+class FormstackAppModule(ProgramModuleObj):
     """
     Student application module for Junction.
 
@@ -57,6 +57,10 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
             "seq": 10,
             "required": True,
             }]
+
+    @classmethod
+    def extensions(cls):
+        return [module_ext.FormstackAppSettings]
 
     def students(self, QObject = False):
         result = {}
@@ -116,5 +120,5 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
                                   request, context)
 
     class Meta:
-        abstract = True
+        proxy = True
 
