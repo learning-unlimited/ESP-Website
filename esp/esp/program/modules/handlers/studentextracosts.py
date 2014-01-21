@@ -213,5 +213,5 @@ class StudentExtraCosts(ProgramModuleObj):
 
 
     class Meta:
-        abstract = True
+        proxy = True
 

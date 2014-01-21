@@ -100,5 +100,5 @@ class SurveyManagement(ProgramModuleObj):
             return top_classes(request, tl, one, two)
 
     class Meta:
-        abstract = True
+        proxy = True
 

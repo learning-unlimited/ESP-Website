@@ -79,5 +79,5 @@ class TextMessageModule(ProgramModuleObj):
             
 
     class Meta:
-        abstract = True
+        proxy = True
 

@@ -103,5 +103,5 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
         return base_dict
 
     class Meta:
-        abstract = True
+        proxy = True
 

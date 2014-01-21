@@ -453,5 +453,5 @@ LIMIT 1
         
 
     class Meta:
-        abstract = True
+        proxy = True
 

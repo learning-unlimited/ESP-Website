@@ -521,4 +521,4 @@ class AJAXSchedulingModule(ProgramModuleObj):
         return num_affected_sections
 
     class Meta:
-        abstract = True
+        proxy = True

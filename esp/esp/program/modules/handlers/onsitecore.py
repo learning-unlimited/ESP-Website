@@ -80,5 +80,5 @@ class OnsiteCore(ProgramModuleObj, CoreModule):
 
 
     class Meta:
-        abstract = True
+        proxy = True
 

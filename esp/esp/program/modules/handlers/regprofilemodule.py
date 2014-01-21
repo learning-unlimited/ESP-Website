@@ -128,5 +128,5 @@ class RegProfileModule(ProgramModuleObj):
 
 
     class Meta:
-        abstract = True
+        proxy = True
 

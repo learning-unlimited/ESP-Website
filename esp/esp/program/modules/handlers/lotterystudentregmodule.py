@@ -179,5 +179,5 @@ class LotteryStudentRegModule(ProgramModuleObj):
         return render_to_response(self.baseDir()+'view_lottery_prefs.html', request, context)
     
     class Meta:
-        abstract = True
+        proxy = True
 

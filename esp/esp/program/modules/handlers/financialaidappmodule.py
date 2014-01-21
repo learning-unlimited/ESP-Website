@@ -193,4 +193,4 @@ This request can be (re)viewed at:
 
 
     class Meta:
-        abstract = True
+        proxy = True

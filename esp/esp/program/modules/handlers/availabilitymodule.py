@@ -330,4 +330,4 @@ class AvailabilityModule(ProgramModuleObj):
         return self.availabilityForm(request, tl, one, two, prog, teacher, True)
 
     class Meta:
-        abstract = True
+        proxy = True

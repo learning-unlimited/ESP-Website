@@ -69,7 +69,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
         return {'acknowledgement': """Teachers who have submitted the acknowledgement for the program."""}    
     
     class Meta:
-        abstract = True
+        proxy = True
     
 
 
