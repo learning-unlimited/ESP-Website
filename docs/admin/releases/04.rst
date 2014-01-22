@@ -20,7 +20,7 @@ still work now. Report any bugs you find, and we will fix them ASAP.
 
 If you previously knew about User Bits and the Data Tree, or if you are
 otherwise interested in the scope of these changes, read
-/docs/admin/releases/04/schema_simplification.txt.
+`<04/schema_simplification.rst>`_.
 
 Themes - front end design
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -31,8 +31,8 @@ can select from pre-defined themes (/themes/select), configure page contents
 (/themes/setup), or adjust aesthetic parameters (/themes/customize).  Behind
 the scenes, the app is generating template overrides and CSS stylesheets based
 on your configuration.  More details can be found at
-/docs/admin/generic_templates.txt or
-http://wiki.learningu.org/Generic_Templates.
+`<04/generic_templates.rst>`_ or
+`<http://wiki.learningu.org/Generic_Templates>`_.
 
 Check Availability Page
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -162,7 +162,7 @@ submit medical information before they can continue with registration. The
 modules are "Formstack Med-liab Module" and "Formstack Med-liab Bypass Page"
 (the latter allows administrators to grant a "bypass" to students, allowing
 them to opt-out of online submission). A separate program, hosted at
-https://github.com/btidor/esp-medical, is used to collect the encrypted
+`<https://github.com/btidor/esp-medical>`_, is used to collect the encrypted
 information and store it locally. If your chapter is considering implementing
 online collection of medical information, please talk to MIT ESP at
 esp-webmasters@mit.edu for aid and suggested security considerations.
@@ -311,5 +311,5 @@ templates were used, among other things.  You can enable or disable it via the
 debug_toolbar GET variable, for example http://localhost:8000/?debug_toolbar=f,
 or with the DEBUG_TOOLBAR setting in local_settings.py.  There are more
 configuration options defined in django_settings.py.  For more information see
-http://django-debug-toolbar.readthedocs.org/en/1.0/.
+`<http://django-debug-toolbar.readthedocs.org/en/1.0/>`_.
 
