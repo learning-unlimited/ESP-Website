@@ -188,11 +188,17 @@ class ESPUser(User, AnonymousUser):
         return self._is_anonymous
 
     @staticmethod
+    def grade_options():
+        """ Returns a list<int> of valid grades """ 
+        return Tag.getTag('student_grade_options')
+
+    @staticmethod
     def onsite_user():
         if ESPUser.objects.filter(username='onsite').exists():
             return ESPUser.objects.get(username='onsite')
         else:
             return None
+
 
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -2149,9 +2155,8 @@ class GradeChangeRequest(TimeStampedModel):
         A grade change request is issued by a student when it is felt
         that the current grade is incorrect.
     """
-    #I am making an assumption about the allowable values for this field. Needs to be confirmed
-    #TODO - Investigate way to generate a better list of values
-    claimed_grade = models.PositiveIntegerField(choices = zip(range(7, 13), range(7, 13)))
+  
+    claimed_grade = models.PositiveIntegerField()
     reason = models.TextField()
     approved = models.NullBooleanField()
     acknowledged_time = models.DateTimeField(blank=True, null=True)
@@ -2161,6 +2166,12 @@ class GradeChangeRequest(TimeStampedModel):
 
     class Meta:
         ordering = ['-acknowledged_time','-created']
+
+    def __init__(self, *args, **kwargs):
+        super(GradeChangeRequest, self).__init__(*args, **kwargs)
+        grade_options = ESPUser.grade_options()
+
+        self._meta.get_field_by_name('claimed_grade')[0]._choices = zip(grade_options, grade_options)
 
     def save(self, **kwargs):
         is_new = self.id is None
@@ -2180,7 +2191,7 @@ class GradeChangeRequest(TimeStampedModel):
         Returns the email content for the grade change request email.
         """
         context = {'student': self.requesting_student,
-                    'grade_change_request':self,
+                    'change_request':self,
                     'site': Site.objects.get_current()}
 
         subject = render_to_string('users/emails/grade_change_request_email_subject.txt',
@@ -2201,6 +2212,7 @@ class GradeChangeRequest(TimeStampedModel):
 
     def _confirmation_email_content(self):
         context = {'student': self.requesting_student,
+                    'change_request':self,
                   'site': Site.objects.get_current()}
 
         subject = render_to_string('users/emails/grade_change_confirmation_email_subject.txt',

@@ -5,20 +5,20 @@ import urllib
 
 log = logging.getLogger(__name__)
 
-
-from vanilla import CreateView
 from django.conf import settings
+from django.contrib import messages
 from django.contrib.auth import login, authenticate
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import Group
 from django.contrib.sites.models import Site
 from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse_lazy
 from django.http import HttpResponseRedirect
 from django.template import loader
 from django.utils.datastructures import MultiValueDictKeyError
-from django.core.urlresolvers import reverse_lazy
+from django.utils.decorators import method_decorator
 
-
-#from django.views.generic.base import TemplateView
+from vanilla import CreateView
 
 from esp.dbmail.models import send_mail
 from esp.mailman import add_list_member
@@ -28,7 +28,6 @@ from esp.tagdict.models import Tag
 from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
 from esp.users.models import ESPUser_Profile, ESPUser
 from esp.web.util.main import render_to_response
-from django.contrib import messages
 
 
 __all__ = ['join_emaillist','user_registration_phase1', 'user_registration_phase2','resend_activation_view']
@@ -252,10 +251,14 @@ class GradeChangeRequestView(CreateView):
         change_request = form.save(commit=False)
         change_request.requesting_student = self.request.user
         change_request.save()
-        messages.add_message(self.request, messages.SUCCESS, "Your grade change request was sent!")
+        messages.add_message(self.request, messages.SUCCESS, "Your grade change request was sent! You will receive an email containing your approval status shortly.")
         
         log.info('grade change request sent by user %s'%(self.request.user,))
 
         return HttpResponseRedirect(self.success_url)
+
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(GradeChangeRequestView, self).dispatch(*args, **kwargs)
 
 

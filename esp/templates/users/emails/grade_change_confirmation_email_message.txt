@@ -1,3 +1,12 @@
 Dear {{ student.name }},
 
-We have received your grade change request
+We have reviewed the grade change request that you sent to {{ site }}:
+
+Current Grade: {{ student.getGrade }}
+Claimed Grade: {{ change_request.claimed_grade }}
+Reason:
+
+{{ change_request.reason }}
+
+The status of your request is: {% if change_request.approved %}Approved{% else %}Not Approved{% endif %}
+
