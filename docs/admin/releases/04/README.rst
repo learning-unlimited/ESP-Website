@@ -20,7 +20,7 @@ still work now. Report any bugs you find, and we will fix them ASAP.
 
 If you previously knew about User Bits and the Data Tree, or if you are
 otherwise interested in the scope of these changes, read
-`<04/schema_simplification.rst>`_.
+`<schema_simplification.rst>`_.
 
 Themes - front end design
 ~~~~~~~~~~~~~~~~~~~~~~~~~
