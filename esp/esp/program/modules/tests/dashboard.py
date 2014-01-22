@@ -32,9 +32,12 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
+import json
+
+from django.utils.html import escape
+
 from esp.program.tests import ProgramFrameworkTest
 from esp.program.modules.base import ProgramModule, ProgramModuleObj
-from django.utils.html import escape
 from esp.program.models import ClassSubject
 
 class DashboardTest(ProgramFrameworkTest):
@@ -54,7 +57,10 @@ class DashboardTest(ProgramFrameworkTest):
             self.moduleobj.user = self.students[0]
 
             self.client.login(username=self.admins[0].username, password='password')
-            self.response = self.client.get('/manage/%s/dashboard' % self.program.getUrlBase())
+            self.stats_response = self.client.get('/json/%s/stats'
+                                                  % self.program.getUrlBase())
+            self.classes_response = self.client.get('/json/%s/class_subjects'
+                                                    % self.program.getUrlBase())
 
             self.isSetUp = True  ## Save duplicate sets of queries on setUp
         
@@ -70,8 +76,8 @@ class DashboardTest(ProgramFrameworkTest):
 
         for query_label, query in student_display_dict.iteritems():
             value = query.count()
-            display_str = "<strong>%s</strong> &ndash; %d\n" % (escape(query_label), value)
-            self.assertContains(self.response, display_str)
+            json_str = "[\"%s\", %d]" % (query_label, value)
+            self.assertContains(self.stats_response, json_str)
 
     def testTeacherStats(self):
         ## Teacher statistics
@@ -85,17 +91,20 @@ class DashboardTest(ProgramFrameworkTest):
 
         for query_label, query in teacher_display_dict.iteritems():
             value = query.count()
-            display_str = "<strong>%s</strong> &ndash; %d\n" % (escape(query_label), value)
-            self.assertContains(self.response, display_str)
+            json_str = "[\"%s\", %d]" % (query_label, value)
+            self.assertContains(self.stats_response, json_str)
         
 
     def testClasses(self):
         ## Make sure all classes are listed
+        json_classes = json.loads(str(self.classes_response.content))
         classes = ClassSubject.objects.filter(parent_program=self.program)
-        self.assertContains(self.response, '-row">', count=classes.count()+1)
+        self.assertEquals(len(json_classes["classes"]), classes.count())
         
+        json_classes_dict = dict()
+        for json_cls in json_classes["classes"]:
+            json_classes_dict[json_cls['id']] = json_cls
         for cls in classes:
-            self.assertContains(self.response, '<tr id="%d-row">' % cls.id)
-            self.assertContains(self.response, cls.emailcode())
-            
-            
+            # Very basic check that we're getting the data correctly
+            self.assertTrue(cls.id in json_classes_dict)
+            self.assertEquals(json_classes_dict[cls.id]['emailcode'], cls.emailcode())

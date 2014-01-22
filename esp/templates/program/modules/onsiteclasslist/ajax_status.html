@@ -3,11 +3,11 @@
 <title>Live Registration Status</title>
 <script type="text/javascript" src="/media/scripts/jquery.js"></script>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/jquery-ui.js"></script>
+<script type="text/javascript" src="/media/scripts/common.js"></script>
 <script type="text/javascript">
-    $j = $.noConflict();
     $j(document).ready(function() {
-        $j.getScript("/media/scripts/csrf_init.js");
-        $j.getScript("/media/scripts/csrf_check.js");
+        $j.getScriptWithCaching("/media/scripts/csrf_init.js");
+        $j.getScriptWithCaching("/media/scripts/csrf_check.js");
     });
     function set_compact_classes() {
     }

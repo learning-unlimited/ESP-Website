@@ -53,6 +53,7 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration
+from esp.program.modules.base import needs_student
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
@@ -116,10 +117,6 @@ def lottery_student_reg_simple(request, program = None):
 def lsr_submit(request, program = None): 
     
     priority_limit = program.priorityLimit()
-
-    # First check whether the user is actually a student.
-    if not request.user.isStudent():
-        raise ESPError(False), "You must be a student in order to access student registration."
 
     data = json.loads(request.POST['json_data'])
     
@@ -572,11 +569,11 @@ def submit_transaction(request):
             from django.conf import settings
             recipient_list = [contact[1] for contact in settings.ADMINS]
             recipient_list.append(settings.DEFAULT_EMAIL_ADDRESSES['treasury']) 
-            refs = 'Cybersource request ID: %s' % post_id
+            refs = 'Cybersource request ID: %s' % post_identifier
 
             subject = 'Possible Duplicate Postback/Payment'
-            refs = 'User: %s (%d); Program: %s (%d)' % (iac.user.name(), iac.user.id, self.program.niceName(), self.program.id)
-            refs += '\n\nPrevious payments\' Transfer IDs: ' + ( u', '.join([x.id for x in prev_payments]) )
+            refs = 'User: %s (%d); Program: %s (%d)' % (iac.user.name(), iac.user.id, iac.program.niceName(), iac.program.id)
+            refs += '\n\nPrevious payments\' Transfer IDs: ' + ( u', '.join([str(x.id) for x in prev_payments]) )
 
             # Send mail!
             send_mail('[ ESP CC ] ' + subject + ' by ' + iac.user.first_name + ' ' + iac.user.last_name, \
@@ -589,8 +586,15 @@ def submit_transaction(request):
 
         tl = 'learn'
         one, two = iac.program.url.split('/')
+        destination = Tag.getProgramTag("cc_redirect", iac.program, default="confirmreg")
 
-        return HttpResponseRedirect("http://%s/%s/%s/%s/confirmreg" % (request.META['HTTP_HOST'], tl, one, two))
+        if destination.startswith('/') or '//' in destination:
+            pass
+        else:
+            # simple urls like 'confirmreg' are relative to the program
+            destination = "/%s/%s/%s/%s" % (tl, one, two, destination)
+
+        return HttpResponseRedirect(destination)
 
     return render_to_response( 'accounting_docs/credit_rejected.html', request, {} )
 

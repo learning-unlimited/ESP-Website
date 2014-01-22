@@ -1,0 +1,168 @@
+#catalog-sticky {
+    width: 560px;
+    border: 1px solid #777;
+    padding: 0.5em 0.25em;
+    margin-left: -0.25em;
+    background-color: #f7f7f7;
+    z-index: 100;
+    position: relative;
+}
+
+#catalog-sticky .save-button {
+    position: absolute;
+    right: 0.1em;
+    top: 0.2em;
+}
+
+#catalog-sticky .sticky-toggle {
+    float: right;
+}
+
+#catalog-sticky .sticky-toggle a {
+    font-size: 13px;
+    color: inherit;
+    outline: 0;
+    text-decoration: none;
+}
+
+#catalog-sticky label {
+    display: inline;
+}
+
+#catalog-sticky .search-box, #catalog-sticky .filter-box, #catalog-sticky .priority-box {
+    font-size: 13px;
+    line-height: normal;
+}
+
+#catalog-sticky .search-box input {
+    margin-bottom: 0;
+}
+
+#catalog-sticky .filter-box {
+    display: inline-block;
+    vertical-align: top;
+    margin-top: 0.5em;
+    margin-right: 2em;
+}
+#catalog-sticky .priority-box {
+    display: inline-block;
+    vertical-align: top;
+    margin-top: 0.5em;
+    margin-right: 2em;
+}
+
+#catalog-sticky .filter-column {
+    display: inline-block;
+    vertical-align: top;
+}
+
+#catalog-sticky a.save,input.save {
+    border: 2px solid #333;
+    background-color: #ccccff;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 14px;
+    padding: 2px 5px 2px 5px;
+}
+#catalog-sticky a.save:hover,input.save:hover {
+    background-color: #333399;
+    color: #ccccff;
+}
+
+#catalog-new {
+    font-size: 13px;
+}
+#catalog-new .catalog-entry {
+    border: 2px solid #9BF;
+    margin: 1em 0;
+    overflow: hidden;
+}
+#catalog-new .catalog-entry-header {
+    padding: 0.5em;
+    background-color: #CDF;
+}
+#catalog-new .catalog-entry-title {
+    font-size: 1.15em;
+    line-height: normal;
+    display: inline-block;
+}
+#catalog-new .catalog-entry-teachers {
+    font-style: italic;
+    display: inline-block;
+    margin-left: 1em;
+}
+#catalog-new .catalog-entry-body {
+    padding: 0.5em;
+    font-family: serif;
+}
+#catalog-new .catalog-entry-description {
+    white-space: pre-wrap;
+    margin: 0.5em 0;
+}
+#catalog-new .catalog-entry dl {
+    display: table;
+    margin: 0.5em 0;
+}
+#catalog-new .catalog-entry dl > dt {
+    clear: left;
+    float: left;
+    margin: 0;
+    padding: 0 0.4em 0.4em 0;
+    font-weight: bold;
+}
+#catalog-new .catalog-entry dl > dt:after {
+    content: ": ";
+}
+#catalog-new .catalog-entry dl > dd {
+    float: left;
+    margin: 0;
+    padding: 0 0.4em 0.4em 0;
+}
+#catalog-new .catalog-entry table {
+    margin: 0.5em 0;
+}
+#catalog-new .catalog-entry th, #catalog-new .catalog-entry td {
+    text-align: center;
+    padding: 0 1em;
+}
+
+#search-spinner {
+    display: inline-block;
+}
+
+#catalog-new .mark-interested {
+    padding: 0.3em 0.5em;
+    background-color: #DEF;
+}
+#catalog-new .mark-interested label {
+    display: inline;
+    vertical-align: middle;
+}
+#catalog-new .mark-interested .star {
+    text-decoration: none !important;
+    outline: none;
+    display: inline-block;
+    position: relative;
+    vertical-align: middle;
+}
+#catalog-new .mark-interested .star-outline {
+    color: #248;
+    position: relative;
+    left: 0;
+    top: 0;
+    z-index: 2;
+}
+#catalog-new .mark-interested .star-outline:hover {
+    color: #013;
+}
+#catalog-new .mark-interested .star-fill {
+    color: #FD7;
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 1;
+}
+
+#catalog-new .no-match {
+    margin-top: 2em;
+}

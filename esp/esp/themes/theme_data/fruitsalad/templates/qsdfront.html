@@ -1,0 +1,10 @@
+{% extends "main.html" %}
+
+{% block content_title %}Welcome to {{ theme.full_group_name }}!{% endblock %}
+
+{% block content %}
+
+{% load render_qsd %}
+{% render_inline_qsd "homepage_qsdpart" %}
+
+{% endblock %}

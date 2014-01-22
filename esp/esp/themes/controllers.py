@@ -44,6 +44,7 @@ from django.template.loader import render_to_string
 
 from string import Template
 import cStringIO
+import datetime
 import os
 import re
 import subprocess
@@ -52,7 +53,6 @@ import distutils.dir_util
 import simplejson as json
 
 THEME_PATH = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data')
-
 
 class ThemeController(object):
     """
@@ -63,7 +63,16 @@ class ThemeController(object):
         
     def get_current_theme(self):
         return Tag.getTag('current_theme_name', default='default')
-        
+
+    def get_current_customization(self):
+        return Tag.getTag('prev_theme_customization', default='None')
+
+    def set_current_customization(self, theme_name):
+        Tag.setTag('prev_theme_customization', value=theme_name)
+
+    def unset_current_customization(self):
+        Tag.unSetTag('prev_theme_customization')
+
     def get_current_params(self):
         return json.loads(Tag.getTag('current_theme_params', default='{}'))
 
@@ -72,13 +81,36 @@ class ThemeController(object):
             if os.path.isdir(os.path.join(THEME_PATH, name))]
 
     def get_template_settings(self):
-        return json.loads(Tag.getTag('theme_template_control', default='{}'))
+        """
+        Get the current template settings. The base settings are the initial
+        values of the configuration form fields, which are overriden by values
+        in the theme_template_control Tag.
+        """
+        form_class = self.get_config_form_class(self.get_current_theme())
+        if form_class is not None:
+            data = form_class.initial_data()
+        else:
+            data = {}
+        data.update(json.loads(Tag.getTag('theme_template_control', default='{}')))
+        return data
 
     def set_template_settings(self, data):
         #   Merge with the existing settings so you don't forget anything
         initial_data = self.get_template_settings()
         initial_data.update(data)
+        now = datetime.datetime.now()
+        mtime = {'year': now.year, 'month': now.month, 'day': now.day,
+                 'hour': now.hour, 'minute': now.minute,
+                 'second': now.second, 'microsecond': now.microsecond}
+        initial_data.update({'mtime': mtime})
         Tag.setTag('theme_template_control', value=json.dumps(initial_data))
+
+    def update_template_settings(self):
+        """
+        Refreshes the template settings, possibly updating some values (such as
+        the mtime).
+        """
+        self.set_template_settings(self.get_template_settings())
 
     def base_dir(self, theme_name):
         return os.path.join(THEME_PATH, theme_name)
@@ -133,6 +165,7 @@ class ThemeController(object):
             result += self.global_less()
             result.append(os.path.join(themes_settings.less_dir, 'bootstrap.less'))
             result.append(os.path.join(themes_settings.less_dir, 'variables_custom.less'))
+            result.append(os.path.join(themes_settings.less_dir, 'main.less'))
         #   Make sure variables.less is included first, before any other custom LESS code
         result += self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'variables(.*?)\.less')
         result += self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'(?<!variables)\.less$')
@@ -168,6 +201,11 @@ class ThemeController(object):
         return results
         
     def compile_css(self, theme_name, variable_data, output_filename):
+        #   Hack to make things work on Windows systems
+        INCLUDE_PATH_SEP = ':'
+        if os.name == 'nt':
+            INCLUDE_PATH_SEP = ';'
+    
         #   Load LESS files in order of search path
         less_data = ''
         for filename in self.get_less_names(theme_name):
@@ -201,7 +239,7 @@ class ThemeController(object):
         if themes_settings.THEME_DEBUG: print 'Wrote %d bytes to LESS file %s' % (len(less_data), less_output_filename)
         less_output_file.close()
 
-        less_search_path = ':'.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
+        less_search_path = INCLUDE_PATH_SEP.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
         if themes_settings.THEME_DEBUG: print 'LESS search path is "%s"' % less_search_path
 
         #   Compile to CSS
@@ -210,12 +248,32 @@ class ThemeController(object):
         css_data = lessc_process.communicate()[0]
 
         if lessc_process.returncode != 0:
-            raise ESPError(True)('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support']))
+            raise ESPError(True)('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />LESS compile command was: <pre>%s</pre>' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], ' '.join(lessc_args)))
 
         output_file = open(output_filename, 'w')
         output_file.write(css_data)
         output_file.close()
         if themes_settings.THEME_DEBUG: print 'Wrote %.1f KB CSS output to %s' % (len(css_data) / 1000., output_filename)
+
+    def recompile_theme(self, theme_name=None, customization_name=None):
+        """
+        Reloads the theme (possibly updating the template overrides with recent
+        code changes), then recompiles the customizations.
+        """
+        if theme_name is None:
+            theme_name = self.get_current_theme()
+        if (customization_name is None) or (customization_name == "None"):
+            customization_name = self.get_current_customization()
+        self.clear_theme()
+        self.load_theme(theme_name)
+        self.update_template_settings()
+        if customization_name == "None":
+            return
+        (vars, palette) = self.load_customizations(customization_name)
+        if vars:
+            self.customize_theme(vars)
+        if palette:
+            self.set_palette(palette)
 
     def clear_theme(self, theme_name=None):
     
@@ -244,7 +302,7 @@ class ThemeController(object):
         Tag.unSetTag('current_theme_name')
         Tag.unSetTag('current_theme_params')
         Tag.unSetTag('current_theme_palette')
-        Tag.unSetTag('prev_theme_customization')
+        self.unset_current_customization()
 
     def load_theme(self, theme_name, **kwargs):
     
@@ -257,9 +315,9 @@ class ThemeController(object):
             template_file = open(template_filename, 'r')
             to.content = template_file.read()
             
-            #   Add an HTML comment indicating theme type to the main.html override (for tests)
+            #   Add a Django template comment tag indicating theme type to the main.html override (for tests)
             if to.name == 'main.html':
-                to.content = ('<!-- Theme: %s -->' % theme_name) + to.content
+                to.content += ('\n{%% comment %%} Theme: %s {%% endcomment %%}\n' % theme_name)
             
             #   print 'Template override %s contents: \n%s' % (to.name, to.content)
             to.save()
@@ -284,7 +342,7 @@ class ThemeController(object):
         Tag.setTag('current_theme_name', value=theme_name)
         Tag.setTag('current_theme_params', value='{}')
         Tag.unSetTag('current_theme_palette')
-        Tag.unSetTag('prev_theme_customization')
+        self.unset_current_customization()
 
     def customize_theme(self, vars):
         if themes_settings.THEME_DEBUG: print 'Customizing theme with variables: %s' % vars
@@ -343,6 +401,8 @@ class ThemeController(object):
         palette = []
         for match in re.findall(r'palette:(#?\w+?);', data):
             palette.append(match)
+
+        self.set_current_customization(save_name)
 
         if themes_settings.THEME_DEBUG: print (vars, palette)
         return (vars, palette)

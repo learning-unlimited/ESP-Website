@@ -8,7 +8,8 @@
 
 <h1>{{prog.niceName }} Student Registration&mdash; Error</h1>
 
-{% inline_program_qsd_block prog "notastudent_error" request.user %}
+{% load render_qsd %}
+{% inline_program_qsd_block prog "notastudent_error" %}
 
 
 <p>

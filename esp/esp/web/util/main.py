@@ -92,7 +92,7 @@ def render_to_response(template, request, context, prog=None, auto_per_program_t
         category = None
         if context.has_key('nav_category'):
             category = context['nav_category']
-        context['navbar_list'] = makeNavBar(section, category)
+        context['navbar_list'] = makeNavBar(section, category, path=request.path[1:])
 
     if not use_request_context:
         context['request'] = request
@@ -111,8 +111,17 @@ def error404(request, template_name='404.html'):
 
 def error500(request, template_name='500.html'):
     context = {}
+    context['settings'] = settings # needed by elements/html
     context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
     context['EMAIL_HOST'] = settings.EMAIL_HOST
     context['request'] = request
     t = loader.get_template(template_name) # You need to create a 500.html template.
-    return http.HttpResponseServerError(t.render(Context(context)))
+
+    # If possible, we want to render this page with a RequestContext so that
+    # the context processors are run. If this fails for some reason, we still
+    # want to display the original 500 error page, so fall back to using a
+    # normal Context.
+    try:
+        return http.HttpResponseServerError(t.render(RequestContext(context)))
+    except Exception:
+        return http.HttpResponseServerError(t.render(Context(context)))

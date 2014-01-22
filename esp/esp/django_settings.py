@@ -74,6 +74,7 @@ DISPLAYSQL = False
 TEMPLATE_DEBUG = False
 SHOW_TEMPLATE_ERRORS = False
 CACHE_DEBUG = False
+USE_PROFILER = False
 
 INTERNAL_IPS = (
     '127.0.0.1',
@@ -192,6 +193,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
+    'django.contrib.markup',
     'grappelli',
     'filebrowser',
     'django.contrib.admin',
@@ -232,6 +234,7 @@ INSTALLED_APPS = (
     'debug_toolbar',
     'bootstrapform',
     'django_nose',
+    'esp.formstack',
 )
 
 import os
@@ -365,3 +368,7 @@ DEBUG_TOOLBAR_CONFIG = {
 #   (not just '/media/uploads/' which is the default)
 FILEBROWSER_DIRECTORY = ''
 
+#   Default imports for shell_plus, for convenience.
+SHELL_PLUS_POST_IMPORTS = (
+        ('esp.utils.shell_utils', '*'),
+        )

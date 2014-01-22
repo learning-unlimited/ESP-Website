@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 import time
 
 from esp.cal.models import Event
-from esp.dbmail.models import MessageRequest, EmailRequest, send_mail, TextOfEmail
+from esp.dbmail.models import MessageRequest, EmailRequest, send_mail, TextOfEmail, can_process_and_send
 from esp.datatree.models import *
 from datetime import datetime, timedelta
 from django.db.models.query import Q
@@ -43,6 +43,7 @@ from django.contrib.auth.models import User, AnonymousUser
 from django.db import transaction
 from esp.users.models import ESPUser
 from esp.miniblog.models import Entry
+from django.template.loader import render_to_string
 
 from django.conf import settings
 
@@ -56,6 +57,10 @@ def process_messages():
     my_pid = os.getpid()
     now = datetime.now()
     target_time = now + timedelta(seconds=10)
+
+    if not can_process_and_send():
+        return []
+
     MessageRequest.objects.filter(Q(processed_by__lte=now) | Q(processed_by__isnull=True)).filter(processed=False).update(processed_by=target_time)
     
     #   Identify the messages we just claimed.
@@ -74,18 +79,29 @@ def process_messages():
     return list(messages)
 
 @transaction.autocommit
-def send_email_requests(messages):
+def send_email_requests():
     """ Go through all email requests that aren't sent and send them. """
-    
-    #   Find e-mail requests only for the specified messages.
+
+    if not can_process_and_send():
+        return
+
+    if hasattr(settings, 'EMAILRETRIES') and settings.EMAILRETRIES is not None:
+        retries = settings.EMAILRETRIES
+    else:
+        retries = 2 # default 3 tries total
+
+    #   Find unsent e-mail requests
     mailtxts = TextOfEmail.objects.filter(Q(sent_by__lte=datetime.now()) |
                                           Q(sent_by__isnull=True),
                                           sent__isnull=True,
-                                          emailrequest__msgreq__in=messages)
+                                          locked=False,
+                                          tries__lte=retries)
     mailtxts_list = list(mailtxts)
     
-    #   Update these TextOfEmails so we won't try to send them ever again
-    mailtxts.update(sent_by = datetime.now() + timedelta(seconds=10))
+    #   Mark these messages as locked for this send_email_requests call
+    #   If the process is killed unexpectedly, then any locked messages will need to be unlocked
+    #   TODO: consider a lock on the function, for example by locking a file
+    mailtxts.update(locked=True)
     
     if hasattr(settings, 'EMAILTIMEOUT') and settings.EMAILTIMEOUT is not None:
         wait = settings.EMAILTIMEOUT
@@ -93,21 +109,36 @@ def send_email_requests(messages):
         wait = 1.5
     
     num_sent = 0
+    errors = [] # if any messages failed to deliver
+
     for mailtxt in mailtxts_list:
         try:
             mailtxt.send()
-        except:
-            #   Raise an exception if sending failed - we want to find out what happened.
-            mailtxt.sent_by = None
+        except Exception as e:
+            #   Increment tries so that we don't continuously attempt to send this message
+            mailtxt.tries = mailtxt.tries + 1
             mailtxt.save()
-            raise
+
+            #   Queue report about this delivery failure
+            errors.append({'email': mailtxt, 'exception': str(e)})
+            print "Encountered error while sending to " + str(mailtxt.send_to) + ": " + str(e)
         else:
-            mailtxt.sent = datetime.now()
-            mailtxt.save()
             num_sent += 1
 
         time.sleep(wait)
+
+    #   Unlock the messages as we are done processing them
+    mailtxts.update(locked=False)
+
     if num_sent > 0:
         print 'Sent %d messages' % num_sent
 
+    #   Report any errors
+    if errors:
+        recipients = [mailtxt.send_from]
 
+        if 'bounces' in settings.DEFAULT_EMAIL_ADDRESSES:
+            recipients.append(settings.DEFAULT_EMAIL_ADDRESSES['bounces'])
+
+        mail_context = {'errors': errors}
+        send_mail('Mail delivery failure', render_to_string('email/delivery_failed', mail_context), settings.SERVER_EMAIL, recipients)

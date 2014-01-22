@@ -112,13 +112,7 @@ def render_class_helper(cls, user=None, prereg_url=None, filter=False, timeslot=
         prereg_url = cls.parent_program.get_learn_url() + 'addclass'
 
     if user and prereg_url and timeslot:
-        error1 = cls.cannotAdd(user)
-        # If we can't add the class at all, then we take that error message
-        if error1:
-            errormsg = error1
-        else:  # there's some section for which we can add this class; does that hold for this one?
-            if section:
-                errormsg = section.cannotAdd(user, autocorrect_constraints=False)
+        errormsg = cls.cannotAdd(user, which_section=section)
         
     show_class =  (not filter) or (not errormsg)
     

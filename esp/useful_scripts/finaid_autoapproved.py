@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 #
 # Display Auto-Approved Financial Aid Requests
 # 
@@ -8,6 +9,8 @@
 #
 # This script should be run from the manage.py shell
 #
+
+from script_setup import *
 
 from esp.program.models import FinancialAidRequest
 from datetime import datetime

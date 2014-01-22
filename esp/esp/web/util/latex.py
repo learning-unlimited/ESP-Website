@@ -147,7 +147,7 @@ def gen_latex(texcode, type='pdf', landscape=False):
         mime = 'image/png'
         subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
         subprocess.check_call(['dvips'] + dvips_options + ['%s.dvi' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['convert', '-density', '96', '%s.ps' % file_base, '%s.png' % file_base], cwd=TEX_TEMP)
+        subprocess.check_call(['convert', '-density', '192', '%s.ps' % file_base, '%s.png' % file_base], cwd=TEX_TEMP)
         if remove_files:
             os.remove('%s.dvi' % file_base)
             os.remove('%s.ps' % file_base)
