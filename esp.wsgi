@@ -5,17 +5,23 @@ import sys
 
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
 
-BASEDIR = os.path.dirname(__file__)
+BASEDIR = os.path.dirname(os.path.realpath(__file__))
 
 # Path for ESP code
 sys.path.insert(0, os.path.join(BASEDIR, 'esp'))
 
+# activate virtualenv
+activate_this = os.path.join(BASEDIR, 'env/bin/activate_this.py')
 try:
-    # activate virtualenv
-    activate_this = os.path.join(BASEDIR, 'env/bin/activate_this.py')
     execfile(activate_this, dict(__file__=activate_this))
-except IOError:
-    pass
+except IOError, e:
+    # Check if a virtualenv has been installed and activated from elsewhere.
+    # If this has happened, then the VIRTUAL_ENV environment variable should be
+    # defined, and we can ignore the IOError.
+    # If the variable isn't defined, then we really should be using our own
+    # virtualenv, so we re-raise the error.
+    if os.environ.get('VIRTUAL_ENV') is None:
+        raise e
 
 import django.core.handlers.wsgi
 django_application = django.core.handlers.wsgi.WSGIHandler()
