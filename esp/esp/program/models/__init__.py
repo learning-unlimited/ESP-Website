@@ -272,9 +272,6 @@ def _get_type_url(type):
 
 class Program(models.Model, CustomFormsLinkModel):
     """ An ESP Program, such as HSSP Summer 2006, Splash Fall 2006, Delve 2005, etc. """
-    
-    #from esp.program.models.class_ import ClassCategories
-
     #customforms definitions
     form_link_name='Program'
     
