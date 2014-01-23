@@ -1,3 +1,4 @@
+
 /*
  * Utilities
  */
@@ -286,6 +287,7 @@ font-variant: small-caps;
 #submenu {
 margin: 0; padding: 0 10px;
 line-height: 35px;
+//height: 35px;
 width: 580px;
 font-size: smaller;
 background: #ccc;
@@ -296,8 +298,6 @@ position: relative;
 /*float: left;*/
 display: inline-block;
 list-style-type: none;
-font-size: smaller;
-line-height: 35px;
 }
 
 #submenu li a {
