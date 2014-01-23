@@ -929,6 +929,31 @@ are a teacher of the class"""
 
         return schoolyear + 12 - grade
 
+    def set_student_grad_year(self, grad_year):
+        """ Update the user's graduation year if they are a student. """
+
+        #   Check that the user is a student.
+        #   (We could raise an error, but I don't think it's a huge problem
+        #   if this function is called accidentally on a non-student.)
+        if not self.isStudent():
+            return
+
+        #   Retrieve the user's most recent registration profile and create a StudentInfo if needed.
+        profile = self.getLastProfile()
+        if profile.student_info is None:
+            profile.student_info = StudentInfo(user=self)
+            profile.save()
+
+        #   Update the graduation year.
+        student_info = profile.student_info
+        student_info.graduation_year = int(grad_year)
+        student_info.save()
+
+    def set_grade(self, grade):
+        """ Convenience function for setting a student's grade based on the
+            current school year. """
+        self.set_student_grad_year(ESPUser.YOGFromGrade(int(grade)))
+
     @staticmethod
     def getRankInClass(student, subject, default=10):
         from esp.program.models.app_ import StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication
