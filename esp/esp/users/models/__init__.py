@@ -2285,7 +2285,8 @@ class GradeChangeRequest(TimeStampedModel):
     def _confirmation_email_content(self):
         context = {'student': self.requesting_student,
                     'change_request':self,
-                  'site': Site.objects.get_current()}
+                  'site': Site.objects.get_current(),
+                  'settings': settings}
 
         subject = render_to_string('users/emails/grade_change_confirmation_email_subject.txt',
                                    context)

@@ -1,1 +1,1 @@
-Your grade change request was received
+Grade Change Request Update - {{ student.name }}
