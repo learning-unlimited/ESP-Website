@@ -216,10 +216,7 @@ class StudentInfoForm(FormUnrestrictedOtherUser):
             del self.fields['food_preference']
 
         #   Allow grade range of students to be customized by a Tag (default is 7-12)
-        custom_grade_options = Tag.getTag('student_grade_options')
-        if custom_grade_options:
-            custom_grade_options = json.loads(custom_grade_options)
-            self.fields['graduation_year'].choices = [('','')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in custom_grade_options]
+        self.fields['graduation_year'].choices = [('','')]+[(str(ESPUser.YOGFromGrade(x)), str(x)) for x in ESPUser.grade_options()]
             
         #   Add user's current grade if it is out of range and they have already filled out the profile.
         if user and user.registrationprofile_set.count() > 0:
