@@ -45,7 +45,6 @@ from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
-from django.core.mail import send_mail
 from django.db import models
 from django.db.models.base import ModelState
 from django.db.models.query import Q
@@ -2219,7 +2218,9 @@ def install():
         ESPUser.objects.create(username='onsite', first_name='Onsite', last_name='User')
         print 'Created onsite user, please set their password in the admin interface.'
 
-
+#   This import is placed down here since we need it in GradeChangeRequest
+#   but esp.dbmail.models imports ESPUser.
+from esp.dbmail.models import send_mail
 
 class GradeChangeRequest(TimeStampedModel):
     """ 
@@ -2300,7 +2301,6 @@ class GradeChangeRequest(TimeStampedModel):
         This email is sent when the administrator confirms a change grade change request.
         """
         subject, message = self._confirmation_email_content()
-        #TODO - Ask someone or research whether email correspondence needs to be persistent
         send_mail(subject,
                   message,
                   settings.DEFAULT_FROM_EMAIL,
