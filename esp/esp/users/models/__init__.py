@@ -205,8 +205,12 @@ class ESPUser(User, AnonymousUser):
 
     @staticmethod
     def grade_options():
-        """ Returns a list<int> of valid grades """ 
-        return Tag.getTag('student_grade_options')
+        """ Returns a list<int> of valid grades """
+        tag_val = Tag.getTag('student_grade_options')
+        if tag_val is None:
+            return range(7, 13)
+        else:
+            return json.loads(tag_val)
 
     @staticmethod
     def onsite_user():
