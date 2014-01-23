@@ -2,6 +2,8 @@
  ESP Website Stable Release 04 release notes
 ============================================
 
+.. contents:: :backlinks: top
+
 Changelog
 =========
 

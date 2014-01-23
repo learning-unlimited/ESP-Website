@@ -8,6 +8,8 @@ in the Data Tree and in User Bits. This was very bad for a variety of reasons.
 The new schema migrates these separate types of data into their own fields or
 new database tables.
 
+.. contents:: :backlinks: top
+
 User Types
 ----------
 

@@ -2,6 +2,8 @@
 Generic Templates
 =================
 
+.. contents:: :backlinks: top
+
 Instructions for site admins
 ============================
 
