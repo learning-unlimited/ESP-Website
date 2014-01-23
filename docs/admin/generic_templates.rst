@@ -2,7 +2,7 @@
 Generic Templates
 =================
 
-.. contents:: :backlinks: top
+.. contents:: :local:
 
 Instructions for site admins
 ============================

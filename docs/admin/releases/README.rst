@@ -2,7 +2,7 @@
 Release notes
 =============
 
-.. contents:: :backlinks: top
+.. contents:: :local:
 
 Release notes for the official ESP Website releases. Each release note will
 tell you what's new and changed in each version.
