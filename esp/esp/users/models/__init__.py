@@ -2282,6 +2282,9 @@ class GradeChangeRequest(TimeStampedModel):
             self.acknowledged_time = datetime.now()
             self.send_confirmation_email()
 
+        #   Update the student's grade if the request has been approved
+        if self.approved is True:
+            self.requesting_student.set_grade(self.claimed_grade)
 
     def _request_email_content(self):
         """
