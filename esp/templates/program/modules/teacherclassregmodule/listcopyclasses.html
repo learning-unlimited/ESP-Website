@@ -17,7 +17,7 @@
 <br /><br />
 
 {% load render_qsd %}
-{% inline_program_qsd_block prog "teacher_class_import_description" request.user %}Write instructions here!{% end_inline_program_qsd_block %}
+{% render_inline_program_qsd program "teacher_class_import_description" %}
 
 {% if allow_class_import %}
 <div id="battlescreen">

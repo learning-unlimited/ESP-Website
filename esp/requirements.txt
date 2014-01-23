@@ -1,16 +1,16 @@
-Django==1.4.8
+Django==1.4.10
 pillow==2.2.1
 South==0.8.1
 argparse==1.2.1
 cssutils==0.9.10
-django-extensions==1.1.1
+django-extensions==1.2.5
 django-form-utils==0.3.1
-# django-reversion==1.7.1
-git+https://github.com/etianen/django-reversion.git@a5a9c59582329af1b8dc8218f72b3e0021a44aed
+django-reversion==1.8.0
 django-selenium==0.9.6
 flup==1.0.2
 icalendar==3.5
 ipython==0.13.2
+Markdown==2.3.1
 numpy==1.7.1
 psycopg2==2.4.1
 pycurl==7.19.0
@@ -24,10 +24,10 @@ repoze.profile==2.0
 selenium==2.33.0
 simplejson==3.3.0
 six==1.3.0
-twill==0.9
 wsgiref==0.1.2
 xlwt==0.7.5
 django-debug-toolbar==0.9.4
 django-grappelli==2.4.8
 django-filebrowser==3.5.2
 werkzeug
+

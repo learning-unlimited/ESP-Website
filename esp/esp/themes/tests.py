@@ -124,7 +124,7 @@ class ThemesTest(TestCase):
             """
             
             #   Check that the template override is marked with the theme name.
-            self.assertTrue(('<!-- Theme: %s -->' % theme_name) in response.content)
+            self.assertTrue(('{%% comment %%} Theme: %s {%% endcomment %%}' % theme_name) in response.content)
         
         #   Test that the theme can be cleared and the home page reverts.
         response = self.client.post('/themes/select/', {'action': 'clear'})

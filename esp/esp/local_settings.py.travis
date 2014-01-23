@@ -62,6 +62,7 @@ DISPLAYSQL = True
 TEMPLATE_DEBUG = DEBUG
 SHOW_TEMPLATE_ERRORS = DEBUG
 DEBUG_TOOLBAR = False
+USE_PROFILER = False
 
 ##############
 # Middleware #

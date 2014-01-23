@@ -32,32 +32,21 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
-from esp.web.models import NavBarEntry, NavBarCategory
-from esp.users.models import AnonymousUser, ESPUser
-from django.http import HttpResponseRedirect, Http404, HttpResponse
-from esp.dblog.models import error
-from esp.middleware.esperrormiddleware import ESPError
 
-from esp.program.models import Program
+from django.http import HttpResponseRedirect, Http404, HttpResponse
 from django.core.exceptions import PermissionDenied
 from django.contrib.auth.decorators import login_required
 from django.db.models.query import Q
 
-def nav_category(section=''):
-    """ A function to guess the appropriate navigation category when one
-        is not provided in the context. """
-        
-    #   See if there's a category with the provided section name.
-    categories = NavBarCategory.objects.filter(name=section)
-    if categories.count() > 0:
-        return categories[0]
-    
-    #   If all else fails, make something up.
-    return NavBarCategory.default()
+from esp.web.models import NavBarEntry, NavBarCategory
+from esp.users.models import AnonymousUser, ESPUser
+from esp.dblog.models import error
+from esp.program.models import Program
+from esp.middleware.esperrormiddleware import ESPError
 
-def makeNavBar(section='', category=None):
+def makeNavBar(section=None, category=None, path=None):
     if not category:
-        category = nav_category(section)
+        category = NavBarCategory.from_request(section, path)
 
     navbars = list(category.get_navbars().order_by('sort_rank'))
     navbar_context = [{'entry': x} for x in navbars]

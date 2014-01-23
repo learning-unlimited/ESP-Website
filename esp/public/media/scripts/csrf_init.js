@@ -1,11 +1,11 @@
 function csrf_token()
 {
-    return $j.cookie('csrftoken');
+    return $j.cookie('esp_csrftoken');
 }
 
 function csrf_token_string()
 {
-    return "<input type='hidden' name='csrfmiddlewaretoken' value='" + $j.cookie('csrftoken') + "' />";
+    return "<input type='hidden' name='csrfmiddlewaretoken' value='" + $j.cookie('esp_csrftoken') + "' />";
 }
 
 function add_csrf_token()
@@ -20,7 +20,7 @@ function set_onsubmit()
 
 function refresh_csrf_cookie()
 {
-    if (!$j.cookie('csrftoken'))
+    if (!$j.cookie('esp_csrftoken'))
     {
         $j.ajax("/set_csrf_token", { async: false });
     }
@@ -32,5 +32,5 @@ function force_refresh_csrf_cookie()
 }
 
 $j(document).ready(function() {
-    $j.getScript("/media/scripts/csrf_check.js", set_onsubmit);
+    $j.getScriptWithCaching("/media/scripts/csrf_check.js", set_onsubmit);
 });

@@ -15,6 +15,9 @@ class Migration(SchemaMigration):
 
         # Delete all announcements/entries that were not anchored on Q/Web
         # since those anchor points now have no meaning
+        # This is wrapped in a transaction so that the schema changes below 
+        # will work properly
+        db.start_transaction()
         try:
             web_node_id = GetNode('Q/Web').id
         except DataTree.DoesNotExist:
@@ -22,6 +25,7 @@ class Migration(SchemaMigration):
             web_node_id = -1
         db.execute('DELETE FROM "miniblog_announcementlink" WHERE "anchor_id" != %s', [web_node_id,])
         db.execute('DELETE FROM "miniblog_entry" WHERE "anchor_id" != %s', [web_node_id,])
+        db.commit_transaction()
 
         # Deleting field 'AnnouncementLink.anchor'
         db.delete_column('miniblog_announcementlink', 'anchor_id')

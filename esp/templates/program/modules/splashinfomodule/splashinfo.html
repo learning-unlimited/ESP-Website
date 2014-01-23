@@ -20,7 +20,7 @@
 
 {% if form.errors or missing_siblingname %}<p align="center" style="color: red;">Please correct the form below before continuing. <br />{{ form.errors }}</p>{% endif %}
 
-{% inline_program_qsd_block program "splashinfo_lunch" request.user %}
+{% inline_program_qsd_block program "splashinfo_lunch" %}
 <h2>Lunch Preferences</h2>
 <p>Select your lunch preference below.
 <b>All meals come with chips or fruit and drink.</b>
@@ -80,7 +80,7 @@ We are offering a special discount to households with more than one attendee reg
 </table>
 {% endif %}
 
-{% inline_program_qsd_block program "splashinfo_finaid" request.user %}
+{% inline_program_qsd_block program "splashinfo_finaid" %}
 <hr/>
 <h2>Financial Aid</h2>
 <p>

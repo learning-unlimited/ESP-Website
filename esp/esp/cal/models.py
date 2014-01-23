@@ -61,8 +61,6 @@ class Event(models.Model):
     priority = models.IntegerField(blank=True, null=True) # Priority of this event
 
     def title(self):
-        if self.program is not None:
-            return "%s for %s" % (self.name, self.program.title())
         return self.name
 
     def duration(self):

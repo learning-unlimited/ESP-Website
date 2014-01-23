@@ -38,6 +38,7 @@ from esp.datatree.models import *
 from django.core.exceptions import MultipleObjectsReturned
 from django.conf import settings
 import os.path
+import fnmatch
 
 
 def qsdmedia2(request, url, ignored_part=None):
@@ -55,7 +56,7 @@ def qsdmedia2(request, url, ignored_part=None):
             media_rec = Media.objects.get(file_name=url)
         except Media.DoesNotExist:
             raise Http404
-        except MultipleObjectsreturned:
+        except MultipleObjectsReturned:
             media_rec = Media.objects.filter(file_name=url).latest('id')
     except MultipleObjectsReturned: # If there exist multiple Media entries, we want the first one
         media_rec = Media.objects.filter(hashed_name=url).latest('id')
@@ -63,6 +64,17 @@ def qsdmedia2(request, url, ignored_part=None):
     file_name = media_rec.get_uploaded_filename()
     f = open(file_name, 'rb')
     response = HttpResponse(f.read(), content_type=media_rec.mime_type)
-    response['Content-Disposition'] = 'attachment; filename="' + media_rec.file_name + '"'
+
+    inline_dispositions = ['application/pdf', 'image/*', 'audio/*', 'video/*']
+    # these MIME types are served with Content-Disposition: inline (show in browser)
+    # all others are served with Content-Disposition: attachment (download)
+    disposition = 'attachment'
+    for disp in inline_dispositions:
+        if fnmatch.fnmatch(media_rec.mime_type, disp):
+            disposition = 'inline'
+            break
+    response['Content-Disposition'] = disposition + '; filename="' + media_rec.file_name + '"'
+
+    response['X-Content-Type-Options'] = 'nosniff'  # prevent browsers from second-guessing our MIME type
     return response
 

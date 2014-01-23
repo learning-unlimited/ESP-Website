@@ -2,13 +2,13 @@ language: python
 python:
   - "2.7"
 services:
-  - postgresql
   - memcached
 env: DJANGO_SETTINGS_MODULE=esp.settings
 before_install:
   - sudo apt-get update
 install: 
-  - sudo apt-get install -y $(< esp/packages.txt)
+  - sudo apt-get install -y $(cat esp/packages_base.txt | grep -v ^memcached | grep -v ^postgres)
+  - esp/packages_base_manual_install.sh
   - pip install -r esp/requirements.txt --use-mirrors
 before_script:
   - cp esp/esp/local_settings.py.travis esp/esp/local_settings.py

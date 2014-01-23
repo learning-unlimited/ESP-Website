@@ -65,9 +65,6 @@
      Markdown</a> whenever possible. (Although HTML will work.)
   </p>
   <p><textarea class="wide" name="content" class="markdown" rows="50">{{ content|escape }}</textarea></p>
-  {% for file in missing_files %}
-  <p><label target="{{ file }}">File: {{ file }}</label> &nbsp; <input type="file" name="{{ file }}" /></p>
-  {% endfor %}
   <p><input type="submit" name="post_edit" value="Save Changes!" /> &nbsp;| <a href="{{ target_url }}">Cancel</a> | <a href="{{ return_to_view }}">Back to Page View</a></p>
 </form>
 <div id="divmainqsddatetimestamp">

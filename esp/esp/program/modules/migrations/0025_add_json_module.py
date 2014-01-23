@@ -12,17 +12,17 @@ class Migration(DataMigration):
     def forwards(self, orm):
         "forwards method: enable the JSON Data Module on all existing programs"
         install()   # Install newest program modules
-        json_module = ProgramModule.objects.get(handler=u'JSONDataModule')  # get the JSON Data Module
+        json_module = orm['program.ProgramModule'].objects.get(handler=u'JSONDataModule')  # get the JSON Data Module
         # enable the JSON Data Module on all existing programs
         for program in Program.objects.all():
-            program.program_modules.add(json_module)
+            program.program_modules.add(json_module.id)
 
         # There are some edge cases (not sure what causes them)
         # whereby duplicate ProgramModuleObjs can be created, which
         # causes lots of errors. There is no harm in deleting all
         # existing ProgramModuleObjs, because they will be regenerated
         # automatically by any view that needs it.
-        ProgramModuleObj.objects.filter(module=json_module).delete()
+        orm['modules.ProgramModuleObj'].objects.filter(module=json_module).delete()
 
     def backwards(self, orm):
         "backwards method: do nothing"

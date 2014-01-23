@@ -85,12 +85,8 @@
       <li id="tab_{{ forloop.counter }}" class="tabcolor{{ forloop.counter }}" ><span class="accent">&nbsp;</span><a href="{{ item.link }}">{{ item.text.upper }}</a></li>
       {% endfor %}
       {% endwith %}
-      <div class="admin hidden">
-            <li id="tab_admin" class="tabcolor9" ><span class="accent">&nbsp;</span><a href="/manage/programs/">MANAGE</a></li>
-        </div>
-        <div class="unmorph hidden">
-            <li id="tab_admin" class="tabcolor9" ><span class="accent">&nbsp;</span><a href="/myesp/switchback/">UNMORPH</a><div id="unmorph_text" style="font-size: 0.7em; margin-left: 16px"></div></li>
-        </div>
+      <li class="admin hidden tabcolor9" ><span class="accent">&nbsp;</span><a href="/manage/programs/">MANAGE</a></li>
+      <li class="unmorph hidden tabcolor9" ><span class="accent">&nbsp;</span><a href="/myesp/switchback/">UNMORPH</a><div id="unmorph_text" style="font-size: 0.7em; margin-left: 16px"></div></li>
       </ul>
   </div>
   <div id="body">
@@ -114,7 +110,7 @@
       <div id="contact_info">
 	<span class="title accentcolor">{{ theme.full_group_name }}</span>
       <span class="normal">{{ theme.contact_info|linebreaksbr }}</span>
-      <span class="normal">E-mail: <a href="mailto:{{ DEFAULT_EMAIL_ADDRESSES.default }}">{{ DEFAULT_EMAIL_ADDRESSES.default }}</a></span>
+      <span class="normal">E-mail: <a href="mailto:{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}">{{ settings.DEFAULT_EMAIL_ADDRESSES.default }}</a></span>
       <span class="normal"><a href="/faq.html">FAQ</a> | <a href="/contact.html">contact us</a>{% if theme.facebook_link %} | <a href="{{ theme.facebook_link }}">facebook</a>{% endif %}</span>
       </div>
 {% block login %}
@@ -207,7 +203,7 @@
       {% endwith %}
     </div>
     <div id="footer">
-      &copy; {{ theme.full_group_name }}, 2013
+      &copy; {{ theme.full_group_name }}, {{ theme.mtime.year }}
     </div>
   </div>
 </div>

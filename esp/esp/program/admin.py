@@ -164,16 +164,21 @@ admin_site.register(RegistrationType, Admin_RegistrationType)
 def expire_student_registrations(modeladmin, request, queryset):
     for reg in queryset:
         reg.expire()
+
+def renew_student_registrations(modeladmin, request, queryset):
+    for reg in queryset:
+        reg.unexpire()
+
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date', )
-    actions = [ expire_student_registrations, ]
+    actions = [ expire_student_registrations, renew_student_registrations ]
     search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
 class StudentSubjectInterestAdmin(admin.ModelAdmin):
     list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
+    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'subject__id', 'subject__title']
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
 
 def sec_classrooms(obj):

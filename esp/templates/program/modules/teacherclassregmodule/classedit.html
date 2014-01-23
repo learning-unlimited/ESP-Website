@@ -53,8 +53,7 @@
     <tr><th colspan="2">{{ classtype|title }} Creation/Editing Form</th></tr>
     <tr>
         <td colspan="2">
-        {% inline_program_qsd_block program "classroom_form_advisories" request.user %}
-        {% end_inline_program_qsd_block %}
+        {% render_inline_program_qsd program "classroom_form_advisories" %}
         </td>
     </tr>
     {{ form }}
@@ -67,8 +66,7 @@
     </tr>
     <tr>
         <td colspan="2">
-        {% inline_program_qsd_block program "classroom_requests_advisories" request.user %}
-        {% end_inline_program_qsd_block %}
+        {% render_inline_program_qsd program "classroom_requests_advisories" %}
         </td>
     </tr>
     <!--
