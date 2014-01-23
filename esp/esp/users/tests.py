@@ -459,7 +459,7 @@ class TestChangeRequestModel(TestCase):
 
         self.assertIn(student.first_name,message)
         self.assertIn(student.last_name,message)
-        self.assertEqual(subject,'Your grade change request was received')
+        self.assertIn('Grade Change Request Update', subject)
 
 
     def test_request_email_content(self):
@@ -496,4 +496,4 @@ class TestChangeRequestView(TestCase):
         response = c.post("/myesp/grade_change_request", { "reason": '', 'claimed_grade': 483 })
 
         self.assertFormError(response, 'form', 'reason', 'This field is required.')
-        self.assertFormError(response, 'form', 'claimed_grade', 'Select a valid choice. 483 is not one of the available choices.')
+        self.assertFormError(response, 'form', 'claimed_grade', 'Value 483 is not a valid choice.')
