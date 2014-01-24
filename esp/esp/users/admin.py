@@ -4,7 +4,7 @@ from django import forms
 from django.db import models
 from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
-from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record, Permission
+from esp.users.models import UserAvailability, ContactInfo, StudentInfo, TeacherInfo, GuardianInfo, EducatorInfo, ZipCode, ZipCodeSearches, K12School, ESPUser, Record, Permission, GradeChangeRequest
 from django.contrib.auth.models import Group
 from django.contrib.auth.admin import UserAdmin, GroupAdmin
 import datetime
@@ -107,6 +107,18 @@ class K12SchoolAdmin(admin.ModelAdmin):
     contact_name.short_description = 'Contact name'
 
 admin_site.register(K12School, K12SchoolAdmin)
+
+
+class GradeChangeRequestAdmin(admin.ModelAdmin):
+    list_display = ['requesting_student', 'approved','acknowledged_by','acknowledged_time', 'created']
+    readonly_fields = ['requesting_student','acknowledged_by','acknowledged_time','claimed_grade']
+
+    def save_model(self, request, obj, form, change):
+        if getattr(obj, 'acknowledged_by', None) is None:
+            obj.acknowledged_by = request.user
+        obj.save()
+
+admin_site.register(GradeChangeRequest, GradeChangeRequestAdmin)
 
 #   Include admin pages for Django group
 admin_site.register(Group, GroupAdmin)
