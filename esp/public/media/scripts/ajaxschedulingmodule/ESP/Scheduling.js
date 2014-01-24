@@ -620,6 +620,8 @@ ESP.Scheduling = function(){
         //  Check that the section would not run over the end of the program,
         //  or the end of the contiguous time block (if there is a break).
         //  (10 min error tolerance)
+        //  This is a temporary workaround for a larger problem; see Github issue #972.
+        //  - Michael P, 1/24/2014
 	    if (!test_time.seq)
 	    {
             if (section.length > time_included + 10 * 60 * 1000)
