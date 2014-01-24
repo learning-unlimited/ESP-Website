@@ -600,41 +600,41 @@ ESP.Scheduling = function(){
         var covered_lunch_start = false;
 
 	// Start with the proposed start time and iterate over all time blocks the section will need
-    var time_included = 0;
+	var time_included = 0;
 	for (var i = 0; i < length; i++)
 	{
-        //  Maintain a count of the time included by the timeslots so far.
-        time_included += test_time.length;
-        
+		//  Maintain a count of the time included by the timeslots so far.
+		time_included += test_time.length;
+
 	    if (test_time.is_lunch && !covered_lunch_start)
 	    {
-		//  Check that this is the first lunch in the group:
-		//  - this is the first time slot, or
-		//  - the previous time slot is not a lunch block
-		if ((ESP.Scheduling.data.times.indexOf(test_time) == 0) || !(ESP.Scheduling.data.times[ESP.Scheduling.data.times.indexOf(test_time) - 1].is_lunch))
+			//  Check that this is the first lunch in the group:
+			//  - this is the first time slot, or
+			//  - the previous time slot is not a lunch block
+			if ((ESP.Scheduling.data.times.indexOf(test_time) == 0) || !(ESP.Scheduling.data.times[ESP.Scheduling.data.times.indexOf(test_time) - 1].is_lunch))
+			{
+				covered_lunch_start = true;
+			}
+	    }
+	    
+		//  Check that the section would not run over the end of the program,
+		//  or the end of the contiguous time block (if there is a break).
+		//  (10 min error tolerance)
+		//  This is a temporary workaround for a larger problem; see Github issue #972.
+		//  - Michael P, 1/24/2014
+		if (!test_time.seq)
 		{
-		    covered_lunch_start = true;
+			if (section.length > time_included + 10 * 60 * 1000)
+				return (str_err ? "Section " + section.code + " does not fit within the contiguous time available" : false);
+			else
+				return true;
 		}
-	    }
-	    
-        //  Check that the section would not run over the end of the program,
-        //  or the end of the contiguous time block (if there is a break).
-        //  (10 min error tolerance)
-        //  This is a temporary workaround for a larger problem; see Github issue #972.
-        //  - Michael P, 1/24/2014
-	    if (!test_time.seq)
+
+		//  But, if our class period overlapped with the beginning of the lunch sequence
+		//  and now also overlaps with the end of the lunch sequence, that's a conflict.
+		else if (covered_lunch_start && !(test_time.seq.is_lunch))
 	    {
-            if (section.length > time_included + 10 * 60 * 1000)
-                return (str_err ? "Section " + section.code + " does not fit within the contiguous time available" : false);
-            else
-                return true;
-	    }
-	    
-	    //  But, if our class period overlapped with the beginning of the lunch sequence
-	    //  and now also overlaps with the end of the lunch sequence, that's a conflict.
-	    else if (covered_lunch_start && !(test_time.seq.is_lunch))
-	    {
-		return (str_err ? "Section " + section.code + " starting at " + time.text + " would conflict with a group of lunch periods" : false);
+			return (str_err ? "Section " + section.code + " starting at " + time.text + " would conflict with a group of lunch periods" : false);
 	    }
 	    
 	    //  Move on to the next time slot.
