@@ -7,8 +7,6 @@
 .yellowgreen a { color: #3f7a00; }
 #page.yellowgreen #body > .corners div { background-image: url(/media/images/theme/gen/yg_corners_body.png); }
 #page.yellowgreen #search_box { background: #fff url(/media/images/theme/gen/yg_search.png) no-repeat 0% scroll; }
-#page.yellowgreen #login_submit { background: #fff url(/media/images/theme/gen/yg_login.png) no-repeat 0% scroll; }
-#page.yellowgreen #login_signup { background: #fff url(/media/images/theme/gen/yg_signup.png) no-repeat 0% scroll; }
 li.yellowgreen a { background-color: #88cf00; background-image: url(/media/images/theme/gen/yg_tab.png); }
 #page.yellowgreen #menu li.yellowgreen { margin-left: 0; width: 130px }
 #page.yellowgreen #submenu { background: #3f7a00; }
@@ -26,8 +24,6 @@ li.yellowgreen a { background-color: #88cf00; background-image: url(/media/image
 .blue a { color: #1041ba; }
 #page.blue #body > .corners div { background-image: url(/media/images/theme/gen/bl_corners_body.png); }
 #page.blue #search_box { background: #fff url(/media/images/theme/gen/bl_search.png) no-repeat 0% scroll; }
-#page.blue #login_submit { background: #fff url(/media/images/theme/gen/bl_login.png) no-repeat 0% scroll; }
-#page.blue #login_signup { background: #fff url(/media/images/theme/gen/bl_signup.png) no-repeat 0% scroll; }
 li.blue a { background-color: #3dc0ff; background-image: url(/media/images/theme/gen/bl_tab.png); }
 #page.blue #menu li.blue { margin-left: 0; width: 130px }
 #page.blue #submenu { background: #1041ba; }
@@ -45,8 +41,6 @@ li.blue a { background-color: #3dc0ff; background-image: url(/media/images/theme
 .purple a { color: #4f0873; }
 #page.purple #body > .corners div { background-image: url(/media/images/theme/gen/pu_corners_body.png); }
 #page.purple #search_box { background: #fff url(/media/images/theme/gen/pu_search.png) no-repeat 0% scroll; }
-#page.purple #login_submit { background: #fff url(/media/images/theme/gen/pu_login.png) no-repeat 0% scroll; }
-#page.purple #login_signup { background: #fff url(/media/images/theme/gen/pu_signup.png) no-repeat 0% scroll; }
 li.purple a { background-color: #7932e3; background-image: url(/media/images/theme/gen/pu_tab.png); }
 #page.purple #menu li.purple { margin-left: 0; width: 130px }
 #page.purple #submenu { background: #4f0873; }
@@ -64,8 +58,6 @@ li.purple a { background-color: #7932e3; background-image: url(/media/images/the
 .red a { color: #8c0724; }
 #page.red #body > .corners div { background-image: url(/media/images/theme/gen/re_corners_body.png); }
 #page.red #search_box { background: #fff url(/media/images/theme/gen/re_search.png) no-repeat 0% scroll; }
-#page.red #login_submit { background: #fff url(/media/images/theme/gen/re_login.png) no-repeat 0% scroll; }
-#page.red #login_signup { background: #fff url(/media/images/theme/gen/re_signup.png) no-repeat 0% scroll; }
 li.red a { background-color: #d45437; background-image: url(/media/images/theme/gen/re_tab.png); }
 #page.red #menu li.red { margin-left: 0; width: 130px }
 #page.red #submenu { background: #8c0724; }
@@ -83,8 +75,6 @@ li.red a { background-color: #d45437; background-image: url(/media/images/theme/
 .orange a { color: #c95700; }
 #page.orange #body > .corners div { background-image: url(/media/images/theme/gen/or_corners_body.png); }
 #page.orange #search_box { background: #fff url(/media/images/theme/gen/or_search.png) no-repeat 0% scroll; }
-#page.orange #login_submit { background: #fff url(/media/images/theme/gen/or_login.png) no-repeat 0% scroll; }
-#page.orange #login_signup { background: #fff url(/media/images/theme/gen/or_signup.png) no-repeat 0% scroll; }
 li.orange a { background-color: #ff9d00; background-image: url(/media/images/theme/gen/or_tab.png); }
 #page.orange #menu li.orange { margin-left: 0; width: 130px }
 #page.orange #submenu { background: #c95700; }
@@ -102,8 +92,6 @@ li.orange a { background-color: #ff9d00; background-image: url(/media/images/the
 .yellow a { color: #ba8200; }
 #page.yellow #body > .corners div { background-image: url(/media/images/theme/gen/ye_corners_body.png); }
 #page.yellow #search_box { background: #fff url(/media/images/theme/gen/ye_search.png) no-repeat 0% scroll; }
-#page.yellow #login_submit { background: #fff url(/media/images/theme/gen/ye_login.png) no-repeat 0% scroll; }
-#page.yellow #login_signup { background: #fff url(/media/images/theme/gen/ye_signup.png) no-repeat 0% scroll; }
 li.yellow a { background-color: #edb600; background-image: url(/media/images/theme/gen/ye_tab.png); }
 #page.yellow #menu li.yellow { margin-left: 0; width: 130px }
 #page.yellow #submenu { background: #ba8200; }
@@ -121,8 +109,6 @@ li.yellow a { background-color: #edb600; background-image: url(/media/images/the
 .lightgreen a { color: #45591b; }
 #page.lightgreen #body > .corners div { background-image: url(/media/images/theme/gen/lg_corners_body.png); }
 #page.lightgreen #search_box { background: #fff url(/media/images/theme/gen/lg_search.png) no-repeat 0% scroll; }
-#page.lightgreen #login_submit { background: #fff url(/media/images/theme/gen/lg_login.png) no-repeat 0% scroll; }
-#page.lightgreen #login_signup { background: #fff url(/media/images/theme/gen/lg_signup.png) no-repeat 0% scroll; }
 li.lightgreen a { background-color: #84be6a; background-image: url(/media/images/theme/gen/lg_tab.png); }
 #page.lightgreen #menu li.lightgreen { margin-left: 0; width: 130px }
 #page.lightgreen #submenu { background: #45591b; }
@@ -140,8 +126,6 @@ li.lightgreen a { background-color: #84be6a; background-image: url(/media/images
 .darkgreen a { color: #20300f; }
 #page.darkgreen #body > .corners div { background-image: url(/media/images/theme/gen/dg_corners_body.png); }
 #page.darkgreen #search_box { background: #fff url(/media/images/theme/gen/dg_search.png) no-repeat 0% scroll; }
-#page.darkgreen #login_submit { background: #fff url(/media/images/theme/gen/dg_login.png) no-repeat 0% scroll; }
-#page.darkgreen #login_signup { background: #fff url(/media/images/theme/gen/dg_signup.png) no-repeat 0% scroll; }
 li.darkgreen a { background-color: #478a00; background-image: url(/media/images/theme/gen/dg_tab.png); }
 #page.darkgreen #menu li.darkgreen { margin-left: 0; width: 130px }
 #page.darkgreen #submenu { background: #20300f; }
@@ -159,8 +143,6 @@ li.darkgreen a { background-color: #478a00; background-image: url(/media/images/
 .grey a { color: #000000; }
 #page.grey #body > .corners div { background-image: url(/media/images/theme/gen/gr_corners_body.png); }
 #page.grey #search_box { background: #fff url(/media/images/theme/gen/gr_search.png) no-repeat 0% scroll; }
-#page.grey #login_submit { background: #fff url(/media/images/theme/gen/gr_login.png) no-repeat 0% scroll; }
-#page.grey #login_signup { background: #fff url(/media/images/theme/gen/gr_signup.png) no-repeat 0% scroll; }
 li.grey a { background-color: #666666; background-image: url(/media/images/theme/gen/gr_tab.png); }
 #page.grey #menu li.grey { margin-left: 0; width: 130px }
 #page.grey #submenu { background: #000000; }
@@ -178,8 +160,6 @@ li.grey a { background-color: #666666; background-image: url(/media/images/theme
 .black a { color: #cc0036; }
 #page.black #body > .corners div { background-image: url(/media/images/theme/gen/bk_corners_body.png); }
 #page.black #search_box { background: #fff url(/media/images/theme/gen/bk_search.png) no-repeat 0% scroll; }
-#page.black #login_submit { background: #fff url(/media/images/theme/gen/bk_login.png) no-repeat 0% scroll; }
-#page.black #login_signup { background: #fff url(/media/images/theme/gen/bk_signup.png) no-repeat 0% scroll; }
 li.black a { background-color: #231f20; background-image: url(/media/images/theme/gen/bk_tab.png); }
 #page.black #menu li.black { margin-left: 0; width: 130px }
 #page.black #submenu { background: #cc0036; }
