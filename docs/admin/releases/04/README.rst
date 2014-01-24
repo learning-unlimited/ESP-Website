@@ -304,8 +304,14 @@ Minor feature additions
   was provided for the comm panel in the last stable release.
 
 - Mass emails (i.e., emails sent from the communication panel) will now be
-resent if the first attempt fails, and failure reports will be sent to the
-director email. Some other stability changes made too.
+  resent if the first attempt fails, and failure reports will be sent to the
+  director email. Some other stability changes made too.
+
+- The dashboard now shows some new statistics: the "Categories" section now
+  includes the number of class-hours per category, and there is a new "Grades"
+  section that shows the number of students per grade enrolled in at least one
+  class and number of subjects and sections available to the students in that
+  grade.
 
 Django debug toolbar (developers only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
