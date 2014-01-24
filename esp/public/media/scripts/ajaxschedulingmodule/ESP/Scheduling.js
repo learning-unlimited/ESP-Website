@@ -600,8 +600,12 @@ ESP.Scheduling = function(){
         var covered_lunch_start = false;
 
 	// Start with the proposed start time and iterate over all time blocks the section will need
+    var time_included = 0;
 	for (var i = 0; i < length; i++)
 	{
+        //  Maintain a count of the time included by the timeslots so far.
+        time_included += test_time.length;
+        
 	    if (test_time.is_lunch && !covered_lunch_start)
 	    {
 		//  Check that this is the first lunch in the group:
@@ -613,18 +617,20 @@ ESP.Scheduling = function(){
 		}
 	    }
 	    
-	    //  If this is the last timeslot of the program, don't sweat it... this assignment
-	    //  is invalid anyway.
-	    //TODO!!!!!!!!!!!!!
-	    //  This generally does not work correctly when you have classes with non-integer hour lengths.
-	    if (!test_time.seq && i != length - 1)
+        //  Check that the section would not run over the end of the program,
+        //  or the end of the contiguous time block (if there is a break).
+        //  (10 min error tolerance)
+	    if (!test_time.seq)
 	    {
-		return (str_err ? "Section " + section.code + " has an invalid assignment" : false);
+            if (section.length > time_included + 10 * 60 * 1000)
+                return (str_err ? "Section " + section.code + " does not fit within the contiguous time available" : false);
+            else
+                return true;
 	    }
 	    
 	    //  But, if our class period overlapped with the beginning of the lunch sequence
 	    //  and now also overlaps with the end of the lunch sequence, that's a conflict.
-	    if (covered_lunch_start && test_time.seq && !(test_time.seq.is_lunch))
+	    else if (covered_lunch_start && !(test_time.seq.is_lunch))
 	    {
 		return (str_err ? "Section " + section.code + " starting at " + time.text + " would conflict with a group of lunch periods" : false);
 	    }
