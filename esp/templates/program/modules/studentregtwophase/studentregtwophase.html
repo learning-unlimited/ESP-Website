@@ -24,14 +24,14 @@
 
 {% block content %}
 <h1>Student Registration for {{program.niceName}}</h1>
-{% inline_program_qsd_block program "learn:studentregtwophase/top" request.user %}
+{% inline_program_qsd_block program "learn:studentregtwophase/top" %}
 Welcome to the registration lottery for {{program.niceName}}. Please complete all of the steps below to select your class preferences. You may come back to this page to update your preferences at any time before the deadline.
 {% end_inline_program_qsd_block %}
 
 <hr>
 
 <h1>Step 1 &ndash; Mark all classes you are interested in taking</h1>
-{% inline_program_qsd_block program "learn:studentregtwophase/step1" request.user %}
+{% inline_program_qsd_block program "learn:studentregtwophase/step1" %}
 <p>
 Follow the link below to star classes you would consider taking for {{program.niceName}}.
 These classes don't necessarily have to be your top choices. They should be anything you
@@ -46,7 +46,7 @@ View the classes >>
 <hr>
 
 <h1>Step 2 &ndash; Rank the top {{num_priority}} classes for each time</h1>
-{% inline_program_qsd_block program "learn:studentregtwophase/step2" request.user %}
+{% inline_program_qsd_block program "learn:studentregtwophase/step2" %}
 <p>
 Rank your preferences for each time block during {{program.niceName}}. We highly
 recommend you mark a class for every priority slot to ensure a full schedule.
