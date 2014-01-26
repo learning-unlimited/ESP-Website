@@ -131,7 +131,9 @@ function handle_compact_classes()
 {
     var div = $j('div[id=compact-classes-body]');
     var val = settings.compact_classes;
-    div.toggleClass( "compact-classes" , val);
+    //  This line would make the entire class description appear inline
+    //  instead of just the title.
+    //  div.toggleClass( "compact-classes" , val);
 }
 
 //  I wonder why this variable is necessary...
