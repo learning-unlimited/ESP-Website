@@ -12,6 +12,9 @@
 
 <p>
 <form id="theme_setup_form" method="POST" action="/themes/setup/">
+<input type="hidden" name="confirm_overwrite" value="{{ confirm_overwrite }}" />
+{% for filename in keep_files %}
+<input type="hidden" name="keep_files" id="keep_files_{{ forloop.counter0 }}" value="{{ filename }}" />{% endfor %}
     {{ form }}
 <br />
 <br />
