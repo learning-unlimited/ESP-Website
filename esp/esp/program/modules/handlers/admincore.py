@@ -179,7 +179,10 @@ class AdminCore(ProgramModuleObj, CoreModule):
             if edit_formset.is_valid(): 
                 num_forms = 0
                 for form in edit_formset.forms:
-                    if 'id' in form.cleaned_data:
+                    #   Check if the permission with the specified ID exists.
+                    #   It may have been deleted by previous iterations of this loop
+                    #   deleting duplicate permissions.
+                    if 'id' in form.cleaned_data and Permission.objects.filter(id=form.cleaned_data['id']).exists():
                         num_forms += 1
                         perm = Permission.objects.get(id=form.cleaned_data['id'])
                         #   Clear any duplicate perms
