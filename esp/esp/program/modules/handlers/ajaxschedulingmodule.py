@@ -334,13 +334,13 @@ class AJAXSchedulingModule(ProgramModuleObj):
             if len(times) < 1:
                 return self.makeret(prog, ret=False, msg="Specified Events not found in the database")
 
-            classrooms = Resource.objects.filter(name=basic_cls, res_type__name="Classroom")
+            classrooms = Resource.objects.filter(name=basic_cls, res_type__name="Classroom", event__in=times).order_by('event__start')
             if len(classrooms) < 1:
                 return self.makeret(prog, ret=False, msg="Specified Classrooms not found in the database")
 
             classroom = classrooms[0]
 
-            cannot_schedule = cls.cannotSchedule(times, ignore_classes=False)
+            cannot_schedule = cls.cannotSchedule(classrooms, ignore_classes=False)
             if cannot_schedule:
                 return self.makeret(prog, ret=False, msg=cannot_schedule)
             

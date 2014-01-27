@@ -935,7 +935,8 @@ are a teacher of the class"""
     @cache_function
     def getGrade(self, program = None):
         grade = 0
-        if self.isStudent():
+        # Admins are testing studentreg on their own accounts -ageng 2013-08-28
+        if self.isStudent() or self.isAdministrator(program):
             if program is None:
                 regProf = self.getLastProfile()
             else:

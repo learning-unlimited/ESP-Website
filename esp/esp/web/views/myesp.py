@@ -223,6 +223,8 @@ def profile_editor(request, prog_input=None, responseuponCompletion = True, role
 
         if request.session.has_key('school_id'):
             new_data['k12school'] = request.session['school_id']
+        if 'k12school' in new_data and (isinstance(new_data['k12school'], str) or isinstance(new_data['k12school'], unicode)):
+            new_data['unmatched_school'] = True
 
         #   Set default values for state fields
         state_fields = ['address_state', 'emerg_address_state']

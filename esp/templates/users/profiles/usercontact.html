@@ -100,11 +100,12 @@
 
 {% if form.receive_txt_message %}
 
+<div class="control-group">
  <small><i><label = "id_receive_txt_message">I would like to receive text-message reminders about the program:</label></i></small>
  {{ form.receive_txt_message }} {% if form.receive_txt_message.errors %}
    <br /><span class="form_error">{{ form.receive_txt_message.errors|join:", " }}</span>
    {% endif %}
- 
+</div>
 {% endif %}
 
 <!-- End User ContactInfo -->

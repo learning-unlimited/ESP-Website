@@ -43,6 +43,7 @@ from django.db.models import Count, Sum
 from django.db.models.query import Q
 from django.http import Http404, HttpResponse
 
+from esp.users.models import UserAvailability, UserBit
 from esp.cal.models import Event
 from esp.datatree.models import *
 from esp.dbmail.models import MessageRequest
@@ -59,6 +60,13 @@ from esp.utils.no_autocookie import disable_csrf_cookie_update
 from esp.accounting.controllers import IndividualAccountingController
 
 from decimal import Decimal
+
+
+from django.db.models import Min, Max
+from django.http import HttpResponse
+
+
+import simplejson
 
 class JSONDataModule(ProgramModuleObj, CoreModule):
     """ A program module dedicated to returning program-specific data in JSON form. """
@@ -510,6 +518,25 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     @json_response()
     @needs_admin
     def class_admin_info(self, request, tl, one, two, module, extra, prog):
+        #~ def format_room_type(d):
+        #~     ans = [d['room_type']]
+        #~     if d['discussion_type']:
+        #~         ans.append(' (%s)' % d['discussion_type'])
+        #~     if d['dance_space']:
+        #~         ans.append(' (dance space)')
+        #~     if d['other_explain']:
+        #~         ans.append(': ' + d['other_explain'])
+        #~     return ''.join(ans)
+
+        #~ def format_equipment(d):
+        #~     ans = ', '.join(d['std_equipment'])
+        #~     ans = ans and [ans] or []
+        #~     if d['mac_adapter']:
+        #~         ans.append('Mac adapter = ' + d['mac_adapter'])
+        #~     if d['special_equipment']:
+        #~         ans.append(d['special_equipment'])
+        #~     return '; '.join(ans)
+
         return_key = None
         if 'return_key' in request.GET:
             return_key = request.GET['return_key']
@@ -545,6 +572,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         rrequest_dict = defaultdict(list)
         for r in rrequests:
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
+        # Hack to insert requested_room as a resource request -ageng 2013-08-20
+        if section.parent_class.requested_room:
+            rrequest_dict[section.id].append((-1, section.parent_class.requested_room))
 
         fts = ClassFlagType.get_flag_types(prog)
         ft_dicts = [{'id': ft.id, 'name': ft.name, 'show_in_scheduler': ft.show_in_scheduler, 'show_in_dashboard': ft.show_in_dashboard} for ft in fts]
@@ -766,6 +796,41 @@ len(teachers[key])))
     stats.cached_function.depend_on_row(ClassSubject, lambda cls: {'prog': cls.parent_program})
     stats.cached_function.depend_on_row(SplashInfo, lambda si: {'prog': si.program})
     stats.cached_function.depend_on_row(Program, lambda prog: {'prog': prog})
+    @staticmethod
+    def guess_key_dates(prog):
+        dates = {
+            'Event': Event.objects.filter(anchor=prog.anchor, event_type__description__startswith='Class').aggregate(start=Min('start'), end=Max('end')),
+            'Teacher': UserBit.objects.filter(qsc=prog.anchor, user=None).filter(Q(verb__uri__startswith='V/Deadline/Registration/Teacher', recursive=True) | Q(verb__uri='V/Deadline/Registration/Teacher/Classes/Create')).aggregate(start=Min('startdate'), end=Max('enddate')),
+        }
+        for verb in DataTree.objects.filter(Q(uri__startswith='V/Deadline/Registration/Student/Applications') | Q(uri__startswith='V/Deadline/Registration/Student/Classes') | Q(uri='V/Deadline/Registration/Student', userbit_verb__recursive=True), userbit_verb__user=None, userbit_verb__qsc=prog.anchor).annotate(start=Min('userbit_verb__startdate'), end=Max('userbit_verb__enddate')).values('uri', 'start', 'end'):
+            dates[verb['uri'].replace('V/Deadline/Registration/', '')] = verb
+        return dates
+
+    #@aux_call
+    #@needs_admin
+    @cached_module_view
+    def registration_timestamps(extra, prog):
+        subjects = prog.classes().filter(anchor__userbit_qsc__verb__uri='V/Flags/Registration/Teacher')
+        subjects = subjects.annotate(ts = Min('anchor__userbit_qsc__startdate'))
+        dates = JSONDataModule.guess_key_dates(prog)
+        for verb in dates.values():
+            verb['start'] = verb['start'].isoformat()
+            verb['end'] = verb['end'].isoformat()
+        return HttpResponse(simplejson.dumps({
+            'timestamps': [{'ts': cls.ts.isoformat(), 'name': unicode(cls)} for cls in subjects],
+            'key_dates': dates,
+        }), mimetype='application/json')
+    registration_timestamps.cached_function.depend_on_row(
+        lambda: UserBit,
+        lambda bit: {},
+        lambda bit: bit.verb.uri == 'V/Flags/Registration/Teacher')
+    registration_timestamps.cached_function.depend_on_row(
+        lambda: StudentRegistration,
+        lambda reg: {'extra': 'student',
+            'prog': reg.section.parent_class.parent_program})
+    registration_timestamps_cached = registration_timestamps
+    registration_timestamps = needs_admin(registration_timestamps_cached)
+    registration_timestamps = aux_call(registration_timestamps)
 
     @aux_call
     @needs_student
