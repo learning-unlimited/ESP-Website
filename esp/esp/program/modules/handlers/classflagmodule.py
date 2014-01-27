@@ -41,9 +41,10 @@ from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, need
 from esp.cache           import cache_function
 from esp.web.util        import render_to_response
 
-from esp.program.models import ClassSubject, ClassFlag, ClassFlagType, flag_types
+from esp.program.models import ClassSubject, ClassFlag, ClassFlagType
 from esp.program.forms import ClassFlagForm
 from esp.users.models import ESPUser
+
 
 class ClassFlagModule(ProgramModuleObj):
     doc = """ Flag classes, such as for further review.  Find all classes matching certain flags, and so on. """
@@ -60,7 +61,7 @@ class ClassFlagModule(ProgramModuleObj):
         abstract = True
     
     def teachers(self, QObject = False):
-        fts = flag_types(self.program)
+        fts = ClassFlagType.get_flag_types(self.program)
         t = {}
         for flag_type in fts:
             q = Q(classsubject__flags__flag_type=flag_type.id)
@@ -71,7 +72,7 @@ class ClassFlagModule(ProgramModuleObj):
         return t
     
     def teacherDesc(self):
-        fts = flag_types(self.program)
+        fts = ClassFlagType.get_flag_types(self.program)
         descs = {}
         for flag_type in fts:
             descs['flag_%s' % flag_type.id] = """Teachers who have a class with the "%s" flag.""" % flag_type.name
@@ -98,6 +99,8 @@ class ClassFlagModule(ProgramModuleObj):
                 return base.exclude(pk__in=reduce(operator.or_, subqueries))
             elif t=='not all':
                 return base.exclude(pk__in=reduce(operator.and_, subqueries))
+            else:
+                raise ESPError('Invalid json for flag query builder!')
 
     def jsonToEnglish(self, j):
         '''Takes a dict decided from the json sent by the javscript in /manage///classflags/ and converts it to something vaguely human-readable.'''
@@ -114,10 +117,10 @@ class ClassFlagModule(ProgramModuleObj):
     def classflags(self, request, tl, one, two, module, extra, prog):
         '''An interface to query for some boolean expression of flags.  The front-end javascript will allow the user to build a query, then POST it in the form of a json.  The response to said post should be the list of classes matching the flag query.
 
-        The json should be a single object, which should have two keys: "type" and "value".  The value of the "type" key should be a string, one of the set ["the flag", "not the flag", "all", "any", "not all", "none"].  In the first two cases, the value of the "value" key should be the id of a flag.  In the latter four cases, it should be a list of objects of the same form.'''
+        The json should be a single object, which should have two keys: "type" and "value".  The value of the "type" key should be a string, one of the set ["flag", "not flag", "all", "any", "not all", "none"].  In the first two cases, the value of the "value" key should be the id of a flag.  In the latter four cases, it should be a list of objects of the same form.'''
         if request.method == 'GET':
             # We should display the query builder interface.
-            fts = flag_types(self.program)
+            fts = ClassFlagType.get_flag_types(self.program)
             context = { 'flag_types': fts, 'prog': self.program }
             return render_to_response(self.baseDir()+'flag_query_builder.html', request, context)
         elif request.method == 'POST':
@@ -149,7 +152,6 @@ class ClassFlagModule(ProgramModuleObj):
     def newflag(self, request, tl, one, two, module, extra, prog):
         '''Create a flag from the POST data, and return its detail display.'''
         if request.method != 'POST':
-            print "not a post"
             return HttpResponseBadRequest('')
         form = ClassFlagForm(request.POST)
         if form.is_valid():
@@ -158,7 +160,6 @@ class ClassFlagModule(ProgramModuleObj):
             return render_to_response(self.baseDir()+'flag_detail.html', request, context)
         else:
             # The user shouldn't be able to get here unless they're doing something really weird, so let's not bother to try to tell them where the error was; since this is asynchronous that would be a bit tricky.
-            print form, form.errors
             return HttpResponseBadRequest('')
 
     @aux_call

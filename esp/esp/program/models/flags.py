@@ -60,23 +60,28 @@ class ClassFlagType(models.Model):
         if self.color:
             return self.color
         else:
+            h = hash(self.name)
+            r = 128 + h % 128
+            g = 128 + (h // 128) % 16384
+            b = 128 + (h // 16384) % 2097152
             # Choose a random one from the hash.
-            return "#"+hex(hash(self.name))[-6:]
+            return "#"+hex(r)[-2:]+hex(g)[-2:]+hex(b)[-2:]
 
-@cache_function
-def flag_types(program=None, scheduler=False, dashboard=False):
-    '''Gets all flag types associated with a given program, in a cached fashion.  If program is None, gets all flag types.  scheduler=True and dashboard=True return only flag types that should be shown in those interfaces.'''
-    if program is None:
-        base = ClassFlagType.objects.all()
-    else:
-        base = program.flag_types.all()
-    if scheduler:
-        base = base.filter(show_in_scheduler=True)
-    if dashboard:
-        base = base.filter(show_in_dashboard=True)
-    return base
-flag_types.depend_on_model(lambda: ClassFlagType)
-flag_types.depend_on_m2m(lambda: Program, 'flag_types', lambda prog, flag_type: {'program': prog})
+    @cache_function
+    def get_flag_types(cls, program=None, scheduler=False, dashboard=False):
+        '''Gets all flag types associated with a given program, in a cached fashion.  If program is None, gets all flag types.  scheduler=True and dashboard=True return only flag types that should be shown in those interfaces.'''
+        if program is None:
+            base = cls.objects.all()
+        else:
+            base = program.flag_types.all()
+        if scheduler:
+            base = base.filter(show_in_scheduler=True)
+        if dashboard:
+            base = base.filter(show_in_dashboard=True)
+        return base
+    get_flag_types.depend_on_model(lambda: ClassFlagType)
+    get_flag_types.depend_on_m2m(lambda: Program, 'flag_types', lambda prog, flag_type: {'program': prog})
+    get_flag_types = classmethod(get_flag_types)
 
 class ClassFlag(models.Model):
     subject = AjaxForeignKey('ClassSubject', related_name='flags')
@@ -92,7 +97,6 @@ class ClassFlag(models.Model):
     class Meta:
         app_label='program'
         ordering=['flag_type']
-        unique_together=('subject','flag_type')
 
 
     def __unicode__(self):
