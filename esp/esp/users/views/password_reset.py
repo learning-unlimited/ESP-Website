@@ -1,3 +1,4 @@
+import os.path
 
 from esp.users.forms.password_reset import PasswordResetForm,NewPasswordSetForm
 from django.contrib.auth.models import User
@@ -40,7 +41,7 @@ def initial_passwd_request(request, success=None):
             for user in users:
                 user.recoverPassword()
 
-            return HttpResponseRedirect('%ssuccess/' % request.path)
+            return HttpResponseRedirect('/%s/success/' % request.path.strip('/'))
 
 
     else:

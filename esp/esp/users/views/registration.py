@@ -1,22 +1,34 @@
-from esp.users.models import ESPUser_Profile, ESPUser
-from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm
-from esp.web.util.main import render_to_response
-from esp.mailman import add_list_member
-from esp.middleware.esperrormiddleware import ESPError
-from esp.tagdict.models import Tag
-from django.contrib.auth import login, authenticate
-from django.contrib.auth.models import Group
-from django.http import HttpResponseRedirect
-from django.template import loader
-from esp.middleware.threadlocalrequest import AutoRequestContext as Context
-from esp.dbmail.models import send_mail
-from django.contrib.sites.models import Site
-from django.core.urlresolvers import reverse
 import hashlib
+import logging
 import random
 import urllib
+
+log = logging.getLogger(__name__)
+
 from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import login, authenticate
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import Group
+from django.contrib.sites.models import Site
+from django.core.urlresolvers import reverse
+from django.core.urlresolvers import reverse_lazy
+from django.http import HttpResponseRedirect
+from django.template import loader
 from django.utils.datastructures import MultiValueDictKeyError
+from django.utils.decorators import method_decorator
+
+from vanilla import CreateView
+
+from esp.dbmail.models import send_mail
+from esp.mailman import add_list_member
+from esp.middleware.esperrormiddleware import ESPError
+from esp.middleware.threadlocalrequest import AutoRequestContext as Context
+from esp.tagdict.models import Tag
+from esp.users.forms.user_reg import UserRegForm, EmailUserForm, EmailUserRegForm, AwaitingActivationEmailForm, SinglePhaseUserRegForm, GradeChangeRequestForm
+from esp.users.models import ESPUser_Profile, ESPUser
+from esp.web.util.main import render_to_response
+
 
 __all__ = ['join_emaillist','user_registration_phase1', 'user_registration_phase2','resend_activation_view']
 
@@ -225,3 +237,33 @@ def resend_activation_view(request):
         form=AwaitingActivationEmailForm()
         return render_to_response('registration/resend.html',request,
                                   {'form':form, 'site': Site.objects.get_current()})
+
+
+class GradeChangeRequestView(CreateView):
+    """
+    Handles Display of Grade Change Request Form and dispatching of request.
+    """
+    template_name = 'users/profiles/gradechangerequestform.html'
+    form_class = GradeChangeRequestForm
+    success_url = reverse_lazy('grade_change_request')
+
+    def form_valid(self, form):
+        change_request = form.save(commit=False)
+        change_request.requesting_student = self.request.user
+        change_request.save()
+        messages.add_message(self.request, messages.SUCCESS, "Your grade change request was sent! You will receive an email containing your approval status shortly.")
+        
+        log.info('grade change request sent by user %s'%(self.request.user,))
+
+        return HttpResponseRedirect(self.success_url)
+
+    def render_to_response(self, context):
+        #   Override rendering function to use our context processors.
+        from esp.web.util.main import render_to_response as render_to_response_base
+        return render_to_response_base(self.template_name, self.request, context)
+
+    @method_decorator(login_required)
+    def dispatch(self, *args, **kwargs):
+        return super(GradeChangeRequestView, self).dispatch(*args, **kwargs)
+
+

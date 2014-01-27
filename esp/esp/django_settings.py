@@ -232,6 +232,8 @@ INSTALLED_APPS = (
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
+    'bootstrapform',
+    'django_nose',
     'esp.formstack',
 )
 
