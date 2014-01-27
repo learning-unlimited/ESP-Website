@@ -21,14 +21,14 @@ class Migration(SchemaMigration):
         for media in orm['qsdmedia.Media'].objects.all():
             if Program.objects.filter(anchor=media.anchor).count() == 1:
                 target_prog = Program.objects.filter(anchor=media.anchor)[0]
-                target_ctype = ContentType.objects.get(app_label='program', model='program')
+                target_ctype = orm['contenttypes.ContentType'].objects.get(app_label='program', model='program')
                 media.owner_type_id = target_ctype.id
                 media.owner_id = target_prog.id
                 media.save()
                 count_program += 1
             if ClassSubject.objects.filter(anchor=media.anchor).count() == 1:
                 target_subj = ClassSubject.objects.filter(anchor=media.anchor)[0]
-                target_ctype = ContentType.objects.get(app_label='program', model='classsubject')
+                target_ctype = orm['contenttypes.ContentType'].objects.get(app_label='program', model='classsubject')
                 media.owner_type_id = target_ctype.id
                 media.owner_id = target_subj.id
                 media.save()
