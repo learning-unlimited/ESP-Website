@@ -58,9 +58,11 @@ class VolunteerSignup(ProgramModuleObj, CoreModule):
             if form.is_valid():
                 offers = form.save()
                 context['complete'] = True
-                context['complete_name'] = offers[0].name
-                context['complete_email'] = offers[0].email
-                context['complete_phone'] = offers[0].phone
+                # These changes are necessary to allow saving the form
+                # with no boxes checked. -ageng 2013-05-08
+                context['complete_name'] = form.cleaned_data['name']
+                context['complete_email'] = form.cleaned_data['email']
+                context['complete_phone'] = form.cleaned_data['phone']
                 form = VolunteerOfferForm(program=prog)
         else:
             form = VolunteerOfferForm(program=prog)

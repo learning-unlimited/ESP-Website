@@ -749,7 +749,8 @@ class ProgramPrintables(ProgramModuleObj):
         classes = [ cls for cls in teacher.getTaughtSections()]
         classes = [ cls for cls in classes
                     if cls.parent_program == program
-                    and cls.isAccepted()                       ]
+                    and cls.meeting_times.exists()
+                    and cls.status >= 0                       ]
         classes.sort()
         return classes
 
@@ -793,13 +794,13 @@ class ProgramPrintables(ProgramModuleObj):
                 schedule = """
     %s schedule for %s:
 
-     Time                   | Class                                  | Room\n""" % (schedule_type, user.name())
+     <table border="1" cellpadding="4" cellspacing="0" style="border: 1px solid #000; border-collapse: collapse;"><tr><th>Time</th><th>Class</th><th>Room</th></tr>\n""" % (schedule_type, user.name())
             else:
                 schedule = """
     %s schedule for %s:
 
-     Time                   | Class                                  \n""" % (schedule_type, user.name())
-            schedule += '------------------------+---------------------------------------------------\n'
+     <table border="1" cellpadding="4" cellspacing="0" style="border: 1px solid #000; border-collapse: collapse;"><tr><th>Time</th><th>Class</th></tr>\n""" % (schedule_type, user.name())
+            #schedule += '------------------------+---------------------------------------------------\n'
             if schedule_type == 'Student':
                 classes = ProgramPrintables.get_student_classlist(program, user)
             elif schedule_type == 'Teacher':
@@ -811,9 +812,10 @@ class ProgramPrintables(ProgramModuleObj):
                 else:
                     rooms = ' ' + ", ".join(rooms)
                 if room_numbers:
-                    schedule += '%s|%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40), rooms)
+                    schedule += '<tr><td>%s</td><td>%s</td><td>%s</td></tr>\n' % ((' '+",".join(cls.friendly_times())), (' ' + cls.title()), rooms)
                 else:
-                    schedule += '%s|%s\n' % ((' '+",".join(cls.friendly_times())).ljust(24), (' ' + cls.title()).ljust(40))
+                    schedule += '<tr><td>%s</td><td>%s</td></tr>\n' % ((' '+",".join(cls.friendly_times())), (' ' + cls.title()))
+            schedule += '</table>\n'
                 
         elif schedule_type == 'Volunteer':
             schedule = """

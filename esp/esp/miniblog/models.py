@@ -72,8 +72,9 @@ class AnnouncementLink(models.Model):
 class Entry(models.Model):
     """ A Markdown-encoded miniblog entry """
     title = models.CharField(max_length=256) # Plaintext; shouldn't contain HTML, for security reasons, though HTML will probably be passed through intact
-    slug    = models.SlugField(default="General",
-                               help_text="(will determine the URL)")
+    # made a CharField to allow editing in /admin/ -ageng 2013-08-12
+    slug    = models.CharField(default="General",
+                               help_text="(will determine the URL)", max_length=50)
 
     timestamp = models.DateTimeField(default = datetime.datetime.now, editable=False)
     highlight_begin = models.DateTimeField(blank=True,null=True,

@@ -79,8 +79,13 @@ def login_checked(request, *args, **kwargs):
         # We're getting redirected to somewhere undesirable.
         # Let's try to do something smarter.
         request.user = ESPUser(request.user)
+        admin_home_url = Tag.getTag('admin_home_page')
         if request.user.isTeacher():
             reply = HttpMetaRedirect("/teach/index.html")
+        # We need this to make onsite easier at Splash on Oct 6.
+        # -ageng 2012-10-05
+        elif request.user.isAdmin() and admin_home_url:
+            reply = HttpMetaRedirect(admin_home_url)
         else:
             reply = HttpMetaRedirect("/learn/index.html")
     elif reply.status_code == 302:

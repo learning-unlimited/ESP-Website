@@ -1034,6 +1034,10 @@ class Program(models.Model, CustomFormsLinkModel):
 
             for row in query:
                 shirt_type, shirt_size, count = row
+                # If we didn't ask for shirt type in the profile, assume M.
+                # There's probably a neater, more semantically accurate way.
+                # -ageng 2013-09-19
+                shirt_type = shirt_type or shirt_types[0][0]
                 shirt_count[shirt_type][shirt_size] = count
 
         shirts = {}

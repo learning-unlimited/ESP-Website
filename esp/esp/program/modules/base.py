@@ -200,7 +200,10 @@ class ProgramModuleObj(models.Model):
         #   If a "core" module has been found:
         #   Put the user through a sequence of all required modules in the same category.
         #   Only do so if we've not blocked this behavior, though
-        if tl != "manage" and tl != "json" and isinstance(moduleobj, CoreModule):
+        if tl != "manage" and tl != "json" and tl != "volunteer" and isinstance(moduleobj, CoreModule):
+                # I don't remember exactly what the problem was
+                # but it had something to do with the volunteer signup module
+                # being a core module and required. -ageng 2013-08-12
             scrmi = prog.getModuleExtension('StudentClassRegModuleInfo')
             if scrmi.force_show_required_modules:
                 if not_logged_in(request):

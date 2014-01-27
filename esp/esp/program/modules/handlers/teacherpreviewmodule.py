@@ -91,12 +91,14 @@ class TeacherPreviewModule(ProgramModuleObj):
 
     @aux_call
     def catalogpreview(self, request, tl, one, two, module, extra, prog):
+        # Makes class documents show up in teacher catalog preview.
+        # Submitted in pull request #393. -ageng 2012-08-04
         try:
             qs = ClassSubject.objects.filter(id=int(extra))
             cls = qs[0]
         except (ValueError, IndexError):
             raise Http404('The requested class could not be found.')
-        cls = ClassSubject.objects.catalog(cls.parent_program, force_all=True, initial_queryset=qs)[0]
+        cls = ClassSubject.objects.catalog(None, force_all=True, initial_queryset=qs)[0]
         return render_to_response(self.baseDir()+'catalogpreview.html', request, {'class': cls})
     
     def get_handouts(self):
