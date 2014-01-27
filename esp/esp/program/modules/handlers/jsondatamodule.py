@@ -47,8 +47,7 @@ from esp.cal.models import Event
 from esp.datatree.models import *
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
-from esp.program.models import SplashInfo
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, flag_types
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, main_call, aux_call
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
@@ -608,6 +607,8 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", len(classes.filter(status=10))))
         class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", len(classes.filter(status=-10))))
         class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", len(classes.filter(status=-20))))
+        for ft in flag_types(prog):
+            class_num_list.append(('Total # of Classes with the "%s" flag' % ft.name, classes.filter(flags__flag_type=ft).count()))
         vitals['classnum'] = class_num_list
 
         #   Display pretty labels for teacher and student numbers
