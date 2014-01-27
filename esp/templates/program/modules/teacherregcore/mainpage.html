@@ -6,16 +6,37 @@
 {% block subsection %}{% autoescape off %}{{ "Teacher Registration"|subsection }}{% endautoescape %}
 {% endblock %}
 
+{% block stylesheets %}
+{{ block.super }}
+<!--<link rel="stylesheet" href="/media/styles/catalog.css" type="text/css">-->
+<style type="text/css">
+.nocheckmark { border: 1px solid black; }
+#divmaintext .mainstats, #divmaintext .mainstats th, #divmaintext .mainstats td
+  { border: 1px solid black; border-collapse: collapse;
+    vertical-align: baseline;}
+#divmaintext .blogentry { border: 2px solid black; }
+#divmaintext .blogentry .heading { background-color: #d7eeff; padding: 5px; }
+#divmaintext .blogentry .title { font-weight: bolder; }
+#divmaintext .blogentry .date { font-style: italic; margin: 0 5px 0 0;  }
+#divmaintext .blogentry .contents { margin: 0 0 0 30px; }
+</style>
+{% endblock %}
+
 {% block content %}
 
-<h1>Teacher registration for {{program.niceName}}</h1>
-
-{% load render_qsd %}
-{% inline_program_qsd_block program "teach:teacherreg" %}
-<p>
-Please complete the following steps to teach for {{ program.niceName }}.  When each step is completed, the corresponding box in the right-hand column will be "checked off."  If you have any questions, please <a href="mailto:{{ program.director_email}}">contact the program directors</a>.
+<h1>Teacher registration for {{program.niceName}} </h1>
+<!--
+<div style="position: absolute; right: -8px; top: 10px; width: 140px; padding: 10px; background-color:#EDC0C0; font-weight: bold; font-height:13px; border-radius: 9px;
+  -moz-border-radius: 9px;
+  -webkit-border-radius: 9px;
+  border: 1px solid #D64636">We need help!  <a href="\getinvolved\index.html">Volunteer to staff Splash</a> and get a free Splash water bottle</div>
+-->
+<div id="catalog">
+<p><center><h2>For important information about teaching, please go <a href="/teach/info.html">here</a>.</h2></center>
 </p>
-{% end_inline_program_qsd_block %}
+<p>
+<span class="large">Thank you for teaching! Here's what you need to do:</span>
+</p>
 
 {% ifequal options.progress_mode 1 %}
     {% include "program/modules/checkboxes.html" %}
@@ -32,5 +53,6 @@ Please complete the following steps to teach for {{ program.niceName }}.  When e
     {% include module.getTemplate %}
 {% endif %}
 {% endfor %}
+{% endcomment %}
 
 {% endblock %}

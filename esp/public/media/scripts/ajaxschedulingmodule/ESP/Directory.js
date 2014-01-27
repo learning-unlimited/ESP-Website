@@ -104,7 +104,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
 
         // filter for determining active section or not
         activeFilter: function(section) {
-	    var lunch_symbol = "L";
+	    var lunch_symbol = "";
 	    return section.category != lunch_symbol;
 	},
         
