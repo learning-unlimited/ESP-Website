@@ -65,7 +65,7 @@ class Media(models.Model):
     
     #   Generic Foreign Key to object this media is associated with.
     #   Currently limited to be either a ClassSubject or Program.
-    owner_type = models.ForeignKey(ContentType, blank=True, null=True, limit_choices_to=Q(name__in=['ClassSubject', 'Program']))
+    owner_type = models.ForeignKey(ContentType, blank=True, null=True, limit_choices_to={'model__in': ['classsubject', 'program']})
     owner_id = models.PositiveIntegerField(blank=True, null=True)
     owner = generic.GenericForeignKey(ct_field='owner_type', fk_field='owner_id')
 
