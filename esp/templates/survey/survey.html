@@ -105,7 +105,7 @@
     {% for sec in sections %}
       <table class="fullwidth">
        <tr>
-            <th>Questions for {{ sec.emailcode }}: {{ sec.title }}</th>
+            <th>Questions for {{ sec.emailcode }}: {{ sec.title }} ({% for tm in sec.friendly_times %}{% if forloop.counter > 1 %},{% endif %}{{ tm }}{% endfor %})</th>
         </tr>
         </table>
         {% for question in perclass_questions %}

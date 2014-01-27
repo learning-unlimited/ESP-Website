@@ -11,5 +11,12 @@
 <br />
 <p>Your survey responses for {{ prog.niceName }} have been saved.  We appreciate the help.</p>
 
+{% if "teach" in request.path %}
+<p><a href="/teach/{{ prog.program_type }}/index.html">Click here</a> to return to the program's main page.</p>
+{% else %}
+{% if "learn" in request.path %}
 <p><a href="/learn/{{ prog.program_type }}/index.html">Click here</a> to return to the program's main page.</p>
+{% endif %}
+{% endif %}
+
 {% endblock %}

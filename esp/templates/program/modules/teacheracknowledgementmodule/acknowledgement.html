@@ -8,8 +8,15 @@
 {{ prog.niceName }} will be on {{ prog.date_range }}! Please acknowledge that you are aware of this and commit to teaching at one of the times you have specified for your availability. You may not cancel your classes after student registration opens. In the case of extenuating circumstances like illness or serious emergency, you must notify the directors ASAP at <a href="mailto:{{ prog.director_email }}">{{ prog.director_email }}</a> and assist in finding a substitute for your classes. If you do not meet these expectations, it is unfair for the students who registered for your class and makes organization difficult for us. Note that not being responsible with respect to your classes will affect your ability to teach for us in the future.
 {% end_inline_program_qsd_block %}
 <br />
+<style>
+label {
+    width: auto;
+}
+</style>
 <form action="acknowledgement" method="post">
-{{ form.as_p }}
+<table>
+{{ form.as_table }}
+</table>
 <input type="submit" value="Submit" />
 </form>
 {% endblock %}

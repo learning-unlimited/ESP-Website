@@ -679,6 +679,7 @@ class ProgramPrintables(ProgramModuleObj):
                     if cls.parent_program == self.program
                     and cls.meeting_times.all().exists()
                     and cls.resourceassignment_set.all().exists()
+                    and cls.status > 0
                     and cls.isAccepted()                       ]
             # now we sort them by time/title
             classes.sort()            
