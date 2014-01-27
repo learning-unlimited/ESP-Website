@@ -36,7 +36,8 @@ from django import forms
 from esp.utils.forms import SizedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 
 class StanfordTeacherQuestionsForm(FormWithRequiredCss):
-    schedule_acknowledgement = forms.BooleanField(label='Acknowledgement', help_text='Splash will be on Halloween weekend (Oct. 29-30)!  Please acknowledge that you are aware of this and commit to teaching at one of the times you have specified for your availability.')
+    schedule_acknowledgement = forms.BooleanField(label='Acknowledgement', help_text='Splash will be on Apr. 12-13!  Please acknowledge that you are aware of this and commit to teaching at one of the times you have specified for your availability.')
+#    walk_in = forms.ChoiceField(label="walk_in", help_text='Walk-in Seminars are courses geared towards students with gaps in their schedules or who are faced with last-minute class cancellations. While similar in spirit to a normal Splash class, students do not sign up in advance for Walk-in Seminars -- rather, they are free to choose to come and go as they would like. <A HREF="http://www.stanfordesp.org/teach/walkins.html">Click here for more information on walk-ins.</A>', choices=[('no', 'No'), ('yes', 'Yes')])
 
 class BCTeacherQuestionsForm(FormWithRequiredCss):
     qualifications = forms.CharField(label='Qualifications', help_text='What are your qualifications for teaching this course?', widget=forms.Textarea(attrs={'cols': 40, 'rows': 4}))
