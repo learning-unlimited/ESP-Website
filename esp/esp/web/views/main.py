@@ -82,7 +82,7 @@ def my_import(name):
     
 @cache_control(max_age=180)
 @disable_csrf_cookie_update
-def home(request):
+def home(request, foo=None):
     #   Get navbars corresponding to the 'home' category
     nav_category, created = NavBarCategory.objects.get_or_create(name='home')
     context = {'navbar_list': makeNavBar('', nav_category)}
@@ -111,6 +111,20 @@ def program(request, tl, one, two, module, extra = None):
             return newResponse
 
 	raise Http404
+
+@csrf_exempt
+def payment_success(request, tl, one, two):
+    from esp.program.models import Program, StudentAppResponse, StudentRegistration, RegistrationType
+    from urllib import quote
+    try:
+        program = Program.by_prog_inst(one, two) #DataTree.get_by_uri(treeItem)
+    except Program.DoesNotExist:
+        raise Http404("Program not found.")
+    from esp.program.modules.handlers.creditcardmodule_firstdata import CreditCardModule_FirstData
+    module = filter(lambda x: isinstance(x, CreditCardModule_FirstData), program.getModules())[0]
+    module.user = request.user
+    view_function = module.payment_success
+    return view_function(request, tl, one, two, view_function.__name__, '', program)
 
 def classchangerequest(request, tl, one, two):
     from esp.program.models import Program, StudentAppResponse, StudentRegistration, RegistrationType

@@ -45,6 +45,7 @@ from esp.users.models    import ESPUser
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.middleware      import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
+from django.views.decorators.csrf import csrf_exempt
 
 from django.conf import settings
 
@@ -79,8 +80,10 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         return {'creditcard': """Students who have filled out the credit card form."""}
 
     @aux_call
+    @csrf_exempt
     def payment_success(self, request, tl, one, two, module, extra, prog):
         """ Receive payment from First Data Global Gateway """
+        from django.conf import settings
 
         if request.method == 'GET' or request.POST.get('status', '') != 'APPROVED':
             return self.payment_failure(request, tl, one, two, module, extra, prog)
@@ -126,7 +129,9 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         return render_to_response(self.baseDir() + 'success.html', request, context)
         
     @aux_call
+    @csrf_exempt
     def payment_failure(self, request, tl, one, two, module, extra, prog):
+        from django.conf import settings
         context = {}
         if request.method == 'POST':
             context['postdata'] = request.POST.copy()
@@ -138,7 +143,10 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
     @usercheck_usetl
     @meets_deadline('/Payment')
     def payonline(self, request, tl, one, two, module, extra, prog):
-
+        if self.have_paid():
+            raise ESPError(False), "You've already paid for this program; you can't pay again!"
+        
+        # Force users to pay for non-optional stuffs
         user = ESPUser(request.user)
 
         iac = IndividualAccountingController(self.program, request.user)

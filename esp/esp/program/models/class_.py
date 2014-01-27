@@ -1097,7 +1097,7 @@ class ClassSection(models.Model):
         return self.friendly_times(raw=True)
 
     @cache_function
-    def friendly_times(self, raw=False, include_date=False): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun"
+    def friendly_times(self, raw=False, include_date=True): # if include_date is True, display the date as well (e.g., display "Sun, July 10" instead of just "Sun"
         """ Return a friendlier, prettier format for the times.
 
         If the events of this class are next to each other (within 10-minute overlap,

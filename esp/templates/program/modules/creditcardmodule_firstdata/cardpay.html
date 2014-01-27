@@ -31,19 +31,35 @@ input.button:hover {
     color: #c6def7;
 }
 </style>
+
+<script type="text/javascript">
+<!--
+$j(document).ready(function () {
+  $j("#id_csrfmiddlewaretoken").val(csrf_token());
+  /* $j("#submit_form").click(function () { 
+   var inputs = $j("#payment_form :input");
+   inputs.each(function () {
+     console.log(this.name + " = " + $j(this).val());
+    }); 
+   alert("Check form values");
+  });
+  */
+});
+-->
+</script>
 <script type="text/javascript">
 <!--
 
 // user contact information
 user_contact =  [
-{% for contactitem in module.user.getLastProfile.contact_user.items %}
+{% for contactitem in request.user.getLastProfile.contact_user.items %}
   ['{{ contactitem.0|striptags|addslashes }}','{{contactitem.1|striptags|addslashes }}'],{% endfor %}
   ['','']
 ];
 
 // guardian contact information
 guardian_contact =  [
-{% for contactitem in module.user.getLastProfile.contact_guardian.items %}
+{% for contactitem in request.user.getLastProfile.contact_guardian.items %}
   ['{{ contactitem.0|striptags|addslashes }}','{{contactitem.1|striptags|addslashes }}'],{% endfor %}
   ['','']
 ];
@@ -62,7 +78,6 @@ function getItem(arr, key) {
    }
    return '';
 }
-
 
 // autofill with contact information
 function autofill(ci) {
@@ -161,7 +176,7 @@ Please review the costs below. If you are concerned that there is a problem, ple
 
 <p>If you would like to cancel at this time, you can <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.  Otherwise, please fill out the form below.  Required fields are boxed in a colored border.</p>
 
-<form onsubmit="return formTest();" action="{{ module.post_url }}" method="post" autocomplete="off"> 
+<form id="payment_form" onsubmit="return formTest();" action="{{ module.post_url }}" method="post" autocomplete="off"> 
 
 <input type="hidden" name="storename" value="{{ module.store_id }}" />
 <input type="hidden" name="oid" value="{{ invoice_id }}" />
@@ -169,6 +184,7 @@ Please review the costs below. If you are concerned that there is a problem, ple
 <input type="hidden" id="id_total" name="total" value="{{ itemizedcosttotal|floatformat:2 }}" />
 <input type="hidden" name="ponumber" value="{{ invoice_id }}" />
 <input type="hidden" name="invoice_number" value="{{ identifier }}" />
+<input type="hidden" id="id_csrfmiddlewaretoken" name="csrfmiddlewaretoken" value="DEFAULT" />
 <input type="hidden" name="userid" value="{{ user.id }}" />
 <input type="hidden" name="txntype" value="sale" />
 <input type="hidden" name="bcountry" value="US" />
@@ -315,7 +331,7 @@ Autofill contact information:
 {% if module.offer_donation %}
 <tr>
     <td colspan="2">
-      <input type="checkbox" onclick="check_cost();" />Check here to support Learning Unlimited's mentoring of UMBC Splash with an additional donation of $10.  <a href="http://www.learningu.org/about" target="_blank">Learning Unlimited</a> is a 501(c)(3) nonprofit that mentored the UMBC students in organizing this program and provided this Web site. </td>
+      <input type="checkbox" onclick="check_cost();" />Check here to support Learning Unlimited's mentoring of Yale Splash with an additional donation of $10.  <a href="http://www.learningu.org/about" target="_blank">Learning Unlimited</a> is a 501(c)(3) nonprofit that mentored the Yale students in organizing this program and provided this Web site. </td>
 </tr>
 {% endif %}
 <tr>

@@ -85,6 +85,8 @@ INTERNAL_IPS = (
 ##################
 ADMINS = (
     ('LU Web Team','serverlog@lists.learningu.org'),
+    ('Ben Horowitz', 'horowitz.ben@gmail.com'),
+    ('Yale Splash Admins', 'yalesplash@gmail.com'),
 )
 
 GRAPPELLI_ADMIN_TITLE = "ESP administration"

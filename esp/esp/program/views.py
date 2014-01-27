@@ -545,6 +545,27 @@ def newprogram(request):
     return render_to_response('program/newprogram.html', request, {'form': form, 'programs': Program.objects.all().order_by('-id'),'template_prog_id':template_prog_id})
 
 @csrf_exempt
+def submit_firstdata_base(request, success=False):
+    #  Redirect to Splash Summer 5k - ID = 4
+    from esp.program.modules.handlers.creditcardmodule_firstdata import CreditCardModule_FirstData
+    program = Program.objects.get(id=4)
+    module = filter(lambda x: isinstance(x, CreditCardModule_FirstData), program.getModules())[0]
+    module.user = request.user
+    if success:
+        view_function = module.payment_success
+    else:
+        view_function = module.payment_failure
+    return view_function(request, 'learn', 'Splash', '5K', view_function.__name__, '', program)
+
+@csrf_exempt
+def submit_firstdata_success(request):
+    return submit_firstdata_base(request, True)
+
+@csrf_exempt
+def submit_firstdata_failure(request):
+    return submit_firstdata_base(request, False)
+
+@csrf_exempt
 @login_required
 def submit_transaction(request):
     #   We might also need to forward post variables to http://shopmitprd.mit.edu/controller/index.php?action=log_transaction

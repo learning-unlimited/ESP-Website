@@ -80,7 +80,7 @@ urlpatterns += patterns('esp.web.views.main',
                         (r'^web$', 'home'), # index
                         (r'^esp_web', 'home'), # index
                         (r'.php$', 'home'), # index
-                        (r'^$', 'home'), # index
+                        (r'^(index.html)?$', 'home'), # index
                         (r'^set_csrf_token', 'set_csrf_token'), # tiny view used to set csrf token
                         )
 
@@ -138,6 +138,7 @@ urlpatterns += patterns('esp.web.views.main',
 
 
     # Program stuff
+    (r'^(learn)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/payment_success/?$', 'payment_success'),
     (r'^(onsite|manage|teach|learn|volunteer)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/classchangerequest/?$', 'classchangerequest'),
     (r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
     (r'^(onsite|manage|teach|learn|volunteer|json)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'program'),
