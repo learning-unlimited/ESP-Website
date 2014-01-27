@@ -179,7 +179,10 @@ class AdminCore(ProgramModuleObj, CoreModule):
             if edit_formset.is_valid(): 
                 num_forms = 0
                 for form in edit_formset.forms:
-                    if 'id' in form.cleaned_data:
+                    #   Check if the permission with the specified ID exists.
+                    #   It may have been deleted by previous iterations of this loop
+                    #   deleting duplicate permissions.
+                    if 'id' in form.cleaned_data and Permission.objects.filter(id=form.cleaned_data['id']).exists():
                         num_forms += 1
                         perm = Permission.objects.get(id=form.cleaned_data['id'])
                         #   Clear any duplicate perms
@@ -202,7 +205,10 @@ class AdminCore(ProgramModuleObj, CoreModule):
                 message = 'No activities selected.  Please select a deadline type from the list before creating a deadline.'
     
         #   find all the existing permissions with this program
-        perms = Permission.deadlines().filter(program=self.program)
+        #   Only consider global permissions -- those that apply to all users
+        #   of a particular role.  Permissions added for individual users
+        #   should be managed in the admin interface.
+        perms = Permission.deadlines().filter(program=self.program, user__isnull=True)
         perm_map = {p.permission_type: p for p in perms}
 
         #   Populate template context to render page with forms
