@@ -18,13 +18,14 @@
                 <div class="dummy_field_text">{{ field.help_text }}</div>
             {% else %}
 				
-                {{ field.label_tag }}
+                <label for="id_{{ field.name }}" class="no_float">{{ field.label }}</label>
                 {% if field.help_text %}
                     <img src="/media/default_images/question_mark.jpg" class="qmark" title="{{field.help_text}}">
                 {% endif %}
             {% endif %}
 		  <div class="form_field">{{ field }}</div>
 		</div>
+	      <br />
 	    {% endif %}
 		
 	  {% endfor %}

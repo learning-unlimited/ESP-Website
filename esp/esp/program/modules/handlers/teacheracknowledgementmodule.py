@@ -49,7 +49,7 @@ class TeacherAcknowledgementModule(ProgramModuleObj):
             else:
                 rec.delete()
         elif self.isCompleted():
-            context['form'] = teacheracknowledgementform_factory(prog)({'acknowledgement': True})
+            context['form'] = teacheracknowledgementform_factory(prog)(dict([('acknowledgement_%s'%i, True) for i in range(3)]))
         else:
             context['form'] = teacheracknowledgementform_factory(prog)()
         return render_to_response(self.baseDir()+'acknowledgement.html', request, context)
