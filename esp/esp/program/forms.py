@@ -65,7 +65,7 @@ class ProgramCreationForm(BetterModelForm):
     base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
     sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None, help_text='The amount of the sibling discount. Leave blank to disable sibling discounts.')
     program_type      = forms.CharField(label = "Program Type")
-    program_modules   = forms.MultipleChoiceField(choices = [], label = 'Program Modules')
+    program_modules   = forms.MultipleChoiceField(choices = [], label = 'Program Modules', widget=forms.SelectMultiple(attrs={'class': 'input-xxlarge'}))
 
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current admins and modules. """

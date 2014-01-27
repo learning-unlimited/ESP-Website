@@ -5,7 +5,7 @@ from form_utils.forms import BetterForm
 from django.utils.datastructures import SortedDict
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.core.files.storage import FileSystemStorage
-from django.shortcuts import redirect, render_to_response, HttpResponse
+from django.shortcuts import redirect, HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.customforms.forms import NameField, AddressField

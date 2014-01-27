@@ -1,8 +1,12 @@
-Generic templates (themes app) - Technical documentation
+Generic templates (themes app)
+==============================
+*Technical documentation*
 
 Authors: 
-    Vikrant Varma <vikrant.varma94@gmail.com>   
-    Michael Price <price@learningu.org>
+   - Vikrant Varma <vikrant.varma94@gmail.com>   
+   - Michael Price <price@learningu.org>
+
+.. contents:: :local:
 
 Context
 -------
@@ -22,12 +26,17 @@ Setup
 -----
 
 1) Make sure the server has all of the necessary libraries:
+
+  ::
+
     apt-get install nodejs node-less
-        Note: You will need version 1.3.1 of LESS (the one that comes with Ubuntu 13.04). You can install LESS from https://github.com/less/less.js (git clone, then git checkout v1.3.1) or, in Ubuntu, by adding this PPA: https://launchpad.net/~george-edison55/+archive/less
-        Note: You will need version 0.10 or higher of Node.js.  You can install Node.js from https://github.com/joyent/node.git (git clonse, then git checkout v0.11.9-release).
+
+
+- Note: You will need version 1.3.1 of LESS (the one that comes with Ubuntu 13.04). You can install LESS from https://github.com/less/less.js (git clone, then git checkout v1.3.1) or, in Ubuntu, by adding this PPA: https://launchpad.net/~george-edison55/+archive/less
+- Note: You will need version 0.10 or higher of Node.js.  You can install Node.js from https://github.com/joyent/node.git (git clonse, then git checkout v0.11.9-release).
 
 2) Back up your database, or at least the template overrides.
-3) Make sure the Web server user has execute and write permission on all of the directories under esp/public/media.  (The theme editor will be copying images and generating style files.)
+3) Make sure the Web server user has execute and write permission on all of the directories under esp/public/media.  (The theme editor will be copying images and generating style files.)    
 4) If you are using the MIT theme, you will need to manually delete your main.html template override in order to avoid seeing errors on every page before you load the theme.
 
 Architecture
@@ -40,24 +49,22 @@ parameters.
 
 From the end user perspective, there are 3 steps to setting up their 
 front-end design:
-  1) Selecting a theme, i.e. choosing which general design to use
-  2) Setting up the theme, i.e. providing information needed by the theme
-     to render properly (e.g. navigation structure, group name and contact
-     information)
-  3) Customizing the theme, i.e. changing optional parameters that affect
-     appearance (like colors and fonts)
+
+1) Selecting a theme, i.e. choosing which general design to use
+2) Setting up the theme, i.e. providing information needed by the theme to render properly (e.g. navigation structure, group name and contact information)
+3) Customizing the theme, i.e. changing optional parameters that affect appearance (like colors and fonts)
      
 Each of these steps is handled by a view function in esp/themes/views.py:
-  1) Selecting: /themes/select -> selector()
-  2) Setup: /themes/setup -> configure()
-  3) Customizing: /themes/customize -> editor()
+
+1) Selecting: /themes/select -> selector()
+2) Setup: /themes/setup -> configure()
+3) Customizing: /themes/customize -> editor()
   
 All operations are handled by the ThemeController class defined in
 esp/themes/controllers.py.  The most important methods are:
-  - High level theme controls: clear_theme(), load_theme(), 
-    customize_theme()
-  - Back end driver functions: compile_css(), load_customizations(), 
-    save_customizations()
+
+- High level theme controls: clear_theme(), load_theme(), customize_theme()
+- Back end driver functions: compile_css(), load_customizations(), save_customizations()
 
 When someone selects a theme, the LESS stylesheet sources are all compiled
 into a single CSS file (by default, public/media/styles/theme_compiled.css).
@@ -102,9 +109,11 @@ CSS styles and images.  The process for contributing this design as a theme
 is similar to the old process, but with some changes to ensure the theme
 can be adjusted for the needs of other chapters.
 
--- Sources
-
+Sources
++++++++
 Each theme is packaged in a directory under esp/themes/theme_data as follows:
+
+::
 
   esp/
     themes/
@@ -125,16 +134,20 @@ Each theme is packaged in a directory under esp/themes/theme_data as follows:
 The required sources for each theme are:
 
   1) Templates
+
      For each template you want to override, make an HTML file in the
      templates/ directory.  Many themes will only override the
      main.html template, but you can override more (e.g. index.html,
      users/student_schedule.html) as needed.
   
   2) Styles
+
      Any number of LESS stylesheet files can be placed in the less/
      directory.  These will be concatenated together and compiled
      to the CSS used by the site.  Note that LESS allows parameters to
      be specified with the following format:
+     ::
+
        @box_heading_color: #333333;
        @box_rounding_radius: 8px;
        @heading_font: "Helvetica Neue";
@@ -143,16 +156,19 @@ The required sources for each theme are:
      file named variables.less.
   
   3) Images
+
      Place any images needed by the design in this directory.
      The images will be copied to /media/images/theme/ when the theme is
      loaded.
   
   4) Scripts
+
      If your design requires UI-specific Javascript code, any files that
      you place in the scripts/ directory will be copied to
      /media/scripts/theme/ when the theme is loaded.
   
   5) Configuration form
+
      In config_form.py, define a class named ConfigForm which subclasses
      esp.themes.forms.ThemeConfigurationForm.  This form can contain
      any Django form fields that you need to collect information expected
@@ -161,7 +177,8 @@ The required sources for each theme are:
      The widget esp.utils.widgets.NavStructureWidget may be useful for
      collecting up to 2 levels of link structure.
 
--- Design process
+Design process
+++++++++++++++
 
 Here is a recommended process for converting from an HTML/CSS mockup to a 
 contributed theme.  Create a new Git branch relative to 'main' to
@@ -212,7 +229,8 @@ files in the repository.
 Create a pull request so the new theme can be reviewed before it is merged 
 into the main branch.
 
--- Potential pitfalls
+Potential pitfalls
+++++++++++++++++++
 
 If there are any errors in your LESS code, you may not be able to compile CSS.
 Turn on THEME_DEBUG to generate intermediate LESS output and print debugging
