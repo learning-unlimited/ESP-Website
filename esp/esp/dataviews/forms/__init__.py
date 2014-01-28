@@ -1,5 +1,4 @@
 from django.forms import *
-from django.shortcuts import render_to_response
 from django.contrib.formtools.wizard import FormWizard
 from django.template.context import RequestContext
 from dataviews import useful_models as all_usefull_models

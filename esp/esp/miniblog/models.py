@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 from django.db import models
 from django.db.models.query import Q
 from esp.datatree.models import *
-from esp.lib.markdown import markdown
+from markdown import markdown
 from esp.users.models import ESPUser
 from django.contrib.auth.models import User
 from esp.db.fields import AjaxForeignKey

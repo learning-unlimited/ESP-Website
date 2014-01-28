@@ -1,16 +1,14 @@
 Media setup instructions
 ------------------------
 
-This directory contains all media files required for a generic ESP Web site.  However, in order to facilitate the use of shared filesystems (e.g. Dropbox, SVN) for storing customized media files, the 'images' and 'styles' directories have been moved to 'default_images' and 'default_styles' respectively.  You may copy or link these to the names 'images' and 'styles' in order to use the generic media files.
+This directory contains all media files required for a generic ESP Web site.  Top level subdirectories of note include images, scripts, styles, and uploaded.
 
-Learning Unlimited hosts several sites, each having their own set of customized media files, as follows:
+The media directories 'images' and 'styles' should be created as symbolic links to the actual directories 'default_images' and 'default_styles'.  This is an artifact of a previous (Dropbox-based) scheme for file customization that is no longer being used.  The symbolic links will be removed in a future release.
 
-1. A Dropbox instance runs somewhere outside the Web site repository checkout on the server.
-   Example: 
-   - Install Dropbox by typing 'HOME=/lu/dropboxes/[sitename] /lu/software/dropbox/dropbox start -i &' and following directions
-   - Add 'HOME=/lu/dropboxes/[sitename] /lu/software/dropbox/dropboxd &' to /etc/rc.local
-2. Media directories from the Dropbox are linked into the appropriate locations in the working copy.
-   Example:
-   - ln -s /lu/dropboxes/[sitename]/My Dropbox/media/images /lu/sites/[sitename]/esp/public/media/images
-   - ln -s /lu/dropboxes/[sitename]/My Dropbox/media/styles /lu/sites/[sitename]/esp/public/media/styles
+The entire directory tree may be edited by administrators through the admin interface:
+    /admin/filebrowser/browse/
+This the preferred method for customizing image files such as logos.
+
+Some of the files in this area are also written by the Web site itself.  For example, the themes system generates CSS stylesheets and writes image files and scripts particular to the selected theme.  It can be accessed by administrators at:
+    /themes/
 

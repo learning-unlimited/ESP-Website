@@ -32,8 +32,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
+import sys
+
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import User
+from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.middleware import ESPError
 from datetime import datetime
@@ -49,6 +53,8 @@ from django.conf import settings
 from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
+
+from south.models import MigrationHistory
 
 
 
@@ -75,6 +81,37 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
         msg.content_subtype = 'html'
     
     msg.send()
+
+def expire_unsent_emails(orm=None):
+    """
+    Expires old, unsent TextOfEmails and MessageRequests.
+
+    By default, performs the query using the models/managers defined in this
+    file. Alternatively, during a migration, a frozen orm can be passed via the
+    orm parameter.
+    """
+    if orm is None:
+        orm = sys.modules[__name__]
+    TextOfEmail.expireUnsentEmails(orm_class=orm.TextOfEmail)
+    MessageRequest.expireUnprocessedRequests(orm_class=orm.MessageRequest)
+
+@cache_function
+def can_process_and_send():
+    """
+    Returns True if the dbmail cronmail script is allowed to process and send
+    emails, and False otherwise.
+
+    Currently, this function asserts that the expire_unsent_emails migration
+    has been run. If it hasn't, it is possible that there are old, unsent
+    messages from before 6e350a3735 that should not be sent because they are
+    out-of-date. This requirement can be removed after the full deployment of
+    stable release 4.
+    """
+    now = datetime.now()
+    return MigrationHistory.objects.filter(app_name='dbmail',
+                                migration__contains='expire_unsent_emails',
+                                applied__lt=now).exists()
+can_process_and_send.depend_on_model(MigrationHistory)
 
 
 
@@ -139,6 +176,21 @@ class MessageRequest(models.Model):
             new_request.save()
             MessageVars.createMessageVars(new_request, var_dict) # create the message Variables
         return new_request
+
+    @classmethod
+    def expireUnprocessedRequests(cls, orm_class=None):
+        """
+        For all unprocessed requests (probably old messages that for some
+        reason were never sent), expire them by pretending that they've been
+        processed. Used to prevent old, outdated messages from going out.
+
+        By default, performs the query using the MessageRequest model and its
+        default Manager. Alternatively, during a migration, a frozen orm class
+        can be passed via the orm_class parameter.
+        """
+        if orm_class is None:
+            orm_class = cls
+        return orm_class.objects.filter(Q(processed_by__isnull=True) | Q(processed_by__lt=datetime.now()), processed=False).update(processed=True)
 
     def parseSmartText(self, text, user):
         """ Takes a text and user, and, within the confines of this message, will make it better. """
@@ -234,7 +286,12 @@ class TextOfEmail(models.Model):
             extra_headers = parent_request.special_headers_dict
         
         now = datetime.now()
-        
+
+        # Before sending the email, check one more time that it hasn't been
+        # sent or expired.
+        if self.sent is not None:
+            return
+
         send_mail(self.subject,
                   self.msgtext,
                   self.send_from,
@@ -244,6 +301,27 @@ class TextOfEmail(models.Model):
 
         self.sent = now
         self.save()
+
+    @classmethod
+    def expireUnsentEmails(cls, min_tries=0, orm_class=None):
+        """
+        For all unsent emails (probably old messages that for some reason were
+        never sent), expire them by pretending that they were just sent.  Used
+        to prevent old, outdated messages from going out.
+
+        The optional min_tries parameter sets the number of tries that must
+        have happened before expiring the message. Defaults to 0, since old
+        messages from before the 0003_lock_and_retry_emails migration start
+        with 0 tries.
+
+        By default, performs the query using the TextOfEmail model and its
+        default Manager. Alternatively, during a migration, a frozen orm class
+        can be passed via the orm_class parameter.
+        """
+        if orm_class is None:
+            orm_class = cls
+        now = datetime.now()
+        return orm_class.objects.filter(Q(sent_by__isnull=True) | Q(sent_by__lt=now), sent__isnull=True, tries__gte=min_tries).update(sent=now)
         
     class Admin:
         pass

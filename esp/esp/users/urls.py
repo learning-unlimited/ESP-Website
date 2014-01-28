@@ -1,5 +1,6 @@
 from django.conf.urls import *
 
+from esp.users.views.registration import GradeChangeRequestView
 
 urlpatterns = patterns('esp.users.views',
                        (r'^ajax_login/?', 'ajax_login'),
@@ -25,8 +26,10 @@ urlpatterns = patterns('esp.users.views',
                        (r'^disableaccount/?$', 'disable_account'),
                        (r'^emailpref/?$', 'emailpref'),
                        (r'^emailpref/(success)?/?$', 'emailpref'),
+                       url(r'^grade_change_request/?$', GradeChangeRequestView.as_view(), name = 'grade_change_request'),
                        (r'^makeadmin/?$', 'make_admin'),
                        (r'^morph/?$', 'morph_into_user'),
+
                        )
 
 urlpatterns += patterns('esp.web.views.main',

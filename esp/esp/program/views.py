@@ -403,9 +403,7 @@ def userview(request):
     from esp.users.forms.user_profile import StudentInfoForm
     
     if 'graduation_year' in request.GET:
-        student_info = user.getLastProfile().student_info
-        student_info.graduation_year = int(request.GET['graduation_year'])
-        student_info.save()
+        user.set_student_grad_year(request.GET['graduation_year'])
     
     change_grade_form = StudentInfoForm(user=user)
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:

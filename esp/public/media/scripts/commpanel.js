@@ -65,13 +65,13 @@ function submit_prev_selection()
 function prepare_accordion(accordion_id, rb_selected)
 {
     //  Show school/grade options for students, graduation year options for teachers
-    if (rb_selected == "students")
+    if (rb_selected.toLowerCase().substr(0, 7) == "student")
     {
         $j("#" + accordion_id).children(".ui-accordion-header").eq(7).show();
         $j("#" + accordion_id).children(".ui-accordion-header").eq(8).show();
         $j("#" + accordion_id).children(".ui-accordion-header").eq(9).hide();
     }
-    else if (rb_selected == "teachers")
+    else if (rb_selected.toLowerCase().substr(0, 7) == "teacher")
     {
         $j("#" + accordion_id).children(".ui-accordion-header").eq(7).hide();
         $j("#" + accordion_id).children(".ui-accordion-header").eq(8).hide();

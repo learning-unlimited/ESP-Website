@@ -7,6 +7,16 @@ import json
 
 register = template.Library()
 
+def count_matching_chars(str1, str2):
+    """ Determines the length of the common substring at the beginning of 
+        str1 and str2.  Used to identify the best matching tab based on
+        link URLs in the extract_theme filter below.
+    """
+    for i in range(len(str1)):
+        if i < len(str2) and str1[i] != str2[i]:
+            return i
+    return min(len(str1), len(str2))
+
 @register.filter
 def mux_tl(str,type):
     splitstr = str.split("/") # String should be of the format "/learn/foo/bar/index.html"
@@ -52,25 +62,25 @@ def bool_and(obj1,obj2):
     return obj1 and obj2
     
 @register.filter
-def extract_theme(str):
+def extract_theme(url):
     #   Get the appropriate color scheme out of the Tag that controls nav structure
     #   (specific to MIT theme)
     tab_index = 0
     tc = ThemeController()
     settings = tc.get_template_settings()
+    max_chars_matched = 0
     for category in settings['nav_structure']:
-        if category['header_link'][:5] == str[:5]:
-            i = 1
-            for item in category['links']:
-                if str == item['link']:
-                    tab_index = i
-                    break
-                path_current = os.path.dirname(str)
-                path_tab = os.path.dirname(item['link'])
-                if len(path_current) > len(path_tab) and path_current.startswith(path_tab):
-                    tab_index = i
-                    break
-                i += 1
+        num_chars_matched = count_matching_chars(url, category['header_link'])
+        if num_chars_matched > max_chars_matched:
+            max_chars_matched = num_chars_matched
+            tab_index = 0
+        i = 1
+        for item in category['links']:
+            num_chars_matched = count_matching_chars(url, item['link'])
+            if num_chars_matched > max_chars_matched:
+                max_chars_matched = num_chars_matched
+                tab_index = i
+            i += 1
     return 'tabcolor%d' % tab_index
 
 @register.filter

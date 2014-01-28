@@ -115,7 +115,7 @@
 {% load preview %}
 {% miniblog_for_user None as announcements 6 %}
 
-{% load markdown %}
+{% load markup %}
 {% for announce in announcements.announcementList %}
 <p>
 <span class="announcementlink_title{% if announce.section %} {{ announce.section }}{% endif %}">{{ announce.makeTitle }}</span><br />

@@ -193,6 +193,7 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
     'django.contrib.sites',
     'django.contrib.staticfiles',
+    'django.contrib.markup',
     'grappelli',
     'filebrowser',
     'django.contrib.admin',
@@ -231,6 +232,8 @@ INSTALLED_APPS = (
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
+    'bootstrapform',
+    'django_nose',
     'esp.formstack',
 )
 
@@ -371,5 +374,6 @@ SHELL_PLUS_POST_IMPORTS = (
         )
 
 #   Set test runner to behave like pre-1.6 versions of Django
-TEST_RUNNER = 'django.test.simple.DjangoTestSuiteRunner'
-
+#   Exclude apps from testing
+TEST_RUNNER = 'esp.utils.testing.ExcludeTestSuiteRunner'
+TEST_EXCLUDE = ('django', 'grappelli')

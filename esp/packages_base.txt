@@ -18,6 +18,7 @@ libmemcached-dev
 libpq-dev
 libcurl4-openssl-dev
 libjpeg-dev
-nodejs
-node-less
 javascript-common
+libc-ares2
+libev4
+

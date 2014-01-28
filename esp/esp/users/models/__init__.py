@@ -36,21 +36,27 @@ from collections import defaultdict
 from datetime import datetime, timedelta, date
 import json
 
-from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
 from django import forms
 from django.conf import settings
+from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group
 from localflavor.us.models import USStateField, PhoneNumberField
 from localflavor.us.forms import USStateSelect
+
+from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
-from django.core.mail import send_mail
 from django.db import models
 from django.db.models.base import ModelState
-from django.db.models.query import Q, QuerySet
+from django.db.models.query import Q
 from django.http import HttpRequest, HttpResponseRedirect
 from django.template import loader, Context as DjangoContext
 from django.template.defaultfilters import urlencode
+from django.template.loader import render_to_string
+from django_extensions.db.models import TimeStampedModel
+from django.core import urlresolvers
+
+
 
 from esp.cal.models import Event
 from esp.cache import cache_function, wildcard
@@ -198,11 +204,21 @@ class ESPUser(User, AnonymousUser):
         return self._is_anonymous
 
     @staticmethod
+    def grade_options():
+        """ Returns a list<int> of valid grades """
+        tag_val = Tag.getTag('student_grade_options')
+        if tag_val is None:
+            return range(7, 13)
+        else:
+            return json.loads(tag_val)
+
+    @staticmethod
     def onsite_user():
         if ESPUser.objects.filter(username='onsite').exists():
             return ESPUser.objects.get(username='onsite')
         else:
             return None
+
 
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -913,6 +929,31 @@ are a teacher of the class"""
             return 0
 
         return schoolyear + 12 - grade
+
+    def set_student_grad_year(self, grad_year):
+        """ Update the user's graduation year if they are a student. """
+
+        #   Check that the user is a student.
+        #   (We could raise an error, but I don't think it's a huge problem
+        #   if this function is called accidentally on a non-student.)
+        if not self.isStudent():
+            return
+
+        #   Retrieve the user's most recent registration profile and create a StudentInfo if needed.
+        profile = self.getLastProfile()
+        if profile.student_info is None:
+            profile.student_info = StudentInfo(user=self)
+            profile.save()
+
+        #   Update the graduation year.
+        student_info = profile.student_info
+        student_info.graduation_year = int(grad_year)
+        student_info.save()
+
+    def set_grade(self, grade):
+        """ Convenience function for setting a student's grade based on the
+            current school year. """
+        self.set_student_grad_year(ESPUser.YOGFromGrade(int(grade)))
 
     @staticmethod
     def getRankInClass(student, subject, default=10):
@@ -2202,6 +2243,104 @@ def install():
     if not ESPUser.onsite_user():
         ESPUser.objects.create(username='onsite', first_name='Onsite', last_name='User')
         print 'Created onsite user, please set their password in the admin interface.'
+
+#   This import is placed down here since we need it in GradeChangeRequest
+#   but esp.dbmail.models imports ESPUser.
+from esp.dbmail.models import send_mail
+
+class GradeChangeRequest(TimeStampedModel):
+    """ 
+        A grade change request is issued by a student when it is felt
+        that the current grade is incorrect.
+    """
+  
+    claimed_grade = models.PositiveIntegerField()
+    reason = models.TextField()
+    approved = models.NullBooleanField()
+    acknowledged_time = models.DateTimeField(blank=True, null=True)
+    
+    requesting_student = models.ForeignKey(ESPUser, related_name='requesting_student_set')
+    acknowledged_by = models.ForeignKey(ESPUser, blank=True, null=True)
+
+    class Meta:
+        ordering = ['-acknowledged_time','-created']
+
+    def __init__(self, *args, **kwargs):
+        super(GradeChangeRequest, self).__init__(*args, **kwargs)
+        grade_options = ESPUser.grade_options()
+
+        self._meta.get_field_by_name('claimed_grade')[0]._choices = zip(grade_options, grade_options)
+
+    def save(self, **kwargs):
+        is_new = self.id is None
+        super(GradeChangeRequest, self).save(**kwargs)
+
+        if is_new:
+            self.send_request_email()
+            return
+            
+        if self.approved is not None and not self.acknowledged_time:
+            self.acknowledged_time = datetime.now()
+            self.send_confirmation_email()
+
+        #   Update the student's grade if the request has been approved
+        if self.approved is True:
+            self.requesting_student.set_grade(self.claimed_grade)
+
+    def _request_email_content(self):
+        """
+        Returns the email content for the grade change request email.
+        """
+        context = {'student': self.requesting_student,
+                    'change_request':self,
+                    'site': Site.objects.get_current()}
+
+        subject = render_to_string('users/emails/grade_change_request_email_subject.txt',
+                                   context)
+        subject = ''.join(subject.splitlines())
+
+        message = render_to_string('users/emails/grade_change_request_email_message.txt',
+                                   context)
+        return subject, message
+
+    def send_request_email(self):
+        """ Sends the the email for the change request to the LU admin email address"""
+        subject, message = self._request_email_content()
+        send_mail(subject,
+                  message,
+                  settings.DEFAULT_FROM_EMAIL,
+                  [self.requesting_student.email, ])
+
+    def _confirmation_email_content(self):
+        context = {'student': self.requesting_student,
+                    'change_request':self,
+                  'site': Site.objects.get_current(),
+                  'settings': settings}
+
+        subject = render_to_string('users/emails/grade_change_confirmation_email_subject.txt',
+                                   context)
+        subject = ''.join(subject.splitlines())
+
+        message = render_to_string('users/emails/grade_change_confirmation_email_message.txt',
+                                   context)
+        return subject, message
+
+    def send_confirmation_email(self):
+        """
+        Sends a confirmation email to the requesting student.
+        This email is sent when the administrator confirms a change grade change request.
+        """
+        subject, message = self._confirmation_email_content()
+        send_mail(subject,
+                  message,
+                  settings.DEFAULT_FROM_EMAIL,
+                  [self.requesting_student.email, ])
+
+    def get_admin_url(self):
+        return urlresolvers.reverse("admin:%s_%s_change" %
+        (self._meta.app_label, self._meta.module_name), args=(self.id,))
+
+
 
 # We can't import these earlier because of circular stuff...
 from esp.users.models.userbits import UserBit, UserBitImplication

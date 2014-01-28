@@ -67,3 +67,11 @@ class ThemeConfigurationForm(forms.Form):
         data['just_selected'] = just_selected
         form = cls(initial=data)
         return form
+
+    @classmethod
+    def initial_data(cls):
+        """
+        A dictionary of the initial values of the configuration form fields.
+        """
+        return dict(map(lambda (k,v): (k, v.initial), cls().fields.iteritems()))
+

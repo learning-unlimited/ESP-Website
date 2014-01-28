@@ -1,33 +1,32 @@
 {% extends "elements/html" %}
 
-{% block fulltitle %}{% block title %}{% endblock %}{% endblock %}
+{% block fulltitle %}{{ settings.INSTITUTION_NAME }} {{ settings.ORGANIZATION_SHORT_NAME }} - {% block title %}Home{% endblock title %}{% endblock fulltitle %}
 
 {% block stylesheets %}
-    {{ block.super }}
-    {#  Default stylesheets, no customization   #}
-    <link rel="stylesheet" type="text/css" href="/media/theme_editor/bootstrap_initial.css"/>
-{% endblock %}
+  {{ block.super }}
+  {#  Default stylesheets, no customization   #}
+  <link rel="stylesheet" type="text/css" href="/media/theme_editor/bootstrap_initial.css"/>
+{% endblock stylesheets %}
 
 {% block body %}
 
-{% block main %}
+  {% block main %}
 
-<div class="container">
-  <div class="row-fluid">
-    {% block sidebar %}
-    <h3>Navigation</h3>
-    {% load navbar %}
-    {% navbar_gen request.path None navbar_list %}
-    {% include "users/loginbox_content.html" %}
-    {% endblock %}
+    <div class="container">
+      <div class="row-fluid">
+        {% block sidebar %}
+          <h3>Navigation</h3>
+          {% load navbar %}
+          {% navbar_gen request.path None navbar_list %}
+          {% include "users/loginbox_content.html" %}
+        {% endblock sidebar %}
 
-    <div id="main" class="span12 resizable">
-      {% block content %}
-      {% endblock %}
+        <div id="main" class="span12 resizable">
+          {% block content %}
+          {% endblock content %}
+        </div>
+      </div>
     </div>
-  </div>
-</div>
-</div>
-{% endblock %} {# end block main #}
+  {% endblock main %}
 
-{% endblock %} {# end block body #}
+{% endblock body %}

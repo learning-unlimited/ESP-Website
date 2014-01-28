@@ -1,9 +1,10 @@
 from django import forms
-from django.forms.fields import HiddenInput, TextInput
 from django.contrib.auth.models import User
+from django.contrib.localflavor.us.forms import USPhoneNumberField
 from django.db.models.query import Q
+from django.forms.fields import HiddenInput, TextInput
 
-from esp.users.models import ESPUser
+from esp.users.models import ESPUser, GradeChangeRequest
 from esp.utils.forms import CaptchaForm, StrippedCharField
 from localflavor.us.forms import USPhoneNumberField
 
@@ -150,3 +151,12 @@ class AwaitingActivationEmailForm(forms.Form):
         
         data = data.strip()
         return data
+
+
+class GradeChangeRequestForm(forms.ModelForm):
+    """
+    Form used by student to issue a grade change request.
+    """
+    class Meta:
+        model = GradeChangeRequest
+        exclude = ('acknowledged_by','acknowledged_time','requesting_student','approved',)

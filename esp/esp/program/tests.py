@@ -316,7 +316,7 @@ class ProgramHappenTest(TestCase):
         from esp.resources.models import Resource, ResourceType, ResourceAssignment
         from esp.program.controllers.classreg import get_custom_fields
         from django import forms
-        from datetime import datetime
+        from datetime import datetime, timedelta
 
         self.failUnless( self.prog.classes().count() == 0, 'Website thinks empty program has classes')
         user_obj = ESPUser.objects.get(username='tubbeachubber')
@@ -324,16 +324,17 @@ class ProgramHappenTest(TestCase):
         self.failUnless( user_obj.getTaughtSections().count() == 0, "User tubbeachubber is teaching sections that don't exist")
         
         timeslot_type = EventType.objects.create(description='Class Time Block')
-        self.timeslot = Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
-            start=datetime(3001,1,1,12,0), end=datetime(3001,1,1,13,0), event_type=timeslot_type )
+        now = datetime.now()
+        self.timeslot = Event.objects.create(program=self.prog, description='Now', short_description='Right now',
+            start=now, end=now+timedelta(0,3600), event_type=timeslot_type )
 
         # Make some other time slots
         Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
-            start=datetime(3001,1,1,13,0), end=datetime(3001,1,1,14,0), event_type=timeslot_type )
+            start=now+timedelta(0,3600), end=now+timedelta(0,2*3600), event_type=timeslot_type )
         Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
-            start=datetime(3001,1,1,14,0), end=datetime(3001,1,1,15,0), event_type=timeslot_type )
+            start=now+timedelta(0,2*3600), end=now+timedelta(0,3*3600), event_type=timeslot_type )
         Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
-            start=datetime(3001,1,1,15,0), end=datetime(3001,1,1,16,0), event_type=timeslot_type )
+            start=now+timedelta(0,3*3600), end=now+timedelta(0,4*3600), event_type=timeslot_type )
 
         classroom_type = ResourceType.objects.create(name='Classroom', consumable=False, priority_default=0,
             description='Each classroom or location is a resource; almost all classes need one.')
@@ -380,7 +381,7 @@ class ProgramHappenTest(TestCase):
                 class_dict[field] = 'foo'
         
         # Check that stuff went through correctly
-        response = self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)  
+        response = self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
         
         # check prog.classes
         classes = self.prog.classes()
@@ -448,12 +449,12 @@ class ProgramHappenTest(TestCase):
         thisyear = ESPUser.current_schoolyear(self.prog)
         prof = RegistrationProfile.getLastForProgram(self.student, self.prog)
         prof.contact_user = ContactInfo.objects.create( user=self.student, first_name=self.student.first_name, last_name=self.student.last_name, e_mail=self.student.email )
-        prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=thisyear+2, dob=datetime(thisyear-15, 1, 1) )
+        prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=ESPUser.YOGFromGrade(10), dob=datetime(thisyear-15, 1, 1) )
         prof.save()
         
         # Student logs in and signs up for classes
         self.loginStudent()
-        self.client.get('%sstudentreg' % self.prog.get_learn_url())
+        response = self.client.get('%sstudentreg' % self.prog.get_learn_url())
         reg_dict = {
             'class_id': self.classsubject.id,
             'section_id': sec.id,
@@ -672,7 +673,7 @@ class ProgramFrameworkTest(TestCase):
     #   Does not get called by default, but subclasses can call it.
     def add_student_profiles(self):
         for student in self.students:
-            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(10))
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.current_schoolyear(self.program)+2)
             student_studentinfo.save()
             student_regprofile = RegistrationProfile(user=student, program=self.program, student_info=student_studentinfo, most_recent_profile=True)
             student_regprofile.save()
