@@ -37,7 +37,7 @@ from esp.program.modules import module_ext
 from esp.program.controllers.consistency import ConsistencyChecker
 from esp.program.modules.handlers.teacherclassregmodule import TeacherClassRegModule
 
-from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem, flag_types
+from esp.program.models import ClassSubject, ClassSection, Program, ProgramCheckItem, ClassFlagType
 from esp.users.models import ESPUser, User
 from esp.datatree.models import *
 from esp.cal.models              import Event
@@ -400,7 +400,7 @@ class AdminClass(ProgramModuleObj):
 
         if self.program.program_modules.filter(handler='ClassFlagModule').exists():
             context['show_flags'] = True
-            context['flag_types'] = flag_types(self.program)
+            context['flag_types'] = ClassFlagType.get_flag_types(self.program)
             
         context['class'] = cls
         context['sections'] = sections

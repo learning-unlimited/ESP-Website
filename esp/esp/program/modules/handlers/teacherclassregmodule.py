@@ -36,7 +36,7 @@ from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_d
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
-from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType, flag_types
+from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.tagdict.models          import Tag
 from esp.tagdict.decorators      import require_tag
@@ -862,7 +862,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             context['manage'] = True
             if self.program.program_modules.filter(handler='ClassFlagModule').exists():
                 context['show_flags'] = True
-                context['flag_types'] = flag_types(self.program)
+                context['flag_types'] = ClassFlagType.get_flag_types(self.program)
         
         return render_to_response(self.baseDir() + 'classedit.html', request, context)
 

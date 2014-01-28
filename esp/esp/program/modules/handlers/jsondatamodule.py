@@ -47,7 +47,7 @@ from esp.cal.models import Event
 from esp.datatree.models import *
 from esp.dbmail.models import MessageRequest
 from esp.middleware import ESPError
-from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, flag_types
+from esp.program.models import Program, ClassSection, ClassSubject, StudentRegistration, ClassCategories, StudentSubjectInterest, SplashInfo, ClassFlagType
 from esp.program.modules.base import ProgramModuleObj, CoreModule, needs_student, needs_teacher, needs_admin, needs_onsite, needs_account, main_call, aux_call
 from esp.program.modules.forms.splashinfo import SplashInfoForm
 from esp.program.modules.handlers.splashinfomodule import SplashInfoModule
@@ -543,6 +543,9 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         for r in rrequests:
             rrequest_dict[r.target_id].append((r.res_type_id, r.desired_value))
 
+        fts = get_flag_types(prog).values('id','name')
+        ft_dicts = [{'id': ft.id, 'name': ft.name, 'show_in_scheduler': ft.show_in_scheduler, 'show_in_dashboard': ft.show_in_dashboard} for ft in fts]
+
         section_info = []
         for sec in cls.get_sections():
             section_info.append({
@@ -571,10 +574,12 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             'resource_requests': rrequest_dict,
             'comments': cls.message_for_directors,
             'special_requests': cls.requested_special_resources,
-            'purchases': cls.purchase_requests
+            'purchases': cls.purchase_requests,
+            'flags': ', '.join(cls.flags.values_list('flag_type__name', flat=True)),
         }
 
         return {return_key: [return_dict]}
+
         
     @aux_call
     @json_response()
@@ -607,7 +612,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         class_num_list.append(("Total # of Classes <span style='color: #0C0;'>Accepted</span>", len(classes.filter(status=10))))
         class_num_list.append(("Total # of Classes <span style='color: #C00;'>Rejected</span>", len(classes.filter(status=-10))))
         class_num_list.append(("Total # of Classes <span style='color: #990;'>Cancelled</span>", len(classes.filter(status=-20))))
-        for ft in flag_types(prog):
+        for ft in ClassFlagType.get_flag_types(prog):
             class_num_list.append(('Total # of Classes with the "%s" flag' % ft.name, classes.filter(flags__flag_type=ft).count()))
         vitals['classnum'] = class_num_list
 
