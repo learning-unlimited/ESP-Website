@@ -323,6 +323,19 @@ Minor feature additions
   class and number of subjects and sections available to the students in that
   grade.
 
+Class flags
+~~~~~~~~~~~
+
+This is a new feature for tracking the review of classes.
+The idea is that you can create various types of class flags, like "needs safety review" or "description has been proofread", and then get a list of classes with (or without) some set of flags.
+
+To set up class flags, first add some flag types from the admin panel at /admin/program/classflagtype/, then add them to your program by choosing your program in /admin/program/program/ and scrolling to the bottom of the page.
+(There is also a place to add them at program creation.)
+Now you can add and view class flags from the edit class or manage class pages.
+To create a list of classes with(out) some flag, go to the manage page for the program, and in the complete list of modules, choose "Manage class flags".
+
+This is still a work in progress; everything should work fine, but if there are more interfaces you would like to see, let the web team know!
+
 Django debug toolbar (developers only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
