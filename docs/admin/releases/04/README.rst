@@ -172,6 +172,16 @@ esp-webmasters@mit.edu for aid and suggested security considerations.
 AJAX Scheduler upgrades
 ~~~~~~~~~~~~~~~~~~~~~~~
 
+Markdown Version Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Markdown, the software package that we used to render the quasi-static content,
+has been upgraded to the latest version, 2.3.1
+(`<https://pypi.python.org/pypi/Markdown/2.3.1>`_). This may have affected the
+visual appearance of your existing pages. Please double-check your web-content
+throughout the site to ensure that it appears correctly. The documentation for
+Markdown syntax is at `<http://daringfireball.net/projects/markdown/syntax>`_.
+
 Teacher training creation and sign-up
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
