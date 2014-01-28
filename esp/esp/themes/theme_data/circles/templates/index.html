@@ -1,12 +1,7 @@
 {% extends "main.html" %}
 
-{% block title %}{{ theme.titlebar_prefix }}{% endblock %}
-
-{% block welcome_message %}<img src="/media/images/theme/homewelc.gif" 
-alt="Welcome to {{ theme.titlebar_prefix }}" />{% endblock %}
-{% block nav_header %}{% endblock %}
-
 {% block content %}
+
 {% load render_qsd %}
 {% render_inline_qsd "homepage_qsdpart" %}
 
