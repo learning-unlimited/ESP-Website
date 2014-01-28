@@ -56,7 +56,8 @@ This code is under development.  Status history:
 """
 
 from django.conf import settings
-from django.test.simple import DjangoTestSuiteRunner, dependency_ordered, build_suite, build_test, reorder_suite
+from django.test.simple import DjangoTestSuiteRunner, build_suite, build_test
+from django.test.runner import dependency_ordered, reorder_suite
 from django.db import connections
 from django.db.utils import ConnectionHandler
 from django.db.backends.creation import BaseDatabaseCreation
