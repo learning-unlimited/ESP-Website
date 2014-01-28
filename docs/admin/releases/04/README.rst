@@ -96,6 +96,25 @@ teaching, back-to-back classes in different rooms).  We recently added the
 check for "hungry teachers" (those who are teaching during lunch), and
 corrected some errors in the diagnostic output.
 
+Class flags
+~~~~~~~~~~~
+
+This is a new feature for tracking the review of classes.  The idea is that you
+can create various types of class flags, like "needs safety review" or
+"description has been proofread", and then get a list of classes with (or
+without) some set of flags.
+
+To set up class flags, first add some flag types from the admin panel at
+/admin/program/classflagtype/, then add them to your program by choosing your
+program in /admin/program/program/ and scrolling to the bottom of the page.
+(There is also a place to add them at program creation.) Now you can add and
+view class flags from the edit class or manage class pages.  To create a list
+of classes with(out) some flag, go to the manage page for the program, and in
+the complete list of modules, choose "Manage class flags".
+
+This is still a work in progress; everything should work fine, but if there are
+more interfaces you would like to see, let the web team know!
+
 Accounting System
 ~~~~~~~~~~~~~~~~~
 
@@ -171,6 +190,16 @@ esp-webmasters@mit.edu for aid and suggested security considerations.
 
 AJAX Scheduler upgrades
 ~~~~~~~~~~~~~~~~~~~~~~~
+
+Markdown Version Upgrade
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Markdown, the software package that we used to render the quasi-static content,
+has been upgraded to the latest version, 2.3.1
+(`<https://pypi.python.org/pypi/Markdown/2.3.1>`_). This may have affected the
+visual appearance of your existing pages. Please double-check your web-content
+throughout the site to ensure that it appears correctly. The documentation for
+Markdown syntax is at `<http://daringfireball.net/projects/markdown/syntax>`_.
 
 Teacher training creation and sign-up
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -304,8 +333,14 @@ Minor feature additions
   was provided for the comm panel in the last stable release.
 
 - Mass emails (i.e., emails sent from the communication panel) will now be
-resent if the first attempt fails, and failure reports will be sent to the
-director email. Some other stability changes made too.
+  resent if the first attempt fails, and failure reports will be sent to the
+  director email. Some other stability changes made too.
+
+- The dashboard now shows some new statistics: the "Categories" section now
+  includes the number of class-hours per category, and there is a new "Grades"
+  section that shows the number of students per grade enrolled in at least one
+  class and number of subjects and sections available to the students in that
+  grade.
 
 Django debug toolbar (developers only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
