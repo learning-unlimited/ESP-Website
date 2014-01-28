@@ -303,6 +303,10 @@ Minor feature additions
 - The "User list generator" program module now uses the newer interface that
   was provided for the comm panel in the last stable release.
 
+- Mass emails (i.e., emails sent from the communication panel) will now be
+resent if the first attempt fails, and failure reports will be sent to the
+director email. Some other stability changes made too.
+
 Django debug toolbar (developers only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
