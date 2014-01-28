@@ -8,12 +8,14 @@
 {% block stylesheets %}
 {{ block.super }}
 <link rel="stylesheet" type="text/css" href="/media/styles/forms.css" />
+<link rel="stylesheet" type="text/css" href="/media/styles/flags.css" />
 {% endblock %}
 
 {% block xtrajs %}
     {{ block.super }}
     {% include "load_ajax_scripts.html" %}
     <script type="text/javascript" src="/media/scripts/program/modules/teacherclassregmodule.js"></script>
+    <script type="text/javascript" src="/media/scripts/flag-edit.js"></script>
 {% endblock %}
 
 {% block content %}
@@ -38,6 +40,7 @@
     <p align="center"><div class="info">If you would like to teach multiple sections of the same class, <b>do not submit this form multiple times.</b>  Instead, select the desired number of sections next to "Number of Sections" (the second field from the top).</div></p>
 {% endif %}
 
+<div id="program_form">
 <form action="{{request.path}}" id="clsform" name="clsform" method="post" class="form-inline" {% if grade_range_popup %}class="grade_range_popup" grademin="{{ program.grade_min }}" grademax="{{ program.grade_max }}"{% endif %}>
 
 {% if form.errors %}
@@ -47,7 +50,6 @@
 {% endif %}
 
 
-<div id="program_form">
 <center>
 <table width="550">
     <tr><th colspan="2">{{ classtype|title }} Creation/Editing Form</th></tr>
@@ -140,7 +142,10 @@
     </tr>    
 </table>
 </center>
-</div> <!-- div#program_form -->
 </form>
+{% if show_flags %}
+    {% include "program/modules/classflagmodule/class_flag_list.html" %}
+{% endif %}
+</div> <!-- div#program_form -->
 
 {% endblock %}
