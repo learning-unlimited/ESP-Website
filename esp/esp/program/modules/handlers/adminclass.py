@@ -624,11 +624,16 @@ class AdminClass(ProgramModuleObj):
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
+
+        if cls.category.category == self.program.open_class_category.category:
+            action = 'editopenclass'
+        else:
+            action = 'edit'
         
         module_list = prog.getModules()
         for mod in module_list:
             if isinstance(mod, TeacherClassRegModule):
-                return mod.makeaclass_logic(request,  tl, one, two, module, extra, prog, cls, action='edit')
+                return mod.makeaclass_logic(request,  tl, one, two, module, extra, prog, cls, action=action)
 
     @aux_call
     @needs_admin
