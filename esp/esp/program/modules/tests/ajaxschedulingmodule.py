@@ -306,8 +306,21 @@ class AJAXSchedulingModuleTest(AJAXSchedulingModuleTestBase):
         beforeDelete = self.changelog.get_latest_index()
         # delete change log
         self.client.post('/manage/%s/ajax_clear_change_log' % self.program.getUrlBase(), {})
-        #request change log
+        # Request change log.  We should not be prompted to reload because the
+        # change log has not changed since our last update.
         response = self.client.get(self.changelog_url, {'last_fetched_index': beforeDelete })
         response = json.loads(response.content)
-        self.failUnless(response["other"] == [{"command" : "reload"}], "Was not asked to reload after the change log was destroyed: " +
+        self.failUnless('command' not in response["other"][0], "Was asked to reload after the change log was destroyed but no changes were made: " +
                         str(response["other"]))
+        # Schedule a class after deleting the change log and not reloading it.
+        beforeDelete = self.changelog.get_latest_index()
+        self.client.post('/manage/%s/ajax_clear_change_log' % self.program.getUrlBase(), {})
+        self.clearScheduleAvailability()
+        (s2, times, rooms) = self.scheduleClass()
+        # Request change log.  We should be prompted to reload because the 
+        # change log has been updated but may be missing relevant information.
+        response = self.client.get(self.changelog_url, {'last_fetched_index': beforeDelete })
+        response = json.loads(response.content)
+        self.failUnless(response["other"][0]["command"] == "reload", "Was not asked to reload after the change log was destroyed and a class was scheduled: " +
+                        str(response["other"]))
+
