@@ -94,11 +94,12 @@ class HTMLSCFormatter:
         return output
 
     def _format_dict_table(self, d, title, headings, help_text=""):
+        headings = [""] + headings[:]
         output = self._table_title(title, headings, help_text=help_text)
-        output = output + self._table_headings([""] + headings)
+        output = output + self._table_headings(headings)
 
         for key, row in d.iteritems():
-            ordered_row = [row[h] for h in headings]
+            ordered_row = [row[h] for h in headings if h]
             output = output + self._table_row([key] + ordered_row)
         output += "</table>"
         return output
