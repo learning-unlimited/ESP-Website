@@ -257,6 +257,11 @@ class GradeChangeRequestView(CreateView):
 
         return HttpResponseRedirect(self.success_url)
 
+    def render_to_response(self, context):
+        #   Override rendering function to use our context processors.
+        from esp.web.util.main import render_to_response as render_to_response_base
+        return render_to_response_base(self.template_name, self.request, context)
+
     @method_decorator(login_required)
     def dispatch(self, *args, **kwargs):
         return super(GradeChangeRequestView, self).dispatch(*args, **kwargs)

@@ -38,7 +38,7 @@ import unicodedata
 
 from esp.users.models import ESPUser, StudentInfo, K12School
 from esp.datatree.models import *
-from esp.program.models import Program, ProgramModule
+from esp.program.models import Program, ProgramModule, ClassFlag
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.utils.widgets import DateTimeWidget
 from esp.users.models import ESPUser
@@ -65,7 +65,7 @@ class ProgramCreationForm(BetterModelForm):
     base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
     sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None, help_text='The amount of the sibling discount. Leave blank to disable sibling discounts.')
     program_type      = forms.CharField(label = "Program Type")
-    program_modules   = forms.MultipleChoiceField(choices = [], label = 'Program Modules')
+    program_modules   = forms.MultipleChoiceField(choices = [], label = 'Program Modules', widget=forms.SelectMultiple(attrs={'class': 'input-xxlarge'}))
 
     def __init__(self, *args, **kwargs):
         """ Used to update ChoiceFields with the current admins and modules. """
@@ -110,7 +110,7 @@ class ProgramCreationForm(BetterModelForm):
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
                      ('About Program Creator',{'fields':['admins','director_email']}),
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
-                     ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories']}),
+                     ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
                      ('Registrations Date',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
 
 
@@ -348,3 +348,8 @@ class StatisticsQueryForm(forms.Form):
                 result.append(field_name)
         return result
 
+
+class ClassFlagForm(forms.ModelForm):
+    class Meta:
+        model = ClassFlag
+        fields = ['subject','flag_type','comment']

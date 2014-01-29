@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from django.contrib import admin
 from django.db.models import ManyToManyField
+from django.db.models.sql.constants import LOOKUP_SEP
 
 from esp.admin import admin_site
 
@@ -48,6 +49,8 @@ from esp.program.models import RegistrationType, StudentRegistration, StudentSub
 
 from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
+
+from esp.program.models import ClassFlag, ClassFlagType
 
 from esp.accounting.models import FinancialAidGrant
 
@@ -241,3 +244,16 @@ class Admin_StudentAppReview(admin.ModelAdmin):
         'comments',
     )
 admin_site.register(StudentAppReview, Admin_StudentAppReview)
+
+class ClassFlagTypeAdmin(admin.ModelAdmin):
+    list_display = ('name','show_in_scheduler','show_in_dashboard')
+    search_fields = ['name']
+    list_filter = ['program']
+admin_site.register(ClassFlagType, ClassFlagTypeAdmin)
+
+class ClassFlagAdmin(admin.ModelAdmin):
+    list_display = ('flag_type','subject','comment')
+    search_fields = ['flag_type', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
+    search_fields.extend([field + LOOKUP_SEP + lookup for field in ['modified_by', 'created_by'] for lookup in ['username', 'first_name', 'last_name', 'id']])
+    list_filter = ['subject__parent_program','flag_type']
+admin_site.register(ClassFlag, ClassFlagAdmin)

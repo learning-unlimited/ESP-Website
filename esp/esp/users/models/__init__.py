@@ -45,7 +45,6 @@ from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
-from django.core.mail import send_mail
 from django.db import models
 from django.db.models.base import ModelState
 from django.db.models.query import Q
@@ -205,8 +204,12 @@ class ESPUser(User, AnonymousUser):
 
     @staticmethod
     def grade_options():
-        """ Returns a list<int> of valid grades """ 
-        return Tag.getTag('student_grade_options')
+        """ Returns a list<int> of valid grades """
+        tag_val = Tag.getTag('student_grade_options')
+        if tag_val is None:
+            return range(7, 13)
+        else:
+            return json.loads(tag_val)
 
     @staticmethod
     def onsite_user():
@@ -925,6 +928,31 @@ are a teacher of the class"""
             return 0
 
         return schoolyear + 12 - grade
+
+    def set_student_grad_year(self, grad_year):
+        """ Update the user's graduation year if they are a student. """
+
+        #   Check that the user is a student.
+        #   (We could raise an error, but I don't think it's a huge problem
+        #   if this function is called accidentally on a non-student.)
+        if not self.isStudent():
+            return
+
+        #   Retrieve the user's most recent registration profile and create a StudentInfo if needed.
+        profile = self.getLastProfile()
+        if profile.student_info is None:
+            profile.student_info = StudentInfo(user=self)
+            profile.save()
+
+        #   Update the graduation year.
+        student_info = profile.student_info
+        student_info.graduation_year = int(grad_year)
+        student_info.save()
+
+    def set_grade(self, grade):
+        """ Convenience function for setting a student's grade based on the
+            current school year. """
+        self.set_student_grad_year(ESPUser.YOGFromGrade(int(grade)))
 
     @staticmethod
     def getRankInClass(student, subject, default=10):
@@ -2215,7 +2243,9 @@ def install():
         ESPUser.objects.create(username='onsite', first_name='Onsite', last_name='User')
         print 'Created onsite user, please set their password in the admin interface.'
 
-
+#   This import is placed down here since we need it in GradeChangeRequest
+#   but esp.dbmail.models imports ESPUser.
+from esp.dbmail.models import send_mail
 
 class GradeChangeRequest(TimeStampedModel):
     """ 
@@ -2252,6 +2282,9 @@ class GradeChangeRequest(TimeStampedModel):
             self.acknowledged_time = datetime.now()
             self.send_confirmation_email()
 
+        #   Update the student's grade if the request has been approved
+        if self.approved is True:
+            self.requesting_student.set_grade(self.claimed_grade)
 
     def _request_email_content(self):
         """
@@ -2280,7 +2313,8 @@ class GradeChangeRequest(TimeStampedModel):
     def _confirmation_email_content(self):
         context = {'student': self.requesting_student,
                     'change_request':self,
-                  'site': Site.objects.get_current()}
+                  'site': Site.objects.get_current(),
+                  'settings': settings}
 
         subject = render_to_string('users/emails/grade_change_confirmation_email_subject.txt',
                                    context)
@@ -2296,7 +2330,6 @@ class GradeChangeRequest(TimeStampedModel):
         This email is sent when the administrator confirms a change grade change request.
         """
         subject, message = self._confirmation_email_content()
-        #TODO - Ask someone or research whether email correspondence needs to be persistent
         send_mail(subject,
                   message,
                   settings.DEFAULT_FROM_EMAIL,

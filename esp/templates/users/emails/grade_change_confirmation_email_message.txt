@@ -10,3 +10,4 @@ Reason:
 
 The status of your request is: {% if change_request.approved %}Approved{% else %}Not Approved{% endif %}
 
+Please contact the administrators at {{ settings.DEFAULT_EMAIL_ADDRESSES.default }} if you would like to discuss further.
