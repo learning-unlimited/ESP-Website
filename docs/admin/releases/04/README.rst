@@ -39,7 +39,8 @@ on your configuration.  More details can be found at
 Check Availability Page
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The page at /manage/[program url]/check_availability allows you to see a
+If you add the "Check Teacher Availability" module for your program, the 
+page at /manage/[program url]/check_availability will allow you to see a
 teacher's availability for that program. It shows all of the program's
 timeslots in order, and colors each one based on the teacher's status. Gray
 indicates unavailable, blue indicates available, black indicates available and
