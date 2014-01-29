@@ -375,4 +375,4 @@ SHELL_PLUS_POST_IMPORTS = (
 
 #   Exclude apps from testing
 TEST_RUNNER = 'utils.testing.ExcludeTestSuiteRunner'
-TEST_EXCLUDE = ('django', 'grappelli')
+TEST_EXCLUDE = ('django', 'grappelli', 'reversion')
