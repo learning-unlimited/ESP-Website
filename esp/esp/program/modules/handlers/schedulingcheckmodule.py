@@ -273,7 +273,7 @@ class SchedulingCheckRunner:
           #reporting    
           self.formatter.format_list(sections, "Classes allowing middle school students during the high school only block")
           middle_school_only = filter(lambda x: x.parent_class.grade_max < 9, sections)
-          return self.formatter.format_list(middle_school_only, "Classe wiht only middle school students during the high school only block")
+          return self.formatter.format_list(middle_school_only, "Classe with only middle school students during the high school only block")
 
      def room_capacity_mismatch(self, lower_reporting_ratio=0.5, upper_reporting_ratio=1.5):
           l = []
