@@ -20,5 +20,3 @@ script:
   - cd esp
   - ./manage.py collectstatic --noinput -v 0
   - ./manage.py test
-notifications:
-  email: false  # disable emails until we configure the tests
