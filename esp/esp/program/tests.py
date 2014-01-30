@@ -655,6 +655,11 @@ class ProgramFrameworkTest(TestCase):
     #   Helper function to give the program a schedule.
     #   Does not get called by default, but subclasses can call it.
     def schedule_randomly(self):
+        #   Clear scheduled classes to get a clean schedule
+        for cls in self.program.classes():
+            for sec in cls.get_sections():
+                sec.clearRooms()
+                sec.clear_meeting_times()
         #   Force availability
         for t in self.teachers:
             for ts in self.program.getTimeSlots():
@@ -1057,8 +1062,13 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         # Force the modules and extensions to be created
         self.program.getModules()
         # Schedule classes
-        self.schedule_randomly()
-        self.timeslots = Event.objects.filter(meeting_times__parent_class__parent_program = self.program).distinct()
+        while True:
+            self.schedule_randomly()
+            self.timeslots = Event.objects.filter(meeting_times__parent_class__parent_program = self.program).distinct()
+            # We need three timeslots with classes in them 
+            # for the multiple lunch constraints test
+            if len(self.timeslots) >= 3:
+                break
 
         # Create the registration types
         self.enrolled_rt, created = RegistrationType.objects.get_or_create(name='Enrolled')
