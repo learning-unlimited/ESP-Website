@@ -1,5 +1,11 @@
-ESP CACHING FRAMEWORK OVERVIEW
+ESP Caching Framework
 ==============================
+*Technical documentation*
+
+Authors: 
+   - David Benjamin <davidben@mit.edu>
+
+.. contents:: :local:
 
 The ESP caching framework provides a (hopefully) easy-to-use set of
 APIs to simplify caching functions and maintain correctness of their
@@ -120,8 +126,9 @@ used.) Both also take similar filter arguments as depend_on_row.
 depend_on_cache has a slightly special mapping function. Here, we take
 advantage of the dictionary representation of key sets. The mapping
 function should be of the form
+::
 
-lambda arg1=wildcard, arg2=wildcard, arg3=wildcard, **kwargs: {.....}
+  lambda arg1=wildcard, arg2=wildcard, arg3=wildcard, **kwargs: {.....}
 
 The default arguments handle the implicit default attribute of key
 sets (requirement will likely be removed later), and kwargs captures
@@ -139,6 +146,7 @@ makes it an error to define new caches. This does not fully solve the
 problem, because Python is applicative-order. To deal with this, wrap
 your model reference with lambda when needed. depend_on_* will notice
 when it has a thunk and dethunk it. As an example of all this,
+::
 
   depend_on_row(lambda:UserBit, lambda bit: {'user': bit.user},
   				lambda bit: bit.applies_to_verb('V/Administer/Edit'))
@@ -159,6 +167,8 @@ example,
 Program.objects.get(...) throws an exception... ArgCache should
 probably be set up to dump everything when an exception gets raised,
 although in this case the correct response is to do nothing.)
+
+::
 
     @cache_function
     def getAvailableTimes(self, program, ignore_classes=False):

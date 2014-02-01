@@ -232,6 +232,8 @@ INSTALLED_APPS = (
     'form_utils',
     'django.contrib.redirects',
     'debug_toolbar',
+    'bootstrapform',
+    'django_nose',
     'esp.formstack',
 )
 
@@ -370,3 +372,7 @@ FILEBROWSER_DIRECTORY = ''
 SHELL_PLUS_POST_IMPORTS = (
         ('esp.utils.shell_utils', '*'),
         )
+
+#   Exclude apps from testing
+TEST_RUNNER = 'utils.testing.ExcludeTestSuiteRunner'
+TEST_EXCLUDE = ('django', 'grappelli', 'reversion')

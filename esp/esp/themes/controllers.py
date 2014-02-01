@@ -95,6 +95,7 @@ class ThemeController(object):
         else:
             data = {}
         data.update(json.loads(Tag.getTag('theme_template_control', default='{}')))
+        data['theme_name'] = self.get_current_theme()
         return data
 
     def set_template_settings(self, data):
