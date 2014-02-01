@@ -55,6 +55,7 @@ This code is under development.  Status history:
     data.
 """
 
+from django.conf import settings
 from django.test.simple import DjangoTestSuiteRunner, dependency_ordered, build_suite, build_test, reorder_suite
 from django.db import connections
 from django.db.utils import ConnectionHandler
@@ -63,6 +64,21 @@ from django.utils import unittest
 from django.test.testcases import TestCase
 from django.db.models import get_app, get_apps
 import sys
+
+EXCLUDED_APPS = getattr(settings, 'TEST_EXCLUDE', [])
+
+class ExcludeTestSuiteRunner(DjangoTestSuiteRunner):
+    """Test runner to exclude apps from general testing."""
+    def build_suite(self, *args, **kwargs):
+        suite = super(ExcludeTestSuiteRunner, self).build_suite(*args, **kwargs)
+        if not args[0]:
+            tests = []
+            for case in suite:
+                pkg = case.__class__.__module__.split('.')[0]
+                if pkg not in EXCLUDED_APPS:
+                    tests.append(case)
+            suite._tests = tests 
+        return suite
 
 class InPlaceTestSuiteRunner(DjangoTestSuiteRunner, BaseDatabaseCreation):
 

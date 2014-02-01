@@ -104,7 +104,7 @@ class CommunicationsPanelTest(ProgramFrameworkTest):
         
         #   Send out e-mail
         msgs = process_messages()
-        send_email_requests(msgs)
+        send_email_requests()
         
         #   Check that the e-mail was sent to all students
         self.assertEqual(len(mail.outbox), len(self.students))

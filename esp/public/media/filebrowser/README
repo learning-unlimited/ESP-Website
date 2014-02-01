@@ -1,0 +1,5 @@
+This is a placeholder for the django-filebrowser media directory.
+It is no longer used by django-filebrowser (which has migrated to using
+staticfiles) but is still checked by the tests.
+It will be removed in a future release.
+
