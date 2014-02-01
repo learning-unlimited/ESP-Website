@@ -401,6 +401,8 @@ class ThemeController(object):
         img_src_dir = os.path.join(self.base_dir(theme_name), 'images')
         if os.path.exists(img_src_dir):
             img_dest_dir = os.path.join(settings.MEDIA_ROOT, 'images', 'theme')
+            if not os.path.exists(img_dest_dir):
+                os.mkdir(img_dest_dir)
             for diff_item in self.get_directory_differences(img_src_dir, img_dest_dir):
                 diff_item['filename'] = os.path.join('images', 'theme', diff_item['filename'])
                 diff_item['dest_url'] = os.path.join('/media', diff_item['filename'])
@@ -409,6 +411,8 @@ class ThemeController(object):
         script_src_dir = os.path.join(self.base_dir(theme_name), 'scripts')
         if os.path.exists(script_src_dir):
             script_dest_dir = os.path.join(settings.MEDIA_ROOT, 'scripts', 'theme')
+            if not os.path.exists(script_dest_dir):
+                os.mkdir(script_dest_dir)
             for diff_item in self.get_directory_differences(script_src_dir, script_dest_dir):
                 diff_item['filename'] = os.path.join('scripts', 'theme', diff_item['filename'])
                 diff_item['dest_url'] = os.path.join('/media', diff_item['filename'])
