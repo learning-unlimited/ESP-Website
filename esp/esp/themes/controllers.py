@@ -53,6 +53,7 @@ from esp.utils.models import TemplateOverride
 from esp.utils.template import Loader as TemplateOverrideLoader
 from esp.tagdict.models import Tag
 from esp.themes import settings as themes_settings
+from esp.cache import varnish
 from esp.middleware import ESPError
 
 THEME_PATH = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data')
@@ -341,6 +342,10 @@ class ThemeController(object):
         Tag.unSetTag('current_theme_params')
         Tag.unSetTag('current_theme_palette')
         self.unset_current_customization()
+
+        #   Clear the Varnish cache
+        varnish.purge_all()
+
         return backup_info
 
     def get_file_summaries(self, dir):
@@ -455,6 +460,9 @@ class ThemeController(object):
         Tag.unSetTag('current_theme_palette')
         self.unset_current_customization()
 
+        #   Clear the Varnish cache
+        varnish.purge_all()
+
     def customize_theme(self, vars):
         if themes_settings.THEME_DEBUG: print 'Customizing theme with variables: %s' % vars
         self.compile_css(self.get_current_theme(), vars, self.css_filename)
@@ -466,6 +474,9 @@ class ThemeController(object):
                 vars_diff[key] = vars[key]
         if themes_settings.THEME_DEBUG: print 'Customized %d variables for theme %s' % (len(vars_diff), self.get_current_theme())
         Tag.setTag('current_theme_params', value=json.dumps(vars_diff))
+
+        #   Clear the Varnish cache
+        varnish.purge_all()
 
     ##  Customizations - stored as LESS files with modified variables only; palette is included
 
