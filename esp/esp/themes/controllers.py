@@ -285,8 +285,13 @@ class ThemeController(object):
             (filename, temporary_location) pairs.   """
 
         backup_info = []
+
         if keep_files is None:
-            keep_files = []
+            #   The default behavior, with keep_files = None, is to back up all
+            #   files that differ between the working copy and the current theme.
+            modifications = self.check_local_modifications(self.get_current_theme())
+            keep_files = [item['filename'] for item in modifications]
+
         for filename in keep_files:
             full_filename = os.path.join(dir, filename)
             (file_desc, file_path) = tempfile.mkstemp()
