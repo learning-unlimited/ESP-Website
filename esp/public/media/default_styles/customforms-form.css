@@ -8,6 +8,11 @@ ul.errorlist {
 	margin: 0;
 	padding: 0;
 }
+
+li {
+	list-style: none;
+}
+
 .errorlist li {
 	background-color: #C40000;
 	color: white;

@@ -65,7 +65,7 @@ class ConfigForm(ThemeConfigurationForm):
 
         # fill in %(host)s for front_page_style.help_text
         request = get_current_request()
-        if request is not None:
+        if request is not None and 'HTTP_HOST' in request.META:
             host = request.META['HTTP_HOST']
         else:
             host = settings.SITE_INFO[1]
