@@ -232,27 +232,91 @@ This module does *NOT* send text messages, although this feature will be include
 Teacher modules (11)
 ====================
 
-Core Teacher Reg (TeacherRegCore)
-
-Teacher Signup Classes (TeacherClassRegModule)
-
 Teacher Availability (AvailabilityModule)
+-----------------------------------------
+
+Use this module if you are having classes scheduled into specific timeslots.  Teachers will be shown a list of all of the class time slots, which they should check or uncheck to indicate their availability.
+
+It is important that all teachers and co-teachers have indicated availability for the time slots in which they are teaching.  The scheduling module will not allow you to violate this constraint, and teachers will not be allowed to change their availability once their classes are scheduled.  You can use the "Force Availability" feature of the scheduling module to override the availability if you are sure this will not cause any problems.  Or, use the "Manage Class" page to schedule the class.
+
+E-mail verification (EmailVerifyModule)
+---------------------------------------
+
+This module is deprecated and will be removed in a future version of the site.
 
 Teacher Profile Editor (RegProfileModule)
+-----------------------------------------
 
-Teacher Biography Update (TeacherBioModule)
+This module will prompt teachers to fill out their profile information before proceeding to create classes.  In addition to their contact information, they will be asked a few questions such as their affiliation (e.g. your university, or something else) and graduation year.  If you would like to ask additional questions, please use the CustomFormModule.
 
-Teacher Training and Interview Signups (TeacherEventsModule)
+The questions shown on the teacher profile are configurable via the following tags:
 
-Teacher Logistics Quiz (TeacherQuizModule)
-
-Teacher Class Previewing (TeacherPreviewModule)
+* teacherreg_label_purchase_requests - If tag exists, overwrites text under 'Planned Purchases' in teacher registration.
+* teacherreg_label_message_for_directors - If tag exists, overwrites text under 'Message for Directors' in teacher registration.
+* teacherinfo_shirt_options - If it is set to 'False', teachers won't be able to specify shirt size/type on their profile.  The default behavior is to show the shirt fields on the profile form.
+* teacherinfo_shirt_type_selection - If it is set to 'False', teachers won't be able to specify whether they want normal shaped (guys') or fitted shaped (girls') T-shirts.  The default behavior is to provide this choice on the profile form.
+* teacherinfo_reimbursement_options - If set, shows the following fields on the teacher profile form: full_legal_name, university_email, student_id, mail_reimbursement
 
 Teacher Surveys (SurveyModule)
+------------------------------
+
+This module will cause your teacher survey to appear at /learn/[program]/[instance]/survey.  It is controlled by the "Survey" teacher deadline.  Make sure you have created a survey at /admin/survey/ before adding this module.
+
+Teacher Acknowledgement (TeacherAcknowledgementModule)
+------------------------------------------------------
+
+Include this module if you would like teachers to submit a somewhat scary-looking form where they simply check a box to say that they really will show up for the program.  This is intended to convey the seriousness of your event and reduce the number of teacher no-shows.
+
+Teacher Biography Update (TeacherBioModule)
+-------------------------------------------
+
+If you include this module, teachers will be asked to fill out a brief biography describing their background and interests.  They can optionally upload a picture.  The biographies are linked to from the student catalog and have URLs like /teach/teachers/[username]/bio.html.
+
+Note that all of the information entered here will be displayed *publicly* and may be difficult to remove from caches, so teachers should not enter any private information, or anything they would like to hide from the public (e.g. potential employers).
+
+Teacher Signup Classes (TeacherClassRegModule)
+----------------------------------------------
+
+This module allows teachers to register and view classes.  They can upload files or create Web pages for their classes, and import classes from a previous program (if the allow_class_import Tag is set).
+
+The class creation/editing form requires that you have set up time slots for the program (see ResourceModule) in order to establish the possible lengths of classes.  It can be customized using the following Tags:
+
+* teacherreg_difficulty_label - This controls the name of the 'Difficulty' field on the class creation/editing form.
+* teacherreg_difficulty_choices - This controls the choices of the 'Difficulty' field on the class creation/editing form.  This should be a JSON-formatted list of 2-element lists.  Example: '[[1, "Easy"], [2, "Medium"], [3, "Hard"], [4, "David Roe"]]'
+
+Teacher Training and Interview Signups (TeacherEventsModule)
+------------------------------------------------------------
+
+If you have included this module, teachers will be asked to select a time slot for their teacher training and/or interview.  Only include this module if you would like all teachers to register for this events and you have configured teacher events on the management side.
+
+Teacher Class Previewing (TeacherPreviewModule)
+-----------------------------------------------
+
+If you include this module, teachers will see a summary of the classes that other teachers have created so far on the main registration page.  Note that this list includes unreviewed and rejected classes.  They will also be able to see a preview of what their class will look like in the student catalog (/teach/[program]/[instance]/catalogpreview/[class ID]).
+
+Teacher Logistics Quiz (TeacherQuizModule)
+------------------------------------------
+
+You can use this module to show teachers a quiz as part of the registration process.  The quiz is typically used to ensure that teachers know the basic logistical knowledge they need to participate in the program smoothly.  Teachers will have to enter a correct answer to every question before they are allowed to proceed.  Often the information they need is provided via e-mail or at an in-person training session, so you can use this module as a means of forcing teachers to stay in touch.
+
+The teacher quiz is based on a custom form.  To set it up:
+1) Create a custom form at /customforms/.  Make sure that you specify a correct answer for every question.
+2) Once you have submitted the form, take note of its integer ID (in the link to fill out the form, it will be /customforms/view/[ID]). 
+3) Create a Tag (/admin/tagdict/tag/add/) called either "quiz_form_id", with the form ID as its value.
+4) (Optional) Associate the desired program with this Tag by selecting "Program" as the content type and the program ID as the object ID.  This will allow you to use different quizzes for different programs.
+
+Core Teacher Reg (TeacherRegCore)
+---------------------------------
+
+This module should be included whenever you would like to use the site for teacher registration.  It displays the main teacher registration page, including a summary of information for the other teacher modules that you have included.
 
 Application Reviews for Teachers (TeacherReviewApps)
+----------------------------------------------------
 
-Remote-Teacher Profile Editing (RemoteTeacherProfile)
+This module will allow teachers to create one or more application questions for each of their classes.  These are optional for the teachers, but once questions have been created, they are required for the students.
+
+Do not include this module unless you intend to review the responses in order to determine which students are admitted to the program.  It is unnecessary and confusing otherwise.
+
 
 Management modules (20)
 =======================
