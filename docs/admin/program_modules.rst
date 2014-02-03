@@ -33,7 +33,7 @@ You will also see references to other data structures that store configuration s
 
 Below we provide a more detailed explanation of what each program module is for and which settings can be used to adjust it.
 
-Student modules (10)
+Student modules (15)
 ====================
 
 Extra Registration Info (CustomFormModule)
@@ -229,7 +229,7 @@ With this module, students will be prompted to enter a phone number at which you
 This module does *NOT* send text messages, although this feature will be included in a future version of the site.  Please send your messages using a third party service.
 
 
-Teacher modules (11)
+Teacher modules (12)
 ====================
 
 Teacher Availability (AvailabilityModule)
@@ -318,7 +318,7 @@ This module will allow teachers to create one or more application questions for 
 Do not include this module unless you intend to review the responses in order to determine which students are admitted to the program.  It is unnecessary and confusing otherwise.
 
 
-Management modules (20)
+Management modules (24)
 =======================
 
 Class Management For Admin (AdminClass)
@@ -485,54 +485,65 @@ Volunteer Management (VolunteerManage)
 Include this module if you will be using the Web site for volunteer registration.  It lets you define time slots for volunteering (each with a desired number of volunteers) and shows you who has signed up for each slot.
 
 
-Onsite modules (9)
+Onsite modules (8)
 ==================
 
-Onsite Reg Core Module (OnsiteCore)
-
 On-Site User Check-In (OnSiteCheckinModule)
+-------------------------------------------
 
-Onsite View Purchased Items (OnsitePaidItemsModule)
+It is useful to have a record of which students attended your program, e.g. by storing the ID numbers of those who have checked-in and picked up their schedules.  If you include this module, you will have two options for recording this information:
+
+1) With the rapidcheckin view, you can search for students' names using an autocomplete box and submit their attendance one at a time.
+2) With the barcodecheckin view, you will be able to use barcode scanners to read student IDs off their name tags or schedules, and record their attendance in batches.  Note that you can also type into the box manually if you don't have barcode scanners.
 
 Show open classes at registration (OnSiteClassList)
+---------------------------------------------------
 
-On-Site User Check-In (OnSiteCheckinModule)
+This module creates a view which shows a scrolling list, suitable for projection on a large screen at your program.  The list shows non-full classes sorted by time slot, with an emphasis on those beginning in the next hour.  Students can also view this list if they have a computer or mobile device with Internet access.
+
+This module is very useful because it includes the class changes grid (classchange_grid), which is now the preferred way to handle students' class change requests during a program.  The class change grid is a compact display of all classes with color codes indicating how much (predicted and actual) space there is in each.  You can find a student to highlight their selections, and check boxes to change them.  Performance may be an issue with slow laptops/browsers and large programs.
 
 Onsite Scheduling for students (OnsiteClassSchedule)
+----------------------------------------------------
 
-Show All Classes at Onsite Registration (OnSiteClassList)
+This module will allow you to morph into a student and access the regular student registration pages in order to change their registration in any way.  It is more flexible, but also more time-consuming to use than the class changes grid.  You may also request for their schedule to be printed (if you have printers set up and OnsitePrintSchedules enabled).
 
-Onsite New Registration (OnSiteRegister)
+Onsite Reg Core Module (OnsiteCore)
+-----------------------------------
+
+This module should be included in all programs.  It will show the main on-site page which links to all of the other modules.  This page will be accessible to administrators as well as the special "onsite" user.  (The password for the "onsite" user should be set using the admin interface at /admin/users/espuser/.)
+
+Onsite View Purchased Items (OnsitePaidItemsModule)
+---------------------------------------------------
+
+With this module, you can search for a user and view what optional items (e.g. meals and T-shirts) they have purchased.  There is no need to include this module unless you used the StudentExtraCosts module during student registration.
 
 Automatically Print schedules for Onsite reg (OnsitePrintSchedules)
+-------------------------------------------------------------------
+
+This module supports unattended automated schedule printing: from the class change grid or student registration, your volunteers will be able to queue up a student's schedule to be printed at a shared printer.  This is useful when you have many volunteers helping students in parallel.  Include it with your program and run the poll_schedules.sh script on the computer that is connected to the shared printer (this script will need to be modified slightly for your particular operating system and program).
+
+If you have multiple printers, you will need to specify them using the admin interface (/admin/utils/printer/).
+
+Onsite New Registration (OnSiteRegister)
+----------------------------------------
+
+This module will allow you to quickly create new accounts and profiles for students who have shown up at the program but have not registered on your Web site.  They can then be assigned to classes using OnsiteClassSchedule or the class change grid.
+
+Teacher Check-in (TeacherCheckInModule)
+---------------------------------------
+
+This is a very helpful module for recording which teachers have checked in (/onsite/[program]/[instance]/teachercheckin), avoiding the need for a Google Doc or paper checklist.  It divides teachers by the time of their first class on each day, and shows you their phone number if you need to call them.  Teachers will need to check in before the first class on each day that they are teaching.
+
 
 Volunteer modules (1)
 =====================
 
 Volunteer Sign-up Module (VolunteerSignup)
+------------------------------------------
 
-Unsupported/deprecated modules (11)
-===================================
+If you are using the site for volunteer registration, add this along with VolunteerManage.  Potential volunteers will see a view (/volunteer/[program]/[instance]/signup) which you will need to link to.  This will allow them to specify which time slots they can commit to volunteering for, and provide their basic contact information.  You will need to create those time slots on the management side.  The time slots for volunteers are distinct from class time slots.
 
-SOW Class Reg (StudentClassRegModule)
+If the user fills out this form without being logged in, an account will be created for them.  Otherwise their current account will be marked as a volunteer.
 
-Module for managing rooms for program (ClassRoomModule)
-
-Credit Card Payment Module (CreditCardModule)
-
-Student Optional Fees (StudentExtraCosts)
-
-Credit Card Payment Module (Cybersource) (CreditCardModule_Cybersource)
-
-Credit Card View Module (Cybersource) (CreditCardViewer_Cybersource)
-
-SATPrep Information (SATPrepModule)
-
-SATprep On-Site User Creation (SATPrepOnSiteRegister)
-
-SATPrep Teacher Information (SATPrepTeacherModule)
-
-SATPrep Interface for Teachers (SATPrepTeacherInput)
-
-SATPrep Schedule Module (SATPrepAdminSchedule)
 
