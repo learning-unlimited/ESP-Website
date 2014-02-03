@@ -41,6 +41,12 @@ class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):
         """
         from django.conf import settings
 
+        # Keep track of request.session.accessed. If the debug toolbar should
+        # not be enabled, then we will reset request.session.accessed to this
+        # value to avoid setting Vary: Cookie across this middleware in
+        # production and testing.
+        accessed = request.session.accessed
+
         # settings.DEBUG_TOOLBAR must be True to enable the toolbar.
         # Assuming this is set:
         #   - Always show toolbar when debugging,
@@ -51,7 +57,14 @@ class ESPDebugToolbarMiddleware(DebugToolbarMiddleware):
         # short-circuiting to only call request.user.isAdmin() when necessary,
         # because calling request.user.isAdmin() sets Vary:Cookie and prevents
         # proxy caching. See Github issue #739.
-        return (not request.is_ajax()) and settings.DEBUG_TOOLBAR and \
-                ((settings.DEBUG and not request.session.get('debug_toolbar') == 'f') or \
-                (request.session.get('debug_toolbar') == 't' and request.user.isAdmin()))
+        enabled = ((not request.is_ajax()) and settings.DEBUG_TOOLBAR and (
+                (settings.DEBUG and not request.session.get('debug_toolbar') == 'f') or
+                (request.session.get('debug_toolbar') == 't' and request.user.isAdmin())))
+
+        # Avoid setting Vary: Cookie across this middleware in production and
+        # testing (see above).
+        if not enabled:
+            request.session.accessed = accessed
+
+        return enabled
 

@@ -625,7 +625,7 @@ class AdminClass(ProgramModuleObj):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
-        if cls.category.category == self.program.open_class_category.category:
+        if cls.category == self.program.open_class_category:
             action = 'editopenclass'
         else:
             action = 'edit'
