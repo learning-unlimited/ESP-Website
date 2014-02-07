@@ -68,7 +68,7 @@ class ClassFlagModule(ProgramModuleObj):
             if QObject:
                 t['flag_%s' % flag_type.id] = q
             else:
-                t['flag_%s' % flag_type.id] = ESPUser.objects.filter(q)
+                t['flag_%s' % flag_type.id] = ESPUser.objects.filter(q).distinct()
         return t
     
     def teacherDesc(self):
@@ -118,14 +118,23 @@ class ClassFlagModule(ProgramModuleObj):
         '''An interface to query for some boolean expression of flags.  The front-end javascript will allow the user to build a query, then POST it in the form of a json.  The response to said post should be the list of classes matching the flag query.
 
         The json should be a single object, which should have two keys: "type" and "value".  The value of the "type" key should be a string, one of the set ["flag", "not flag", "all", "any", "not all", "none"].  In the first two cases, the value of the "value" key should be the id of a flag.  In the latter four cases, it should be a list of objects of the same form.'''
+        # Grab the data from either a GET or a POST.
+        # We allow a GET request to make them linkable, and POST requests for some kind of backwards-compatibility with the way the interface previously worked.
         if request.method == 'GET':
+            if 'query' in request.GET:
+                data = request.GET['query']
+            else:
+                data = None
+        else:
+            data = request.POST['query']
+        if data is None:
             # We should display the query builder interface.
             fts = ClassFlagType.get_flag_types(self.program)
             context = { 'flag_types': fts, 'prog': self.program }
             return render_to_response(self.baseDir()+'flag_query_builder.html', request, context)
-        elif request.method == 'POST':
+        else:
             # They've sent a query, let's process it.
-            decoded = json.loads(request.POST['query-json'])
+            decoded = json.loads(data)
             queryset = self.jsonToQuerySet(decoded).distinct().order_by('id').prefetch_related('flags', 'flags__flag_type', 'teachers') # The prefetch lets us do basically all of the processing on the template level.
             english = self.jsonToEnglish(decoded)
             context = { 'queryset' : queryset, 'english' : english, 'prog': self.program }
