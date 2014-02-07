@@ -580,7 +580,7 @@ def submit_transaction(request):
                   settings.SERVER_EMAIL, recipient_list, True)
 
         #   Save the payment as a transfer in the database
-        iac.submit_payment(post_amount)
+        iac.submit_payment(post_amount, transaction_id=request.POST.get('requestID', ''))
 
         tl = 'learn'
         one, two = iac.program.url.split('/')
