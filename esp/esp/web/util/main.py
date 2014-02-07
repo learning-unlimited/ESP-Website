@@ -32,11 +32,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
+import re
 from esp.users.models import ESPUser
 from django.template import Context, Template, loader, RequestContext
 from django.conf import settings
 from django import http
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth.models import AnonymousUser
 from esp.program.models import Program
 from esp.qsd.models import ESPQuotations
@@ -125,3 +126,22 @@ def error500(request, template_name='500.html'):
         return http.HttpResponseServerError(t.render(RequestContext(context)))
     except Exception:
         return http.HttpResponseServerError(t.render(Context(context)))
+
+def secure_required(view_fn):
+    """
+    Apply this decorator to a view to require that the view only be accessed
+    via a secure request. If the request is not secure, the wrapped view
+    redirects to the https version of the uri. Otherwise it runs the view
+    function as normal.
+
+    The https redirect only occurs when the request method is GET, to avoid
+    missing form submissions, even if they are insecure.
+    """
+    def _wrapped_view(request, *args, **kwargs):
+        if request.method == 'GET' and not request.is_secure():
+            return HttpResponseRedirect(re.sub(r'^\w+://',
+                                               r'https://',
+                                               request.build_absolute_uri()))
+        return view_fn(request, *args, **kwargs)
+    return _wrapped_view
+
