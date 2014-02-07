@@ -342,6 +342,11 @@ Minor feature additions
   section that shows the number of students per grade enrolled in at least one
   class and number of subjects and sections available to the students in that
   grade.
+  
+- You can now filter for students in particular grades using the comm panel.
+  The grade filtering options will show up at the bottom of the list (below
+  "States" and "School") on step 3 when you are creating a list of students.
+  You will also see an option to filter teachers by graduation year.
 
 Django debug toolbar (developers only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
