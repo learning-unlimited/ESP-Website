@@ -68,7 +68,7 @@ class ClassFlagModule(ProgramModuleObj):
             if QObject:
                 t['flag_%s' % flag_type.id] = q
             else:
-                t['flag_%s' % flag_type.id] = ESPUser.objects.filter(q)
+                t['flag_%s' % flag_type.id] = ESPUser.objects.filter(q).distinct()
         return t
     
     def teacherDesc(self):
