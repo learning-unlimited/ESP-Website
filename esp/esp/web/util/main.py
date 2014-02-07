@@ -123,7 +123,7 @@ def error500(request, template_name='500.html'):
     # want to display the original 500 error page, so fall back to using a
     # normal Context.
     try:
-        return http.HttpResponseServerError(t.render(RequestContext(context)))
+        return http.HttpResponseServerError(t.render(RequestContext(request, context)))
     except Exception:
         return http.HttpResponseServerError(t.render(Context(context)))
 
