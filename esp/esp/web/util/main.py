@@ -107,8 +107,9 @@ def error404(request, template_name='404.html'):
     context = {'request_path': request.path}
     context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
     context['EMAIL_HOST'] = settings.EMAIL_HOST
-    t = loader.get_template(template_name) # You need to create a 404.html template.
-    return http.HttpResponseNotFound(t.render(RequestContext(request, context)))
+    response = render_to_response(template_name, request, context)
+    response.status_code = 404
+    return response
 
 def error500(request, template_name='500.html'):
     context = {}
@@ -118,14 +119,23 @@ def error500(request, template_name='500.html'):
     context['request'] = request
     t = loader.get_template(template_name) # You need to create a 500.html template.
 
-    # If possible, we want to render this page with a RequestContext so that
-    # the context processors are run. If this fails for some reason, we still
-    # want to display the original 500 error page, so fall back to using a
-    # normal Context.
+    # If possible, we want to render this page with our custom
+    # render_to_response().  If this fails for some reason, we still want to
+    # display the original 500 error page, so fall back to manually creating an
+    # HttpResponse object.
     try:
-        return http.HttpResponseServerError(t.render(RequestContext(request, context)))
+        response = render_to_response(template_name, request, context)
+        response.status_code = 500
+        return response
     except Exception:
-        return http.HttpResponseServerError(t.render(Context(context)))
+        # If possible, we want to render this page with a RequestContext so that
+        # the context processors are run. If this fails for some reason, we still
+        # want to display the original 500 error page, so fall back to using a
+        # normal Context.
+        try:
+            return http.HttpResponseServerError(t.render(RequestContext(request, context)))
+        except Exception:
+            return http.HttpResponseServerError(t.render(Context(context)))
 
 def secure_required(view_fn):
     """
