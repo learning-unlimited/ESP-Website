@@ -32,6 +32,8 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
+from collections import defaultdict
+
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
@@ -272,17 +274,55 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                                 found = True
                             else:
                                 reg.expire()
-                            #   result_strs.append('Expired: %s' % bit)
+
                         if not found:
                             new_reg = StudentRegistration(user=student, relationship=rel, section=sec)
                             new_reg.save()
                         
         #   Jazz up this information a little
+        #Not having much luck with query count/performance when selecting related parent_class and parent_class__category
+        #Creating a lookup dict instead to strip out duplicate ClassSubject instances
+
+        student_regs = StudentRegistration.valid_objects().filter(user__in=students_list) \
+                       .order_by('start_date').select_related('section','user','relationship')
+        student_regs = student_regs.filter(section__parent_class__parent_program=self.program)
+
+        student_sections_dict = defaultdict(set)
+        student_reg_dict = defaultdict(set)
+
+        #need a unique set of parent_class ids
+        #creating lookup dicts to avoid hitting database(was not solved with 
+        #select_related or prefecth_related
+        parent_class_id_set= set()
+        sections = set()
+        for reg in student_regs:
+            student_sections_dict[reg.user].add(reg.section)
+            display_name = reg.relationship.displayName or reg.relationship.name
+            sections.add(reg.section)
+            parent_class_id_set.add(reg.section.parent_class_id)
+            student_reg_dict['%i_%i'%(reg.user.id,reg.section.id,)].add(display_name)
+
+        subjects = ClassSubject.objects.filter(id__in=parent_class_id_set).select_related('category')
+        subject_categories_dict = dict([(s.id, (s,s.category)) for s in subjects])
+
         for student in students_list:
-            student.bits = sec.getRegVerbs(student)
+            student.bits = student_reg_dict['%i_%i'%(student.id,sec.id,)]
+            #this is a bit of a problem because it produces the side affect of application
+            #creation if not found
             student.app = student.getApplication(self.program, False)
-            student.other_classes = [(sec2, sec2.getRegVerbs(student)) for sec2 in student.getSections(self.program).exclude(id=sec.id)]
+            student.other_classes = []
+            for section in student_sections_dict[student]:
+                parent_class,category = subject_categories_dict.get(section.parent_class_id)
+                regtypes = student_reg_dict['%i_%i'%(student.id,section.id,)]
+
+                section_row = (section,
+                               regtypes,
+                               parent_class,
+                               category
+                               )
+                student.other_classes.append(section_row)
             preregs = sec.getRegistrations(student).exclude(relationship__name__in=['Enrolled', 'Rejected'])
+           
             if preregs.count() != 0:
                student.added_class = preregs[0].start_date
             if 'Enrolled' in student.bits:
@@ -291,6 +331,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 student.rejected = True
 
         #   Detect if there is an application module
+
         from esp.program.modules.handlers.studentjunctionappmodule import StudentJunctionAppModule
         has_app_module = False
         for module in prog.getModules():
@@ -595,7 +636,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
-        if cls.category.category == self.program.open_class_category.category:
+        if cls.category == self.program.open_class_category:
             action = 'editopenclass'
         else:
             action = 'edit'
@@ -627,7 +668,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         cls = classes[0]
 
         # Select the correct action
-        if cls.category.category == self.program.open_class_category.category:
+        if cls.category == self.program.open_class_category:
             action = 'editopenclass'
         else:
             action = 'edit'

@@ -63,8 +63,10 @@ urlpatterns += patterns('',
                      #(r'^learn/Junction/2007_Spring/catalog/?$',RedirectView.as_view(url='/learn/Junction/2007_Summer/catalog/')),
                      (r'^(?P<subsection>(learn|teach|program|help|manage|onsite))/?$',RedirectView.as_view(url='/%(subsection)s/index.html')),
                         )
+
+# Adds missing trailing slash to any admin urls that haven't been matched yet.
 urlpatterns += patterns('',
-(r'^admin', RedirectView.as_view(url='/admin/')),)
+(r'^(?P<url>admin($|(.*[^/]$)))', RedirectView.as_view(url='/%(url)s/')),)
 
 #   Short term views
 urlpatterns += patterns('',

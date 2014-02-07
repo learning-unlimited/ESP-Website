@@ -32,24 +32,24 @@ class SchedulingCheckModule(ProgramModuleObj):
 #For formatting output.  The default is to use HTMLSCFormatter, but someone writing a script
 #may want to use RawSCFormatter to get the original data structures
 class RawSCFormatter:
-    def format_table(self, l, title, options={}):
+    def format_table(self, l, title, options={}, help_text=""):
         return l
 
-    def format_list(self, l, title, options={}):
+    def format_list(self, l, title, options={}, help_text=""):
         return l
 
 class HTMLSCFormatter:
     #requires: d, a two level dictionary where the the first set of
     #   keys are the headings expected on the side of the table, and
     #   the second set are the headings expected on the top of the table
-    def format_table(self, d, title, options={}):
+    def format_table(self, d, title, options={}, help_text=""):
         if type(d) == list:
-            return self._format_list_table(d, title, options['headings'])
+            return self._format_list_table(d, title, options['headings'], help_text=help_text)
         else:
-            return self._format_dict_table(d, title, options['headings'])
+            return self._format_dict_table(d, title, options['headings'], help_text=help_text)
 
-    def format_list(self, l, title):
-        output = self._table_title(title, [title])
+    def format_list(self, l, title, help_text=""):
+        output = self._table_title(title, [title], help_text=help_text)
         for row in l:
             output += self._table_row([row])
         output += "</table>"
@@ -59,9 +59,11 @@ class HTMLSCFormatter:
         output = "<table cellpadding=10 style=\"border: 1px solid black; border-collapse: collapse;\">"
         return output
 
-    def _table_title(self, title, headings):
+    def _table_title(self, title, headings, help_text=""):
         output = self._table_start()
         output += "<tr><th colspan=\""+str(len(headings))+"\" align=\"center\">" + str(title) + "</th></tr>"
+        if help_text:
+            output += "<tr><td colspan=\""+str(len(headings))+"\" align=\"center\">" + str(help_text) + "</td></tr>"
         return output
 
     def _table_headings(self, headings):
@@ -82,8 +84,8 @@ class HTMLSCFormatter:
         next_row += "</tr>"
         return next_row
         
-    def _format_list_table(self, d, title, headings):
-        output = self._table_title(title, headings)
+    def _format_list_table(self, d, title, headings, help_text=""):
+        output = self._table_title(title, headings, help_text=help_text)
         output = output + self._table_headings(headings)
         for row in d:
             ordered_row = [row[h] for h in headings]
@@ -91,12 +93,13 @@ class HTMLSCFormatter:
         output = output + "</table>"
         return output
 
-    def _format_dict_table(self, d, title, headings):
-        output = self._table_title(title, headings)
-        output = output + self._table_headings([""] + headings)
+    def _format_dict_table(self, d, title, headings, help_text=""):
+        headings = [""] + headings[:]
+        output = self._table_title(title, headings, help_text=help_text)
+        output = output + self._table_headings(headings)
 
         for key, row in d.iteritems():
-            ordered_row = [row[h] for h in headings]
+            ordered_row = [row[h] for h in headings if h]
             output = output + self._table_row([key] + ordered_row)
         output += "</table>"
         return output
@@ -271,7 +274,7 @@ class SchedulingCheckRunner:
           #reporting    
           self.formatter.format_list(sections, "Classes allowing middle school students during the high school only block")
           middle_school_only = filter(lambda x: x.parent_class.grade_max < 9, sections)
-          return self.formatter.format_list(middle_school_only, "Classe wiht only middle school students during the high school only block")
+          return self.formatter.format_list(middle_school_only, "Classe with only middle school students during the high school only block")
 
      def room_capacity_mismatch(self, lower_reporting_ratio=0.5, upper_reporting_ratio=1.5):
           l = []
@@ -301,7 +304,14 @@ class SchedulingCheckRunner:
                              'Teacher': t,
                              'Classes over lunch': classes,
                              })
-         return self.formatter.format_table(bads,"Hungry Teachers", {'headings': ['Teacher','Classes over lunch']})
+         return self.formatter.format_table(bads,"Hungry Teachers",
+                         {'headings': ['Teacher','Classes over lunch']},
+                         help_text="A list of teachers scheduled to teach " +
+                         "during all lunch blocks of any day. Requires that " +
+                         "lunch blocks are set up for the program. Ignores " +
+                         "teachers who are teaching at least one " +
+                         "open class / walk-in activity during that day's " +
+                         "lunch.")
 
      #for classes_by_category and capacity_by_category
      def _calculate_d_categories(self):
@@ -456,4 +466,10 @@ class SchedulingCheckRunner:
                          l.append({"Teacher": teacher, "Section 1": sections[i], "Section 2": sections[i+1], "Room 1": room0, "Room 2": room1})
                  except BaseException:
                      continue
-         return self.formatter.format_table(l, "Teachers who Like Running", {"headings": ["Teacher", "Section 1", "Section 2", "Room 1", "Room 2"]})
+         return self.formatter.format_table(l, "Teachers who Like Running",
+                         {"headings": ["Teacher", "Section 1", "Section 2",
+                                       "Room 1", "Room 2"]},
+                         help_text="A list of teachers teaching two " +
+                         "back-to-back classes (defined as two classes " +
+                         "within 20 minutes of each other) in two different " +
+                         "locations.")

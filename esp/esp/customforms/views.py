@@ -267,7 +267,7 @@ def viewForm(request, form_id):
     
     perm, error_text = hasPerm(request.user, form)
     if not perm:
-        return render_to_response('customforms/error.html', {'error_text': error_text}, context_instance=RequestContext(request))    
+        return render_to_response('customforms/error.html', request, {'error_text': error_text})
     fh = FormHandler(form=form, request=request, user=request.user)
     
     return fh.get_wizard_view()    
@@ -296,7 +296,7 @@ def viewResponse(request, form_id):
         except ValueError:
             raise Http404
         form = Form.objects.get(id=form_id)
-        return render_to_response('customforms/view_results.html', {'form': form})
+        return render_to_response('customforms/view_results.html', request, {'form': form})
     else:
         return HttpResponseRedirect('/')
         
