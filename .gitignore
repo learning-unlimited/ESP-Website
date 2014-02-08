@@ -13,6 +13,7 @@ esp/public/media/images
 esp/public/media/default_images/theme
 esp/public/media/theme_editor/themes
 esp/public/media/scripts/theme
+esp/public/static
 esp/file_cache/*
 esp/file_db/*
 esp/esp/database_settings.py.chicago
