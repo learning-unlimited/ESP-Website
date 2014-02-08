@@ -61,9 +61,6 @@ def prepare_program(program, data):
     if ESPUser.onsite_user():
         perms += [('Onsite', ESPUser.onsite_user(), None, None)]
     
-    for director in data['admins']:
-        perms += [('Administer', ESPUser.objects.get(id=int(director)), None, None)]
-        
     json_module = ProgramModule.objects.get(handler=u'JSONDataModule')  # get the JSON Data Module
     # If the JSON Data Module isn't already in the list of selected
     # program modules, add it. The JSON Data Module is a dependency for

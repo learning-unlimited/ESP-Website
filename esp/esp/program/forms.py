@@ -36,12 +36,11 @@ Learning Unlimited, Inc.
 import re
 import unicodedata
 
-from esp.users.models import ESPUser, StudentInfo, K12School
+from esp.users.models import StudentInfo, K12School
 from esp.datatree.models import *
 from esp.program.models import Program, ProgramModule, ClassFlag
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.utils.widgets import DateTimeWidget
-from esp.users.models import ESPUser
 from django.db.models import Q
 from django import forms
 from django.core import validators
@@ -57,7 +56,6 @@ class ProgramCreationForm(BetterModelForm):
     term = forms.SlugField(label='Term or year, in URL form (i.e. "2007_Fall")', widget=forms.TextInput(attrs={'size': '40'}))
     term_friendly = forms.CharField(label='Term, in English (i.e. "Fall 07")', widget=forms.TextInput(attrs={'size': '40'}))
     
-    admins            = forms.MultipleChoiceField(choices = [], label = 'Administrators')
     teacher_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
@@ -68,10 +66,8 @@ class ProgramCreationForm(BetterModelForm):
     program_modules   = forms.MultipleChoiceField(choices = [], label = 'Program Modules', widget=forms.SelectMultiple(attrs={'class': 'input-xxlarge'}))
 
     def __init__(self, *args, **kwargs):
-        """ Used to update ChoiceFields with the current admins and modules. """
+        """ Used to update ChoiceFields with the current modules. """
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
-        admin_list=ESPUser.objects.filter(groups__name="Administrator")
-        self.fields['admins'].choices = make_id_tuple(admin_list.distinct().order_by('username'))
         self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
 
         #   Enable validation on other fields
@@ -108,7 +104,7 @@ class ProgramCreationForm(BetterModelForm):
         fieldsets = [
 ('Program Title', {'fields': ['term', 'term_friendly'] }),
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
-                     ('About Program Creator',{'fields':['admins','director_email']}),
+                     ('About Program Creator',{'fields':['director_email']}),
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
                      ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
                      ('Registrations Date',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
