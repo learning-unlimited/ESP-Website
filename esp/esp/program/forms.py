@@ -92,7 +92,6 @@ class ProgramCreationForm(BetterModelForm):
               }
         return super(ProgramCreationForm, self).save(commit=commit)
 
-        #self.fields.keyOrder = ['term','term_friendly','grade_min','grade_max','class_size_min','class_size_max','director_email','program_modules']
     def load_program(self, program):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
         pass
@@ -104,7 +103,7 @@ class ProgramCreationForm(BetterModelForm):
         fieldsets = [
 ('Program Title', {'fields': ['term', 'term_friendly'] }),
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
-                     ('About Program Creator',{'fields':['director_email']}),
+                     ('About Program Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
                      ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
                      ('Registrations Date',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
@@ -114,6 +113,8 @@ class ProgramCreationForm(BetterModelForm):
 
         model = Program
 ProgramCreationForm.base_fields['director_email'].widget = forms.TextInput(attrs={'size': 40})
+ProgramCreationForm.base_fields['director_cc_email'].widget = forms.TextInput(attrs={'size': 40})
+ProgramCreationForm.base_fields['director_confidential_email'].widget = forms.TextInput(attrs={'size': 40})
 '''        
 ProgramCreationForm.base_fields['term'].line_group = -4
 ProgramCreationForm.base_fields['term_friendly'].line_group = -4
