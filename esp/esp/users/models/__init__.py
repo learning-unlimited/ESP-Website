@@ -2110,6 +2110,8 @@ class Permission(ExpirableModel):
 
     @classmethod
     def user_has_perm(self, user, name, program=None, when=None):
+        if user.isAdministrator(program=program):
+            return True
         perms=[name]
         for k,v in self.implications.items():
             if name in v: perms.append(k)
