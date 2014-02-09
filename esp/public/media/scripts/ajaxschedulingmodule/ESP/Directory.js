@@ -145,7 +145,7 @@ ESP.declare('ESP.Scheduling.Widgets.Directory', Class.create({
             tbody.innerHTML = "";
             $j.each(
 		this.active_rows, function (i,x){ 
-		    this.table.append(x.update().el); 
+		    this.table.append(x.el); 
 		    x.draggable(); 
 		}.bind(this)
 	    );
@@ -180,12 +180,6 @@ ESP.declare('ESP.Scheduling.Widgets.Directory.Entry', Class.create({
         draggable: function(){
             ESP.Scheduling.DragDrop.make_draggable(this.el, function(){ return this.section; }.bind(this));
         },
-        update: function(){
-            $j.each(this.directory.properties,function(index, prop){
-                this.tds[index].html(prop.get(this.section));
-            }.bind(this));
-            return this;
-        }
     }));
 
 /* State of the art:  the current design is simple to understand but
