@@ -10,49 +10,20 @@
   <script type="text/javascript" src="/media/scripts/jasmine/lib/jasmine-1.3.0/jasmine-html.js"></script>
 
 <!-- 3rd party -->
-<script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/prototype.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/jquery.js"></script>
 <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/jquery-ui-custom.js"></script>
 
 <script type="text/javascript">    
-  var debug_on = false;  
-  var debug_log = function(message){
-      if (debug_on){
-          console.log(message);
-      }
-  };
-</script>
-
-<script type='text/javascript'>
-var $j = jQuery.noConflict(); // grr... stupid prototype fail
-</script>
-
-<!--script language="JavaScript" src="/media/scripts/jquery.cookie.js"></script-->
-<!--<script type='text/javascript' src='/media/scripts/class.min.js'></script>-->
-<!--script language="JavaScript" src="/media/scripts/csrf_init.js"></script-->
-<script type="text/javascript">    
   var base_url = "Splash/2012";  
-  var manage_url = "http://localhost:8000/manage/"+base_url+"/"
-  var program_base_url = "http://localhost:8000/json/"+base_url+"/";  
-  var debug_on = false
 </script>
 
-<script type='text/javascript' src="/media/scripts/json_fetch.js"></script>
+<script type="text/javascript" src="/media/scripts/json_fetch.js"></script>
 
 
   <!-- include source files here... -->
-  <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/ESP.js"></script>
-  <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Util.js"></script>
-  <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Scheduling.js"></script>
-  <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Resources.js"></script>
-  <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/DragDrop.js"></script>
-  <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Widgets.js"></script>
-  <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Directory.js"></script>
-  <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Matrix.js"></script>
-
-
+  <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/ESP/Scheduler.js"></script>
   <!-- include spec files here... -->
-  <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/spec/DirectorySpec.js"></script>
+  <script type="text/javascript" src="/media/scripts/ajaxschedulingmodule/spec/SchedulerSpec.js"></script>
 
   <script type="text/javascript">
     (function() {
@@ -85,76 +56,5 @@ var $j = jQuery.noConflict(); // grr... stupid prototype fail
 
 </head>
 <body>
-<div id="ajax-dom">
-<table>
-  <tr>
-    <!-- MATRIX TARGET-->
-    <td width=200 id='matrix-target'>
-      <div class="matrix">
-	<div class="matrix-header">
-	  <table class="matrix-column-header-box">
-	    <tr class="matrix-row-body">
-	      <td class="matrix-corner-box">
-		<div class="matrix-corner-box">
-		  <div id="garbage-div" class="garbage ui-droppable">Drag here to unschedule</div>	
-		</div>
-	      </td>
-	      <!--times added by javascript here-->
-	    </tr>
-	  </table>
-	</div>
-	<div class="matrix-body">
-	  <table id="matrix-table">
-	    <!--grid added here-->
-	  </table>
-	</div>
-      </div>
-    </td>
-    <!-- DIRECTORY AND CLASS FILTER TARGET-->
-    <td width=200 id='directory-target'>
-      <div id="directory-accordion">
-	<h3><a href="#" id="directory_header">Class Directory</a></h3>
-	<div id="directory-table-wrapper" style="padding: 0px 0px" class="directory-table-wrapper">
-	  <table class="directory">
-	    <thead><tr id="directory_table_header" class="header">
-	      <td class="sortable" id="directory-header-ID"><span>ID</span></td>
-	      <td class="sortable" id="directory-header-Title"><span>Title</span></td>
-	      <td class="sortable" id="directory-header-Teacher"><span>Teacher</span></td>
-	      <td class="sortable" id="directory-header-Length"><span>Length</span></td>
-	    </tr></thead>
-	    <tbody id="directory-table-body"></tbody>
-	    <!--classes get added here-->
-	  </table>
-	</div>
-	<h3><a href="#" id="filtering_header">Advanced Filter</a></h3>
-	<div id="searchbox" class="searchbox">
-	  <table>
-	    <tr><td>Title</td><td colspan="3"><input id="filter_Title"/></td></tr>
-	    <tr><td>ID</td><td colspan="3"><input id="filter_ID"/></td></tr>
-	    <tr><td>Teacher</td><td colspan="3"><input id="filter_Teacher"/></td></tr>
-	    <tr><td>Timeslot</td><td colspan="3"><input id="filter_Timeslot"/></td></tr>
-	    <tr>
-	      <td>Length</td>
-	      <td colspan="1"><input id="filter_Min-length"></td>
-	      <td align="center">to</td>
-	      <td colspan="1"><input id="filter_Max-length"></td>
-	    </tr>
-	    <tr>
-	      <td>Class size</td><td><input id="filter_Min-size"></td>
-	      <td align="center">to</td><td><input id="filter_Max-size"></td>
-	    </tr>
-            <tr>
-	      <td>Show unapproved classes</td>
-	      <td><input type="checkbox" id="filter_Status"></td>
-	      <td>Show already scheduled classes</td>
-	      <td><input type="checkbox" id="filter_Scheduled"></td>
-	    </tr>
-	  </table>
-	</div>
-      </div>
-    </td>
-  </tr>
-</table>
-</div>
 </body>
 </html>
