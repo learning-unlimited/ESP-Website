@@ -1,6 +1,6 @@
 describe("Scheduler", function(){
     beforeEach(function(){
-	s = new Scheduler({}, $j("<div/>")[0], $j("<div/>")[0])
+	s = new Scheduler({schedule_assignments: {}, rooms: {}, timeslots: {}, sections: {}}, $j("<div/>")[0], $j("<div/>")[0])
     })
 
     it("should have a directory and a matrix", function(){
@@ -20,6 +20,7 @@ describe("Scheduler", function(){
     })
 })
 
+//TODO:  how does javascript variable scoping work?  These shouldn't be global I think.
 var time_data = {
 	1: {
 	    label:  "first timeslot"
@@ -33,6 +34,15 @@ var room_data = {
 	"room-1": {},
 	"room-2": {}
 }
+
+var schedule_assignments = {
+    3329: {
+	room_name: "room-1",
+	id: 3329,
+	timeslots: [1]
+    }
+}
+
 
 var section_data = {sections: {
 	3329: {
@@ -71,7 +81,7 @@ var section_data = {sections: {
 
 describe("Matrix", function(){
     beforeEach(function(){
-	m = new Matrix(time_data, room_data, $j("<div/>")[0])
+	m = new Matrix(time_data, room_data, schedule_assignments, $j("<div/>")[0])
     })
 
     it("should have an element", function(){
@@ -81,6 +91,7 @@ describe("Matrix", function(){
     it("should have times and rooms", function(){
 	expect(m.timeslots).toBeObject()
 	expect(m.rooms).toBeObject()
+	expect(m.schedule_assigments).toBeObject()
     })
 
     describe("render", function(){
@@ -110,6 +121,22 @@ describe("Matrix", function(){
 	    expect(headers[1].innerHTML).toMatch("first timeslot")
 	    expect(headers[2].innerHTML).toMatch("second timeslot")
 	})
+
+	it("should have a cell for every timeslot/room combination", function(){
+	    table = m.el.children[0]
+	    expect(table.rows[1].cells[1]).toBeDefined()
+	    expect(table.rows[1].cells[2]).toBeDefined()
+	    expect(table.rows[2].cells[1]).toBeDefined()
+	    expect(table.rows[2].cells[2]).toBeDefined()
+	    
+	})
+
+	it("should show already scheduled sections", function(){
+	    table = m.el.children[0]
+	    expect(table.rows[1].cells[1].innerHTML).toMatch('S3188s1')
+	})
+
+	//TODO:  do we need to do verification on the client side that classes take up the right amount of time?
     })
 })
 
