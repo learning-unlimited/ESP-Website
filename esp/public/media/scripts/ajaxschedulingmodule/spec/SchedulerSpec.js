@@ -1,6 +1,6 @@
 describe("Scheduler", function(){
     beforeEach(function(){
-	s = new Scheduler({}, $j("<div/>")[0])
+	s = new Scheduler({}, $j("<div/>")[0], $j("<div/>")[0])
     })
 
     it("should have a directory and a matrix", function(){
@@ -10,10 +10,12 @@ describe("Scheduler", function(){
     })
 
     describe("render", function(){
-	it("calls render on the directory",  function(){
+	it("calls render on the directory and matrix",  function(){
 	    spyOn(s.directory, "render")
+	    spyOn(s.matrix, "render")
 	    s.render()
 	    expect(s.directory.render).toHaveBeenCalled()
+	    expect(s.matrix.render).toHaveBeenCalled()
 	})
     })
 })
@@ -53,8 +55,17 @@ var data = {sections: {
 	}
 }}
 
-describe("Scheduler", function(){
+describe("Matrix", function(){
+    beforeEach(function(){
+	m = new Matrix($j("<div/>")[0])
+    })
 
+    it("should have an element", function(){
+	expect(m.el).toBeHtmlNode()
+    })
+})
+
+describe("Directory", function(){
     beforeEach(function(){
 	d = new Directory(data.sections, $j("<div/>")[0])
     })
