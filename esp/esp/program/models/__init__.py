@@ -286,7 +286,10 @@ class Program(models.Model, CustomFormsLinkModel):
     director_confidential_email = models.EmailField(blank=True, default='', help_text='If set, confidential emails such as financial aid applications will be sent to this address instead of the director email.')
     program_size_max = models.IntegerField(null=True)
     program_allow_waitlist = models.BooleanField(default=False)
-    program_modules = models.ManyToManyField(ProgramModule)
+    program_modules = models.ManyToManyField(ProgramModule,
+                         help_text='The set of enabled program functionalities. See ' +
+                         '<a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst">' +
+                         'the documentation</a> for details.')
     class_categories = models.ManyToManyField('ClassCategories')
     flag_types = models.ManyToManyField('ClassFlagType',blank=True) #so we don't have to delete old ones and don't end up with 3 seemingly-identical flags in the same program.
     
