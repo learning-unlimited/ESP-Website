@@ -1,21 +1,25 @@
 describe("Scheduler", function(){
     beforeEach(function(){
-	//TODO:  what data should be passed in?
-	s = new Scheduler({}, $("<div/>")[0])
+	s = new Scheduler({}, $j("<div/>")[0])
     })
 
-    it("should have a directory", function(){
+    it("should have a directory and a matrix", function(){
+	//TODO:  can we assert on the types of these?
 	expect(s.directory).toBeDefined()
-    })
-
-    it("should have a matrix", function(){
 	expect(s.matrix).toBeDefined()
     })
 
+    describe("render", function(){
+	it("calls render on the directory",  function(){
+	    spyOn(s.directory, "render")
+	    s.render()
+	    expect(s.directory.render).toHaveBeenCalled()
+	})
+    })
 })
 
-var data = {sections: [
-	{
+var data = {sections: {
+	3329: {
 	    status: 10, 
 	    category: 'S', 
 	    parent_class: 3188, 
@@ -31,7 +35,7 @@ var data = {sections: [
 	    id: 3329, 
 	    teachers: [6460]
 	}, 
-	{
+	3538: {
 	    status: 10, 
 	    category: 'M', 
 	    parent_class: 3343, 
@@ -47,16 +51,16 @@ var data = {sections: [
 	    id: 3538, 
 	    teachers: [45225]
 	}
-]}
+}}
 
-describe("Matrix", function(){
+describe("Scheduler", function(){
 
     beforeEach(function(){
-	d = new Directory(data.sections, $("<div/>")[0])
+	d = new Directory(data.sections, $j("<div/>")[0])
     })
 
     it("should have a list of sections and an el", function(){
-	expect(d.sections).toBeArray()
+	expect(d.sections).toBeObject()
 	expect(d.el).toBeHtmlNode()
     })
 
