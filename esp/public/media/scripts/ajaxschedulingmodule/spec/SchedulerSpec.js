@@ -39,7 +39,12 @@ var schedule_assignments = {
     3329: {
 	room_name: "room-1",
 	id: 3329,
-	timeslots: [1]
+	timeslots: [1, 2]
+    },
+    3538: {
+	room_name: "",
+	id: 3538,
+	timeslots: []
     }
 }
 
@@ -132,14 +137,13 @@ describe("Matrix", function(){
 	    
 	})
 
-	//TODO: class with multiple timeslots
-
 	it("should show already scheduled sections", function(){
 	    table = m.el.children[0]
 	    expect(table.rows[1].cells[1].innerHTML).toMatch('S3188s1')
+	    expect(table.rows[1].cells[2].innerHTML).toMatch('S3188s1')
+	    //doesn't show the class we didn't schedule
+	    expect(table.innerHTML).not.toMatch('M3343s1')
 	})
-
-	//TODO:  test that we deal gracefully with empty schedule assignments
 
 	//TODO:  do we need to do verification on the client side that classes take up the right amount of time?
     })
