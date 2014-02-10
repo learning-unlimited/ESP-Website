@@ -44,7 +44,7 @@ var schedule_assignments = {
 }
 
 
-var section_data = {sections: {
+var sections = {
 	3329: {
 	    status: 10, 
 	    category: 'S', 
@@ -77,11 +77,11 @@ var section_data = {sections: {
 	    id: 3538, 
 	    teachers: [45225]
 	}
-}}
+}
 
 describe("Matrix", function(){
     beforeEach(function(){
-	m = new Matrix(time_data, room_data, schedule_assignments, $j("<div/>")[0])
+	m = new Matrix(time_data, room_data, schedule_assignments, sections, $j("<div/>")[0])
     })
 
     it("should have an element", function(){
@@ -92,6 +92,7 @@ describe("Matrix", function(){
 	expect(m.timeslots).toBeObject()
 	expect(m.rooms).toBeObject()
 	expect(m.schedule_assigments).toBeObject()
+	expect(m.sections).toBeObject()
     })
 
     describe("render", function(){
@@ -131,6 +132,8 @@ describe("Matrix", function(){
 	    
 	})
 
+	//TODO: class with multiple timeslots
+
 	it("should show already scheduled sections", function(){
 	    table = m.el.children[0]
 	    expect(table.rows[1].cells[1].innerHTML).toMatch('S3188s1')
@@ -142,7 +145,7 @@ describe("Matrix", function(){
 
 describe("Directory", function(){
     beforeEach(function(){
-	d = new Directory(section_data.sections, $j("<div/>")[0])
+	d = new Directory(sections, $j("<div/>")[0])
     })
 
     it("should have a list of sections and an el", function(){

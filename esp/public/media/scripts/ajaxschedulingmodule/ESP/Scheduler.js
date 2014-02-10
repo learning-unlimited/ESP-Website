@@ -11,22 +11,43 @@ function Directory(sections, el) {
     }
 }
 
-function Matrix(timeslots, rooms, schedule_assignments, el) {
+function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
+    //TODO:  just pass the whole damn data object in
     this.el = el
-    this.timeslots = timeslots
+
     this.rooms = rooms
     this.schedule_assigments = schedule_assignments
+    this.sections = sections
     
+    this.add_timeslots_order = function(timeslot_object){
+	//TODO test and actually implement this
+	//TODO should this be a helper elsewhere
+	i = 0
+	$j.each(timeslot_object, function(timeslot_id, timeslot){
+	    timeslot.order = i
+	    i = i+1
+	})
+	return timeslot_object
+    }
+
+    this.timeslots = this.add_timeslots_order(timeslots)
+
     this.cells = function(){
 	cells = {}
-	ts = timeslots
 	$j.each(rooms, function(room_name, room){
 	    cells[room_name] = []
 	    i = 0
-	    $j.each(ts, function(timeslot_id, timeslot){
+	    $j.each(timeslots, function(timeslot_id, timeslot){
 		cells[room_name][i] = $j("<td/>")[0]
 		i = i + 1
 	    })
+	})
+
+	$j.each(schedule_assignments, function(class_id, assignment_data){
+	    class_emailcode = sections[class_id].emailcode
+	    timeslot_order = timeslots[assignment_data.timeslots[0]].order
+	    //TODO:  augment timslots datastructure with order information
+	    cells[assignment_data.room_name][timeslot_order] = $j("<td>"+class_emailcode+"</td>")[0]
 	})
 	return cells
     }()
@@ -64,7 +85,7 @@ function Matrix(timeslots, rooms, schedule_assignments, el) {
 
 function Scheduler(data, directoryEl, matrixEl) {
     this.directory = new Directory(data.sections, directoryEl)
-    this.matrix = new Matrix(data.timeslots, data.rooms, data.schedule_assignments, matrixEl)
+    this.matrix = new Matrix(data.timeslots, data.rooms, data.schedule_assignments, data.sections, matrixEl)
     this.render = function(){
 	this.directory.render()
 	this.matrix.render()
