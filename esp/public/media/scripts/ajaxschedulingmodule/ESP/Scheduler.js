@@ -44,10 +44,12 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
 	})
 
 	$j.each(schedule_assignments, function(class_id, assignment_data){
-	    class_emailcode = sections[class_id].emailcode
-	    timeslot_order = timeslots[assignment_data.timeslots[0]].order
-	    //TODO:  augment timslots datastructure with order information
-	    cells[assignment_data.room_name][timeslot_order] = $j("<td>"+class_emailcode+"</td>")[0]
+	    $j.each(assignment_data.timeslots, function(j, timeslot_id){
+		class_emailcode = sections[class_id].emailcode
+		timeslot_order = timeslots[timeslot_id].order
+		//TODO:  augment timslots datastructure with order information
+		cells[assignment_data.room_name][timeslot_order] = $j("<td>"+class_emailcode+"</td>")[0]
+	    })
 	})
 	return cells
     }()

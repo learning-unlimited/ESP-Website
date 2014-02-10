@@ -139,6 +139,8 @@ describe("Matrix", function(){
 	    expect(table.rows[1].cells[1].innerHTML).toMatch('S3188s1')
 	})
 
+	//TODO:  test that we deal gracefully with empty schedule assignments
+
 	//TODO:  do we need to do verification on the client side that classes take up the right amount of time?
     })
 })
