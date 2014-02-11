@@ -3,3 +3,11 @@ table,th,td
     border:1px solid black;
     border-collapse: collapse;
 }
+
+.available-cell{
+    background: #222222;
+}
+
+.occupied-cell{
+    background:  violet;
+}
