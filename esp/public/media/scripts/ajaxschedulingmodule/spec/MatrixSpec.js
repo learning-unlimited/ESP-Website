@@ -14,6 +14,38 @@ describe("Matrix", function(){
 	expect(m.sections).toBeObject()
     })
 
+    describe("getCell", function(){
+	it("returns the html cell for the requested room and time", function(){
+	    console.log(m.getCell("room-1", 1).innerHTML)
+	    expect(m.getCell("room-1", 1).innerHTML).toMatch('S3188s1')
+	    expect(m.getCell("room-1", 2).innerHTML).toMatch('S3188s1')
+	    expect(m.getCell("room-2", 1).innerHTML).toEqual('')
+	    expect(m.getCell("room-2", 2).innerHTML).toEqual('')
+	})
+    })
+    
+    describe("scheduling", function(){
+	beforeEach(function(){
+	    //TODO:  unschedule all classes
+	    //m.scheduleClass()
+	})
+
+	it("inserts the class into the matrix", function(){
+	    expect(m.getCell("room-2", 1).innerHTML).not.toMatch('M3343s1')
+	    expect(m.scheduleClass(3538, "room-2", [1,2])).toBeTrue()
+	    expect(m.getCell("room-2", 1).innerHTML).toMatch('M3343s1')
+	    expect(m.getCell("room-2", 2).innerHTML).toMatch('M3343s1')
+	    //TODO:  I want an assertion here that that the cell actually gets redrawn
+	})
+
+	it("should have draggable cells", function(){
+	    //I guess just expect draggable to be called here?
+	    //cells should be droppable
+	})
+	//TODO:  unscheduling classes
+	//TODO:  what if the room or time is taken?
+    })
+
     describe("render", function(){
 	beforeEach(function(){
 	    m.render()

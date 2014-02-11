@@ -25,7 +25,7 @@ var schedule_assignments_fixture = {
     }
 }
 
-
+//TODO:  we don't need all this data.  Can we pare it down?
 var sections_fixture = {
 	3329: {
 	    status: 10, 

@@ -41,6 +41,17 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
 	return cells
     }()
 
+    this.getCell = function(room_name, timeslot_id){
+	return cells[room_name][timeslots[timeslot_id].order]
+    }
+
+    this.scheduleClass = function(section_id, room_name, timeslots){
+	$j.each(timeslots, function(j, timeslot_id){
+	    this.getCell(room_name, timeslot_id).innerHTML = this.sections[section_id].emailcode
+	}.bind(this))
+	return true
+    }
+
     this.render = function(){
 	table = $j("<table/>")[0]
 
