@@ -25,7 +25,7 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
 	    cells[room_name] = []
 	    i = 0
 	    $j.each(timeslots, function(timeslot_id, timeslot){
-		cells[room_name][i] = $j("<td class='available-cell'/>")[0]
+		cells[room_name][i] = $j("<td class='available-cell matrix-cell'/>")[0]
 		i = i + 1
 	    })
 	})
@@ -35,7 +35,7 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
 		class_emailcode = sections[class_id].emailcode
 		timeslot_order = timeslots[timeslot_id].order
 		//TODO:  augment timslots datastructure with order information
-		cells[assignment_data.room_name][timeslot_order] = $j("<td class='occupied-cell'>"+class_emailcode+"</td>")[0]
+		cells[assignment_data.room_name][timeslot_order] = $j("<td class='occupied-cell matrix-cell'>"+class_emailcode+"</td>")[0]
 	    })
 	})
 	return cells

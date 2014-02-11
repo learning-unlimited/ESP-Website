@@ -4,6 +4,10 @@ table,th,td
     border-collapse: collapse;
 }
 
+.matrix-cell{
+    height: 40px;
+}
+
 .available-cell{
     background: #222222;
 }
