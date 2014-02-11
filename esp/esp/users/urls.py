@@ -35,3 +35,11 @@ urlpatterns = patterns('esp.users.views',
 urlpatterns += patterns('esp.web.views.main',
                         (r'^redirect/?$', 'registration_redirect',),
                        )
+
+urlpatterns += patterns('esp.web.views.myesp',
+                        (r'^switchback/?$', 'myesp_switchback',),
+                        (r'^onsite/?$', 'myesp_onsite',),
+                        (r'^passwd/?$', 'myesp_passwd',),
+                        (r'^profile/?$', 'edit_profile',),
+                       )
+

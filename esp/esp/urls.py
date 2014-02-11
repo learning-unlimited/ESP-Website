@@ -150,7 +150,6 @@ urlpatterns += patterns('esp.web.views.main',
     (r'^archives/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
-    (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'myesp'),
 
     # Event-generation
     # Needs to get fixed (axiak)
