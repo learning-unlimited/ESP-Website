@@ -11,3 +11,12 @@ table,th,td
 .occupied-cell{
     background:  violet;
 }
+
+.component-div {
+    height: 500px;
+    overflow-y: scroll;
+}
+
+.no-border {
+    border: 0px;
+}
