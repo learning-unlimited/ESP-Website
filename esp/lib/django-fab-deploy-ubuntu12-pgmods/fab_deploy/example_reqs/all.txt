@@ -1,0 +1,4 @@
+# this is just an example how requirements can be handled
+-r basic.txt
+-r django.txt
+-r apps.txt

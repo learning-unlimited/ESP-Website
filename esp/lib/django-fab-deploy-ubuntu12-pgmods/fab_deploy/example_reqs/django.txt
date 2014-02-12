@@ -1,0 +1,2 @@
+# django 1.2 svn
+-e svn+http://code.djangoproject.com/svn/django/branches/releases/1.2.X#egg=Django

@@ -1,0 +1,5 @@
+# packages that are widely used and rarely updated
+PIL
+mysql-python >= 1.2
+python-memcached >= 1.43
+simplejson
