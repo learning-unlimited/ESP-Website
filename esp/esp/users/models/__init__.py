@@ -781,10 +781,11 @@ class ESPUser(User, AnonymousUser):
         if self.is_anonymous() or self.id is None: return False
         is_admin_role = self.groups.filter(name="Administrator").exists()
         if is_admin_role: return True
-        if program is None:
-            return Permission.user_has_perm(self, "Administer")
-
-        return Permission.user_has_perm(self, "Administer",program=program)
+        quser = Q(user=self) | Q(user=None, role__in=self.groups.all())
+        return Permission.objects.filter(
+                        quser & Permission.is_valid_qobject(),
+                        permission_type="Administer",
+                        program__in=[None, program]).exists()
     isAdmin = isAdministrator
 
     @cache_function
@@ -2110,6 +2111,8 @@ class Permission(ExpirableModel):
 
     @classmethod
     def user_has_perm(self, user, name, program=None, when=None):
+        if user.isAdministrator(program=program):
+            return True
         perms=[name]
         for k,v in self.implications.items():
             if name in v: perms.append(k)

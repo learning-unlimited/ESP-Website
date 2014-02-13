@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 """
 
 from django import forms
+from django.core import validators
 from django.core.exceptions import ObjectDoesNotExist
 from esp.utils.forms import StrippedCharField, FormWithRequiredCss, FormUnrestrictedOtherUser
 from esp.utils.widgets import BlankSelectWidget, SplitDateWidget
@@ -75,7 +76,10 @@ class TeacherClassRegForm(FormWithRequiredCss):
 
     grade_min      = forms.ChoiceField( label='Minimum Grade Level', choices=[(7, 7)], widget=BlankSelectWidget() )
     grade_max      = forms.ChoiceField( label='Maximum Grade Level', choices=[(12, 12)], widget=BlankSelectWidget() )
-    class_size_max = forms.ChoiceField( label='Maximum Number of Students', choices=[(0, 0)], widget=BlankSelectWidget(),
+    class_size_max = forms.ChoiceField( label='Maximum Number of Students',
+                                        choices=[(0, 0)],
+                                        widget=BlankSelectWidget(),
+                                        validators=[validators.MinValueValidator(1)],
                                         help_text='The above class-size and grade-range values are absolute, not the "optimum" nor "recommended" amounts. We will not allow any more students than you specify, nor allow any students in grades outside the range that you specify. Please contact us later if you would like to make an exception for a specific student.' )
     class_size_optimal = forms.IntegerField( label='Optimal Number of Students', help_text="This is the number of students you would have in your class in the most ideal situation.  This number is not a hard limit, but we'll do what we can to try to honor this." )
     optimal_class_size_range = forms.ChoiceField( label='Optimal Class Size Range', choices=[(0, 0)], widget=BlankSelectWidget() )

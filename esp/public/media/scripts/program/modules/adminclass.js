@@ -16,8 +16,6 @@ function assignRoom(clsid){
 var handleSubmit = function () { this.submit(); }
 var handleCancel = function () { this.cancel(); }
 
-
-
 function show_loading_class_popup() {
   class_desc_popup
     .dialog('option', 'title', 'Loading')
@@ -182,20 +180,15 @@ function fillClasses(data)
     $j("#classes_anchor").html('');
 
     // Now loop through and render each class row
-    for (var i in classes) {
-    	var cls = classes[i];
-    	$j("#classes_anchor").append(createClassRow(cls));
+    for (var i in classes)
+    {
+	var cls = classes[i];
+	$j("#classes_anchor").append(createClassRow(cls));
     }
     
     //  Save the data for later if we need it
     classes_global = classes;
     sections_global = sections;
-    
-    $j('.submit-link').click(function(e){
-        e.preventDefault();
-        $j(this).closest('form').submit();
-     });
-
 }
 
 function createClassRow(clsObj)
@@ -223,21 +216,14 @@ function createClassRow(clsObj)
  \
     <td class='clsmiddle'> \
        <form method='post' action='/manage/{{ program.getUrlBase }}/deleteclass/{{ cls.id }}' onsubmit='return deleteClass();'> \
-          <a href='#' \
-              class='abutton submit-link' style='white-space: nowrap;'> \
-              Delete \
-          </a> \
+         <input class='button' type='submit' value='Delete' /> \
        </form> \
     </td> \
     <td class='clsmiddle'> \
-       <form method='post' action='/teach/{{ program.getUrlBase }}/editclass/{{ cls.id }}'> \
-         <input type='hidden' name='command' value='edit_class_{{ cls.id }}'> \
-         <input type='hidden' name='manage' value='manage'> \
-         <a href='#' \
-              class='abutton submit-link' style='white-space: nowrap;'> \
-              Edit \
-          </a> \
-       </form> \
+      <a href='/manage/{{ program.getUrlBase }}/editclass/{{ cls.id }}' title='Edit {{ cls.title }}' \
+       class='abutton' style='white-space: nowrap;'> \
+        Edit \
+      </a> \
     </td> \
     <td class='clsmiddle'> \
       <a href='/manage/{{ program.getUrlBase }}/manageclass/{{ cls.id }}' title='Manage {{ cls.title }}' \
@@ -330,4 +316,3 @@ function setup_sort_control()
     $j("#dashboard_sort_control").change(handle_sort_control);
     handle_sort_control();
 }
-
