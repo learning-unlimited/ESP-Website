@@ -7,7 +7,8 @@
 #   Building: 1
 #   Room: 136 (meaining 1-136 when put together)
 #
-# Room capacities and furnishings are drawn from a reference program of your choice.
+# Room capacities and furnishings are drawn from a reference program of your
+# choice. Note that the 'Sound system' resource should now be called 'Speakers'.
 #
 
 from script_setup import *
@@ -19,8 +20,13 @@ from datetime import datetime
 
 ETYPE_CLASSBLOCK = EventType.objects.get(description='Class Time Block')
 RTYPE_CLASSROOM = ResourceType.get_or_create('Classroom')
+
 PROGRAM = Program.objects.get(name=raw_input("Program name: "))
 REFPROG = Program.objects.get(name=raw_input("Reference program: "))
+
+RESOURCE_TYPES = ResourceType.objects.filter(program=PROGRAM)
+RTYPE_CLASS_SPACE = RESOURCE_TYPES.get(name__iexact='Classroom space')
+
 filename = os.path.expanduser(raw_input("Full path to CSV file: "))
 csvfile = open(filename, "r")
 reader = csv.reader(csvfile)
@@ -45,6 +51,34 @@ for row in reader:
                                       event_type=ETYPE_CLASSBLOCK,
                                       program=PROGRAM)
 
+    # Because most ResourceTypes are tied to a specific program, convert from
+    # last year's ResourceTypes to this year's by comparing the names. Nasty
+    # caveat: 'Sound system' is now called 'Speakers'.
+    furnishings = set() # a set of ResourceTypes, not Resources
+    furnishings.add(RTYPE_CLASS_SPACE) # always add classroom space
+
+    ref_furnishings = Resource.objects.filter(group_id=reference.group_id)
+    for f in ref_furnishings:
+        if f.res_type == RTYPE_CLASSROOM:
+            # skip the classroom resource itself; we only want to copy projectors
+            # and movable tables and stuff
+            continue
+        
+        search_term = f.res_type.name
+        if 'sound system' in search_term.lower():
+            search_term = 'Speakers'
+        results = ResourceType.objects.filter(program=PROGRAM,
+                                              name__iexact=search_term)
+        if len(results) == 0:
+            print "Could not add %s resource for %s" \
+                % (search_term, room_number)
+            continue
+        if len(results) > 1:
+            print "Multiple results for %s resource for %s; skipping" \
+                % (search_term, room_number)
+            continue
+        furnishings.add(results[0])
+
     # Create Clasrooms with Furnishings
     for block in timeblocks:
         room = Resource()
@@ -54,15 +88,11 @@ for row in reader:
         room.name = room_number
         room.save()
 
-        original_resources = Resource.objects.filter(group_id=reference.group_id)
-        for original_resource in original_resources:
-            if original_resource.res_type == RTYPE_CLASSROOM:
-                continue
-            
+        for res_type in furnishings:
             resource = Resource()
             resource.event = block
-            resource.res_type = original_resource.res_type
-            resource.name = original_resource.res_type.name + ' for ' + room_number
+            resource.res_type = res_type
+            resource.name = res_type.name + ' for ' + room_number
             resource.group_id = room.group_id
             resource.save()
 
