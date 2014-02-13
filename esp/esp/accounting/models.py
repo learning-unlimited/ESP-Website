@@ -180,6 +180,14 @@ class Transfer(models.Model):
     user = AjaxForeignKey(ESPUser, blank=True, null=True)
     line_item = models.ForeignKey(LineItemType, blank=True, null=True)
     amount_dec = models.DecimalField(max_digits=9, decimal_places=2)
+    transaction_id = models.TextField(
+                      'credit card processor transaction ID number',
+                      max_length=64,
+                      blank=True,
+                      default='',
+                      help_text='If this transfer is from a credit card ' +
+                      'transaction, stores the transaction ID number from ' +
+                      'the processor.')
     timestamp = models.DateTimeField(auto_now=True)
     executed = models.BooleanField(default=False)
     
