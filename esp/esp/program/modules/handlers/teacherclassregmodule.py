@@ -895,7 +895,8 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             context['classroom_form_advisories'] += '__open_class'
         context['classtype'] = context['classes'][context['isopenclass']]['type']
         context['otherclass'] = context['classes'][1 - context['isopenclass']]
-        
+        context['qsd_name'] = 'classedit_' + context['classtype']
+
         context['manage'] = False
         if ((request.method == "POST" and request.POST.has_key('manage') and request.POST['manage'] == 'manage') or 
             (request.method == "GET" and request.GET.has_key('manage') and request.GET['manage'] == 'manage') or
