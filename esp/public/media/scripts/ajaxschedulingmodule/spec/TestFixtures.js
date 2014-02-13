@@ -26,8 +26,7 @@ var schedule_assignments_fixture = {
 }
 
 //TODO:  we don't need all this data.  Can we pare it down?
-var sections_fixture = {
-	3329: {
+section_1 = {
 	    status: 10, 
 	    category: 'S', 
 	    parent_class: 3188, 
@@ -42,8 +41,9 @@ var sections_fixture = {
 	    grade_max: 12, 
 	    id: 3329, 
 	    teachers: [6460]
-	}, 
-	3538: {
+	}
+
+section_2 = {
 	    status: 10, 
 	    category: 'M', 
 	    parent_class: 3343, 
@@ -59,5 +59,9 @@ var sections_fixture = {
 	    id: 3538, 
 	    teachers: [45225]
 	}
+
+var sections_fixture = {
+	3329: section_1, 
+	3538: section_2
 }
 

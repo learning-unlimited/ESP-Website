@@ -25,7 +25,7 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
 	    cells[room_name] = []
 	    i = 0
 	    $j.each(timeslots, function(timeslot_id, timeslot){
-		cells[room_name][i] = $j("<td class='available-cell matrix-cell'/>")[0]
+		cells[room_name][i] = new Cell($j("<td/>"))
 		i = i + 1
 	    })
 	})
@@ -35,20 +35,21 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
 		class_emailcode = sections[class_id].emailcode
 		timeslot_order = timeslots[timeslot_id].order
 		//TODO:  augment timslots datastructure with order information
-		cells[assignment_data.room_name][timeslot_order] = $j("<td class='occupied-cell matrix-cell'>"+class_emailcode+"</td>")[0]
+		cells[assignment_data.room_name][timeslot_order].addSection(sections[class_id])
 	    })
 	})
 	return cells
     }()
 
     this.getCell = function(room_name, timeslot_id){
-	return cells[room_name][timeslots[timeslot_id].order]
+	return this.cells[room_name][this.timeslots[timeslot_id].order]
     }
 
-    this.scheduleClass = function(section_id, room_name, timeslots){
-	$j.each(timeslots, function(j, timeslot_id){
-	    this.getCell(room_name, timeslot_id).innerHTML = this.sections[section_id].emailcode
-	}.bind(this))
+    //TODO:  use scheduleClass in timeslots
+    this.scheduleClass = function(section, room_name, timeslots){
+	for(timeslot_id in this.timeslots){
+	    this.getCell(room_name, timeslot_id).addSection(section)
+	}
 	return true
     }
 
@@ -76,7 +77,8 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
 	$j.each(this.rooms, function(id, room){
 	    row = rows[id]
 	    for(i = 0; i < Object.keys(timeslots).length; i++){
-		row.appendChild(cells[id][i])
+		//TODO:  use getCell here
+		row.appendChild(cells[id][i].el[0])
 	    }
 	})
 	this.el.appendChild(table)	

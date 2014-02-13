@@ -16,11 +16,10 @@ describe("Matrix", function(){
 
     describe("getCell", function(){
 	it("returns the html cell for the requested room and time", function(){
-	    console.log(m.getCell("room-1", 1).innerHTML)
-	    expect(m.getCell("room-1", 1).innerHTML).toMatch('S3188s1')
-	    expect(m.getCell("room-1", 2).innerHTML).toMatch('S3188s1')
-	    expect(m.getCell("room-2", 1).innerHTML).toEqual('')
-	    expect(m.getCell("room-2", 2).innerHTML).toEqual('')
+	    expect(m.getCell("room-1", 1).section).toEqual(section_1)
+	    expect(m.getCell("room-1", 2).section).toEqual(section_1)
+	    expect(m.getCell("room-2", 1).innerHTML).toEqual(null)
+	    expect(m.getCell("room-2", 2).innerHTML).toEqual(null)
 	})
     })
     
@@ -31,11 +30,12 @@ describe("Matrix", function(){
 	})
 
 	it("inserts the class into the matrix", function(){
-	    expect(m.getCell("room-2", 1).innerHTML).not.toMatch('M3343s1')
-	    expect(m.scheduleClass(3538, "room-2", [1,2])).toBeTrue()
-	    expect(m.getCell("room-2", 1).innerHTML).toMatch('M3343s1')
-	    expect(m.getCell("room-2", 2).innerHTML).toMatch('M3343s1')
-	    //TODO:  I want an assertion here that that the cell actually gets redrawn
+	    cells = [m.getCell("room-2", 1), m.getCell("room-2", 2)]
+	    /*$j(cells).each(function(cell){
+		spyOn(c, 'addSection')
+	        expect(c.addSection).toHaveBeenCalled()//TODO:  with arguments
+	    })*/
+	    expect(m.scheduleClass(section_2, "room-2", [1,2])).toBeTrue()
 	})
 
 	it("should have draggable cells", function(){
@@ -80,7 +80,6 @@ describe("Matrix", function(){
 	    expect(table.rows[1].cells[2]).toBeDefined()
 	    expect(table.rows[2].cells[1]).toBeDefined()
 	    expect(table.rows[2].cells[2]).toBeDefined()
-	    
 	})
 
 	it("should show already scheduled sections", function(){
