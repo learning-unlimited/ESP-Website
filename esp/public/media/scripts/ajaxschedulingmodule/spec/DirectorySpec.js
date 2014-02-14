@@ -38,6 +38,10 @@ describe("TableRow", function(){
 	expect(tr.section).toBeObject()
     })
 
+    it("should have a cell", function(){
+	expect(tr.cell).toBeObject()
+    })
+
     describe("render", function(){
 	it("should display the section name", function(){
 	    tr.render()
@@ -49,10 +53,9 @@ describe("TableRow", function(){
 	    expect(tr.el[0].innerHTML).toMatch("my-emailcode")
 	})
 
-	it("should be draggable", function(){
-	    spyOn(tr.el, 'draggable')
+	it("includes the draggable cell", function(){
 	    tr.render()
-	    expect(tr.el.draggable).toHaveBeenCalled()
+	    expect(tr.el[0].innerHTML).toMatch(tr.cell.el[0].outerHTML)
 	})
     })
 })
