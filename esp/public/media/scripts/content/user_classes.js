@@ -32,7 +32,11 @@ function update_user_classes() {
     var hidden_name = '';
     for (var i = 0; i < esp_user.cur_roles.length; i++) {
 	type_name = "." + esp_user.cur_roles[i];
-	$j(type_name).removeClass("hidden");
+	try {
+		// This is wrapped in a try/catch block, because custom user
+		// role names might not be in a format that jQuery accepts.
+		$j(type_name).removeClass("hidden");
+	} catch (e) {}
     }
     
     //    Write user's name in the appropriate spot in the login box

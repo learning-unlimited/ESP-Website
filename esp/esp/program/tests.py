@@ -1015,7 +1015,9 @@ class ModuleControlTest(ProgramFrameworkTest):
         moduleobj.required = True
         moduleobj.save()
         
-        response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
+        response = self.client.get(
+                    '/learn/%s/studentreg' % self.program.getUrlBase(),
+                    **{'wsgi.url_scheme': 'https'})
         self.assertTrue('Financial Aid' in response.content)
         
         #   Remove the module and make sure we are not shown it anymore.

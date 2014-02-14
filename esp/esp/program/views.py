@@ -451,11 +451,6 @@ def newprogram(request):
         template_prog["term_friendly"] = tprogram.anchor.friendly_name
         '''
         
-        template_prog["admins"] = ESPUser.objects.filter(permission__permission_type="Administer",permission__program=tprogram).values_list("id", flat=True)
-
-        # aseering 5/18/2008 -- More aggressively list everyone who was an Admin
-        #template_prog["admins"] = [ x.id for x in UserBit.objects.bits_get_users(verb=GetNode("V/Administer"), qsc=tprogram.anchor, user_objs=True) ]
-
         student_reg_bits = list(Permission.objects.filter(permission_type__startswith='Student', program=template_prog_id).order_by('-start_date'))
         if len(student_reg_bits) > 0:
             newest_bit = student_reg_bits[0]
@@ -580,7 +575,7 @@ def submit_transaction(request):
                   settings.SERVER_EMAIL, recipient_list, True)
 
         #   Save the payment as a transfer in the database
-        iac.submit_payment(post_amount)
+        iac.submit_payment(post_amount, transaction_id=request.POST.get('requestID', ''))
 
         tl = 'learn'
         one, two = iac.program.url.split('/')

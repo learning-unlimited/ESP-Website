@@ -43,6 +43,7 @@ from django.conf import settings
 from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.contenttypes import generic
 from django.contrib.localflavor.us.models import PhoneNumberField
+from django.core import urlresolvers
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Count
@@ -59,6 +60,7 @@ from esp.middleware import ESPError, AjaxError
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types, Record
 from esp.utils.expirable_model import ExpirableModel
+from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
 
@@ -282,14 +284,26 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField() # director contact email address used for from field and display
-    director_cc_email = models.EmailField(blank=True, default='', help_text='If set, automated outgoing mail from ESP-Website (except class cancellations) will be sent to this address instead') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
-    director_confidential_email = models.EmailField(blank=True, default='', help_text='If set, confidential emails such as financial aid applications will be sent to this address instead')
+    director_cc_email = models.EmailField(blank=True, default='', help_text='If set, automated outgoing mail (except class cancellations) will be sent to this address instead of the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
+    director_confidential_email = models.EmailField(blank=True, default='', help_text='If set, confidential emails such as financial aid applications will be sent to this address instead of the director email.')
     program_size_max = models.IntegerField(null=True)
     program_allow_waitlist = models.BooleanField(default=False)
-    program_modules = models.ManyToManyField(ProgramModule)
+    program_modules = models.ManyToManyField(ProgramModule,
+                         help_text='The set of enabled program functionalities. See ' +
+                         '<a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst">' +
+                         'the documentation</a> for details.')
     class_categories = models.ManyToManyField('ClassCategories')
-    flag_types = models.ManyToManyField('ClassFlagType',blank=True) #so we don't have to delete old ones and don't end up with 3 seemingly-identical flags in the same program.
-    
+
+    #so we don't have to delete old ones and don't end up with
+    # 3 seemingly-identical flags in the same program.
+    flag_types = models.ManyToManyField('ClassFlagType',
+                    blank=True,
+                    help_text=format_lazy(
+                    'The set of flags that can be used ' +
+                    'to tag classes for this program. ' +
+                    'Add flag types in <a href="%s">the admin panel</a>.',
+                    urlresolvers.reverse_lazy('admin:program_classflagtype_changelist')))
+
     documents = generic.GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 
     class Meta:

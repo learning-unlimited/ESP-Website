@@ -68,13 +68,7 @@ admin_site.register(ArchiveClass, ArchiveClassAdmin)
 class ProgramAdmin(admin.ModelAdmin):
     class Media:
         css = { 'all': ( 'styles/admin.css', ) }
-    formfield_overrides = { ManyToManyField: { 'widget': admin.widgets.FilteredSelectMultiple(verbose_name='', is_stacked=False) } }
-    # formfield_overrides will work once we move past Django r9760.
-    # At that time we should cut out formfield_for_dbfield.
-    def formfield_for_dbfield(self, db_field, **kwargs):
-        if isinstance( db_field, ManyToManyField ):
-            kwargs['widget'] = admin.widgets.FilteredSelectMultiple(verbose_name='', is_stacked=False)
-        return super(ProgramAdmin, self).formfield_for_dbfield(db_field,**kwargs)
+    filter_horizontal = ('program_modules', 'class_categories', 'flag_types')
 admin_site.register(Program, ProgramAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
