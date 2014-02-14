@@ -54,22 +54,21 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
     }
 
     this.render = function(){
-	table = $j("<table/>")[0]
+	table = $j("<table/>")
 
 	//Time headers
-	header_row = table.createTHead().insertRow(0)
-	header_row.appendChild($j("<th/>")[0])
+	header_row = $j("<tr/>").appendTo($j("<thead/>").appendTo(table))
+	$j("<th/>").appendTo(header_row)
 	$j.each(this.timeslots, function(id, timeslot){
-	    cell = $j("<th>" + timeslot.label + "</th>")[0]
-	    header_row.appendChild(cell)
+	    $j("<th>" + timeslot.label + "</th>").appendTo(header_row)
 	})
 
 	//Room headers
 	rows = {}	//table rows by room name
 	$j.each(this.rooms, function(id, room){
-	    row = $j("<tr><th>" + id + "</th></tr>")[0]
+	    row = $j("<tr><th>" + id + "</th></tr>")
 	    rows[id] = row
-	    table.appendChild(row)
+	    row.appendTo(table)
 	})
 
 	//populate cells
@@ -78,10 +77,10 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
 	    row = rows[id]
 	    for(i = 0; i < Object.keys(timeslots).length; i++){
 		//TODO:  use getCell here
-		row.appendChild(cells[id][i].el[0])
+		cells[id][i].el.appendTo(row)
 	    }
 	})
-	this.el.appendChild(table)	
+	table.appendTo(this.el)
     }
 }
 

@@ -2,12 +2,12 @@ function Directory(sections, el) {
     this.sections = sections
     this.el = el
     this.render = function(){
-	table = $j("<table/>")[0]
+	table = $j("<table/>")
 	$j.each(sections, function(id, section){
-	    row = $j("<tr><td>" + section.title + "</td><td>"+section.emailcode+"</td></tr>")[0]
-	    table.appendChild(row)
+	    row = $j("<tr><td>" + section.title + "</td><td>"+section.emailcode+"</td></tr>")
+	    row.appendTo(table)
 	})
-	this.el.appendChild(table)
+	table.appendTo(this.el)
     }
 }
 
