@@ -72,14 +72,17 @@ class QSDManager(FileDBManager):
         if qsd_obj is None:
             qsd_obj = QuasiStaticData(url=url, **defaults)
             # Because of the way templates are usually written, there will
-            # often be unintended whitespace at the beginning of the default
-            # content of an inline QSD. Usually the block start tag will be
-            # followed by a linebreak, some indentation, and then the actual
-            # content. However, Markdown will interpret this as a code block.
-            # To avoid this, we assume that the default content will never
-            # purposely start with a Markdown code block, and we strip this
-            # unintended space.
-            qsd_obj.content = qsd_obj.content.lstrip()
+            # often be unintended whitespace at the beginnings of lines of the
+            # default content of an inline QSD. Usually a line starts with some
+            # template indentation before the actual content. However, Markdown
+            # will interpret this as a code block.  To avoid this, we assume
+            # that the default content will never purposely use Markdown code
+            # blocks, and we strip this unintended space.
+            content = unicode(qsd_obj.content.lstrip())
+            content = content.split('\n')
+            content = map(unicode.lstrip, content)
+            content = '\n'.join(content)
+            qsd_obj.content = content
         return qsd_obj
     get_by_url_else_init.depend_on_row(lambda:QuasiStaticData, lambda qsd: {'url': qsd.url})
 
