@@ -18,6 +18,7 @@ function Cell(el) {
 	this.el.addClass("occupied-cell")
 	this.el.removeClass("available-cell")
 	this.el[0].innerHTML = section.emailcode
+	this.el.draggable()
     }
 
     this.hasSection = function(){

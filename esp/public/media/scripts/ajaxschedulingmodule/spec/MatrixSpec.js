@@ -52,11 +52,6 @@ describe("Matrix", function(){
 	    })
 	})
 
-	it("should have draggable cells", function(){
-	    //I guess just expect draggable to be called here?
-	    //cells should be droppable
-	})
-
 	afterEach(function() {
 	    m.clearCell(m.getCell("room-2", 1))
 	    m.clearCell(m.getCell("room-2", 2))

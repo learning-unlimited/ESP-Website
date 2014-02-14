@@ -33,6 +33,11 @@ describe("Cell", function(){
 	    expect(c.el.hasClass("occupied-cell")).toBeTrue()
 	    expect(c.el.hasClass("available-cell")).toBeFalse()
 	})
+	it("makes the el draggable", function(){
+	    spyOn(c.el, 'draggable')
+	    c.addSection(section)
+	    expect(c.el.draggable).toHaveBeenCalled()
+	})
     })
 
     describe("removing a section", function(){
