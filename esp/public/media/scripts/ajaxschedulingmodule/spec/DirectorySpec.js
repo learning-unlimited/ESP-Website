@@ -25,3 +25,34 @@ describe("Directory", function(){
 	})
     })
 })
+
+describe("TableRow", function(){
+    beforeEach(function(){
+	tr = new TableRow({title: "my-title", emailcode: "my-emailcode"}, $j("<tr/>"))
+    })
+    it("should have an el", function(){
+	expect(tr.el[0]).toBeHtmlNode()
+    })
+
+    it("should have a section", function(){
+	expect(tr.section).toBeObject()
+    })
+
+    describe("render", function(){
+	it("should display the section name", function(){
+	    tr.render()
+	    expect(tr.el[0].innerHTML).toMatch("my-title")
+	})
+
+	it("shsould display the section email code", function(){
+	    tr.render()
+	    expect(tr.el[0].innerHTML).toMatch("my-emailcode")
+	})
+
+	it("should be draggable", function(){
+	    spyOn(tr.el, 'draggable')
+	    tr.render()
+	    expect(tr.el.draggable).toHaveBeenCalled()
+	})
+    })
+})

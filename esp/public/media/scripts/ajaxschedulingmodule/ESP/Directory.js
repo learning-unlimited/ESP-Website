@@ -4,10 +4,21 @@ function Directory(sections, el) {
     this.render = function(){
 	table = $j("<table/>")
 	$j.each(sections, function(id, section){
-	    row = $j("<tr><td>" + section.title + "</td><td>"+section.emailcode+"</td></tr>")
-	    row.appendTo(table)
+	    row = new TableRow(section, $j("<tr/>"))
+	    row.render()
+	    row.el.appendTo(table)
 	})
 	table.appendTo(this.el)
+    }
+}
+
+function TableRow(section, el){
+    this.el = el
+    this.section = section
+
+    this.render = function(){
+	this.el[0].innerHTML = "<td>" + this.section.title + "</td><td>"+this.section.emailcode+"</td>"
+	this.el.draggable()
     }
 }
 
