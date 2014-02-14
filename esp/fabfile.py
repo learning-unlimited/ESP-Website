@@ -11,8 +11,7 @@ from fabric.api import *
 from fabric.contrib import files
 
 env.user='vmuser'
-env.password = 'opensesame'
-env.site='/home/%s/src/hyhbc/' % (env.user)
+env.password = 'opensesame'#CHANGEME
 
 class CustomWebProject(WebProject):
     @task_method
