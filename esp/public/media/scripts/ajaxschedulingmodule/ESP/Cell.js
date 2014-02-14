@@ -19,6 +19,10 @@ function Cell(el) {
 	this.el.removeClass("available-cell")
 	this.el[0].innerHTML = section.emailcode
     }
+
+    this.hasSection = function(){
+	return this.section != null
+    }
 }
 
 //TODO:  test that cells have appropriate classes

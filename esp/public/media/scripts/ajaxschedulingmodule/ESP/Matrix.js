@@ -46,11 +46,24 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
     }
 
     //TODO:  use scheduleClass in timeslots
-    this.scheduleClass = function(section, room_name, timeslots){
-	for(timeslot_id in this.timeslots){
+    this.scheduleSection = function(section, room_name, schedule_timeslots){
+	//validation
+	for(timeslot_index in schedule_timeslots){
+	    timeslot_id = schedule_timeslots[timeslot_index]
+	    if (this.getCell(room_name, timeslot_id).section != null){
+		return false
+	    }
+	}
+
+	for(timeslot_index in schedule_timeslots){
+	    timeslot_id = schedule_timeslots[timeslot_index]
 	    this.getCell(room_name, timeslot_id).addSection(section)
 	}
 	return true
+    }
+
+    this.clearCell = function(cell){
+	cell.removeSection()
     }
 
     this.render = function(){

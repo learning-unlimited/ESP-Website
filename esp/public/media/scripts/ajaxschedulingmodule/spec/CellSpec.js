@@ -49,10 +49,22 @@ describe("Cell", function(){
 	    c.removeSection()
 	    expect(c.el[0].innerHTML).not.toMatch(section.emailcode)
 	})
+
 	it("changes the cell styling", function(){
 	    c.removeSection()
 	    expect(c.el.hasClass("occupied-cell")).toBeFalse()
 	    expect(c.el.hasClass("available-cell")).toBeTrue()
+	})
+    })
+
+    describe("hasSection", function(){
+	it("returns true when the cell has a section", function(){
+	    c.addSection({})
+	    expect(c.hasSection()).toBeTrue()
+	})
+
+	it("returns false when there is no section", function(){
+	    expect(c.hasSection()).toBeFalse()
 	})
     })
 })

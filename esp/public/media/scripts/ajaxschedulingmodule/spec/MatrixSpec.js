@@ -24,28 +24,56 @@ describe("Matrix", function(){
 	})
     })
     
-    /*describe("scheduling", function(){
-	beforeEach(function(){
-	    //TODO:  unschedule all classes
-	    //m.scheduleClass()
+    describe("scheduleSection", function(){
+	it("inserts the class into the matrix", function(){
+	    cell1 = m.getCell("room-2", 1)
+	    cell2 = m.getCell("room-2", 2)
+	    spyOn(cell1, 'addSection')
+	    spyOn(cell2, 'addSection')
+	    expect(m.scheduleSection(section_2, "room-2", [1,2])).toBeTrue()
+	    expect(cell1.addSection).toHaveBeenCalled()//TODO: .withArguments(section_1)
+	    expect(cell2.addSection).toHaveBeenCalled()//TODO: .withArguments(section_1)
 	})
 
-	it("inserts the class into the matrix", function(){
-	    //cells = [m.getCell("room-2", 1), m.getCell("room-2", 2)]
-	    /*$j(cells).each(function(cell){
-		spyOn(c, 'addSection')
-	        expect(c.addSection).toHaveBeenCalled()//TODO:  with arguments
+	describe("validation", function(){
+	    describe("when a class is already scheduled in a room", function(){
+		beforeEach(function(){
+		    m.scheduleSection(section_1, "room-2", [2])
+		})
+		
+		it("returns false", function(){
+		    expect(m.scheduleSection(section_2, "room-2", [1,2])).toBeFalse()
+		})
+		it("doesn't allow you to schedule the class", function(){
+		    m.scheduleSection(section_2, "room-2", [1,2])
+		    expect(m.getCell("room-2", 1).section).not.toEqual(section_2)
+		    expect(m.getCell("room-2", 2).section).not.toEqual(section_2)
+		})
 	    })
-	    expect(m.scheduleClass(section_2, "room-2", [1,2])).toBeTrue()
 	})
 
 	it("should have draggable cells", function(){
 	    //I guess just expect draggable to be called here?
 	    //cells should be droppable
 	})
+
+	afterEach(function() {
+	    m.clearCell(m.getCell("room-2", 1))
+	    m.clearCell(m.getCell("room-2", 2))
+	})
 	//TODO:  unscheduling classes
 	//TODO:  what if the room or time is taken?
-    })*/
+    })
+
+    describe("clearCell", function(){
+	it("removes a section from that cell", function(){
+	    cell = m.getCell("room-1", 1)
+	    spyOn(cell, "removeSection")
+	    expect(cell.section).not.toBeNull()
+	    m.clearCell(m.getCell("room-1", 1))
+	    expect(cell.removeSection).toHaveBeenCalled()
+	})
+    })
 
     describe("render", function(){
 	beforeEach(function(){
