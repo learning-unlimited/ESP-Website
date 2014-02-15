@@ -493,8 +493,7 @@ class ClassSection(models.Model):
     checklist_progress_all_cached.depend_on_m2m(lambda: ClassSection, 'checklist_progress', lambda cs, cp: {'self': cs})
 
     def getResourceAssignments(self):
-        from esp.resources.models import ResourceAssignment
-        return ResourceAssignment.objects.filter(target=self)
+        return self.resourceassignment_set.all()
 
     def getResources(self):
         assignment_list = self.getResourceAssignments()
