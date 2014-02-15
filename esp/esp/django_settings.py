@@ -345,8 +345,8 @@ DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TEMPLATE_CONTEXT': True,
     'INSERT_BEFORE': '</div>',
     'ENABLE_STACKTRACES' : True,
-    'RENDER_PANELS': None,
-    'SHOW_COLLAPSED': True,
+    'RENDER_PANELS': True, # Ideally would be None, but there is a bug in their code.
+    'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.
 }
 
 #   Allow Filebrowser to edit anything under media/
