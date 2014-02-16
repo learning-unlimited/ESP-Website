@@ -51,16 +51,30 @@ class ESPError_Log(Exception):
 class ESPError_NoLog(Exception):
     pass
 
-def ESPError(log=True):
+def ESPError(message=None, log=True):
     """ Use this to raise an error in the ESP world.
     Example usage::
         from esp.middleware import ESPError
-        raise ESPError(False), 'This error will not be logged.'
+        raise ESPError('This error will not be logged.', log=False)
+    Legacy (deprecated) usage::
+        raise ESPError(log=False), 'This error will not be logged.'
     """
+    if isinstance(message, bool):
+        # trying to pass a bool argument: assume they meant log rather than message
+        # this should become deprecated -lua 2013-02-15
+        message = None
+        log = message
+
     if log:
-        return ESPError_Log
+        cls = ESPError_Log
     else:
-        return ESPError_NoLog
+        cls = ESPError_NoLog
+
+    if message is None:
+        # no message: assume legacy usage
+        return cls
+    else:
+        return cls(message)
  
 """ Adapted from http://www.djangosnippets.org/snippets/802/ """
 class AjaxErrorMiddleware(object):
