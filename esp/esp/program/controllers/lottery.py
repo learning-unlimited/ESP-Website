@@ -620,10 +620,12 @@ class LotteryAssignmentController(object):
             This is a fairly time consuming step compared to computing the assignments. """
             
         self.clear_saved_assignments()
-        
-        assignments = numpy.nonzero(self.student_sections)
-        student_ids = self.student_ids[assignments[0]]
-        section_ids = self.section_ids[assignments[1]]
+        self.save_assignments_helper(self.student_sections, self.student_ids, self.section_ids, debug_display, try_mailman)
+    
+    def save_assignments_helper(self, student_sections, student_ids, section_ids, debug_display=False, try_mailman=False):
+        assignments = numpy.nonzero(student_sections)
+        student_ids = student_ids[assignments[0]]
+        section_ids = section_ids[assignments[1]]
         
         assert(student_ids.shape == section_ids.shape)
         
