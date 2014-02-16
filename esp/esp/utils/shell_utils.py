@@ -11,6 +11,7 @@ from esp.program.modules.base import CoreModule, ProgramModuleObj
 from esp.program.modules.models import install
 
 from esp.accounting.controllers import BaseAccountingController, GlobalAccountingController, IndividualAccountingController
+from esp.program.controllers.classchange import ClassChangeController
 from esp.program.controllers.classreg import ClassCreationController
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.controllers.consistency import ConsistencyChecker

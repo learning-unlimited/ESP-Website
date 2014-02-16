@@ -134,10 +134,10 @@ class ClassChangeController(object):
         if 'students_not_checked_in' in self.options.keys() and isinstance(self.options['students_not_checked_in'],QuerySet):
             self.students_not_checked_in = list(self.options['students_not_checked_in'].values_list('id',flat=True).distinct())
         self.Q_SR_NOW = Q(studentregistration__start_date__lt=self.deadline, studentregistration__end_date__gt=self.now)
-        self.Q_SR_PROG = Q(studentregistration__section__parent_class__parent_program=self.program) & self.Q_SR_NOW
+        self.Q_SR_PROG = Q(studentregistration__section__parent_class__parent_program=self.program, studentregistration__section__meeting_times__isnull=False) & self.Q_SR_NOW
         self.Q_SR_REQ = Q(studentregistration__relationship__name="Request") & self.Q_SR_PROG
         self.Q_NOW = Q(start_date__lt=self.deadline, end_date__gt=self.now)
-        self.Q_PROG = Q(section__parent_class__parent_program=self.program) & self.Q_NOW
+        self.Q_PROG = Q(section__parent_class__parent_program=self.program, section__meeting_times__isnull=False) & self.Q_NOW
         self.Q_REQ = Q(relationship__name="Request") & self.Q_PROG
         self.students = ESPUser.objects.filter(self.Q_SR_REQ).order_by('id').distinct()
         self.priority_limit = self.program.priorityLimit()
@@ -414,7 +414,10 @@ class ClassChangeController(object):
                                 for [old_section] in old_sections:
                                     pq.put((self.section_scores[old_section], random.random(), student), False)
                             students_to_kick[sec_ind] = pq
-                        self.enroll_final[students_to_kick[sec_ind].get(False)[2], sec_ind, self.section_schedules[sec_ind,:]] = False
+                        try:
+                            self.enroll_final[students_to_kick[sec_ind].get(False)[2], sec_ind, self.section_schedules[sec_ind,:]] = False
+                        except Queue.Empty:
+                            pass
 
     def compute_assignments(self):
         """ Figure out what students should be assigned to what sections.
