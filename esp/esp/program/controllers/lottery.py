@@ -431,7 +431,7 @@ class LotteryAssignmentController(object):
         for i in range(self.num_students):
             assert(numpy.sum(self.student_schedules[i, :] != numpy.sum(self.section_schedules[numpy.nonzero(self.student_sections[i, :])[0], :], 0)) == 0)
     
-    def compute_stats(self, display=True):
+    def compute_stats(self, display=False):
         """ Compute statistics to provide feedback to the user about how well the
             lottery assignment worked.  """
 
@@ -528,29 +528,30 @@ class LotteryAssignmentController(object):
         stats['students_by_screwedness'] = screwed_students
 
         if self.options['stats_display'] or display:
-            self.display_stats(stats)
+            print self.display_stats(stats)
 
         self.stats = stats
         return stats
 
     def display_stats(self, stats):
-        print 'Lottery results for %s' % self.program.niceName()
-        print '--------------------------------------'
+        s = 'Lottery results for %s\n' % self.program.niceName()
+        s += '--------------------------------------\n'
 
-        print 'Counts:'
-        print '%6d students applied to the lottery' % stats['num_lottery_students']
-        print '%6d students were enrolled in at least 1 class' % stats['num_enrolled_students']
-        print '%6d total enrollments' % stats['num_registrations']
-        print '%6d available sections' % stats['num_sections']
-        print '%6d sections were filled to capacity' % stats['num_full_classes']
+        s += 'Counts:\n'
+        s += '%6d students applied to the lottery\n' % stats['num_lottery_students']
+        s += '%6d students were enrolled in at least 1 class\n' % stats['num_enrolled_students']
+        s += '%6d total enrollments\n' % stats['num_registrations']
+        s += '%6d available sections\n' % stats['num_sections']
+        s += '%6d sections were filled to capacity\n' % stats['num_full_classes']
 
-        print 'Ratios:'
+        s += 'Ratios:\n'
         if self.priority_limit>1:
             for i in range(1,self.priority_limit+1):
-                print '%2.2f%% of priority classes were enrolled' % (stats['overall_priority_%s_ratio' % i] * 100.0)
+                s += '%2.2f%% of priority classes were enrolled\n' % (stats['overall_priority_%s_ratio' % i] * 100.0)
         else:
-            print '%2.2f%% of priority classes were enrolled' % (stats['overall_priority_ratio'] * 100.0)
-        print '%2.2f%% of interested classes were enrolled' % (stats['overall_interest_ratio'] * 100.0)
+            s += '%2.2f%% of priority classes were enrolled\n' % (stats['overall_priority_ratio'] * 100.0)
+        s += '%2.2f%% of interested classes were enrolled\n' % (stats['overall_interest_ratio'] * 100.0)
+        return s
         """
         print 'Example results:'
         no_pri_indices = numpy.nonzero(stats['priority_assigned'] == 0)[0]
@@ -564,6 +565,7 @@ class LotteryAssignmentController(object):
             cs_ids = self.section_ids[numpy.nonzero(self.interest[no_pri_indices[i], :])[0]]
             print '   - Interested classes: %s' % ClassSection.objects.filter(id__in=list(cs_ids))
             """
+            
 
     def get_computed_schedule(self, student_id, mode='assigned'):
         #   mode can be 'assigned', 'interested', or 'priority'
