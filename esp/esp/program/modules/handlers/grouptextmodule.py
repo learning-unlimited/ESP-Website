@@ -63,58 +63,56 @@ class GroupTextModule(ProgramModuleObj):
     @aux_call
     @needs_admin
     def grouptextfinal(self, request, tl, one, two, module, extra, prog):
-        filterObj = None
-        data = {}
-        for key in request.POST:
-            data[key] = request.POST[key]
+        if request.method != 'POST' or 'filterid' not in request.GET or 'message' not in request.POST:
+            raise ESPError(), 'Filter or message have not been properly set'
 
-        print data
-
-
-        if not ('base_list' in data and 'recipient_type' in data):
-            raise ESPError(), "Corrupted POST data!  Please contact us at "+settings.DEFAULT_EMAIL_ADDRESSES['support']+" and tell us how you got this error, and we'll look into it."
-
-        filterObj = UserSearchController().filter_from_postdata(prog, data)
-
+        # get the filter to use and text message to send from the request; this is set in grouptextpanel form
+        filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
+        message = request.POST['message']
 
         numusers = filterObj.getList(ESPUser).distinct().count()
+        est_time = 0.5 * numusers # TODO: calculate properly
+        log = self.sendMessages(filterObj, message)
 
-        # TODO: calculate properly
-        est_time = 0.5 * numusers
-
-        print 'Sending %d text messages' % numusers
-        self.sendMessages(filterObj, data["message"])
-
-        return render_to_response(self.baseDir()+'finished.html', request,
-                                  (prog, tl), {'time': est_time})
+        return render_to_response(self.baseDir()+'finished.html', request, {'time': est_time, 'log': log})
 
     @main_call
     @needs_admin
     def grouptextpanel(self, request, tl, one, two, module, extra, prog):
         usc = UserSearchController()
-
         context = {}
         context['program'] = prog
 
-        context.update(usc.prepare_context(prog))
-        context['lists'] = context['lists']['Student']
+        if request.method == "POST":
+            data = {}
+            for key in request.POST:
+                data[key] = request.POST[key]
+            filterObj = UserSearchController().filter_from_postdata(prog, data)
 
-        # care about enrolled students, students in specific classes, and not really anyone else
-        def interesting_list(lst):
-          return lst['name'] == 'enrolled' or lst['name'] == 'attended' or lst['name'] == 'all_Student'
+            context['filterid'] = filterObj.id
+            context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            return render_to_response(self.baseDir()+'options.html', request, context)
 
-        context['lists'] = [lst for lst in context['lists'] if interesting_list(lst)]
-
-        return render_to_response(self.baseDir()+'panel.html', request, (prog, tl), context)
+        context.update(usc.prepare_context(prog, target_path='/manage/%s/grouptextpanel' % prog.url))
+        return render_to_response(self.baseDir()+'search.html', request, context)
 
     def sendMessages(self, filterobj, body):
-        from twilio.rest import TwilioRestClient
+        """ Attempts to send a text message with body to users matching filterobj
+            Returns a log of actions which can be displayed to user. """
+
+        try:
+            from twilio.rest import TwilioRestClient
+        except ImportError:
+            raise ESPError(), "Python Twilio API client has not been installed"
 
         users = filterobj.getList(ESPUser)
         try:
             users = users.distinct()
         except:
             pass
+
+        if not users:
+            raise ESPError(), "Your query did not match any users"
 
         account_sid = settings.TWILIO_ACCOUNT_SID
         auth_token = settings.TWILIO_AUTH_TOKEN
@@ -123,7 +121,11 @@ class GroupTextModule(ProgramModuleObj):
         if not account_sid or not auth_token or not ourNumbers:
           raise ESPError(), "You must configure the Twilio account settings before attempting to send texts using this module"
 
+        # cycle through our phone numbers to reduce sending time
         numberIndex = 0
+
+        send_log = []
+        send_log.append('Sending message to ' + str(users.count()) + ' users')
 
         for user in users:
             user = ESPUser(user)
@@ -131,25 +133,34 @@ class GroupTextModule(ProgramModuleObj):
             contactInfo = None
             try:
                 # TODO: handle multiple ContactInfo objects per user
-                contactInfo = ContactInfo.objects.get(user=user)
+                contactInfo = ContactInfo.objects.filter(user=user).order_by("-id")[0]
             except ContactInfo.DoesNotExist:
                 pass
             if not contactInfo:
-                print "Could not find contact info for "+str(user)
+                send_log.append("Could not find contact info for "+str(user))
                 continue
+            send_log.append("Found contact info for "+str(user))
+
             # the user has elected to not receive text messages
             if not contactInfo.receive_txt_message:
-                print str(user)+" does not want text messages, fine"
+                send_log.append(str(user)+" does not want text messages, fine")
                 continue
             client = TwilioRestClient(account_sid, auth_token)
 
-            formattedNumber = "+1"+contactInfo.phone_cell.replace("-","")
-            print "Sending text message to "+formattedNumber
-            client.sms.messages.create(body=body,
-                                       to=formattedNumber,
-                                       from_=ourNumbers[numberIndex])
-            numberIndex = (numberIndex + 1) % len(ourNumbers)
+            # format the number for Twilio
+            formattedNumber = contactInfo.phone_cell.replace("-", "").replace(" ", "")
+
+            if formattedNumber:
+                if formattedNumber[0] != '+':
+                    formattedNumber = '+1' + formattedNumber
+
+                send_log.append("Sending text message to "+formattedNumber)
+                client.sms.messages.create(body=body,
+                                           to=formattedNumber,
+                                           from_=ourNumbers[numberIndex])
+                numberIndex = (numberIndex + 1) % len(ourNumbers)
+
+        return "\n".join(send_log)
 
     class Meta:
         abstract = True
-
