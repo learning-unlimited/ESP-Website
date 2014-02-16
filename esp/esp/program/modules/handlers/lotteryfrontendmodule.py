@@ -87,10 +87,10 @@ class LotteryFrontendModule(ProgramModuleObj):
         	return {'response': [{'success': 'no', 'error': 'missing student_sections,student_ids,section_ids'}]};
         
         lotteryObj = LotteryAssignmentController(prog)
-        lotteryObj.student_sections = numpy.loadtxt(StringIO(request.POST['student_sections']))
-        lotteryObj.student_ids = numpy.loadtxt(StringIO(request.POST['student_ids']))
-        lotteryObj.section_ids = numpy.loadtxt(StringIO(request.POST['section_ids']))
-        lotteryObj.save_assignments()
+        student_sections = numpy.loadtxt(StringIO(request.POST['student_sections']))
+        student_ids = numpy.loadtxt(StringIO(request.POST['student_ids']))
+        section_ids = numpy.loadtxt(StringIO(request.POST['section_ids']))
+        lotteryObj.save_assignments_helper(student_sections, student_ids, section_ids)
         
         return {'response': [{'success': 'yes'}]};
 
