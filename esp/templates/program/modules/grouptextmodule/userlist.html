@@ -1,0 +1,55 @@
+<html>
+<head>
+<title>User List</title>
+<style type="text/css" media="print,screen">
+body { font-family: georgia; }
+.classtitle { text-align: center; font-size: 15pt; font-weight: bold; font-family: georgia; padding: .3in;}
+
+.classroster { text-align: center; }
+.title span { font-weight:bolder; text-decoration: underline;
+              font-size:16pt; }
+
+.blocks { padding: 4px; font-size: 10pt; font-weight: bold; }
+.classroom { padding: 8px; font-size: 10pt; font-weight: bold; }
+.pretty {border: 1px solid black; }
+.pretty td { border: 1px solid black; }
+.pretty th { border: 1px solid black; }
+.pretty td { vertical-align: top; }
+.teachername { font-size: 9pt; }
+.teachername span { border: 1px solid black; padding: 3px;
+               width: auto; }
+.classroom { vertical-align: top; }
+.blokcs { vertical-align: top; }
+.pretty td.oldnew { border-bottom: 0; border-top: 2px; }
+.pretty td.old { border-bottom: 0;
+                      border-top: 0;}
+#pagebreak {page-break-after: always; }
+</style>
+</head>
+<body>
+<div class="title" style="text-align: center;">
+<span>List generated for:</span><br />
+<tt>{{finalsentence}}</tt>
+</div>
+<br />
+<br />
+<table class="pretty" cellspacing="0">
+<tr>
+   <th>#</th>
+   <th>Name</th>
+   <th>Address</th>
+   <th>Email</th>
+   <th>ID#</th>
+</tr>
+{% for user in users %}
+<tr>
+   <td>{{forloop.counter}}</td>
+   <td>{{ user.name }}</td>
+   <td>{% if user.getLastProfile.contact_user.address %}{{ user.getLastProfile.contact_user.address}}{% else %}N/A{% endif %}</td>
+   <td>{{ user.email }}</td>
+   <td><strong>{{user.id}}</strong></td>
+</tr>
+ {% endfor %}
+</table>
+</body>
+</html>

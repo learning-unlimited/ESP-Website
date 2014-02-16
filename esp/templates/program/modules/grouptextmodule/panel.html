@@ -1,0 +1,75 @@
+{% extends "main.html" %}
+
+{% block title %}Group Texting Portal{% endblock %}
+
+{% block subsection_name %}Group Texting Portal{% endblock %}
+
+{% block xtrajs %}
+{{block.super}}
+<script type="text/javascript">
+<!--
+
+var lists = [
+ {% for dblist in lists %}['{{dblist.id|addslashes}}', '{{dblist.description|addslashes}}']{% if not forloop.last %},{% endif %}
+ {% endfor %}];
+
+var TextMessage = {
+  messageInput: null,
+  lengthRemainingText: null,
+  onMessageChange: function() {
+    if(!TextMessage.messageInput) {
+      TextMessage.messageInput = document.getElementById("message_input");
+    }
+    if(!TextMessage.lengthRemainingText) {
+      TextMessage.lengthRemainingText = document.getElementById("length_remaining");
+    }
+    var len = TextMessage.messageInput.textLength;
+    var remainingCharacters = 160 - len;
+    TextMessage.lengthRemainingText.textContent = remainingCharacters+" characters remaining";
+  }
+};
+
+//-->
+</script>
+{% endblock %}
+{% block stylesheets %}
+{{block.super}}
+<style type="text/css">
+#length_remaining {
+  color: #777;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+
+<h1>Group Texting Portal</h1>
+<br />
+<p> Welcome to the group texting portal&mdash;your one stop to text the ESP community for your program.</p>
+
+<br />
+<h2>Step 1:</h2>
+
+<form action="/manage/{{program.getUrlBase}}/grouptextfinal" method="post" name="grouptext">
+<p>
+<em>(If you feel there's a list omitted from this list or this interface is too hard to use, please email <tt>{{ DEFAULT_EMAIL_ADDRESSES.support }}</tt> with questions!)</em>
+<br />
+
+<select name="base_list" id="base_list">
+   <option value="">Select list to text...</option>
+{% for dblist in lists %}
+  <option value="{{dblist.id}}">{{dblist.description }}</option>
+{% endfor %}
+</select><br /><br />
+<textarea name="message" id="message_input" cols="40" rows="4" oninput="TextMessage.onMessageChange();"></textarea>
+<p id="length_remaining">160 characters remaining.</p>
+</p>
+<input type="submit" value="Send your message!" name="submitform" />
+<input type="hidden" name="keys" value="{{lists|join:",,"|addslashes}}" />
+<input type="hidden" name="recipient_type" value="student" />
+</form>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}
