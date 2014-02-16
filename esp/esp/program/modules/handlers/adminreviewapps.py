@@ -77,10 +77,10 @@ class AdminReviewApps(ProgramModuleObj):
         try:
             cls = ClassSubject.objects.get(id = extra)
         except ClassSubject.DoesNotExist:
-            raise ESPError(False), 'Cannot find class.'
+            raise ESPError('Cannot find class.', log=False)
 
         if not request.user.canEdit(cls):
-            raise ESPError(False), 'You cannot edit class "%s"' % cls
+            raise ESPError('You cannot edit class "%s"' % cls, log=False)
 
         #   Fetch any student even remotely related to the class.
         students_dict = cls.students_dict()
@@ -124,7 +124,7 @@ class AdminReviewApps(ProgramModuleObj):
             cls = ClassSubject.objects.get(id = request.GET.get('cls',''))
             student = ESPUser.objects.get(id = request.GET.get('student',''))
         except:
-            raise ESPError(False), 'Student or class not found.'
+            raise ESPError('Student or class not found.', log=False)
 
         #   Note: no support for multi-section classes.
         sec = cls.get_sections()[0]
@@ -142,7 +142,7 @@ class AdminReviewApps(ProgramModuleObj):
             cls = ClassSubject.objects.get(id = request.GET.get('cls',''))
             student = ESPUser.objects.get(id = request.GET.get('student',''))
         except:
-            raise ESPError(False), 'Student or class not found.'
+            raise ESPError('Student or class not found.', log=False)
 
         #   Note: no support for multi-section classes.
         sec = cls.get_sections()[0]
@@ -162,7 +162,7 @@ class AdminReviewApps(ProgramModuleObj):
             cls = ClassSubject.objects.get(id = extra)
             section = cls.default_section()
         except ClassSubject.DoesNotExist:
-            raise ESPError(False), 'Cannot find class.'
+            raise ESPError('Cannot find class.', log=False)
         
         student = request.GET.get('student',None)
         if not student:
@@ -171,17 +171,17 @@ class AdminReviewApps(ProgramModuleObj):
         try:
             student = ESPUser.objects.get(id = student)
         except ESPUser.DoesNotExist:
-            raise ESPError(False), 'Cannot find student, %s' % student
+            raise ESPError('Cannot find student, %s' % student, log=False)
 
         if student.studentregistration_set.filter(section__parent_class=cls).count() == 0:
-            raise ESPError(False), 'Student not a student of this class.'
+            raise ESPError('Student not a student of this class.', log=False)
         
         try:
             student.app = student.studentapplication_set.get(program = self.program)
         except:
             student.app = None
             assert False, student.studentapplication_set.all()[0].__dict__
-            raise ESPError(False), 'Error: Student did not apply. Student is automatically rejected.'
+            raise ESPError('Error: Student did not apply. Student is automatically rejected.', log=False)
         
         return render_to_response(self.baseDir()+'app_popup.html', request, {'class': cls, 'student': student})
 

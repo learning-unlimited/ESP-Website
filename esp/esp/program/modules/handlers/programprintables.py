@@ -177,7 +177,7 @@ class ProgramPrintables(ProgramModuleObj):
                 cls   = ClassSubject.objects.get(parent_program = self.program,
                                           id             = clsid)
             except:
-                raise ESPError(), 'Could not get the class object.'
+                raise ESPError('Could not get the class object.')
 
             cls_dict = {}
             for cur_cls in classes:
@@ -202,7 +202,7 @@ class ProgramPrintables(ProgramModuleObj):
                         clsids[i+1] = tmp
                         found       = True
             else:
-                raise ESPError(), 'Received invalid operation for class list.'
+                raise ESPError('Received invalid operation for class list.')
 
             classes = []
 

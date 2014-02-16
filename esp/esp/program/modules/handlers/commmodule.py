@@ -88,14 +88,14 @@ class CommModule(ProgramModuleObj):
         try:
             filterid = int(filterid)
         except:
-            raise ESPError(), "Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it."
+            raise ESPError("Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it.")
 
         userlist = PersistentQueryFilter.getFilterFromID(filterid, ESPUser).getList(ESPUser)
 
         try:
             firstuser = userlist[0]
         except:
-            raise ESPError(), "You seem to be trying to email 0 people!  Please go back, edit your search, and try again."
+            raise ESPError("You seem to be trying to email 0 people!  Please go back, edit your search, and try again.")
 
         #   If they were trying to use HTML, don't sanitize the content.
         if '<html>' not in body:
@@ -134,7 +134,7 @@ class CommModule(ProgramModuleObj):
         try:
             filterid = int(filterid)
         except:
-            raise ESPError(), "Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it."
+            raise ESPError("Corrupted POST data!  Please contact us at esp-web@mit.edu and tell us how you got this error, and we'll look into it.")
         
         filterobj = PersistentQueryFilter.getFilterFromID(filterid, ESPUser)
 
@@ -232,7 +232,7 @@ class CommModule(ProgramModuleObj):
                 return render_to_response(self.baseDir()+'step2.html', request, context)
                 
             else:
-                raise ESPError(True), 'What do I do without knowing what kind of users to look for?'
+                raise ESPError('What do I do without knowing what kind of users to look for?', log=True)
         
         #   Otherwise, render a page that shows the list selection options
         context.update(usc.prepare_context(prog))

@@ -248,7 +248,7 @@ class ListGenModule(ProgramModuleObj):
                 if 'filterid' in request.GET:
                     filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
                 else:
-                    raise ESPError(False)('Could not determine the query filter ID.')
+                    raise ESPError('Could not determine the query filter ID.', log=False)
 
             #   Parse the contents of the form
             form = ListGenForm(request.POST)

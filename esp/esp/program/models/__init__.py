@@ -1272,7 +1272,7 @@ class RegistrationProfile(models.Model):
 
     def cancelStudentRegConfirmation(self, user):
         """ Cancel the registration confirmation for the specified student """
-        raise ESPError(), "Error: You can't cancel a registration confirmation!  Confirmations are final!"
+        raise ESPError("Error: You can't cancel a registration confirmation!  Confirmations are final!")
         
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
@@ -1681,7 +1681,7 @@ class ScheduleConstraint(models.Model):
             result = _f(self.schedule_map)
             return result
         except Exception, inst:
-            #   raise ESPError(False), 'Schedule constraint handler error: %s' % inst
+            #   raise ESPError('Schedule constraint handler error: %s' % inst, log=False)
             pass
         #   If we got nothing from the on_failure function, just provide Nones.
         return (None, None)
@@ -1850,7 +1850,7 @@ class RegistrationType(models.Model):
         #   If 'include' is specified, make sure we have keys named in that list
         if include:
             if not isinstance(category, str):
-                raise ESPError(True), 'Need to supply category to RegistrationType.get_map() when passing include arguments'
+                raise ESPError('Need to supply category to RegistrationType.get_map() when passing include arguments', log=True)
             for name in include:
                 type, created = RegistrationType.objects.get_or_create(name=name, category=category)
         
