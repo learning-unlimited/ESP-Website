@@ -910,6 +910,15 @@ class Program(models.Model, CustomFormsLinkModel):
         return modules
 
     @cache_function
+    def hasModule(self, name):
+        """ Tests whether a program has the given module enabled, cachedly. name should be a module name, like 'AvailabilityModule'. """
+        return self.program_modules.filter(handler=name).exists()
+    getModules_cached.depend_on_row(lambda: Program, lambda prog: {'self': prog})
+    getModules_cached.depend_on_model(lambda: ProgramModule)
+    getModules_cached.depend_on_row(lambda: ProgramModuleObj, lambda module: {'self': module.program})
+
+
+    @cache_function
     def getModuleViews(self, main_only=False, tl=None):
         modules = self.getModules_cached(tl)
         result = {}

@@ -500,7 +500,7 @@ class ESPUser(User, AnonymousUser):
 
         #   Detect whether the program has the availability module, and assume
         #   the user is always available if it isn't there.
-        if program.program_modules.filter(handler='AvailabilityModule').exists():
+        if program.hasModule('AvailabilityModule'):
             valid_events = Event.objects.filter(useravailability__user=self, program=program).order_by('start')
         else:
             valid_events = program.getTimeSlots()
