@@ -1,5 +1,3 @@
-from __future__ import with_statement
-
 __author__    = "Individual contributors (see AUTHORS file)"
 __date__      = "$DATE$"
 __rev__       = "$REV$"
@@ -31,11 +29,9 @@ MIT Educational Studies Program
 Learning Unlimited, Inc.
   527 Franklin St, Cambridge, MA 02139
   Phone: 617-379-0178
-  Email: web-team@learningu.org
+  Email: web-team@lists.learningu.org
 """
 
-import logging
-logger = logging.getLogger(__name__)
 import numpy
 assert numpy.version.short_version >= "1.7.0"
 import numpy.random
@@ -46,8 +42,7 @@ from esp.cal.models import Event
 from esp.users.models import ESPUser, StudentInfo
 from esp.program.models import StudentRegistration, StudentSubjectInterest, RegistrationType, RegistrationProfile, ClassSection
 from esp.program.models.class_ import ClassCategories
-from esp.mailman import add_list_members, remove_list_member, list_contents
-from esp.tagdict.models import Tag
+from esp.mailman import add_list_member, remove_list_member, list_contents
 
 from django.conf import settings
 from django.db.models import Min
@@ -65,28 +60,15 @@ class LotteryAssignmentController(object):
         'use_student_apps': False,
         'fill_low_priorities': False,
     }
-
+    
     def __init__(self, program, **kwargs):
         """ Set constant parameters for a lottery assignment. """
-
+        
 
         self.program = program
-
-        if Tag.getProgramTag('program_size_by_grade', self.program):
-            # TODO(benkraft): Consider implementing this.  Stanford's use case
-            # as of Fall 2015 (for which program_size_by_grade was written)
-            # doesn't need it, but we might want to implement it anyway, or
-            # remove the program size logic from the lottery entirely.
-            print ("WARNING: The lottery doesn't support the "
-                   "program_size_by_grade Tag yet.  It will run without a "
-                   "program cap, and allow all students who have marked "
-                   "preferences to get classes.")
-            self.program_size_max = 0
-        else:
-            self.program_size_max = self.program.program_size_max
         students = self.program.students()
         if 'twophase_star_students' in students:
-            # We can't do the join in SQL, because the query generated takes at least half an hour.  So do it in python.
+            # We can't do the join in SQL, because the query generated takes at leas half an hour.  So do it in python.
             stars = set(students['twophase_star_students'].values_list('id',flat=True))
             prioritys = set(students['twophase_priority_students'].values_list('id',flat=True))
             self.lotteried_students = list(stars|prioritys)
@@ -94,48 +76,47 @@ class LotteryAssignmentController(object):
         elif 'lotteried_students' in students:
             self.lotteried_students = students['lotteried_students']
         else:
-            raise Exception('Cannot retrieve lottery preferences for program, please ensure that it has the lottery module.')
-        self.sections = self.program.sections().filter(status__gt=0, parent_class__status__gt=0, registration_status=0, meeting_times__isnull=False).order_by('id').select_related('parent_class','parent_class__parent_program').prefetch_related('meeting_times').distinct()
+            raise Exception('Cannot retrive lottery preferences for program, please ensure that it has the lottery module.')
+        self.sections = self.program.sections().filter(status__gt=0, parent_class__status__gt=0, registration_status=0, meeting_times__isnull=False).order_by('id').select_related('parent_class','parent_class__parent_program','meeting_times').distinct()
         self.timeslots = self.program.getTimeSlots()
         self.num_timeslots = len(self.timeslots)
         self.num_students = len(self.lotteried_students)
         self.num_sections = len(self.sections)
-        self.real_priority_limit = self.program.priorityLimit() # For most purposes, you probably want to use self.effective_priority_limit instead.
+        self.priority_limit = self.program.priorityLimit()
         self.grade_range_exceptions = self.program.useGradeRangeExceptions()
-        self.effective_priority_limit = self.real_priority_limit + 1 if self.grade_range_exceptions else self.real_priority_limit
-
+        
         self.options = LotteryAssignmentController.default_options.copy()
         self.options.update(kwargs)
-
+        
         self.now = datetime.now()
         numpy.random.seed(self.now.microsecond)
-
+        
         self.initialize()
-
-        if self.options['stats_display']:
-            logger.info('Initialized lottery assignment for %d students, %d sections, %d timeslots', self.num_students, self.num_sections, self.num_timeslots)
-
+        
+        if self.options['stats_display']: 
+            print 'Initialized lottery assignment for %d students, %d sections, %d timeslots' % (self.num_students, self.num_sections, self.num_timeslots)
+        
     def get_index_array(self, arr):
-        """ Given an array of arbitrary integers, create a new array that maps
+        """ Given an array of arbitrary integers, create a new array that maps 
             the values back to their indices.  Invalid entries are stored as -1.
             For example:            arr = [1, 6, 5, 3]
                 -> get_index_array(arr) = [-1, 0, -1, 3, -1, 2, 1]
         """
-
+        
         max_index = numpy.max(arr)
         index_arr = -numpy.ones((max_index + 1,), dtype=numpy.int32)
         for i in range(arr.shape[0]):
             index_arr[arr[i]] = i
         return index_arr
-
+        
     def get_ids(self, qs):
         """ Get an array of the IDs of the objects stored in the QuerySet qs. """
-
+        
         return numpy.array(qs.order_by('id').values_list('id', flat=True))
-
+        
     def get_ids_and_indices(self, qs):
         """ Get a tuple of the IDs and lookup indices of the objects stored in the QuerySet qs. """
-
+        
         if 'order_by' in dir(qs):
             # We have a QuerySet.
             a1 = numpy.array(qs.order_by('id').values_list('id', flat=True))
@@ -143,32 +124,15 @@ class LotteryAssignmentController(object):
             a1 = numpy.array(qs)
         a2 = self.get_index_array(a1)
         return (a1, a2)
-
+        
     def clear_assignments(self):
         """ Reset the state of the controller so that new assignments may be computed,
             but without fetching any information from the database. """
-
+            
         self.student_schedules = numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool)
         self.student_enrollments = numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.int32)
         self.student_sections = numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool)
         self.student_weights = numpy.ones((self.num_students,))
-        self.student_utilities = numpy.zeros((self.num_students, ), dtype=numpy.float)
-
-    def put_prefs_in_array(self, prefs, array):
-        """ Helper function for self.initialize().
-
-        Given ValuesListQuerySet of preferences (student, section) and a students-by-sections array (likely self.interest or self.priority[i]), set the entries of the array corresponding to the preferences True.  Check that all values in question are valid.
-
-        prefs should be a ValuesListQuerySet of tuples (user, section), such as that generated by StudentRegistration.objects.filter(...).values_list('user__id', 'section__id').distinct().
-        array should be a boolean array of dimension self.num_students by self.num_sections, such as self.interest or self.priority[i]."""
-        if prefs.exists():
-            pref_array = numpy.array(prefs, dtype=numpy.uint32)
-            student_ixs = self.student_indices[pref_array[:, 0]]
-            section_ixs = self.section_indices[pref_array[:, 1]]
-            #   Check that we didn't look up invalid indices (which are set to -1).
-            assert numpy.min(student_ixs)>=0, "Got a preference for a student who doesn't exist!"
-            assert numpy.min(section_ixs)>=0, "Got a preference for a section which doesn't exist!"
-            array[student_ixs, section_ixs] = True
 
     def initialize(self):
         """ Gather all of the information needed to run the lottery assignment.
@@ -177,15 +141,15 @@ class LotteryAssignmentController(object):
             -   Class schedules and capacities
             -   Timeslots (incl. lunch periods for each day)
         """
-
+        
         self.interest = numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool)
-        self.priority = [numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool) for i in range(self.effective_priority_limit+1)]
+        self.priority = [numpy.zeros((self.num_students, self.num_sections), dtype=numpy.bool) for i in range(self.priority_limit+2 if self.grade_range_exceptions else self.priority_limit+1)]
         self.ranks = 10*numpy.ones((self.num_students, self.num_sections), dtype=numpy.int32)
         self.section_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool)
         self.section_start_schedules = numpy.zeros((self.num_sections, self.num_timeslots), dtype=numpy.bool)
         self.section_capacities = numpy.zeros((self.num_sections,), dtype=numpy.uint32)
         self.section_overlap = numpy.zeros((self.num_sections, self.num_sections), dtype=numpy.bool)
-
+        
         # One array to keep track of the utility of each student
         # (defined as hours of interested class + 1.5*hours of priority classes)
         # and the other arrary to keep track of student weigths (defined as # of classes signed up for)
@@ -197,7 +161,7 @@ class LotteryAssignmentController(object):
         (self.section_ids, self.section_indices) = self.get_ids_and_indices(self.sections)
         (self.timeslot_ids, self.timeslot_indices) = self.get_ids_and_indices(self.timeslots)
         self.parent_classes = numpy.array(self.sections.values_list('parent_class__id', flat=True))
-
+        
         #   Get IDs of timeslots allocated to lunch by day
         #   (note: requires that this is constant across days)
         self.lunch_schedule = numpy.zeros((self.num_timeslots,))
@@ -215,36 +179,50 @@ class LotteryAssignmentController(object):
             lunch_by_day[dates.index(d)].append(ts.id)
             self.lunch_schedule[self.timeslot_indices[ts.id]] = True
         self.lunch_timeslots = numpy.array(lunch_by_day)
-
-        #   Populate interest matrix; this uses both the StudentRegistrations (which apply to a particular section) and StudentSubjectIntegests (which apply to all sections of the class).  If one does not exist, ignore it.  Be careful to only return SRs and SSIs for accepted sections of accepted classes; this might matter for SSIs where only some sections of the class are accepted.
-        interest_regs_sr = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, section__status__gt=0, section__parent_class__status__gt=0, section__registration_status=0, section__meeting_times__isnull=False, relationship__name='Interested').values_list('user__id', 'section__id').distinct()
-        interest_regs_ssi = StudentSubjectInterest.valid_objects().filter(subject__parent_program=self.program, subject__status__gt=0, subject__sections__status__gt=0, subject__sections__registration_status=0, subject__sections__meeting_times__isnull=False).values_list('user__id', 'subject__sections__id').distinct()
-        self.put_prefs_in_array(interest_regs_sr, self.interest)
-        self.put_prefs_in_array(interest_regs_ssi, self.interest)
-
+        
+        #   Populate interest matrix; this uses both the StudentRegistrations (which apply to a particular section) and StudentSubjectIntegests (which apply to all sections of the class).  If one does not exist, ignore it.
+        interest_regs_sr = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Interested').values_list('user__id', 'section__id').distinct()
+        interest_regs_ssi = StudentSubjectInterest.valid_objects().filter(subject__parent_program=self.program).values_list('user__id', 'subject__sections__id').distinct()
+        ira_sr = numpy.array(interest_regs_sr, dtype=numpy.uint32)
+        ira_ssi = numpy.array(interest_regs_ssi, dtype=numpy.uint32)
+        try:
+            self.interest[self.student_indices[ira_sr[:, 0]], self.section_indices[ira_sr[:, 1]]] = True
+        except IndexError:
+            pass
+        try:
+            self.interest[self.student_indices[ira_ssi[:, 0]], self.section_indices[ira_ssi[:, 1]]] = True
+        except IndexError:
+            pass
+        
         #   Populate priority matrix
-        priority_regs = [StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Priority/%s'%i).values_list('user__id', 'section__id').distinct() for i in range(self.real_priority_limit+1)]
+        priority_regs = [StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='Priority/%s'%i).values_list('user__id', 'section__id').distinct() for i in range(self.priority_limit+1)]
         if self.grade_range_exceptions:
             priority_regs.append(StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, relationship__name='GradeRangeException').values_list('user__id', 'section__id').distinct())
-        for i in range(1,self.effective_priority_limit+1):
-            self.put_prefs_in_array(priority_regs[i], self.priority[i])
+            self.priority_limit += 1
+        pra = [numpy.array(priority_regs[i], dtype=numpy.uint32) for i in range(self.priority_limit+1)]
+        for i in range(1,self.priority_limit+1):
+            try:
+                self.priority[i][self.student_indices[pra[i][:, 0]], self.section_indices[pra[i][:, 1]]] = True
+            except IndexError:
+                #   If the query was empty, we get an IndexError; we just want to ignore it.
+                pass
         if self.options['use_student_apps']:
-            for i in range(1,self.effective_priority_limit+1):
+            for i in range(1,self.priority_limit+1):
                 for (student_id,section_id) in priority_regs[i]:
                     self.ranks[self.student_indices[student_id],self.section_indices[section_id]] = ESPUser.getRankInClass(student_id,self.parent_classes[self.section_indices[section_id]])
-            for (student_id,section_id) in interest_regs_sr + interest_regs_ssi:
+            for (student_id,section_id) in interest_regs:
                 self.ranks[self.student_indices[student_id],self.section_indices[section_id]] = ESPUser.getRankInClass(student_id,self.parent_classes[self.section_indices[section_id]])
 
-
+        
         #   Set student utility weights. Counts number of classes that students selected. Used only for computing the overall_utility stat
-        self.student_utility_weights = numpy.sum(self.interest.astype(float), 1) + sum([numpy.sum(self.priority[i].astype(float), 1) for i in range(1,self.effective_priority_limit+1)])
+        self.student_utility_weights = numpy.sum(self.interest.astype(float), 1) + sum([numpy.sum(self.priority[i].astype(float), 1) for i in range(1,self.priority_limit+1)])
 
         #   Populate section schedule
         section_times = numpy.array(self.sections.values_list('id', 'meeting_times__id'))
         start_times = numpy.array(self.sections.annotate(start_time=Min('meeting_times')).values_list('id','start_time'))
         self.section_schedules[self.section_indices[section_times[:, 0]], self.timeslot_indices[section_times[:, 1]]] = True
         self.section_start_schedules[self.section_indices[start_times[:, 0]], self.timeslot_indices[start_times[:, 1]]] = True
-
+        
         #   Populate section overlap matrix
         for i in range(self.num_sections):
             group_ids = numpy.nonzero(self.parent_classes == self.parent_classes[i])[0]
@@ -253,12 +231,12 @@ class LotteryAssignmentController(object):
         #   Populate section grade limits
         self.section_grade_min = numpy.array(self.sections.values_list('parent_class__grade_min', flat=True), dtype=numpy.uint32)
         self.section_grade_max = numpy.array(self.sections.values_list('parent_class__grade_max', flat=True), dtype=numpy.uint32)
-
+        
         #   Populate student grades; grade will be assumed to be 0 if not entered on profile
         self.student_grades = numpy.zeros((self.num_students,))
         gradyear_pairs = numpy.array(RegistrationProfile.objects.filter(user__id__in=list(self.student_ids), most_recent_profile=True, student_info__graduation_year__isnull=False).values_list('user__id', 'student_info__graduation_year'), dtype=numpy.uint32)
-        self.student_grades[self.student_indices[gradyear_pairs[:, 0]]] = 12 + ESPUser.program_schoolyear(self.program) - gradyear_pairs[:, 1]
-
+        self.student_grades[self.student_indices[gradyear_pairs[:, 0]]] = 12 + ESPUser.current_schoolyear() - gradyear_pairs[:, 1] + self.program.incrementGrade()
+        
         #   Find section capacities (TODO: convert to single query)
         for sec in self.sections:
             self.section_capacities[self.section_indices[sec.id]] = sec.capacity
@@ -268,22 +246,22 @@ class LotteryAssignmentController(object):
 
         if self.options['fill_low_priorities']:
             #   Compute who has a priority when.  Includes lower priorities, since this is used for places where we check not clobbering priorities.
-            self.has_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit+1)]
-            for i in range(1,self.effective_priority_limit+1):
-                priority_at_least_i = reduce(operator.or_,[self.priority[j] for j in range(i,self.effective_priority_limit+1)])
+            self.has_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.priority_limit+2 if self.grade_range_exceptions else self.priority_limit+1)]
+            for i in range(1,self.priority_limit+1):
+                priority_at_least_i = reduce(operator.or_,[self.priority[j] for j in range(i,self.priority_limit+1)])
                 numpy.dot(priority_at_least_i,self.section_schedules,out=self.has_priority[i])
-
+            
             self.sections_at_same_time = numpy.dot(self.section_schedules, numpy.transpose(self.section_schedules))
 
             #   And the same, overlappingly.
-            self.has_overlapping_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit+1)]
-            for i in range(1,self.effective_priority_limit+1):
-                priority_at_least_i = reduce(operator.or_,[self.priority[j] for j in range(i,self.effective_priority_limit+1)])
+            self.has_overlapping_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.priority_limit+2 if self.grade_range_exceptions else self.priority_limit+1)]
+            for i in range(1,self.priority_limit+1):
+                priority_at_least_i = reduce(operator.or_,[self.priority[j] for j in range(i,self.priority_limit+1)])
                 numpy.dot(numpy.dot(priority_at_least_i,self.sections_at_same_time),self.section_schedules,out=self.has_overlapping_priority[i])
 
             #   Fill in preferences for students who haven't ranked them.  In particular, if a student has ranked some level of class in a timeblock (i.e. they plan to be at Splash that timeblock), but has not ranked any priority/n or lower-priority classes overlapping it, add a random class from their interesteds.
 
-            for i in range(1,self.real_priority_limit+1): #Use self.real_priority_limit since we don't want to give people free grade range exceptions!
+            for i in range(1,self.priority_limit+1):
                 should_fill = numpy.transpose(numpy.nonzero(self.has_priority[1]&~self.has_overlapping_priority[i]))
                 if len(should_fill):
                     for student, timeslot in should_fill:
@@ -293,31 +271,31 @@ class LotteryAssignmentController(object):
                             choice = numpy.random.choice(possible_classes)
                             self.priority[i][student,choice]=True
 
+                        
 
-
-
+    
     def fill_section(self, si, priority=False, rank=10):
         """ Assigns students to the section with index si.
             Performs some checks along the way to make sure this didn't break anything. """
-
+        
         timeslots = numpy.nonzero(self.section_schedules[si, :])[0]
-
-        if self.options['stats_display']: logger.info('-- Filling section %d (index %d, capacity %d, timeslots %s), priority=%s', self.section_ids[si], si, self.section_capacities[si], self.timeslot_ids[timeslots], priority)
-
-        #   Compute number of spaces - exit if section or program is already full.  Otherwise, set num_spaces to the number of students we can add without overfilling the section or program.
+        
+        if self.options['stats_display']: print '-- Filling section %d (index %d, capacity %d, timeslots %s), priority=%s' % (self.section_ids[si], si, self.section_capacities[si], self.timeslot_ids[timeslots], priority)
+        
+        #   Compute number of spaces - exit if section or program is already full
         num_spaces = self.section_capacities[si] - numpy.sum(self.student_sections[:, si])
-        if self.program_size_max:
-            program_spaces_remaining = self.program_size_max - numpy.sum((numpy.sum(self.student_schedules, 1) > 0))
-            if program_spaces_remaining == 0:
-                if self.options['stats_display']: logger.info('   Program was already full with %d students', numpy.sum((numpy.sum(self.student_schedules, 1) > 0)))
+        if self.program.program_size_max:
+            program_spaces_remaining = self.program.program_size_max - numpy.sum((numpy.sum(self.student_schedules, 1) > 0))
+            num_spaces = min(num_spaces, program_spaces_remaining)
+            if num_spaces == 0:
+                if self.options['stats_display']: print '   Program was already full with %d students' % numpy.sum((numpy.sum(self.student_schedules, 1) > 0))
                 return True
-            else:
-                num_spaces = min(num_spaces, program_spaces_remaining)
-        if num_spaces == 0:
-            if self.options['stats_display']: logger.info('   Section was already full with %d students', self.section_capacities[si])
-            return True
+        else:
+            if num_spaces == 0:
+                if self.options['stats_display']: print '   Section was already full with %d students' % self.section_capacities[si]
+                return True
         assert(num_spaces > 0)
-
+        
         #   Assign the matrix of sign-up preferences depending on whether we are considering priority bits or not
         if priority:
             signup = self.priority[priority]
@@ -325,38 +303,38 @@ class LotteryAssignmentController(object):
         else:
             signup = self.interest
             weight_factor = self.options['Ki']
-
+            
         #   Check that there is at least one timeslot associated with this section
         if timeslots.shape[0] == 0:
-            if self.options['stats_display']: logger.info('   Section was not assigned to any timeslots, aborting')
+            if self.options['stats_display']: print '   Section was not assigned to any timeslots, aborting'
             return False
-
+            
         #   Check that this section does not cover all lunch timeslots on any given day
         lunch_overlap = self.lunch_schedule * self.section_schedules[si, :]
         for i in range(self.lunch_timeslots.shape[0]):
             if len(self.lunch_timeslots[i]) != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i]]]) >= (self.lunch_timeslots.shape[1]):
-                if self.options['stats_display']: logger.info('   Section covered all lunch timeslots %s on day %d, aborting', self.lunch_timeslots[i, :], i)
+                if self.options['stats_display']: print '   Section covered all lunch timeslots %s on day %d, aborting' % (self.lunch_timeslots[i, :], i)
                 return False
-
+        
         #   Get students who have indicated interest in the section
         possible_students = numpy.copy(signup[:, si])
-
+        
         #   Filter students by the section's grade limits
-        if self.options['check_grade'] and not (priority == self.effective_priority_limit and self.grade_range_exceptions):
+        if self.options['check_grade'] and not (priority == self.priority_limit and self.grade_range_exceptions):
             possible_students *= (self.student_grades >= self.section_grade_min[si])
             possible_students *= (self.student_grades <= self.section_grade_max[si])
 
         if self.options['use_student_apps']:
             possible_students *= (self.ranks[:, si] == rank)
-
+            
         #   Filter students by who has all of the section's timeslots available
         for i in range(timeslots.shape[0]):
             possible_students *= (True - self.student_schedules[:, timeslots[i]])
-
+            
         #   Filter students by who is not already registered for a different section of the class
         for sec_index in numpy.nonzero(self.section_overlap[:, si])[0]:
             possible_students *= (True - self.student_sections[:, sec_index])
-
+            
         #   Filter students by lunch constraint - if class overlaps with lunch period, student must have 1 additional free spot
         #   NOTE: Currently only works with 2 lunch periods per day
         for i in range(timeslots.shape[0]):
@@ -366,7 +344,7 @@ class LotteryAssignmentController(object):
                     timeslot_index = self.timeslot_indices[self.lunch_timeslots[lunch_day, j]]
                     if timeslot_index != timeslots[i]:
                         possible_students *= (True - self.student_schedules[:, timeslot_index])
-
+                        
         candidate_students = numpy.nonzero(possible_students)[0]
         if candidate_students.shape[0] <= num_spaces:
             #   If the section has enough space for all students that applied, let them all in.
@@ -385,7 +363,7 @@ class LotteryAssignmentController(object):
         #   Check that none of these students are already assigned to this section
         assert(numpy.sum(self.student_sections[selected_students, si]) == 0)
         self.student_sections[selected_students, si] = True
-
+        
         #   Update student schedules
         #   Check that none of the students are already occupied in those timeblocks
         for i in range(timeslots.shape[0]):
@@ -398,100 +376,81 @@ class LotteryAssignmentController(object):
                 self.student_utilities[selected_students] += 1.5
             else:
                 self.student_utilities[selected_students] += 1
-
+        
         #   Update student weights
         self.student_weights[selected_students] /= weight_factor
-
-        if self.options['stats_display']: logger.info('   Added %d/%d students (section filled: %s)', selected_students.shape[0], candidate_students.shape[0], section_filled)
-
+        
+        if self.options['stats_display']: print '   Added %d/%d students (section filled: %s)' % (selected_students.shape[0], candidate_students.shape[0], section_filled)
+        
         return section_filled
 
     def compute_assignments(self, check_result=True):
         """ Figure out what students should be assigned to what sections.
             Doesn't actually store results in the database.
             Can be run any number of times. """
-
+            
         self.clear_assignments()
-
+        
+        #   Assign priority students to all sections in random order, grouped by duration
+        #   so that longer sections aren't disadvantaged by scheduling conflicts
+        random_section_indices = numpy.random.choice(self.num_sections, self.num_sections, replace=False)
         ranks = (10,)
         if self.options['use_student_apps']:
             ranks = (10,5)
         for rank in ranks:
-            for i in range(1,self.effective_priority_limit+1):
+            for i in range(1,self.priority_limit+1):
                 if self.options['stats_display']:
-                    logger.info('\n== Assigning priority%s students%s',
-                                str(i) if self.effective_priority_limit > 1 else '',
-                                ' with rank %s' % rank if self.options['use_student_apps'] else '')
-                #   Assign priority students to all sections in random order, grouped by duration
-                #   so that longer sections aren't disadvantaged by scheduling conflicts
-                #   Re-randomize for each priority level so that some sections don't keep getting screwed
-                sections_by_length = [numpy.nonzero(numpy.sum(self.section_schedules, axis=1) == i)[0] for i in range(self.num_timeslots, 0, -1)]
-                for a in sections_by_length:
-                    numpy.random.shuffle(a)
-                    for section_index in a:
-                        self.fill_section(section_index, priority=i, rank=rank)
+                    print '\n== Assigning priority%s students%s' % ((str(i) if self.priority_limit > 1 else ''), (' with rank %s'%rank if self.options['use_student_apps'] else ''))
+                for section_index in random_section_indices:
+                    self.fill_section(section_index, priority=i, rank=rank)
             #   Sort sections in increasing order of number of interesting students
             #   TODO: Check with Alex that this is the desired algorithm
             interested_counts = numpy.sum(self.interest, 0)
             sorted_section_indices = numpy.argsort(interested_counts.astype(numpy.float) / self.section_capacities)
             if self.options['stats_display']:
-                logger.info('\n== Assigning interested students%s',
-                            ' with rank %s' % rank if self.options['use_student_apps'] else '')
+                print '\n== Assigning interested students%s' % (' with rank %s'%rank if self.options['use_student_apps'] else '')
             for section_index in sorted_section_indices:
                 self.fill_section(section_index, priority=False, rank=rank)
-
+        
         if check_result:
             self.check_assignments()
-
+    
     def check_assignments(self):
         """ Check the result for desired properties, before it is saved. """
-
+        
         #   Check that no sections are overfilled
         assert(numpy.sum(numpy.sum(self.student_sections, 0) > self.section_capacities) == 0)
-
+        
         #   Check that no student's schedule violates the lunch constraints: 1 or more open lunch periods per day
         for i in range(self.lunch_timeslots.shape[0]):
             timeslots = numpy.array([]) if (self.lunch_timeslots[i].shape[0] == 0) else self.timeslot_indices[self.lunch_timeslots[i, :]]
             if (timeslots.shape[0] == 0): continue
             assert(numpy.sum(numpy.sum(self.student_schedules[:, timeslots] > self.lunch_timeslots.shape[1] - 1)) == 0)
-
+        
         #   Check that each student's schedule is consistent with their assigned sections
         for i in range(self.num_students):
             assert(numpy.sum(self.student_schedules[i, :] != numpy.sum(self.section_schedules[numpy.nonzero(self.student_sections[i, :])[0], :], 0)) == 0)
-
-    def compute_stats(self, display=True):
+    
+    def compute_stats(self, display=False):
         """ Compute statistics to provide feedback to the user about how well the
             lottery assignment worked.  """
 
         stats = {}
-
-        priority_matches = [self.student_sections * self.priority[i] for i in range(self.effective_priority_limit+1)]
-        priority_assigned = [numpy.sum(priority_matches[i], 1) for i in range(self.effective_priority_limit+1)]
-        priority_requested = [numpy.sum(self.priority[i], 1) for i in range(self.effective_priority_limit+1)]
-        priority_fractions = [0 for i in range(self.effective_priority_limit+1)]
-
-        # We expect that there will occasionally be 0/0 division errors,
-        # whenver a student has not specified any classes for a particular
-        # priority level.  We handle this by calling nan_to_num(), but by
-        # default numpy will still raise and print a RuntimeWarning.  We can
-        # safely ignore this by passing 'ignore' to the errstate() context
-        # manager.  However, if display mode is on, then we can still print
-        # these warnings along with the rest of the debugging messages by
-        # passing 'warn'.
-        np_errstate = 'warn' if display else 'ignore'
-
-        for i in range(1,self.effective_priority_limit+1):
-            with numpy.errstate(divide=np_errstate, invalid=np_errstate):
-                priority_fractions[i] = numpy.nan_to_num(priority_assigned[i].astype(numpy.float) / priority_requested[i])
-
+        
+        priority_matches = [self.student_sections * self.priority[i] for i in range(self.priority_limit+1)]
+        priority_assigned = [numpy.sum(priority_matches[i], 1) for i in range(self.priority_limit+1)]
+        priority_requested = [numpy.sum(self.priority[i], 1) for i in range(self.priority_limit+1)]
+        priority_fractions = [0 for i in range(self.priority_limit+1)]
+        for i in range(1,self.priority_limit+1):
+            priority_fractions[i] = numpy.nan_to_num(priority_assigned[i].astype(numpy.float) / priority_requested[i])
+        
         interest_matches = self.student_sections * self.interest
         interest_assigned = numpy.sum(interest_matches, 1)
         interest_requested = numpy.sum(self.interest, 1)
-        with numpy.errstate(divide=np_errstate, invalid=np_errstate):
-            interest_fractions = numpy.nan_to_num(interest_assigned.astype(numpy.float) / interest_requested)
-
-        if self.effective_priority_limit > 1:
-            for i in range(1,self.effective_priority_limit+1):
+        interest_fractions = numpy.nan_to_num(interest_assigned.astype(numpy.float) / interest_requested)
+        
+        if self.priority_limit > 1:
+            for i in range(1,self.priority_limit+1):
                 stats['priority_%s_requested'%i] = priority_requested[i]
                 stats['priority_%s_assigned'%i] = priority_assigned[i]
                 stats['overall_priority_%s_ratio'%i] = float(numpy.sum(priority_assigned[i])) / numpy.sum(priority_requested[i])
@@ -518,15 +477,9 @@ class LotteryAssignmentController(object):
         stats['num_full_classes'] = numpy.sum(self.section_capacities == numpy.sum(self.student_sections, 0))
         stats['total_spaces'] = numpy.sum(self.section_capacities)
 
-        #   Timeslot-based metrics
-        stats['timeslots_filled'] = numpy.sum(self.student_schedules, axis=1)
-        for j in range(1, self.effective_priority_limit+1):
-            stats['timeslots_priority_%s'%j] = numpy.dot(self.priority[j], self.section_schedules).sum(axis=1)
-        stats['hist_timeslots_filled'] = dict(enumerate(numpy.bincount(stats['timeslots_filled'])))
-
         #   Compute histograms of assigned vs. requested classes
-        hist_priority = [{} for i in range(self.effective_priority_limit+1)]
-        for j in range(1,self.effective_priority_limit+1):
+        hist_priority = [{} for i in range(self.priority_limit+1)]
+        for j in range(1,self.priority_limit+1):
             for i in range(self.num_students):
                 key = (priority_assigned[j][i], priority_requested[j][i])
                 if key not in hist_priority[j]:
@@ -536,7 +489,7 @@ class LotteryAssignmentController(object):
                 stats['hist_priority_%s'%j] = hist_priority[j]
         if not self.options['use_student_apps']:
             stats['hist_priority'] = hist_priority[1]
-
+        
         hist_interest = {}
         for i in range(self.num_students):
             key = (interest_assigned[i], interest_requested[i])
@@ -575,46 +528,44 @@ class LotteryAssignmentController(object):
         stats['students_by_screwedness'] = screwed_students
 
         if self.options['stats_display'] or display:
-            self.display_stats(stats)
+            print self.display_stats(stats)
 
         self.stats = stats
         return stats
 
     def display_stats(self, stats):
-        logger.info('Lottery results for %s', self.program.niceName())
-        logger.info('--------------------------------------')
+        s = 'Lottery results for %s\n' % self.program.niceName()
+        s += '--------------------------------------\n'
 
-        logger.info('Distribution:')
-        for i, count in stats['hist_timeslots_filled'].items():
-            logger.info('%6d students got a schedule with %d filled slots', count, i)
+        s += 'Counts:\n'
+        s += '%6d students applied to the lottery\n' % stats['num_lottery_students']
+        s += '%6d students were enrolled in at least 1 class\n' % stats['num_enrolled_students']
+        s += '%6d total enrollments\n' % stats['num_registrations']
+        s += '%6d available sections\n' % stats['num_sections']
+        s += '%6d sections were filled to capacity\n' % stats['num_full_classes']
 
-        logger.info('Counts:')
-        logger.info('%6d students applied to the lottery', stats['num_lottery_students'])
-        logger.info('%6d students were enrolled in at least 1 class', stats['num_enrolled_students'])
-        logger.info('%6d total enrollments', stats['num_registrations'])
-        logger.info('%6d available sections', stats['num_sections'])
-        logger.info('%6d sections were filled to capacity', stats['num_full_classes'])
-
-        logger.info('Ratios:')
-        if self.effective_priority_limit>1:
-            for i in range(1,self.effective_priority_limit+1):
-                logger.info('%2.2f%% of priority %s classes were enrolled', stats['overall_priority_%s_ratio' % i] * 100.0, i)
+        s += 'Ratios:\n'
+        if self.priority_limit>1:
+            for i in range(1,self.priority_limit+1):
+                s += '%2.2f%% of priority classes were enrolled\n' % (stats['overall_priority_%s_ratio' % i] * 100.0)
         else:
-            logger.info('%2.2f%% of priority classes were enrolled', stats['overall_priority_ratio'] * 100.0)
-        logger.info('%2.2f%% of interested classes were enrolled', stats['overall_interest_ratio'] * 100.0)
+            s += '%2.2f%% of priority classes were enrolled\n' % (stats['overall_priority_ratio'] * 100.0)
+        s += '%2.2f%% of interested classes were enrolled\n' % (stats['overall_interest_ratio'] * 100.0)
+        return s
         """
-        logger.info('Example results:')
+        print 'Example results:'
         no_pri_indices = numpy.nonzero(stats['priority_assigned'] == 0)[0]
-        logger.info('1) First %d students who got none of their priority classes:', min(5, no_pri_indices.shape[0]))
+        print '1) First %d students who got none of their priority classes:' % min(5, no_pri_indices.shape[0])
         for i in range(min(5, no_pri_indices.shape[0])):
             sid = stats['student_ids'][no_pri_indices[i]]
             student = ESPUser.objects.get(id=sid)
-            logger.info('   Student: %s (grade %s)', student.name(), student.getGrade())
+            print '   Student: %s (grade %s)' % (student.name(), student.getGrade())
             cs_ids = self.section_ids[numpy.nonzero(self.priority[no_pri_indices[i], :])[0]]
-            logger.info('   - Priority classes: %s', ClassSection.objects.filter(id__in=list(cs_ids)))
+            print '   - Priority classes: %s' % ClassSection.objects.filter(id__in=list(cs_ids))
             cs_ids = self.section_ids[numpy.nonzero(self.interest[no_pri_indices[i], :])[0]]
-            logger.info('   - Interested classes: %s', ClassSection.objects.filter(id__in=list(cs_ids)))
+            print '   - Interested classes: %s' % ClassSection.objects.filter(id__in=list(cs_ids))
             """
+            
 
     def get_computed_schedule(self, student_id, mode='assigned'):
         #   mode can be 'assigned', 'interested', or 'priority'
@@ -650,70 +601,68 @@ class LotteryAssignmentController(object):
         studentlist = stats['students_by_screwedness']
         if n != None: studentlist = studentlist[:n]
         tday = datetime.today().strftime('%Y-%m-%d')
-
+        
         fullfilename = directory + '/screwed_csv_' + tday + '.csv'
-
+        
         csvfile = open(fullfilename, 'wb')
         csvwriter = csv.writer(csvfile)
-
+        
         csvwriter.writerow(["Student", "Student ID", "StudentScrewedScore", "#Classes"])
 
         for s in studentlist:
             csvwriter.writerow([ESPUser.objects.get(id=s[1]).name().encode('ascii', 'ignore'), s[1], s[0], len(self.get_computed_schedule(s[1]))])
 
         csvfile.close()
-        logger.info('File can be found at: %s', fullfilename)
-
-    def save_assignments(self, try_mailman=True):
+        print 'File can be found at: ' + fullfilename
+    
+    def save_assignments(self, debug_display=False, try_mailman=False):
         """ Store lottery assignments in the database once they have been computed.
             This is a fairly time consuming step compared to computing the assignments. """
-
+            
         self.clear_saved_assignments()
-
+        
         assignments = numpy.nonzero(self.student_sections)
         student_ids = self.student_ids[assignments[0]]
         section_ids = self.section_ids[assignments[1]]
-
+        
         assert(student_ids.shape == section_ids.shape)
-
+        
         relationship, created = RegistrationType.objects.get_or_create(name='Enrolled')
         self.now = datetime.now()   # The time that all the registrations start at, in case all lottery registrations need to be manually reverted later
         StudentRegistration.objects.bulk_create([StudentRegistration(user_id=student_ids[i], section_id=section_ids[i], relationship=relationship, start_date=self.now) for i in range(student_ids.shape[0])])
-        if self.options['stats_display']:
-            logger.info("StudentRegistration enrollments all created to start at %s", self.now)
-            logger.info('Created %d registrations', student_ids.shape[0])
-
-        #As mailman has sometimes not worked in the past,
-        #leave the option to disable.
+        print "StudentRegistration enrollments all created to start at %s" % self.now
+        if debug_display:
+            print 'Created %d registrations' % student_ids.shape[0]
+        
+        #As mailman doesn't work, disable for now.
         if try_mailman:
             self.update_mailman_lists()
-
+    
     def clear_saved_assignments(self, delete=False):
         """ Expire/delete all previous StudentRegistration enrollments associated with the program. """
-
+        
         old_registrations = StudentRegistration.objects.filter(section__parent_class__parent_program=self.program, relationship__name='Enrolled')
         if delete:
             old_registrations.delete()
         else:
             old_registrations.filter(StudentRegistration.is_valid_qobject()).update(end_date=datetime.now())
-
+        
     def clear_mailman_list(self, list_name):
         contents = list_contents(list_name)
         for address in contents:
             remove_list_member(list_name, address)
-
+        
     def update_mailman_lists(self, delete=True):
         if hasattr(settings, 'USE_MAILMAN') and settings.USE_MAILMAN:
-            program_list = "%s_%s-students" % (self.program.program_type, self.program.program_instance)
-            self.clear_mailman_list(program_list)
-            # Add all registered students into the program mailing list, even
-            # if they didn't get enrolled into any classes.
-            add_list_members(program_list, ESPUser.objects.filter(id__in=list(self.student_ids)).distinct())
+            self.clear_mailman_list("%s_%s-students" % (self.program.program_type, self.program.program_instance))
             for i in range(self.num_sections):
                 section = ClassSection.objects.get(id=self.section_ids[i])
                 list_names = ["%s-%s" % (section.emailcode(), "students"), "%s-%s" % (section.parent_class.emailcode(), "students")]
-                student_ids = self.student_ids[numpy.nonzero(self.student_sections[:,i])]
-                students = ESPUser.objects.filter(id__in=student_ids).distinct()
                 for list_name in list_names:
                     self.clear_mailman_list(list_name)
-                    add_list_members(list_name, students)
+                for j in range(self.num_students):
+                    student = ESPUser.objects.get(id=self.student_ids[i])
+                    for list_name in list_names:
+                        add_list_member(list_name, student.email)
+                    add_list_member("%s_%s-students" % (self.program.program_type, self.program.program_instance), student.email)
+        
