@@ -33,7 +33,7 @@ select.fqb-type {
     margin: 1px;
 }
 
-.flag-detail table, form {
+.flag-detail table, .flag-detail form {
     padding-left: 3em;
     width: 100%;
 }
