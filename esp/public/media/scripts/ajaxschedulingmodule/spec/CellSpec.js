@@ -7,13 +7,31 @@ describe("Cell", function(){
 	}
     })
 
-    it("has an element", function(){
+    it("has an element with the matrix cell class", function(){
 	expect(c.el).toBeDefined()
 	expect(c.el.hasClass("matrix-cell")).toBeTrue()
     })
 
-    it("starts with a null section", function(){
-	expect(c.section).toBeNull()
+    it("calls init on creation", function(){
+	//HOW to test this?
+    })
+
+    describe("init", function(){
+	describe("with a section", function(){
+	    it("has a section", function(){
+		spyOn(c, 'addSection')
+		c.init(section)
+		expect(c.addSection).toHaveBeenCalledWith(section)
+	    })
+	})
+
+	describe("without a section", function(){
+	    it("calls removeSection", function(){
+		spyOn(c, 'removeSection')
+		c.init(null)
+		expect(c.removeSection).toHaveBeenCalled()
+	    })
+	})
     })
 
     describe("adding a section", function(){
@@ -44,8 +62,6 @@ describe("Cell", function(){
 	beforeEach(function(){
 	    c.addSection(section)
 	})
-
-	//TODO:  break this into separate its
 	it("removes the section", function(){
 	    c.removeSection()
 	    expect(c.section).toBeNull()
@@ -54,11 +70,15 @@ describe("Cell", function(){
 	    c.removeSection()
 	    expect(c.el[0].innerHTML).not.toMatch(section.emailcode)
 	})
-
 	it("changes the cell styling", function(){
 	    c.removeSection()
 	    expect(c.el.hasClass("occupied-cell")).toBeFalse()
 	    expect(c.el.hasClass("available-cell")).toBeTrue()
+	})
+	it("calls droppable", function(){
+	    spyOn(c.el, 'droppable')
+	    c.removeSection()
+	    expect(c.el.droppable).toHaveBeenCalled()
 	})
     })
 
