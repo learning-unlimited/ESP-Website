@@ -15,9 +15,7 @@ function Directory(sections, el) {
 function TableRow(section, el){
     this.el = el
     this.section = section
-    this.cell = new Cell($j("<td/>"))
-    //TODO:  I should be able to create a cell with a section
-    this.cell.addSection(section)
+    this.cell = new Cell($j("<td/>"), section)
 
     this.render = function(){
 	this.el[0].innerHTML = "<td>" + this.section.title + "</td>"

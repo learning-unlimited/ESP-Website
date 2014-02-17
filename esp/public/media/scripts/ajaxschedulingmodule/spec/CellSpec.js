@@ -12,10 +12,6 @@ describe("Cell", function(){
 	expect(c.el.hasClass("matrix-cell")).toBeTrue()
     })
 
-    it("calls init on creation", function(){
-	//HOW to test this?
-    })
-
     describe("init", function(){
 	describe("with a section", function(){
 	    it("has a section", function(){
