@@ -14,6 +14,7 @@ function review (id, stat, text, color) {
                 "csrfmiddlewaretoken": csrf_token(),
             }, function () {
                 $j("#fqr-class-"+id+" .class-status").html(text).css("color",color);
+                $j("#fqr-class-"+id+" .fqr-class-header").removeClass("accepted rejected unreviewed").addClass(text.toLowerCase())
             });
 }
 

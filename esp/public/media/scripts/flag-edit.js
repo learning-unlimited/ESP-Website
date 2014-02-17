@@ -15,8 +15,9 @@ function addFlag (event) {
 }
 
 function removeFlag (url, id) {
-    var div = $j("div#flag-detail-"+id);
-    $j.post(url, {'csrfmiddlewaretoken': csrf_token(), 'id' : id}, function () { div.hide(); });
+    var div1 = $j("div#flag-detail-"+id);
+    var div2 = $j("span#fqr-flag-header-"+id);
+    $j.post(url, {'csrfmiddlewaretoken': csrf_token(), 'id' : id}, function () { div1.hide(); div2.hide(); });
 }
 
 $j(document).on("submit", "form.flag-form", submitFlagForm)
