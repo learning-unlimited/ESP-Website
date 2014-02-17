@@ -13,6 +13,18 @@ describe("Cell", function(){
     })
 
     describe("init", function(){
+	it("makes the element draggable", function(){
+	    spyOn(c.el, 'draggable')
+	    c.init(section)
+	    expect(c.el.draggable).toHaveBeenCalled()
+	})
+
+	it("makes the element droppable", function(){
+	    spyOn(c.el, 'droppable')
+	    c.init(section)
+	    expect(c.el.droppable).toHaveBeenCalled()
+	})
+
 	describe("with a section", function(){
 	    it("has a section", function(){
 		spyOn(c, 'addSection')
@@ -48,9 +60,12 @@ describe("Cell", function(){
 	    expect(c.el.hasClass("available-cell")).toBeFalse()
 	})
 	it("makes the el draggable", function(){
-	    spyOn(c.el, 'draggable')
 	    c.addSection(section)
-	    expect(c.el.draggable).toHaveBeenCalled()
+	    expect(c.el.draggable("option", "disabled")).toBeFalse()
+	})
+	it("makes the el not droppable", function(){
+	    c.addSection(section)
+	    expect(c.el.droppable("option", "disabled")).toBeTrue()
 	})
     })
 
@@ -71,10 +86,13 @@ describe("Cell", function(){
 	    expect(c.el.hasClass("occupied-cell")).toBeFalse()
 	    expect(c.el.hasClass("available-cell")).toBeTrue()
 	})
-	it("calls droppable", function(){
-	    spyOn(c.el, 'droppable')
+	it("makes the cell droppable", function(){
 	    c.removeSection()
-	    expect(c.el.droppable).toHaveBeenCalled()
+	    expect(c.el.droppable("option", "disabled")).toBeFalse()
+	})
+	it("makes the cell not draggable", function(){
+	    c.removeSection()
+	    expect(c.el.draggable("option", "disabled")).toBeTrue()
 	})
     })
 

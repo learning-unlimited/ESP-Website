@@ -2,6 +2,15 @@ function Cell(el, section) {
     this.el = el
 
     this.init = function(new_section){
+	this.el.draggable({
+	    stack: ".matrix-cell",
+	    helper: "clone",
+	})
+	this.el.droppable({
+	    drop:  function(){
+		console.log("dropped")
+	    }
+	})
 	if (new_section != null){
 	    this.addSection(new_section)
 	}
@@ -15,11 +24,8 @@ function Cell(el, section) {
 	this.section = null
 	this.el[0].innerHTML = ""
 	this.el.addClass("available-cell")
-	this.el.droppable({
-	    drop:  function(){
-		console.log("dropped")
-	    }
-	})
+	this.el.droppable("enable")
+	this.el.draggable("disable")
 	this.el.removeClass("occupied-cell")
     }
 
@@ -29,10 +35,8 @@ function Cell(el, section) {
 	this.el.removeClass("available-cell")
 	//TODO:  jquery, how am I actually supposed to do this?
 	this.el[0].innerHTML = section.emailcode
-	this.el.draggable({
-	    stack: ".matrix-cell",
-	    helper: "clone",
-	})
+	this.el.droppable("disable")
+	this.el.draggable("enable")
     }
 
     this.hasSection = function(){
