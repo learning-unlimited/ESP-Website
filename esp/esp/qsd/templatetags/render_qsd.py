@@ -4,13 +4,14 @@ from django.core.cache import cache
 from esp.web.util.template import cache_inclusion_tag, DISABLED
 from esp.qsd.models import QuasiStaticData
 from esp.qsd.models import qsd_cache_key, qsd_edit_id
+from esp.tagdict.models import Tag
 from urllib import quote
 
 register = template.Library()
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html')
 def render_qsd(qsd):
-    return {'qsdrec': qsd}
+    return {'qsdrec': qsd, 'display_date_author' : Tag.getTag('qsd_display_date_author', default='True') != 'False'}
 render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html')
