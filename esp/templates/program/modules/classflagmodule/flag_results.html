@@ -44,6 +44,7 @@ You asked for classes with {{english}}; {{queryset.count}} of {{program.classsub
                 <button class="btn btn-default" onclick="unreview({{class.id}});">unreview</button>
                 <button class="btn btn-default" onclick="reject({{class.id}});">reject</button>
                 <button class="btn btn-default" onclick="deleteClass({{class.id}}, '{{class.title}}');">delete</button>
+                <button class="add-flag btn btn-default">add flag</button>
             </div>
             <div class="fqr-class-detail" style="display: none;">
                 <table>
@@ -80,6 +81,7 @@ You asked for classes with {{english}}; {{queryset.count}} of {{program.classsub
                 {% for flag in class.flags.all %}
                     {% include "program/modules/classflagmodule/flag_detail.html" %}
                 {% endfor %}
+                {% include "program/modules/classflagmodule/new_flag_form.html" %}
             </div>
         </div>
     {% empty %}

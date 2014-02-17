@@ -146,17 +146,22 @@ class ClassFlagModule(ProgramModuleObj):
                 data = None
         else:
             data = request.POST['query']
+        context = {
+                'flag_types': ClassFlagType.get_flag_types(self.program),
+                'prog': self.program,
+                }
         if data is None:
             # We should display the query builder interface.
             fts = ClassFlagType.get_flag_types(self.program)
-            context = { 'flag_types': fts, 'prog': self.program, 'categories': self.program.class_categories.all() }
+            context['categories'] = self.program.class_categories.all()
             return render_to_response(self.baseDir()+'flag_query_builder.html', request, context)
         else:
             # They've sent a query, let's process it.
             decoded = json.loads(data)
             queryset = self.jsonToQuerySet(decoded).distinct().order_by('id').prefetch_related('flags', 'flags__flag_type', 'teachers') # The prefetch lets us do basically all of the processing on the template level.
             english = self.jsonToEnglish(decoded)
-            context = { 'queryset' : queryset, 'english' : english, 'prog': self.program }
+            context['queryset']=queryset
+            context['english']=english
             return render_to_response(self.baseDir()+'flag_results.html', request, context)
 
 

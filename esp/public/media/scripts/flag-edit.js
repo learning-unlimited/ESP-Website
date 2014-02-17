@@ -4,14 +4,12 @@ function submitFlagForm (event) {
     var data = form.serialize();
     $j.post(form.attr("action"), data, function (data) {
         form.parents("div.flag-detail").replaceWith(data);
-        $j("button.add-flag").show();
     })
     event.preventDefault();
 }
 
 function addFlag (event) {
-    $j("#flag-extra").clone().attr("id","flag-new").show().insertBefore(this);
-    $j(this).hide();
+    $j("#flag-extra").clone().attr("id","flag-new").show().insertBefore($j("#flag-extra"));
 }
 
 function removeFlag (url, id) {
