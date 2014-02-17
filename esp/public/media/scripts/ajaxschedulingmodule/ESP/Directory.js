@@ -23,5 +23,13 @@ function TableRow(section, el){
 	this.el[0].innerHTML = "<td>" + this.section.title + "</td>"
 	this.el.append(this.cell.el)
     }
+
+    this.hide = function(){
+	this.el.css("display", "none")
+    }
+
+    this.unHide = function(){
+	this.el.css("display", "table-row")
+    }
 }
 

@@ -58,4 +58,19 @@ describe("TableRow", function(){
 	    expect(tr.el[0].innerHTML).toMatch(tr.cell.el[0].outerHTML)
 	})
     })
+
+    describe("hide", function(){
+	it("sets the display style to 'none'", function(){
+	    tr.hide()
+	    expect(tr.el[0].style.display).toEqual("none")
+	})
+    })
+
+    describe("unHide", function(){
+	it("unsets the display style from 'none'", function(){
+	    tr.hide()
+	    tr.unHide()
+	    expect(tr.el[0].style.display).not.toEqual("none")
+	})
+    })
 })
