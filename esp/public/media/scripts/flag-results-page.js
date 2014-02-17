@@ -40,6 +40,16 @@ function deleteClass (id, name) {
     }
 }
 
+function showAll () {
+    $j(".fqr-class-detail").show();
+    $j(".flag-detail:not(#flag-extra)").show();
+}
+
+function hideAll () {
+    $j(".fqr-class-detail").hide();
+    $j(".flag-detail").hide();
+}
+
 $j(document).ready(function () {
     $j(".flag-detail").hide();
     $j(".manage-approve-link").hide();
