@@ -6,6 +6,7 @@ table,th,td
 
 .matrix-cell{
     height: 40px;
+    width: 80px;
     text-align: center;
 }
 
