@@ -260,10 +260,9 @@ def viewForm(request, form_id):
     """
     try:
         form_id = int(form_id)
-    except ValueError:
+        form = Form.objects.get(pk=form_id)
+    except (ValueError, Form.DoesNotExist):
         raise Http404
-        
-    form = Form.objects.get(pk=form_id)
     
     perm, error_text = hasPerm(request.user, form)
     if not perm:

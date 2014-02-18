@@ -68,8 +68,8 @@ If you don't see the flag you're looking for, <a href="/admin/program/classflagt
     </div>
 
     <div class="fqb-form">
-        <form method="post" action="">{% csrf_token %}
-            <input type="hidden" class="query-json" value="" name="query-json"></input>
+        <form method="get" action="">
+            <input type="hidden" class="query-json" value="" name="query"></input>
             <button type="submit" class="btn btn-primary">Find classes</button>
         </form>
     </div>

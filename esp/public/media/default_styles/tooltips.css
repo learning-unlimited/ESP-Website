@@ -27,3 +27,19 @@
 .tooltip_wide span {
     width: 600px !important;
 }
+
+/* custom tooltip for select students page */
+.custom-tooltip:hover .tooltip-content {
+  display: block;
+}
+
+.tooltip-content {
+  display: none;
+  position: absolute;
+  width: 400px;
+  left: -150px;
+  border-radius: 5px;
+  padding: 10px;
+  background-color: #444;
+  color: #fff;
+}

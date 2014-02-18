@@ -1015,7 +1015,9 @@ class ModuleControlTest(ProgramFrameworkTest):
         moduleobj.required = True
         moduleobj.save()
         
-        response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
+        response = self.client.get(
+                    '/learn/%s/studentreg' % self.program.getUrlBase(),
+                    **{'wsgi.url_scheme': 'https'})
         self.assertTrue('Financial Aid' in response.content)
         
         #   Remove the module and make sure we are not shown it anymore.
@@ -1075,6 +1077,7 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         self.priority_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
         self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
         self.waitlist_rt, created = RegistrationType.objects.get_or_create(name='Waitlist/1')
+        self.priority_rts=[self.priority_rt]
 
         # Add some priorities and interesteds for the lottery
         es = Event.objects.filter(program=self.program)
@@ -1109,13 +1112,14 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         for student in self.students:
             # Figure out which classes they got
             interested_regs = StudentRegistration.objects.filter(user=student, relationship=self.interested_rt)
-            priority_regs = StudentRegistration.objects.filter(user=student, relationship=self.priority_rt)
+            priority_regs = StudentRegistration.objects.filter(user=student, relationship__in=self.priority_rts)
             enrolled_regs = StudentRegistration.objects.filter(user=student, relationship=self.enrolled_rt)
 
             interested_classes = set([sr.section for sr in interested_regs])
             priority_classes = set([sr.section for sr in priority_regs])
             enrolled_classes = set([sr.section for sr in enrolled_regs])
             not_enrolled_classes = (priority_classes | interested_classes) - enrolled_classes
+            incorrectly_enrolled_classes = enrolled_classes - (priority_classes | interested_classes)
 
 
             # Get their grade
@@ -1124,6 +1128,9 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
                 self.failUnless(cls.cannotAdd(student) or cls.isFull())
+
+            # Check that they only got into classes that they asked for
+            self.failIf(incorrectly_enrolled_classes)
 
     def testStats(self):
         """ Verify that the values returned by compute_stats() are correct
@@ -1213,3 +1220,14 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                     lunch_free = True
                     break
             self.failUnless(lunch_free, "No lunch sections free for a student!")
+    
+    def testLotteryMultiplePriorities(self):
+        """Creates some more priorities, then runs testLottery again."""
+        self.priority_2_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.priority_3_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.priority_rts=[self.priority_rt, self.priority_2_rt, self.priority_3_rt]
+        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi.priority_limit = 3
+        scrmi.save()
+
+        self.testLottery()

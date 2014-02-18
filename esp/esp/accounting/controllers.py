@@ -486,11 +486,16 @@ class IndividualAccountingController(ProgramAccountingController):
         target_account = self.default_source_account()
         Transfer.objects.filter(source=None, destination=target_account, user=self.user, line_item=line_item_type).delete()
 
-    def submit_payment(self, amount):
+    def submit_payment(self, amount, transaction_id=None):
         #   Create a transfer representing a user's payment for this program
         line_item_type = self.default_payments_lineitemtype()
         target_account = self.default_source_account()
-        return Transfer.objects.create(source=None, destination=target_account, user=self.user, line_item=line_item_type, amount_dec=Decimal('%.2f' % amount))
+        return Transfer.objects.create(source=None,
+                                       destination=target_account,
+                                       user=self.user,
+                                       line_item=line_item_type,
+                                       amount_dec=Decimal('%.2f' % amount),
+                                       transaction_id=transaction_id)
 
     def __unicode__(self):
         return 'Accounting for %s at %s' % (self.user.name(), self.program.niceName())
