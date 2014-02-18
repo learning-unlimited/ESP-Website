@@ -913,9 +913,10 @@ class Program(models.Model, CustomFormsLinkModel):
     def hasModule(self, name):
         """ Tests whether a program has the given module enabled, cachedly. name should be a module name, like 'AvailabilityModule'. """
         return self.program_modules.filter(handler=name).exists()
-    getModules_cached.depend_on_row(lambda: Program, lambda prog: {'self': prog})
-    getModules_cached.depend_on_model(lambda: ProgramModule)
-    getModules_cached.depend_on_row(lambda: ProgramModuleObj, lambda module: {'self': module.program})
+    hasModule.depend_on_row(lambda: Program, lambda prog: {'self': prog})
+    hasModule.depend_on_model(lambda: ProgramModule)
+    hasModule.depend_on_row(lambda: ProgramModuleObj, lambda module: {'self': module.program})
+    hasModule.depend_on_m2m(lambda: Program, 'program_modules', lambda program, module: {'self': program})
 
 
     @cache_function
