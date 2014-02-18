@@ -20,6 +20,6 @@ $j(document).ready(function() {
 </script>
 
 <br /><br />
-<div {% if not display_date_author %}class="qsd_bits hidden" {% endif %}id="divmainqsddatetimestamp">
-  <p class="attribution">Last modified by {{ qsdrec.author }} on {{ qsdrec.create_date|date:"N d, Y \a\t h:i a" }}</p>
+<div {% if display_date_author == 0 %}class="qsd_bits hidden" {% endif %}id="divmainqsddatetimestamp">
+  <p class="attribution">Last modified {% if display_date_author == 1 %}<span class="qsd_bits hidden">{% endif %}by {{ qsdrec.author }} {% if display_date_author == 1 %}</span>{% endif %}on {{ qsdrec.create_date|date:"N d, Y \a\t h:i a" }}</p>
 </div>

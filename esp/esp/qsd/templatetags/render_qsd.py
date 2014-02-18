@@ -11,7 +11,16 @@ register = template.Library()
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd.html')
 def render_qsd(qsd):
-    return {'qsdrec': qsd, 'display_date_author' : Tag.getTag('qsd_display_date_author', default='True') != 'False'}
+    # check whether we should display the date and author footer
+    display_date_author_tag = Tag.getTag('qsd_display_date_author', default='True')
+    display_date_author = 2
+
+    if display_date_author_tag == 'Date':
+        display_date_author = 1
+    elif display_date_author_tag == 'False':
+        display_date_author = 0
+
+    return {'qsdrec': qsd, 'display_date_author' : display_date_author}
 render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html')
