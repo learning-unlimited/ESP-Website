@@ -59,6 +59,10 @@ describe("Cell", function(){
 	    expect(c.el.hasClass("occupied-cell")).toBeTrue()
 	    expect(c.el.hasClass("available-cell")).toBeFalse()
 	})
+	it("adds the section to the el data", function(){
+	    c.addSection(section)
+	    expect(c.el.data("section")).toEqual(section)
+	})
 	it("makes the el draggable", function(){
 	    c.addSection(section)
 	    expect(c.el.draggable("option", "disabled")).toBeFalse()
@@ -80,6 +84,10 @@ describe("Cell", function(){
 	it("changes the el contents", function(){
 	    c.removeSection()
 	    expect(c.el[0].innerHTML).not.toMatch(section.emailcode)
+	})
+	it("removes the section from the el data", function(){
+	    c.removeSection()
+	    expect(c.el.data("section")).not.toBeDefined()
 	})
 	it("changes the cell styling", function(){
 	    c.removeSection()
@@ -104,6 +112,16 @@ describe("Cell", function(){
 
 	it("returns false when there is no section", function(){
 	    expect(c.hasSection()).toBeFalse()
+	})
+    })
+
+    var mockUI = { draggable: {data: function(){ return section } } }
+    describe("accepting dropped sections", function(){
+	it("adds a section to the item", function(){
+	    section = { id: "section-id" }
+	    spyOn(c, 'addSection')
+	    c.dropHandler({}, mockUI)
+	    expect(c.addSection).toHaveBeenCalledWith(section)
 	})
     })
 })

@@ -1,15 +1,17 @@
 function Cell(el, section) {
     this.el = el
 
+    this.dropHandler = function(event, ui){
+	this.addSection(ui.draggable.data("section"))
+    }
+
     this.init = function(new_section){
 	this.el.draggable({
 	    stack: ".matrix-cell",
 	    helper: "clone",
 	})
 	this.el.droppable({
-	    drop:  function(){
-		console.log("dropped")
-	    }
+	    drop:  this.dropHandler.bind(this)
 	})
 	if (new_section != null){
 	    this.addSection(new_section)
@@ -22,6 +24,7 @@ function Cell(el, section) {
 
     this.removeSection = function(){
 	this.section = null
+	this.el.removeData("section")
 	this.el[0].innerHTML = ""
 	this.el.addClass("available-cell")
 	this.el.droppable("enable")
@@ -31,6 +34,7 @@ function Cell(el, section) {
 
     this.addSection = function(section){
 	this.section = section
+	this.el.data("section", section)
 	this.el.addClass("occupied-cell")
 	this.el.removeClass("available-cell")
 	//TODO:  jquery, how am I actually supposed to do this?
