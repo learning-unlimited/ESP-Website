@@ -87,6 +87,8 @@ ADMINS = (
     ('LU Web Team','serverlog@lists.learningu.org'),
 )
 
+GRAPPELLI_ADMIN_TITLE = "ESP administration"
+
 #############################
 # Default database settings #
 #############################
@@ -174,7 +176,7 @@ MIDDLEWARE_GLOBAL = [
     (1000, 'esp.middleware.espauthmiddleware.ESPAuthMiddleware'),
     (1050, 'django.middleware.csrf.CsrfViewMiddleware'),
     (1100, 'django.middleware.doc.XViewMiddleware'),
-    (1250, 'esp.middleware.espdebugtoolbarmiddleware.ESPDebugToolbarMiddleware'),
+    (1250, 'esp.middleware.debugtoolbar.middleware.ESPDebugToolbarMiddleware'),
     (1300, 'esp.middleware.PrettyErrorEmailMiddleware'),
     (1400, 'esp.middleware.StripWhitespaceMiddleware'),
     (1500, 'django.middleware.transaction.TransactionMiddleware'),
@@ -311,47 +313,31 @@ CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 
 DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
 
-DEBUG_TOOLBAR_PANELS = (
-    'debug_toolbar.panels.cache.CacheDebugPanel',
-    'debug_toolbar.panels.headers.HeaderDebugPanel',
-    'debug_toolbar.panels.logger.LoggingPanel',
-    'debug_toolbar.panels.request_vars.RequestVarsDebugPanel',
-    'debug_toolbar.panels.settings_vars.SettingsVarsDebugPanel',
-    'debug_toolbar.panels.signals.SignalDebugPanel',
-    'debug_toolbar.panels.sql.SQLDebugPanel',
-    'debug_toolbar.panels.template.TemplateDebugPanel',
-    'debug_toolbar.panels.timer.TimerDebugPanel',
-    'debug_toolbar.panels.version.VersionDebugPanel',
+DEBUG_TOOLBAR_PATCH_SETTINGS = False
 
-    # The profiling panel causes every request to be computed twice, slowing
-    # down the page load by a factor of over 2x and giving incorrect results
-    # for the sql panel. So by default, we will not include it, but can add it
-    # back to the list at request time via the ESPDebugToolbarMiddleware and
-    # DEBUG_TOOLBAR_CONFIG['CONDITIONAL_PANELS'].
-    # 'debug_toolbar.panels.profiling.ProfilingDebugPanel',
+DEBUG_TOOLBAR_PANELS = (
+    'debug_toolbar.panels.cache.CachePanel',
+    'debug_toolbar.panels.headers.HeadersPanel',
+    'debug_toolbar.panels.logging.LoggingPanel',
+    'debug_toolbar.panels.redirects.RedirectsPanel',
+    'debug_toolbar.panels.request.RequestPanel',
+    'debug_toolbar.panels.settings.SettingsPanel',
+    'debug_toolbar.panels.signals.SignalsPanel',
+    'debug_toolbar.panels.sql.SQLPanel',
+    'debug_toolbar.panels.staticfiles.StaticFilesPanel',
+    'debug_toolbar.panels.templates.TemplatesPanel',
+    'debug_toolbar.panels.timer.TimerPanel',
+    'debug_toolbar.panels.versions.VersionsPanel',
+    'esp.middleware.debugtoolbar.panels.profiling.ESPProfilingPanel'
 )
 
 def custom_show_toolbar(request):
-    from esp.middleware.espdebugtoolbarmiddleware import ESPDebugToolbarMiddleware
+    from esp.middleware.debugtoolbar.middleware import ESPDebugToolbarMiddleware
     return ESPDebugToolbarMiddleware.custom_show_toolbar(request)
-
-def conditional_panels(request):
-    """
-    Adds new debug_toolbar panels to DEBUG_TOOLBAR_PANELS conditionally based
-    on the request.
-    """
-    from django.conf import settings
-    new_panels = []
-
-    if request.GET.get('debug_toolbar_profiling', None) == 't':
-        # Add the profiling panel if it is requested in the query params.
-        new_panels.append('debug_toolbar.panels.profiling.ProfilingDebugPanel')
-
-    settings.DEBUG_TOOLBAR_PANELS = tuple(list(settings.DEBUG_TOOLBAR_PANELS) + new_panels)
 
 DEBUG_TOOLBAR_CONFIG = {
     'INTERCEPT_REDIRECTS': True,
-    'SHOW_TOOLBAR_CALLBACK': custom_show_toolbar,
+    'SHOW_TOOLBAR_CALLBACK': 'esp.settings.custom_show_toolbar',
     'EXTRA_SIGNALS': [
         'esp.cache.signals.cache_deleted',
         'esp.cache.signals.m2m_added',
@@ -359,9 +345,10 @@ DEBUG_TOOLBAR_CONFIG = {
     ],
     'HIDE_DJANGO_SQL': True,
     'SHOW_TEMPLATE_CONTEXT': True,
-    'TAG': 'div',
+    'INSERT_BEFORE': '</div>',
     'ENABLE_STACKTRACES' : True,
-    'CONDITIONAL_PANELS': conditional_panels,
+    'RENDER_PANELS': True, # Ideally would be None, but there is a bug in their code.
+    'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.
 }
 
 #   Allow Filebrowser to edit anything under media/

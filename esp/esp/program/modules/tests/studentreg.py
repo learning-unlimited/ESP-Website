@@ -185,7 +185,9 @@ class StudentRegTest(ProgramFrameworkTest):
         
         #   Apply for financial aid
         self.failUnless( self.client.login( username=student.username, password='password' ), "Couldn't log in as student %s" % student.username )
-        response = self.client.get('/learn/%s/finaid' % self.program.url)
+        response = self.client.get(
+                    '/learn/%s/finaid' % self.program.url,
+                    **{'wsgi.url_scheme': 'https'})
         self.assertEqual(response.status_code, 200)
         
         form_settings = {

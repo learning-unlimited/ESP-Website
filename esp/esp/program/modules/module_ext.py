@@ -245,7 +245,7 @@ class ClassRegModuleInfo(models.Model):
 
     def getClassSizes(self):
         #   Default values
-        min_size = 0
+        min_size = 5
         max_size = 30
         size_step = 1
         other_sizes = range(40, 210, 10)
