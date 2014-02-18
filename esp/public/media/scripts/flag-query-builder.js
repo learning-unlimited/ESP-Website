@@ -1,3 +1,11 @@
+function hideAll () {
+    // Hide all conditionally-displayed selectors.
+    flagSelector.hide();
+    statusSelector.hide();
+    categorySelector.hide();
+    ul.hide();
+}
+
 function updateNode () {
     // Update the tree to reflect a change in a type selector.
     var typeSelector = $j(this);
@@ -5,12 +13,6 @@ function updateNode () {
     var flagSelector = typeSelector.siblings(".fqb-flag-list");
     var statusSelector = typeSelector.siblings(".fqb-status-list");
     var categorySelector = typeSelector.siblings(".fqb-category-list");
-    function hideAll () {
-        flagSelector.hide();
-        statusSelector.hide();
-        categorySelector.hide();
-        ul.hide();
-    }
     var ul = typeSelector.siblings("ul");
     if (value.indexOf("flag") > -1) {
         // The user has picked a single flag, we need to show the flag selector
