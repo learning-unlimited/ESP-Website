@@ -21,8 +21,19 @@ select.fqb-type {
 }
 
 .fqr-class-header {
-    background: #c6def7;
     font-size: 1.2em;
+}
+
+.fqr-class-header.accepted {
+    background: #def7c6;
+}
+
+.fqr-class-header.unreviewed {
+    background: #c6def7;
+}
+
+.fqr-class-header.rejected {
+    background: #f7c6de;
 }
 
 .fqr-class-flags {
@@ -33,7 +44,7 @@ select.fqb-type {
     margin: 1px;
 }
 
-.flag-detail table, form {
+.flag-detail table, .flag-detail form {
     padding-left: 3em;
     width: 100%;
 }
