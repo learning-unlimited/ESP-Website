@@ -353,7 +353,7 @@ class MessageVars(models.Model):
         #try:
         provider = pickle.loads(str(self.pickled_provider))
         #except:
-        #    raise ESPError(), 'Coule not load variable provider object!'
+        #    raise ESPError('Coule not load variable provider object!')
 
         actionhandler = ActionHandler(provider, user)
 
@@ -367,7 +367,7 @@ class MessageVars(models.Model):
         try:
             provider = pickle.loads(str(self.pickled_provider))
         except:
-            raise ESPError(), 'Could not load variable provider object!'
+            raise ESPError('Could not load variable provider object!')
 
         if hasattr(provider, 'get_msg_vars'):
             return str(provider.get_msg_vars(user, key))
@@ -410,12 +410,12 @@ class MessageVars(models.Model):
         try:
             module, varname = varstring.split('.')
         except:
-            raise ESPError(False), 'Variable %s not a valid module.var name' % varstring
+            raise ESPError('Variable %s not a valid module.var name' % varstring, log=False)
 
         try:
             msgVar = MessageVars.objects.get(provider_name = module, messagerequest = msgrequest)
         except:
-            #raise ESPError(False), "Could not get the variable provider... %s is an invalid variable module." % module
+            #raise ESPError("Could not get the variable provider... %s is an invalid variable module." % module, log=False)
             # instead of erroring, I'm just going to ignore it.
             return '{{%s}}' % varstring
     

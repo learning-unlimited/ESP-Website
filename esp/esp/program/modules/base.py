@@ -264,8 +264,8 @@ class ProgramModuleObj(models.Model):
         if len(classes) == 1:
             if not get_current_request().user.canEdit(classes[0]):
                 from esp.middleware import ESPError
-                raise ESPError(False), 'You do not have permission to edit %s.' %\
-                      classes[0].title
+                message = 'You do not have permission to edit %s.' % classes[0].title
+                raise ESPError(message, log=False)
             else:
                 Found = True
                 return (classes[0], True)
