@@ -1,17 +1,19 @@
 import sys
 from twilio.rest import TwilioRestClient
-account_sid = "AC0f79038e0b69e5ac71eb4854ac8f6d02"
-auth_token = "f3900990f80e47c9b75eafa6cfc37cbb"
 
-ourNumbers = ["+1 617-606-4889"]
-numberIndex = 0
-if len(sys.argv) < 2:
-  sys.stderr.write("Usage: %s <file with line-separated phone numbers>\n" % sys.argv[0])
+if len(sys.argv) < 6:
+  sys.stderr.write("Usage: %s <account SID> <auth token> <file with line-separated phone numbers to send from> <file with line-separated phone numbers recipients> <message to send>\n" % sys.argv[0])
   exit(1)
 
-numberFile = open(sys.argv[1], "r")
+account_sid = sys.argv[1]
+auth_token = sys.argv[2]
+ourNumbers = [x.strip() for x in open(sys.argv[3], "r").readlines() if x.strip()]
+recipients = [x.strip() for x in open(sys.argv[4], "r").readlines() if x.strip()]
+body = sys.argv[5]
 
-for number in numberFile.readlines():
+numberIndex = 0
+
+for number in recipients:
     client = TwilioRestClient(account_sid, auth_token)
 
     print "Sending text message to "+number
@@ -19,5 +21,3 @@ for number in numberFile.readlines():
                                to=number,
                                from_=ourNumbers[numberIndex])
     numberIndex = (numberIndex + 1) % len(ourNumbers)
-
-
