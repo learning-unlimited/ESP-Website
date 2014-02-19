@@ -36,6 +36,7 @@ from esp.users.models import ESPUser, ZipCode, PersistentQueryFilter
 from esp.middleware import ESPError
 from esp.web.util import render_to_response
 from esp.program.models import Program
+from esp.dbmail.models import MessageRequest
 
 from django.db.models.query import Q
 
@@ -240,6 +241,20 @@ class UserSearchController(object):
             filterObj.useful_name = 'Custom user list'
         filterObj.save()
         return filterObj
+
+    def sendto_fn_from_postdata(self, data):
+        recipient_type = data.get('recipient_type', '') or data.get('combo_base_list', ':').split(':')[0]
+        sendtos = []
+        if recipient_type == 'Student':
+            for key,value in data.iteritems():
+                if ('student_sendto_' in key) and (value == '1'):
+                    sendtos.append(key[1+key.rindex('_'):])
+            if not sendtos:
+                sendtos.append('self')
+            sendtos.sort(key=['self', 'guardian', 'emergency'].index)
+            return 'send_to_' + '_and_'.join(sendtos)
+        else:
+            return MessageRequest.SEND_TO_SELF_REAL
 
     def prepare_context(self, program, target_path=None):
         context = {}
