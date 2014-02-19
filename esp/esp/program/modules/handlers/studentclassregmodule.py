@@ -762,8 +762,8 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             Should be revisited in the future, as this was a temporary
             hack created for Stanford Splash in fall 2013. """
 
-        if prog.hasModule('OnSiteClassList'):
-            module = prog.getModule('OnSiteClassList')
+        module = prog.getModule('OnSiteClassList')
+        if module:
             return module.classList_base(request, tl, one, two, module, 'by_time', prog, 'allclass_fragment.html')
         
         #  Otherwise this will be a 404
