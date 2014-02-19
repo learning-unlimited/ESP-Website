@@ -574,7 +574,6 @@ class LotteryAssignmentController(object):
             cs_ids = self.section_ids[numpy.nonzero(self.interest[no_pri_indices[i], :])[0]]
             print '   - Interested classes: %s' % ClassSection.objects.filter(id__in=list(cs_ids))
             """
-            
 
     def get_computed_schedule(self, student_id, mode='assigned'):
         #   mode can be 'assigned', 'interested', or 'priority'
