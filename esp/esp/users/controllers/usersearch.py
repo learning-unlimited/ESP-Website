@@ -74,7 +74,7 @@ class UserSearchController(object):
                 try:
                     userid.append(int(digit))
                 except:
-                    raise ESPError(False), 'User id invalid, please enter a number or comma-separated list of numbers.'
+                    raise ESPError('User id invalid, please enter a number or comma-separated list of numbers.', log=False)
                     
             if criteria.has_key('userid__not'):
                 Q_exclude &= Q(id__in = userid)
@@ -91,7 +91,7 @@ class UserSearchController(object):
                     try:
                         rc = re.compile(criteria[field])
                     except:
-                        raise ESPError(False), 'Invalid search expression, please check your syntax: %s' % criteria[field]
+                        raise ESPError('Invalid search expression, please check your syntax: %s' % criteria[field], log=False)
                     filter_dict = {'%s__iregex' % field: criteria[field]}
                     if criteria.has_key('%s__not' % field):
                         Q_exclude &= Q(**filter_dict)
@@ -104,7 +104,7 @@ class UserSearchController(object):
                 try:
                     zipc = ZipCode.objects.get(zip_code = criteria['zipcode'])
                 except:
-                    raise ESPError(False), 'Zip code not found.  This may be because you didn\'t enter a valid US zipcode.  Tried: "%s"' % criteria['zipcode']
+                    raise ESPError('Zip code not found.  This may be because you didn\'t enter a valid US zipcode.  Tried: "%s"' % criteria['zipcode'], log=False)
                 zipcodes = zipc.close_zipcodes(criteria['zipdistance'])
                 # Excludes zipcodes within a certain radius, giving an annulus; can fail to exclude people who used to live outside the radius.
                 # This may have something to do with the Q_include line below taking more than just the most recent profile. -ageng, 2008-01-15
@@ -147,13 +147,13 @@ class UserSearchController(object):
                 try:
                     gradyear_min = int(criteria['gradyear_min'])
                 except:
-                    raise ESPError(False), 'Please enter a 4-digit integer for graduation year limits.'
+                    raise ESPError('Please enter a 4-digit integer for graduation year limits.', log=False)
                 possible_gradyears = filter(lambda x: x >= gradyear_min, possible_gradyears)
             if criteria.has_key('gradyear_max') and len(criteria['gradyear_min'].strip()) > 0:
                 try:
                     gradyear_max = int(criteria['gradyear_max'])
                 except:
-                    raise ESPError(False), 'Please enter a 4-digit integer for graduation year limits.'
+                    raise ESPError('Please enter a 4-digit integer for graduation year limits.', log=False)
                 possible_gradyears = filter(lambda x: x <= gradyear_max, possible_gradyears)
             if criteria.get('gradyear_min', None) or criteria.get('gradyear_max', None):
                 Q_include &= Q(registrationprofile__teacher_info__graduation_year__in = map(str, possible_gradyears), registrationprofile__most_recent_profile=True)

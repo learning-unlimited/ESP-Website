@@ -179,7 +179,7 @@ class ArgCache(WithDelayableMethods):
         existing = cache_by_uid(uid)
         if existing:
             if tuple(existing.params) != tuple(params):
-                raise ESPError(), ("Cache %s already exists with different parameters." % name)
+                raise ESPError("Cache %s already exists with different parameters." % name)
             # Don't duplicate dependencies
             existing.locked = True
         return existing
@@ -264,7 +264,7 @@ class ArgCache(WithDelayableMethods):
             # don't do anything if we already have an id
             return param
         if not self.param_dict.has_key(param):
-            raise ESPError(), 'Cache %s (params %s) error: %s is not a valid argument' % (self.name, self.param_dict, param)
+            raise ESPError('Cache %s (params %s) error: %s is not a valid argument' % (self.name, self.param_dict, param))
         return self.param_dict[param]
 
     def delete_all(self):
@@ -495,7 +495,7 @@ class ArgCache(WithDelayableMethods):
             return
         Model = handle_thunk(Model)
         if Model is None:
-            raise ESPError(), "Attempting to depend on Model None... this is a pretty dumb thing to do."
+            raise ESPError("Attempting to depend on Model None... this is a pretty dumb thing to do.")
         if filter is None:
             filter = lambda instance: True
         if isinstance(selector, str):
@@ -620,9 +620,9 @@ class ArgCacheDecorator(ArgCache):
         name = describe_func(func) + extra_name
         uid = get_uid(func) + extra_name
         if self.argspec[1] is not None:
-            raise ESPError(), "ArgCache does not support varargs."
+            raise ESPError("ArgCache does not support varargs.")
         if self.argspec[2] is not None:
-            raise ESPError(), "ArgCache does not support keywords."
+            raise ESPError("ArgCache does not support keywords.")
 
         super(ArgCacheDecorator, self).__init__(name=name, params=params, uid=uid, *args, **kwargs)
 

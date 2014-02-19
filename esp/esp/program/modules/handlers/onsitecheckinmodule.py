@@ -192,7 +192,7 @@ class OnSiteCheckinModule(ProgramModuleObj):
                     except ValueError:
                         results['not_found'].append(code)
                     if len(result) > 1:
-                        raise ESPError(False), "Something weird happened, there are two students with ID %s." % code
+                        raise ESPError("Something weird happened, there are two students with ID %s." % code, log=False)
                     elif len(result) == 0:
                         results['not_found'].append(code)
                     else:

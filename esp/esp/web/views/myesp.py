@@ -51,7 +51,7 @@ from django.db.models.query import Q
 def myesp_passwd(request):
         """ Change password """
         if request.user.username == 'onsite':
-                raise ESPError(False), "Sorry, you're not allowed to change the password of this user. It's special."
+                raise ESPError("Sorry, you're not allowed to change the password of this user. It's special.", log=False)
 
         if request.method == "POST":
                 form = UserPasswdForm(user=request.user, data=request.POST)
@@ -78,7 +78,7 @@ def myesp_switchback(request):
 	user.updateOnsite(request)
 
 	if not user.other_user:
-		raise ESPError(False), 'You were not another user!'
+		raise ESPError('You were not another user!', log=False)
 
 	return HttpResponseRedirect(user.switch_back(request))
 
@@ -240,7 +240,7 @@ def myesp_onsite(request):
 	
 	user = ESPUser(request.user)
 	if not user.isOnsite():
-		raise ESPError(False), 'You are not a valid on-site user, please go away.'
+		raise ESPError('You are not a valid on-site user, please go away.', log=False)
 	
 	progs = Permission.program_by_perm(user,"Onsite")
 
