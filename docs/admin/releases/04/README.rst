@@ -116,6 +116,17 @@ the complete list of modules, choose "Manage class flags".
 This is still a work in progress; everything should work fine, but if there are
 more interfaces you would like to see, let the web team know!
 
+Emailing Program Guardians From the Communications Panel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The communications panel can now send mail to the listed guardian and emergency
+contact email address for students. On the first screen of the commpanel
+(/manage/<program>/<instance>/commpanel), after you select that you are
+emailing students, you can select which combination of students, guardians, and
+emergency contacts you wish to address. On the next screen, you can narrow down
+your query (for example, for all students who are enrolled in the program).
+When you send the message, it will go to the types of contacts (students and/or
+guardians and/or emergency contacts) that you specified.
+
 Accounting System
 ~~~~~~~~~~~~~~~~~
 
