@@ -1207,12 +1207,12 @@ class SplashInfo(models.Model):
         #   Save accounting information
         iac = IndividualAccountingController(self.program, self.student)
 
-        if self.lunchsat == 'no':
+        if not self.lunchsat or self.lunchsat == 'no':
             iac.set_preference('Saturday Lunch', 0)
         elif 'lunchsat' in cost_info:
             iac.set_preference('Saturday Lunch', 1, cost_info['lunchsat'][self.lunchsat])
 
-        if self.lunchsun == 'no':
+        if not self.lunchsun or self.lunchsun == 'no':
             iac.set_preference('Sunday Lunch', 0)
         elif 'lunchsun' in cost_info:
             iac.set_preference('Sunday Lunch', 1, cost_info['lunchsun'][self.lunchsun])
