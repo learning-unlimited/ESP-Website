@@ -97,7 +97,7 @@ class NewPasswordSetForm(forms.Form):
 
     code     = forms.CharField(widget = forms.HiddenInput())
     username = forms.CharField(max_length=128,
-                               help_text='(The one you used to receive the email.)')
+                               help_text='(The one you used to receive the email.)<br/><br/>')
     password = forms.CharField(max_length=128, min_length=5,widget=forms.PasswordInput())
     password_confirm = forms.CharField(max_length = 128,widget=forms.PasswordInput(),
                                        label='Password Confirmation')
