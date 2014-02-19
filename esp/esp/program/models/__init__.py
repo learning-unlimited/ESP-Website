@@ -924,6 +924,17 @@ class Program(models.Model, CustomFormsLinkModel):
     hasModule.depend_on_row(lambda: ProgramModuleObj, lambda module: {'self': module.program})
     hasModule.depend_on_m2m(lambda: Program, 'program_modules', lambda program, module: {'self': program})
 
+    def getModule(self, name):
+        """ Returns the specified module for this program if it is enabled.
+            'name' should be a module name like 'AvailabilityModule'. """
+
+        if self.hasModule(name):
+            #   Sometimes there are multiple modules with the same handler.
+            #   This function is not choosy, since the return value
+            #   is typically used just to access a view function.
+            return ProgramModuleObj.getFromProgModule(self, self.program_modules.filter(handler=name)[0])
+        else:
+            return None
 
     @cache_function
     def getModuleViews(self, main_only=False, tl=None):
