@@ -1,4 +1,4 @@
-from esp.program.models import Program, ClassSection
+from esp.program.models import Program, ClassSection, ClassSubject
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call
 from copy import deepcopy
 from math import ceil
@@ -6,6 +6,8 @@ from esp.cal.models import *
 from datetime import date
 from esp.web.util.main import render_to_response
 from esp.users.models import ESPUser
+from esp.tagdict.models import Tag
+import json
 
 class SchedulingCheckModule(ProgramModuleObj):
 
@@ -98,7 +100,7 @@ class HTMLSCFormatter:
         output = self._table_title(title, headings, help_text=help_text)
         output = output + self._table_headings(headings)
 
-        for key, row in d.iteritems():
+        for key, row in sorted(d.iteritems()):
             ordered_row = [row[h] for h in headings if h]
             output = output + self._table_row([key] + ordered_row)
         output += "</table>"
@@ -170,6 +172,7 @@ class SchedulingCheckRunner:
              self.admins_teaching_per_timeblock(),
              self.teachers_who_like_running(),
              self.hungry_teachers(),
+             self.no_overlap_classes(),
           ]
 
      #################################################
@@ -197,6 +200,8 @@ class SchedulingCheckRunner:
                qs = qs.exclude(resourceassignment__isnull=True)
                #filter out lunch
                qs = qs.exclude(parent_class__category__category=u'Lunch')
+               qs = qs.select_related('parent_class', 'parent_class__parent_program', 'parent_class__category')
+               qs = qs.prefetch_related('meeting_times', 'resourceassignment_set', 'resourceassignment_set__resource', 'parent_class__teachers')
                self.all_sections = list(qs)
                self.listed_sections = True
                return self.all_sections
@@ -473,3 +478,32 @@ class SchedulingCheckRunner:
                          "back-to-back classes (defined as two classes " +
                          "within 20 minutes of each other) in two different " +
                          "locations.")
+
+
+     def no_overlap_classes(self):
+         '''Gets a list of classes from the tag no_overlap_classes, and checks that they don't overlap.  The tag should contain a dict of {'comment': [list,of,class,ids]}.'''
+         classes = json.loads(Tag.getProgramTag('no_overlap_classes',program=self.p, default="{}"))
+         classes_lookup = {x.id: x for x in ClassSubject.objects.filter(id__in=sum(classes.values(),[]))}
+         bad_classes = []
+         for key, l in classes.iteritems():
+             eventtuples = list(Event.objects.filter(meeting_times__parent_class__in=l).values_list('description', 'meeting_times', 'meeting_times__parent_class'))
+             overlaps = {}
+             for event, sec, cls in eventtuples:
+                 if event in overlaps:
+                     overlaps[event].append(classes_lookup[cls])
+                 else:
+                     overlaps[event]=[classes_lookup[cls]]
+             for event in overlaps:
+                 if len(overlaps[event])>1:
+                     bad_classes.append({
+                         'Comment': key,
+                         'Timeblock': event,
+                         'Classes': overlaps[event]
+                         })
+         return self.formatter.format_table(bad_classes, "Classes which shouldn't overlap",
+                 {'headings': ['Comment', 'Timeblock', 'Classes']},
+                 help_text="Given a list of classes that should not overlap, compute which overlap.  This is to be used for example for classes using the same materials which are not tracked by the website, or to check that directors' classes don't overlap.  The classes should be put in the Tag no_overlap_classes, in the format of a dictionary with keys various comments (e.g. 'classes using the Quiz Bowl buzzers') and values as corresponding lists of class IDs."
+                 )
+                     
+
+
