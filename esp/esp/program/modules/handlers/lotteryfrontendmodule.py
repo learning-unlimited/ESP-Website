@@ -13,7 +13,7 @@ class LotteryFrontendModule(ProgramModuleObj):
     def module_properties(cls):
         return {
             "admin_title": "Lottery Frontend",
-            "link_title": "Run the Lottery Thing",
+            "link_title": "Run the Lottery Assignment Thing",
             "module_type": "manage",
             "seq": 10
             }
@@ -37,11 +37,11 @@ class LotteryFrontendModule(ProgramModuleObj):
     def lottery_execute(self, request, tl, one, two, module, extra, prog):
         # find what options the user wants
         options = {}
-        
+
         for key in request.POST:
             if 'lottery_' in key:
                 value = request.POST[key]
-                
+
                 if value == 'True':
                     value = True
                 elif value == 'False':
@@ -50,21 +50,21 @@ class LotteryFrontendModule(ProgramModuleObj):
                 	value = None
                 elif self.is_float(value):
                     value = float(value)
-                
+
                 options[key.split('_', 1)[1]] = value
 
         lotteryObj = LotteryAssignmentController(prog, **options)
-        
+
         for i in xrange(15):
             try:
                 lotteryObj.compute_assignments(True)
                 break
             except AssertionError:
                 pass
-        
+
         stats = lotteryObj.compute_stats()
         statsDisp = lotteryObj.display_stats(stats)
-        
+
         # export numpy arrayrs
         # the client will upload these back to server if they decide to save a particular run of the lottery
         s = StringIO()
@@ -76,7 +76,7 @@ class LotteryFrontendModule(ProgramModuleObj):
         s = StringIO()
         numpy.savetxt(s, lotteryObj.section_ids)
         section_ids = s.getvalue()
-        
+
         return {'response': [{'stats': statsDisp, 'student_sections': student_sections, 'student_ids': student_ids, 'section_ids': section_ids}]};
 
     @aux_call
@@ -85,13 +85,13 @@ class LotteryFrontendModule(ProgramModuleObj):
     def lottery_save(self, request, tl, one, two, module, extra, prog):
         if 'student_sections' not in request.POST or 'student_ids' not in request.POST or 'section_ids' not in request.POST:
         	return {'response': [{'success': 'no', 'error': 'missing student_sections,student_ids,section_ids'}]};
-        
+
         lotteryObj = LotteryAssignmentController(prog)
         student_sections = numpy.loadtxt(StringIO(request.POST['student_sections']))
         student_ids = numpy.loadtxt(StringIO(request.POST['student_ids']))
         section_ids = numpy.loadtxt(StringIO(request.POST['section_ids']))
         lotteryObj.save_assignments_helper(student_sections, student_ids, section_ids)
-        
+
         return {'response': [{'success': 'yes'}]};
 
     @aux_call
@@ -104,4 +104,3 @@ class LotteryFrontendModule(ProgramModuleObj):
 
     class Meta:
         abstract = True
-
