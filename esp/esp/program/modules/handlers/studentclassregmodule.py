@@ -762,10 +762,9 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             Should be revisited in the future, as this was a temporary
             hack created for Stanford Splash in fall 2013. """
 
-        modules = prog.getModules()
-        for module in modules:
-            if isinstance(module, OnSiteClassList):
-                return module.classList_base(request, tl, one, two, module, 'by_time', prog, 'allclass_fragment.html')
+        if prog.hasModule('OnSiteClassList'):
+            module = prog.getModule('OnSiteClassList')
+            return module.classList_base(request, tl, one, two, module, 'by_time', prog, 'allclass_fragment.html')
         
         #  Otherwise this will be a 404
         return None
