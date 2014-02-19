@@ -924,6 +924,7 @@ class Program(models.Model, CustomFormsLinkModel):
     hasModule.depend_on_row(lambda: ProgramModuleObj, lambda module: {'self': module.program})
     hasModule.depend_on_m2m(lambda: Program, 'program_modules', lambda program, module: {'self': program})
 
+    @cache_function
     def getModule(self, name):
         """ Returns the specified module for this program if it is enabled.
             'name' should be a module name like 'AvailabilityModule'. """
@@ -935,6 +936,7 @@ class Program(models.Model, CustomFormsLinkModel):
             return ProgramModuleObj.getFromProgModule(self, self.program_modules.filter(handler=name)[0])
         else:
             return None
+    getModule.depend_on_cache(lambda: Program.hasModule, lambda self=wildcard, name=wildcard, **kwargs: {'self': self, 'name': name})
 
     @cache_function
     def getModuleViews(self, main_only=False, tl=None):
