@@ -15,19 +15,22 @@ var program_url_base = '{{ program.getUrlBase }}';
 
 <form id="lotteryform" action="javascript:runLotteryThing()" class="form-inline" method="POST">
 <center>
-<table width="400" cellpadding="5">
+<table width="100%" cellpadding="5">
 {% for option_key, option_value in options.items %}
 <tr>
 	<th>{{ option_key }}</th>
-	<td><input type="text" name="lottery_{{ option_key }}" value="{{ option_value }}" /></td>
+	<td><input type="text" class="input-small" name="lottery_{{ option_key }}" value="{{ option_value.0 }}" /></td>
+	<td>{{ option_value.1 }}</td>
 </tr>
 {% endfor %}
 <tr>
-    <td colspan="2"><input type="submit" value="Whee... Run Lottery!"/></td>
+    <td colspan="3"><button type="submit" class="btn btn-primary btn-large" style="background-color:red; background-image: none;">Whee... Run Lottery!</button></td>
 </tr>
 <tr>
-    <td><a href="javascript:saveLotteryThing()"><button type="button">Save lottery assignments</button></a></td>
-    <td><a href="javascript:clearLotteryThing()"><button type="button">Clear saved lottery assignments</button></a></td>
+    <td colspan="3">
+        <a href="javascript:saveLotteryThing()"><button type="button" class="btn btn-success">Save lottery assignments</button></a>
+        <a href="javascript:clearLotteryThing()"><button type="button" class="btn btn-danger">Clear saved lottery assignments</button></a>
+    </td>
 </tr>
 </table>
 </center>

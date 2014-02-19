@@ -51,14 +51,16 @@ import operator
 
 class LotteryAssignmentController(object):
 
+	# map from default option key to (default value, help text)
+	# help text is false if it should not be displayed on a web interface (specifically, lottery frontend module)
     default_options = {
-        'Kp': 1.2,
-        'Ki': 1.1,
-        'check_grade': True,
-        'stats_display': False,
-        'directory': os.getenv("HOME"),
-        'use_student_apps': False,
-        'fill_low_priorities': False,
+        'Kp': (1.2, 'Assignment weight factor for priority students'),
+        'Ki': (1.1, 'Assignment weight factor for interested students'),
+        'check_grade': (True, 'Whether to validate grade constraints'),
+        'stats_display': (False, False),
+        'directory': (os.getenv("HOME"), False),
+        'use_student_apps': (False, 'Whether to use student application ranks'),
+        'fill_low_priorities': (False, 'Whether to push students who have interested classes marked but no priority, to priority')
     }
     
     def __init__(self, program, **kwargs):
@@ -85,7 +87,7 @@ class LotteryAssignmentController(object):
         self.priority_limit = self.program.priorityLimit()
         self.grade_range_exceptions = self.program.useGradeRangeExceptions()
         
-        self.options = LotteryAssignmentController.default_options.copy()
+        self.options = {key: value[0] for key, value in LotteryAssignmentController.default_options.items()}
         self.options.update(kwargs)
         
         self.now = datetime.now()
