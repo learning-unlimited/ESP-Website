@@ -3,17 +3,21 @@ var student_sections = '';
 var student_ids = '';
 var section_ids = '';
 
+function lotteryErrorHandler() {
+	$j('#lotterythingstats').html('The server returned an error to our request. Contact your local webministry for help.');
+}
+
 function runLotteryThing() {
 	$j('#lotterythingstats').html('Loading...');
 	var $inputs = $j('#lotteryform :input');
 	var post_data = {'csrfmiddlewaretoken': csrf_token()};
-	
+
 	$inputs.each(function() {
 		if(this.name.indexOf('lottery_') == 0) {
 			post_data[this.name] = $j(this).val();
 		}
 	});
-	
+
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/lottery_execute",
 		type: "post",
@@ -25,6 +29,7 @@ function runLotteryThing() {
 			section_ids = data['section_ids'];
 			$j('#lotterythingstats').html("<pre>" + data['stats'] + "</pre>");
 		},
+		error: lotteryErrorHandler,
 		dataType: 'json'
 	});
 }
@@ -32,7 +37,7 @@ function runLotteryThing() {
 function saveLotteryThing() {
 	$j('#lotterythingstats').html('Saving...');
 	var post_data = {'csrfmiddlewaretoken': csrf_token(), 'student_sections': student_sections, 'student_ids': student_ids, 'section_ids': section_ids};
-	
+
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/lottery_save",
 		type: "post",
@@ -40,6 +45,7 @@ function saveLotteryThing() {
 		success: function() {
 			$j('#lotterythingstats').html("The lottery assignments has been saved successfully!");
 		},
+		error: lotteryErrorHandler,
 		dataType: 'json'
 	});
 }
@@ -47,7 +53,7 @@ function saveLotteryThing() {
 function clearLotteryThing() {
 	$j('#lotterythingstats').html('Clearing...');
 	var post_data = {'csrfmiddlewaretoken': csrf_token()};
-	
+
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/lottery_clear",
 		type: "post",
@@ -55,6 +61,7 @@ function clearLotteryThing() {
 		success: function() {
 			$j('#lotterythingstats').html("The lottery assignments has been clear successfully!");
 		},
+		error: lotteryErrorHandler,
 		dataType: 'json'
 	});
 }
