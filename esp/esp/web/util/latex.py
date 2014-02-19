@@ -153,7 +153,7 @@ def gen_latex(texcode, type='pdf', landscape=False):
             os.remove('%s.ps' % file_base)
 
     else:
-        raise ESPError(), 'Invalid type received for latex generation: %s should be one of %s' % (type, file_types)
+        raise ESPError('Invalid type received for latex generation: %s should be one of %s' % (type, file_types))
     
     
     try:
@@ -180,7 +180,7 @@ def gen_latex(texcode, type='pdf', landscape=False):
                 os.remove(file_base+TEX_EXT)
         
         except:
-            raise ESPError(), 'Could not read contents of %s. (Hint: try looking at the log file)' % (file_base+'.'+type)
+            raise ESPError('Could not read contents of %s. (Hint: try looking at the log file)' % (file_base+'.'+type))
 
     if type=='log':
         new_contents = tex_log

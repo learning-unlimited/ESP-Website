@@ -309,7 +309,7 @@ class ESPUser(User, AnonymousUser):
             # Disallow morphing into Administrators.
             # It's too broken, from a security perspective.
             # -- aseering 1/29/2010
-            raise ESPError(False), "User '%s' is an administrator; morphing into administrators is not permitted." % user.username
+            raise ESPError("User '%s' is an administrator; morphing into administrators is not permitted." % user.username, log=False)
 
         logout(request)
         user.backend = 'django.contrib.auth.backends.ModelBackend'
@@ -329,7 +329,7 @@ class ESPUser(User, AnonymousUser):
 
     def switch_back(self, request):
         if not 'user_morph' in request.session:
-            raise ESPError(), 'Error: You were not another user to begin with!'
+            raise ESPError('Error: You were not another user to begin with!')
 
         retUrl   = request.session['user_morph']['retUrl']
         new_user = self.get_old(request)
@@ -459,11 +459,11 @@ class ESPUser(User, AnonymousUser):
         try:
             num = int(num)
         except:
-            raise ESPError(), 'Could not find user "%s %s"' % (first, last)
+            raise ESPError('Could not find user "%s %s"' % (first, last))
         users = ESPUser.objects.filter(last_name__iexact = last,
                                     first_name__iexact = first).order_by('id')
         if len(users) <= num:
-            raise ESPError(False), '"%s %s": Unknown User' % (first, last)
+            raise ESPError('"%s %s": Unknown User' % (first, last), log=False)
         return users[num]
 
     @cache_function
@@ -482,7 +482,7 @@ class ESPUser(User, AnonymousUser):
     @staticmethod
     def getAllOfType(strType, QObject = True):
         if strType not in ESPUser.getTypes():
-            raise ESPError(), "Invalid type to find all of."
+            raise ESPError("Invalid type to find all of.")
 
         Q_useroftype      = Q(groups__name=strType)
 
@@ -500,7 +500,7 @@ class ESPUser(User, AnonymousUser):
 
         #   Detect whether the program has the availability module, and assume
         #   the user is always available if it isn't there.
-        if program.program_modules.filter(handler='AvailabilityModule').exists():
+        if program.hasModule('AvailabilityModule'):
             valid_events = Event.objects.filter(useravailability__user=self, program=program).order_by('start')
         else:
             valid_events = program.getTimeSlots()
@@ -749,7 +749,7 @@ class ESPUser(User, AnonymousUser):
         # we have a lot of users with no email (??)
         #  let's at least display a sensible error message
         if self.email.strip() == '':
-            raise ESPError(), 'User %s has blank email address; cannot recover password. Please contact webmasters to reset your password.' % self.username
+            raise ESPError('User %s has blank email address; cannot recover password. Please contact webmasters to reset your password.' % self.username)
 
         # email addresses
         to_email = ['%s <%s>' % (self.name(), self.email)]
@@ -1078,7 +1078,7 @@ class StudentInfo(models.Model):
         if not studentInfo.user:
             studentInfo.user = curUser
         elif studentInfo.user != curUser: # this should never happen, but you never know....
-            raise ESPError(), "Your registration profile is corrupted. Please contact esp-web@mit.edu, with your name and username in the message, to correct this issue."
+            raise ESPError("Your registration profile is corrupted. Please contact esp-web@mit.edu, with your name and username in the message, to correct this issue.")
 
         studentInfo.graduation_year = new_data['graduation_year']
         try:
@@ -1444,7 +1444,7 @@ class ZipCode(models.Model):
             distance_decimal = Decimal(str(distance))
             distance_float = float(str(distance))
         except:
-            raise ESPError(), '%s should be a valid decimal number!' % distance
+            raise ESPError('%s should be a valid decimal number!' % distance)
 
         if distance < 0:
             distance *= -1
@@ -1734,7 +1734,7 @@ class PersistentQueryFilter(models.Model):
         try:
             QObj = pickle.loads(str(self.q_filter))
         except:
-            raise ESPError(), 'Invalid Q object stored in database.'
+            raise ESPError('Invalid Q object stored in database.')
 
         #   Do not include users if they have disabled their account.
         if restrict_to_active and (self.item_model.find('auth.models.User') >= 0 or self.item_model.find('esp.users.models.ESPUser') >= 0):
@@ -1775,7 +1775,7 @@ class PersistentQueryFilter(models.Model):
             to the live database. You must supply the model. If the model is not matched,
             it will become an error. """
         if str(module) != str(self.item_model):
-            raise ESPError(), 'The module given does not match that of the persistent entry.'
+            raise ESPError('The module given does not match that of the persistent entry.')
 
         return module.objects.filter(self.get_Q())
 

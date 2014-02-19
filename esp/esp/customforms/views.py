@@ -152,7 +152,7 @@ def onModify(request):
             try:
                 form = Form.objects.get(id=int(metadata['form_id']))
             except:
-                raise ESPError(False), 'Form %s not found' % metadata['form_id']
+                raise ESPError('Form %s not found' % metadata['form_id'], log=False)
             dmh = DMH(form=form)
             link_models_list = []     # Stores a cache of link models that should not be removed
             
