@@ -260,6 +260,28 @@ class ESPUser(User, AnonymousUser):
     def name(self):
         return '%s %s' % (self.first_name, self.last_name)
 
+    def get_email_sendto_address_pair(self):
+        """
+        Returns the pair of data needed to send an email to the user.
+        """
+        return (self.email, self.name())
+
+    @staticmethod
+    def email_sendto_address(email, name=''):
+        """
+        Given an email and a name, returns the string used to address mail.
+        """
+        if name:
+            return u'%s <%s>' % (name, email)
+        else:
+            return u'<%s>' % email
+
+    def get_email_sendto_address(self):
+        """
+        Returns the string used to address mail to the user.
+        """
+        return ESPUser.email_sendto_address(self.email, self.name())
+
     def __cmp__(self, other):
         lastname = cmp(self.last_name.upper(), other.last_name.upper())
         if lastname == 0:
@@ -500,7 +522,7 @@ class ESPUser(User, AnonymousUser):
 
         #   Detect whether the program has the availability module, and assume
         #   the user is always available if it isn't there.
-        if program.program_modules.filter(handler='AvailabilityModule').exists():
+        if program.hasModule('AvailabilityModule'):
             valid_events = Event.objects.filter(useravailability__user=self, program=program).order_by('start')
         else:
             valid_events = program.getTimeSlots()
@@ -1550,6 +1572,23 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
 
 
 
+
+    def name(self):
+        return '%s %s' % (self.first_name, self.last_name)
+
+    email = property(lambda self: self.e_mail)
+
+    def get_email_sendto_address_pair(self):
+        """
+        Returns the pair of data needed to send an email to the contact.
+        """
+        return (self.email, self.name())
+
+    def get_email_sendto_address(self):
+        """
+        Returns the string used to address mail to the contact.
+        """
+        return ESPUser.email_sendto_address(self.email, self.name())
 
     def address(self):
         return '%s, %s, %s %s' % \
