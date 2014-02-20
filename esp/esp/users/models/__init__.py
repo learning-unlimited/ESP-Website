@@ -2349,8 +2349,8 @@ class GradeChangeRequest(TimeStampedModel):
         subject, message = self._request_email_content()
         send_mail(subject,
                   message,
-                  settings.DEFAULT_FROM_EMAIL,
-                  [self.requesting_student.email, ])
+                  settings.SERVER_EMAIL,
+                  [settings.DEFAULT_EMAIL_ADDRESSES['default'], ])
 
     def _confirmation_email_content(self):
         context = {'student': self.requesting_student,
