@@ -28,7 +28,7 @@ describe("Directory", function(){
 
 describe("TableRow", function(){
     beforeEach(function(){
-	tr = new TableRow({title: "my-title", emailcode: "my-emailcode"}, $j("<tr/>"))
+	tr = new TableRow({title: "my-title", emailcode: "my-emailcode", parent_class: 1234}, $j("<tr/>"))
     })
     it("should have an el", function(){
 	expect(tr.el[0]).toBeHtmlNode()
@@ -45,17 +45,17 @@ describe("TableRow", function(){
     describe("render", function(){
 	it("should display the section name", function(){
 	    tr.render()
-	    expect(tr.el[0].innerHTML).toMatch("my-title")
+	    expect(tr.el[0].innerHTML).toContain("my-title")
 	})
 
 	it("shsould display the section email code", function(){
 	    tr.render()
-	    expect(tr.el[0].innerHTML).toMatch("my-emailcode")
+	    expect(tr.el[0].innerHTML).toContain("my-emailcode")
 	})
 
 	it("includes the draggable cell", function(){
 	    tr.render()
-	    expect(tr.el[0].innerHTML).toMatch(tr.cell.el[0].outerHTML)
+	    expect(tr.el[0].innerHTML).toContain(tr.cell.el[0].outerHTML)
 	})
     })
 

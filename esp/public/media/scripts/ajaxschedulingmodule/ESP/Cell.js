@@ -1,6 +1,8 @@
 function Cell(el, section) {
     this.el = el
 
+    this.cellColors = new CellColors()
+
     this.dropHandler = function(event, ui){
 	this.addSection(ui.draggable.data("section"))
     }
@@ -37,6 +39,7 @@ function Cell(el, section) {
 	this.el.data("section", section)
 	this.el.addClass("occupied-cell")
 	this.el.removeClass("available-cell")
+	this.el.css("background-color", this.cellColors.color(section))
 	//TODO:  jquery, how am I actually supposed to do this?
 	this.el[0].innerHTML = section.emailcode
 	this.el.droppable("disable")

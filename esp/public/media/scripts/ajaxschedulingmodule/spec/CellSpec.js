@@ -3,7 +3,8 @@ describe("Cell", function(){
 	c = new Cell($j("<td/>"))
 
 	section = {
-	    emailcode: "my-emailcode"
+	    emailcode: "my-emailcode",
+	    parent_class: 1234
 	}
     })
 
@@ -106,7 +107,7 @@ describe("Cell", function(){
 
     describe("hasSection", function(){
 	it("returns true when the cell has a section", function(){
-	    c.addSection({})
+	    c.addSection({ parent_class: 1234})
 	    expect(c.hasSection()).toBeTrue()
 	})
 
