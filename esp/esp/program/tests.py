@@ -1100,7 +1100,11 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                 # 0.25 prob of adding a section as interested
                 if random.random() < 0.25:
                     StudentRegistration.objects.get_or_create(user=student, section=sec, relationship=self.interested_rt)
-
+            # Make sure the student actually entered the lottery
+            if StudentRegistration.objects.filter(user=student, section__parent_class__parent_program=self.program).count() == 0:
+                pri = random.choice(self.program.sections())
+                StudentRegistration.objects.get_or_create(user=student, section=pri, relationship=self.priority_rt)
+                
     def testLottery(self):
         # Run the lottery!
         lotteryController = LotteryAssignmentController(self.program)
