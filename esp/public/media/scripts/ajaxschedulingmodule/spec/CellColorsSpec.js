@@ -3,11 +3,9 @@ describe("CellColors", function(){
 	cc = new CellColors()
 	section = { 
 	    emailcode: "S1234s1",
-	    parent_class: 1234 
 	}
 	section2 = {
 	    emailcode: "S1235s1",
-	    parent_class: 1235
 	}
     })
 

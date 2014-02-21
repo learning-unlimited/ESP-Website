@@ -4,7 +4,6 @@ describe("Cell", function(){
 
 	section = {
 	    emailcode: "my-emailcode",
-	    parent_class: 1234
 	}
     })
 
@@ -107,7 +106,7 @@ describe("Cell", function(){
 
     describe("hasSection", function(){
 	it("returns true when the cell has a section", function(){
-	    c.addSection({ parent_class: 1234})
+	    c.addSection({ emailcode: "S1234s1"})
 	    expect(c.hasSection()).toBeTrue()
 	})
 
