@@ -219,14 +219,15 @@ To set up Two-Phase Student Reg, the module should be enabled and sequenced afte
 .. figure:: images/fig1.png
    :scale: 30 %
 
-   Two-Phase Student Reg landing page
+   Figure 1: Two-Phase Student Reg landing page
 
 Once the Two-Phase Student Reg portion of registration is complete for students, **the Two-Phase Student Reg module should be disabled**. This allows students to now land at the normal checkboxes landing page and make edits to their schedule.
 
 *Future work: We'd like to change this to interact better with the checkboxpage, so steps that need to be revisited can be used during the Two-Phase stage of registration, and so that the module doesn't have the be disabled to land at the main student reg page.*
 
 
-**Student flow**
+Student flow
+~~~~~~~~~~~~
 
 While Two-Phase registration is enabled, students will see the following workflow:
 1. Interact with any module enabled before Two-Phase (Medical form, Student Profile, etc.)
@@ -237,17 +238,18 @@ While Two-Phase registration is enabled, students will see the following workflo
 .. figure:: images/fig2.png
    :scale: 30 %
 
-   Step 1 of registration -- view catalog and star interested classes
+   Figure 2: Step 1 of registration -- view catalog and star interested classes
 
 4. Step 2 of registration: rank priorities for each timeslot in the program (Fig. 3). By default, the list of classes for the timeslot shows just the starred classes, but this can be widened to all available classes for the timeslot with a checkbox. The selector shows both starred and unstarred classes to choose from.
 
 .. figure:: images/fig3.png
    :scale: 30 %
 
-   Step 2 of registration -- rank classes for each timeslot
+   Figure 3: Step 2 of registration -- rank classes for each timeslot
 
 
-**Views provided**
+Views provided
+~~~~~~~~~~~~~~
 
 * [main] /learn/<program>/studentreg2phase -- Main Two-Phase landing page (Fig. 1)
 * /learn/<program>/view_classes -- Filterable catalog that is similar to the one shown during step 1 of registration, but that is viewable by anyone. This effectively replaces the old /catalog view.
