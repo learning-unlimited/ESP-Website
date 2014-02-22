@@ -217,7 +217,7 @@ This is a new mode of student registration which functions much like the lottery
 To set up Two-Phase Student Reg, the module should be enabled and sequenced after any modules that students should interact with before registering (ex. Medical form or Student Profile). You should not have this module in your program concurrently with StudentClassRegModule or LotteryStudentRegModule. The Two-Phase Student Reg module is currently set to be required, but is never marked as “completed” for students. This means that as long as the module is enabled, the Two Phase landing page (Fig. 1) will supercede the normal student reg landing page (the page with the checkboxes indicating steps completed).
 
 .. figure:: images/fig1.png
-   :scale: 30 %
+   :width: 30 %
 
    Figure 1: Two-Phase Student Reg landing page
 
@@ -236,14 +236,14 @@ While Two-Phase registration is enabled, students will see the following workflo
 *Note: Classes starred are saved as "Interested" in the back-end, and DO affect the outcome of the lottery.*
 
 .. figure:: images/fig2.png
-   :scale: 30 %
+   :width: 30 %
 
    Figure 2: Step 1 of registration -- view catalog and star interested classes
 
 4. Step 2 of registration: rank priorities for each timeslot in the program (Fig. 3). By default, the list of classes for the timeslot shows just the starred classes, but this can be widened to all available classes for the timeslot with a checkbox. The selector shows both starred and unstarred classes to choose from.
 
 .. figure:: images/fig3.png
-   :scale: 30 %
+   :width: 30 %
 
    Figure 3: Step 2 of registration -- rank classes for each timeslot
 
