@@ -214,7 +214,10 @@ Two-phase Student Registration (StudentRegTwoPhase)
 
 This is a new mode of student registration which functions much like the lottery (in the back-end) but has a new front-end interface.  In the first step, students are asked to "star" the classes they are interested in, using a searchable interactive catalog.  In the second step, students can select which classes to mark as "priority" and which to mark as "interested" for each time slot.
 
-To set up Two-Phase Student Reg, the module should be enabled and sequenced after any modules that students should interact with before registering (ex. Medical form or Student Profile). You should not have this module in your program concurrently with StudentClassRegModule or LotteryStudentRegModule. The Two-Phase Student Reg module is currently set to be required, but is never marked as “completed” for students. This means that as long as the module is enabled, the Two Phase landing page (Fig. 1) will supercede the normal student reg landing page (the page with the checkboxes indicating steps completed).
+Admin Setup
+~~~~~~~~~~~
+
+To set up Two-Phase Student Reg, the module should be enabled and sequenced after any modules that students should interact with before registering (ex. Medical form or Student Profile). You should not have this module in your program concurrently with StudentClassRegModule or LotteryStudentRegModule. The Two-Phase Student Reg module is currently set to be required, but is never marked as "completed" for students. This means that as long as the module is enabled, the Two Phase landing page (Fig. 1) will supercede the normal student reg landing page (the page with the checkboxes indicating steps completed).
 
 .. figure:: images/fig1.png
    :width: 30 %
@@ -222,6 +225,8 @@ To set up Two-Phase Student Reg, the module should be enabled and sequenced afte
    Figure 1: Two-Phase Student Reg landing page
 
 Once the Two-Phase Student Reg portion of registration is complete for students, **the Two-Phase Student Reg module should be disabled**. This allows students to now land at the normal checkboxes landing page and make edits to their schedule.
+
+To control the number of priority slots listed in the rank classes interface, set the 'priority_limit' property of the Student Class Reg Module Info associated with the program.
 
 *Future work: We'd like to change this to interact better with the checkboxpage, so steps that need to be revisited can be used during the Two-Phase stage of registration, and so that the module doesn't have the be disabled to land at the main student reg page.*
 

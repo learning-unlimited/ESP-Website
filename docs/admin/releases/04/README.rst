@@ -407,7 +407,7 @@ that web servers running ESP-Website now be configured to also utilize the
 virtual environment. A script is included to automatically do the configuration
 (specifically, make_virtualenv.sh).
 
-Two phase student registration
+Two-phase student registration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This is a new mode of student registration which functions much like the lottery
@@ -424,3 +424,6 @@ fix in a future release, but for now the recommended workflow is to enable the
 module for the Two-Phase portion of registration, then disable it and allow
 students to land at the normal landing page to complete registration and change
 classes after the lottery has been run.
+
+Full documentation can be found in the program modules docs:
+`</docs/admin/program_modules.rst>`_.
