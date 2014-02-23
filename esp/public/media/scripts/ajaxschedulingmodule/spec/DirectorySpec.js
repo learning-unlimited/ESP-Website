@@ -1,6 +1,6 @@
 describe("Directory", function(){
     beforeEach(function(){
-	d = new Directory(sections_fixture, $j("<div/>"))
+	d = new Directory(sections_fixture(), $j("<div/>"))
     })
 
     it("should have a list of sections and an el", function(){

@@ -3,7 +3,7 @@ function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
     this.el = el
 
     this.rooms = rooms
-    this.schedule_assigments = schedule_assignments
+    this.schedule_assignments = schedule_assignments
     this.sections = sections
     
     this.add_timeslots_order = function(timeslot_object){
