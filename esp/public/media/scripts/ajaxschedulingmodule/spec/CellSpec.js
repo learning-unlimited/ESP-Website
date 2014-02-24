@@ -114,14 +114,4 @@ describe("Cell", function(){
 	    expect(c.hasSection()).toBeFalse()
 	})
     })
-
-    var mockUI = { draggable: {data: function(){ return section } } }
-    describe("accepting dropped sections", function(){
-	it("adds a section to the item", function(){
-	    section = { id: "section-id" }
-	    spyOn(c, 'addSection')
-	    c.dropHandler({}, mockUI)
-	    expect(c.addSection).toHaveBeenCalledWith(section)
-	})
-    })
 })

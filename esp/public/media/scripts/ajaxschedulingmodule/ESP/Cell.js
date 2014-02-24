@@ -3,17 +3,16 @@ function Cell(el, section) {
 
     this.cellColors = new CellColors()
 
-    this.dropHandler = function(event, ui){
-	this.addSection(ui.draggable.data("section"))
-    }
-
     this.init = function(new_section){
 	this.el.draggable({
 	    stack: ".matrix-cell",
 	    helper: "clone",
 	})
 	this.el.droppable({
-	    drop:  this.dropHandler.bind(this)
+	    drop: function(el, ui){
+		//this doesn't need to do anything, it just needs to receive the
+		//event so that the matrix can listen for it.
+	    }
 	})
 	if (new_section != null){
 	    this.addSection(new_section)

@@ -1,6 +1,19 @@
 function Matrix(timeslots, rooms, schedule_assignments, sections, el) {
     //TODO:  just pass the whole damn data object in
     this.el = el
+    this.el.id = "matrix-table"
+
+    this.dropHandler = function(el){
+    }
+
+    this.init = function(){
+	this.el.on("drop", "td", this.dropHandler)
+	this.el.droppable({
+	    drop: this.dropHandler.bind(this)
+	})
+    }
+
+    this.init()
 
     this.rooms = rooms
     this.schedule_assignments = schedule_assignments
