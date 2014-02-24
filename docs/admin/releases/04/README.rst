@@ -426,4 +426,4 @@ students to land at the normal landing page to complete registration and change
 classes after the lottery has been run.
 
 Full documentation can be found in the program modules docs:
-`</docs/admin/program_modules.rst>`_.
+`</docs/admin/program_modules.rst#two-phase-student-registration-studentregtwophase>`_.
