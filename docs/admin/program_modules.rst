@@ -226,7 +226,7 @@ To set up Two-Phase Student Reg, the module should be enabled and sequenced afte
 
 Once the Two-Phase Student Reg portion of registration is complete for students, **the Two-Phase Student Reg module should be disabled**. This allows students to now land at the normal checkboxes landing page and make edits to their schedule.
 
-To control the number of priority slots listed in the rank classes interface, set the 'priority_limit' property of the Student Class Reg Module Info associated with the program.
+To control the number of priority slots listed in the rank classes interface, set the 'priority_limit' property of the Student Class Reg Module Info associated with the program. This can be edited through the admin panel by visiting /admin/modules/studentclassregmoduleinfo/ and selecting the Student Class Reg Module Info object associated with the program.
 
 *Future work: We'd like to change this to interact better with the checkboxpage, so steps that need to be revisited can be used during the Two-Phase stage of registration, and so that the module doesn't have the be disabled to land at the main student reg page.*
 
