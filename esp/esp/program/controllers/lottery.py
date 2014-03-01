@@ -252,7 +252,7 @@ class LotteryAssignmentController(object):
 
         if self.options['fill_low_priorities']:
             #   Compute who has a priority when.  Includes lower priorities, since this is used for places where we check not clobbering priorities.
-            self.has_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit)]
+            self.has_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit+1)]
             for i in range(1,self.effective_priority_limit+1):
                 priority_at_least_i = reduce(operator.or_,[self.priority[j] for j in range(i,self.effective_priority_limit+1)])
                 numpy.dot(priority_at_least_i,self.section_schedules,out=self.has_priority[i])
@@ -260,7 +260,7 @@ class LotteryAssignmentController(object):
             self.sections_at_same_time = numpy.dot(self.section_schedules, numpy.transpose(self.section_schedules))
 
             #   And the same, overlappingly.
-            self.has_overlapping_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit)]
+            self.has_overlapping_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit+1)]
             for i in range(1,self.effective_priority_limit+1):
                 priority_at_least_i = reduce(operator.or_,[self.priority[j] for j in range(i,self.effective_priority_limit+1)])
                 numpy.dot(numpy.dot(priority_at_least_i,self.sections_at_same_time),self.section_schedules,out=self.has_overlapping_priority[i])
