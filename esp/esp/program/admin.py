@@ -34,6 +34,7 @@ Learning Unlimited, Inc.
 
 from django.contrib import admin
 from django.db.models import ManyToManyField
+from django.db.models.sql.constants import LOOKUP_SEP
 
 from esp.admin import admin_site
 
@@ -48,6 +49,8 @@ from esp.program.models import RegistrationType, StudentRegistration, StudentSub
 
 from esp.program.models import ProgramCheckItem, ClassSection, ClassSubject, ClassCategories, ClassSizeRange
 from esp.program.models import StudentApplication, StudentAppQuestion, StudentAppResponse, StudentAppReview
+
+from esp.program.models import ClassFlag, ClassFlagType
 
 from esp.accounting.models import FinancialAidGrant
 
@@ -65,13 +68,7 @@ admin_site.register(ArchiveClass, ArchiveClassAdmin)
 class ProgramAdmin(admin.ModelAdmin):
     class Media:
         css = { 'all': ( 'styles/admin.css', ) }
-    formfield_overrides = { ManyToManyField: { 'widget': admin.widgets.FilteredSelectMultiple(verbose_name='', is_stacked=False) } }
-    # formfield_overrides will work once we move past Django r9760.
-    # At that time we should cut out formfield_for_dbfield.
-    def formfield_for_dbfield(self, db_field, **kwargs):
-        if isinstance( db_field, ManyToManyField ):
-            kwargs['widget'] = admin.widgets.FilteredSelectMultiple(verbose_name='', is_stacked=False)
-        return super(ProgramAdmin, self).formfield_for_dbfield(db_field,**kwargs)
+    filter_horizontal = ('program_modules', 'class_categories', 'flag_types')
 admin_site.register(Program, ProgramAdmin)
 
 class RegistrationProfileAdmin(admin.ModelAdmin):
@@ -164,16 +161,21 @@ admin_site.register(RegistrationType, Admin_RegistrationType)
 def expire_student_registrations(modeladmin, request, queryset):
     for reg in queryset:
         reg.expire()
+
+def renew_student_registrations(modeladmin, request, queryset):
+    for reg in queryset:
+        reg.unexpire()
+
 class StudentRegistrationAdmin(admin.ModelAdmin):
     list_display = ('id', 'section', 'user', 'relationship', 'start_date', 'end_date', )
-    actions = [ expire_student_registrations, ]
+    actions = [ expire_student_registrations, renew_student_registrations ]
     search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
 admin_site.register(StudentRegistration, StudentRegistrationAdmin)
 
 class StudentSubjectInterestAdmin(admin.ModelAdmin):
     list_display = ('id', 'subject', 'user', 'start_date', 'end_date', )
     actions = [ expire_student_registrations, ]
-    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'section__id', 'section__parent_class__title', 'section__parent_class__id']
+    search_fields = ['user__last_name', 'user__first_name', 'user__username', 'user__email', 'id', 'subject__id', 'subject__title']
 admin_site.register(StudentSubjectInterest, StudentSubjectInterestAdmin)
 
 def sec_classrooms(obj):
@@ -236,3 +238,16 @@ class Admin_StudentAppReview(admin.ModelAdmin):
         'comments',
     )
 admin_site.register(StudentAppReview, Admin_StudentAppReview)
+
+class ClassFlagTypeAdmin(admin.ModelAdmin):
+    list_display = ('name','show_in_scheduler','show_in_dashboard')
+    search_fields = ['name']
+    list_filter = ['program']
+admin_site.register(ClassFlagType, ClassFlagTypeAdmin)
+
+class ClassFlagAdmin(admin.ModelAdmin):
+    list_display = ('flag_type','subject','comment')
+    search_fields = ['flag_type', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
+    search_fields.extend([field + LOOKUP_SEP + lookup for field in ['modified_by', 'created_by'] for lookup in ['username', 'first_name', 'last_name', 'id']])
+    list_filter = ['subject__parent_program','flag_type']
+admin_site.register(ClassFlag, ClassFlagAdmin)

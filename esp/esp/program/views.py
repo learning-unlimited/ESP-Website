@@ -53,13 +53,13 @@ from django.http import HttpResponse
 from django import forms
 
 from esp.program.models import Program, TeacherBio, RegistrationType, ClassSection, StudentRegistration
+from esp.program.modules.base import needs_student
 from esp.program.forms import ProgramCreationForm, StatisticsQueryForm
 from esp.program.setup import prepare_program, commit_program
 from esp.program.controllers.confirmation import ConfirmationEmailController
 from esp.program.modules.handlers.studentregcore import StudentRegCore
 from esp.accounting_docs.models import Document
 from esp.middleware import ESPError
-from esp.accounting_core.models import CompletedTransactionException
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
 from esp.mailman import create_list, load_list_settings, apply_list_settings, add_list_member
 from esp.resources.models import ResourceType
@@ -68,8 +68,6 @@ from django.conf import settings
 import pickle
 import operator
 import simplejson as json
-import re
-import unicodedata
 from collections import defaultdict
 from decimal import Decimal
 
@@ -90,7 +88,7 @@ def lottery_student_reg(request, program = None):
 
     # First check whether the user is actually a student.
     if not request.user.isStudent():
-        raise ESPError(False), "You must be a student in order to access Splash student registration."
+        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
 
     context = {}
     
@@ -107,7 +105,7 @@ def lottery_student_reg_simple(request, program = None):
 
     # First check whether the user is actually a student.
     if not request.user.isStudent():
-        raise ESPError(False), "You must be a student in order to access Splash student registration."
+        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
 
     context = {}
     
@@ -119,10 +117,6 @@ def lottery_student_reg_simple(request, program = None):
 def lsr_submit(request, program = None): 
     
     priority_limit = program.priorityLimit()
-
-    # First check whether the user is actually a student.
-    if not request.user.isStudent():
-        raise ESPError(False), "You must be a student in order to access student registration."
 
     data = json.loads(request.POST['json_data'])
     
@@ -380,13 +374,13 @@ def usersearch(request):
     Either redirect to that user's "userview" page, or
     display a list of users to pick from."""
     if not request.GET.has_key('userstr'):
-        raise ESPError(False), "You didn't specify a user to search for!"
+        raise ESPError("You didn't specify a user to search for!", log=False)
                                
     userstr = request.GET['userstr']
     found_users = find_user(userstr)
 
     if not found_users:
-        raise ESPError(False), "No user found by that name!"
+        raise ESPError("No user found by that name!", log=False)
 
     if isiterable(found_users):
         return render_to_response('users/userview_search.html', request, { 'found_users': found_users })
@@ -400,7 +394,7 @@ def userview(request):
     try:
         user = ESPUser.objects.get(username=request.GET['username'])
     except:
-        raise ESPError(False), "Sorry, can't find anyone with that username."
+        raise ESPError("Sorry, can't find anyone with that username.", log=False)
 
     teacherbio = TeacherBio.getLastBio(user)
     if not teacherbio.picture:
@@ -409,9 +403,7 @@ def userview(request):
     from esp.users.forms.user_profile import StudentInfoForm
     
     if 'graduation_year' in request.GET:
-        student_info = user.getLastProfile().student_info
-        student_info.graduation_year = int(request.GET['graduation_year'])
-        student_info.save()
+        user.set_student_grad_year(request.GET['graduation_year'])
     
     change_grade_form = StudentInfoForm(user=user)
     if 'disabled' in change_grade_form.fields['graduation_year'].widget.attrs:
@@ -459,11 +451,6 @@ def newprogram(request):
         template_prog["term_friendly"] = tprogram.anchor.friendly_name
         '''
         
-        template_prog["admins"] = ESPUser.objects.filter(permission__permission_type="Administer",permission__program=tprogram).values_list("id", flat=True)
-
-        # aseering 5/18/2008 -- More aggressively list everyone who was an Admin
-        #template_prog["admins"] = [ x.id for x in UserBit.objects.bits_get_users(verb=GetNode("V/Administer"), qsc=tprogram.anchor, user_objs=True) ]
-
         student_reg_bits = list(Permission.objects.filter(permission_type__startswith='Student', program=template_prog_id).order_by('-start_date'))
         if len(student_reg_bits) > 0:
             newest_bit = student_reg_bits[0]
@@ -484,7 +471,7 @@ def newprogram(request):
         line_items = pac.get_lineitemtypes(required_only=True).values('amount_dec')
 
         template_prog["base_cost"] = int(sum(x["amount_dec"] for x in line_items))
-        template_prog["sibling_discount"] = tprogram.sibling_discount_tag
+        template_prog["sibling_discount"] = tprogram.sibling_discount
 
     if 'checked' in request.GET:
         # Our form's anchor is wrong, because the form asks for the parent of the anchor that we really want.
@@ -493,14 +480,7 @@ def newprogram(request):
         pcf = ProgramCreationForm(context['prog_form_raw'])
         if pcf.is_valid():
 
-            new_prog = pcf.save(commit = False) # don't save, we need to fix it up:
-            
-            #   Filter out unwanted characters from program type to form URL
-            ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', pcf.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
-            new_prog.url = ptype_slug + "/" + pcf.cleaned_data['term']
-            new_prog.name = pcf.cleaned_data['program_type'] + " " + pcf.cleaned_data['term_friendly']
-            new_prog.save()
-            pcf.save_m2m()
+            new_prog = pcf.save(commit = True)
             
             commit_program(new_prog, context['perms'], context['modules'], context['cost'], context['sibling_discount'])
 
@@ -537,7 +517,7 @@ def newprogram(request):
 
             return HttpResponseRedirect(manage_url)
         else:
-            raise ESPError(False), "Improper form data submitted."
+            raise ESPError("Improper form data submitted.", log=False)
           
 
     #   If the form has been submitted, process it.
@@ -582,11 +562,11 @@ def submit_transaction(request):
             from django.conf import settings
             recipient_list = [contact[1] for contact in settings.ADMINS]
             recipient_list.append(settings.DEFAULT_EMAIL_ADDRESSES['treasury']) 
-            refs = 'Cybersource request ID: %s' % post_id
+            refs = 'Cybersource request ID: %s' % post_identifier
 
             subject = 'Possible Duplicate Postback/Payment'
-            refs = 'User: %s (%d); Program: %s (%d)' % (iac.user.name(), iac.user.id, self.program.niceName(), self.program.id)
-            refs += '\n\nPrevious payments\' Transfer IDs: ' + ( u', '.join([x.id for x in prev_payments]) )
+            refs = 'User: %s (%d); Program: %s (%d)' % (iac.user.name(), iac.user.id, iac.program.niceName(), iac.program.id)
+            refs += '\n\nPrevious payments\' Transfer IDs: ' + ( u', '.join([str(x.id) for x in prev_payments]) )
 
             # Send mail!
             send_mail('[ ESP CC ] ' + subject + ' by ' + iac.user.first_name + ' ' + iac.user.last_name, \
@@ -595,12 +575,19 @@ def submit_transaction(request):
                   settings.SERVER_EMAIL, recipient_list, True)
 
         #   Save the payment as a transfer in the database
-        iac.submit_payment(post_amount)
+        iac.submit_payment(post_amount, transaction_id=request.POST.get('requestID', ''))
 
         tl = 'learn'
         one, two = iac.program.url.split('/')
+        destination = Tag.getProgramTag("cc_redirect", iac.program, default="confirmreg")
 
-        return HttpResponseRedirect("http://%s/%s/%s/%s/confirmreg" % (request.META['HTTP_HOST'], tl, one, two))
+        if destination.startswith('/') or '//' in destination:
+            pass
+        else:
+            # simple urls like 'confirmreg' are relative to the program
+            destination = "/%s/%s/%s/%s" % (tl, one, two, destination)
+
+        return HttpResponseRedirect(destination)
 
     return render_to_response( 'accounting_docs/credit_rejected.html', request, {} )
 

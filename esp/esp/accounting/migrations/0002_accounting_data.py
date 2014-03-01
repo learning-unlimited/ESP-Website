@@ -10,6 +10,8 @@ from esp.accounting_core.models import Transaction, LineItem
 
 class Migration(SchemaMigration):
 
+    #   depends_on = ( ("program", "0039_add_alt_program_director_contacts"), )
+ 
     def forwards(self, orm):
         #   Set up accounts
         gac = GlobalAccountingController()

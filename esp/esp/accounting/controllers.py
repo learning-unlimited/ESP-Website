@@ -119,7 +119,7 @@ class ProgramAccountingController(BaseAccountingController):
         #   For now, just create a single account for the program.  In the
         #   future we may want finer grained accounting per program.
         program = self.program
-        (account, created) = Account.objects.get_or_create(name=slugify(program.name), description='Main account for %s' % program.niceName(), program=program)
+        (account, created) = Account.objects.get_or_create(name=slugify(program.name), description='Main account', program_id=program.id)
         return account
 
     def setup_lineitemtypes(self, base_cost, optional_items=None, select_items=None):
@@ -486,11 +486,16 @@ class IndividualAccountingController(ProgramAccountingController):
         target_account = self.default_source_account()
         Transfer.objects.filter(source=None, destination=target_account, user=self.user, line_item=line_item_type).delete()
 
-    def submit_payment(self, amount):
+    def submit_payment(self, amount, transaction_id=None):
         #   Create a transfer representing a user's payment for this program
         line_item_type = self.default_payments_lineitemtype()
         target_account = self.default_source_account()
-        return Transfer.objects.create(source=None, destination=target_account, user=self.user, line_item=line_item_type, amount_dec=Decimal('%.2f' % amount))
+        return Transfer.objects.create(source=None,
+                                       destination=target_account,
+                                       user=self.user,
+                                       line_item=line_item_type,
+                                       amount_dec=Decimal('%.2f' % amount),
+                                       transaction_id=transaction_id)
 
     def __unicode__(self):
         return 'Accounting for %s at %s' % (self.user.name(), self.program.niceName())

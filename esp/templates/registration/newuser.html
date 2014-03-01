@@ -37,11 +37,10 @@
   </ul>
 </div>
 {% endif %}
-<div class="row-fluid">
-  <div class="span6">
+<div>
 <h1>Create a new account</h1><br />
 {% load render_qsd %}
-{% inline_qsd_block "myesp/create_new_account_headertext" request.user %}
+{% inline_qsd_block "myesp/create_new_account_headertext" %}
 <p>
   Welcome to ESP! To do almost anything with ESP, you first need to register
   an account with us. After you register account, you will be allowed to register
@@ -52,9 +51,7 @@
 </p>
 {% end_inline_qsd_block %}
 </div>
-<div class="span5 offset1">
-
-
+<div>
 <form action="{{ request.path }}" method="post" name="newuser_form" class="form-horizontal well">
   <fieldset>
     <h3>User Account Creation Form</h3>
@@ -78,7 +75,6 @@
     </div>
   </fieldset>
 </form>
-</div>
 </div>
 
 <script type="text/javascript">

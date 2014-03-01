@@ -43,6 +43,7 @@ color: #006600;
    cursor: default;
    padding: 2px 5px 2px 5px;
    text-decoration: none;
+   margin: 0px;
 }
 
 #battlescreen a.abutton:hover
@@ -59,7 +60,10 @@ color: #006600;
    font-size:12px;
    font-weight:bold;
    border: #cccccc 1px solid;
+   border-radius: 0px;
    background-color: #cccccc;
+   margin: 0px;
+   padding: 2px 5px 2px 5px;
 }
 
 #battlescreen input.button:hover

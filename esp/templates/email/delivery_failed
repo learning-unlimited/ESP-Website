@@ -1,0 +1,5 @@
+The following emails failed to deliver.
+
+{% for error in errors %}
+* {{ error.email.subject }} to {{ error.email.send_to }} ({{ error.email.id }}): {{ error.exception }}
+{% endfor %}

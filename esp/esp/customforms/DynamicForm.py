@@ -5,7 +5,7 @@ from form_utils.forms import BetterForm
 from django.utils.datastructures import SortedDict
 from django.contrib.formtools.wizard.views import SessionWizardView
 from django.core.files.storage import FileSystemStorage
-from django.shortcuts import redirect, render_to_response, HttpResponse
+from django.shortcuts import redirect, HttpResponse
 from django.http import HttpResponseRedirect
 from django.contrib.localflavor.us.forms import USStateField, USPhoneNumberField, USStateSelect
 from esp.customforms.forms import NameField, AddressField
@@ -403,7 +403,12 @@ class ComboForm(SessionWizardView):
                 del data[key]
         dynModel.objects.create(**data)    
         return HttpResponseRedirect('/customforms/success/%d/' % self.form.id)
-        
+
+    def render_to_response(self, context):
+        #   Override rendering function to use our context processors.
+        from esp.web.util.main import render_to_response as render_to_response_base
+        return render_to_response_base(self.template_name, self.request, context)
+
     def get_form_prefix(self, step, form):
         """
         The WizardView implements a form prefix for each step. Setting the prefix to an empty string, 

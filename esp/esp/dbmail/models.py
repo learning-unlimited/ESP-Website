@@ -32,8 +32,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
+import sys
+
 from django.db import models
+from django.db.models import Q
 from django.contrib.auth.models import User
+from esp.cache import cache_function
 from esp.users.models import ESPUser
 from esp.middleware import ESPError
 from datetime import datetime
@@ -43,12 +47,16 @@ from esp.datatree.models import *
 from esp.users.models import PersistentQueryFilter, ESPUser
 from django.template import Template #, VariableNode, TextNode
 
+import esp.dbmail.sendto_fns
 
 from django.conf import settings
 
 from django.core.mail import get_connection
 from django.core.mail.backends.smtp import EmailBackend as SMTPEmailBackend
 from django.core.mail.message import sanitize_address
+from django.core.exceptions import ImproperlyConfigured
+
+from south.models import MigrationHistory
 
 
 
@@ -76,6 +84,37 @@ def send_mail(subject, message, from_email, recipient_list, fail_silently=False,
     
     msg.send()
 
+def expire_unsent_emails(orm=None):
+    """
+    Expires old, unsent TextOfEmails and MessageRequests.
+
+    By default, performs the query using the models/managers defined in this
+    file. Alternatively, during a migration, a frozen orm can be passed via the
+    orm parameter.
+    """
+    if orm is None:
+        orm = sys.modules[__name__]
+    TextOfEmail.expireUnsentEmails(orm_class=orm.TextOfEmail)
+    MessageRequest.expireUnprocessedRequests(orm_class=orm.MessageRequest)
+
+@cache_function
+def can_process_and_send():
+    """
+    Returns True if the dbmail cronmail script is allowed to process and send
+    emails, and False otherwise.
+
+    Currently, this function asserts that the expire_unsent_emails migration
+    has been run. If it hasn't, it is possible that there are old, unsent
+    messages from before 6e350a3735 that should not be sent because they are
+    out-of-date. This requirement can be removed after the full deployment of
+    stable release 4.
+    """
+    now = datetime.now()
+    return MigrationHistory.objects.filter(app_name='dbmail',
+                                migration__contains='expire_unsent_emails',
+                                applied__lt=now).exists()
+can_process_and_send.depend_on_model(MigrationHistory)
+
 
 
 class ActionHandler(object):
@@ -101,11 +140,45 @@ class ActionHandler(object):
 
 class MessageRequest(models.Model):
     """ An initial request to broadcast an e-mail message """
+
+    # Each MessageRequest can specify a sendto function, which specifies, for
+    # each recipient in the recipients query, which set of associated email
+    # addresses should receive the message.  The sendto functions are defined
+    # in esp.dbmail.sendto_fns, and their names are choices for the
+    # MessageRequest.sendto_fn_name field.
+    SEND_TO_GUARDIAN = 'send_to_guardian'
+    SEND_TO_EMERGENCY = 'send_to_emergency'
+    SEND_TO_SELF_AND_GUARDIAN = 'send_to_self_and_guardian'
+    SEND_TO_SELF_AND_EMERGENCY = 'send_to_self_and_emergency'
+    SEND_TO_GUARDIAN_AND_EMERGENCY = 'send_to_guardian_and_emergency'
+    SEND_TO_SELF_AND_GUARDIAN_AND_EMERGENCY = 'send_to_self_and_guardian_and_emergency'
+
+    # The empty string is the default value of the MessageRequest.sendto_fn_name
+    # field and means 'send_to_self', the legacy functionality of sending only
+    # to the ESPUser's email as given in the email field.
+    SEND_TO_SELF = ''
+    SEND_TO_SELF_REAL = 'send_to_self'
+
+    SENDTO_FN_CHOICES = (
+        (SEND_TO_SELF, 'send to user'),
+        (SEND_TO_GUARDIAN, 'send to guardian'),
+        (SEND_TO_EMERGENCY, 'send to emergency contact'),
+        (SEND_TO_SELF_AND_GUARDIAN, 'send to user and guardian'),
+        (SEND_TO_SELF_AND_EMERGENCY, 'send to user and emergency contact'),
+        (SEND_TO_GUARDIAN_AND_EMERGENCY, 'send to guardian and emergency contact'),
+        (SEND_TO_SELF_AND_GUARDIAN_AND_EMERGENCY, 'send to user and guardian and emergency contact'),
+    )
+
     id = models.AutoField(primary_key=True)
     subject = models.TextField(null=True,blank=True) 
     msgtext = models.TextField(blank=True, null=True) 
     special_headers = models.TextField(blank=True, null=True) 
     recipients = models.ForeignKey(PersistentQueryFilter) # We will get the user from a query filter
+    sendto_fn_name = models.CharField("sendto function", max_length=128,
+                    choices=SENDTO_FN_CHOICES, default=SEND_TO_SELF,
+                    help_text="The function that specifies, for each recipient " +
+                    "of the message, which set of associated email addresses " +
+                    "should receive the message.")
     sender = models.TextField(blank=True, null=True) # E-mail sender; should be a valid SMTP sender string 
     creator = AjaxForeignKey(ESPUser) # the person who sent this message
     processed = models.BooleanField(default=False, db_index=True) # Have we made EmailRequest objects from this MessageRequest yet?
@@ -140,6 +213,21 @@ class MessageRequest(models.Model):
             MessageVars.createMessageVars(new_request, var_dict) # create the message Variables
         return new_request
 
+    @classmethod
+    def expireUnprocessedRequests(cls, orm_class=None):
+        """
+        For all unprocessed requests (probably old messages that for some
+        reason were never sent), expire them by pretending that they've been
+        processed. Used to prevent old, outdated messages from going out.
+
+        By default, performs the query using the MessageRequest model and its
+        default Manager. Alternatively, during a migration, a frozen orm class
+        can be passed via the orm_class parameter.
+        """
+        if orm_class is None:
+            orm_class = cls
+        return orm_class.objects.filter(Q(processed_by__isnull=True) | Q(processed_by__lt=datetime.now()), processed=False).update(processed=True)
+
     def parseSmartText(self, text, user):
         """ Takes a text and user, and, within the confines of this message, will make it better. """
 
@@ -153,6 +241,59 @@ class MessageRequest(models.Model):
         template = Template(text)
 
         return template.render(context)
+
+    @classmethod
+    def is_sendto_fn_name_choice(cls, sendto_fn_name):
+        """
+        Determines if the given string is one of the sendto_fn_name field choices.
+        """
+        if sendto_fn_name == cls.SEND_TO_SELF_REAL:
+            return True
+        return bool(filter(lambda fn: sendto_fn_name == fn[0], cls.SENDTO_FN_CHOICES))
+
+    @classmethod
+    def get_sendto_fn_callable(cls, sendto_fn_name):
+        """
+        Returns the callable sendto function whose name is the given string.
+
+        The function must be one of the sendto_fn_name field choices, and must
+        be a callable defined in esp.dbmail.sendto_fns. Raises aan
+        ImproperlyConfigured exception if that is not the case.
+        """
+        if not cls.is_sendto_fn_name_choice(sendto_fn_name):
+            raise ImproperlyConfigured('"%s" is not one of the available sendto function choices' % sendto_fn_name)
+        if sendto_fn_name == cls.SEND_TO_SELF:
+            sendto_fn_name = cls.SEND_TO_SELF_REAL
+        if not hasattr(esp.dbmail.sendto_fns, sendto_fn_name):
+            raise ImproperlyConfigured('"esp.dbmail.sendto_fns" does not define "%s"' % sendto_fn_name)
+        sendto_fn_callable = getattr(esp.dbmail.sendto_fns, sendto_fn_name)
+        if not callable(sendto_fn_callable):
+            raise ImproperlyConfigured('"esp.dbmail.sendto_fns" does not define a "%s" callable sendto function' % sendto_fn_name)
+        return sendto_fn_callable
+
+    def get_sendto_fn(self):
+        """
+        Returns the callable sendto function for this MessageRequest.
+        """
+        return self.get_sendto_fn_callable(self.sendto_fn_name)
+
+    @classmethod
+    def assert_is_valid_sendto_fn_or_ESPError(cls, sendto_fn_name):
+        """
+        Returns the callable sendto function whose name is the given string.
+
+        If the callable cannot be retrieved, raises an ESPError.
+        """
+        if sendto_fn_name == cls.SEND_TO_SELF:
+            sendto_fn_name = cls.SEND_TO_SELF_REAL
+        try:
+            return cls.get_sendto_fn_callable(sendto_fn_name)
+        except ImproperlyConfigured, e:
+            raise ESPError(True, 'Invalid sendto function "%s". ' + \
+                'This might be a website bug. Please contact us at %s ' + \
+                'and tell us how you got this error, and we will look into it. ' + \
+                'The error message is: "%s".' % \
+                (sendto_fn_name, DEFAULT_EMAIL_ADDRESSES['support'], e))
 
     def process(self, processoverride = False):
         """ Process this request...if it's an email, create all the necessary email requests. """
@@ -183,24 +324,32 @@ class MessageRequest(models.Model):
             users = users.distinct()
         except:
             pass
-        
+
+        sendto_fn = self.get_sendto_fn_callable(self.sendto_fn_name)
+
         # go through each user and parse the text...then create the proper
         # emailrequest and textofemail object
         for user in users:
             user = ESPUser(user)
-            newemailrequest = EmailRequest(target = user, msgreq = self)
-            
-            newtxt = TextOfEmail(send_to   = '%s <%s>' % (user.name(), user.email),
-                                 send_from = send_from,
-                                 subject   = self.parseSmartText(self.subject, user),
-                                 msgtext   = self.parseSmartText(self.msgtext, user),
-                                 sent      = None)
+            subject = self.parseSmartText(self.subject, user)
+            msgtext = self.parseSmartText(self.msgtext, user)
 
-            newtxt.save()
+            # For each user, create an EmailRequest and a TextOfEmail
+            # for each address given by the output of the sendto function.
+            for address_pair in sendto_fn(user):
+                newemailrequest = EmailRequest(target = user, msgreq = self)
 
-            newemailrequest.textofemail = newtxt
+                newtxt = TextOfEmail(send_to   = ESPUser.email_sendto_address(*address_pair),
+                                     send_from = send_from,
+                                     subject   = subject,
+                                     msgtext   = msgtext,
+                                     sent      = None)
 
-            newemailrequest.save()
+                newtxt.save()
+
+                newemailrequest.textofemail = newtxt
+
+                newemailrequest.save()
 
         print 'Prepared e-mails to send for message request %d: %s' % (self.id, self.subject)
 
@@ -217,6 +366,8 @@ class TextOfEmail(models.Model):
     msgtext = models.TextField() # Message body; plain text
     sent = models.DateTimeField(blank=True, null=True)
     sent_by = models.DateTimeField(null=True, default=None, db_index=True) # When it should be sent by.
+    locked = models.BooleanField(default=False)
+    tries = models.IntegerField(default=0) # Number of times we attempted to send this message and failed
 
     def __unicode__(self):
         return unicode(self.subject) + ' <' + (self.send_to) + '>'
@@ -224,10 +375,6 @@ class TextOfEmail(models.Model):
     def send(self):
         """ Take the e-mail data contained within this class, put it into a MIMEMultipart() object, and send it """
 
-        # this might be the source of trouble
-        #if self.sent != None:
-        #    return False
-        
         parent_request = None
         if self.emailrequest_set.count() > 0:
             parent_request = self.emailrequest_set.all()[0].msgreq
@@ -236,7 +383,12 @@ class TextOfEmail(models.Model):
             extra_headers = parent_request.special_headers_dict
         
         now = datetime.now()
-        
+
+        # Before sending the email, check one more time that it hasn't been
+        # sent or expired.
+        if self.sent is not None:
+            return
+
         send_mail(self.subject,
                   self.msgtext,
                   self.send_from,
@@ -244,26 +396,29 @@ class TextOfEmail(models.Model):
                   False,
                   extra_headers=extra_headers)
 
-        #send_mail(str(self.subject),
-        #          str(self.msgtext),
-        #          str(self.send_from),
-        #          [ str(self.send_to) ],
-        #          fail_silently=False )
-        
-        #message = MIMEMultipart()
-        #message['To'] = str(self.send_to)
-        #message['From'] = str(self.send_from)
-        #message['Date'] = formatdate(localtime=True, timeval=now)
-        #message['Subject'] = str(self.subject)
-        #message.attach( MIMEText(str(self.msgtext)) )
-        #print str(self.send_from) + ' | ' + str(self.send_to) + ' | ' + message.as_string() + "\n"
-        # aseering: Code currently commented out because we're debugging this.  It might break and, say, spam esp-webmasters.  That would be bad.
-        #sendvia_smtp = smtplib.SMTP(smtp_server)
-        #sendvia_smtp.sendmail(str(self.send_from), str(self.send_to), message.as_string())
-        #sendvia_smtp.close()
-
         self.sent = now
         self.save()
+
+    @classmethod
+    def expireUnsentEmails(cls, min_tries=0, orm_class=None):
+        """
+        For all unsent emails (probably old messages that for some reason were
+        never sent), expire them by pretending that they were just sent.  Used
+        to prevent old, outdated messages from going out.
+
+        The optional min_tries parameter sets the number of tries that must
+        have happened before expiring the message. Defaults to 0, since old
+        messages from before the 0003_lock_and_retry_emails migration start
+        with 0 tries.
+
+        By default, performs the query using the TextOfEmail model and its
+        default Manager. Alternatively, during a migration, a frozen orm class
+        can be passed via the orm_class parameter.
+        """
+        if orm_class is None:
+            orm_class = cls
+        now = datetime.now()
+        return orm_class.objects.filter(Q(sent_by__isnull=True) | Q(sent_by__lt=now), sent__isnull=True, tries__gte=min_tries).update(sent=now)
         
     class Admin:
         pass
@@ -295,7 +450,7 @@ class MessageVars(models.Model):
         #try:
         provider = pickle.loads(str(self.pickled_provider))
         #except:
-        #    raise ESPError(), 'Coule not load variable provider object!'
+        #    raise ESPError('Coule not load variable provider object!')
 
         actionhandler = ActionHandler(provider, user)
 
@@ -309,7 +464,7 @@ class MessageVars(models.Model):
         try:
             provider = pickle.loads(str(self.pickled_provider))
         except:
-            raise ESPError(), 'Could not load variable provider object!'
+            raise ESPError('Could not load variable provider object!')
 
         if hasattr(provider, 'get_msg_vars'):
             return str(provider.get_msg_vars(user, key))
@@ -352,12 +507,12 @@ class MessageVars(models.Model):
         try:
             module, varname = varstring.split('.')
         except:
-            raise ESPError(False), 'Variable %s not a valid module.var name' % varstring
+            raise ESPError('Variable %s not a valid module.var name' % varstring, log=False)
 
         try:
             msgVar = MessageVars.objects.get(provider_name = module, messagerequest = msgrequest)
         except:
-            #raise ESPError(False), "Could not get the variable provider... %s is an invalid variable module." % module
+            #raise ESPError("Could not get the variable provider... %s is an invalid variable module." % module, log=False)
             # instead of erroring, I'm just going to ignore it.
             return '{{%s}}' % varstring
     

@@ -37,7 +37,7 @@ Learning Unlimited, Inc.
 from esp.cal.models import Event
 from esp.users.models import User, ESPUser
 from esp.db.fields import AjaxForeignKey
-from esp.middleware import ESPError_Log
+from esp.middleware import ESPError
 from esp.cache import cache_function
 from esp.tagdict.models          import Tag
 
@@ -110,8 +110,12 @@ class ResourceType(models.Model):
             self.attributes_pickled = pickle.dumps(self._attributes_cached)
         super(ResourceType, self).save(*args, **kwargs)
 
-    @staticmethod
-    def get_or_create(label, program=None):
+    _get_or_create_cache = {}
+    @classmethod
+    def get_or_create(cls, label, program=None):
+        if (label, program) in cls._get_or_create_cache:
+            return cls._get_or_create_cache[(label, program)]
+
         if program:
             base_q = Q(program=program)
             if Tag.getTag('allow_global_restypes'):
@@ -120,7 +124,7 @@ class ResourceType(models.Model):
             base_q = Q(program__isnull=True)
         current_type = ResourceType.objects.filter(base_q).filter(name__icontains=label)
         if len(current_type) != 0:
-            return current_type[0]
+            ret = current_type[0]
         else:
             nt = ResourceType()
             nt.name = label
@@ -129,7 +133,10 @@ class ResourceType(models.Model):
             nt.program = program
             nt.autocreated = True
             nt.save()
-            return nt
+            ret = nt
+
+        cls._get_or_create_cache[(label, program)] = ret
+        return ret
         
     @staticmethod
     def global_types():
@@ -269,7 +276,7 @@ class Resource(models.Model):
             new_ra.target = section
             new_ra.save()
         else:
-            raise ESPError_Log, 'Attempted to assign class section %d to conflicted resource; and constraint check was on.' % section.id
+            raise ESPError('Attempted to assign class section %d to conflicted resource; and constraint check was on.' % section.id, log=True)
         
     assign_to_class = assign_to_section
         

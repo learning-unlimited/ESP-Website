@@ -152,7 +152,7 @@ def onModify(request):
             try:
                 form = Form.objects.get(id=int(metadata['form_id']))
             except:
-                raise ESPError(False), 'Form %s not found' % metadata['form_id']
+                raise ESPError('Form %s not found' % metadata['form_id'], log=False)
             dmh = DMH(form=form)
             link_models_list = []     # Stores a cache of link models that should not be removed
             
@@ -260,14 +260,13 @@ def viewForm(request, form_id):
     """
     try:
         form_id = int(form_id)
-    except ValueError:
+        form = Form.objects.get(pk=form_id)
+    except (ValueError, Form.DoesNotExist):
         raise Http404
-        
-    form = Form.objects.get(pk=form_id)
     
     perm, error_text = hasPerm(request.user, form)
     if not perm:
-        return render_to_response('customforms/error.html', {'error_text': error_text}, context_instance=RequestContext(request))    
+        return render_to_response('customforms/error.html', request, {'error_text': error_text})
     fh = FormHandler(form=form, request=request, user=request.user)
     
     return fh.get_wizard_view()    
@@ -296,7 +295,7 @@ def viewResponse(request, form_id):
         except ValueError:
             raise Http404
         form = Form.objects.get(id=form_id)
-        return render_to_response('customforms/view_results.html', {'form': form})
+        return render_to_response('customforms/view_results.html', request, {'form': form})
     else:
         return HttpResponseRedirect('/')
         

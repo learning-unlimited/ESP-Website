@@ -14,8 +14,8 @@ function update_user_classes() {
     if (esp_user.cur_username != null) {
 	$j(".not_logged_in").addClass("hidden");
 	$j(".logged_in").removeClass("hidden");
-	$j("#main").removeClass("span12");
-	$j("#main").addClass("span9");
+	$j("#main.resizable").removeClass("span12");
+	$j("#main.resizable").addClass("span9");
 	$j("#sidebar").removeClass("hidden");
 	$j("#sidebar").addClass("span3");
     }
@@ -24,15 +24,19 @@ function update_user_classes() {
 	$j(".logged_in").addClass("hidden");
 	$j("#sidebar").addClass("hidden");
 	$j("#sidebar").removeClass("span3");
-	$j("#main").removeClass("span9");
-	$j("#main").addClass("span12");
+	$j("#main.resizable").removeClass("span9");
+	$j("#main.resizable").addClass("span12");
     }
 
     var type_name = '';
     var hidden_name = '';
     for (var i = 0; i < esp_user.cur_roles.length; i++) {
 	type_name = "." + esp_user.cur_roles[i];
-	$j(type_name).removeClass("hidden");
+	try {
+		// This is wrapped in a try/catch block, because custom user
+		// role names might not be in a format that jQuery accepts.
+		$j(type_name).removeClass("hidden");
+	} catch (e) {}
     }
     
     //    Write user's name in the appropriate spot in the login box

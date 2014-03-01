@@ -58,7 +58,7 @@ REG_VERB_BASE = 'V/Flags/Registration'
 class StudentClassRegModuleInfo(models.Model):
     """ Define what happens when students add classes to their schedule at registration. """
 
-    module               = models.ForeignKey(ProgramModuleObj)
+    module               = models.ForeignKey(ProgramModuleObj, editable=False)
     
     #   Set to true to prevent students from registering from full classes.
     enforce_max          = models.BooleanField(default=True, help_text='Check this box to prevent students from signing up for full classes.')
@@ -68,7 +68,7 @@ class StudentClassRegModuleInfo(models.Model):
     #     b = class_cap_offset
     class_cap_multiplier = models.DecimalField(max_digits=3, decimal_places=2, default='1.00', help_text='A multiplier for class capacities (set to 0.5 to cap all classes at half their stored capacity).')
     class_cap_offset    = models.IntegerField(default=0, help_text='Offset for class capacities (this number is added to the original capacity of every class).')
-    apply_multiplier_to_room_cap = models.BooleanField(default=False, help_text='Apply class cap multipler and offset to room capacity instead of class capacity.)')
+    apply_multiplier_to_room_cap = models.BooleanField(default=False, help_text='Apply class cap multipler and offset to room capacity instead of class capacity.')
     
     #   This points to the tree node that is used for the verb when a student is added to a class.
     #   Only 'Enrolled' actually puts them on the class roster.  Other verbs may be used to
@@ -81,6 +81,8 @@ class StudentClassRegModuleInfo(models.Model):
     use_priority         = models.BooleanField(default=False, help_text='Check this box to enable priority registration.')
     #   Number of choices a student can make for each time block (1st choice, 2nd choice, ...Nth choice.)
     priority_limit       = models.IntegerField(default=3, help_text='The maximum number of choices a student can make per timeslot when priority registration is enabled.')
+    #   Whether to use grade range exceptions
+    use_grade_range_exceptions = models.BooleanField(default=False, help_text='Check this box to enable grade range exceptions.')
     
     #   Set to true to allow classes to be added (via Ajax) using buttons on the catalog
     register_from_catalog = models.BooleanField(default=False, help_text='Check this box to allow students to add classes from the catalog page if they are logged in.')
@@ -243,7 +245,7 @@ class ClassRegModuleInfo(models.Model):
 
     def getClassSizes(self):
         #   Default values
-        min_size = 0
+        min_size = 5
         max_size = 30
         size_step = 1
         other_sizes = range(40, 210, 10)

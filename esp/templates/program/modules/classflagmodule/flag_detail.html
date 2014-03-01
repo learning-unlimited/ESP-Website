@@ -1,0 +1,27 @@
+<div class="flag-detail" id="flag-detail-{{flag.id}}">
+    <div style="background: {{flag.flag_type.getColor}};" onclick="$j('#flag-detail-{{flag.id}}').toggle('blink');">{{flag.flag_type.name}}</div>
+    <form method="post" class="flag-form" action="/manage/{{program.getUrlBase}}/editflag/{{flag.id}}/">{% csrf_token %}
+        <table>
+            <tbody>
+                <tr>
+                    <th> Created: </th>
+                    <td> {{flag.created_by.name}} on {{flag.created_time.date}} at {{flag.created_time.time}} </td>
+                </tr>
+                <tr>
+                    <th> Last modified: </th>
+                    <td class="lastmod"> {{flag.modified_by.name}} on {{flag.modified_time.date}} at {{flag.modified_time.time}} </td>
+                </tr>
+                <tr>
+                    <th>
+                        Comment:<br/>
+                        <input type="submit" id="flag-submit-{{flag.id}}" class="btn btn-default" value="Update"></input> <br/>
+                        <button type="button" class="btn btn-default" onclick="removeFlag('/manage/{{program.getUrlBase}}/deleteflag/',{{flag.id}});">Remove</button>
+                    </th>
+                    <td>
+                        <textarea id="flag-comment-{{flag.id}}" name="comment" rows="4" cols="60">{{flag.comment}}</textarea>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+</div>

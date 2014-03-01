@@ -42,7 +42,7 @@ The teachers of this class have provided the following materials for you.  We ho
 	{% endif %}
 	{% for doc in cls.getDocuments %}
 	<tr>
-		<td class="clsmiddle"><a href="/download/{{ doc.hashed_name }}">{{ doc.friendly_name }}</a></td>
+		<td class="clsmiddle"><a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a></td>
 
 	</tr>
 	{% endfor %}

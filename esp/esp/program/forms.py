@@ -33,12 +33,14 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.users.models import ESPUser, StudentInfo, K12School
+import re
+import unicodedata
+
+from esp.users.models import StudentInfo, K12School
 from esp.datatree.models import *
-from esp.program.models import Program, ProgramModule
+from esp.program.models import Program, ProgramModule, ClassFlag
 from esp.utils.forms import new_callback, grouped_as_table, add_fields_to_class
 from esp.utils.widgets import DateTimeWidget
-from esp.users.models import ESPUser
 from django.db.models import Q
 from django import forms
 from django.core import validators
@@ -54,7 +56,6 @@ class ProgramCreationForm(BetterModelForm):
     term = forms.SlugField(label='Term or year, in URL form (i.e. "2007_Fall")', widget=forms.TextInput(attrs={'size': '40'}))
     term_friendly = forms.CharField(label='Term, in English (i.e. "Fall 07")', widget=forms.TextInput(attrs={'size': '40'}))
     
-    admins            = forms.MultipleChoiceField(choices = [], label = 'Administrators')
     teacher_reg_start = forms.DateTimeField(widget = DateTimeWidget())
     teacher_reg_end   = forms.DateTimeField(widget = DateTimeWidget())
     student_reg_start = forms.DateTimeField(widget = DateTimeWidget())
@@ -62,20 +63,39 @@ class ProgramCreationForm(BetterModelForm):
     base_cost         = forms.IntegerField( label = 'Cost of Program Admission $', min_value = 0 )
     sibling_discount  = forms.DecimalField(max_digits=9, decimal_places=2, required=False, initial=None, help_text='The amount of the sibling discount. Leave blank to disable sibling discounts.')
     program_type      = forms.CharField(label = "Program Type")
-    program_modules   = forms.MultipleChoiceField(choices = [], label = 'Program Modules')
+    program_modules   = forms.MultipleChoiceField(
+                          choices=[],
+                          label='Program Modules',
+                          widget=forms.SelectMultiple(attrs={'class': 'input-xxlarge'}),
+                          help_text=Program.program_modules.field.help_text)
 
     def __init__(self, *args, **kwargs):
-        """ Used to update ChoiceFields with the current admins and modules. """
+        """ Used to update ChoiceFields with the current modules. """
         super(ProgramCreationForm, self).__init__(*args, **kwargs)
-        admin_list=ESPUser.objects.filter(groups__name="Administrator")
-        self.fields['admins'].choices = make_id_tuple(admin_list.distinct().order_by('username'))
         self.fields['program_modules'].choices = make_id_tuple(ProgramModule.objects.all())
 
         #   Enable validation on other fields
         self.fields['program_size_max'].required = True
         self.fields['program_size_max'].validators.append(validators.MaxValueValidator((1 << 31) - 1))
 
-        #self.fields.keyOrder = ['term','term_friendly','grade_min','grade_max','class_size_min','class_size_max','director_email','program_modules']
+    def save(self, commit=True):
+        '''
+        Takes the program creation form's program_type, term, and term_friendly
+        fields, and constructs the url and name fields on the Program instance;
+        then calls the superclass's save() method.
+        '''
+        #   Filter out unwanted characters from program type to form URL
+        ptype_slug = re.sub('[-\s]+', '_', re.sub('[^\w\s-]', '', unicodedata.normalize('NFKD', self.cleaned_data['program_type']).encode('ascii', 'ignore')).strip())
+        self.instance.url = u'%(type)s/%(instance)s' \
+            % {'type': ptype_slug
+              ,'instance': self.cleaned_data['term']
+              }
+        self.instance.name = u'%(type)s %(instance)s' \
+            % {'type': self.cleaned_data['program_type']
+              ,'instance': self.cleaned_data['term_friendly']
+              }
+        return super(ProgramCreationForm, self).save(commit=commit)
+
     def load_program(self, program):
         #   Copy the data in the program into the form so that we don't have to re-select modules and stuff.
         pass
@@ -87,9 +107,9 @@ class ProgramCreationForm(BetterModelForm):
         fieldsets = [
 ('Program Title', {'fields': ['term', 'term_friendly'] }),
                      ('Program Constraints', {'fields':['grade_min','grade_max','program_size_max','program_allow_waitlist']}),
-                     ('About Program Creator',{'fields':['admins','director_email']}),
+                     ('About Program Creator',{'fields':['director_email', 'director_cc_email', 'director_confidential_email']}),
                      ('Financial Details' ,{'fields':['base_cost','sibling_discount']}),
-                     ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories']}),
+                     ('Program Internal details' ,{'fields':['program_type','program_modules','class_categories','flag_types']}),
                      ('Registrations Date',{'fields':['teacher_reg_start','teacher_reg_end','student_reg_start','student_reg_end'],}),
 
 
@@ -97,6 +117,8 @@ class ProgramCreationForm(BetterModelForm):
 
         model = Program
 ProgramCreationForm.base_fields['director_email'].widget = forms.TextInput(attrs={'size': 40})
+ProgramCreationForm.base_fields['director_cc_email'].widget = forms.TextInput(attrs={'size': 40})
+ProgramCreationForm.base_fields['director_confidential_email'].widget = forms.TextInput(attrs={'size': 40})
 '''        
 ProgramCreationForm.base_fields['term'].line_group = -4
 ProgramCreationForm.base_fields['term_friendly'].line_group = -4
@@ -327,3 +349,8 @@ class StatisticsQueryForm(forms.Form):
                 result.append(field_name)
         return result
 
+
+class ClassFlagForm(forms.ModelForm):
+    class Meta:
+        model = ClassFlag
+        fields = ['subject','flag_type','comment']

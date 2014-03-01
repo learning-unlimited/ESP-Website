@@ -6,6 +6,7 @@ function fillStats(data)
     stats = json_data.stats;
     vitals = stats.vitals;
     categories = stats.categories;
+    grades = stats.grades;
     shirtnum = stats.shirtnum;
     splashinfo = stats.splashinfo;
 
@@ -50,13 +51,31 @@ function fillStats(data)
     $categories.html("(Note: Totals include unreviewed classes)"+
 		     "<table><tr><th><b>Category</b></th>"+
 		     "<th class='smaller'># of subjects</th>"+
-		     "<th class='smaller'># of sections</th></tr></table>");
+		     "<th class='smaller'># of sections</th>"+
+		     "<th class='smaller'># of class-hours</th></tr></table>");
     $categorytable = $categories.children("table");
     for (var i = 0; i < categories.data.length; i++)
     {
 	$categorytable.append("<tr><th class='smaller'>"+categories.data[i].category+"</th>"+
-			      "<td>"+categories.data[i].num_subjects+"</td>"+
-			      "<td>"+categories.data[i].num_sections+"</td></tr>");
+		"<td>"+categories.data[i].num_subjects+"</td>"+
+		"<td>"+categories.data[i].num_sections+"</td>"+
+		"<td>"+categories.data[i].num_class_hours+"</td></tr>");
+    }
+
+    // Fill in the grades table
+    $grades = $j("#stats_grades > .module_group_body");
+    $grades.html("(Note: students counted are enrolled in at least one class)"+
+	         "<table><tr><th><b>Grade</b></th>"+
+		 "<th class='smaller'># of students</th>"+
+		 "<th class='smaller'># of subjects</th>"+
+		 "<th class='smaller'># of sections</th></tr></table>");
+    $gradestable = $grades.children("table");
+    for (var i = 0; i < grades.data.length; i++)
+    {
+	$gradestable.append("<tr><th class='smaller'>"+grades.data[i].grade+"</th>"+
+		"<td>"+grades.data[i].num_students+"</td>"+
+		"<td>"+grades.data[i].num_subjects+"</td>"+
+		"<td>"+grades.data[i].num_sections+"</td></tr>");
     }
 
     // Fill in the hours num data

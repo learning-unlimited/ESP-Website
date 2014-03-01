@@ -33,24 +33,29 @@ Learning Unlimited, Inc.
 """
 
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import simplejson as json
 
-from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
 from django import forms
 from django.conf import settings
+from django.contrib.auth import logout, login, authenticate, REDIRECT_FIELD_NAME
 from django.contrib.auth.models import User, AnonymousUser, Group
-from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
 from django.contrib.localflavor.us.forms import USStateSelect
+from django.contrib.localflavor.us.models import USStateField, PhoneNumberField
+from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.exceptions import PermissionDenied
-from django.core.mail import send_mail
 from django.db import models
 from django.db.models.base import ModelState
-from django.db.models.query import Q, QuerySet
+from django.db.models.query import Q
 from django.http import HttpRequest, HttpResponseRedirect
 from django.template import loader, Context as DjangoContext
 from django.template.defaultfilters import urlencode
+from django.template.loader import render_to_string
+from django_extensions.db.models import TimeStampedModel
+from django.core import urlresolvers
+
+
 
 from esp.cal.models import Event
 from esp.cache import cache_function, wildcard
@@ -112,6 +117,7 @@ class UserAvailability(models.Model):
     priority = models.DecimalField(max_digits=3, decimal_places=2, default='1.0')
 
     class Meta:
+        app_label = 'users'
         db_table = 'users_useravailability'
 
     def __unicode__(self):
@@ -174,12 +180,36 @@ class ESPUser(User, AnonymousUser):
 
         self.other_user = False
 
-        if not hasattr(ESPUser, 'isOfficer'):
-            for user_type in ESPUser.getTypes() + ['Officer']:
-                setattr(ESPUser, 'is%s' % user_type, ESPUser.create_membership_method(user_type))
+        self.create_membership_methods()
+
+    @classmethod
+    def create_membership_methods(cls):
+        """
+        Setup for the ESPUser membership methods
+        """
+        if not hasattr(cls, 'isOfficer'):
+            for user_type in cls.getTypes(use_tag=False):
+                # Make sure that all of the default user types have membership
+                # methods defined, because some (such as isStudent()) are used
+                # in the code even if that user type isn't included in the Tag
+                # override. Start by defining all the membership methods for
+                # the default types as returning False, and then overwrite them
+                # as necessary.
+                setattr(cls, 'is%s' % user_type, lambda user: False)
+            for user_type in cls.getTypes() + ['Officer']:
+                setattr(cls, 'is%s' % user_type, cls.create_membership_method(user_type))
 
     def is_anonymous(self):
         return self._is_anonymous
+
+    @staticmethod
+    def grade_options():
+        """ Returns a list<int> of valid grades """
+        tag_val = Tag.getTag('student_grade_options')
+        if tag_val is None:
+            return range(7, 13)
+        else:
+            return json.loads(tag_val)
 
     @staticmethod
     def onsite_user():
@@ -187,6 +217,7 @@ class ESPUser(User, AnonymousUser):
             return ESPUser.objects.get(username='onsite')
         else:
             return None
+
 
     @classmethod
     def ajax_autocomplete(cls, data):
@@ -229,11 +260,40 @@ class ESPUser(User, AnonymousUser):
     def name(self):
         return '%s %s' % (self.first_name, self.last_name)
 
+    def get_email_sendto_address_pair(self):
+        """
+        Returns the pair of data needed to send an email to the user.
+        """
+        return (self.email, self.name())
+
+    @staticmethod
+    def email_sendto_address(email, name=''):
+        """
+        Given an email and a name, returns the string used to address mail.
+        """
+        if name:
+            return u'%s <%s>' % (name, email)
+        else:
+            return u'<%s>' % email
+
+    def get_email_sendto_address(self):
+        """
+        Returns the string used to address mail to the user.
+        """
+        return ESPUser.email_sendto_address(self.email, self.name())
+
     def __cmp__(self, other):
         lastname = cmp(self.last_name.upper(), other.last_name.upper())
         if lastname == 0:
            return cmp(self.first_name.upper(), other.first_name.upper())
         return lastname
+
+    def __eq__(self, other):
+        """Extends equality to support User object == ESPUser object."""
+        if type(other) == User:
+            return self.getOld() == other or self.id == other.id
+        else:
+            return super(ESPUser, self).__eq__(other)
 
     def is_authenticated(self):
         return self.getOld().is_authenticated()
@@ -271,7 +331,7 @@ class ESPUser(User, AnonymousUser):
             # Disallow morphing into Administrators.
             # It's too broken, from a security perspective.
             # -- aseering 1/29/2010
-            raise ESPError(False), "User '%s' is an administrator; morphing into administrators is not permitted." % user.username
+            raise ESPError("User '%s' is an administrator; morphing into administrators is not permitted." % user.username, log=False)
 
         logout(request)
         user.backend = 'django.contrib.auth.backends.ModelBackend'
@@ -291,7 +351,7 @@ class ESPUser(User, AnonymousUser):
 
     def switch_back(self, request):
         if not 'user_morph' in request.session:
-            raise ESPError(), 'Error: You were not another user to begin with!'
+            raise ESPError('Error: You were not another user to begin with!')
 
         retUrl   = request.session['user_morph']['retUrl']
         new_user = self.get_old(request)
@@ -421,25 +481,30 @@ class ESPUser(User, AnonymousUser):
         try:
             num = int(num)
         except:
-            raise ESPError(), 'Could not find user "%s %s"' % (first, last)
+            raise ESPError('Could not find user "%s %s"' % (first, last))
         users = ESPUser.objects.filter(last_name__iexact = last,
                                     first_name__iexact = first).order_by('id')
         if len(users) <= num:
-            raise ESPError(False), '"%s %s": Unknown User' % (first, last)
+            raise ESPError('"%s %s": Unknown User' % (first, last), log=False)
         return users[num]
 
     @cache_function
-    def getTypes():
-        """ Get a list of the different roles an ESP user can have. By default there are five roles,
-            but there can be more. (Returns ['Student','Teacher','Educator','Guardian','Volunteer'] by default. """
-        return [x[0] for x in ESPUser.getAllUserTypes()]
+    def getTypes(use_tag=True):
+        """
+        Get a list of the different roles an ESP user can have. By default
+        there are five roles, but there can be more. Returns
+        ['Student','Teacher','Educator','Guardian','Volunteer'] by default. If
+        use_tag is False, always returns the default roles, and ignores the Tag
+        override.
+        """
+        return [x[0] for x in ESPUser.getAllUserTypes(use_tag=use_tag)]
     getTypes.depend_on_model(Tag)
     getTypes = staticmethod(getTypes)
 
     @staticmethod
     def getAllOfType(strType, QObject = True):
         if strType not in ESPUser.getTypes():
-            raise ESPError(), "Invalid type to find all of."
+            raise ESPError("Invalid type to find all of.")
 
         Q_useroftype      = Q(groups__name=strType)
 
@@ -457,7 +522,7 @@ class ESPUser(User, AnonymousUser):
 
         #   Detect whether the program has the availability module, and assume
         #   the user is always available if it isn't there.
-        if program.program_modules.filter(handler='AvailabilityModule').exists():
+        if program.hasModule('AvailabilityModule'):
             valid_events = Event.objects.filter(useravailability__user=self, program=program).order_by('start')
         else:
             valid_events = program.getTimeSlots()
@@ -706,7 +771,7 @@ class ESPUser(User, AnonymousUser):
         # we have a lot of users with no email (??)
         #  let's at least display a sensible error message
         if self.email.strip() == '':
-            raise ESPError(), 'User %s has blank email address; cannot recover password. Please contact webmasters to reset your password.' % self.username
+            raise ESPError('User %s has blank email address; cannot recover password. Please contact webmasters to reset your password.' % self.username)
 
         # email addresses
         to_email = ['%s <%s>' % (self.name(), self.email)]
@@ -738,17 +803,29 @@ class ESPUser(User, AnonymousUser):
         if self.is_anonymous() or self.id is None: return False
         is_admin_role = self.groups.filter(name="Administrator").exists()
         if is_admin_role: return True
-        if program is None:
-            return Permission.user_has_perm(self, "Administer")
-
-        return Permission.user_has_perm(self, "Administer",program=program)
+        quser = Q(user=self) | Q(user=None, role__in=self.groups.all())
+        return Permission.objects.filter(
+                        quser & Permission.is_valid_qobject(),
+                        permission_type="Administer",
+                        program__in=[None, program]).exists()
     isAdmin = isAdministrator
 
     @cache_function
-    def getAllUserTypes():
-        #   Allow Tag to remove user types as well as adding/updating them.
-        #   So, if you set the Tag, be sure to include all of the user types you want.
-        return json.loads(Tag.getTag('user_types', default=json.dumps(DEFAULT_USER_TYPES)))
+    def getAllUserTypes(use_tag=True):
+        """
+        Get the list of all user types, along with their metadata (label and
+        profile form). By default returns DEFAULT_USER_TYPES. Allow user_types
+        Tag to override this struct. The Tag can remove user types as well as
+        adding/updating them. So, if you set the Tag, be sure to include all
+        of the user types you want.
+
+        If use_tag is False, always returns DEFAULT_USER_TYPES, and ignores the
+        Tag override.
+        """
+        user_types = DEFAULT_USER_TYPES
+        if use_tag:
+            user_types = json.loads(Tag.getTag('user_types', default=json.dumps(user_types)))
+        return user_types
     getAllUserTypes.depend_on_model(Tag)
     getAllUserTypes = staticmethod(getAllUserTypes)
 
@@ -817,15 +894,19 @@ are a teacher of the class"""
         return len(User.objects.filter(username=username.lower()).values('id')[:1]) > 0
 
     @staticmethod
-    def current_schoolyear():
-        now = datetime.now()
+    def current_schoolyear(program=None):
+        if program == None:
+            now = date.today()
+        else:
+            # "now" is actually whenever the program ran or will run
+            now = program.dates()[0]
         curyear = now.year
         # Changed from 6/1 to 5/1 rollover so as not to affect start of Summer HSSP registration
         # - Michael P 5/24/2010
         # Changed from 5/1 to 7/31 rollover to as to neither affect registration starts nor occur prior to graduation.
         # Adam S 8/1/2010
         #if datetime(curyear, 6, 1) > now:
-        if datetime(curyear, 7, 31) > now:
+        if date(curyear, 7, 31) > now:
             schoolyear = curyear
         else:
             schoolyear = curyear + 1
@@ -833,8 +914,6 @@ are a teacher of the class"""
 
     @cache_function
     def getGrade(self, program = None):
-        if hasattr(self, '_grade'):
-            return self._grade
         grade = 0
         if self.isStudent():
             if program is None:
@@ -844,24 +923,19 @@ are a teacher of the class"""
                 regProf = RegistrationProfile.getLastForProgram(self,program)
             if regProf and regProf.student_info:
                 if regProf.student_info.graduation_year:
-                    grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year)
+                    grade =  ESPUser.gradeFromYOG(regProf.student_info.graduation_year, ESPUser.current_schoolyear(program))
                     if program:
                         grade += program.incrementGrade() # adds 1 if appropriate tag is set; else does nothing
-                        
-
-        self._grade = grade
 
         return grade
     #   The cache will need to be cleared once per academic year.
     getGrade.depend_on_row(lambda: StudentInfo, lambda info: {'self': info.user})
     getGrade.depend_on_row(lambda: Tag, lambda tag: {'program' :  tag.target})
 
-    def currentSchoolYear(self):
-        return ESPUser.current_schoolyear()-1
-
     @staticmethod
-    def gradeFromYOG(yog):
-        schoolyear = ESPUser.current_schoolyear()
+    def gradeFromYOG(yog, schoolyear=None):
+        if schoolyear == None:
+            schoolyear = ESPUser.current_schoolyear()
         try:
             yog        = int(yog)
         except:
@@ -878,6 +952,55 @@ are a teacher of the class"""
 
         return schoolyear + 12 - grade
 
+    def set_student_grad_year(self, grad_year):
+        """ Update the user's graduation year if they are a student. """
+
+        #   Check that the user is a student.
+        #   (We could raise an error, but I don't think it's a huge problem
+        #   if this function is called accidentally on a non-student.)
+        if not self.isStudent():
+            return
+
+        #   Retrieve the user's most recent registration profile and create a StudentInfo if needed.
+        profile = self.getLastProfile()
+        if profile.student_info is None:
+            profile.student_info = StudentInfo(user=self)
+            profile.save()
+
+        #   Update the graduation year.
+        student_info = profile.student_info
+        student_info.graduation_year = int(grad_year)
+        student_info.save()
+
+    def set_grade(self, grade):
+        """ Convenience function for setting a student's grade based on the
+            current school year. """
+        self.set_student_grad_year(ESPUser.YOGFromGrade(int(grade)))
+
+    @staticmethod
+    def getRankInClass(student, subject, default=10):
+        from esp.program.models.app_ import StudentAppQuestion, StudentAppResponse, StudentAppReview, StudentApplication
+        from esp.program.models import StudentRegistration
+        if isinstance(subject, int):
+            subject = ClassSubject.objects.get(id=subject)
+        if not StudentAppQuestion.objects.filter(subject=subject).count():
+            return 10
+        elif StudentRegistration.objects.filter(section__parent_class=subject, relationship__name="Rejected",end_date__gte=datetime.now(),user=student).exists() or not StudentApplication.objects.filter(user=student, program__classsubject = subject).exists() or not StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student).exists():
+            return 1
+        for sar in StudentAppResponse.objects.filter(question__subject=subject, studentapplication__user=student):
+            if not len(sar.response.strip()):
+                return 1
+        rank = max(list(StudentAppReview.objects.filter(studentapplication__user=student, studentapplication__program__classsubject=subject, reviewer__in=subject.teachers()).values_list('score', flat=True)) + [-1])
+        if rank == -1:
+            rank = default
+        return rank
+
+    @staticmethod
+    def getRankInSection(student, section, default=10):
+        if isinstance(section, int):
+            section = ClassSection.objects.get(id=section)
+        return getRankInClass(student, section.parent_class, default)
+
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
 shirt_sizes = tuple([('14/16', '14/16 (XS)')] + zip(shirt_sizes, shirt_sizes))
 shirt_types = (('M', 'Plain'), ('F', 'Fitted (for women)'))
@@ -891,6 +1014,7 @@ class StudentInfo(models.Model):
     k12school = AjaxForeignKey('K12School', help_text='Begin to type your school name and select your school if it comes up.', blank=True, null=True)
     school = models.CharField(max_length=256,blank=True, null=True)
     dob = models.DateField(blank=True, null=True)
+    gender = models.CharField(max_length=32,blank=True,null=True)
     studentrep = models.BooleanField(blank=True, default = False)
     studentrep_expl = models.TextField(blank=True, null=True)
     heard_about = models.TextField(blank=True, null=True)
@@ -949,6 +1073,7 @@ class StudentInfo(models.Model):
             form_dict['k12school']   = self.school
         form_dict['school']          = self.school
         form_dict['dob']             = self.dob
+        form_dict['gender']          = self.gender
         if Tag.getTag('studentinfo_shirt_options'):
             form_dict['shirt_size']      = self.shirt_size
             form_dict['shirt_type']      = self.shirt_type
@@ -975,7 +1100,7 @@ class StudentInfo(models.Model):
         if not studentInfo.user:
             studentInfo.user = curUser
         elif studentInfo.user != curUser: # this should never happen, but you never know....
-            raise ESPError(), "Your registration profile is corrupted. Please contact esp-web@mit.edu, with your name and username in the message, to correct this issue."
+            raise ESPError("Your registration profile is corrupted. Please contact esp-web@mit.edu, with your name and username in the message, to correct this issue.")
 
         studentInfo.graduation_year = new_data['graduation_year']
         try:
@@ -993,6 +1118,7 @@ class StudentInfo(models.Model):
             
         studentInfo.school          = new_data['school'] if not studentInfo.k12school else studentInfo.k12school.name
         studentInfo.dob             = new_data['dob']
+        studentInfo.gender          = new_data.get('gender', None)
         
         studentInfo.heard_about      = new_data.get('heard_about', '')
 
@@ -1340,7 +1466,7 @@ class ZipCode(models.Model):
             distance_decimal = Decimal(str(distance))
             distance_float = float(str(distance))
         except:
-            raise ESPError(), '%s should be a valid decimal number!' % distance
+            raise ESPError('%s should be a valid decimal number!' % distance)
 
         if distance < 0:
             distance *= -1
@@ -1446,6 +1572,23 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
 
 
 
+
+    def name(self):
+        return '%s %s' % (self.first_name, self.last_name)
+
+    email = property(lambda self: self.e_mail)
+
+    def get_email_sendto_address_pair(self):
+        """
+        Returns the pair of data needed to send an email to the contact.
+        """
+        return (self.email, self.name())
+
+    def get_email_sendto_address(self):
+        """
+        Returns the string used to address mail to the contact.
+        """
+        return ESPUser.email_sendto_address(self.email, self.name())
 
     def address(self):
         return '%s, %s, %s %s' % \
@@ -1630,7 +1773,7 @@ class PersistentQueryFilter(models.Model):
         try:
             QObj = pickle.loads(str(self.q_filter))
         except:
-            raise ESPError(), 'Invalid Q object stored in database.'
+            raise ESPError('Invalid Q object stored in database.')
 
         #   Do not include users if they have disabled their account.
         if restrict_to_active and (self.item_model.find('auth.models.User') >= 0 or self.item_model.find('esp.users.models.ESPUser') >= 0):
@@ -1671,7 +1814,7 @@ class PersistentQueryFilter(models.Model):
             to the live database. You must supply the model. If the model is not matched,
             it will become an error. """
         if str(module) != str(self.item_model):
-            raise ESPError(), 'The module given does not match that of the persistent entry.'
+            raise ESPError('The module given does not match that of the persistent entry.')
 
         return module.objects.filter(self.get_Q())
 
@@ -1895,6 +2038,7 @@ class Record(models.Model):
         ("interview","Teacher-interviewed for a program"),
         ("teacher_training","Attended teacher-training for a program"),
         ("teacher_checked_in", "Teacher checked in for teaching on the day of the program"),
+        ("twophase_reg_done", "Completed two-phase registration"),
     )
         
     event = models.CharField(max_length=80,choices=EVENT_CHOICES)
@@ -1902,6 +2046,9 @@ class Record(models.Model):
     user = AjaxForeignKey(ESPUser, 'id', blank=True, null=True)
 
     time = models.DateTimeField(blank=True, default = datetime.now)
+
+    class Meta:
+        app_label = 'users'
 
     @classmethod
     def user_completed(cls, user, event, program=None):
@@ -1998,8 +2145,13 @@ class Permission(ExpirableModel):
     #it may, however, be the case that this model is not general enough,
     #in which case program may need to be replaced by a generic foreignkey
 
+    class Meta:
+        app_label = 'users'
+
     @classmethod
     def user_has_perm(self, user, name, program=None, when=None):
+        if user.isAdministrator(program=program):
+            return True
         perms=[name]
         for k,v in self.implications.items():
             if name in v: perms.append(k)
@@ -2133,8 +2285,106 @@ def install():
         ESPUser.objects.create(username='onsite', first_name='Onsite', last_name='User')
         print 'Created onsite user, please set their password in the admin interface.'
 
+#   This import is placed down here since we need it in GradeChangeRequest
+#   but esp.dbmail.models imports ESPUser.
+from esp.dbmail.models import send_mail
+
+class GradeChangeRequest(TimeStampedModel):
+    """ 
+        A grade change request is issued by a student when it is felt
+        that the current grade is incorrect.
+    """
+  
+    claimed_grade = models.PositiveIntegerField()
+    reason = models.TextField()
+    approved = models.NullBooleanField()
+    acknowledged_time = models.DateTimeField(blank=True, null=True)
+    
+    requesting_student = models.ForeignKey(ESPUser, related_name='requesting_student_set')
+    acknowledged_by = models.ForeignKey(ESPUser, blank=True, null=True)
+
+    class Meta:
+        ordering = ['-acknowledged_time','-created']
+
+    def __init__(self, *args, **kwargs):
+        super(GradeChangeRequest, self).__init__(*args, **kwargs)
+        grade_options = ESPUser.grade_options()
+
+        self._meta.get_field_by_name('claimed_grade')[0]._choices = zip(grade_options, grade_options)
+
+    def save(self, **kwargs):
+        is_new = self.id is None
+        super(GradeChangeRequest, self).save(**kwargs)
+
+        if is_new:
+            self.send_request_email()
+            return
+            
+        if self.approved is not None and not self.acknowledged_time:
+            self.acknowledged_time = datetime.now()
+            self.send_confirmation_email()
+
+        #   Update the student's grade if the request has been approved
+        if self.approved is True:
+            self.requesting_student.set_grade(self.claimed_grade)
+
+    def _request_email_content(self):
+        """
+        Returns the email content for the grade change request email.
+        """
+        context = {'student': self.requesting_student,
+                    'change_request':self,
+                    'site': Site.objects.get_current()}
+
+        subject = render_to_string('users/emails/grade_change_request_email_subject.txt',
+                                   context)
+        subject = ''.join(subject.splitlines())
+
+        message = render_to_string('users/emails/grade_change_request_email_message.txt',
+                                   context)
+        return subject, message
+
+    def send_request_email(self):
+        """ Sends the the email for the change request to the LU admin email address"""
+        subject, message = self._request_email_content()
+        send_mail(subject,
+                  message,
+                  settings.DEFAULT_FROM_EMAIL,
+                  [self.requesting_student.email, ])
+
+    def _confirmation_email_content(self):
+        context = {'student': self.requesting_student,
+                    'change_request':self,
+                  'site': Site.objects.get_current(),
+                  'settings': settings}
+
+        subject = render_to_string('users/emails/grade_change_confirmation_email_subject.txt',
+                                   context)
+        subject = ''.join(subject.splitlines())
+
+        message = render_to_string('users/emails/grade_change_confirmation_email_message.txt',
+                                   context)
+        return subject, message
+
+    def send_confirmation_email(self):
+        """
+        Sends a confirmation email to the requesting student.
+        This email is sent when the administrator confirms a change grade change request.
+        """
+        subject, message = self._confirmation_email_content()
+        send_mail(subject,
+                  message,
+                  settings.DEFAULT_FROM_EMAIL,
+                  [self.requesting_student.email, ])
+
+    def get_admin_url(self):
+        return urlresolvers.reverse("admin:%s_%s_change" %
+        (self._meta.app_label, self._meta.module_name), args=(self.id,))
+
+
+
 # We can't import these earlier because of circular stuff...
-from esp.users.models.userbits import UserBit
+from esp.users.models.userbits import UserBit, UserBitImplication
 from esp.users.models.forwarder import UserForwarder
 from esp.cal.models import Event
 from esp.program.models import ClassSubject, ClassSection, Program, StudentRegistration

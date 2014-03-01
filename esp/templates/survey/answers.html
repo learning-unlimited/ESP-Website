@@ -37,9 +37,9 @@ Expects:
             {% if q.question.question_type.is_numeric %}
                 <li>Average: {{ q.answers|unpack_answers|average }}</li>
                 <li>Std. deviation: {{ q.answers|unpack_answers|stdev }}</li>
-                {% ifequal q.question.anchor.name "Classes" %}
+                {% if q.question.per_class %}
                     <li>Average for all classes: {{ q.question.global_average }}</li>
-                {% endifequal %}
+                {% endif %}
             {% endif %}
         </ul>
     </td>

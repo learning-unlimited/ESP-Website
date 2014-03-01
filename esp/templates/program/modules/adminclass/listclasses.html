@@ -10,20 +10,14 @@ json_data = {};
 <script type="text/javascript">
 /* <![CDATA[ */
 
-  // Check if rapid approval is enabled
-  {% load tagdict %}
-  use_rapid_approval = {% getBooleanTag 'use_rapid_approval' program %};
-  if (use_rapid_approval)
-  {
-    // Create the class description popup for the Status button
-    class_desc_popup = $j('<div></div>').attr('id', "class_status_popup")
-      .dialog({
-        autoOpen: false,
-        minWidth: 400,
-        minHeight: 300,
-        modal: true
-      });
-  }
+  // Create the class description popup for the Status button
+  class_desc_popup = $j('<div></div>').attr('id', "class_status_popup")
+    .dialog({
+      autoOpen: false,
+      minWidth: 400,
+      minHeight: 300,
+      modal: true
+    });
 
   // Set up sorting control
   $j(document).ready(setup_sort_control);

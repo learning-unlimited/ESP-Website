@@ -159,7 +159,10 @@ class ViewUserInfoTest(TestCase):
         response = c.get("/manage/userview", { 'username': self.user.username })
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['user'].id, self.user.id)
-        self.assert_(self.admin.first_name in response.content)
+        self.assert_(self.user.username in response.content)
+        self.assert_(self.user.first_name in response.content)
+        self.assert_(self.user.last_name in response.content)
+        self.assert_(str(self.user.id) in response.content)
 
         # Test to make sure we get an error on an unknown user
         response = c.get("/manage/userview", { 'username': "NotARealUser" })
@@ -313,7 +316,7 @@ class ProgramHappenTest(TestCase):
         from esp.resources.models import Resource, ResourceType, ResourceAssignment
         from esp.program.controllers.classreg import get_custom_fields
         from django import forms
-        from datetime import datetime
+        from datetime import datetime, timedelta
 
         self.failUnless( self.prog.classes().count() == 0, 'Website thinks empty program has classes')
         user_obj = ESPUser.objects.get(username='tubbeachubber')
@@ -321,16 +324,17 @@ class ProgramHappenTest(TestCase):
         self.failUnless( user_obj.getTaughtSections().count() == 0, "User tubbeachubber is teaching sections that don't exist")
         
         timeslot_type = EventType.objects.create(description='Class Time Block')
-        self.timeslot = Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
-            start=datetime(3001,1,1,12,0), end=datetime(3001,1,1,13,0), event_type=timeslot_type )
+        now = datetime.now()
+        self.timeslot = Event.objects.create(program=self.prog, description='Now', short_description='Right now',
+            start=now, end=now+timedelta(0,3600), event_type=timeslot_type )
 
         # Make some other time slots
         Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
-            start=datetime(3001,1,1,13,0), end=datetime(3001,1,1,14,0), event_type=timeslot_type )
+            start=now+timedelta(0,3600), end=now+timedelta(0,2*3600), event_type=timeslot_type )
         Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
-            start=datetime(3001,1,1,14,0), end=datetime(3001,1,1,15,0), event_type=timeslot_type )
+            start=now+timedelta(0,2*3600), end=now+timedelta(0,3*3600), event_type=timeslot_type )
         Event.objects.create(program=self.prog, description='Never', short_description='Never Ever',
-            start=datetime(3001,1,1,15,0), end=datetime(3001,1,1,16,0), event_type=timeslot_type )
+            start=now+timedelta(0,3*3600), end=now+timedelta(0,4*3600), event_type=timeslot_type )
 
         classroom_type = ResourceType.objects.create(name='Classroom', consumable=False, priority_default=0,
             description='Each classroom or location is a resource; almost all classes need one.')
@@ -377,7 +381,7 @@ class ProgramHappenTest(TestCase):
                 class_dict[field] = 'foo'
         
         # Check that stuff went through correctly
-        response = self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)  
+        response = self.client.post('%smakeaclass' % self.prog.get_teach_url(), class_dict)
         
         # check prog.classes
         classes = self.prog.classes()
@@ -445,12 +449,12 @@ class ProgramHappenTest(TestCase):
         thisyear = datetime.now().year
         prof = RegistrationProfile.getLastForProgram(self.student, self.prog)
         prof.contact_user = ContactInfo.objects.create( user=self.student, first_name=self.student.first_name, last_name=self.student.last_name, e_mail=self.student.email )
-        prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=thisyear+2, dob=datetime(thisyear-15, 1, 1) )
+        prof.student_info = StudentInfo.objects.create( user=self.student, graduation_year=ESPUser.YOGFromGrade(10), dob=datetime(thisyear-15, 1, 1) )
         prof.save()
         
         # Student logs in and signs up for classes
         self.loginStudent()
-        self.client.get('%sstudentreg' % self.prog.get_learn_url())
+        response = self.client.get('%sstudentreg' % self.prog.get_learn_url())
         reg_dict = {
             'class_id': self.classsubject.id,
             'section_id': sec.id,
@@ -651,6 +655,11 @@ class ProgramFrameworkTest(TestCase):
     #   Helper function to give the program a schedule.
     #   Does not get called by default, but subclasses can call it.
     def schedule_randomly(self):
+        #   Clear scheduled classes to get a clean schedule
+        for cls in self.program.classes():
+            for sec in cls.get_sections():
+                sec.clearRooms()
+                sec.clear_meeting_times()
         #   Force availability
         for t in self.teachers:
             for ts in self.program.getTimeSlots():
@@ -669,7 +678,7 @@ class ProgramFrameworkTest(TestCase):
     #   Does not get called by default, but subclasses can call it.
     def add_student_profiles(self):
         for student in self.students:
-            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.YOGFromGrade(10))
+            student_studentinfo = StudentInfo(user=student, graduation_year=ESPUser.current_schoolyear(self.program)+2)
             student_studentinfo.save()
             student_regprofile = RegistrationProfile(user=student, program=self.program, student_info=student_studentinfo, most_recent_profile=True)
             student_regprofile.save()
@@ -1006,7 +1015,9 @@ class ModuleControlTest(ProgramFrameworkTest):
         moduleobj.required = True
         moduleobj.save()
         
-        response = self.client.get('/learn/%s/studentreg' % self.program.getUrlBase())
+        response = self.client.get(
+                    '/learn/%s/studentreg' % self.program.getUrlBase(),
+                    **{'wsgi.url_scheme': 'https'})
         self.assertTrue('Financial Aid' in response.content)
         
         #   Remove the module and make sure we are not shown it anymore.
@@ -1053,14 +1064,20 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         # Force the modules and extensions to be created
         self.program.getModules()
         # Schedule classes
-        self.schedule_randomly()
-        self.timeslots = Event.objects.filter(meeting_times__parent_class__parent_program = self.program).distinct()
+        while True:
+            self.schedule_randomly()
+            self.timeslots = Event.objects.filter(meeting_times__parent_class__parent_program = self.program).distinct()
+            # We need three timeslots with classes in them 
+            # for the multiple lunch constraints test
+            if len(self.timeslots) >= 3:
+                break
 
         # Create the registration types
         self.enrolled_rt, created = RegistrationType.objects.get_or_create(name='Enrolled')
         self.priority_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
         self.interested_rt, created = RegistrationType.objects.get_or_create(name='Interested')
         self.waitlist_rt, created = RegistrationType.objects.get_or_create(name='Waitlist/1')
+        self.priority_rts=[self.priority_rt]
 
         # Add some priorities and interesteds for the lottery
         es = Event.objects.filter(program=self.program)
@@ -1095,13 +1112,14 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         for student in self.students:
             # Figure out which classes they got
             interested_regs = StudentRegistration.objects.filter(user=student, relationship=self.interested_rt)
-            priority_regs = StudentRegistration.objects.filter(user=student, relationship=self.priority_rt)
+            priority_regs = StudentRegistration.objects.filter(user=student, relationship__in=self.priority_rts)
             enrolled_regs = StudentRegistration.objects.filter(user=student, relationship=self.enrolled_rt)
 
             interested_classes = set([sr.section for sr in interested_regs])
             priority_classes = set([sr.section for sr in priority_regs])
             enrolled_classes = set([sr.section for sr in enrolled_regs])
             not_enrolled_classes = (priority_classes | interested_classes) - enrolled_classes
+            incorrectly_enrolled_classes = enrolled_classes - (priority_classes | interested_classes)
 
 
             # Get their grade
@@ -1110,6 +1128,9 @@ class LSRAssignmentTest(ProgramFrameworkTest):
             # Check that they can't possibly add a class they didn't get into
             for cls in not_enrolled_classes:
                 self.failUnless(cls.cannotAdd(student) or cls.isFull())
+
+            # Check that they only got into classes that they asked for
+            self.failIf(incorrectly_enrolled_classes)
 
     def testStats(self):
         """ Verify that the values returned by compute_stats() are correct
@@ -1199,3 +1220,14 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                     lunch_free = True
                     break
             self.failUnless(lunch_free, "No lunch sections free for a student!")
+    
+    def testLotteryMultiplePriorities(self):
+        """Creates some more priorities, then runs testLottery again."""
+        self.priority_2_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.priority_3_rt, created = RegistrationType.objects.get_or_create(name='Priority/1')
+        self.priority_rts=[self.priority_rt, self.priority_2_rt, self.priority_3_rt]
+        scrmi = self.program.getModuleExtension('StudentClassRegModuleInfo')
+        scrmi.priority_limit = 3
+        scrmi.save()
+
+        self.testLottery()

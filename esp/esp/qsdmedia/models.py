@@ -39,7 +39,8 @@ from esp.datatree.models import *
 from django.conf import settings
 from esp.db.fields import AjaxForeignKey
 from time import strftime
-import hashlib
+import os.path
+from esp.middleware import ESPError
 
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes import generic
@@ -48,7 +49,7 @@ from django.db.models import Q
 # Create your models here.
 
 # The folder that Media files are saved to
-root_file_path = "uploaded/%y_%m"
+root_file_path = "uploaded"
 
 class Media(models.Model):
     """ A generic container for 'media': videos, pictures, papers, etc. """
@@ -60,57 +61,60 @@ class Media(models.Model):
     mime_type = models.CharField(blank=True, null=True, max_length=256, editable=False)
     file_extension = models.TextField(blank=True, null=True, max_length=16, editable=False) # Windows file extension for this file type, in case it's something archaic / Windows-centric enough to not get a unique MIME type
     file_name = models.TextField(blank=True, null=True, max_length=256, editable=False) # original filename that this file should be downloaded as
-    hashed_name = models.TextField(blank=True, null=True, max_length=256, editable=False) # safe hashed filename
+    hashed_name = models.TextField(blank=True, null=True, max_length=256, editable=False) # randomized filename
     
     #   Generic Foreign Key to object this media is associated with.
     #   Currently limited to be either a ClassSubject or Program.
-    owner_type = models.ForeignKey(ContentType, blank=True, null=True, limit_choices_to=Q(name__in=['ClassSubject', 'Program']))
+    owner_type = models.ForeignKey(ContentType, blank=True, null=True, limit_choices_to={'model__in': ['classsubject', 'program']})
     owner_id = models.PositiveIntegerField(blank=True, null=True)
     owner = generic.GenericForeignKey(ct_field='owner_type', fk_field='owner_id')
 
-    #def get_target_file_relative_url(self):a
-    #    return str(self.target_file)[ len(root_file_path): ]
-
-    def get_target_file_url(self):
-        return str(self.target_file.url)
-    target_url = property(get_target_file_url)
-
-    def safe_filename(self, filename):
-        """ Compute the MD5 hash of the original filename. 
-            The data is saved under this hashed filename to reduce
-            security risk.  """
-        m = hashlib.md5()
-        m.update(filename)
-        return m.hexdigest()
-
     def handle_file(self, file, filename):
         """ Saves a file from request.FILES. """
-        from os.path import basename, dirname
+        import uuid
 
         # Do we actually need this?
-        splitname = basename(filename).split('.')
+        splitname = os.path.basename(filename).split('.')
         if len(splitname) > 1:
             self.file_extension = splitname[-1]
         else:
             self.file_extension = ''
+        
+        # get list of allowed file extensions
+        if hasattr(settings, 'ALLOWED_EXTENSIONS'):
+            allowed_extensions = [x.lower() for x in settings.ALLOWED_EXTENSIONS]
+        else:
+            allowed_extensions = ['pdf', 'odt', 'odp', 'jpg', 'jpeg', 'gif', 'png', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'txt']
+        
+        if not self.file_extension.lower() in allowed_extensions:
+            raise ESPError("The file extension provided is not allowed. Allowed extensions: %s." % (', '.join(allowed_extensions),), log=False)
 
         self.mime_type = file.content_type
         self.size = file.size
         
         # hash the filename, easy way to prevent bad filename attacks
         self.file_name = filename
-        self.hashed_name = self.safe_filename(filename)
+        self.hashed_name = str(uuid.uuid4())
+        
+        while not self.test_upload_filename():
+            self.hashed_name = str(uuid.uuid4())
+        
         self.target_file.save(self.hashed_name, file)
+    
+    # returns an absolute path to this file
+    def get_uploaded_filename(self):
+        return os.path.join(settings.MEDIA_ROOT, "..", self.target_file.url.lstrip('/'))
+    
+    # returns an absolute path to this file
+    def test_upload_filename(self):
+        return not os.path.isfile(os.path.join(settings.MEDIA_ROOT, root_file_path, self.hashed_name))
 
     def delete(self, *args, **kwargs):
         """ Delete entry; provide hack to fix old absolute-path-storing. """
         import os
-        # If needby, strip URL prefix
-        if os.path.isabs(self.target_file.name) and self.target_file.name.startswith(settings.MEDIA_URL):
-            self.target_file.name = self.target_file.name[len(settings.MEDIA_URL):]
-            # In case trailing slash missing
-            if self.target_file.name[0] is '/':
-                self.target_file.name = self.target_file.name[1:]
+        if os.path.isfile(self.get_uploaded_filename()):
+            os.remove(self.get_uploaded_filename())
+
         super(Media, self).delete(*args, **kwargs)
 
     def __unicode__(self):

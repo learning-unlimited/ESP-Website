@@ -66,7 +66,7 @@ class ClassCreationController(object):
         try:
             cls = ClassSubject.objects.get(id=int(clsid))
         except (TypeError, ClassSubject.DoesNotExist):
-            raise ESPError(False), "The class you're trying to edit (ID %s) does not exist!" % (repr(clsid))
+            raise ESPError("The class you're trying to edit (ID %s) does not exist!" % (repr(clsid)), log=False)
 
         extra_time = reg_form._get_total_time_requested() - cls.sections.count() * float(cls.duration)
         for teacher in cls.get_teachers():
@@ -176,7 +176,8 @@ class ClassCreationController(object):
                          'timeslots': timeslots,
                          'program': self.program,
                          'curtime': datetime.now(),
-                         'note': note}
+                         'note': note,
+                         'DEFAULT_HOST': settings.DEFAULT_HOST}
         email_contents = render_to_string('program/modules/availabilitymodule/update_email.txt', email_context)
         email_to = ['%s <%s>' % (teacher.name(), teacher.email)]
         send_mail(email_title, email_contents, email_from, email_to, False)
@@ -188,9 +189,10 @@ class ClassCreationController(object):
     def require_teacher_has_time(self, user, current_user, hours):
         if not self.teacher_has_time(user, hours):
             if user == current_user:
-                raise ESPError(False), 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
+                message = 'We love you too!  However, you attempted to register for more hours of class than we have in the program.  Please go back to the class editing page and reduce the duration, or remove or shorten other classes to make room for this one.'
             else:
-                raise ESPError(False), "%(teacher_full)s doesn't have enough free time to teach a class of this length.  Please go back to the class editing page and reduce the duration, or have %(teacher_first)s remove or shorten other classes to make room for this one." % {'teacher_full': user.name(), 'teacher_first': user.first_name}
+                message = "%(teacher_full)s doesn't have enough free time to teach a class of this length.  Please go back to the class editing page and reduce the duration, or have %(teacher_first)s remove or shorten other classes to make room for this one." % {'teacher_full': user.name(), 'teacher_first': user.first_name}
+            raise ESPError(message, log=False)
 
     def add_teacher_to_program_mailinglist(self, user):
         add_list_member("%s_%s-teachers" % (self.program.program_type, self.program.program_instance), user)

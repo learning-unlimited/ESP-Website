@@ -33,26 +33,30 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 
-from esp.utils.models import TemplateOverride
-from esp.utils.template import Loader as TemplateOverrideLoader
-from esp.tagdict.models import Tag
-from esp.themes import settings as themes_settings
-from esp.middleware import ESPError
-
-from django.conf import settings
-from django.template.loader import render_to_string
-
 from string import Template
 import cStringIO
+import datetime
 import os
+import os.path
+import shutil
 import re
 import subprocess
 import tempfile
 import distutils.dir_util
-import simplejson as json
+import json
+import hashlib
+
+from django.conf import settings
+from django.template.loader import render_to_string
+
+from esp.utils.models import TemplateOverride
+from esp.utils.template import Loader as TemplateOverrideLoader
+from esp.tagdict.models import Tag
+from esp.themes import settings as themes_settings
+from esp.cache import varnish
+from esp.middleware import ESPError
 
 THEME_PATH = os.path.join(settings.PROJECT_ROOT, 'esp', 'themes', 'theme_data')
-
 
 class ThemeController(object):
     """
@@ -63,7 +67,16 @@ class ThemeController(object):
         
     def get_current_theme(self):
         return Tag.getTag('current_theme_name', default='default')
-        
+
+    def get_current_customization(self):
+        return Tag.getTag('prev_theme_customization', default='None')
+
+    def set_current_customization(self, theme_name):
+        Tag.setTag('prev_theme_customization', value=theme_name)
+
+    def unset_current_customization(self):
+        Tag.unSetTag('prev_theme_customization')
+
     def get_current_params(self):
         return json.loads(Tag.getTag('current_theme_params', default='{}'))
 
@@ -72,13 +85,37 @@ class ThemeController(object):
             if os.path.isdir(os.path.join(THEME_PATH, name))]
 
     def get_template_settings(self):
-        return json.loads(Tag.getTag('theme_template_control', default='{}'))
+        """
+        Get the current template settings. The base settings are the initial
+        values of the configuration form fields, which are overriden by values
+        in the theme_template_control Tag.
+        """
+        form_class = self.get_config_form_class(self.get_current_theme())
+        if form_class is not None:
+            data = form_class.initial_data()
+        else:
+            data = {}
+        data.update(json.loads(Tag.getTag('theme_template_control', default='{}')))
+        data['theme_name'] = self.get_current_theme()
+        return data
 
     def set_template_settings(self, data):
         #   Merge with the existing settings so you don't forget anything
         initial_data = self.get_template_settings()
         initial_data.update(data)
+        now = datetime.datetime.now()
+        mtime = {'year': now.year, 'month': now.month, 'day': now.day,
+                 'hour': now.hour, 'minute': now.minute,
+                 'second': now.second, 'microsecond': now.microsecond}
+        initial_data.update({'mtime': mtime})
         Tag.setTag('theme_template_control', value=json.dumps(initial_data))
+
+    def update_template_settings(self):
+        """
+        Refreshes the template settings, possibly updating some values (such as
+        the mtime).
+        """
+        self.set_template_settings(self.get_template_settings())
 
     def base_dir(self, theme_name):
         return os.path.join(THEME_PATH, theme_name)
@@ -133,8 +170,9 @@ class ThemeController(object):
             result += self.global_less()
             result.append(os.path.join(themes_settings.less_dir, 'bootstrap.less'))
             result.append(os.path.join(themes_settings.less_dir, 'variables_custom.less'))
+            result.append(os.path.join(themes_settings.less_dir, 'main.less'))
         #   Make sure variables.less is included first, before any other custom LESS code
-        result += self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'variables\.less')
+        result += self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'variables(.*?)\.less')
         result += self.list_filenames(os.path.join(self.base_dir(theme_name), 'less'), r'(?<!variables)\.less$')
         return result
         
@@ -168,6 +206,11 @@ class ThemeController(object):
         return results
         
     def compile_css(self, theme_name, variable_data, output_filename):
+        #   Hack to make things work on Windows systems
+        INCLUDE_PATH_SEP = ':'
+        if os.name == 'nt':
+            INCLUDE_PATH_SEP = ';'
+    
         #   Load LESS files in order of search path
         less_data = ''
         for filename in self.get_less_names(theme_name):
@@ -201,7 +244,7 @@ class ThemeController(object):
         if themes_settings.THEME_DEBUG: print 'Wrote %d bytes to LESS file %s' % (len(less_data), less_output_filename)
         less_output_file.close()
 
-        less_search_path = ':'.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
+        less_search_path = INCLUDE_PATH_SEP.join(settings.LESS_SEARCH_PATH + [os.path.join(settings.MEDIA_ROOT, 'theme_editor', 'less')])
         if themes_settings.THEME_DEBUG: print 'LESS search path is "%s"' % less_search_path
 
         #   Compile to CSS
@@ -210,14 +253,64 @@ class ThemeController(object):
         css_data = lessc_process.communicate()[0]
 
         if lessc_process.returncode != 0:
-            raise ESPError(True)('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support']))
+            raise ESPError('The stylesheet compiler (lessc) returned error code %d.  Please check the LESS sources and settings you are using to generate the theme, or if you are using a provided theme please contact the <a href="mailto:%s">Web support team</a>.<br />LESS compile command was: <pre>%s</pre>' % (lessc_process.returncode, settings.DEFAULT_EMAIL_ADDRESSES['support'], ' '.join(lessc_args)), log=True)
 
         output_file = open(output_filename, 'w')
         output_file.write(css_data)
         output_file.close()
         if themes_settings.THEME_DEBUG: print 'Wrote %.1f KB CSS output to %s' % (len(css_data) / 1000., output_filename)
 
-    def clear_theme(self, theme_name=None):
+    def recompile_theme(self, theme_name=None, customization_name=None, keep_files=None):
+        """
+        Reloads the theme (possibly updating the template overrides with recent
+        code changes), then recompiles the customizations.
+        """
+        if theme_name is None:
+            theme_name = self.get_current_theme()
+        if (customization_name is None) or (customization_name == "None"):
+            customization_name = self.get_current_customization()
+        backup_info = self.clear_theme(keep_files=keep_files)
+        self.load_theme(theme_name, backup_info=backup_info)
+        self.update_template_settings()
+        if customization_name == "None":
+            return
+        (vars, palette) = self.load_customizations(customization_name)
+        if vars:
+            self.customize_theme(vars)
+        if palette:
+            self.set_palette(palette)
+
+    def backup_files(self, dir, keep_files=None):
+        """ Copy the files specified in keep_files (relative to directory dir)
+            to temporary locations and return a tuple of
+            (filename, temporary_location) pairs.   """
+
+        backup_info = []
+
+        if keep_files is None:
+            #   The default behavior, with keep_files = None, is to back up all
+            #   files that differ between the working copy and the current theme.
+            modifications = self.check_local_modifications(self.get_current_theme())
+            keep_files = [item['filename'] for item in modifications]
+
+        for filename in keep_files:
+            full_filename = os.path.join(dir, filename)
+            (file_desc, file_path) = tempfile.mkstemp()
+            file_obj = os.fdopen(file_desc, 'wb')
+            file_obj.write(open(full_filename, 'rb').read())
+            file_obj.close()
+            backup_info.append((filename, file_path))
+        return backup_info
+
+    def restore_files(self, dir, backup_info):
+        """ Restore files from the temporary locations provided by the
+            backup_files() function above.  """
+
+        for (filename, file_path) in backup_info:
+            shutil.copy(file_path, os.path.join(dir, filename))
+            os.remove(file_path)
+
+    def clear_theme(self, theme_name=None, keep_files=None):
     
         if theme_name is None:
             theme_name = self.get_current_theme()
@@ -231,7 +324,11 @@ class ThemeController(object):
         #   Clear template override cache
         TemplateOverrideLoader.get_template_hash.delete_all()
 
-        #   Remove images and script files from the active theme directory
+        #   If files are to be preserved, copy them to temporary locations
+        #   and return a record of those locations (backup_info).
+        #   This is much easier than writing new functions for removing and
+        #   copying directory trees.
+        backup_info = self.backup_files(settings.MEDIA_ROOT, keep_files)
         if os.path.exists(settings.MEDIA_ROOT + 'images/theme'):
             distutils.dir_util.remove_tree(settings.MEDIA_ROOT + 'images/theme')
         if os.path.exists(settings.MEDIA_ROOT + 'scripts/theme'):
@@ -244,10 +341,87 @@ class ThemeController(object):
         Tag.unSetTag('current_theme_name')
         Tag.unSetTag('current_theme_params')
         Tag.unSetTag('current_theme_palette')
-        Tag.unSetTag('prev_theme_customization')
+        self.unset_current_customization()
+
+        #   Clear the Varnish cache
+        varnish.purge_all()
+
+        return backup_info
+
+    def get_file_summaries(self, dir):
+        """ Retrieve a list of (filename, size, hash of contents) tuples.
+            For comparing the state of directories that are copied
+            from the theme data.    """
+
+        result = []
+        for filename in os.listdir(dir):
+            full_filename = os.path.join(dir, filename)
+            if os.path.isdir(filename):
+                result += self.get_file_summaries(full_filename)
+            else:
+                file_data = open(full_filename, 'rb').read()
+                result.append((full_filename, os.path.getsize(full_filename), hashlib.sha1(file_data).hexdigest()))
+        return result
+        
+    def get_directory_differences(self, src_dir, dest_dir):
+        """ Retrieve a list of relative paths that exist in both src_dir
+            and dest_dir but with different file contents.  """
+
+        differences = []
+        summaries_src = self.get_file_summaries(src_dir)
+        summaries_dest = self.get_file_summaries(dest_dir)
+
+        #   Build an index of the source files.
+        index_src = {}
+        for (filename, filesize, hash) in summaries_src:
+            rel_filename_src = os.path.relpath(filename, src_dir)
+            index_src[rel_filename_src] = (filesize, hash)
+
+        #   Iterate over destination files and see which ones match.
+        #   Compare the hashes of those files.
+        for (filename, filesize_dest, hash_dest) in summaries_dest:
+            rel_filename_dest = os.path.relpath(filename, dest_dir)
+            if rel_filename_dest in index_src:
+                (filesize_src, hash_src) = index_src[rel_filename_dest]
+                if hash_src != hash_dest:
+                    differences.append({
+                        'filename': rel_filename_dest,
+                        'filename_hash': hashlib.sha1(rel_filename_dest).hexdigest(),
+                        'source_size': filesize_src,
+                        'dest_size': filesize_dest,
+                    })
+                
+        return differences
+
+    def check_local_modifications(self, theme_name):
+        """ Return a list of relative paths under /media that could be
+            to be overwritten by loading the specified theme.   """
+        differences = []
+    
+        img_src_dir = os.path.join(self.base_dir(theme_name), 'images')
+        if os.path.exists(img_src_dir):
+            img_dest_dir = os.path.join(settings.MEDIA_ROOT, 'images', 'theme')
+            if not os.path.exists(img_dest_dir):
+                os.mkdir(img_dest_dir)
+            for diff_item in self.get_directory_differences(img_src_dir, img_dest_dir):
+                diff_item['filename'] = os.path.join('images', 'theme', diff_item['filename'])
+                diff_item['dest_url'] = os.path.join('/media', diff_item['filename'])
+                differences.append(diff_item)
+
+        script_src_dir = os.path.join(self.base_dir(theme_name), 'scripts')
+        if os.path.exists(script_src_dir):
+            script_dest_dir = os.path.join(settings.MEDIA_ROOT, 'scripts', 'theme')
+            if not os.path.exists(script_dest_dir):
+                os.mkdir(script_dest_dir)
+            for diff_item in self.get_directory_differences(script_src_dir, script_dest_dir):
+                diff_item['filename'] = os.path.join('scripts', 'theme', diff_item['filename'])
+                diff_item['dest_url'] = os.path.join('/media', diff_item['filename'])
+                differences.append(diff_item)
+
+        return differences
 
     def load_theme(self, theme_name, **kwargs):
-    
+
         #   Create template overrides using data provided (our models handle versioning)
         if themes_settings.THEME_DEBUG: print 'Loading theme: %s' % theme_name
         for template_name in self.get_template_names(theme_name):
@@ -257,9 +431,9 @@ class ThemeController(object):
             template_file = open(template_filename, 'r')
             to.content = template_file.read()
             
-            #   Add an HTML comment indicating theme type to the main.html override (for tests)
+            #   Add a Django template comment tag indicating theme type to the main.html override (for tests)
             if to.name == 'main.html':
-                to.content = ('<!-- Theme: %s -->' % theme_name) + to.content
+                to.content += ('\n{%% comment %%} Theme: %s {%% endcomment %%}\n' % theme_name)
             
             #   print 'Template override %s contents: \n%s' % (to.name, to.content)
             to.save()
@@ -281,10 +455,17 @@ class ThemeController(object):
             script_dest_dir = os.path.join(settings.MEDIA_ROOT, 'scripts', 'theme')
             distutils.dir_util.copy_tree(script_src_dir, script_dest_dir)
 
+        #   If files need to be restored, copy them back to the desired locations.
+        if kwargs.get('backup_info', None) is not None:
+            self.restore_files(settings.MEDIA_ROOT, kwargs['backup_info'])
+
         Tag.setTag('current_theme_name', value=theme_name)
         Tag.setTag('current_theme_params', value='{}')
         Tag.unSetTag('current_theme_palette')
-        Tag.unSetTag('prev_theme_customization')
+        self.unset_current_customization()
+
+        #   Clear the Varnish cache
+        varnish.purge_all()
 
     def customize_theme(self, vars):
         if themes_settings.THEME_DEBUG: print 'Customizing theme with variables: %s' % vars
@@ -297,6 +478,9 @@ class ThemeController(object):
                 vars_diff[key] = vars[key]
         if themes_settings.THEME_DEBUG: print 'Customized %d variables for theme %s' % (len(vars_diff), self.get_current_theme())
         Tag.setTag('current_theme_params', value=json.dumps(vars_diff))
+
+        #   Clear the Varnish cache
+        varnish.purge_all()
 
     ##  Customizations - stored as LESS files with modified variables only; palette is included
 
@@ -343,6 +527,8 @@ class ThemeController(object):
         palette = []
         for match in re.findall(r'palette:(#?\w+?);', data):
             palette.append(match)
+
+        self.set_current_customization(save_name)
 
         if themes_settings.THEME_DEBUG: print (vars, palette)
         return (vars, palette)

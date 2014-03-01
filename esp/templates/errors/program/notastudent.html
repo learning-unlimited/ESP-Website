@@ -8,16 +8,20 @@
 
 <h1>{{prog.niceName }} Student Registration&mdash; Error</h1>
 
+{% load render_qsd %}
+{% inline_program_qsd_block prog "notastudent_error" %}
+
+
 <p>
 The user account is not a student.
 <br />
-Please note: Parents should create user for <em>each</em> child. This allows us to accurately determine which students are in which classes.
+Please note: <em>Each</em> child should create a separate account for her-/himself. This allows us to accurately determine which students are in which classes.
 <br />
 <br />
 <a href="/myesp/signout/?redirect=/myesp/register/&role=Student" title="Create a student account!">Click here to create a new account for an ESP Student!</a>
 
 </p>
 
-
+{% end_inline_program_qsd_block %}
 
 {% endblock %}

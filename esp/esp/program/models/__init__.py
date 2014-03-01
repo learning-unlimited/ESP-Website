@@ -43,6 +43,7 @@ from django.conf import settings
 from django.contrib.auth.models import User, AnonymousUser
 from django.contrib.contenttypes import generic
 from django.contrib.localflavor.us.models import PhoneNumberField
+from django.core import urlresolvers
 from django.core.cache import cache
 from django.db import models
 from django.db.models import Count
@@ -59,6 +60,7 @@ from esp.middleware import ESPError, AjaxError
 from esp.tagdict.models import Tag
 from esp.users.models import ContactInfo, StudentInfo, TeacherInfo, EducatorInfo, GuardianInfo, ESPUser, shirt_sizes, shirt_types, Record
 from esp.utils.expirable_model import ExpirableModel
+from esp.utils.formats import format_lazy
 from esp.qsdmedia.models import Media
 
 
@@ -282,13 +284,26 @@ class Program(models.Model, CustomFormsLinkModel):
     grade_min = models.IntegerField()
     grade_max = models.IntegerField()
     director_email = models.EmailField() # director contact email address used for from field and display
-    director_cc_email = models.EmailField(blank=True, default='', help_text='If set, automated outgoing mail from ESP-Website (except class cancellations) will be sent to this address instead') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
-    director_confidential_email = models.EmailField(blank=True, default='', help_text='If set, confidential emails such as financial aid applications will be sent to this address instead')
+    director_cc_email = models.EmailField(blank=True, default='', help_text='If set, automated outgoing mail (except class cancellations) will be sent to this address instead of the director email. Use this if you do not want to spam the director email with teacher class registration emails. Otherwise, leave this field blank.') # "carbon-copy" address for most automated outgoing mail to or CC'd to directors (except class cancellations)
+    director_confidential_email = models.EmailField(blank=True, default='', help_text='If set, confidential emails such as financial aid applications will be sent to this address instead of the director email.')
     program_size_max = models.IntegerField(null=True)
     program_allow_waitlist = models.BooleanField(default=False)
-    program_modules = models.ManyToManyField(ProgramModule)
+    program_modules = models.ManyToManyField(ProgramModule,
+                         help_text='The set of enabled program functionalities. See ' +
+                         '<a href="https://github.com/learning-unlimited/ESP-Website/blob/main/docs/admin/program_modules.rst">' +
+                         'the documentation</a> for details.')
     class_categories = models.ManyToManyField('ClassCategories')
-    
+
+    #so we don't have to delete old ones and don't end up with
+    # 3 seemingly-identical flags in the same program.
+    flag_types = models.ManyToManyField('ClassFlagType',
+                    blank=True,
+                    help_text=format_lazy(
+                    'The set of flags that can be used ' +
+                    'to tag classes for this program. ' +
+                    'Add flag types in <a href="%s">the admin panel</a>.',
+                    urlresolvers.reverse_lazy('admin:program_classflagtype_changelist')))
+
     documents = generic.GenericRelation(Media, content_type_field='owner_type', object_id_field='owner_id')
 
     class Meta:
@@ -300,16 +315,15 @@ class Program(models.Model, CustomFormsLinkModel):
     USER_TYPE_LIST_NUM_FUNCS    = ['num_'+user_type for user_type in USER_TYPE_LIST_FUNCS]  # the names of the num methods, e.g. num_students(), num_teachers()
     USER_TYPE_LIST_DESC_FUNCS   = [user_type.lower()+'Desc' for user_type in USER_TYPES_WITH_LIST_FUNCS]    # the names of the description methods, e.g. studentDesc(), teacherDesc()
 
-    def __init__(self, *args, **kwargs):
-        super(Program, self).__init__(*args, **kwargs)
-        self.setup_user_filters()
-
-    def setup_user_filters(self):
-        # Setup for the ProgramModule user filters
-        if not hasattr(Program, Program.USER_TYPE_LIST_FUNCS[0]):
-            for i, user_type in enumerate(Program.USER_TYPE_LIST_FUNCS):
-                setattr(Program, user_type, Program.get_users_from_module(user_type))
-                setattr(Program, Program.USER_TYPE_LIST_NUM_FUNCS[i], Program.counts_from_query_dict(getattr(Program, user_type)))
+    @classmethod
+    def setup_user_filters(cls):
+        """
+        Setup for the ProgramModule user filters
+        """
+        if not hasattr(cls, cls.USER_TYPE_LIST_FUNCS[0]):
+            for i, user_type in enumerate(cls.USER_TYPE_LIST_FUNCS):
+                setattr(cls, user_type, cls.get_users_from_module(user_type))
+                setattr(cls, cls.USER_TYPE_LIST_NUM_FUNCS[i], cls.counts_from_query_dict(getattr(cls, user_type)))
 
     @cache_function
     def isUsingStudentApps(self):
@@ -571,6 +585,12 @@ class Program(models.Model, CustomFormsLinkModel):
     isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
     isFull.depend_on_row(lambda: Record, lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
 
+    @cache_function
+    def open_class_registration(self):
+        return self.getModuleExtension('ClassRegModuleInfo').open_class_registration
+    open_class_registration.depend_on_row(lambda: ClassRegModuleInfo, lambda crmi: {'self': crmi.get_program()})
+    open_class_registration = property(open_class_registration)
+
     @property
     def open_class_category(self):
         """Return the name of the open class category, as determined by the program tag.
@@ -743,19 +763,24 @@ class Program(models.Model, CustomFormsLinkModel):
         return result
     
     def date_range(self):
+        """ Returns string range from earliest timeslot to latest timeslot, or NoneType if no timeslots set """
         dates = self.getTimeSlots()
-        d1 = min(dates).start
-        d2 = max(dates).end
-        if d1.year == d2.year:
-            if d1.month == d2.month:
-                if d1.day == d2.day:
-                    return '%s' % d1.strftime('%b. %d, %Y')
+
+        if dates:
+            d1 = min(dates).start
+            d2 = max(dates).end
+            if d1.year == d2.year:
+                if d1.month == d2.month:
+                    if d1.day == d2.day:
+                        return '%s' % d1.strftime('%b. %d, %Y')
+                    else:
+                        return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
                 else:
-                    return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%d, %Y'))
+                    return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
             else:
-                return '%s - %s' % (d1.strftime('%b. %d'), d2.strftime('%b. %d, %Y'))
+                return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
         else:
-            return '%s - %s' % (d1.strftime('%b. %d, %Y'), d2.strftime('%b. %d, %Y'))
+            return None
 
     def getResourceTypes(self, include_classroom=False, include_global=None):
         #   Show all resources pertaining to the program that aren't these two hidden ones.
@@ -891,6 +916,29 @@ class Program(models.Model, CustomFormsLinkModel):
         return modules
 
     @cache_function
+    def hasModule(self, name):
+        """ Tests whether a program has the given module enabled, cachedly. name should be a module name, like 'AvailabilityModule'. """
+        return self.program_modules.filter(handler=name).exists()
+    hasModule.depend_on_row(lambda: Program, lambda prog: {'self': prog})
+    hasModule.depend_on_model(lambda: ProgramModule)
+    hasModule.depend_on_row(lambda: ProgramModuleObj, lambda module: {'self': module.program})
+    hasModule.depend_on_m2m(lambda: Program, 'program_modules', lambda program, module: {'self': program})
+
+    @cache_function
+    def getModule(self, name):
+        """ Returns the specified module for this program if it is enabled.
+            'name' should be a module name like 'AvailabilityModule'. """
+
+        if self.hasModule(name):
+            #   Sometimes there are multiple modules with the same handler.
+            #   This function is not choosy, since the return value
+            #   is typically used just to access a view function.
+            return ProgramModuleObj.getFromProgModule(self, self.program_modules.filter(handler=name)[0])
+        else:
+            return None
+    getModule.depend_on_cache(lambda: Program.hasModule, lambda self=wildcard, name=wildcard, **kwargs: {'self': self, 'name': name})
+
+    @cache_function
     def getModuleViews(self, main_only=False, tl=None):
         modules = self.getModules_cached(tl)
         result = {}
@@ -1008,18 +1056,22 @@ class Program(models.Model, CustomFormsLinkModel):
 
     @cache_function
     def incrementGrade(self): 
-        incrementTag = Tag.getProgramTag('increment_default_grade_levels', self)
-        if incrementTag: 
-            return 1
-        return 0
+        return int(Tag.getBooleanTag('increment_default_grade_levels', self, False))
     incrementGrade.depend_on_row(lambda: Tag, lambda tag: {'self' :  tag.target})
     
     def priorityLimit(self):
         studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
-        if studentregmodule and studentregmodule.use_priority and studentregmodule.priority_limit > 0:
+        if studentregmodule and studentregmodule.priority_limit > 0:
             return studentregmodule.priority_limit
         else: 
             return 1
+    
+    def useGradeRangeExceptions(self):
+        studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
+        if studentregmodule:
+            return studentregmodule.use_grade_range_exceptions
+        else:
+            return False
     
     def getDirectorCCEmail(self):
         if self.director_cc_email:
@@ -1075,6 +1127,8 @@ class Program(models.Model, CustomFormsLinkModel):
             return self._splashinfo_objects
         self._splashinfo_objects = dict(SplashInfo.objects.filter(program=self, siblingdiscount=True).distinct().values_list('student', 'siblingdiscount'))
         return self._splashinfo_objects
+
+Program.setup_user_filters()
 
 
 class SplashInfo(models.Model):
@@ -1166,12 +1220,12 @@ class SplashInfo(models.Model):
         #   Save accounting information
         iac = IndividualAccountingController(self.program, self.student)
 
-        if self.lunchsat == 'no':
+        if not self.lunchsat or self.lunchsat == 'no':
             iac.set_preference('Saturday Lunch', 0)
         elif 'lunchsat' in cost_info:
             iac.set_preference('Saturday Lunch', 1, cost_info['lunchsat'][self.lunchsat])
 
-        if self.lunchsun == 'no':
+        if not self.lunchsun or self.lunchsun == 'no':
             iac.set_preference('Sunday Lunch', 0)
         elif 'lunchsun' in cost_info:
             iac.set_preference('Sunday Lunch', 1, cost_info['lunchsun'][self.lunchsun])
@@ -1247,7 +1301,7 @@ class RegistrationProfile(models.Model):
 
     def cancelStudentRegConfirmation(self, user):
         """ Cancel the registration confirmation for the specified student """
-        raise ESPError(), "Error: You can't cancel a registration confirmation!  Confirmations are final!"
+        raise ESPError("Error: You can't cancel a registration confirmation!  Confirmations are final!")
         
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
@@ -1445,6 +1499,9 @@ class BooleanToken(models.Model):
     text = models.TextField(help_text='Boolean value, or text needed to compute it', default='', blank=True)
     seq = models.IntegerField(help_text='Location of this token on the expression stack (larger numbers are higher)', default=0)
 
+    class Meta:
+        app_label = 'program'
+
     def get_expr(self):
         return self.exp.subclass_instance()
     #   Renamed to expr to avoid conflicting with Django SQL evaluator "expression"
@@ -1505,6 +1562,10 @@ class BooleanExpression(models.Model):
         Arbitrary arguments can be supplied to the evaluate function in order
         to help subclassed tokens do their thing.
     """
+
+    class Meta:
+        app_label = 'program'
+
     label = models.CharField(max_length=80, help_text='Description of the expression')
 
     def __unicode__(self):
@@ -1613,6 +1674,9 @@ class ScheduleConstraint(models.Model):
     requirement = models.ForeignKey(BooleanExpression, related_name='requirement_constraint')
     #   This is a function of one argument, schedule_map, which returns an updated schedule_map.
     on_failure = models.TextField()
+
+    class Meta:
+        app_label = 'program'
     
     def __unicode__(self):
         return '%s: "%s" requires "%s"' % (self.program.niceName(), unicode(self.condition), unicode(self.requirement))
@@ -1646,7 +1710,7 @@ class ScheduleConstraint(models.Model):
             result = _f(self.schedule_map)
             return result
         except Exception, inst:
-            #   raise ESPError(False), 'Schedule constraint handler error: %s' % inst
+            #   raise ESPError('Schedule constraint handler error: %s' % inst, log=False)
             pass
         #   If we got nothing from the on_failure function, just provide Nones.
         return (None, None)
@@ -1658,10 +1722,16 @@ class ScheduleTestTimeblock(BooleanToken):
     """
     timeblock = models.ForeignKey(Event, help_text='The timeblock that this schedule test pertains to')
 
+    class Meta:
+        app_label = 'program'
+
 class ScheduleTestOccupied(ScheduleTestTimeblock):
     """ Boolean value testing: Does the schedule contain at least one
         section at the specified time?
     """
+    class Meta:
+        app_label = 'program'
+
     def boolean_value(self, *args, **kwargs):
         timeblock_id = self.timeblock.id
         user_schedule = kwargs['map']
@@ -1683,12 +1753,19 @@ class ScheduleTestCategory(ScheduleTestTimeblock):
                 if sec.category == self.category:
                     return True
         return False
+
+    class Meta:
+        app_label = 'program'
             
 class ScheduleTestSectionList(ScheduleTestTimeblock):
     """ Boolean value testing: Does the schedule contain one of the specified
         sections at the specified time?
     """
     section_ids = models.TextField(help_text='A comma separated list of ClassSection IDs that can be selected for this timeblock')
+
+    class Meta:
+        app_label = 'program'
+    
     def boolean_value(self, *args, **kwargs):
         timeblock_id = self.timeblock.id
         user_schedule = kwargs['map']
@@ -1721,6 +1798,9 @@ class VolunteerRequest(models.Model):
     program = models.ForeignKey(Program)
     timeslot = models.ForeignKey('cal.Event')
     num_volunteers = models.PositiveIntegerField()
+
+    class Meta:
+        app_label = 'program'
     
     def num_offers(self):
         return self.volunteeroffer_set.count()
@@ -1747,6 +1827,9 @@ class VolunteerOffer(models.Model):
     shirt_type = models.CharField(max_length=20, blank=True, choices=shirt_types, null=True)
     
     comments = models.TextField(blank=True, null=True)
+
+    class Meta:
+        app_label = 'program'
     
     def __unicode__(self):
         return u'%s (%s, %s) for %s' % (self.name, self.email, self.phone, self.request)
@@ -1782,6 +1865,7 @@ class RegistrationType(models.Model):
     
     class Meta:
         unique_together = (("name", "category"),)
+        app_label = 'program'
     
     @cache_function
     def get_cached(name, category):
@@ -1795,7 +1879,7 @@ class RegistrationType(models.Model):
         #   If 'include' is specified, make sure we have keys named in that list
         if include:
             if not isinstance(category, str):
-                raise ESPError(True), 'Need to supply category to RegistrationType.get_map() when passing include arguments'
+                raise ESPError('Need to supply category to RegistrationType.get_map() when passing include arguments', log=True)
             for name in include:
                 type, created = RegistrationType.objects.get_or_create(name=name, category=category)
         
@@ -1821,6 +1905,9 @@ class StudentRegistration(ExpirableModel):
     section = AjaxForeignKey('ClassSection')
     user = AjaxForeignKey(ESPUser)
     relationship = models.ForeignKey(RegistrationType)
+
+    class Meta:
+        app_label = 'program'
     
     def __unicode__(self):
         return u'%s %s in %s' % (self.user, self.relationship, self.section)
@@ -1832,11 +1919,15 @@ class StudentSubjectInterest(ExpirableModel):
     subject = AjaxForeignKey('ClassSubject')
     user = AjaxForeignKey(ESPUser)
 
+    class Meta:
+        app_label = 'program'
+
     def __unicode__(self):
         return u'%s interest in %s' % (self.user, self.subject)
     
 from esp.program.models.class_ import *
 from esp.program.models.app_ import *
+from esp.program.models.flags import *
 
 # The following are only so that we can refer to them in caching Program.getModules.
 from esp.program.modules.base import ProgramModuleObj

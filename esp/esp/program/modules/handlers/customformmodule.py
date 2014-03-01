@@ -79,13 +79,13 @@ class CustomFormModule(ProgramModuleObj):
         return Record.objects.filter(user=get_current_request().user, program=self.program, event=self.event).exists()
 
     @main_call
+    @usercheck_usetl
     def extraform(self, request, tl, one, two, module, extra, prog):
-    
         custom_form_id = Tag.getProgramTag('%s_extraform_id' % tl, prog, None)
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
         else:
-            raise ESPError(False), 'Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the %s_extraform_id Tag.' % tl
+            raise ESPError('Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the %s_extraform_id Tag.' % tl, log=False)
         
         form_wizard = FormHandler(cf, request, request.user).get_wizard()
         form_wizard.curr_request = request
@@ -119,7 +119,7 @@ class CustomFormModule(ProgramModuleObj):
             
             form = form_wizard.get_form(0)
             
-        return render_to_response(self.baseDir()+'custom_form.html', request, {'prog':prog, 'form': form, 'tl':tl})
+        return render_to_response(self.baseDir()+'custom_form.html', request, {'prog':prog, 'form': form, 'qsd_name': tl+':customform_header'})
     
     class Meta:
         abstract = True

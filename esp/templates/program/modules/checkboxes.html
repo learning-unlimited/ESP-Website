@@ -1,7 +1,7 @@
 {% load render_qsd %}
 
 <div class="row-fluid">
-<div class="span6 offset1">
+<div class="span10 offset1">
 <table class="table table-condensed" align="center" width="400">
 <tr class="well"><th>Steps for Registration</th><th>Done?</th></tr>
 {% for module in modules %}
@@ -24,9 +24,9 @@
 <a href="#module-{{ module.id }}">
 {% endif %}
 {% if module.isCompleted %}
-    <i class="icon-ok"></i>
+    <i class="icon-ok icon-green"></i>
 {% else %}
-    <i class="icon-remove"></i>
+    <i class="icon-remove icon-red"></i>
 {% endif %}
 </a>
 
@@ -37,9 +37,8 @@
 
 </table>
 
-{% inline_qsd_block "learn:extra_steps" request.user %}
-{% end_inline_qsd_block %}
+</div>
+</div>
 
-</div>
-</div>
+{% render_inline_program_qsd program extra_steps %}
 

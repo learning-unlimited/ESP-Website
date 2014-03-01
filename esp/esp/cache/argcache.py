@@ -169,6 +169,7 @@ class ArgCache(WithDelayableMethods):
     """ Implements a cache that allows for selectively dropping bits of itself. """
 
     __metaclass__ = ParametrizedSingleton
+    CACHE_NONE = {} # we could use a garbage string for this, but it's impossible to collide with the id of a dict.
 
     @staticmethod
     def check_for_instance(name, params, uid=None, *args, **kwargs):
@@ -178,7 +179,7 @@ class ArgCache(WithDelayableMethods):
         existing = cache_by_uid(uid)
         if existing:
             if tuple(existing.params) != tuple(params):
-                raise ESPError(), ("Cache %s already exists with different parameters." % name)
+                raise ESPError("Cache %s already exists with different parameters." % name)
             # Don't duplicate dependencies
             existing.locked = True
         return existing
@@ -263,7 +264,7 @@ class ArgCache(WithDelayableMethods):
             # don't do anything if we already have an id
             return param
         if not self.param_dict.has_key(param):
-            raise ESPError(), 'Cache %s (params %s) error: %s is not a valid argument' % (self.name, self.param_dict, param)
+            raise ESPError('Cache %s (params %s) error: %s is not a valid argument' % (self.name, self.param_dict, param))
         return self.param_dict[param]
 
     def delete_all(self):
@@ -325,10 +326,10 @@ class ArgCache(WithDelayableMethods):
             if token.contains(key_set):
                 return token
 
-    def get(self, arg_list):
+    def get(self, arg_list, default=None):
         """ Get the value of the cache at arg_list (which can be a tuple). """
         if self.disabled:
-            return None
+            return default
 
         key = self.key(arg_list)
 
@@ -337,10 +338,10 @@ class ArgCache(WithDelayableMethods):
 
         # extract values
         ans_dict = self.cache.get_many(keys_to_get)
-        wrapped_value = ans_dict.get(key, None)
-        if wrapped_value is None:
+        wrapped_value = ans_dict.get(key, self.CACHE_NONE)
+        if wrapped_value is self.CACHE_NONE:
             self._miss_hook(arg_list)
-            return None
+            return default
         
         try:
             # check tokens
@@ -348,15 +349,15 @@ class ArgCache(WithDelayableMethods):
                 # shhhh... that value wasn't really there
                 self.cache.delete(key)
                 self._miss_hook(arg_list)
-                return None
+                return default
             for tvalue, tkey in zip(wrapped_value[1:], keys_to_get[1:]):
-                saved_value = ans_dict.get(tkey, None)
+                saved_value = ans_dict.get(tkey, self.CACHE_NONE)
                 # token mismatch!
-                if not saved_value or saved_value != tvalue:
+                if saved_value is self.CACHE_NONE or saved_value != tvalue:
                     # shhhh... that value wasn't really there
                     self.cache.delete(key)
                     self._miss_hook(arg_list)
-                    return None
+                    return default
 
             # okay, it's good
             self._hit_hook(arg_list)
@@ -364,7 +365,7 @@ class ArgCache(WithDelayableMethods):
 
         except Exception: # Don't die on errors, e.g. if wrapped_value is not a tuple/list
             self._miss_hook(arg_list)
-            return None
+            return default
 
     def set(self, arg_list, value, timeout_seconds=None):
         """ Set the value of the cache at arg_list (which can be a tuple). """
@@ -434,7 +435,7 @@ class ArgCache(WithDelayableMethods):
 
     def has_key(self, arg_list):
         """ Returns true if arg_list is cached. """
-        return self.get(arg_list) is not None
+        return self.get(arg_list,default=self.CACHE_NONE) is not self.CACHE_NONE
 
     def is_arg_list(self, key_set):
         """ Does this key_set specify everything? """
@@ -494,7 +495,7 @@ class ArgCache(WithDelayableMethods):
             return
         Model = handle_thunk(Model)
         if Model is None:
-            raise ESPError(), "Attempting to depend on Model None... this is a pretty dumb thing to do."
+            raise ESPError("Attempting to depend on Model None... this is a pretty dumb thing to do.")
         if filter is None:
             filter = lambda instance: True
         if isinstance(selector, str):
@@ -619,9 +620,9 @@ class ArgCacheDecorator(ArgCache):
         name = describe_func(func) + extra_name
         uid = get_uid(func) + extra_name
         if self.argspec[1] is not None:
-            raise ESPError(), "ArgCache does not support varargs."
+            raise ESPError("ArgCache does not support varargs.")
         if self.argspec[2] is not None:
-            raise ESPError(), "ArgCache does not support keywords."
+            raise ESPError("ArgCache does not support keywords.")
 
         super(ArgCacheDecorator, self).__init__(name=name, params=params, uid=uid, *args, **kwargs)
 
@@ -637,12 +638,14 @@ class ArgCacheDecorator(ArgCache):
 
         if use_cache:
             arg_list = self.arg_list_from(args, kwargs)
-            retVal = self.get(arg_list)
+            retVal = self.get(arg_list, default=self.CACHE_NONE)
 
-            if retVal is not None:
+            if retVal is not self.CACHE_NONE:
                 return retVal
 
-            if not cache_only:
+            if cache_only:
+                retVal = None
+            else:
                 retVal = self.func(*args, **kwargs)
                 self.set(arg_list, retVal)
         else:

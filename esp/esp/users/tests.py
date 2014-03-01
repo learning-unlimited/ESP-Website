@@ -1,17 +1,23 @@
-from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
+import datetime
+
+from model_mommy import mommy
+
 from django import forms
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission
-from esp.users.forms.user_reg import ValidHostEmailField
-from esp.program.tests import ProgramFrameworkTest
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import Group
-from esp.middleware import ESPError
-from esp.users.views import make_user_admin
 from django.core import mail
+from django.test.client import Client
+
+from esp.middleware import ESPError
 from esp.program.models import RegistrationProfile, Program
-import datetime
-import esp.users.views as views
+from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
+from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
+from esp.users.forms.user_reg import ValidHostEmailField
+from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission
+from esp.users.views import make_user_admin
+
+import esp.users.views as views
 
 class ESPUserTest(TestCase):
     def setUp(self):
@@ -411,5 +417,83 @@ class AccountCreationTest(TestCase):
         match = re.search("\?username=(?P<user>[^&]*)&key=(?P<key>\d+)",mail.outbox[0].body)
         self.assertEqual(match.group("user"),u.username)
         self.assertEqual(match.group("key"),u.password.rsplit("_")[-1])
-        
 
+from esp.users.models import GradeChangeRequest
+
+
+class TestChangeRequestModel(TestCase):
+
+    def _create_change_request(self):
+        change_request = mommy.make(GradeChangeRequest)
+        student = change_request.requesting_student
+        student.first_name = 'bob'
+        student.last_name = 'dobbs'
+        student.save()
+        return change_request
+
+    def test_acknowledged_time_set(self):
+        """ Tests assignment of current time to acknowledged_time when 
+        request approval flag is set"""        
+        change_request = self._create_change_request()
+        self.assertIsNone(change_request.acknowledged_time)
+
+        change_request.approved = True
+        change_request.save()
+
+        self.assertIsInstance(change_request.acknowledged_time,datetime.datetime)
+
+    def test_acknowledged_time_not_set(self):
+        """ Tests acknowledged_time not set if approved is None """
+        change_request = self._create_change_request()
+        change_request.acknowledged_time = None
+        change_request.approved = None
+        change_request.save()
+
+        self.assertIsNone(change_request.acknowledged_time)
+
+    def test_confirmation_email_content(self):
+        """Verifies content in confirmation email"""
+        change_request = self._create_change_request()   
+        student = change_request.requesting_student
+        subject, message  = change_request._confirmation_email_content()
+
+        self.assertIn(student.first_name,message)
+        self.assertIn(student.last_name,message)
+        self.assertIn('Grade Change Request Update', subject)
+
+
+    def test_request_email_content(self):
+        """Verifies content in request email"""
+        change_request = self._create_change_request()   
+        student = change_request.requesting_student
+        subject, message  = change_request._request_email_content()
+
+        self.assertIn(student.first_name,message)
+        self.assertIn(student.last_name,message)
+        self.assertIn(student.name(),subject)
+
+
+class TestChangeRequestView(TestCase):
+
+    def setUp(self):
+        import random
+
+        """ Set up a bunch of user accounts to play with """
+        self.password = "pass1234"
+        
+        #   May fail once in a while, but it's not critical.
+        self.unique_name = 'Test_UNIQUE%06d' % random.randint(0, 999999)
+        self.user, created = ESPUser.objects.get_or_create(first_name=self.unique_name, last_name="User", username="testuser123543", email="server@esp.mit.edu")
+        if created:
+            self.user.set_password(self.password)
+            self.user.save()
+
+    def test_send_request_view_submission_invalid(self):
+        c = Client()
+        c.login(username=self.user.username, password=self.password)
+
+        # Try searching by ID
+        response = c.post("/myesp/grade_change_request", { "reason": '', 'claimed_grade': 483 })
+
+        self.assertFormError(response, 'form', 'reason', 'This field is required.')
+        self.assertFormError(response, 'form', 'claimed_grade', 'Value 483 is not a valid choice.')

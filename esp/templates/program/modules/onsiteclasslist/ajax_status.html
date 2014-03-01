@@ -3,11 +3,11 @@
 <title>Live Registration Status</title>
 <script type="text/javascript" src="/media/scripts/jquery.js"></script>
 <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.8.9/jquery-ui.js"></script>
+<script type="text/javascript" src="/media/scripts/common.js"></script>
 <script type="text/javascript">
-    $j = $.noConflict();
     $j(document).ready(function() {
-        $j.getScript("/media/scripts/csrf_init.js");
-        $j.getScript("/media/scripts/csrf_check.js");
+        $j.getScriptWithCaching("/media/scripts/csrf_init.js");
+        $j.getScriptWithCaching("/media/scripts/csrf_check.js");
     });
     function set_compact_classes() {
     }
@@ -48,7 +48,7 @@
     <div><input type="checkbox" id="hide_full_control" checked="checked"/>Show full classes</div>
     <div><input type="checkbox" id="override_control"/>Override size limits</div>
     <div><input type="checkbox" id="grade_limits_control"/>Show classes outside student's grade range</div>
-    <div><input type="checkbox" id="compact_classes"/>Display only class numbers</div>
+    <div><input type="checkbox" id="compact_classes" checked="checked" />Display only class numbers</div>
     <div><input type="checkbox" id="show_closed_reg"/>Show sections that are closed to registration</div>
     </div>
 </td>
@@ -84,3 +84,4 @@
 <a name="settings" />
 
 </body>
+</html>

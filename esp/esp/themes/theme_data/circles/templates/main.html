@@ -1,0 +1,148 @@
+{% extends "elements/html" %}
+
+{% block fulltitle %}{{ theme.titlebar_prefix }} - {% block title %}Home{% endblock %}{% endblock %}
+
+{% block javascript %}
+    {{ block.super }}
+    <script type="text/javascript" src="/media/scripts/match_heights.js"></script>
+    <script type="text/javascript">
+    match_content = function () {
+        match_heights(['chicago_main', 'navbar']);
+    };
+    $j(document).ready(function() {
+        window.setTimeout(function() {
+            match_content();
+        });
+    });
+    </script>
+{% endblock %}
+
+{% block body %}
+
+<div id="content">
+<div id="topleft"><a href="/"><img src="/media/images/theme/splogo.gif" alt="{{ theme.titlebar_prefix }}" /></a></div>
+
+<div id="nav_buttons">
+<div id="nav_button_spacer" class="nav_button_spacer">&nbsp;</div>
+<a href="/learn/index.html">
+<div id="nav_button_learn" class="nav_button">
+  <svg width="141" height="180">
+    <defs>
+      <mask id="nav_button_learn_mask">
+        <rect width="100%" height="100%" class="nav_button_mask" />
+        <circle cx="70" cy="90" r="55" class="nav_button_circle" />
+        <text transform="rotate(10, 70, 90)" x="70" y="99" class="nav_button_text">LEARN</text>
+      </mask>
+    </defs>
+    <rect width="100%" height="100%" mask="url(#nav_button_learn_mask)" class="nav_button_rect" />
+  </svg>
+</div>
+</a>
+
+<a href="/teach/index.html">
+<div id="nav_button_teach" class="nav_button">
+  <svg width="141" height="180">
+    <defs>
+      <mask id="nav_button_teach_mask">
+        <rect width="100%" height="100%" class="nav_button_mask" />
+        <circle cx="70" cy="90" r="55" class="nav_button_circle" />
+        <text transform="rotate(-10, 70, 90)" x="70" y="99" class="nav_button_text">TEACH</text>
+      </mask>
+    </defs>
+    <rect width="100%" height="100%" mask="url(#nav_button_teach_mask)" class="nav_button_rect" />
+  </svg>
+</div>
+</a>
+
+<a href="/volunteer/index.html">
+<div id="nav_button_helpout" class="nav_button">
+  <svg width="141" height="180">
+    <defs>
+      <mask id="nav_button_helpout_mask">
+        <rect width="100%" height="100%" class="nav_button_mask" />
+        <circle cx="70" cy="90" r="55" class="nav_button_circle" />
+        <text transform="rotate(10, 70, 90)" x="70" y="87" class="nav_button_text">HELP</text>
+        <text transform="rotate(10, 70, 90)" x="70" y="117" class="nav_button_text">OUT</text>
+      </mask>
+    </defs>
+    <rect width="100%" height="100%" mask="url(#nav_button_helpout_mask)" class="nav_button_rect" />
+  </svg>
+</div>
+</a>
+
+<a href="/more_info/index.html">
+<div id="nav_button_moreinfo" class="nav_button">
+  <svg width="141" height="180">
+    <defs>
+      <mask id="nav_button_moreinfo_mask">
+        <rect width="100%" height="100%" class="nav_button_mask" />
+        <circle cx="70" cy="90" r="55" class="nav_button_circle" />
+        <text transform="rotate(-10, 70, 90)" x="70" y="85" class="nav_button_text">MORE</text>
+        <text transform="rotate(-10, 70, 90)" x="70" y="115" class="nav_button_text">INFO</text>
+      </mask>
+    </defs>
+    <rect width="100%" height="100%" mask="url(#nav_button_moreinfo_mask)" class="nav_button_rect" />
+  </svg>
+</div>
+</a>
+
+</div>
+
+<div id="navbar">
+
+<div id="navbar_header">RECENT NEWS</div>
+
+<div id="navbar_content">
+
+{% block loginbox %}
+{% include "users/loginbox.html" %}
+{% endblock %}
+
+<div class="admin hidden">
+<div id="usersearchform">
+<h3>Search for User</h3>
+<p>
+<form id="user_search_form" name="user_search_form" method="get" action="/manage/usersearch">
+<input class="usersearchbox" type="text" id="user_search_field" name="userstr" />
+<input class="usersearchbutton" type="submit" id="user_search_submit" name="search_submit" value="Find User"/>
+</form>
+</p>
+</div>
+
+<a href="/admin/miniblog/entry/">Edit Links</a>
+</div>
+
+{% load preview %}
+{% miniblog_for_user None as announcements 6 %}
+
+{% load markup %}
+{% for announce in announcements.announcementList %}
+<p>
+<span class="announcementlink_title{% if announce.section %} {{ announce.section }}{% endif %}">{{ announce.makeTitle }}</span><br />
+<span class="announcementlink prettify">{% autoescape off %}{{ announce.content|markdown }}{% endautoescape %}</span>
+</p>
+{% endfor %}
+
+<!-- more announcements -->
+{% if announcements.overflowed %}
+<div id="divannouncemore">
+  <a href="/myesp/home/">More Notices...</a>
+</div>
+{% endif %}
+
+</div>
+</div>
+
+<div id="chicago_main">
+
+<div id="chicago_main_header">{% block welcome_message %}<!-- CSS2 doesn't allow vertical alignment without a table.  So, give it a table. --><table width="600px" height="30px"><tr><td valign="middle">{{ theme.welcome_message }}</td></tr></table>{% endblock %}</div>
+
+<div id="chicago_main_content">{% block content %}{% endblock %}</div>
+
+<div id="footer">{% block footer %}{% endblock %}</div>
+
+</div>
+
+</div>
+{% endblock %}
+

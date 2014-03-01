@@ -39,7 +39,7 @@ class ThemesTest(TestCase):
         """ Check that the ThemeController says we have the themes we expect to have. """
         
         tc = ThemeController()
-        names_ref = ['generic1', 'generic2', 'chicago', 'mit']
+        names_ref = ['barebones', 'circles', 'floaty', 'fruitsalad']
         names_tc = tc.get_theme_names()
         self.assertEqual(set(names_ref), set(names_tc))
 
@@ -96,9 +96,13 @@ class ThemesTest(TestCase):
             #   Supply more settings if the theme asks for them.
             if '<form id="theme_setup_form"' in response.content:
                 field_matches = re.findall(r'<(input type="\S+"|textarea).*?name="(\S+)".*?>', response.content, flags=re.DOTALL)
+                #   This is the union of all the theme configuration settings that
+                #   have a non-trivial form (e.g. key = value fails validation).
                 settings_dict = {
                     'theme': theme_name,
                     'just_selected': 'True',
+                    'front_page_style': 'bubblesfront.html',
+                    'facebook_link': 'http://somehost.net',
                     'nav_structure': '[{"header": "header", "header_link": "/header_link/", "links": [{"link": "link1", "text": "text1"}]}]',
                 }
                 for entry in field_matches:

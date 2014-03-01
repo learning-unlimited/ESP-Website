@@ -56,8 +56,18 @@ function fill_class_popup(clsid, classes_data) {
   var status_details = getStatusDetails(class_info.status);
   var status_string = status_details['text'];
 
+  var sections_list = $j('<ul>')
+  for (var i = 0; i < class_info.sections.length; i++)
+  {
+    var sec = class_info.sections[i];
+    if (sec.time.length > 0)
+        sections_list.append($j('<li>').html(sec.time + " in " + sec.room + ": " + sec.num_students_priority + " priority, " + sec.num_students_interested + " interested, " + sec.num_students_enrolled + " enrolled"));
+    else
+        sections_list.append($j('<li>').html('Section ' + (i + 1) + ': not scheduled'));
+  }
+
   class_desc_popup
-    .dialog('option', 'title', class_info.title)
+    .dialog('option', 'title', class_info.emailcode + ": " +class_info.title)
     .dialog('option', 'width', 600)
     .dialog('option', 'height', 400)
     .dialog('option', 'position', 'center')
@@ -82,7 +92,9 @@ function fill_class_popup(clsid, classes_data) {
       }])
     .html('')
     .append("<p><b>Status:</b> " + status_string + "</p>")
+    .append("<p><b>Teachers:</b> " + class_info.teacher_names + "</p>")
     .append("<p><b>Sections:</b> " + class_info.sections.length + "</p>")
+    .append(sections_list)
     .append("<p><b>Max Size:</b> " + class_info.class_size_max + "</p>")
     .append("<p><b>Duration:</b> " + class_info.duration + "</p>")
     .append("<p><b>Location:</b> " + class_info.location + "</p>")
@@ -91,6 +103,9 @@ function fill_class_popup(clsid, classes_data) {
     //.append("<p>Difficulty: " + class_info.difficulty + "</p>")
     .append("<p><b>Prereqs:</b> " + class_info.prereqs + "</p>")
     .append("<p><b>Description:</b> " + class_info.class_info + "</p>")
+    .append("<p><b>Requests:</b> " + class_info.special_requests + "</p>")
+    .append("<p><b>Planned Purchases:</b> " + class_info.purchases + "</p>")
+    .append("<p><b>Comments:</b> " + class_info.comments + "</p>")
     .attr('clsid', clsid);
 }
 
@@ -99,9 +114,9 @@ function show_approve_class_popup(clsid) {
   show_loading_class_popup();
 
   // Load the class data and fill the popup using it
-  json_get('class_info', {'class_id': clsid},
+    json_get('class_admin_info', {'class_id': clsid},
     function(data) {
-       fill_class_popup(clsid, data);
+	fill_class_popup(clsid, data);
     },
     function(jqXHR, status, errorThrown) {
       if (errorThrown == "NOT FOUND") {
@@ -115,6 +130,7 @@ function show_approve_class_popup(clsid) {
         }]);
       }
     });
+
 }
 
 // status should be the status integer
@@ -204,11 +220,10 @@ function createClassRow(clsObj)
        </form> \
     </td> \
     <td class='clsmiddle'> \
-       <form method='post' action='/teach/{{ program.getUrlBase }}/editclass/{{ cls.id }}'> \
-         <input type='hidden' name='command' value='edit_class_{{ cls.id }}'> \
-         <input type='hidden' name='manage' value='manage'> \
-         <input class='button' type='submit' value='Edit'> \
-       </form> \
+      <a href='/manage/{{ program.getUrlBase }}/editclass/{{ cls.id }}' title='Edit {{ cls.title }}' \
+       class='abutton' style='white-space: nowrap;'> \
+        Edit \
+      </a> \
     </td> \
     <td class='clsmiddle'> \
       <a href='/manage/{{ program.getUrlBase }}/manageclass/{{ cls.id }}' title='Manage {{ cls.title }}' \
@@ -216,7 +231,7 @@ function createClassRow(clsObj)
         Manage \
       </a> \
     </td> \
-    <td class='clsmiddle rapid_approval_button' {{ rapid_approval_style }}> \
+    <td class='clsmiddle rapid_approval_button'> \
       <a href='#' title='Set the status of {{ cls.title }}' class='abutton' style='white-space: nowrap;' onclick='show_approve_class_popup({{ cls.id }}); return false;'> \
 	Status \
       </a> \
@@ -247,12 +262,6 @@ function createClassRow(clsObj)
 
     var status_details = getStatusDetails(clsObj.status);
 
-    var rapid_approval_style = "style='display:none;'";
-    if (use_rapid_approval)
-    {
-	rapid_approval_style = "";
-    }
-
     template = template.replace(new RegExp("{{ cls.id }}", "g"), clsObj.id)
 	.replace(new RegExp("{{ cls.title }}", "g"), class_title_trimmed)
 	.replace(new RegExp("{{ cls.emailcode }}", "g"), clsObj.emailcode)
@@ -260,8 +269,7 @@ function createClassRow(clsObj)
 	.replace(new RegExp("{{ section_links }}", "g"), section_link_list)
 	.replace(new RegExp("{{ program.getUrlBase }}", "g"), base_url)
 	.replace(new RegExp("{{ title_css_class }}", "g"), status_details.classes.join(" "))
-	.replace(new RegExp("{{ cls_status }}", "g"), status_details['text'])
-	.replace(new RegExp("{{ rapid_approval_style }}", "g"), rapid_approval_style);
+	.replace(new RegExp("{{ cls_status }}", "g"), status_details['text']);
 
     // Turn the template into a jQuery node
     $node = $j(template);

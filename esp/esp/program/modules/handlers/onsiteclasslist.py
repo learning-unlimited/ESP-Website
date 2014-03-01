@@ -42,7 +42,7 @@ from django.db.models.query import Q
 from django.http import HttpResponse
 from django.utils.safestring import mark_safe
 
-from esp.program.modules.base import ProgramModuleObj, needs_onsite, main_call, aux_call
+from esp.program.modules.base import ProgramModuleObj, needs_onsite, needs_student, main_call, aux_call
 from esp.program.models import ClassSubject, ClassSection, StudentRegistration, ScheduleMap
 from esp.web.util import render_to_response
 from esp.cal.models import Event
@@ -378,6 +378,14 @@ LIMIT 1
     @aux_call
     @needs_onsite
     def classList(self, request, tl, one, two, module, extra, prog):
+        return self.classList_base(request, tl, one, two, module, extra, prog, 'classlist.html')
+
+    @aux_call
+    @needs_student
+    def classlist_public(self, request, tl, one, two, module, extra, prog):
+        return self.classList_base(request, tl, one, two, module, extra, prog, 'allclass_fragment.html')
+
+    def classList_base(self, request, tl, one, two, module, extra, prog, template_name=None):
         """ Display a list of all classes that still have space in them """
         context = {}
         defaults = {'refresh': 120, 'scrollspeed': 1}

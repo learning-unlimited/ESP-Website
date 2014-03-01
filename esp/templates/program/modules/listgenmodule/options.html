@@ -15,10 +15,10 @@
 <h1>Generate Lists for {{program.niceName}}</h1>
 
 <p style="text-align: center">
-You can use this to get a list of users for a specific purpose.
+You have selected {{ num_users }} users.  Please go back to update your query, or select which information to display below.
 </p>
 
-<form action="{{ request.path }}?filterid={{ filterid }}" method="POST">
+<form action="/manage/{{ program.getUrlBase }}/generateList?filterid={{ filterid }}" class="form-inline" method="POST">
 <center>
 <table width="400" cellpadding="5">
 

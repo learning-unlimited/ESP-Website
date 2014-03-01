@@ -34,7 +34,7 @@ div .class_difficulty {
 div .class_teachers {
     text-align: center;
     width: 50%;
-    float: right;
+    overflow: auto;
 }
 
 div .class_content {

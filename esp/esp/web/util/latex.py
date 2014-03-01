@@ -147,13 +147,13 @@ def gen_latex(texcode, type='pdf', landscape=False):
         mime = 'image/png'
         subprocess.check_call(['latex'] + latex_options + ['%s.tex' % file_base], cwd=TEX_TEMP)
         subprocess.check_call(['dvips'] + dvips_options + ['%s.dvi' % file_base], cwd=TEX_TEMP)
-        subprocess.check_call(['convert', '-density', '96', '%s.ps' % file_base, '%s.png' % file_base], cwd=TEX_TEMP)
+        subprocess.check_call(['convert', '-density', '192', '%s.ps' % file_base, '%s.png' % file_base], cwd=TEX_TEMP)
         if remove_files:
             os.remove('%s.dvi' % file_base)
             os.remove('%s.ps' % file_base)
 
     else:
-        raise ESPError(), 'Invalid type received for latex generation: %s should be one of %s' % (type, file_types)
+        raise ESPError('Invalid type received for latex generation: %s should be one of %s' % (type, file_types))
     
     
     try:
@@ -180,7 +180,7 @@ def gen_latex(texcode, type='pdf', landscape=False):
                 os.remove(file_base+TEX_EXT)
         
         except:
-            raise ESPError(), 'Could not read contents of %s. (Hint: try looking at the log file)' % (file_base+'.'+type)
+            raise ESPError('Could not read contents of %s. (Hint: try looking at the log file)' % (file_base+'.'+type))
 
     if type=='log':
         new_contents = tex_log

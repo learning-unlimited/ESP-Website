@@ -41,7 +41,6 @@ from esp.web.models import NavBarEntry, NavBarCategory
 from esp.web.util.main import render_to_response
 from django.http import HttpResponse, Http404, HttpResponseNotAllowed
 from esp.qsdmedia.models import Media
-from esp.lib.markdownaddons import ESPMarkdown
 from os.path import basename, dirname
 from datetime import datetime
 from django.core.cache import cache
@@ -109,7 +108,9 @@ def qsd(request, url):
 
             if (action == 'read'):
                 edit_link = '/' + base_url + '.edit.html'
-                return render_to_response('qsd/nopage_create.html', request, {'edit_link': edit_link}, use_request_context=False)  
+                response = render_to_response('qsd/nopage_create.html', request, {'edit_link': edit_link}, use_request_context=False)
+                response.status_code = 404 # Make sure we actually 404, so that if there is a redirect the middleware can catch it.
+                return response
         else:
             if action == 'read':
                 raise Http404, 'This page does not exist.'
@@ -169,25 +170,6 @@ def qsd(request, url):
             # We should also purge the cache
             purge_page(qsd_rec.url+".html")
 
-        # If any files were uploaded, save them
-        for name, file in request.FILES.iteritems():
-            m = Media()
-
-            # Strip "media/" from FILE, and strip the file name; just return the path
-            path = dirname(name[9:])
-                
-            # Do we want a better/manual mechanism for setting friendly_name?
-            m.friendly_name = basename(name)
-            
-            m.format = ''
-
-            local_filename = name
-            if name[:9] == 'qsdmedia/':
-                local_filename = name[9:]
-                    
-            m.handle_file(file, local_filename)
-            m.save()
-
 
     # Detect the edit verb
     if action == 'edit':
@@ -195,13 +177,8 @@ def qsd(request, url):
 
         # Enforce authorizations (FIXME: SHOW A REAL ERROR!)
         if not have_edit:
-            raise ESPError(False), "You don't have permission to edit this page."
+            raise ESPError("You don't have permission to edit this page.", log=False)
 
-        m = ESPMarkdown(qsd_rec.content, media={})
-
-        m.toString()
-#        assert False, m.BrokenLinks()
-        
         # Render an edit form
         return render_to_response('qsd/qsd_edit.html', request, {
             'title'        : qsd_rec.title,
@@ -212,7 +189,6 @@ def qsd(request, url):
             'nav_categories': NavBarCategory.objects.all(),
             'qsdrec'       : qsd_rec,
             'qsd'          : True,
-            'missing_files': m.BrokenLinks(),
             'target_url'   : base_url.split("/")[-1] + ".edit.html",
             'return_to_view': base_url.split("/")[-1] + ".html#refresh" },  
             use_request_context=False)  
@@ -223,7 +199,7 @@ def qsd(request, url):
 def ajax_qsd(request):
     """ Ajax function for in-line QSD editing.  """
     from django.utils import simplejson
-    from esp.lib.templatetags.markdown import markdown
+    from markdown import markdown
 
     result = {}
     post_dict = request.POST.copy()
@@ -231,9 +207,10 @@ def ajax_qsd(request):
     if ( request.user.id is None ):
         return HttpResponse(content='Oops! Your session expired!\nPlease open another window, log in, and try again.\nYour changes will not be lost if you keep this page open.', status=500)
     if post_dict['cmd'] == "update":
-        qsd = QuasiStaticData.objects.get(id=post_dict['id'])
-        if not Permission.user_can_edit_qsd(request.user, qsd.url):
+        if not Permission.user_can_edit_qsd(request.user, post_dict['url']):
             return HttpResponse(content='Sorry, you do not have permission to edit this page.', status=500)
+
+        qsd, created = QuasiStaticData.objects.get_or_create(url=post_dict['url'], defaults={'author': request.user})
 
         # Since QSD now uses reversion, we want to only modify the data if we've actually changed something
         # The revision will automatically be created upon calling the save function of the model object
@@ -247,16 +224,6 @@ def ajax_qsd(request):
 
         result['status'] = 1
         result['content'] = markdown(qsd.content)
-        result['id'] = qsd.id
-    if post_dict['cmd'] == "create":
-        if not Permission.user_can_edit_qsd(request.user, post_dict['url']):
-            return HttpResponse(content="Sorry, you do not have permission to edit this page.", status=500)
-        qsd, created = QuasiStaticData.objects.get_or_create(url=post_dict['url'],defaults={'author': request.user})
-        qsd.content = post_dict['data']
-        qsd.author = request.user
-        qsd.save()
-        result['status'] = 1
-        result['content'] = markdown(qsd.content)
-        result['id'] = qsd.id
-    
+        result['url'] = qsd.url
+
     return HttpResponse(simplejson.dumps(result))

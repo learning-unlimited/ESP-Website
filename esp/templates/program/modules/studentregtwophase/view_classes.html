@@ -1,0 +1,64 @@
+{% extends "program/modules/studentregtwophase/catalog_new.html" %}
+{% load render_qsd %}
+
+{% block xtrajs %}
+{{ block.super }}
+<script type="text/javascript">
+  var catalog_type = "view";
+</script>
+{% endblock %}
+
+{% block catalog_intro %}
+{{ block.super }}
+{% inline_program_qsd_block program "learn:studentregtwophase/catalog-intro" %}
+Below is the class listing for {{program.niceName}}. If you have trouble viewing this page, try our <a href="/learn/{{program.getUrlBase}}/catalog">basic catalog</a>.
+{% end_inline_program_qsd_block %}
+{% endblock %}
+
+{% block catalog_sticky %}
+<div><h2>{{program.niceName}} Course Catalog</h2></div>
+<hr>
+<div class="sticky-toggle">
+  <a href="javascript:void(0)"
+     data-bind="click: toggleFilter, text: showFilter() ? 'Collapse (&ndash;)' : 'Expand (+)'">
+  </a>
+</div>
+<div class="search-box">
+  <label>Search:</label>
+  <input type="text" data-bind="value: search, valueUpdate: 'afterkeydown'"></input>
+  <div id="search-spinner">&nbsp;</div>
+</div>
+<div class="filter-box" data-bind="visible: showFilter">
+  <label>Category:</label>
+  <br>
+  {% for column in category_choices %}
+  <div class="filter-column">
+    {% for value, label in column %}
+    <div>
+      <input type="checkbox" value="{{ value }}"
+             data-bind="checked: filterCategory"></input>
+      <label>{{ label }}</label>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+<div class="filter-box" data-bind="visible: showFilter">
+  <label>Grade:</label>
+  <br>
+  {% for column in grade_choices %}
+  <div class="filter-column">
+    {% for value, label in column %}
+    <div>
+      <input type="radio" value="{{ value }}"
+             data-bind="checked: filterGrade"></input>
+      <label>{{ label }}</label>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
+
+{% block class_action %}
+{% endblock %}

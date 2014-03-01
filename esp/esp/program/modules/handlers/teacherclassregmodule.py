@@ -32,11 +32,13 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
+from collections import defaultdict
+
 from esp.program.modules.base    import ProgramModuleObj, needs_teacher, meets_deadline, main_call, aux_call
 from esp.program.modules.module_ext     import ClassRegModuleInfo
 from esp.program.modules         import module_ext
 from esp.program.modules.forms.teacherreg   import TeacherClassRegForm, TeacherOpenClassRegForm
-from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType
+from esp.program.models          import ClassSubject, ClassSection, ClassCategories, ClassImplication, Program, StudentAppQuestion, ProgramModule, StudentRegistration, RegistrationType, ClassFlagType
 from esp.program.controllers.classreg import ClassCreationController, ClassCreationValidationError, get_custom_fields
 from esp.tagdict.models          import Tag
 from esp.tagdict.decorators      import require_tag
@@ -57,6 +59,7 @@ from datetime                    import timedelta
 from esp.mailman                 import add_list_member
 from django.http                 import HttpResponseRedirect
 from django.db                   import models
+from django.forms.util           import ErrorDict
 from esp.middleware.threadlocalrequest import get_current_request
 import simplejson as json
 from copy import deepcopy
@@ -204,7 +207,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     
         section = ClassSection.objects.filter(id=extra)
         if section.count() != 1:
-            raise ESPError(False), 'Could not find that class section; please contact the webmasters.'
+            raise ESPError('Could not find that class section; please contact the webmasters.', log=False)
 
         return render_to_response(self.baseDir()+'class_students.html', request, {'section': section[0], 'cls': section[0]})
 
@@ -215,7 +218,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     
         cls = ClassSubject.objects.filter(id=extra)
         if cls.count() != 1:
-            raise ESPError(False), 'Could not find that class subject; please contact the webmasters.'
+            raise ESPError('Could not find that class subject; please contact the webmasters.', log=False)
 
         return render_to_response(self.baseDir()+'class_students.html', request, {'cls': cls[0]})
         
@@ -228,7 +231,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         try:
             sec = ClassSection.objects.filter(id=extra)[0]
         except:
-            raise ESPError(False), 'Class section not found.  If you came from a link on our site, please notify the webmasters.'
+            raise ESPError('Class section not found.  If you came from a link on our site, please notify the webmasters.', log=False)
         
         students_list = sec.students_prereg()
         
@@ -271,17 +274,55 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                                 found = True
                             else:
                                 reg.expire()
-                            #   result_strs.append('Expired: %s' % bit)
+
                         if not found:
                             new_reg = StudentRegistration(user=student, relationship=rel, section=sec)
                             new_reg.save()
                         
         #   Jazz up this information a little
+        #Not having much luck with query count/performance when selecting related parent_class and parent_class__category
+        #Creating a lookup dict instead to strip out duplicate ClassSubject instances
+
+        student_regs = StudentRegistration.valid_objects().filter(user__in=students_list) \
+                       .order_by('start_date').select_related('section','user','relationship')
+        student_regs = student_regs.filter(section__parent_class__parent_program=self.program)
+
+        student_sections_dict = defaultdict(set)
+        student_reg_dict = defaultdict(set)
+
+        #need a unique set of parent_class ids
+        #creating lookup dicts to avoid hitting database(was not solved with 
+        #select_related or prefecth_related
+        parent_class_id_set= set()
+        sections = set()
+        for reg in student_regs:
+            student_sections_dict[reg.user].add(reg.section)
+            display_name = reg.relationship.displayName or reg.relationship.name
+            sections.add(reg.section)
+            parent_class_id_set.add(reg.section.parent_class_id)
+            student_reg_dict['%i_%i'%(reg.user.id,reg.section.id,)].add(display_name)
+
+        subjects = ClassSubject.objects.filter(id__in=parent_class_id_set).select_related('category')
+        subject_categories_dict = dict([(s.id, (s,s.category)) for s in subjects])
+
         for student in students_list:
-            student.bits = sec.getRegVerbs(student)
+            student.bits = student_reg_dict['%i_%i'%(student.id,sec.id,)]
+            #this is a bit of a problem because it produces the side affect of application
+            #creation if not found
             student.app = student.getApplication(self.program, False)
-            student.other_classes = [(sec2, sec2.getRegVerbs(student)) for sec2 in student.getSections(self.program).exclude(id=sec.id)]
+            student.other_classes = []
+            for section in student_sections_dict[student]:
+                parent_class,category = subject_categories_dict.get(section.parent_class_id)
+                regtypes = student_reg_dict['%i_%i'%(student.id,section.id,)]
+
+                section_row = (section,
+                               regtypes,
+                               parent_class,
+                               category
+                               )
+                student.other_classes.append(section_row)
             preregs = sec.getRegistrations(student).exclude(relationship__name__in=['Enrolled', 'Rejected'])
+           
             if preregs.count() != 0:
                student.added_class = preregs[0].start_date
             if 'Enrolled' in student.bits:
@@ -290,6 +331,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                 student.rejected = True
 
         #   Detect if there is an application module
+
         from esp.program.modules.handlers.studentjunctionappmodule import StudentJunctionAppModule
         has_app_module = False
         for module in prog.getModules():
@@ -584,17 +626,17 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         try:
             int(extra)
         except: 
-            raise ESPError(False), "Invalid integer for class ID!"
+            raise ESPError("Invalid integer for class ID!", log=False)
 
         classes = ClassSubject.objects.filter(id = extra)
         if len(classes) == 0:
-            raise ESPError(False), "No class found matching this ID!"
+            raise ESPError("No class found matching this ID!", log=False)
 
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
         cls = classes[0]
 
-        if cls.category.category == self.program.open_class_category.category:
+        if cls.category == self.program.open_class_category:
             action = 'editopenclass'
         else:
             action = 'edit'
@@ -614,19 +656,19 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         if request.method == 'POST':
             return self.makeaclass_logic(request, tl, one, two, module, extra, prog)
         if not request.GET.has_key('cls'):
-            raise ESPError(False), "No class specified!"
+            raise ESPError("No class specified!", log=False)
         
         # Select the class
         cls_id = request.GET['cls']
         classes = ClassSubject.objects.filter(id=cls_id)
         if len(classes) == 0:
-            raise ESPError(False), "No class found matching this ID!"
+            raise ESPError("No class found matching this ID!", log=False)
         if len(classes) != 1:
-            raise ESPError(False)
+            raise ESPError("Something weird happened, more than one class found matching this ID.", log=False)
         cls = classes[0]
 
         # Select the correct action
-        if cls.category.category == self.program.open_class_category.category:
+        if cls.category == self.program.open_class_category:
             action = 'editopenclass'
         else:
             action = 'edit'
@@ -760,13 +802,28 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
                     current_data['optimal_class_size_range'] = newclass.optimal_class_size_range.id
                 if newclass.allowable_class_size_ranges.all():
                     current_data['allowable_class_size_ranges'] = list(newclass.allowable_class_size_ranges.all().values_list('id', flat=True))
+
+                # Makes importing a class from a previous program work
+                # These are the only three fields that can currently be hidden
+                # If another one is added later, this will need to be changed
+                hidden_fields = Tag.getProgramTag('teacherreg_hide_fields', prog)
+                if hidden_fields:
+                    if 'grade_min' in hidden_fields:
+                        current_data['grade_min'] = Tag.getProgramTag('teacherreg_default_min_grade', prog)
+                    if 'grade_max' in hidden_fields:
+                        current_data['grade_max'] = Tag.getProgramTag('teacherreg_default_max_grade', prog)
+                    if 'class_size_max' in hidden_fields:
+                        current_data['class_size_max'] = Tag.getProgramTag('teacherreg_default_class_size_max', prog)
+
                 if not populateonly:
                     context['class'] = newclass
 
                 if action=='edit':
                     reg_form = TeacherClassRegForm(self, current_data)
+                    if populateonly: reg_form._errors = ErrorDict()
                 elif action=='editopenclass':
                     reg_form = TeacherOpenClassRegForm(self, current_data)
+                    if populateonly: reg_form._errors = ErrorDict()
                 
                 #   Todo...
                 ds = newclass.default_section()
@@ -838,11 +895,16 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
             context['classroom_form_advisories'] += '__open_class'
         context['classtype'] = context['classes'][context['isopenclass']]['type']
         context['otherclass'] = context['classes'][1 - context['isopenclass']]
-        
+        context['qsd_name'] = 'classedit_' + context['classtype']
+
         context['manage'] = False
         if ((request.method == "POST" and request.POST.has_key('manage') and request.POST['manage'] == 'manage') or 
-            (request.method == "GET" and request.GET.has_key('manage') and request.GET['manage'] == 'manage')) and request.user.isAdministrator():
+            (request.method == "GET" and request.GET.has_key('manage') and request.GET['manage'] == 'manage') or
+            (tl == 'manage' and 'class' in context)) and request.user.isAdministrator():
             context['manage'] = True
+            if self.program.program_modules.filter(handler='ClassFlagModule').exists():
+                context['show_flags'] = True
+                context['flag_types'] = ClassFlagType.get_flag_types(self.program)
         
         return render_to_response(self.baseDir() + 'classedit.html', request, context)
 

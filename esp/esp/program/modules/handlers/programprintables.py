@@ -138,19 +138,19 @@ class ProgramPrintables(ProgramModuleObj):
         category_options = prog.class_categories.all().values_list('category', flat=True)
         categories = category_options
 
-        if request.GET.has_key('first_sort'):
+        if request.GET.get('first_sort', ''):
             sort_list.append( cmp_fn[request.GET['first_sort']] )
             sort_name_list.append( request.GET['first_sort'] )
         else:
             sort_list.append( cmp_fn["category"] )
 
-        if request.GET.has_key('second_sort'):
+        if request.GET.get('second_sort', ''):
             sort_list.append( cmp_fn[request.GET['second_sort']] )
             sort_name_list.append( request.GET['second_sort'] )
         else:
             sort_list.append( cmp_fn["timeblock"] )
 
-        if request.GET.has_key('third_sort'):
+        if request.GET.get('third_sort', ''):
             sort_list.append( cmp_fn[request.GET['third_sort']] )
             sort_name_list.append( request.GET['third_sort'] )
         else:
@@ -177,7 +177,7 @@ class ProgramPrintables(ProgramModuleObj):
                 cls   = ClassSubject.objects.get(parent_program = self.program,
                                           id             = clsid)
             except:
-                raise ESPError(), 'Could not get the class object.'
+                raise ESPError('Could not get the class object.')
 
             cls_dict = {}
             for cur_cls in classes:
@@ -202,7 +202,7 @@ class ProgramPrintables(ProgramModuleObj):
                         clsids[i+1] = tmp
                         found       = True
             else:
-                raise ESPError(), 'Received invalid operation for class list.'
+                raise ESPError('Received invalid operation for class list.')
 
             classes = []
 
@@ -247,16 +247,39 @@ class ProgramPrintables(ProgramModuleObj):
         if request.GET.has_key('open'):
             classes = [cls for cls in classes if not cls.isFull()]
 
-        if request.GET.has_key('sort_name_list'):
-            sort_name_list = request.GET['sort_name_list'].split(',')
-            first_sort = sort_name_list[0] or 'category'
+        if request.GET.has_key('sort_name_list') and len(request.GET['sort_name_list']) != 0:
+            sort_order = request.GET['sort_name_list'].split(',')
         else:
-            first_sort = "category"
+            sort_order = Tag.getProgramTag('catalog_sort_fields', prog, default='category').split(',')
+
+        #   There is a first_sort option which can be set to 'category' or 'timeblock'.
+        first_sort = request.GET.get('first_sort', 'category')
+
+        #   Perform sorting based on specified order rules
+        #   NOTE: Other catalogs can filter by _num_students but this one can't.
+        if '_num_students' in sort_order:
+            sort_order.remove('_num_students')
+        classes = classes.order_by(*sort_order)
+
+        #   Replace incorrect 'timeblock' sort field with sorting by meeting times start field.
+        for i in xrange(len(sort_order)):
+            if sort_order[i] == 'timeblock':
+                sort_order[i] = 'meeting_times__start'
 
         #   Filter out classes that are not scheduled
         classes = [cls for cls in classes
                    if cls.isAccepted() and cls.sections.all().filter(meeting_times__isnull=False).exists() ]
 
+        #   Filter out duplicate classes in case sort order causes extra results
+        unique_classes = []
+        ids_existing = []
+        for cls in classes:
+            if cls.id not in ids_existing:
+                unique_classes.append(cls)
+                ids_existing.append(cls.id)
+        classes = unique_classes
+
+        #   Reorder classes if an ordering was specified by request.GET['clsids']
         if request.GET.has_key('clsids'):
             clsids = request.GET['clsids'].split(',')
             cls_dict = {}
@@ -861,18 +884,15 @@ Volunteer schedule for %s:
             students = list(ESPUser.objects.filter(filterObj.get_Q(restrict_to_active=False)).distinct())
 
         students.sort()
-        
         return ProgramPrintables.get_student_schedules(request, students, prog, extra, onsite)
 
     @staticmethod
     def get_student_schedules(request, students, prog, extra='', onsite=False):
         """ generate student schedules """
- 
         context = {}
  
         scheditems = []
         
-        all_events = Event.objects.filter(program=prog).order_by('start')
         for student in students:
             student.updateOnsite(request)
             # get list of valid classes
@@ -899,6 +919,9 @@ Volunteer schedule for %s:
             min_index = 0
             times_compulsory = Event.objects.filter(program=prog, event_type__description='Compulsory').order_by('start')
             for t in times_compulsory:
+                t.friendly_times = [t.pretty_time()]
+                t.initial_rooms = []
+                
                 i = min_index
                 while i < len(classes):
                     if classes[i].start_time().start > t.start:
@@ -925,6 +948,7 @@ Volunteer schedule for %s:
             student.classes = classes
             
         context['students'] = students
+        context['program'] = prog
 
         if extra:
             file_type = extra.strip()

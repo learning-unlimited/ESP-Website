@@ -32,11 +32,12 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
+import re
 from esp.users.models import ESPUser
 from django.template import Context, Template, loader, RequestContext
 from django.conf import settings
 from django import http
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.contrib.auth.models import AnonymousUser
 from esp.program.models import Program
 from esp.qsd.models import ESPQuotations
@@ -56,7 +57,7 @@ def get_from_id(id, module, strtype = 'object', error = True):
             foundobj = ESPUser(foundobj)
     except:
         if error:
-            raise ESPError(False), 'Could not find the %s with id %s.' % (strtype, id)
+            raise ESPError('Could not find the %s with id %s.' % (strtype, id), log=False)
         return None
     return foundobj
     
@@ -92,7 +93,7 @@ def render_to_response(template, request, context, prog=None, auto_per_program_t
         category = None
         if context.has_key('nav_category'):
             category = context['nav_category']
-        context['navbar_list'] = makeNavBar(section, category)
+        context['navbar_list'] = makeNavBar(section, category, path=request.path[1:])
 
     if not use_request_context:
         context['request'] = request
@@ -106,13 +107,51 @@ def error404(request, template_name='404.html'):
     context = {'request_path': request.path}
     context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
     context['EMAIL_HOST'] = settings.EMAIL_HOST
-    t = loader.get_template(template_name) # You need to create a 404.html template.
-    return http.HttpResponseNotFound(t.render(RequestContext(request, context)))
+    response = render_to_response(template_name, request, context)
+    response.status_code = 404
+    return response
 
 def error500(request, template_name='500.html'):
     context = {}
+    context['settings'] = settings # needed by elements/html
     context['DEFAULT_EMAIL_ADDRESSES'] = settings.DEFAULT_EMAIL_ADDRESSES
     context['EMAIL_HOST'] = settings.EMAIL_HOST
     context['request'] = request
     t = loader.get_template(template_name) # You need to create a 500.html template.
-    return http.HttpResponseServerError(t.render(Context(context)))
+
+    # If possible, we want to render this page with our custom
+    # render_to_response().  If this fails for some reason, we still want to
+    # display the original 500 error page, so fall back to manually creating an
+    # HttpResponse object.
+    try:
+        response = render_to_response(template_name, request, context)
+        response.status_code = 500
+        return response
+    except Exception:
+        # If possible, we want to render this page with a RequestContext so that
+        # the context processors are run. If this fails for some reason, we still
+        # want to display the original 500 error page, so fall back to using a
+        # normal Context.
+        try:
+            return http.HttpResponseServerError(t.render(RequestContext(request, context)))
+        except Exception:
+            return http.HttpResponseServerError(t.render(Context(context)))
+
+def secure_required(view_fn):
+    """
+    Apply this decorator to a view to require that the view only be accessed
+    via a secure request. If the request is not secure, the wrapped view
+    redirects to the https version of the uri. Otherwise it runs the view
+    function as normal.
+
+    The https redirect only occurs when the request method is GET, to avoid
+    missing form submissions, even if they are insecure.
+    """
+    def _wrapped_view(request, *args, **kwargs):
+        if request.method == 'GET' and not request.is_secure():
+            return HttpResponseRedirect(re.sub(r'^\w+://',
+                                               r'https://',
+                                               request.build_absolute_uri()))
+        return view_fn(request, *args, **kwargs)
+    return _wrapped_view
+
