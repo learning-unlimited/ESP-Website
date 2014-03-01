@@ -22,6 +22,7 @@ def render_qsd(qsd):
 
     return {'qsdrec': qsd, 'display_date_author' : display_date_author}
 render_qsd.cached_function.depend_on_row(QuasiStaticData, lambda qsd: {'qsd': qsd})
+render_qsd.cached_function.depend_on_model(Tag)
 
 @cache_inclusion_tag(register,'inclusion/qsd/render_qsd_inline.html')
 def render_inline_qsd(url):
