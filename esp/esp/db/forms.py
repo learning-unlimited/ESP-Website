@@ -103,7 +103,7 @@ $j("#id_%s").autocomplete({
           fn, shadow_field_javascript)
 
         html = """
-<input type="text" id="id_%s" name="%s_raw" value="%s" class="span10" />
+<input type="text" id="id_%s" name="%s_raw" value="%s" class="span6" />
 <input type="hidden" id="id_%s_data" name="%s" />
 <div class="raw_id_admin" style="display: none;">
   <a href="../" class="related-lookup" id="lookup_%s" onclick="return showRelatedObjectLookupPopup(this);">
