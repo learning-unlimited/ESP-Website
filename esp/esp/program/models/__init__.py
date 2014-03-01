@@ -585,6 +585,12 @@ class Program(models.Model, CustomFormsLinkModel):
     isFull.depend_on_row(lambda: Program, lambda prog: {'self': prog})
     isFull.depend_on_row(lambda: Record, lambda rec: {}, lambda rec: rec.event == "reg_confirmed") #i'm not sure why the selector is empty, that's how it was for the confirmation dependency when it was a userbit
 
+    @cache_function
+    def open_class_registration(self):
+        return self.getModuleExtension('ClassRegModuleInfo').open_class_registration
+    open_class_registration.depend_on_row(lambda: ClassRegModuleInfo, lambda crmi: {'self': crmi.get_program()})
+    open_class_registration = property(open_class_registration)
+
     @property
     def open_class_category(self):
         """Return the name of the open class category, as determined by the program tag.
@@ -910,6 +916,29 @@ class Program(models.Model, CustomFormsLinkModel):
         return modules
 
     @cache_function
+    def hasModule(self, name):
+        """ Tests whether a program has the given module enabled, cachedly. name should be a module name, like 'AvailabilityModule'. """
+        return self.program_modules.filter(handler=name).exists()
+    hasModule.depend_on_row(lambda: Program, lambda prog: {'self': prog})
+    hasModule.depend_on_model(lambda: ProgramModule)
+    hasModule.depend_on_row(lambda: ProgramModuleObj, lambda module: {'self': module.program})
+    hasModule.depend_on_m2m(lambda: Program, 'program_modules', lambda program, module: {'self': program})
+
+    @cache_function
+    def getModule(self, name):
+        """ Returns the specified module for this program if it is enabled.
+            'name' should be a module name like 'AvailabilityModule'. """
+
+        if self.hasModule(name):
+            #   Sometimes there are multiple modules with the same handler.
+            #   This function is not choosy, since the return value
+            #   is typically used just to access a view function.
+            return ProgramModuleObj.getFromProgModule(self, self.program_modules.filter(handler=name)[0])
+        else:
+            return None
+    getModule.depend_on_cache(lambda: Program.hasModule, lambda self=wildcard, name=wildcard, **kwargs: {'self': self, 'name': name})
+
+    @cache_function
     def getModuleViews(self, main_only=False, tl=None):
         modules = self.getModules_cached(tl)
         result = {}
@@ -1032,7 +1061,7 @@ class Program(models.Model, CustomFormsLinkModel):
     
     def priorityLimit(self):
         studentregmodule = self.getModuleExtension('StudentClassRegModuleInfo')
-        if studentregmodule and studentregmodule.use_priority and studentregmodule.priority_limit > 0:
+        if studentregmodule and studentregmodule.priority_limit > 0:
             return studentregmodule.priority_limit
         else: 
             return 1
@@ -1191,12 +1220,12 @@ class SplashInfo(models.Model):
         #   Save accounting information
         iac = IndividualAccountingController(self.program, self.student)
 
-        if self.lunchsat == 'no':
+        if not self.lunchsat or self.lunchsat == 'no':
             iac.set_preference('Saturday Lunch', 0)
         elif 'lunchsat' in cost_info:
             iac.set_preference('Saturday Lunch', 1, cost_info['lunchsat'][self.lunchsat])
 
-        if self.lunchsun == 'no':
+        if not self.lunchsun or self.lunchsun == 'no':
             iac.set_preference('Sunday Lunch', 0)
         elif 'lunchsun' in cost_info:
             iac.set_preference('Sunday Lunch', 1, cost_info['lunchsun'][self.lunchsun])
@@ -1272,7 +1301,7 @@ class RegistrationProfile(models.Model):
 
     def cancelStudentRegConfirmation(self, user):
         """ Cancel the registration confirmation for the specified student """
-        raise ESPError(), "Error: You can't cancel a registration confirmation!  Confirmations are final!"
+        raise ESPError("Error: You can't cancel a registration confirmation!  Confirmations are final!")
         
     def save(self, *args, **kwargs):
         """ update the timestamp and clear getLastProfile cache """
@@ -1681,7 +1710,7 @@ class ScheduleConstraint(models.Model):
             result = _f(self.schedule_map)
             return result
         except Exception, inst:
-            #   raise ESPError(False), 'Schedule constraint handler error: %s' % inst
+            #   raise ESPError('Schedule constraint handler error: %s' % inst, log=False)
             pass
         #   If we got nothing from the on_failure function, just provide Nones.
         return (None, None)
@@ -1850,7 +1879,7 @@ class RegistrationType(models.Model):
         #   If 'include' is specified, make sure we have keys named in that list
         if include:
             if not isinstance(category, str):
-                raise ESPError(True), 'Need to supply category to RegistrationType.get_map() when passing include arguments'
+                raise ESPError('Need to supply category to RegistrationType.get_map() when passing include arguments', log=True)
             for name in include:
                 type, created = RegistrationType.objects.get_or_create(name=name, category=category)
         

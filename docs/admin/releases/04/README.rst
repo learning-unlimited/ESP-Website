@@ -39,7 +39,7 @@ on your configuration.  More details can be found at
 Check Availability Page
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-If you add the "Check Teacher Availability" module for your program, the 
+If you add the "Check Teacher Availability" module for your program, the
 page at /manage/[program url]/check_availability will allow you to see a
 teacher's availability for that program. It shows all of the program's
 timeslots in order, and colors each one based on the teacher's status. Gray
@@ -116,6 +116,17 @@ the complete list of modules, choose "Manage class flags".
 This is still a work in progress; everything should work fine, but if there are
 more interfaces you would like to see, let the web team know!
 
+Emailing Program Guardians From the Communications Panel
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The communications panel can now send mail to the listed guardian and emergency
+contact email address for students. On the first screen of the commpanel
+(/manage/<program>/<instance>/commpanel), after you select that you are
+emailing students, you can select which combination of students, guardians, and
+emergency contacts you wish to address. On the next screen, you can narrow down
+your query (for example, for all students who are enrolled in the program).
+When you send the message, it will go to the types of contacts (students and/or
+guardians and/or emergency contacts) that you specified.
+
 Accounting System
 ~~~~~~~~~~~~~~~~~
 
@@ -191,6 +202,20 @@ esp-webmasters@mit.edu for aid and suggested security considerations.
 
 AJAX Scheduler upgrades
 ~~~~~~~~~~~~~~~~~~~~~~~
+
+Numerous improvements have been made to the AJAX class scheduler. These are
+outlined below.
+
+- Two-column user interface: this increases the vertical space so that more
+rooms are displayed, and the frames are resizable.
+
+- Changelog: a changelog of scheduled classes is stored in the database. This
+is used to facilitate periodic incremental updates on the client-side interface
+of the scheduling matrix (currently every ten seconds). Synchronization between
+multiple users works decently.
+
+- Filtering: several filtering modes exist now that can be used to filter the
+list of classes. This is accessible from the right-hand-side frame.
 
 Markdown Version Upgrade
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -302,6 +327,16 @@ now be downloaded with the original filename again. These changes are
 transparent to users -- the old /download/file_hash URL's still work and the
 new URL's are displayed on documents pages.
 
+Grade change requests
+~~~~~~~~~~~~~~~~~~~~~
+
+Students can now request to have their current grade changed through the
+website, by filling out the new grade and a reason that it needs to be changed.
+After the student confirms the change, an email will be sent to the admin
+contact address notifying that the change was requested. An admin page exists
+where admins can approve the requests (after which an email will be sent to the
+student notifying them of the approval).
+
 Minor feature additions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -342,11 +377,14 @@ Minor feature additions
   section that shows the number of students per grade enrolled in at least one
   class and number of subjects and sections available to the students in that
   grade.
-  
+
 - You can now filter for students in particular grades using the comm panel.
   The grade filtering options will show up at the bottom of the list (below
   "States" and "School") on step 3 when you are creating a list of students.
   You will also see an option to filter teachers by graduation year.
+
+- Credit card transaction refunds are now easier to accomplish as the credit
+card transaction ID is now stored in the transaction model.
 
 Django debug toolbar (developers only)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -360,3 +398,11 @@ or with the DEBUG_TOOLBAR setting in local_settings.py.  There are more
 configuration options defined in django_settings.py.  For more information see
 `<http://django-debug-toolbar.readthedocs.org/en/1.0/>`_.
 
+virtualenv (developers only)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The code has been modified to utilize a virtual environment for Python files.
+The virtualenv is a requirement for external scripts, and it is recommended
+that web servers running ESP-Website now be configured to also utilize the
+virtual environment. A script is included to automatically do the configuration
+(specifically, make_virtualenv.sh).

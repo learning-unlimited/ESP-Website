@@ -207,7 +207,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     
         section = ClassSection.objects.filter(id=extra)
         if section.count() != 1:
-            raise ESPError(False), 'Could not find that class section; please contact the webmasters.'
+            raise ESPError('Could not find that class section; please contact the webmasters.', log=False)
 
         return render_to_response(self.baseDir()+'class_students.html', request, {'section': section[0], 'cls': section[0]})
 
@@ -218,7 +218,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
     
         cls = ClassSubject.objects.filter(id=extra)
         if cls.count() != 1:
-            raise ESPError(False), 'Could not find that class subject; please contact the webmasters.'
+            raise ESPError('Could not find that class subject; please contact the webmasters.', log=False)
 
         return render_to_response(self.baseDir()+'class_students.html', request, {'cls': cls[0]})
         
@@ -231,7 +231,7 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         try:
             sec = ClassSection.objects.filter(id=extra)[0]
         except:
-            raise ESPError(False), 'Class section not found.  If you came from a link on our site, please notify the webmasters.'
+            raise ESPError('Class section not found.  If you came from a link on our site, please notify the webmasters.', log=False)
         
         students_list = sec.students_prereg()
         
@@ -626,11 +626,11 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         try:
             int(extra)
         except: 
-            raise ESPError(False), "Invalid integer for class ID!"
+            raise ESPError("Invalid integer for class ID!", log=False)
 
         classes = ClassSubject.objects.filter(id = extra)
         if len(classes) == 0:
-            raise ESPError(False), "No class found matching this ID!"
+            raise ESPError("No class found matching this ID!", log=False)
 
         if len(classes) != 1 or not request.user.canEdit(classes[0]):
             return render_to_response(self.baseDir()+'cannoteditclass.html', request, {})
@@ -656,15 +656,15 @@ class TeacherClassRegModule(ProgramModuleObj, module_ext.ClassRegModuleInfo):
         if request.method == 'POST':
             return self.makeaclass_logic(request, tl, one, two, module, extra, prog)
         if not request.GET.has_key('cls'):
-            raise ESPError(False), "No class specified!"
+            raise ESPError("No class specified!", log=False)
         
         # Select the class
         cls_id = request.GET['cls']
         classes = ClassSubject.objects.filter(id=cls_id)
         if len(classes) == 0:
-            raise ESPError(False), "No class found matching this ID!"
+            raise ESPError("No class found matching this ID!", log=False)
         if len(classes) != 1:
-            raise ESPError(False)
+            raise ESPError("Something weird happened, more than one class found matching this ID.", log=False)
         cls = classes[0]
 
         # Select the correct action
