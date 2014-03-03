@@ -197,6 +197,7 @@ class LotteryAssignmentController(object):
             lunch_by_day[dates.index(d)].append(ts.id)
             self.lunch_schedule[self.timeslot_indices[ts.id]] = True
         self.lunch_timeslots = numpy.array(lunch_by_day)
+        print self.lunch_timeslots
         
         #   Populate interest matrix; this uses both the StudentRegistrations (which apply to a particular section) and StudentSubjectIntegests (which apply to all sections of the class).  If one does not exist, ignore it.  Be careful to only return SRs and SSIs for accepted sections of accepted classes; this might matter for SSIs where only some sections of the class are accepted.
         interest_regs_sr = StudentRegistration.valid_objects().filter(section__parent_class__parent_program=self.program, section__status__gt=0, section__parent_class__status__gt=0, section__registration_status=0, section__meeting_times__isnull=False, relationship__name='Interested').values_list('user__id', 'section__id').distinct()
@@ -250,7 +251,7 @@ class LotteryAssignmentController(object):
 
         if self.options['fill_low_priorities']:
             #   Compute who has a priority when.  Includes lower priorities, since this is used for places where we check not clobbering priorities.
-            self.has_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit)]
+            self.has_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit+1)]
             for i in range(1,self.effective_priority_limit+1):
                 priority_at_least_i = reduce(operator.or_,[self.priority[j] for j in range(i,self.effective_priority_limit+1)])
                 numpy.dot(priority_at_least_i,self.section_schedules,out=self.has_priority[i])
@@ -258,7 +259,7 @@ class LotteryAssignmentController(object):
             self.sections_at_same_time = numpy.dot(self.section_schedules, numpy.transpose(self.section_schedules))
 
             #   And the same, overlappingly.
-            self.has_overlapping_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit)]
+            self.has_overlapping_priority = [numpy.zeros((self.num_students, self.num_timeslots), dtype=numpy.bool) for i in range(self.effective_priority_limit+1)]
             for i in range(1,self.effective_priority_limit+1):
                 priority_at_least_i = reduce(operator.or_,[self.priority[j] for j in range(i,self.effective_priority_limit+1)])
                 numpy.dot(numpy.dot(priority_at_least_i,self.sections_at_same_time),self.section_schedules,out=self.has_overlapping_priority[i])
@@ -281,10 +282,13 @@ class LotteryAssignmentController(object):
     def fill_section(self, si, priority=False, rank=10):
         """ Assigns students to the section with index si.
             Performs some checks along the way to make sure this didn't break anything. """
+
+        #print numpy.sum(self.student_schedules[:,8] & self.student_schedules[:,10])
+        #print numpy.nonzero(self.student_schedules[:,8] & self.student_schedules[:,10])
         
         timeslots = numpy.nonzero(self.section_schedules[si, :])[0]
         
-        if self.options['stats_display']: print '-- Filling section %d (index %d, capacity %d, timeslots %s), priority=%s' % (self.section_ids[si], si, self.section_capacities[si], self.timeslot_ids[timeslots], priority)
+        if self.options['stats_display']: print '-- Filling section %d (index %d, capacity %d, timeslots %s %s), priority=%s' % (self.section_ids[si], si, self.section_capacities[si], self.timeslot_ids[timeslots], timeslots, priority)
         
         #   Compute number of spaces - exit if section or program is already full.  Otherwise, set num_spaces to the number of students we can add without overfilling the section or program.
         num_spaces = self.section_capacities[si] - numpy.sum(self.student_sections[:, si])
@@ -316,8 +320,8 @@ class LotteryAssignmentController(object):
         #   Check that this section does not cover all lunch timeslots on any given day
         lunch_overlap = self.lunch_schedule * self.section_schedules[si, :]
         for i in range(self.lunch_timeslots.shape[0]):
-            if len(self.lunch_timeslots[i]) != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i]]]) >= (self.lunch_timeslots.shape[1]):
-                if self.options['stats_display']: print '   Section covered all lunch timeslots %s on day %d, aborting' % (self.lunch_timeslots[i, :], i)
+            if len(self.lunch_timeslots[i]) != 0 and numpy.sum(lunch_overlap[self.timeslot_indices[self.lunch_timeslots[i]]]) >= len(self.lunch_timeslots[i]):
+                if self.options['stats_display']: print '   Section covered all lunch timeslots %s on day %d, aborting' % (self.lunch_timeslots[i], i)
                 return False
         
         #   Get students who have indicated interest in the section
@@ -341,13 +345,29 @@ class LotteryAssignmentController(object):
             
         #   Filter students by lunch constraint - if class overlaps with lunch period, student must have 1 additional free spot
         #   NOTE: Currently only works with 2 lunch periods per day
+        lunchSlot = None
         for i in range(timeslots.shape[0]):
-            if numpy.sum(self.lunch_timeslots == self.timeslot_ids[timeslots[i]]) > 0:
-                lunch_day = numpy.nonzero(self.lunch_timeslots == self.timeslot_ids[timeslots[i]])[0][0]
-                for j in range(self.lunch_timeslots.shape[1]):
-                    timeslot_index = self.timeslot_indices[self.lunch_timeslots[lunch_day, j]]
-                    if timeslot_index != timeslots[i]:
-                        possible_students *= (True - self.student_schedules[:, timeslot_index])
+            timeslot_index = timeslots[i]
+            if self.lunch_schedule[timeslot_index]:
+                lunchSlot = timeslot_index
+                for day, lunches in zip(range(self.lunch_timeslots.shape[0]),self.lunch_timeslots):
+                    if self.timeslot_ids[timeslot_index] in lunches:
+                        lunch_day = day
+                for j in range(len(self.lunch_timeslots[lunch_day])):
+                    if timeslot_index != self.timeslot_indices[self.lunch_timeslots[lunch_day][j]]:
+                        print "Filtering possible students", timeslot_index
+                        possible_students *= (True - self.student_schedules[:, self.timeslot_indices[self.lunch_timeslots[lunch_day][j]]])
+                        print list(possible_students)
+                        assert numpy.sum(possible_students & self.student_schedules[:,timeslot_index])==0
+        # DEBUG
+        if lunchSlot is not None:
+            for slot in self.lunch_timeslots[1]:
+                slotIndex = self.timeslot_indices[slot]
+                if slotIndex != lunchSlot:
+                    for index, s in enumerate(possible_students):
+                        if s:
+                            assert self.student_schedules[index, slotIndex] == 0, "student with index %s has overlap between %d and %d" % (index, lunchSlot, slotIndex)
+        print "Past debug assert"
                         
         candidate_students = numpy.nonzero(possible_students)[0]
         if candidate_students.shape[0] <= num_spaces:
@@ -430,9 +450,9 @@ class LotteryAssignmentController(object):
         
         #   Check that no student's schedule violates the lunch constraints: 1 or more open lunch periods per day
         for i in range(self.lunch_timeslots.shape[0]):
-            timeslots = numpy.array([]) if (self.lunch_timeslots[i].shape[0] == 0) else self.timeslot_indices[self.lunch_timeslots[i, :]]
+            timeslots = numpy.array([]) if (len(self.lunch_timeslots[i]) == 0) else self.timeslot_indices[self.lunch_timeslots[i]]
             if (timeslots.shape[0] == 0): continue
-            assert(numpy.sum(numpy.sum(self.student_schedules[:, timeslots] > self.lunch_timeslots.shape[1] - 1)) == 0)
+            assert(numpy.sum(numpy.sum(self.student_schedules[:, timeslots] > len(self.lunch_timeslots[i]) - 1)) == 0)
         
         #   Check that each student's schedule is consistent with their assigned sections
         for i in range(self.num_students):
