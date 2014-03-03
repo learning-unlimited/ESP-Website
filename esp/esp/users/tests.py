@@ -6,6 +6,7 @@ from django import forms
 from django.contrib.auth import logout, login, authenticate
 from django.contrib.auth.models import Group
 from django.core import mail
+from django.conf import settings
 from django.test.client import Client
 
 from esp.middleware import ESPError
@@ -492,8 +493,22 @@ class TestChangeRequestView(TestCase):
         c = Client()
         c.login(username=self.user.username, password=self.password)
 
-        # Try searching by ID
         response = c.post("/myesp/grade_change_request", { "reason": '', 'claimed_grade': 483 })
 
         self.assertFormError(response, 'form', 'reason', 'This field is required.')
         self.assertFormError(response, 'form', 'claimed_grade', 'Value 483 is not a valid choice.')
+
+    def test_send_request_email(self):
+        c = Client()
+        c.login(username=self.user.username, password=self.password)
+
+        #   Submit a valid grade change request
+        response = c.post("/myesp/grade_change_request", { "reason": 'I should not get this e-mail', 'claimed_grade': 10 })
+        
+        #   Check that an e-mail was sent with the right from/to
+        self.assertEqual(len(mail.outbox), 1)
+        msg = mail.outbox[0]
+        self.assertEqual(msg.to, [settings.DEFAULT_EMAIL_ADDRESSES['default']])
+        self.assertEqual(msg.from_email, settings.SERVER_EMAIL)
+        
+        
