@@ -620,7 +620,7 @@ class LotteryAssignmentController(object):
         csvfile.close()
         print 'File can be found at: ' + fullfilename
     
-    def save_assignments(self, debug_display=False, try_mailman=False):
+    def save_assignments(self, debug_display=False, try_mailman=True):
         """ Store lottery assignments in the database once they have been computed.
             This is a fairly time consuming step compared to computing the assignments. """
             
@@ -639,7 +639,8 @@ class LotteryAssignmentController(object):
         if debug_display:
             print 'Created %d registrations' % student_ids.shape[0]
         
-        #As mailman doesn't work, disable for now.
+        #As mailman has sometimes not worked in the past,
+        #leave the option to disable.
         if try_mailman:
             self.update_mailman_lists()
     

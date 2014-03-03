@@ -353,6 +353,7 @@ Grade change requests
 
 Students can now request to have their current grade changed through the
 website, by filling out the new grade and a reason that it needs to be changed.
+The page to do this is /myesp/grade_change_request.
 After the student confirms the change, an email will be sent to the admin
 contact address notifying that the change was requested. An admin page exists
 where admins can approve the requests (after which an email will be sent to the
