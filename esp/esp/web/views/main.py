@@ -148,7 +148,7 @@ def classchangerequest(request, tl, one, two):
     from esp.utils.scheduling import getRankInClass
 
     timeslots = prog.getTimeSlots()
-    sections = prog.sections().filter(status=10)
+    sections = prog.sections().filter(status=10, meeting_times__isnull=False).distinct()
     
     enrollments = {}
     for timeslot in timeslots:
