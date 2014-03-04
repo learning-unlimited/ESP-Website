@@ -87,7 +87,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         
         context['can_edit'] = self.deadline_met('/Classes/Edit')
         context['can_create'] = self.deadline_met('/Classes/Create')
-        context['teacherclsmodule'] = self # ...
+        context['teacherclsmodule'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = (Tag.getProgramTag(key='friendly_times_with_date',program=self.program,default=False) == "True")
         context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='true').lower()
@@ -842,6 +842,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             context['addoredit'] = 'Edit'
 
+        context['open_class_registration'] = self.crmi.open_class_registration
         context['classes'] = {
             0: {'type': 'class', 'link': 'makeaclass'}, 
             1: {'type': self.program.open_class_category.category, 'link': 'makeopenclass'}
