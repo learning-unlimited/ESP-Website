@@ -217,7 +217,7 @@ This is a new mode of student registration which functions much like the lottery
 Admin Setup
 ~~~~~~~~~~~
 
-To set up Two-Phase Student Reg, the module should be enabled and sequenced after any modules that students should interact with before registering (ex. Medical form or Student Profile). You should not have this module in your program concurrently with StudentClassRegModule or LotteryStudentRegModule. The Two-Phase Student Reg module is currently set to be required, but is never marked as "completed" for students. This means that as long as the module is enabled, the Two Phase landing page (Fig. 1) will supercede the normal student reg landing page (the page with the checkboxes indicating steps completed).
+To set up Two-Phase Student Reg, the module should be enabled and sequenced after any modules that students should interact with before registering (ex. Medical form or Student Profile). You should not have this module in your program concurrently with LotteryStudentRegModule. The Two-Phase Student Reg module is currently set to be required, but is never marked as "completed" for students. This means that as long as the module is enabled, the Two Phase landing page (Fig. 1) will supercede the normal student reg landing page (the page with the checkboxes indicating steps completed).
 
 .. figure:: images/fig1.png
    :width: 30 %
