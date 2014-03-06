@@ -1,7 +1,5 @@
 // This will hold the last lottery run, in case we want to finalize and save it
-var student_sections = '';
-var student_ids = '';
-var section_ids = '';
+var lottery_data = '';
 
 function lotteryErrorHandler() {
 	$j('#lotterythingstats').html('The server returned an error to our request. Contact your local webministry for help.');
@@ -24,9 +22,7 @@ function runLotteryThing() {
 		data: post_data,
 		success: function(data) {
 			data = data['response'][0];
-			student_sections = data['student_sections'];
-			student_ids = data['student_ids'];
-			section_ids = data['section_ids'];
+			lottery_data = data['lottery_data'];
 			$j('#lotterythingstats').html("<pre>" + data['stats'] + "</pre>");
 		},
 		error: lotteryErrorHandler,
@@ -36,7 +32,7 @@ function runLotteryThing() {
 
 function saveLotteryThing() {
 	$j('#lotterythingstats').html('Saving...');
-	var post_data = {'csrfmiddlewaretoken': csrf_token(), 'student_sections': student_sections, 'student_ids': student_ids, 'section_ids': section_ids};
+	var post_data = {'csrfmiddlewaretoken': csrf_token(), 'lottery_data': lottery_data};
 
 	$j.ajax({
 		url: "/manage/" + program_url_base + "/lottery_save",

@@ -5,6 +5,7 @@ from esp.web.util.main import render_to_response
 from esp.users.models import ESPUser
 from esp.utils.decorators import json_response
 import numpy
+import zlib
 from StringIO import StringIO
 
 class LotteryFrontendModule(ProgramModuleObj):
@@ -77,19 +78,26 @@ class LotteryFrontendModule(ProgramModuleObj):
         numpy.savetxt(s, lotteryObj.section_ids)
         section_ids = s.getvalue()
 
-        return {'response': [{'stats': statsDisp, 'student_sections': student_sections, 'student_ids': student_ids, 'section_ids': section_ids}]};
+        lottery_data = zlib.compress(student_sections + '|' + student_ids + '|' + section_ids)
+
+        return {'response': [{'stats': statsDisp, 'lottery_data': lottery_data}]};
 
     @aux_call
     @json_response()
     @needs_admin
     def lottery_save(self, request, tl, one, two, module, extra, prog):
-        if 'student_sections' not in request.POST or 'student_ids' not in request.POST or 'section_ids' not in request.POST:
-        	return {'response': [{'success': 'no', 'error': 'missing student_sections,student_ids,section_ids'}]};
+        if 'lottery_data' not in request.POST:
+        	return {'response': [{'success': 'no', 'error': 'missing lottery_data POST field'}]};
 
         lotteryObj = LotteryAssignmentController(prog)
-        student_sections = numpy.loadtxt(StringIO(request.POST['student_sections']))
-        student_ids = numpy.loadtxt(StringIO(request.POST['student_ids']))
-        section_ids = numpy.loadtxt(StringIO(request.POST['section_ids']))
+        lottery_data_parts = zlib.decompress(request.POST['lottery_data']).split('|')
+
+        if len(lottery_data_parts) != 3:
+        	return {'response': [{'success': 'no', 'error': 'provided lottery_data is corrupted (doesn\'t contain three parts)'}]};
+
+        student_sections = numpy.loadtxt(StringIO(lottery_data_parts[0]))
+        student_ids = numpy.loadtxt(StringIO(lottery_data_parts[1]))
+        section_ids = numpy.loadtxt(StringIO(lottery_data_parts[2]))
         lotteryObj.save_assignments_helper(student_sections, student_ids, section_ids)
 
         return {'response': [{'success': 'yes'}]};
