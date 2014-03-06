@@ -284,6 +284,8 @@ class TextOfEmail(models.Model):
         
         if parent_request is not None:
             extra_headers = parent_request.special_headers_dict
+        else:
+            extra_headers = {}
         
         now = datetime.now()
 
