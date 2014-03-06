@@ -82,7 +82,7 @@ class ClassChangeController(object):
         text += "We've processed your class change request, and have updated your schedule. Your new schedule is as follows: <br /><br />\n\n"
         text += "%s\n\n<br /><br />\n\n" % self.get_student_schedule(student_ind, for_real)
         if self.student_not_checked_in[student_ind]:
-            text += "On your first day, you must check in (at room 5-233), turn in your completed medical liability form, and pay the program fee (unless you are a financial aid recipient). After you do this, we will give you the room numbers of your classes.<br /><br />\n\n"
+            text += "On your first day, you must check in at room 1-136, turn in your completed liability form, and pay the program fee (unless you are a financial aid recipient or have paid online). We will give you the room numbers of your classes at check-in.<br /><br />\n\n"
         text += "We hope you enjoy your new schedule. See you soon!<br /><br />"
         text += "The " + self.program.niceName() + " Directors\n"
         text += "</html>"
