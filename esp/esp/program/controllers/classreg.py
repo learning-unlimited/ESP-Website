@@ -74,7 +74,7 @@ class ClassCreationController(object):
 
         self.make_class_happen(cls, None, reg_form, resource_formset, restype_formset, editing=True)
         
-        self.send_class_mail_to_directors(cls)
+        self.send_class_mail_to_directors(cls, False)
 
         return cls
         
@@ -282,19 +282,26 @@ class ClassCreationController(object):
         return mail_ctxt
 
 
-    def send_class_mail_to_directors(self, cls):
+    def send_class_mail_to_directors(self, cls, create = True):
         mail_ctxt = self.generate_director_mail_context(cls)
+        subject = "Comments for " + cls.emailcode() + ': ' + cls.title
+
+        if not create:
+            subject = "Re: " + subject
+
+        # add program email tag
+        subject = '['+self.program.niceName()+'] ' + subject
         
         recipients = [teacher.email for teacher in cls.get_teachers()]
         if recipients:
-            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title, \
+            send_mail(subject, \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
                       ('%s Class Registration <%s>' % (self.program.program_type, self.program.director_email)), \
                       recipients, False)
 
         if self.program.director_email:
             mail_ctxt['admin'] = True
-            send_mail('['+self.program.niceName()+"] Comments for " + cls.emailcode() + ': ' + cls.title, \
+            send_mail(subject, \
                       render_to_string('program/modules/teacherclassregmodule/classreg_email', mail_ctxt) , \
                       ('%s Class Registration <%s>' % (self.program.program_type, self.program.director_email)), \
                       [self.program.getDirectorCCEmail()], False)
