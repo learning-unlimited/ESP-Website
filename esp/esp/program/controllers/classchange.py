@@ -142,7 +142,7 @@ class ClassChangeController(object):
         if 'students_not_checked_in' in self.options.keys() and isinstance(self.options['students_not_checked_in'],QuerySet):
             self.students_not_checked_in = list(self.options['students_not_checked_in'].values_list('id',flat=True).distinct())
         else:
-            self.students_not_checked_in = list(self.students.exclude(self.program.students(QObjects=True)['attended']).values_list('id',flat=True).distinct())
+            self.students_not_checked_in = list(self.students.exclude(id__in=self.program.students()['attended']).values_list('id',flat=True).distinct())
         self.priority_limit = self.program.priorityLimit()
         self._init_Q_objects()
         self.sections = self.program.sections().filter(status__gt=0, parent_class__status__gt=0, meeting_times__isnull=False).order_by('id').select_related('parent_class','parent_class__parent_program','meeting_times').distinct()
