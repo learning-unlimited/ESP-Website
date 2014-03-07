@@ -36,7 +36,7 @@ from esp.datatree.models import *
 from esp.program.modules import module_ext
 from esp.web.util        import render_to_response
 from esp.middleware      import ESPError
-from esp.users.models    import ESPUser
+from esp.users.models    import ESPUser, Record
 from django.db.models.query import Q
 from django.utils.safestring import mark_safe
 from django.template.loader import get_template
@@ -78,6 +78,10 @@ class StudentExtraCosts(ProgramModuleObj):
             "seq": 30
             }
 
+    def __init__(self, *args, **kwargs):
+        super(StudentExtraCosts, self).__init__(*args, **kwargs)
+        self.event = "extra_costs_done"
+
     def have_paid(self):
         iac = IndividualAccountingController(self.program, get_current_request().user)
         return (iac.amount_due() <= 0)
@@ -107,8 +111,7 @@ class StudentExtraCosts(ProgramModuleObj):
         return student_lists
 
     def isCompleted(self):
-        iac = IndividualAccountingController(self.program, get_current_request().user)
-        return (len(iac.get_preferences()) > 0)
+        return Record.objects.filter(user=get_current_request().user, program=self.program, event=self.event).exists()
 
     @main_call
     @needs_student
@@ -186,6 +189,7 @@ class StudentExtraCosts(ProgramModuleObj):
             #   Redirect to main student reg page if all data was recorded properly
             #   (otherwise, the code below will reload the page)
             if forms_all_valid:
+                bit, created = Record.objects.get_or_create(user=request.user, program=self.program, event=self.event)
                 return self.goToCore(tl)
 
         count_map = {}
