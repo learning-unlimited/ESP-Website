@@ -2034,6 +2034,7 @@ class Record(models.Model):
         ("teacheracknowledgement","Did teacher acknowledgement"),
         ("lunch_selected","Selected a lunch block"),
         ("extra_form_done","Filled out Custom Form"),
+        ("extra_costs_done","Filled out Student Extra Costs Form"),
         ("waitlist","Waitlisted for a program"),
         ("interview","Teacher-interviewed for a program"),
         ("teacher_training","Attended teacher-training for a program"),
