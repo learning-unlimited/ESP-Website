@@ -31,7 +31,7 @@ class StaticSite(TaskSet):
     @task_method
     def install_web_servers(self):
         """ Install frontend software. """
-        self.frontend.update_config()
+        self.frontend.install()
 
     @task_method
     def restart(self):
