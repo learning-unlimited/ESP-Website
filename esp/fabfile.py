@@ -33,17 +33,17 @@ COMMON_OPTIONS = dict(
         DB_ROOT_PASSWORD = 'password',#CHANGE ME
         DB_NAME = 'esp_db',
         VCS = 'git',
-        GIT_BRANCH = 'main_fab_deploy',
+        GIT_BRANCH = 'fabric-deployment',
         LOCAL_CONFIG = 'esp/local_settings.py',
         PIP_REQUIREMENTS_PATH = 'esp/requirements',
         APACHE_PORT = 50001,
         PROJECT_PATH = 'esp',
-        SUDO_USER = 'vmuser',
+        SUDO_USER = 'price',
         INSTANCE_NAME = 'esp',
 
     )
 
-@define_host('vmuser@localhost', COMMON_OPTIONS)
+@define_host('price@localhost', COMMON_OPTIONS)
 def staging():
     return dict(
         DEBUG = True,
