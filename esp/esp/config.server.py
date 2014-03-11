@@ -40,8 +40,11 @@ USE_MAILMAN = False
 TIME_ZONE = 'America/New_York'
 
 # File Locations
-PROJECT_ROOT = '/media/sf_webapps/esp_web/esp/'
-LOG_FILE = '/media/sf_webapps/logs/esp_web-django.log'
+import os.path
+PROJECT_ROOT = os.path.join(os.path.dirname(__file__), '..')
+TEMPLATE_DIRS = (
+    os.path.join(PROJECT_ROOT, 'templates'),
+)
 
 # Debug settings
 DEBUG = True
