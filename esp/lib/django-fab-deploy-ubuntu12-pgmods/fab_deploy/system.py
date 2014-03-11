@@ -37,7 +37,7 @@ def install_software():
         'python-profiler', 'libjpeg-dev', 'zlib1g-dev',
         'libssl-dev', 'libcurl3-dev',
         'libxml2-dev', 'libxslt1-dev', # for lxml
-
+	'memcached',
         'subversion',
     ]
     aptitude_install(" ".join(common_packages))
