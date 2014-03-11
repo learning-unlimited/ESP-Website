@@ -26,10 +26,9 @@ add_to_path([
      os.path.normpath('{{ ENV_DIR }}/lib/python2.5/site-packages'),
      os.path.normpath('{{ ENV_DIR }}/lib/python2.6/site-packages'),
      os.path.normpath('{{ ENV_DIR }}/lib/python2.7/site-packages'),
-
-     os.path.normpath('{{ PROJECT_DIR }}' + '/..'), # <- remove this line if django >= 1.4
      '{{ PROJECT_DIR }}',
 ])
+
 
 # django < 1.4 wsgi setup
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
@@ -39,4 +38,4 @@ application = django.core.handlers.wsgi.WSGIHandler()
 # django >= 1.4 wsgi setup: remove "<1.4 wsgi setup" above, uncomment the
 # following line and set proper your project's name:
 
-# from my_project.wsgi import application
+from my_project.wsgi import application
