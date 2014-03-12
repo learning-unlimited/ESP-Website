@@ -68,5 +68,5 @@ echo "Creating Virtualenv in $VENVDIR"
 sudo pip install "virtualenv>=1.10"
 virtualenv "$VENVDIR"
 source "$VENVDIR/bin/activate"
-pip install -r "$BASEDIR/esp/requirements/all.txt"
+pip install -r "$BASEDIR/esp/requirements.txt"
 
