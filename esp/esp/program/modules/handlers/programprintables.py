@@ -259,12 +259,11 @@ class ProgramPrintables(ProgramModuleObj):
         #   NOTE: Other catalogs can filter by _num_students but this one can't.
         if '_num_students' in sort_order:
             sort_order.remove('_num_students')
-        classes = classes.order_by(*sort_order)
-
         #   Replace incorrect 'timeblock' sort field with sorting by meeting times start field.
         for i in xrange(len(sort_order)):
             if sort_order[i] == 'timeblock':
                 sort_order[i] = 'meeting_times__start'
+        classes = classes.order_by(*sort_order)
 
         #   Filter out classes that are not scheduled
         classes = [cls for cls in classes
