@@ -486,7 +486,7 @@ class IndividualAccountingController(ProgramAccountingController):
         target_account = self.default_source_account()
         Transfer.objects.filter(source=None, destination=target_account, user=self.user, line_item=line_item_type).delete()
 
-    def submit_payment(self, amount, transaction_id=None):
+    def submit_payment(self, amount, transaction_id=''):
         #   Create a transfer representing a user's payment for this program
         line_item_type = self.default_payments_lineitemtype()
         target_account = self.default_source_account()
