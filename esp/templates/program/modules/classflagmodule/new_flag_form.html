@@ -1,0 +1,29 @@
+<div class="flag-detail" id="flag-extra" style="display: none;">
+    <div style="background: gray;">New Flag</div>
+    <form method="post" class="flag-form" action="/manage/{{program.getUrlBase}}/newflag/">{% csrf_token %}<input type="hidden" name="subject" value="{{class.id}}"></input>
+        <table>
+            <tbody>
+                <tr>
+                    <th> Flag type: </th>
+                    <td>
+                        <select name="flag_type">
+                            <option selected="selected" value=""></option>
+                            {% for flag in flag_types %}
+                                <option value="{{flag.id}}">{{flag.name}}</option>
+                            {% endfor %}
+                        </select>
+                    </td>
+                </tr>
+                <tr>
+                    <th>
+                        Comment:<br/>
+                        <input type="submit" id="flag-submit-new" class="btn btn-default" value="Save"></input>
+                    </th>
+                    <td>
+                        <textarea id="flag-comment-{{flag.id}}" name="comment" rows="4" cols="60">{{flag.comment}}</textarea>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </form>
+</div>

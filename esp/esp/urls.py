@@ -32,7 +32,7 @@ Learning Unlimited, Inc.
   Email: web-team@lists.learningu.org
 """
 import os
-from django.conf.urls.defaults import patterns, include, handler500, handler404
+from django.conf.urls.defaults import patterns, include, url, handler500, handler404
 from django.contrib import admin
 from esp.admin import admin_site, autodiscover
 from django.conf import settings
@@ -40,7 +40,7 @@ from django.conf.urls.static import static
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.views.generic.base import RedirectView
 from filebrowser.sites import site as filebrowser_site
-import debug_toolbar.urls
+import debug_toolbar
 
 autodiscover(admin_site)
 
@@ -150,7 +150,6 @@ urlpatterns += patterns('esp.web.views.main',
     (r'^archives/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
     (r'^archives/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/([-A-Za-z0-9_ ]+)/?$', 'archives'),
-    (r'^myesp/([-A-Za-z0-9_ ]+)/?$', 'myesp'),
 
     # Event-generation
     # Needs to get fixed (axiak)
@@ -172,7 +171,9 @@ urlpatterns += patterns('esp.qsdmedia.views',
 urlpatterns += patterns('', 
     (r'^accounting/', include('esp.accounting.urls')) )
 
-urlpatterns += debug_toolbar.urls.urlpatterns
+urlpatterns += patterns('',
+    url(r'^__debug__/', include(debug_toolbar.urls)),
+)
 
 urlpatterns += patterns('esp.formstack.views',
     (r'^medicalsyncapi$', 'medicalsyncapi'),)

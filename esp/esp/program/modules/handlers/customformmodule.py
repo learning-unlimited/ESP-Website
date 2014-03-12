@@ -85,7 +85,7 @@ class CustomFormModule(ProgramModuleObj):
         if custom_form_id:
             cf = Form.objects.get(id=int(custom_form_id))
         else:
-            raise ESPError(False), 'Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the %s_extraform_id Tag.' % tl
+            raise ESPError('Cannot find an appropriate form for the quiz.  Please ask your administrator to create a form and set the %s_extraform_id Tag.' % tl, log=False)
         
         form_wizard = FormHandler(cf, request, request.user).get_wizard()
         form_wizard.curr_request = request

@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 #
 # Import classrooms from a CSV file. Columns should be:
-#   Start Date: 01-Mar-14 (meaning March 1st, 2014)
+#   Date: 01-Mar-14 (meaning March 1st, 2014)
 #   Begin Time: 700 (meaning 7:00 AM -- on the hour, not five minutes after)
 #   End Time: 2000 (meaning 8:00 PM)
 #   Building: 1

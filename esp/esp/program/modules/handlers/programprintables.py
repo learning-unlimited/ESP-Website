@@ -138,19 +138,19 @@ class ProgramPrintables(ProgramModuleObj):
         category_options = prog.class_categories.all().values_list('category', flat=True)
         categories = category_options
 
-        if request.GET.has_key('first_sort'):
+        if request.GET.get('first_sort', ''):
             sort_list.append( cmp_fn[request.GET['first_sort']] )
             sort_name_list.append( request.GET['first_sort'] )
         else:
             sort_list.append( cmp_fn["category"] )
 
-        if request.GET.has_key('second_sort'):
+        if request.GET.get('second_sort', ''):
             sort_list.append( cmp_fn[request.GET['second_sort']] )
             sort_name_list.append( request.GET['second_sort'] )
         else:
             sort_list.append( cmp_fn["timeblock"] )
 
-        if request.GET.has_key('third_sort'):
+        if request.GET.get('third_sort', ''):
             sort_list.append( cmp_fn[request.GET['third_sort']] )
             sort_name_list.append( request.GET['third_sort'] )
         else:
@@ -177,7 +177,7 @@ class ProgramPrintables(ProgramModuleObj):
                 cls   = ClassSubject.objects.get(parent_program = self.program,
                                           id             = clsid)
             except:
-                raise ESPError(), 'Could not get the class object.'
+                raise ESPError('Could not get the class object.')
 
             cls_dict = {}
             for cur_cls in classes:
@@ -202,7 +202,7 @@ class ProgramPrintables(ProgramModuleObj):
                         clsids[i+1] = tmp
                         found       = True
             else:
-                raise ESPError(), 'Received invalid operation for class list.'
+                raise ESPError('Received invalid operation for class list.')
 
             classes = []
 
@@ -260,6 +260,11 @@ class ProgramPrintables(ProgramModuleObj):
         if '_num_students' in sort_order:
             sort_order.remove('_num_students')
         classes = classes.order_by(*sort_order)
+
+        #   Replace incorrect 'timeblock' sort field with sorting by meeting times start field.
+        for i in xrange(len(sort_order)):
+            if sort_order[i] == 'timeblock':
+                sort_order[i] = 'meeting_times__start'
 
         #   Filter out classes that are not scheduled
         classes = [cls for cls in classes

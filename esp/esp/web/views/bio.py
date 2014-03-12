@@ -69,16 +69,16 @@ def bio_edit_user_program(request, founduser, foundprogram, external=False):
 
     if founduser is None:
         if external:
-            raise ESPError(), 'No user given.'
+            raise ESPError('No user given.')
         else:
             raise Http404
 
     if not founduser.isTeacher():
-        raise ESPError(False), '%s is not a teacher of ESP.' % \
-                               (founduser.name())
+        raise ESPError('%s is not a teacher of ESP.' % \
+                               (founduser.name()), log=False)
 
     if request.user.id != founduser.id and request.user.is_staff != True:
-        raise ESPError(False), 'You are not authorized to edit this biography.'
+        raise ESPError('You are not authorized to edit this biography.', log=False)
         
     lastbio      = TeacherBio.getLastBio(founduser)
         
@@ -145,8 +145,8 @@ def bio_user(request, founduser):
         raise Http404
 
     if not founduser.isTeacher():
-        raise ESPError(False), '%s is not a teacher of ESP.' % \
-                               (founduser.name())
+        raise ESPError('%s is not a teacher of ESP.' % \
+                               (founduser.name()), log=False)
     
     teacherbio = TeacherBio.getLastBio(founduser)
     if not teacherbio.picture:
