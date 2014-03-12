@@ -1,5 +1,0 @@
-# [paths]
-# bitbucket = ssh://hg@bitbucket.org/me/myrepo/
-
-# [hooks]
-# changegroup.push = screen -d -m hg push bitbucket

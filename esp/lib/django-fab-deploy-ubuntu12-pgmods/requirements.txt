@@ -1,3 +1,0 @@
-jinja2
-fabric >= 1.4.0
-fabric-taskset

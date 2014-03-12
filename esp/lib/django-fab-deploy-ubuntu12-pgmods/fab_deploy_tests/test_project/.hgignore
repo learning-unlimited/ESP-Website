@@ -1,9 +1,0 @@
-syntax: glob
-# next line contains tabs'n'spaces **intentionally**
-  	  
-# comment check
-
-# what previously was hardcoded
-config.py
-*.pyc
-*.pyo

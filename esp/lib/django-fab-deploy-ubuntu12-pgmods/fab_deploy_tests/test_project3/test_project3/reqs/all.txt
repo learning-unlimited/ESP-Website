@@ -1,7 +1,0 @@
-django == 1.4
-psycopg2 == 2.4.5
-South == 0.7.5
-
-# this is here in order to speed up tests
---find-links file:///tmp/sdist/
---index-url file:///dev/null
