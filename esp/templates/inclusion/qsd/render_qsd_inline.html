@@ -11,8 +11,7 @@
     <div class="hidden" id="inline_edit_{{ qsdrec.edit_id }}">
         <textarea rows="8" cols="80" id="qsd_content_{{ qsdrec.edit_id }}"
                   onblur="qsd_inline_upload('{{ qsdrec.url }}', '{{ qsdrec.edit_id }}');" name="qsd_content"
-                  class="qsd_editor qsd_bits hidden {% if not qsdrec.id %}qsd_halfsize{% endif %}">
-            {% autoescape off %}{{ qsdrec.content }}{% endautoescape %}
+                  class="qsd_editor qsd_bits hidden {% if not qsdrec.id %}qsd_halfsize{% endif %}">{% autoescape on %}{{ qsdrec.content }}{% endautoescape %}
         </textarea>
     </div>
 </div>

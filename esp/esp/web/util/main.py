@@ -57,7 +57,7 @@ def get_from_id(id, module, strtype = 'object', error = True):
             foundobj = ESPUser(foundobj)
     except:
         if error:
-            raise ESPError(False), 'Could not find the %s with id %s.' % (strtype, id)
+            raise ESPError('Could not find the %s with id %s.' % (strtype, id), log=False)
         return None
     return foundobj
     

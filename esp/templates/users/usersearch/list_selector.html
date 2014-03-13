@@ -27,6 +27,20 @@
                     {% endfor %}
                     <option value="emaillist" id="recipient_type_emaillist">Mailing list</option>
                 </select>
+                <div class="sendto_fn_select Student">
+                    <div>
+                        <input type="checkbox" name="student_sendto_self" value="1" checked="checked" />
+                        <label for="student_sendto_self">Email the students</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" name="student_sendto_guardian" value="1" />
+                        <label for="student_sendto_guardian">Email the students' guardians</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" name="student_sendto_emergency" value="1" />
+                        <label for="student_sendto_emergency">Email the students' emergency contacts</label>
+                    </div>
+                </div>
                 <p>&nbsp;</p>
                 <a name="#" class="recipient_step_button" id="recipient_type_next">Continue to select set of contacts</a>
             </div>
@@ -128,6 +142,20 @@
             <option value="{{ kv.0 }}:{{ item.name }}">{{ item.description }}</option>
             {% endfor %}{% endfor %}
             </select>
+            <div class="sendto_fn_select Student">
+                <div>
+                    <input type="checkbox" name="student_sendto_self" value="1" checked="checked" />
+                    <label for="student_sendto_self">Email the students</label>
+                </div>
+                <div>
+                    <input type="checkbox" name="student_sendto_guardian" value="1" />
+                    <label for="student_sendto_guardian">Email the students' guardians</label>
+                </div>
+                <div>
+                    <input type="checkbox" name="student_sendto_emergency" value="1" />
+                    <label for="student_sendto_emergency">Email the students' emergency contacts</label>
+                </div>
+            </div>
             <p>&nbsp;</p>
             <a name="#" class="recipient_step_button" id="combo_base_next">Continue to combine with other lists</a>
         </div>

@@ -1,13 +1,13 @@
 {# expects program, class, and teacherclsmodule (ClassRegModuleInfo) #}
 <tr{% if not cls.isReviewed %} style="color: gray"{% endif %}{% if cls.isRejected or cls.isCancelled %} style="color: red"{% endif %}>
+  <td class="clsleft classname bordertop2" colspan="3">
   {% block cls_title %}
-  <td class="clsleft classname bordertop2" colspan="2">
     <span title="{{cls}}">
       {{ cls|truncatewords:6 }}
       <a title="Catalog Preview" href="{{ cls.parent_program.get_teach_url }}catalogpreview/{{ cls.id }}">&raquo;</a>
     </span>
-  </td>
   {% endblock %}
+  </td>
   {% block cls_row_1_buttons %}
   <td class="clsmiddle bordertop2">
     <form method="post" action="/teach/{{program.getUrlBase}}/deleteclass/{{cls.id }}" onsubmit="return deleteClass();">
@@ -41,7 +41,7 @@
 </tr>
 
 <tr>
-  <td class="clsleft" colspan="5">
+  <td class="clsleft" colspan="6">
     <b>Directors' review status</b>: {% if cls.isReviewed %}{% if cls.isAccepted %}
     <span style="font-weight: bold; color: #0C0;">Accepted</span>
     {% else %}
@@ -51,42 +51,42 @@
     <span style="font-weight: bold; color: #00C;">Unreviewed</span>
     {% endif %}
   </td>
-  {% block cls_row_2_buttons %}
   <td class="clsright" colspan="1">
+  {% block cls_row_2_buttons %}
     {% if cls.isAccepted %}
     <a href="/teach/{{program.getUrlBase}}/class_students/{{cls.id}}" 
        title="View Class' Students" class="abutton">
       View Students
     </a>
     {% endif %}
-  </td>
   {% endblock %}
+  </td>
 </tr>
 
 <tr>
   <td class="clsleft" colspan="5">
     <b>Document uploads</b>: There are {{ cls.documents.count }} documents associated with this class.
   </td>
+  <td class="clsright" colspan="2">
   {% block cls_row_3_buttons %}
-  <td class="clsright" colspan="1">
     <a href="/teach/{{ program.getUrlBase }}/class_docs/{{cls.id}}" title="Upload/manage files" class="abutton">Manage Documents</a>
-  </td>
   {% endblock %}
+  </td>
 </tr>
 
 {% if teacherclsmodule.allow_coteach %}
 <tr>
   <td class="clsleft"><b>(Co-)Teachers: </b></td>
-  <td class="clsmiddle" colspan="4">{% for t in cls.get_teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
-  {% block cls_row_4_buttons %}
+  <td class="clsmiddle" colspan="5">{% for t in cls.get_teachers %}{% ifnotequal t request.user %}{{ t.first_name }} {{ t.last_name }}{% if not forloop.last %}, {% endif %}{% endifnotequal %}{% endfor %}</td>
   <td class="clsright">
+  {% block cls_row_4_buttons %}
     <form method="post" action="/teach/{{program.getUrlBase}}/coteachers">
       <input type="hidden" name="command" value="edit_class_{{cls.id}}" />
       <input type="hidden" name="clsid"   value="{{cls.id }}" />
       <input class="button" type="submit" value="Modify Coteachers">
     </form>
-  </td>
   {% endblock %}
+  </td>
 </tr>
 {% endif %}
 
@@ -103,13 +103,15 @@
     <span style="font-weight: bold; color: #00C;">Unreviewed</span>
     {% endif %}
   </td>
-  <td class="clsmiddle" valign="top" colspan="3">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}</td>
+  <td class="clsmiddle" valign="top" colspan="4">Room: {% if sec.initial_rooms %}{% for r in sec.initial_rooms %}{{ r.name }}{% if not forloop.last %}, {% endif %}{% endfor %}{% else %}Unassigned{% endif %} <br />Time: {% if sec.friendly_times|length_is:0 %}Unassigned{% else %}{% if friendly_times_with_date %}{% for f in sec.friendly_times_with_date %}{{ f }}{% endfor %}{% else %}{% for f in sec.friendly_times %}{{ f }}{% endfor %}{% endif%}{% endif %}</td>
   <td class="clsmiddle" valign="top">{{ sec.num_students }} / {{ sec.capacity }} students
     <br />(<a href="/teach/{{ program.getUrlBase }}/section_students/{{ sec.id }}">view list</a>) 
   </td>
+  <td class="clsright" valign="top">
   {% block cls_row_5_buttons %}
-  <td class="clsright" valign="top"><a class="abutton" href="mailto:{{ sec.emailcode }}-students@{{ email_host }}">E-mail students</a></td>
+    <a class="abutton" href="mailto:{{ sec.emailcode }}-students@{{ email_host }}">E-mail students</a>
   {% endblock %}
+  </td>
 </tr>
 {% endfor %}
 {% endif %}

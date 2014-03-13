@@ -193,18 +193,18 @@ def user_registration_phase2(request):
 
 def activate_account(request):
     if not 'username' in request.GET or not 'key' in request.GET:
-        raise ESPError(False), "Invalid account activation information.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
+        raise ESPError("Invalid account activation information.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
 
     try:
         u = ESPUser.objects.get(username = request.GET['username'])
     except:
-        raise ESPError(False), "Invalid account username.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page."
+        raise ESPError("Invalid account username.  Please try again.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
 
     if u.is_active:
-        raise ESPError(False), 'The user account supplied has already been activated. If you have lost your password, visit the <a href="/myesp/passwdrecover/">password recovery form</a>.  Otherwise, please <a href="/accounts/login/?next=/myesp/profile/">log in</a>.'
+        raise ESPError('The user account supplied has already been activated. If you have lost your password, visit the <a href="/myesp/passwdrecover/">password recovery form</a>.  Otherwise, please <a href="/accounts/login/?next=/myesp/profile/">log in</a>.', log=False)
 
     if not u.password.endswith("_%s" % request.GET['key']):
-        raise ESPError(False), "Incorrect key.  Please try again to click the link in your email, or copy the url into your browser.  If this error persists, please contact us using the contact information on the top or bottom of this page."
+        raise ESPError("Incorrect key.  Please try again to click the link in your email, or copy the url into your browser.  If this error persists, please contact us using the contact information on the top or bottom of this page.", log=False)
 
     u.password = u.password[:-(len("_%s" % request.GET['key']))]
     u.is_active = True

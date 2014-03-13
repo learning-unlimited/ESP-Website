@@ -403,7 +403,7 @@ class AJAXSchedulingModule(ProgramModuleObj):
         # DON'T CACHE this function!
         # It's supposed to have side effects, that's the whole point!
         if not request.POST.has_key('action'):
-            raise ESPError(False), "This URL is intended to be used for client<->server communication; it's not for human-readable content."
+            raise ESPError("This URL is intended to be used for client<->server communication; it's not for human-readable content.", log=False)
 
         # Pull relevant data out of the JSON structure
         cls_id = request.POST['cls']

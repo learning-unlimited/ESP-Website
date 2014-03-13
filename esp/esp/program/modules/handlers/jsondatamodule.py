@@ -413,7 +413,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             class_id = int(request.GET['class_id'])
             matching_classes = ClassSubject.objects.filter(id=class_id)
         else:
-            raise ESPError(False), 'Need a section or subject ID to fetch catalog info'
+            raise ESPError('Need a section or subject ID to fetch catalog info', log=False)
 
         # If we're here, we don't have a section_id, so default to classes
         if not return_key:
@@ -474,7 +474,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             class_id = int(request.GET['class_id'])
             target_qs = ClassSubject.objects.filter(id=class_id)
         else:
-            raise ESPError(False), 'Need a section or subject ID to fetch catalog info'
+            raise ESPError('Need a section or subject ID to fetch catalog info', log=False)
 
         # If we're here, we don't have a section_id, so default to classes
         if not return_key:
@@ -523,7 +523,7 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
             class_id = int(request.GET['class_id'])
             matching_classes = ClassSubject.objects.filter(id=class_id)
         else:
-            raise ESPError(False), 'Need a section or subject ID to fetch catalog info'
+            raise ESPError('Need a section or subject ID to fetch catalog info', log=False)
 
         # If we're here, we don't have a section_id, so default to classes
         if not return_key:

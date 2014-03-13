@@ -75,7 +75,7 @@ class TeacherPreviewModule(ProgramModuleObj):
             context['scheditems'] = scheditems
             return render_to_response(pmo.baseDir()+template_file, request, context)
         else:
-            raise ESPError(False), 'No printables module resolved, so this document cannot be generated.  Consult the webmasters.' 
+            raise ESPError('No printables module resolved, so this document cannot be generated.  Consult the webmasters.', log=False)
 
     @aux_call
     # No need for needs_teacher, since it depends on request.user, and onsite may want to use it (with ?user=foo).
