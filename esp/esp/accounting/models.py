@@ -171,30 +171,32 @@ class Account(models.Model):
     def balance_breakdown(self):
         transfers_in = Transfer.objects.filter(destination=self).values('source').annotate(amount = Sum('amount_dec'))
         transfers_out = Transfer.objects.filter(source=self).values('destination').annotate(amount = Sum('amount_dec'))
-        transfers = []
+        transfers_in_context = []
+        transfers_out_context = []
 
         for transfer in transfers_in:
-            target_name = "unknown"
-            target_title = "Unknown"
+            target_name = "none"
+            target_title = "External payer[s]"
             
             if transfer['source'] is not None:
                 target = Account.objects.get(id=transfer['source'])
                 target_name = target.name
                 target_title = target.description_title
             
-            transfers.append({'amount': transfer['amount'], 'target_type': 'source', 'target_name': target_name, 'target_title': target_title})
+            transfers_in_context.append({'amount': transfer['amount'], 'target_type': 'source', 'target_name': target_name, 'target_title': target_title})
+            
         for transfer in transfers_out:
-            target_name = "unknown"
-            target_title = "Unknown"
+            target_name = "none"
+            target_title = "External payee[s]"
             
             if transfer['destination'] is not None:
                 target = Account.objects.get(id=transfer['destination'])
                 target_name = target.name
                 target_title = target.description_title
             
-            transfers.append({'amount': transfer['amount'], 'target_type': 'destination', 'target_name': target_name, 'target_title': target_title})
+            transfers_out_context.append({'amount': transfer['amount'], 'target_type': 'destination', 'target_name': target_name, 'target_title': target_title})
         
-        return transfers
+        return (transfers_out_context, transfers_in_context)
         
     def __unicode__(self):
         return self.name
