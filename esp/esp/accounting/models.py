@@ -89,7 +89,7 @@ class LineItemOptions(models.Model):
             return float(self.amount_dec)
             
     def __unicode__(self):
-        return u'%s ($%.2f)' % (self.description, self.amount_dec)
+        return u'%s ($%s)' % (self.description, self.amount_dec)
 
 class FinancialAidGrant(models.Model):
     request = AjaxForeignKey(FinancialAidRequest)
