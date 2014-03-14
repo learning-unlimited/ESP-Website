@@ -88,7 +88,7 @@ def lottery_student_reg(request, program = None):
 
     # First check whether the user is actually a student.
     if not request.user.isStudent():
-        raise ESPError(False), "You must be a student in order to access Splash student registration."
+        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
 
     context = {}
     
@@ -105,7 +105,7 @@ def lottery_student_reg_simple(request, program = None):
 
     # First check whether the user is actually a student.
     if not request.user.isStudent():
-        raise ESPError(False), "You must be a student in order to access Splash student registration."
+        raise ESPError("You must be a student in order to access Splash student registration.", log=False)
 
     context = {}
     
@@ -374,13 +374,13 @@ def usersearch(request):
     Either redirect to that user's "userview" page, or
     display a list of users to pick from."""
     if not request.GET.has_key('userstr'):
-        raise ESPError(False), "You didn't specify a user to search for!"
+        raise ESPError("You didn't specify a user to search for!", log=False)
                                
     userstr = request.GET['userstr']
     found_users = find_user(userstr)
 
     if not found_users:
-        raise ESPError(False), "No user found by that name!"
+        raise ESPError("No user found by that name!", log=False)
 
     if isiterable(found_users):
         return render_to_response('users/userview_search.html', request, { 'found_users': found_users })
@@ -394,7 +394,7 @@ def userview(request):
     try:
         user = ESPUser.objects.get(username=request.GET['username'])
     except:
-        raise ESPError(False), "Sorry, can't find anyone with that username."
+        raise ESPError("Sorry, can't find anyone with that username.", log=False)
 
     teacherbio = TeacherBio.getLastBio(user)
     if not teacherbio.picture:
@@ -451,11 +451,6 @@ def newprogram(request):
         template_prog["term_friendly"] = tprogram.anchor.friendly_name
         '''
         
-        template_prog["admins"] = ESPUser.objects.filter(permission__permission_type="Administer",permission__program=tprogram).values_list("id", flat=True)
-
-        # aseering 5/18/2008 -- More aggressively list everyone who was an Admin
-        #template_prog["admins"] = [ x.id for x in UserBit.objects.bits_get_users(verb=GetNode("V/Administer"), qsc=tprogram.anchor, user_objs=True) ]
-
         student_reg_bits = list(Permission.objects.filter(permission_type__startswith='Student', program=template_prog_id).order_by('-start_date'))
         if len(student_reg_bits) > 0:
             newest_bit = student_reg_bits[0]
@@ -522,7 +517,7 @@ def newprogram(request):
 
             return HttpResponseRedirect(manage_url)
         else:
-            raise ESPError(False), "Improper form data submitted."
+            raise ESPError("Improper form data submitted.", log=False)
           
 
     #   If the form has been submitted, process it.
@@ -580,7 +575,7 @@ def submit_transaction(request):
                   settings.SERVER_EMAIL, recipient_list, True)
 
         #   Save the payment as a transfer in the database
-        iac.submit_payment(post_amount)
+        iac.submit_payment(post_amount, transaction_id=request.POST.get('requestID', ''))
 
         tl = 'learn'
         one, two = iac.program.url.split('/')

@@ -28,16 +28,18 @@
     <a href="/manage/{{ program.getUrlBase }}/main">Return to the {{ program.niceName }} admin portal</a><br />
     </p>
 {% else %}
-    <p>
-    Thank you for your interest in teaching a {{ classtype }} for {{ one }}!  Please ensure that you are available to teach your class at any of the times you have <a href="/teach/{{ program.url }}/availability">specified that you are available</a>.  If there is any chance that your plans may change and you won't be able to teach, please do not fill out this form; <a href="mailto:{{ program.director_email }}">contact the program directors</a>.</p>
+    {% inline_program_qsd_block program qsd_name %}
+        <p>
+        Thank you for your interest in teaching a {{ classtype }} for {{ one }}!  Please ensure that you are available to teach your class at any of the times you have <a href="/teach/{{ program.url }}/availability">specified that you are available</a>.  If there is any chance that your plans may change and you won't be able to teach, please do not fill out this form; <a href="mailto:{{ program.director_email }}">contact the program directors</a>.</p>
 
-    <p>Please fill out or update the form below.  (The required fields are bordered in red.)  If you would like to co-teach this class with others, please click the "Modify Coteachers" button next to the appropriate class at the teacher registration page afterwards.</p>
+        <p>Please fill out or update the form below.  (The required fields are bordered in red.)  If you would like to co-teach this class with others, please click the "Modify Coteachers" button next to the appropriate class at the teacher registration page afterwards.</p>
+
+        <p align="center"><div class="info">If you would like to teach multiple sections of the same class, <b>do not submit this form multiple times.</b>  Instead, select the desired number of sections next to "Number of Sections" (the second field from the top).</div></p>
+    {% end_inline_program_qsd_block %}
 
     {% if module.open_class_registration and addoredit == 'Add' %}
     <p style="font-weight:bold;">This page is for registering a {{ classtype }} <span style="text-decoration:underline;">only</span>. If you are trying to register a {{ otherclass.type }}, <a href="{% url esp.web.views.main.program tl one two otherclass.link %}">click here</a>.</p>
     {% endif %}
-    
-    <p align="center"><div class="info">If you would like to teach multiple sections of the same class, <b>do not submit this form multiple times.</b>  Instead, select the desired number of sections next to "Number of Sections" (the second field from the top).</div></p>
 {% endif %}
 
 <div id="program_form">

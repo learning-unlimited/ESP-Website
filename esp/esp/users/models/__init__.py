@@ -260,6 +260,28 @@ class ESPUser(User, AnonymousUser):
     def name(self):
         return '%s %s' % (self.first_name, self.last_name)
 
+    def get_email_sendto_address_pair(self):
+        """
+        Returns the pair of data needed to send an email to the user.
+        """
+        return (self.email, self.name())
+
+    @staticmethod
+    def email_sendto_address(email, name=''):
+        """
+        Given an email and a name, returns the string used to address mail.
+        """
+        if name:
+            return u'%s <%s>' % (name, email)
+        else:
+            return u'<%s>' % email
+
+    def get_email_sendto_address(self):
+        """
+        Returns the string used to address mail to the user.
+        """
+        return ESPUser.email_sendto_address(self.email, self.name())
+
     def __cmp__(self, other):
         lastname = cmp(self.last_name.upper(), other.last_name.upper())
         if lastname == 0:
@@ -309,7 +331,7 @@ class ESPUser(User, AnonymousUser):
             # Disallow morphing into Administrators.
             # It's too broken, from a security perspective.
             # -- aseering 1/29/2010
-            raise ESPError(False), "User '%s' is an administrator; morphing into administrators is not permitted." % user.username
+            raise ESPError("User '%s' is an administrator; morphing into administrators is not permitted." % user.username, log=False)
 
         logout(request)
         user.backend = 'django.contrib.auth.backends.ModelBackend'
@@ -329,7 +351,7 @@ class ESPUser(User, AnonymousUser):
 
     def switch_back(self, request):
         if not 'user_morph' in request.session:
-            raise ESPError(), 'Error: You were not another user to begin with!'
+            raise ESPError('Error: You were not another user to begin with!')
 
         retUrl   = request.session['user_morph']['retUrl']
         new_user = self.get_old(request)
@@ -459,11 +481,11 @@ class ESPUser(User, AnonymousUser):
         try:
             num = int(num)
         except:
-            raise ESPError(), 'Could not find user "%s %s"' % (first, last)
+            raise ESPError('Could not find user "%s %s"' % (first, last))
         users = ESPUser.objects.filter(last_name__iexact = last,
                                     first_name__iexact = first).order_by('id')
         if len(users) <= num:
-            raise ESPError(False), '"%s %s": Unknown User' % (first, last)
+            raise ESPError('"%s %s": Unknown User' % (first, last), log=False)
         return users[num]
 
     @cache_function
@@ -482,7 +504,7 @@ class ESPUser(User, AnonymousUser):
     @staticmethod
     def getAllOfType(strType, QObject = True):
         if strType not in ESPUser.getTypes():
-            raise ESPError(), "Invalid type to find all of."
+            raise ESPError("Invalid type to find all of.")
 
         Q_useroftype      = Q(groups__name=strType)
 
@@ -500,7 +522,7 @@ class ESPUser(User, AnonymousUser):
 
         #   Detect whether the program has the availability module, and assume
         #   the user is always available if it isn't there.
-        if program.program_modules.filter(handler='AvailabilityModule').exists():
+        if program.hasModule('AvailabilityModule'):
             valid_events = Event.objects.filter(useravailability__user=self, program=program).order_by('start')
         else:
             valid_events = program.getTimeSlots()
@@ -749,7 +771,7 @@ class ESPUser(User, AnonymousUser):
         # we have a lot of users with no email (??)
         #  let's at least display a sensible error message
         if self.email.strip() == '':
-            raise ESPError(), 'User %s has blank email address; cannot recover password. Please contact webmasters to reset your password.' % self.username
+            raise ESPError('User %s has blank email address; cannot recover password. Please contact webmasters to reset your password.' % self.username)
 
         # email addresses
         to_email = ['%s <%s>' % (self.name(), self.email)]
@@ -781,10 +803,11 @@ class ESPUser(User, AnonymousUser):
         if self.is_anonymous() or self.id is None: return False
         is_admin_role = self.groups.filter(name="Administrator").exists()
         if is_admin_role: return True
-        if program is None:
-            return Permission.user_has_perm(self, "Administer")
-
-        return Permission.user_has_perm(self, "Administer",program=program)
+        quser = Q(user=self) | Q(user=None, role__in=self.groups.all())
+        return Permission.objects.filter(
+                        quser & Permission.is_valid_qobject(),
+                        permission_type="Administer",
+                        program__in=[None, program]).exists()
     isAdmin = isAdministrator
 
     @cache_function
@@ -1077,7 +1100,7 @@ class StudentInfo(models.Model):
         if not studentInfo.user:
             studentInfo.user = curUser
         elif studentInfo.user != curUser: # this should never happen, but you never know....
-            raise ESPError(), "Your registration profile is corrupted. Please contact esp-web@mit.edu, with your name and username in the message, to correct this issue."
+            raise ESPError("Your registration profile is corrupted. Please contact esp-web@mit.edu, with your name and username in the message, to correct this issue.")
 
         studentInfo.graduation_year = new_data['graduation_year']
         try:
@@ -1443,7 +1466,7 @@ class ZipCode(models.Model):
             distance_decimal = Decimal(str(distance))
             distance_float = float(str(distance))
         except:
-            raise ESPError(), '%s should be a valid decimal number!' % distance
+            raise ESPError('%s should be a valid decimal number!' % distance)
 
         if distance < 0:
             distance *= -1
@@ -1549,6 +1572,23 @@ class ContactInfo(models.Model, CustomFormsLinkModel):
 
 
 
+
+    def name(self):
+        return '%s %s' % (self.first_name, self.last_name)
+
+    email = property(lambda self: self.e_mail)
+
+    def get_email_sendto_address_pair(self):
+        """
+        Returns the pair of data needed to send an email to the contact.
+        """
+        return (self.email, self.name())
+
+    def get_email_sendto_address(self):
+        """
+        Returns the string used to address mail to the contact.
+        """
+        return ESPUser.email_sendto_address(self.email, self.name())
 
     def address(self):
         return '%s, %s, %s %s' % \
@@ -1733,7 +1773,7 @@ class PersistentQueryFilter(models.Model):
         try:
             QObj = pickle.loads(str(self.q_filter))
         except:
-            raise ESPError(), 'Invalid Q object stored in database.'
+            raise ESPError('Invalid Q object stored in database.')
 
         #   Do not include users if they have disabled their account.
         if restrict_to_active and (self.item_model.find('auth.models.User') >= 0 or self.item_model.find('esp.users.models.ESPUser') >= 0):
@@ -1774,7 +1814,7 @@ class PersistentQueryFilter(models.Model):
             to the live database. You must supply the model. If the model is not matched,
             it will become an error. """
         if str(module) != str(self.item_model):
-            raise ESPError(), 'The module given does not match that of the persistent entry.'
+            raise ESPError('The module given does not match that of the persistent entry.')
 
         return module.objects.filter(self.get_Q())
 
@@ -1994,6 +2034,7 @@ class Record(models.Model):
         ("teacheracknowledgement","Did teacher acknowledgement"),
         ("lunch_selected","Selected a lunch block"),
         ("extra_form_done","Filled out Custom Form"),
+        ("extra_costs_done","Filled out Student Extra Costs Form"),
         ("waitlist","Waitlisted for a program"),
         ("interview","Teacher-interviewed for a program"),
         ("teacher_training","Attended teacher-training for a program"),
@@ -2110,6 +2151,8 @@ class Permission(ExpirableModel):
 
     @classmethod
     def user_has_perm(self, user, name, program=None, when=None):
+        if user.isAdministrator(program=program):
+            return True
         perms=[name]
         for k,v in self.implications.items():
             if name in v: perms.append(k)
@@ -2307,8 +2350,8 @@ class GradeChangeRequest(TimeStampedModel):
         subject, message = self._request_email_content()
         send_mail(subject,
                   message,
-                  settings.DEFAULT_FROM_EMAIL,
-                  [self.requesting_student.email, ])
+                  settings.SERVER_EMAIL,
+                  [settings.DEFAULT_EMAIL_ADDRESSES['default'], ])
 
     def _confirmation_email_content(self):
         context = {'student': self.requesting_student,

@@ -87,7 +87,7 @@ class Media(models.Model):
             allowed_extensions = ['pdf', 'odt', 'odp', 'jpg', 'jpeg', 'gif', 'png', 'doc', 'docx', 'ppt', 'pptx', 'zip', 'txt']
         
         if not self.file_extension.lower() in allowed_extensions:
-            raise ESPError(False), "The file extension provided is not allowed. Allowed extensions: %s." % (', '.join(allowed_extensions),)
+            raise ESPError("The file extension provided is not allowed. Allowed extensions: %s." % (', '.join(allowed_extensions),), log=False)
 
         self.mime_type = file.content_type
         self.size = file.size

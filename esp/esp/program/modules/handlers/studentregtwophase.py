@@ -86,15 +86,21 @@ class StudentRegTwoPhase(StudentRegistration):
         # Populate the timeslot dictionary with the priority to class title
         # mappings for each timeslot.
         priority_regs = StudentRegistration.valid_objects().filter(
+<<<<<<< HEAD
             user= user, relationship__name__startswith='Priority')
 
         priority_regs = priority_regs.values(
             'relationship__displayName', 'section', 'section__parent_class__title')
 
+=======
+            user=request.user, relationship__name__startswith='Priority')
+        priority_regs = priority_regs.select_related(
+            'relationship', 'section', 'section__parent_class')
+>>>>>>> main
         for student_reg in priority_regs:
-            rel = student_reg['relationship__displayName']
-            title = student_reg['section__parent_class__title']
-            sec = ClassSection.objects.get(pk=student_reg['section'])
+            rel = student_reg.relationship
+            title = student_reg.section.parent_class.title
+            sec = student_reg.section
             times = sec.meeting_times.all().order_by('start')
 
             if times.count() == 0:
@@ -334,10 +340,11 @@ class StudentRegTwoPhase(StudentRegistration):
         context['timeslot'] = timeslot
         context['num_priorities'] = prog.priorityLimit()
         context['priorities'] = []
-        for i in range(1, prog.priorityLimit()+1):
-            priority_name = 'Priority/' + str(i)
-            priority = RegistrationType.objects.get(name=priority_name)
-            context['priorities'].append((i, priority.displayName))
+        for rel_index in range(1, prog.priorityLimit()+1):
+            rel_name = 'Priority/%s' % rel_index
+            rel, created = RegistrationType.objects.get_or_create(
+                name=rel_name, category='student')
+            context['priorities'].append((rel_index, rel))
 
         catalog_context = self.catalog_context(
             request, tl, one, two,module, extra, prog)
@@ -360,8 +367,7 @@ class StudentRegTwoPhase(StudentRegistration):
         priorities = data[timeslot_id]
         for rel_index, cls_id in priorities.items():
             rel_name = 'Priority/%s' % rel_index
-            rel, created = RegistrationType.objects.get_or_create(
-                name=rel_name)
+            rel = RegistrationType.objects.get(name=rel_name, category='student')
 
             # Pull up any registrations that exist (including expired ones)
             srs = StudentRegistration.objects.annotate(

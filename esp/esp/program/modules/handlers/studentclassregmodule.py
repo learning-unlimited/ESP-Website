@@ -47,6 +47,7 @@ from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
+from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration
 from esp.program.modules import module_ext
@@ -365,7 +366,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             classid = request.POST['class_id']
             sectionid = request.POST['section_id']
         else:
-            raise ESPError(False), "We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled."
+            raise ESPError("We've lost track of your chosen class's ID!  Please try again; make sure that you've clicked the \"Add Class\" button, rather than just typing in a URL.  Also, please make sure that your Web browser has JavaScript enabled.", log=False)
 
         # Can we register for more than one class yet?
         if (not request.user.onsite_local) and (not Permission.user_has_perm(request.user, reg_perm, prog ) ):
@@ -390,7 +391,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                         datestring = ' later today'
                     else:
                         datestring = d.strftime(' on %B %d')
-                raise ESPError(False), "Currently, you are only allowed to register for one %s class.  Please come back after student registration fully opens%s!" % (prog.niceName(), datestring)
+                raise ESPError("Currently, you are only allowed to register for one %s class.  Please come back after student registration fully opens%s!" % (prog.niceName(), datestring), log=False)
 
         section = ClassSection.objects.get(id=sectionid)
         if not scrmi.use_priority:
@@ -430,12 +431,12 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                     for sec in auto_classes:
                         sec.unpreregister_student(request.user, prereg_verb = prereg_verb)
                     if blocked_class is not None:
-                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url(), blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error)
+                        raise ESPError('You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class "%s." (%s)' % (blocked_class.parent_program.niceName(), blocked_class.parent_program.get_learn_url(), blocked_class.parent_program.niceName(), blocked_class.title(), cannotadd_error), log=False)
                     else:
-                        raise ESPError(False), 'You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url(), prog.niceName(), cannotadd_error)
+                        raise ESPError('You have no class blocks free for this class during %s! Please go to <a href="%sstudentreg">%s Student Registration</a> and make sure you have time on your schedule for the class. (%s)' % (prog.niceName(), prog.get_learn_url(), prog.niceName(), cannotadd_error), log=False)
                     
         if error and not request.user.onsite_local:
-            raise ESPError(False), error
+            raise ESPError(error, log=False)
         
         #   Desired priority level is 1 above current max
         if section.preregister_student(request.user, request.user.onsite_local, priority, prereg_verb = prereg_verb):
@@ -444,7 +445,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
                 r = Record.objects.create(user=request.user, program=prog, event="reg_confirmed")
             return True
         else:
-            raise ESPError(False), 'According to our latest information, this class is full. Please go back and choose another class.'    
+            raise ESPError('According to our latest information, this class is full. Please go back and choose another class.', log=False)
     
     @aux_call
     @needs_student
@@ -494,7 +495,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         try:
             extra = int(extra)
         except:
-            raise ESPError(False), 'Please use the link at the main registration page.'
+            raise ESPError('Please use the link at the main registration page.', log=False)
         user = ESPUser(request.user)        
         ts = Event.objects.filter(id=extra)
         if len(ts) < 1:
@@ -676,7 +677,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
             if isinstance(module, ProgramPrintables):
                 #   Use it to generate a PDF catalog with the default settings
                 return module.coursecatalog(request, tl, one, two, module, extra, prog)
-        raise ESPError(False)('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.')
+        raise ESPError('Unable to generate a PDF catalog because the ProgramPrintables module is not installed for this program.', log=False)
 
     @aux_call
     @needs_student
@@ -723,7 +724,7 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         """ Clear the specified timeslot from a student registration and go back to the same page """
         result = self.clearslot_logic(request, tl, one, two, module, extra, prog)
         if isinstance(result, basestring):
-            raise ESPError(False), result
+            raise ESPError(result, log=False)
         else:
             return self.goToCore(tl)
 
@@ -754,6 +755,19 @@ class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleIn
         
         else:
             return []
+
+    @aux_call
+    def openclasses(self, request, tl, one, two, module, extra, prog):
+        """ A publicly viewable version of the onsite class list. 
+            Should be revisited in the future, as this was a temporary
+            hack created for Stanford Splash in fall 2013. """
+
+        module = prog.getModule('OnSiteClassList')
+        if module:
+            return module.classList_base(request, tl, one, two, module, 'by_time', prog, 'allclass_fragment.html')
+        
+        #  Otherwise this will be a 404
+        return None
 
     class Meta:
         abstract = True
