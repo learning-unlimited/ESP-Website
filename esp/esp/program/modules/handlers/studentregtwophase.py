@@ -39,11 +39,13 @@ from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade
+from esp.program.modules.handlers.student_registration import StudentRegistration
 from esp.users.models import Record, ESPUser
 from esp.web.util import render_to_response
 from esp.utils.query_utils import nest_Q
 
-class StudentRegTwoPhase(ProgramModuleObj):
+
+class StudentRegTwoPhase(StudentRegistration):
 
     def students(self, QObject = False):
         q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration') 
@@ -71,35 +73,35 @@ class StudentRegTwoPhase(ProgramModuleObj):
             "link_title": "Two-Phase Student Registration",
             "admin_title": "Two-Phase Student Registration",
             "module_type": "learn",
+            'inline_template':'program_form.html',
             "seq": 5,
             "required": True
             }
 
-    @main_call
-    @needs_student
-    @meets_grade
-    @meets_deadline('/Classes/Lottery')
-    def studentreg2phase(self, request, tl, one, two, module, extra, prog):
+    def _get_schedule(self, user, program):
         """
-        Serves the two-phase student reg page. This page includes instructions
-        for registration, and links to the phase1/phase2 sub-pages.
+        TODO - To be generalized in base class
         """
-
         timeslot_dict = {}
         # Populate the timeslot dictionary with the priority to class title
         # mappings for each timeslot.
         priority_regs = StudentRegistration.valid_objects().filter(
-            user=request.user, relationship__name__startswith='Priority')
+            user= user, relationship__name__startswith='Priority')
+
         priority_regs = priority_regs.values(
             'relationship__displayName', 'section', 'section__parent_class__title')
+
         for student_reg in priority_regs:
             rel = student_reg['relationship__displayName']
             title = student_reg['section__parent_class__title']
             sec = ClassSection.objects.get(pk=student_reg['section'])
             times = sec.meeting_times.all().order_by('start')
+
             if times.count() == 0:
                 continue
+
             timeslot = times[0].id
+
             if not timeslot in timeslot_dict:
                 timeslot_dict[timeslot] = {rel: title}
             else:
@@ -109,7 +111,8 @@ class StudentRegTwoPhase(ProgramModuleObj):
         prevTimeSlot = None
         blockCount = 0
         schedule = []
-        timeslots = prog.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+        timeslots = program.getTimeSlots(types=['Class Time Block', 'Compulsory'])
+
         for i in range(len(timeslots)):
             timeslot = timeslots[i]
             if prevTimeSlot != None:
@@ -125,8 +128,20 @@ class StudentRegTwoPhase(ProgramModuleObj):
 
             prevTimeSlot = timeslot
 
+        return schedule
+
+    @main_call
+    @needs_student
+    @meets_grade
+    @meets_deadline('/Classes/Lottery')
+    def studentreg2phase(self, request, tl, one, two, module, extra, prog):
+        """
+        Serves the two-phase student reg page. This page includes instructions
+        for registration, and links to the phase1/phase2 sub-pages.
+        """
         context = {}
-        context['timeslots'] = schedule
+        context['timeslots'] = self._get_schedule(request.user, prog)
+        context['program_form'] = self.baseDir()+'program_form.html'
 
         return render_to_response(
             self.baseDir()+'studentregtwophase.html', request, context)
@@ -148,38 +163,62 @@ class StudentRegTwoPhase(ProgramModuleObj):
         """
         Displays a filterable catalog that anyone can view.
         """
+        print 'ENTERED: ',view_classes
         # get choices for filtering options
-        context = {}
-
-        def group_columns(items):
-            # collect into groups of 5
-            cols = []
-            for i, item in enumerate(items):
-                if i % 5 == 0:
-                    col = []
-                    cols.append(col)
-                col.append(item)
-            return cols
-
         category_choices = []
         for category in prog.class_categories.all():
             # FIXME(gkanwar): Make this less hacky, once #770 is resolved
             if category.category == 'Lunch':
                 continue
             category_choices.append((category.id, category.category))
-        context['category_choices'] = group_columns(category_choices)
 
-        grade_choices = []
-        grade_choices.append(('ALL', 'All'))
-        for grade in range(prog.grade_min, prog.grade_max + 1):
-            grade_choices.append((grade, grade))
-        context['grade_choices'] = group_columns(grade_choices)
+        grade_choices = [('ALL', 'All')] + [(grade, grade) for grade in range(prog.grade_min, prog.grade_max + 1)]
 
-        catalog_context = self.catalog_context(
-            request, tl, one, two,module, extra, prog)
-        context.update(catalog_context)
+        context = {}
+        context['category_choices'] = self._group_columns(category_choices)
+        context['grade_choices'] = self._group_columns(grade_choices)
+        context.update(self.catalog_context(request, tl, one, two,module, extra, prog))
 
         return render_to_response(self.baseDir() + 'view_classes.html', request, context)
+
+
+    # @aux_call
+    # def view_classes(self, request, tl, one, two, module, extra, prog):
+    #     """
+    #     Displays a filterable catalog that anyone can view.
+    #     """
+    #     # get choices for filtering options
+    #     context = {}
+
+    #     def group_columns(items):
+    #         # collect into groups of 5
+    #         cols = []
+    #         for i, item in enumerate(items):
+    #             if i % 5 == 0:
+    #                 col = []
+    #                 cols.append(col)
+    #             col.append(item)
+    #         return cols
+
+    #     category_choices = []
+    #     for category in prog.class_categories.all():
+    #         # FIXME(gkanwar): Make this less hacky, once #770 is resolved
+    #         if category.category == 'Lunch':
+    #             continue
+    #         category_choices.append((category.id, category.category))
+    #     context['category_choices'] = group_columns(category_choices)
+
+    #     grade_choices = []
+    #     grade_choices.append(('ALL', 'All'))
+    #     for grade in range(prog.grade_min, prog.grade_max + 1):
+    #         grade_choices.append((grade, grade))
+    #     context['grade_choices'] = group_columns(grade_choices)
+
+    #     catalog_context = self.catalog_context(
+    #         request, tl, one, two,module, extra, prog)
+    #     context.update(catalog_context)
+
+    #     return render_to_response(self.baseDir() + 'view_classes.html', request, context)
 
     @aux_call
     @needs_student
@@ -190,6 +229,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         Displays a filterable catalog which allows starring classes that the
         user is interested in.
         """
+        assert 3 < 0
         # get choices for filtering options
         context = {}
 
@@ -209,6 +249,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
             if category.category == 'Lunch':
                 continue
             category_choices.append((category.id, category.category))
+            
         context['category_choices'] = group_columns(category_choices)
 
         catalog_context = self.catalog_context(

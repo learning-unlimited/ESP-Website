@@ -1,0 +1,45 @@
+<div id="program_form">
+<table cellpadding="3" class="fullwidth">
+<tr>
+    <th colspan="3">
+    Classes for {{request.user.first_name}} {{request.user.last_name}} - ID: {{request.user.id}}
+    </th>
+</tr>
+{% for timeslot, priority_list, blockCount in timeslots %}
+    {% ifchanged timeslot.start.day %}
+        <tr><th class="small" colspan="3" height="3" style="text-align: center;">Classes beginning on {{ timeslot.pretty_date }}</th></tr>
+    {% endifchanged %}
+    {% ifchanged blockCount %}
+        <tr><th class="small" colspan="3" height="3">Block {{ blockCount }}</th></tr>
+    {% endifchanged %}
+    {% ifequal timeslot.event_type.description "Compulsory" %}
+        <td width="25%" valign="top" align="center" class="compulsory_event_time">{{ timeslot.short_description }}</td>
+        <td colspan="2" class="compulsory_event_desc">{{ timeslot.description }}</td>
+    </tr>
+    {% else %}
+    <tr>
+    <tr>
+        <td width="25%" valign="top" align="center">{{ timeslot.short_description }}</td>
+
+        <td style="vertical-align: top !important;">
+            <i>
+            {% for verb,title in priority_list %}
+	        <span>{{verb}}</span>: {{title}}
+                {% if not forloop.last %}<br />{% endif %}
+            {% endfor %}
+            </i>
+            {% if priority_list|length_is:0 %}
+                Nothing Selected
+            {% endif %}
+        </td>
+
+        {%comment%}{% if module.deadline_met %}{%endcomment%}
+        <td width='25%' align='center' style="vertical-align: top !important;">
+            <a href="/learn/{{program.getUrlBase}}/rank_classes/{{timeslot.id}}">[edit rankings]</a>
+        </td>
+        {%comment%}{% endif %}{%endcomment%}
+    </tr>
+    {% endifequal %}
+{% endfor %}
+</table>
+</div>
