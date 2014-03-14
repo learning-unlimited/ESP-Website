@@ -1,20 +1,32 @@
 
-<p>
-<div id="program_form">
-<table width="500" align="center">
+
+<table class="table table-bordered">
+    <thead>
     <tr>
-        <th colspan="2">Transaction Record</th>
+        <td colspan="2" style="text-align: center; background-color: #ccc;">
+            <h3>Transaction Record</h3>
+            <div style="font-size: 0.9em;">
+            <b>User:</b> {{ user.name }}<br />
+            <b>Event:</b> {{ program.niceName }}
+            </div>
+        </td>
     </tr>
     <tr>
-        <th class="smaller">User: {{ user.name }}</th>
-        <th class="smaller">Event: {{ program.niceName }}</th>
+        <td><b>Item description</b></td>
+        <td><b>Cost</b></td>
     </tr>
+    </thead>
+    <tbody>
     {% for item in itemizedcosts %}
     <tr>
-        <td>{{ item.line_item.text }}</td>
+        <td width="75%">{{ item.line_item.text }}</td>
         <td>${{ item.amount|floatformat:2 }}</td>
     </tr>
     {% endfor %}
+    <tr id="donation_option" class="hidden">
+        <td>Donation to Learning Unlimited</td>
+        <td>$10.00</td>
+    </tr>
     {% if sibling_discount %}
     <tr>
         <td>Sibling Discount</td>
@@ -35,8 +47,7 @@
     {% endif %}
     <tr>
         <td align="right"><b>Total:</b></td>
-        <td>${{ itemizedcosttotal|floatformat:2 }}</td>
+        <td><span id="id_totalcost_dollars">${{ itemizedcosttotal|floatformat:2 }}</span></td>
     </tr>
+    </tbody>
 </table>
-</div>
-</p>

@@ -49,6 +49,7 @@ from esp.middleware.threadlocalrequest import get_current_request
 from django.conf import settings
 
 from decimal import Decimal
+import stripe
 
 class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings):
     @classmethod
@@ -144,9 +145,7 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         iac = IndividualAccountingController(self.program, request.user)
         context = {}
         context['module'] = self
-        context['one'] = one
-        context['two'] = two
-        context['tl']  = tl
+        context['program'] = prog
         context['user'] = user
         context['invoice_id'] = iac.get_id()
         context['identifier'] = iac.get_identifier()
@@ -155,6 +154,7 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         grant_type = iac.default_finaid_lineitemtype()
         context['itemizedcosts'] = iac.get_transfers().exclude(line_item__in=[payment_type, sibling_type, grant_type]).order_by('-line_item__required')
         context['itemizedcosttotal'] = iac.amount_due()
+        context['totalcost_cents'] = int(context['itemizedcosttotal'] * 100)
         context['subtotal'] = iac.amount_requested()
         context['financial_aid'] = iac.amount_finaid()
         context['sibling_discount'] = iac.amount_siblingdiscount()
@@ -165,10 +165,33 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
         else:
             context['hostname'] = Site.objects.get_current().domain
         context['institution'] = settings.INSTITUTION_NAME
-        context['storename'] = self.store_id
         context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
         
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
+
+    @aux_call
+    def charge_payment(self, request, tl, one, two, module, extra, prog):
+        context = {'postdata': request.POST.copy()}
+
+        #   Set Stripe key (needs to be changed for production)
+        stripe.api_key = "" 
+
+        # Create the charge on Stripe's servers - this will charge the user's card 
+        try: 
+            charge = stripe.Charge.create(
+                amount=int(request.POST['totalcost_cents']),
+                currency="usd",
+                card=request.POST['stripeToken'],
+                description="Payment for %s - %s" % (prog.niceName(), request.user.name()),
+            ) 
+        except stripe.CardError, e:
+            #   Handle declined card.
+            return render_to_response(self.baseDir() + 'failure.html', request, context)
+        except stripe.InvalidRequestError, e:
+            #   Handle duplicate request
+            return render_to_response(self.baseDir() + 'failure.html', request, context)
+
+        return render_to_response(self.baseDir() + 'success_new.html', request, context)
 
     class Meta:
         abstract = True
