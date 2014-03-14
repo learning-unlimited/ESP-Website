@@ -39,13 +39,13 @@ from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade
-from esp.program.modules.handlers.student_registration import StudentRegistration
+from esp.program.modules.handlers.student_registration import StudentRegistrationMixin
 from esp.users.models import Record, ESPUser
 from esp.web.util import render_to_response
 from esp.utils.query_utils import nest_Q
 
 
-class StudentRegTwoPhase(StudentRegistration):
+class StudentRegTwoPhase(ProgramModuleObj,StudentRegistrationMixin):
 
     def students(self, QObject = False):
         q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration') 
@@ -86,17 +86,11 @@ class StudentRegTwoPhase(StudentRegistration):
         # Populate the timeslot dictionary with the priority to class title
         # mappings for each timeslot.
         priority_regs = StudentRegistration.valid_objects().filter(
-<<<<<<< HEAD
             user= user, relationship__name__startswith='Priority')
 
-        priority_regs = priority_regs.values(
-            'relationship__displayName', 'section', 'section__parent_class__title')
-
-=======
-            user=request.user, relationship__name__startswith='Priority')
         priority_regs = priority_regs.select_related(
             'relationship', 'section', 'section__parent_class')
->>>>>>> main
+
         for student_reg in priority_regs:
             rel = student_reg.relationship
             title = student_reg.section.parent_class.title
@@ -163,29 +157,6 @@ class StudentRegTwoPhase(StudentRegistration):
         context['open_class_category_id'] = prog.open_class_category.id
         context['lunch_category_id'] = ClassCategories.objects.get(category='Lunch').id
         return context
-
-    @aux_call
-    def view_classes(self, request, tl, one, two, module, extra, prog):
-        """
-        Displays a filterable catalog that anyone can view.
-        """
-        print 'ENTERED: ',view_classes
-        # get choices for filtering options
-        category_choices = []
-        for category in prog.class_categories.all():
-            # FIXME(gkanwar): Make this less hacky, once #770 is resolved
-            if category.category == 'Lunch':
-                continue
-            category_choices.append((category.id, category.category))
-
-        grade_choices = [('ALL', 'All')] + [(grade, grade) for grade in range(prog.grade_min, prog.grade_max + 1)]
-
-        context = {}
-        context['category_choices'] = self._group_columns(category_choices)
-        context['grade_choices'] = self._group_columns(grade_choices)
-        context.update(self.catalog_context(request, tl, one, two,module, extra, prog))
-
-        return render_to_response(self.baseDir() + 'view_classes.html', request, context)
 
 
     # @aux_call

@@ -63,7 +63,7 @@ from esp.web.util        import render_to_response
 
 from abc import ABCMeta, abstractmethod
 
-class StudentRegistration(ProgramModuleObj):
+class StudentRegistrationMixin(object):
 
     def students(self):
         raise NotImplementedError
@@ -89,7 +89,6 @@ class StudentRegistration(ProgramModuleObj):
         """
         Displays a filterable catalog that anyone can view.
         """
-        assert 4 < 0
         # get choices for filtering options
         category_choices = []
         for category in prog.class_categories.all():
