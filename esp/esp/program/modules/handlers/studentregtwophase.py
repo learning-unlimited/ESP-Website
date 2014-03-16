@@ -38,12 +38,14 @@ from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadReque
 from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
+from esp.program.modules.handlers.student_registration import StudentRegistrationMixin
+
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade
 from esp.users.models import Record, ESPUser
 from esp.web.util import render_to_response
 from esp.utils.query_utils import nest_Q
 
-class StudentRegTwoPhase(ProgramModuleObj):
+class StudentRegTwoPhase(ProgramModuleObj, StudentRegistrationMixin):
 
     def students(self, QObject = False):
         q_sr = Q(studentregistration__section__parent_class__parent_program=self.program) & nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration') 
@@ -131,56 +133,7 @@ class StudentRegTwoPhase(ProgramModuleObj):
         return render_to_response(
             self.baseDir()+'studentregtwophase.html', request, context)
 
-    def catalog_context(self, request, tl, one, two, module, extra, prog):
-        """
-        Builds context specific to the catalog. Used by all views which render
-        the catalog. This is not a view in itself.
-        """
-        context = {}
-        # FIXME(gkanwar): This is a terrible hack, we should find a better way
-        # to filter out certain categories of classes
-        context['open_class_category_id'] = prog.open_class_category.id
-        context['lunch_category_id'] = ClassCategories.objects.get(category='Lunch').id
-        return context
-
-    @aux_call
-    def view_classes(self, request, tl, one, two, module, extra, prog):
-        """
-        Displays a filterable catalog that anyone can view.
-        """
-        # get choices for filtering options
-        context = {}
-
-        def group_columns(items):
-            # collect into groups of 5
-            cols = []
-            for i, item in enumerate(items):
-                if i % 5 == 0:
-                    col = []
-                    cols.append(col)
-                col.append(item)
-            return cols
-
-        category_choices = []
-        for category in prog.class_categories.all():
-            # FIXME(gkanwar): Make this less hacky, once #770 is resolved
-            if category.category == 'Lunch':
-                continue
-            category_choices.append((category.id, category.category))
-        context['category_choices'] = group_columns(category_choices)
-
-        grade_choices = []
-        grade_choices.append(('ALL', 'All'))
-        for grade in range(prog.grade_min, prog.grade_max + 1):
-            grade_choices.append((grade, grade))
-        context['grade_choices'] = group_columns(grade_choices)
-
-        catalog_context = self.catalog_context(
-            request, tl, one, two,module, extra, prog)
-        context.update(catalog_context)
-
-        return render_to_response(self.baseDir() + 'view_classes.html', request, context)
-
+   
     @aux_call
     @needs_student
     @meets_grade

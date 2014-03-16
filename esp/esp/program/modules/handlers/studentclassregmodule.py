@@ -47,6 +47,7 @@ from django.views.decorators.vary import vary_on_cookie
 from django.core.cache import cache
 
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, meets_any_deadline, main_call, aux_call
+from esp.program.modules.handlers.student_registration import StudentRegistrationMixin
 from esp.program.modules.handlers.onsiteclasslist import OnSiteClassList
 from esp.datatree.models import *
 from esp.program.models  import ClassSubject, ClassSection, ClassCategories, RegistrationProfile, ClassImplication, StudentRegistration
@@ -127,7 +128,7 @@ def json_encode(obj):
 
 
 # student class picker module
-class StudentClassRegModule(ProgramModuleObj, module_ext.StudentClassRegModuleInfo):
+class StudentClassRegModule(ProgramModuleObj, StudentRegistrationMixin, module_ext.StudentClassRegModuleInfo):
     @classmethod
     def module_properties(cls):
         return [ {
