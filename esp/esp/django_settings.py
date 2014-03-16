@@ -351,6 +351,15 @@ DEBUG_TOOLBAR_CONFIG = {
     'SHOW_COLLAPSED': False, # Ideally would be True, but there is a bug in their code.
 }
 
+""" Settings for Stripe credit card payments (can be overridden in local_settings.py).
+    Global settings are used to define site-wide defaults,
+    but the keys can be overridden in the StripeCreditCardSettings
+    objects to direct payments to different accounts. """
+STRIPE_CONFIG = {
+    'secret_key': '',
+    'publishable_key': '',
+}
+
 #   Allow Filebrowser to edit anything under media/
 #   (not just '/media/uploads/' which is the default)
 FILEBROWSER_DIRECTORY = ''
