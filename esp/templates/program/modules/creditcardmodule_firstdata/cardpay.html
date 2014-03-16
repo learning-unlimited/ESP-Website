@@ -21,11 +21,13 @@ function check_cost()
     {
         current_cost = initial_cost + 1000;
         $j("#donation_option").removeClass("hidden");
+        $j("#id_donation").val("true");
     }
     else
     {
         current_cost = initial_cost;
         $j("#donation_option").addClass("hidden");
+        $j("#id_donation").val("false");
     }	      
     document.getElementById("id_totalcost_cents").value = current_cost;
     document.getElementById("id_totalcost_dollars").innerHTML = "$" + (current_cost / 100.0).toFixed(2);
@@ -45,14 +47,14 @@ function check_cost()
 
 {% include "program/modules/creditcardmodule_firstdata/transaction_record.html" %}
 
+{% if itemizedcosttotal <= 0 %}
+<p>You have no outstanding balance for this program.  Please <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.</p>
+{% else %}
+
 {% if module.offer_donation %}
 <input type="checkbox" onclick="check_cost();" />
 Check here to support Learning Unlimited's mentoring of {{ institution }} with an additional donation of $10.  <a href="http://www.learningu.org/about" target="_blank">Learning Unlimited</a> is a 501(c)(3) nonprofit that mentored the {{ institution }} students in organizing this program and provided this Web site.
 {% endif %}
-
-{% ifequal itemizedcosttotal 0 %}
-<p>You have no outstanding balance for this program.  Please <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.</p>
-{% else %}
 
 <form action="/learn/{{ program.url }}/charge_payment" method="POST">
 <div align="center">
@@ -67,6 +69,7 @@ Check here to support Learning Unlimited's mentoring of {{ institution }} with a
 <input type="hidden" name="ponumber" value="{{ invoice_id }}" />
 <input type="hidden" name="invoice_number" value="{{ identifier }}" />
 <input type="hidden" name="userid" value="{{ user.id }}" />
+<input type="hidden" id="id_donation" name="donation" value="false" />
 <input type="hidden" id="id_totalcost_cents" name="totalcost_cents" value="{{ totalcost_cents }}" />
 {% csrf_token %}
 </div>
@@ -76,7 +79,7 @@ Check here to support Learning Unlimited's mentoring of {{ institution }} with a
 <br />
 <p>If you would like to cancel at this time, you can <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.</p>
 
-{% endifequal %}
+{% endif %}
 
 {% endblock %}
 
