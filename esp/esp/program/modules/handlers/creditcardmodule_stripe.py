@@ -55,11 +55,11 @@ from datetime import datetime
 import stripe
 import re
 
-class CreditCardModule_FirstData(ProgramModuleObj, module_ext.StripeCreditCardSettings):
+class CreditCardModule_Stripe(ProgramModuleObj, module_ext.StripeCreditCardSettings):
     @classmethod
     def module_properties(cls):
         return {
-            "admin_title": "Credit Card Payment Module (First Data)",
+            "admin_title": "Credit Card Payment Module (Stripe)",
             "link_title": "Credit Card Payment",
             "module_type": "learn",
             "seq": 10000,
