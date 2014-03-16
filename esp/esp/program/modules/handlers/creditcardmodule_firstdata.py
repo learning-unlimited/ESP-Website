@@ -205,8 +205,12 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.StripeCreditCardSe
     def charge_payment(self, request, tl, one, two, module, extra, prog):
         context = {'postdata': request.POST.copy()}
 
-        #   Set Stripe key based on settings
+        iac = IndividualAccountingController(self.program, request.user)
+
+        #   Set Stripe key based on settings.  Also require the API version
+        #   which our code is designed for.
         stripe.api_key = self.secret_key
+        stripe.api_version = '2014-03-13'
 
         # Create the charge on Stripe's servers - this will charge the user's card 
         try: 
@@ -223,7 +227,13 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.StripeCreditCardSe
             #   Handle duplicate request
             return render_to_response(self.baseDir() + 'failure.html', request, context)
 
-        return render_to_response(self.baseDir() + 'success_new.html', request, context)
+        #   We have a successful charge.  Save a record of it if we can uniquely identify the user/program.
+        totalcost_dollars = float(request.POST['totalcost_cents']) / 100.0
+        iac.submit_payment(totalcost_dollars, request.POST['stripeToken'])
+
+        #   Render the success page, which doesn't do much except direct back to studentreg.
+        context['amount_paid'] = totalcost_dollars
+        return render_to_response(self.baseDir() + 'success.html', request, context)
 
     class Meta:
         abstract = True
