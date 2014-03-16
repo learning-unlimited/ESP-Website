@@ -51,7 +51,7 @@ from django.conf import settings
 from decimal import Decimal
 import stripe
 
-class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings):
+class CreditCardModule_FirstData(ProgramModuleObj, module_ext.StripeCreditCardSettings):
     @classmethod
     def module_properties(cls):
         return {
@@ -173,8 +173,8 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.CreditCardSettings
     def charge_payment(self, request, tl, one, two, module, extra, prog):
         context = {'postdata': request.POST.copy()}
 
-        #   Set Stripe key (needs to be changed for production)
-        stripe.api_key = "" 
+        #   Set Stripe key based on settings
+        stripe.api_key = self.secret_key
 
         # Create the charge on Stripe's servers - this will charge the user's card 
         try: 

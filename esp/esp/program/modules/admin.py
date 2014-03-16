@@ -35,7 +35,7 @@ Learning Unlimited, Inc.
 
 from django.contrib import admin
 from esp.admin import admin_site
-from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo, CreditCardSettings
+from esp.program.modules.module_ext import DBReceipt, StudentClassRegModuleInfo, ClassRegModuleInfo, StripeCreditCardSettings
 from esp.program.modules.base import ProgramModuleObj
 
 class Admin_DBReceipt(admin.ModelAdmin):
@@ -66,4 +66,4 @@ class ProgramModelObjAdmin(admin.ModelAdmin):
     search_fields = ('program__name', 'program__url', 'module__admin_title', 'module__link_title')
 admin_site.register(ProgramModuleObj, ProgramModelObjAdmin)
 
-admin_site.register(CreditCardSettings)
+admin_site.register(StripeCreditCardSettings)

@@ -286,6 +286,7 @@ class ProgramModuleObj(models.Model):
                 if x != ProgramModuleObj:
                     new_dict = self.program.getModuleExtension(x, module_id=old_id).__dict__
                     self.__dict__.update(new_dict)
+                    self.extension_id = new_dict['id']
             self.id = old_id
             self.module = old_module
 

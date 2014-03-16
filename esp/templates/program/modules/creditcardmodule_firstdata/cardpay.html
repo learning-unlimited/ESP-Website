@@ -58,7 +58,7 @@ Check here to support Learning Unlimited's mentoring of {{ institution }} with a
 <div align="center">
   <script
     src="https://checkout.stripe.com/checkout.js" class="stripe-button"
-    data-key=""
+    data-key="{{ module.publishable_key }}"
     data-name="{{ institution }} Splash Payment"
     data-description="Registration for {{ program.niceName }}"
   >
