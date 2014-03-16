@@ -50,6 +50,7 @@ from django.conf import settings
 
 from decimal import Decimal
 import stripe
+import re
 
 class CreditCardModule_FirstData(ProgramModuleObj, module_ext.StripeCreditCardSettings):
     @classmethod
@@ -135,10 +136,26 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.StripeCreditCardSe
         context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
         return render_to_response(self.baseDir() + 'failure.html', request, context)
 
+    def check_setup(self):
+        """ Validate the keys specified in the StripeCreditCardSettings object.
+            If something is wrong, provide an error message which will hopefully
+            only be seen by admins during setup. """
+
+        #   A Stripe account comes with 4 keys, starting with e.g. sk_test_
+        #   and followed by a 24 character base64-encoded string.
+        valid_pk_re = r'pk_(test|live)_([A-Za-z0-9+/=]){24}'
+        valid_sk_re = r'sk_(test|live)_([A-Za-z0-9+/=]){24}'
+        config_url = '/admin/modules/stripecreditcardsettings/%d' % self.extension_id
+        if not re.match(valid_pk_re, self.publishable_key) or not re.match(valid_sk_re, self.secret_key):
+            raise ESPError('The site has not yet been properly set up for credit card payments.  Administrators should <a href="%s">configure payments here</a>.' % config_url, True)
+
     @main_call
     @usercheck_usetl
     @meets_deadline('/Payment')
     def payonline(self, request, tl, one, two, module, extra, prog):
+
+        #   Check for setup of module.
+        self.check_setup()
 
         user = ESPUser(request.user)
 
