@@ -45,7 +45,7 @@ function check_cost()
 <li>Click the "Pay with Card" button.  You will see a form pop up asking for your credit card information.  When you submit the form, your information is sent to a secure <a href="https://stripe.com/us/help/faq" target="_blank">third party payment processor</a>.  Then you will be redirected to a confirmation receipt.</li>
 </ol></p>
 
-{% include "program/modules/creditcardmodule_firstdata/transaction_record.html" %}
+{% include "program/modules/creditcardmodule_stripe/transaction_record.html" %}
 
 {% if itemizedcosttotal <= 0 %}
 <p>You have no outstanding balance for this program.  Please <a href="/learn/{{ program.getUrlBase }}/studentreg" title="Return to main registration page">return to the main registration page</a>.</p>
