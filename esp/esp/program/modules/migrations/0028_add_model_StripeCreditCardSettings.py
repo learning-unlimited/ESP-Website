@@ -19,6 +19,9 @@ class Migration(SchemaMigration):
         ))
         db.send_create_signal('modules', ['StripeCreditCardSettings'])
 
+        #   While we're at it, make sure to install the new module.
+        from esp.program.modules import models
+        models.install()
 
     def backwards(self, orm):
         # Deleting model 'StripeCreditCardSettings'
