@@ -84,12 +84,25 @@ class StudentRegistrationMixin(object):
             col.append(item)
         return cols
 
-    @aux_call
-    def view_classes(self, request, tl, one, two, module, extra, prog):
+    def base_dir(self):
+        base_dir = 'program/modules/student_registration/'
+        print base_dir
+        return base_dir
+
+    def catalog_context(self, request, tl, one, two, module, extra, prog):
         """
-        Displays a filterable catalog that anyone can view.
+        Builds context specific to the catalog. Used by all views which render
+        the catalog. This is not a view in itself.
         """
-        # get choices for filtering options
+        context = {}
+        # FIXME(gkanwar): This is a terrible hack, we should find a better way
+        # to filter out certain categories of classes
+        context['open_class_category_id'] = prog.open_class_category.id
+        context['lunch_category_id'] = ClassCategories.objects.get(category='Lunch').id
+
+        return context
+
+    def get_class_context(self, request, tl, one, two, module, extra, prog):
         category_choices = []
         for category in prog.class_categories.all():
             # FIXME(gkanwar): Make this less hacky, once #770 is resolved
@@ -104,7 +117,17 @@ class StudentRegistrationMixin(object):
         context['grade_choices'] = self._group_columns(grade_choices)
         context.update(self.catalog_context(request, tl, one, two,module, extra, prog))
 
-        return render_to_response(self.baseDir() + 'view_classes.html', request, context)
+        return context
+
+    @aux_call
+    def view_classes(self, request, tl, one, two, module, extra, prog):
+        """
+        Displays a filterable catalog that anyone can view.
+        """
+        # get choices for filtering options
+        class_context = self.get_class_context(request, tl, one, two, module, extra, prog)
+        return render_to_response(self.base_dir() + 'view_classes.html', request, class_context)
+
 
 
 

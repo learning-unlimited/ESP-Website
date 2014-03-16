@@ -38,12 +38,13 @@ from django.http import HttpResponseRedirect, HttpResponse, HttpResponseBadReque
 from esp.cal.models import Event
 from esp.middleware.threadlocalrequest import get_current_request
 from esp.program.models import ClassCategories, ClassSection, ClassSubject, RegistrationType, StudentRegistration, StudentSubjectInterest
+from esp.program.modules.handlers.student_registration import StudentRegistrationMixin
+
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, meets_deadline, needs_student, meets_grade
 from esp.program.modules.handlers.student_registration import StudentRegistrationMixin
 from esp.users.models import Record, ESPUser
 from esp.web.util import render_to_response
 from esp.utils.query_utils import nest_Q
-
 
 class StudentRegTwoPhase(ProgramModuleObj,StudentRegistrationMixin):
 
@@ -145,18 +146,6 @@ class StudentRegTwoPhase(ProgramModuleObj,StudentRegistrationMixin):
 
         return render_to_response(
             self.baseDir()+'studentregtwophase.html', request, context)
-
-    def catalog_context(self, request, tl, one, two, module, extra, prog):
-        """
-        Builds context specific to the catalog. Used by all views which render
-        the catalog. This is not a view in itself.
-        """
-        context = {}
-        # FIXME(gkanwar): This is a terrible hack, we should find a better way
-        # to filter out certain categories of classes
-        context['open_class_category_id'] = prog.open_class_category.id
-        context['lunch_category_id'] = ClassCategories.objects.get(category='Lunch').id
-        return context
 
 
     # @aux_call
