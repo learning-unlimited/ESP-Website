@@ -32,23 +32,26 @@ Learning Unlimited, Inc.
   Phone: 617-379-0178
   Email: web-team@lists.learningu.org
 """
+
 from esp.program.modules.base import ProgramModuleObj, needs_teacher, needs_student, needs_admin, usercheck_usetl, meets_deadline, main_call, aux_call
 from esp.program.modules import module_ext
 from esp.datatree.models import *
-from esp.web.util        import render_to_response
-from datetime            import datetime        
-from django.db.models.query     import Q
-from django.http         import HttpResponseRedirect
-from django.core.mail import send_mail
-from django.contrib.sites.models import Site
-from esp.users.models    import ESPUser
+from esp.web.util import render_to_response
+from esp.dbmail.models import send_mail
+from esp.users.models import ESPUser
 from esp.accounting.controllers import ProgramAccountingController, IndividualAccountingController
-from esp.middleware      import ESPError
+from esp.middleware import ESPError
 from esp.middleware.threadlocalrequest import get_current_request
 
 from django.conf import settings
+from django.db.models.query import Q
+from django.http import HttpResponseRedirect
+from django.core.mail import send_mail
+from django.contrib.sites.models import Site
+from django.template.loader import render_to_string
 
 from decimal import Decimal
+from datetime import datetime
 import stripe
 import re
 
@@ -185,6 +188,18 @@ class CreditCardModule_FirstData(ProgramModuleObj, module_ext.StripeCreditCardSe
         context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
         
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)
+
+    def send_error_email(self, request, context):
+        """ Send an e-mail to admins explaining the credit card error.
+            (Broken out from charge_payment view for readability.) """
+
+        context['request'] = request
+        context['program'] = self.program
+        context['postdata'] = request.POST.copy()
+        domain_name = Site.objects.get_current().domain
+        msg_content = render_to_string(self.baseDir() + 'error_email.txt', context)
+        msg_subject = '[ ESP CC ] Credit card error on %s: %d %s' % (domain_name, request.user.id, request.user.name())
+        send_mail(msg_subject, msg_content, settings.SERVER_EMAIL, [settings.DEFAULT_EMAIL_ADDRESSES['support'], self.program.getDirectorConfidentialEmail(), ])
 
     @aux_call
     def charge_payment(self, request, tl, one, two, module, extra, prog):
