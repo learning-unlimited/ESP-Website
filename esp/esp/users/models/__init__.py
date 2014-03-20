@@ -2097,6 +2097,7 @@ class Permission(ExpirableModel):
                 ("Student/ExtraCosts","Extra costs page"),
                 ("Student/MainPage","Registration mainpage"),
                 ("Student/Confirm","Confirm registration"),
+                ("Student/Cancel","Cancel registration"),
                 ("Student/Payment","Pay for a program"),
                 ("Student/Profile","Set profile info"),
                 ("Student/Survey", "Access to survey"),
