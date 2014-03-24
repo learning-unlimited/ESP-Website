@@ -94,7 +94,7 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
                 continue
             autopopulated.append((field, value))
         return render_to_response(self.baseDir()+'studentapp.html',
-                                  request, (prog, tl), context)
+                                  request, context)
 
     @aux_call
     @needs_student
@@ -111,7 +111,7 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
         context['username_field'] = self.finaid_username_field
         context['username'] = request.user.username
         return render_to_response(self.baseDir()+'finaidapp.html',
-                                  request, (prog, tl), context)
+                                  request, context)
 
     class Meta:
         abstract = True

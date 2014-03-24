@@ -73,7 +73,6 @@ class AdmissionsDashboard(ProgramModuleObj):
         decision_action_choices = [('admit', 'Admit'), ('unadmit', 'Unadmit'), ('waitlist', 'Waitlist')]
         return render_to_response(self.baseDir() + 'admissions.html',
                                   request,
-                                  (prog, tl),
                                   {'classes': classes,
                                    'admin_status_choices': admin_status_choices,
                                    'teacher_rating_choices': teacher_rating_choices,
@@ -99,7 +98,7 @@ class AdmissionsDashboard(ProgramModuleObj):
             result['user'] = {'id': classapp.app.user.id,
                               'name': classapp.app.user.name()}
             result['subject'] = {'id': classapp.subject.id,
-                                 'title': classapp.subject.title()}
+                                 'title': classapp.subject.title}
             result['teacher_rating'] = classapp.teacher_rating
             result['teacher_ranking'] = classapp.teacher_ranking
             result['teacher_comment'] = classapp.teacher_comment
@@ -110,10 +109,10 @@ class AdmissionsDashboard(ProgramModuleObj):
                 decision_status_lines = []
                 cls = classapp.app.admitted_to_class()
                 if cls is not None:
-                    line = 'Admitted: {0}'.format(cls.title())
+                    line = 'Admitted: {0}'.format(cls.title)
                     decision_status_lines.append(line)
                 for cls in classapp.app.waitlisted_to_class():
-                    line = 'Waitlisted: {0}'.format(cls.title())
+                    line = 'Waitlisted: {0}'.format(cls.title)
                     decision_status_lines.append(line)
                 result['decision_status'] = '\n'.join(decision_status_lines)
             results.append(result)

@@ -7,7 +7,7 @@
 <h1>{{ program.niceName }} Student Application</h1>
 
 {% load render_qsd %}
-{% render_inline_qsd program.anchor "learn:studentapp" %}
+{% render_inline_program_qsd program "learn:studentapp" %}
 
 {% if app_is_open %}
 <form method="post" action="{{form.info.url}}">
