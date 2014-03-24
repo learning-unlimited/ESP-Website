@@ -1,4 +1,4 @@
-var csrftoken = $.cookie('csrftoken');
+var csrftoken = $.cookie('esp_csrftoken');
 
 $.ajaxSetup({
     crossDomain: false,
