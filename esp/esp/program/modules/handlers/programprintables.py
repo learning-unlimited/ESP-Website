@@ -252,9 +252,6 @@ class ProgramPrintables(ProgramModuleObj):
         else:
             sort_order = Tag.getProgramTag('catalog_sort_fields', prog, default='category').split(',')
 
-        #   There is a first_sort option which can be set to 'category' or 'timeblock'.
-        first_sort = request.GET.get('first_sort', 'category')
-
         #   Perform sorting based on specified order rules
         #   NOTE: Other catalogs can filter by _num_students but this one can't.
         if '_num_students' in sort_order:
@@ -293,8 +290,10 @@ class ProgramPrintables(ProgramModuleObj):
             group_name = '%s %s' % (settings.INSTITUTION_NAME, settings.ORGANIZATION_SHORT_NAME)
         context['group_name'] = group_name
 
-        #   Hack for timeblock sorting
-        if first_sort == 'timeblock':
+        #   Hack for timeblock sorting (sorting by category is the default)
+        template_name = 'catalog_category.tex'
+        if sort_order[0] == 'meeting_times__start':
+            template_name = 'catalog_timeblock.tex'
             sections = []
             for cls in classes: 
                 sections += list(x for x in cls.sections.all().filter(status__gt=0, meeting_times__isnull=False).distinct() if not (request.GET.has_key('open') and x.isFull()))
@@ -304,7 +303,7 @@ class ProgramPrintables(ProgramModuleObj):
         if extra is None or len(str(extra).strip()) == 0:
             extra = 'pdf'
 
-        return render_to_latex(self.baseDir()+'catalog_%s.tex' % first_sort, context, extra)
+        return render_to_latex(self.baseDir()+template_name, context, extra)
 
     @needs_admin
     def classesbyFOO(self, request, tl, one, two, module, extra, prog, sort_exp = lambda x,y: cmp(x,y), filt_exp = lambda x: True):
