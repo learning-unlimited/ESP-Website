@@ -78,13 +78,14 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
     @main_call
     @needs_student
     def studentapp(self, request, tl, one, two, module, extra, prog):
+        fsas = prog.getModuleExtension(module_ext.FormstackAppSettings)
         context = {}
-        context['form'] = self.form()
-        context['username_field'] = self.username_field
+        context['form'] = fsas.form()
+        context['username_field'] = fsas.username_field
         context['username'] = request.user.username
-        context['app_is_open'] = self.app_is_open or request.user.isAdmin(prog)
+        context['app_is_open'] = fsas.app_is_open or request.user.isAdmin(prog)
         context['autopopulated'] = autopopulated = []
-        for line in self.autopopulated_fields.strip().split('\n'):
+        for line in fsas.autopopulated_fields.strip().split('\n'):
             field, _, expr = line.partition(':')
             try:
                 value = eval(expr, {'user': request.user})
@@ -99,16 +100,17 @@ class FormstackAppModule(ProgramModuleObj, module_ext.FormstackAppSettings):
     @aux_call
     @needs_student
     def finaidapp(self, request, tl, one, two, module, extra, prog):
-        if not self.finaid_form():
+        fsas = prog.getModuleExtension(module_ext.FormstackAppSettings)
+        if not fsas.finaid_form():
             return # no finaid form
         app = FormstackStudentProgramApp.objects.filter(user=request.user, program=prog)
         if not (app or request.user.isAdmin(prog)): # student has not applied for the program
             return # XXX: more useful error here
         context = {}
-        context['form'] = self.finaid_form()
-        context['user_id_field'] = self.finaid_user_id_field
+        context['form'] = fsas.finaid_form()
+        context['user_id_field'] = fsas.finaid_user_id_field
         context['user_id'] = request.user.id
-        context['username_field'] = self.finaid_username_field
+        context['username_field'] = fsas.finaid_username_field
         context['username'] = request.user.username
         return render_to_response(self.baseDir()+'finaidapp.html',
                                   request, context)
