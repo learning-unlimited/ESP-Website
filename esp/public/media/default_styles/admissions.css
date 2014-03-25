@@ -1,0 +1,53 @@
+body {
+    position: absolute;
+    top: 0px;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+}
+body, input {
+    font: 15px Verdana, Arial, sans-serif;
+}
+#students-list {
+    float: left;
+    height: 100%;
+    overflow: auto;
+}
+#student-detail {
+    float: left;
+    height: 100%;
+    overflow: auto;
+}
+.tl-teach #students-list {
+    width: 40%;
+}
+.tl-teach #student-detail {
+    width: 60%;
+}
+.tl-manage #students-list {
+    width: 100%;
+}
+.tl-manage #student-detail {
+    display: none;
+}
+#students-list table {
+    width: 100%;
+    border-collapse: collapse;
+}
+#students-list td, #students-list th {
+    border-bottom: 1px solid #777;
+    padding: 5px;
+    text-align: center;
+}
+#students-list td:first-child {
+    text-align: left;
+}
+#students-list .admin_comments, #students-list .teacher_comments {
+    max-width: 10em;
+    max-height: 5em;
+    overflow: hidden;
+    cursor: pointer;
+}
+#student-detail p {
+    margin: 1em;
+}
