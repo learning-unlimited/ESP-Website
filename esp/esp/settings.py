@@ -74,10 +74,21 @@ LESS_SEARCH_PATH = [
 
 MANAGERS = ADMINS
 
+HANDLERS_PATH = os.path.join(PROJECT_ROOT,'esp','program','modules','handlers')
+
+HANDLER_TEMPLATE_DIRS = []
+
+#walk module.handler directories in search of templates
+for handler_path in os.walk(HANDLERS_PATH).next()[1]:
+  template_dir = os.path.join(HANDLERS_PATH,handler_path,'templates')
+
+  if os.path.exists(template_dir):
+      HANDLER_TEMPLATE_DIRS.append(template_dir)
+
 TEMPLATE_DIRS = (
     os.path.join(PROJECT_ROOT, 'templates'),
     
-)
+) + tuple(HANDLER_TEMPLATE_DIRS)
 
 DEFAULT_HOST = SITE_INFO[1]
 
