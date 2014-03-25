@@ -73,7 +73,6 @@ LESS_SEARCH_PATH = [
 ]
 
 MANAGERS = ADMINS
-
 HANDLERS_PATH = os.path.join(PROJECT_ROOT,'esp','program','modules','handlers')
 
 HANDLER_TEMPLATE_DIRS = []
