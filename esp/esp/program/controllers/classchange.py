@@ -48,6 +48,7 @@ from esp.cal.models import Event
 from esp.users.models import ESPUser
 from esp.program.models import StudentRegistration, RegistrationType, RegistrationProfile, Program
 from esp.dbmail.models import send_mail
+from esp.utils.query_utils import nest_Q
 
 from django.conf import settings
 from django.db.models.query import QuerySet
@@ -81,7 +82,7 @@ class ClassChangeController(object):
         text += "We've processed your class change request, and have updated your schedule. Your new schedule is as follows: <br /><br />\n\n"
         text += "%s\n\n<br /><br />\n\n" % self.get_student_schedule(student_ind, for_real)
         if self.student_not_checked_in[student_ind]:
-            text += "On your first day, you must check in (at room 5-233), turn in your completed medical liability form, and pay the program fee (unless you are a financial aid recipient). After you do this, we will give you the room numbers of your classes.<br /><br />\n\n"
+            text += "On your first day, you must check in at room 1-136, turn in your completed liability form, and pay the program fee (unless you are a financial aid recipient or have paid online). We will give you the room numbers of your classes at check-in.<br /><br />\n\n"
         text += "We hope you enjoy your new schedule. See you soon!<br /><br />"
         text += "The " + self.program.niceName() + " Directors\n"
         text += "</html>"
@@ -131,15 +132,17 @@ class ClassChangeController(object):
         self.deadline = self.now
         if 'deadline' in self.options.keys():
             self.deadline = self.options['deadline']
-        if 'students_not_checked_in' in self.options.keys() and isinstance(self.options['students_not_checked_in'],QuerySet):
-            self.students_not_checked_in = list(self.options['students_not_checked_in'].values_list('id',flat=True).distinct())
-        self.Q_SR_NOW = Q(studentregistration__start_date__lt=self.deadline, studentregistration__end_date__gt=self.now)
+        self.Q_SR_NOW = nest_Q(StudentRegistration.is_valid_qobject(self.now), 'studentregistration')
         self.Q_SR_PROG = Q(studentregistration__section__parent_class__parent_program=self.program, studentregistration__section__meeting_times__isnull=False) & self.Q_SR_NOW
         self.Q_SR_REQ = Q(studentregistration__relationship__name="Request") & self.Q_SR_PROG
-        self.Q_NOW = Q(start_date__lt=self.deadline, end_date__gt=self.now)
+        self.Q_NOW = StudentRegistration.is_valid_qobject(self.now)
         self.Q_PROG = Q(section__parent_class__parent_program=self.program, section__meeting_times__isnull=False) & self.Q_NOW
         self.Q_REQ = Q(relationship__name="Request") & self.Q_PROG
         self.students = ESPUser.objects.filter(self.Q_SR_REQ).order_by('id').distinct()
+        if 'students_not_checked_in' in self.options.keys() and isinstance(self.options['students_not_checked_in'],QuerySet):
+            self.students_not_checked_in = list(self.options['students_not_checked_in'].values_list('id',flat=True).distinct())
+        else:
+            self.students_not_checked_in = list(self.students.exclude(id__in=self.program.students()['attended']).values_list('id',flat=True).distinct())
         self.priority_limit = self.program.priorityLimit()
         self._init_Q_objects()
         self.sections = self.program.sections().filter(status__gt=0, parent_class__status__gt=0, meeting_times__isnull=False).order_by('id').select_related('parent_class','parent_class__parent_program','meeting_times').distinct()
@@ -453,7 +456,7 @@ class ClassChangeController(object):
             self.changed[student_ind] = True
     
     def unsave_assignments(self):
-        StudentRegistration.objects.filter(end_date__gte=self.now, end_date__lte=datetime(9000,1,1)).update(end_date=datetime(9999,1,1))
+        StudentRegistration.objects.filter(end_date__gte=self.now, end_date__lte=datetime(9000,1,1)).update(end_date=None)
         StudentRegistration.objects.filter(start_date__gte=self.now).delete()
 
     def send_student_email(self, student_ind, changed = True, for_real = False, f = None):
