@@ -1,0 +1,1 @@
+from student_registration import StudentRegistrationMixin
