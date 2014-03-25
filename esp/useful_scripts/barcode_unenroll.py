@@ -7,7 +7,7 @@
 # # review 'registrations'
 # doit()
 
-PROG_ID = 101
+PROG_ID = 105
 
 from script_setup import *
 
@@ -24,7 +24,7 @@ passed_sections = prog.sections().annotate(begin_time=Min("meeting_times__start"
 # students who are enrolled in a class that started more than 60 minutes ago, who have not checked in
 students = ESPUser.objects.filter(studentregistration__in=StudentRegistration.valid_objects(), studentregistration__relationship=1, studentregistration__section__in=passed_sections).distinct().exclude(record__program=prog, record__event='attended')
 # classes that start in the next 60 minutes
-upcoming_sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(status=10, parent_class__status=10, begin_time__start__gt=datetime.now(), begin_time__start__lt=datetime.now() + timedelta(minutes=60))
+upcoming_sections = prog.sections().annotate(begin_time=Min("meeting_times__start")).filter(status=10, parent_class__status=10, begin_time__start__gt=datetime.now())
 # registrations of missing students for upcoming classes
 registrations = StudentRegistration.valid_objects().filter(user__in=students, section__in=upcoming_sections, relationship=1)
 print "Candidate Registrations to Delete:", len(registrations)
