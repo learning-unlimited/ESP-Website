@@ -56,16 +56,14 @@ def medicalsyncapi(request):
     # Find Program
     chunks = request.POST['program'].split(' ')
     if len(chunks) == 2:
-        a = chunks[0]
-        b = chunks[1]
+        url = chunks[0] + '/' + chunks[1]
     elif len(chunks) == 3:
-        a = chunks[1]
-        b = chunks[0] + ' ' + chunks[2]
+        url = chunks[1] + '/' + chunks[0] + '_' + chunks[2]
     else:
         return HttpResponseNotFound("Program could not be parsed")
     
-    results = Program.objects.filter(anchor__friendly_name__icontains=b,
-                                     anchor__parent__friendly_name__icontains=a)
+    results = Program.objects.filter(url=url)
+
     if len(results) != 1:
         return HttpResponseNotFound("No/multiple programs match criteria")
     prog = results[0]
