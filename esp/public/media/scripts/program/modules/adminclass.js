@@ -52,7 +52,6 @@ function getStatusDetails(statusCode) {
 }
 
 function make_attrib_para(field, content) {
-    console.log(content);
     return $j("<p></p>")
         .append("<b>"+field+":</b>")
         .append($j("<div/>").text(content));
