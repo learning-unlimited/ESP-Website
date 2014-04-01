@@ -55,7 +55,7 @@ From this page, you can view documents related to the program (in the first sect
 	<tr>
             <td class="class_stuff"><a href="/download/{{ doc.hashed_name }}/{{ doc.file_name }}">{{ doc.friendly_name }}</a></td>
 		<td class="clsmiddle">
-			<form method="post" action="/manage/{{ prog.url }}/get_materials">
+			<form method="post" action="/manage/{{ prog.url }}/get_materials" onsubmit="return confirm('Are you sure that you want to delete {{ doc.friendly_name|escapejs|escape }}?');">
 				<input type="hidden" name="docid" value="{{ doc.id }}">
 				<input type="hidden" name="command" value="delete">
 				<input class="button" type="submit" value="Delete">
