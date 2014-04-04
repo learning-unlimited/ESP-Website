@@ -125,6 +125,7 @@ class StudentRegistrationMixin(object):
         """
         # get choices for filtering options
         class_context = self.get_class_context(request, tl, one, two, module, extra, prog)
+        class_context['extra'] = extra
         return render_to_response('view_classes.html', request, class_context)
 
 
