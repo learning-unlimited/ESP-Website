@@ -142,7 +142,7 @@ you arrive.
                 <br />
             {% endfor %}
             {% if timeslot.3 %}
-                <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
+                <a href="/learn/{{one}}/{{two}}/view_classes/{{timeslot.0.id}}">[add class]</a>
                 {% if not timeslot.1|length_is:1 %}
                     <a href="/learn/{{one}}/{{two}}/clearslot/{{timeslot.0.id}}">[clear slot]</a>
                 {% endif %}
@@ -167,7 +167,7 @@ you arrive.
           {% comment %} <input type="button" value="Edit My Schedule"
           onclick="window.location='/learn/{{one}}/{{two}}/catalog';">
           <br />Or: {% endcomment %}
-                <a href="/learn/{{one}}/{{two}}/fillslot/{{timeslot.0.id}}">[add class]</a>
+                <a href="/learn/{{one}}/{{two}}/view_classes/{{timeslot.0.id}}">[add class]</a>
                 </td>
             {% endif %}	
         {% endif %}
