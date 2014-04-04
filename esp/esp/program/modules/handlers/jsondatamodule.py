@@ -42,6 +42,7 @@ from django.views.decorators.cache import cache_control
 from django.db.models import Count, Sum
 from django.db.models.query import Q
 from django.http import Http404
+from django.shortcuts import get_object_or_404
 
 from esp.cal.models import Event
 from esp.datatree.models import *
@@ -281,22 +282,22 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
     classes_timeslot.cached_function.depend_on_model(Event)
     classes_timeslot.cached_function.depend_on_m2m(ClassSection, 'meeting_times', lambda sec, event: {'prog': sec.parent_class.parent_program, 'extra': str(event.id)})
 
-
     @aux_call
     @json_response()
     @cached_module_view
     def class_subjects(extra, prog):
-        if extra == 'catalog':
-            catalog = True
-        elif extra == None:
-            catalog = False
-        else:
-            raise Http404
+
         teacher_dict = {}
         teachers = []
         classes = []
-        qs = prog.classes().prefetch_related(
-            'category', 'sections', 'teachers')
+       
+        qs = prog.classes()
+
+        if extra:
+            ts = get_object_or_404(Event, id=extra)
+            qs = qs.filter(sections__meeting_times=ts) \
+              
+        qs = qs.prefetch_related('category', 'sections', 'teachers')
 
         for c in qs:
             class_teachers = c.get_teachers()
@@ -309,16 +310,20 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
                 'grade_max': c.grade_max,
                 'grade_min': c.grade_min,
             }
+
             classes.append(cls)
-            if catalog:
-                cls['class_info'] = c.class_info
-                cls['difficulty'] = c.hardness_rating
-                cls['prereqs'] = c.prereqs
+
+            cls['class_info'] = c.class_info
+            cls['difficulty'] = c.hardness_rating
+            cls['prereqs'] = c.prereqs
             cls['emailcode'] = c.emailcode()
+
             if c.duration:
                 cls['length'] = float(c.duration)
+
             cls['sections'] = [s.id for s in c.sections.all()]
             cls['teachers'] = [t.id for t in class_teachers]
+
             for t in class_teachers:
                 if teacher_dict.has_key(t.id):
                     teacher_dict[t.id]['sections'] += cls['sections']
@@ -335,8 +340,10 @@ class JSONDataModule(ProgramModuleObj, CoreModule):
         # Build up teacher availability
         availabilities = UserAvailability.objects.filter(user__in=teacher_dict.keys()).filter(event__program=prog).values_list('user_id', 'event_id')
         avail_for_user = defaultdict(list)
+
         for user_id, event_id in availabilities:
             avail_for_user[user_id].append(event_id)
+        
         for teacher in teachers:
             teacher['availability'] = avail_for_user[teacher['id']]
 
