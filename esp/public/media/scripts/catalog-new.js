@@ -268,7 +268,7 @@ var CatalogViewModel = function () {
         });
     }, 0);
 
-    var json_views = ['class_subjects/catalog', 'sections/catalog'];
+    var json_views = ['class_subjects/' + $j("#id-extra").val(), 'sections/catalog'];
     if (catalog_type == 'phase1') {
         json_views.push('interested_classes');
     }
