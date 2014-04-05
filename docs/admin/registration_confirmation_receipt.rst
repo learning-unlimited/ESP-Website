@@ -10,7 +10,7 @@ How Students Confirm Their Program Registration
 Registration receipts are seen by students in three instances:
 
 * When they click 'Confirm' on the student registration page for the first
-  time, they are e-mailed a receipt.
+  time, they are emailed a receipt.
 
 * When they click 'Confirm' on the student registration page, they are
   presented with a printable confirmation receipt in their browser.
@@ -37,11 +37,11 @@ create a new receipt.
 
 * In the box next to 'Action' type:
 
-  - 'confirm' for the HTML confirmation receipt
+  - 'confirm' for the confirmation receipt
 
-  - 'confirmemail' for the plain-text e-mail receipt
+  - 'confirmemail' for the email receipt
 
-  - 'cancel' for the HTML cancellation receipt
+  - 'cancel' for the cancellation receipt
 
 * In the dropdown box next to 'Program,' select the program that this receipt
   should apply to.
@@ -70,7 +70,7 @@ create a new receipt.
 
 * Click 'Save' and continue to add any other desired receipts.
 
-**Note**: Confirmation e-mails are not sent by default.  You need to turn
+**Note**: Confirmation emails are not sent by default.  You need to turn
 them on by checking the 'Send confirmation' box on the appropriate student
 registration settings entry accessible from
 [sitename].learningu.org/admin/modules/studentclassregmoduleinfo.
@@ -78,7 +78,7 @@ registration settings entry accessible from
 Screenshot Walkthrough
 ----------------------
 
-1. Write the email.
+1. Write the receipt.
 
    i. Navigate to [yoursite].learningu.org/admin/.
 
@@ -89,15 +89,17 @@ Screenshot Walkthrough
 
    #. Click "Add db receipt".
 
-   #. Name the receipt confirmemail (in the "action" field).
+   #. In the "action" field, type 'confirm' (for the confirmation receipt),
+      'confirmemail' (for the email receipt), or 'cancel' (for the
+      cancellation receipt).
 
       .. figure:: images/registration_confirmation_receipt/fig2.jpg
          :width: 30 %
 
+   #. Select the current program from the dropdown menu.
+
       .. figure:: images/registration_confirmation_receipt/fig3.jpg
          :width: 30 %
-
-   #. Select the current program from the dropdown menu.
 
    #. Type your message in the "Receipt" field (use HTML to format).
 
