@@ -201,6 +201,10 @@ class UserSearchController(object):
                 q_program = Q()
             else:
                 q_program = getattr(program, recipient_type.lower()+'s')(QObjects=True)[list_name]
+                """ Some program queries rely on UserBits, and since user types are also stored in
+                    UserBits we cannot store both of these in a single Q object.  To compensate, we
+                    ignore the user type when performing a program-specific query.  """
+                recipient_type = 'any'
             
             #   Apply Boolean filters
             #   Base list will be intersected with any lists marked 'AND', and then unioned
