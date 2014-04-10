@@ -311,6 +311,10 @@ CONTACTFORM_EMAIL_ADDRESSES = {}
 #   It can be overridden by setting CDN_ADDRESS in local_settings.py.
 CDN_ADDRESS = 'https://dfwb7shzx5j05.cloudfront.net'
 
+# allow configuration of additional Javascript to be placed on website
+# configuration should include <script></script> tags
+ADDITIONAL_TEMPLATE_SCRIPTS = ''
+
 DEBUG_TOOLBAR = True # set to False in local_settings to globally disable the debug toolbar
 
 DEBUG_TOOLBAR_PATCH_SETTINGS = False
