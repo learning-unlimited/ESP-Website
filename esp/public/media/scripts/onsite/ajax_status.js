@@ -190,12 +190,12 @@ function print_schedule()
 {
     printer_name = $j("#printer_selector").attr("value");
     printing_url = program_base_url + "printschedule_status";
-    data = { 'user' : state.student_id }
+    var student_data = { 'user' : state.student_id }
     if (printer_name)
-        data.printer = printer_name
+        student_data.printer = printer_name
     result = $j.ajax({
         url: printing_url,
-        data: data,
+        data: student_data,
         async: false
     });
     add_message(JSON.parse(result.responseText).message);
@@ -261,6 +261,7 @@ function update_checkboxes()
 
 function handle_schedule_response(new_data, text_status, jqxhr)
 {
+    data.students[new_data.user].grade = new_data.user_grade
     //  Save the new schedule
     state.student_schedule = new_data.sections;
     state.student_schedule.sort();
@@ -789,7 +790,7 @@ function populate_students()
         new_student.id = data.students_list[i][0];
         new_student.last_name = data.students_list[i][1];
         new_student.first_name = data.students_list[i][2];
-        new_student.grade = data.students_list[i][3];
+        new_student.grade = 0;
         new_student.sections = [];
         new_student.checked_in = null;
         data.students[new_student.id] = new_student;
