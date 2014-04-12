@@ -117,16 +117,6 @@ class OnSiteClassList(ProgramModuleObj):
     @needs_onsite
     def students_status(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-        grade_query = """
-SELECT (12 + %d - "users_studentinfo"."graduation_year")
-FROM "users_studentinfo", "program_registrationprofile"
-WHERE
-    "program_registrationprofile"."most_recent_profile" = true
-AND	"program_registrationprofile"."student_info_id" = "users_studentinfo"."id"
-AND	"users_studentinfo"."user_id" = "auth_user"."id"
-ORDER BY program_registrationprofile.id DESC
-LIMIT 1
-        """ % ESPUser.current_schoolyear()
         #   Try to ensure we don't miss anyone
         students_dict = self.program.students(QObjects=True)
         student_types = ['student_profile']     #   You could add more list names here, but it would get very slow.
@@ -134,7 +124,7 @@ LIMIT 1
         for student_type in student_types:
             students_Q = students_Q | students_dict[student_type]
         students = ESPUser.objects.filter(students_Q).distinct()
-        data = students.extra({'grade': grade_query}).values_list('id', 'last_name', 'first_name', 'grade').distinct()
+        data = students.values_list('id', 'last_name', 'first_name').distinct()
         simplejson.dump(list(data), resp)
         return resp
     
@@ -166,12 +156,13 @@ LIMIT 1
     @needs_onsite
     def get_schedule_json(self, request, tl, one, two, module, extra, prog):
         resp = HttpResponse(mimetype='application/json')
-        result = {'user': None, 'sections': [], 'messages': []}
+        result = {'user': None, 'user_grade': 0, 'sections': [], 'messages': []}
         try:
             result['user'] = int(request.GET['user'])
         except:
             result['messages'].append('Error: no user specified.')
         if result['user']:
+            result['user_grade'] = ESPUser.objects.get(id=result['user']).getGrade(program=prog)
             result['sections'] = list(ClassSection.objects.filter(nest_Q(StudentRegistration.is_valid_qobject(), 'studentregistration'), status__gt=0, parent_class__status__gt=0, parent_class__parent_program=prog, studentregistration__relationship__name='Enrolled', studentregistration__user__id=result['user']).values_list('id', flat=True).distinct())
         simplejson.dump(result, resp)
         return resp
