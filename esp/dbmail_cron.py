@@ -48,3 +48,8 @@ from esp.dbmail.cronmail import process_messages, send_email_requests
 
 process_messages()
 send_email_requests()
+
+# Release the lock when message sending is complete.
+fcntl.lockf(lock_file_handle, fcntl.LOCK_UN)
+lock_file_handle.close()
+
