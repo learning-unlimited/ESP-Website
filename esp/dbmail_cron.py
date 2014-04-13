@@ -2,9 +2,17 @@
 
 import sys
 import os
-import tempfile
 import fcntl
 os.environ['DJANGO_SETTINGS_MODULE'] = 'esp.settings'
+
+# Forces the evaluation of the Django settings. This otherwise won't happen
+# until later, because of lazy evaluation.
+from django.conf import settings
+dir(settings)
+
+# This import must be after the evaluation of the Django settings, because
+# esp.settings modifies tempfile to avoid collisions between sites.
+import tempfile
 
 import os.path
 project = os.path.dirname(os.path.realpath(__file__))
