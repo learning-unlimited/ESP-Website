@@ -141,4 +141,9 @@ def send_email_requests():
             recipients.append(settings.DEFAULT_EMAIL_ADDRESSES['bounces'])
 
         mail_context = {'errors': errors}
-        send_mail('Mail delivery failure', render_to_string('email/delivery_failed', mail_context), settings.SERVER_EMAIL, recipients)
+        delivery_failed_string = render_to_string('email/delivery_failed', mail_context)
+        print 'Mail delivery failure'
+        print delivery_failed_string
+        send_mail('Mail delivery failure', delivery_failed_string, settings.SERVER_EMAIL, recipients)
+    elif num_sent > 0:
+        print 'No mail delivery failures'
