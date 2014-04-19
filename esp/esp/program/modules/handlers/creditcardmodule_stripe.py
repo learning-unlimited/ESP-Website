@@ -156,37 +156,37 @@ class CreditCardModule_Stripe(ProgramModuleObj, module_ext.StripeCreditCardSetti
         stripe.api_key = self.secret_key
         stripe.api_version = '2014-03-13'
 
-        try:
-            #   Create the charge on Stripe's servers - this will charge the user's card
-            charge = stripe.Charge.create(
-                amount=int(request.POST['totalcost_cents']),
-                currency="usd",
-                card=request.POST['stripeToken'],
-                description="Payment for %s - %s" % (prog.niceName(), request.user.name()),
-                metadata={
-                    'ponumber': request.POST['ponumber'],
-                    'donation': request.POST['donation'],
-                },
-            )
-        except stripe.error.CardError, e:
-            context['error_type'] = 'declined'
-            context['error_info'] = e.json_body['error']
-        except stripe.error.InvalidRequestError, e:
-            #   While this is a generic error meaning invalid parameters were supplied
-            #   to Stripe's API, we will usually see it because of a duplicate request.
-            context['error_type'] = 'invalid'
-        except stripe.error.AuthenticationError, e:
-            context['error_type'] = 'auth'
-        except stripe.error.APIConnectionError, e:
-            context['error_type'] = 'api'
-        except stripe.error.StripeError, e:
-            context['error_type'] = 'generic'
-
         if request.POST.get('ponumber', '') != iac.get_id():
             #   If we received a payment for the wrong PO:
             #   This is not a Python exception, but an error nonetheless.
             context['error_type'] = 'inconsistent_po'
             context['error_info'] = {'request_po': request.POST.get('ponumber', ''), 'user_po': iac.get_id()}
+        else:
+            try:
+                #   Create the charge on Stripe's servers - this will charge the user's card
+                charge = stripe.Charge.create(
+                    amount=int(request.POST['totalcost_cents']),
+                    currency="usd",
+                    card=request.POST['stripeToken'],
+                    description="Payment for %s - %s" % (prog.niceName(), request.user.name()),
+                    metadata={
+                        'ponumber': request.POST['ponumber'],
+                        'donation': request.POST['donation'],
+                    },
+                )
+            except stripe.error.CardError, e:
+                context['error_type'] = 'declined'
+                context['error_info'] = e.json_body['error']
+            except stripe.error.InvalidRequestError, e:
+                #   While this is a generic error meaning invalid parameters were supplied
+                #   to Stripe's API, we will usually see it because of a duplicate request.
+                context['error_type'] = 'invalid'
+            except stripe.error.AuthenticationError, e:
+                context['error_type'] = 'auth'
+            except stripe.error.APIConnectionError, e:
+                context['error_type'] = 'api'
+            except stripe.error.StripeError, e:
+                context['error_type'] = 'generic'
 
         if 'error_type' in context:
             #   If we got any sort of error, send an e-mail to the admins and render an error page.
