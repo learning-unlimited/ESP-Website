@@ -61,22 +61,28 @@ class TeacherCheckinModule(ProgramModuleObj):
             "seq": 10
             }
     
-    def checkIn(self, teacher, prog):
-        """Check teacher into program for the rest of the day"""
+    def checkIn(self, teacher, prog, when=None):
+        """Check teacher into program for the rest of the day (given by 'when').
+
+        'when' defaults to datetime.now()."""
+        if when is None:
+            when = datetime.now()
         if teacher.isTeacher() and teacher.getTaughtClassesFromProgram(prog).exists():
-            now = datetime.now()
-            endtime = datetime(now.year, now.month, now.day) + timedelta(days=1, seconds=-1)
-            (record, created) = Record.objects.get_or_create(user=teacher, event='teacher_checked_in', program=prog)
-            if created:
+            endtime = datetime(when.year, when.month, when.day) + timedelta(days=1, seconds=-1)
+            checked_in_already = Record.user_completed(teacher, 'teacher_checked_in', prog, when, only_today=True)
+            if not checked_in_already:
+                Record.objects.create(user=teacher, event='teacher_checked_in', program=prog, time=when)
                 return '%s is checked in until %s.' % (teacher.name(), str(endtime))
             else:
                 return '%s has already been checked in until %s.' % (teacher.name(), str(endtime))
         else:
             return '%s is not a teacher for %s.' % (teacher.name(), prog.niceName())
     
-    def undoCheckIn(self, teacher, prog):
+    def undoCheckIn(self, teacher, prog, when=None):
         """Undo what checkIn does"""
-        records = Record.objects.filter(user=teacher, event='teacher_checked_in', program=prog)
+        if when is None:
+            when = datetime.now()
+        records = Record.filter(teacher, 'teacher_checked_in', prog, when, only_today=True)
         if records:
             records.delete()
             return '%s is no longer checked in.' % teacher.name()
@@ -112,6 +118,17 @@ class TeacherCheckinModule(ProgramModuleObj):
     @aux_call
     @needs_onsite
     def ajaxteachercheckin(self, request, tl, one, two, module, extra, prog):
+        """
+        POST to this view to change the check-in status of a teacher on a given day.
+
+        POST data:
+          'teacher':          The teacher's username.
+          'undo' (optional):  If 'true', undoes a previous check-in.
+                              Otherwise, the teacher is checked in.
+          'when' (optional):  If given, processes checkIn or undoCheckIn as if
+                              it were that time.  Should be given in the format
+                              "%m/%d/%Y %H:%M".
+        """
         json_data = {}
         if 'teacher' in request.POST:
             teachers = ESPUser.objects.filter(username=request.POST['teacher'])
@@ -119,10 +136,16 @@ class TeacherCheckinModule(ProgramModuleObj):
                 json_data['message'] = 'User not found!'
             else:
                 json_data['name'] = teachers[0].name()
+                when = None
+                if 'when' in request.POST:
+                    try:
+                        when = datetime.strptime(request.POST['when'], "%m/%d/%Y %H:%M")
+                    except:
+                        pass
                 if 'undo' in request.POST and request.POST['undo'].lower() == 'true':
-                    json_data['message'] = self.undoCheckIn(teachers[0], prog)
+                    json_data['message'] = self.undoCheckIn(teachers[0], prog, when)
                 else:
-                    json_data['message'] = self.checkIn(teachers[0], prog)
+                    json_data['message'] = self.checkIn(teachers[0], prog, when)
         return HttpResponse(json.dumps(json_data), mimetype='text/json')
     
     def getMissingTeachers(self, prog, starttime=None, when=None):
