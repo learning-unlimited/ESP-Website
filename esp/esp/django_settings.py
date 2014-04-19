@@ -363,3 +363,8 @@ SHELL_PLUS_POST_IMPORTS = (
 #   Exclude apps from testing
 TEST_RUNNER = 'utils.testing.ExcludeTestSuiteRunner'
 TEST_EXCLUDE = ('django', 'grappelli', 'reversion')
+
+#   Twilio configuration - should be completed in local_settings.py
+TWILIO_ACCOUNT_SID = None
+TWILIO_AUTH_TOKEN = None
+TWILIO_ACCOUNT_NUMBERS = None
