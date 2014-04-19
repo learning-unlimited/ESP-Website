@@ -47,7 +47,7 @@ var TextMessage = {
 <h1>Group Texting Portal</h1>
 
 <h2>Step 2:</h2>
-<p>You have selected {{ num_users }} recipients. Enter the message you wish to send below.</p>
+<p>You have selected {{ num_users }} recipients. We estimate that sending this message with your current configuration will take {{ est_time }} seconds.  Enter the message you wish to send below.</p>
 
 <form action="/manage/{{ program.getUrlBase }}/grouptextfinal?filterid={{ filterid }}" method="post" name="grouptext">
 <textarea name="message" id="message_input" cols="40" rows="4" oninput="TextMessage.onMessageChange();"></textarea>

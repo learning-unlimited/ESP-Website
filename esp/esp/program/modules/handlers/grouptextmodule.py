@@ -86,11 +86,9 @@ class GroupTextModule(ProgramModuleObj):
         filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
         message = request.POST['message']
 
-        numusers = filterObj.getList(ESPUser).distinct().count()
-        est_time = 0.5 * numusers # TODO: calculate properly
         log = self.sendMessages(filterObj, message)
 
-        return render_to_response(self.baseDir()+'finished.html', request, {'time': est_time, 'log': log})
+        return render_to_response(self.baseDir()+'finished.html', request, {'log': log})
 
     @main_call
     @needs_admin
@@ -110,6 +108,7 @@ class GroupTextModule(ProgramModuleObj):
 
             context['filterid'] = filterObj.id
             context['num_users'] = ESPUser.objects.filter(filterObj.get_Q()).distinct().count()
+            context['est_time'] = float(context['num_users']) * 1.0 / len(settings.TWILIO_ACCOUNT_NUMBERS)
             return render_to_response(self.baseDir()+'options.html', request, context)
 
         context.update(usc.prepare_context(prog, target_path='/manage/%s/grouptextpanel' % prog.url))
