@@ -60,11 +60,27 @@ class GroupTextModule(ProgramModuleObj):
             "seq": 10
         }
 
+    def is_configured(self):
+        """ Check if Twilio configuration settings are set.
+            The text message module will not work without them. """
+
+        if not hasattr(settings, 'TWILIO_ACCOUNT_SID') or not isinstance(settings.TWILIO_ACCOUNT_SID, basestring):
+            return False
+        if not hasattr(settings, 'TWILIO_AUTH_TOKEN') or not isinstance(settings.TWILIO_AUTH_TOKEN, basestring):
+            return False
+        if not hasattr(settings, 'TWILIO_ACCOUNT_NUMBERS') or (not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, list) and not isinstance(settings.TWILIO_ACCOUNT_NUMBERS, tuple)):
+            return False
+
+        return True
+
     @aux_call
     @needs_admin
     def grouptextfinal(self, request, tl, one, two, module, extra, prog):
         if request.method != 'POST' or 'filterid' not in request.GET or 'message' not in request.POST:
             raise ESPError(), 'Filter or message have not been properly set'
+
+        if not self.is_configured():
+            return render_to_response(self.baseDir() + 'not_configured.html', request, {})
 
         # get the filter to use and text message to send from the request; this is set in grouptextpanel form
         filterObj = PersistentQueryFilter.objects.get(id=request.GET['filterid'])
@@ -79,6 +95,9 @@ class GroupTextModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def grouptextpanel(self, request, tl, one, two, module, extra, prog):
+        if not self.is_configured():
+            return render_to_response(self.baseDir() + 'not_configured.html', request, {})
+
         usc = UserSearchController()
         context = {}
         context['program'] = prog
