@@ -2052,11 +2052,41 @@ class Record(models.Model):
         app_label = 'users'
 
     @classmethod
-    def user_completed(cls, user, event, program=None):
-        if program is None:
-            return cls.objects.filter(user=user, event=event).count()>0
-        else:
-            return cls.objects.filter(user=user, event=event, program=program).count()>0
+    def user_completed(cls, user, event, program=None, when=None, only_today=False):
+        """
+        Returns True if the user is considered to have completed the event.
+
+        Accepts the same parameters as filter().
+        """
+        return cls.filter(user, event, program, when, only_today).count()>0
+
+    @classmethod
+    def filter(cls, user, event, program=None, when=None, only_today=False):
+        """
+        Returns a QuerySet for all of a user's Records for a particular event,
+        under various constraints.
+
+        Parameters:
+          user (ESPUser):              The user.
+          event (unicode):             The event name.
+          program (Program, optional): The program associated with the event.
+                                       Use None for events with no associated program.
+          when (datetime, optional):   Only Records from before then are considered.
+                                       Defaults to datetime.now().
+          only_today (bool, optional): If True, only Records from the same day as
+                                       'when' are considered.
+                                       Defaults to False.
+        """
+        if when is None:
+            when = datetime.now()
+        filter = cls.objects.filter(user=user, event=event, time__lte=when)
+        if program is not None:
+            filter = filter.filter(program=program)
+        if only_today:
+            filter = filter.filter(time__year=when.year,
+                                   time__month=when.month,
+                                   time__day=when.day)
+        return filter.distinct()
 
     def __unicode__(self):
         return unicode(self.user) + " has completed " + self.event + " for " + unicode(self.program)
