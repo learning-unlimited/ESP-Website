@@ -110,6 +110,8 @@
     <script type="text/javascript" src="{{ settings.CDN_ADDRESS }}/bootstrap/docs/assets/js/application.js"></script>
     
     <script src="/media/scripts/nav.js" type="text/javascript"></script>
+
+    {% autoescape off %}{{ settings.ADDITIONAL_TEMPLATE_SCRIPTS }}{% endautoescape %}
     {% endblock %}
   </body>
 </html>
