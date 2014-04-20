@@ -218,9 +218,10 @@ class TeacherCheckinModule(ProgramModuleObj):
         missing = teachers.exclude(id__in=arrived)
         missing_sections = sections.filter(parent_class__teachers__in=missing,)
         teacher_tuples = ESPUser.objects.filter(classsubject__sections__in=missing_sections) \
-                                          .distinct() \
+                                          .order_by('classsubject__sections__meeting_times__start',
+                                                    'last_name', 'first_name') \
                                           .values_list('id', 'classsubject__id', 'classsubject__title') \
-                                          .order_by('last_name', 'first_name')
+                                          .distinct()
         
         teacher_dict = {}
         for teacher in list(arrived) + list(missing):
@@ -241,10 +242,11 @@ class TeacherCheckinModule(ProgramModuleObj):
             if class_id not in class_dict:
                 class_dict[class_id] = {'id': ClassSubject.objects.get(id=class_id).emailcode(),
                                         'name': class_name,
-                                        'teachers': [],
+                                        'teachers': {},
                                         'any_arrived': False}
                 class_arr.append(class_dict[class_id])
-            class_dict[class_id]['teachers'].append(teacher_dict[teacher_id])
+            if teacher_id not in class_dict[class_id]['teachers']:
+                class_dict[class_id]['teachers'][teacher_id] = teacher_dict[teacher_id]
         
         for sec in missing_sections:
             if sec.parent_class.id in class_dict:
@@ -257,7 +259,7 @@ class TeacherCheckinModule(ProgramModuleObj):
         
         #Move sections where at least one teacher showed up to end of list
         for sec in class_arr:
-            for teacher in sec['teachers']:
+            for teacher in sec['teachers'].itervalues():
                 if teacher['arrived']:
                     sec['any_arrived'] = True
                     break
