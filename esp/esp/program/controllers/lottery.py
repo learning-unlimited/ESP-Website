@@ -49,10 +49,24 @@ from django.db.models import Min
 import os
 import operator
 
+class LotteryException(Exception):
+    """ Top level exception class for lottery related problems.  """
+    pass
+    
+class LotterySectionException(LotteryException):
+    """ Something is wrong with a class section.    """
+    def __init__(self, section, msg, **kwargs):
+        super(LotteryException, self).__init__('Class section %d (%s) %s' % (section.id, section.emailcode(), msg), **kwargs)
+
+class LotterySubjectException(LotteryException):
+    """ Something is wrong with a class subject.    """
+    def __init__(self, subject, msg, **kwargs):
+        super(LotteryException, self).__init__('Class subject %s %s' % (subject.emailcode(), msg), **kwargs)
+
 class LotteryAssignmentController(object):
 
-	# map from default option key to (default value, help text)
-	# help text is false if it should not be displayed on a web interface (specifically, lottery frontend module)
+    # map from default option key to (default value, help text)
+    # help text is false if it should not be displayed on a web interface (specifically, lottery frontend module)
     default_options = {
         'Kp': (1.2, 'Assignment weight factor for priority students'),
         'Ki': (1.1, 'Assignment weight factor for interested students'),
@@ -149,9 +163,33 @@ class LotteryAssignmentController(object):
             pref_array = numpy.array(prefs, dtype=numpy.uint32)
             student_ixs = self.student_indices[pref_array[:, 0]]
             section_ixs = self.section_indices[pref_array[:, 1]]
+
             #   Check that we didn't look up invalid indices (which are set to -1).
+
+            #   - Missing student (this should never happen and would indicate an error in the code)
             assert numpy.min(student_ixs)>=0, "Got a preference for a student who doesn't exist!"
-            assert numpy.min(section_ixs)>=0, "Got a preference for a section which doesn't exist!"
+
+            #   - Missing section (this can happen due to factors outside the code's control)
+            if numpy.min(section_ixs) < 0:
+                #   Try to diagnose what is wrong with the sections we are not tracking
+                bad_section_id = pref_array[numpy.nonzero(section_ixs < 0)[0][0], 1]
+                #   Use .get(), since all class sections should be present in the database.
+                #   (If any does not exist, that is a problem with the code and should cause
+                #   a server error.)
+                bad_section = ClassSection.objects.get(id=bad_section_id)
+                if bad_section.status <= 0:
+                    raise LotterySectionException(bad_section, 'is not approved.')
+                elif bad_section.registration_status != 0:
+                    raise LotterySectionException(bad_section, 'is not open to registration.')
+                elif not bad_section.meeting_times.exists():
+                    raise LotterySectionException(bad_section, 'is not scheduled.')
+                elif bad_section.parent_class.status <= 0:
+                    raise LotterySubjectException(bad_section.parent_class, 'is not approved.')
+                elif bad_section.parent_class.parent_program != self.program:
+                    raise LotterySubjectException(bad_section.parent_class, 'does not belong to the right program.')
+                else:
+                    raise LotterySectionException(bad_section, 'is not associated with the lottery (unknown reason).')
+                
             array[student_ixs, section_ixs] = True
 
     def initialize(self):
