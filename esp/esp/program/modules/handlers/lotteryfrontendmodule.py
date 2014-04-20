@@ -6,6 +6,7 @@ from esp.users.models import ESPUser
 from esp.utils.decorators import json_response
 import numpy
 import zlib
+import base64
 from StringIO import StringIO
 
 class LotteryFrontendModule(ProgramModuleObj):
@@ -91,9 +92,10 @@ class LotteryFrontendModule(ProgramModuleObj):
         numpy.savetxt(s, lotteryObj.section_ids)
         section_ids = s.getvalue()
 
-        lottery_data = zlib.compress(student_sections + '|' + student_ids + '|' + section_ids)
+        #   Encode the lottery data as compressed base64 so it can be transmitted as ASCII
+        lottery_data = base64.b64encode(zlib.compress(student_sections + '|' + student_ids + '|' + section_ids))
 
-        return {'response': [{'stats': statsDisp, 'lottery_data': lottery_data}]};
+        return {'response': [{'stats': statsDisp, 'lottery_data': lottery_data}]}
 
     @aux_call
     @json_response()
@@ -103,7 +105,8 @@ class LotteryFrontendModule(ProgramModuleObj):
         	return {'response': [{'success': 'no', 'error': 'missing lottery_data POST field'}]};
 
         lotteryObj = LotteryAssignmentController(prog)
-        lottery_data_parts = zlib.decompress(request.POST['lottery_data']).split('|')
+        #   Decode compressed and base64-encoded lottery data
+        lottery_data_parts = zlib.decompress(base64.b64decode(request.POST['lottery_data'])).split('|')
 
         if len(lottery_data_parts) != 3:
         	return {'response': [{'success': 'no', 'error': 'provided lottery_data is corrupted (doesn\'t contain three parts)'}]};
