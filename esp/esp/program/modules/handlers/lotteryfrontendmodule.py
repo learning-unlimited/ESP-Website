@@ -1,6 +1,6 @@
 from esp.program.models import Program, ClassSection
 from esp.program.modules.base import ProgramModuleObj, needs_admin, main_call, aux_call
-from esp.program.controllers.lottery import LotteryAssignmentController
+from esp.program.controllers.lottery import LotteryAssignmentController, LotteryException
 from esp.web.util.main import render_to_response
 from esp.users.models import ESPUser
 from esp.utils.decorators import json_response
@@ -60,12 +60,19 @@ class LotteryFrontendModule(ProgramModuleObj):
 
                 options[key.split('_', 1)[1]] = value
 
-        lotteryObj = LotteryAssignmentController(prog, **options)
+        error_msg = ''
+        try:
+            lotteryObj = LotteryAssignmentController(prog, **options)
+        except LotteryException, e:
+            error_msg = str(e)
+            return {'response': [{'error_msg': error_msg}]}
 
         for i in xrange(15):
             try:
                 lotteryObj.compute_assignments(True)
                 break
+            except LotteryException, e:
+                error_msg = str(e)
             except AssertionError:
                 pass
 

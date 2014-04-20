@@ -22,8 +22,15 @@ function runLotteryThing() {
 		data: post_data,
 		success: function(data) {
 			data = data['response'][0];
-			lottery_data = data['lottery_data'];
-			$j('#lotterythingstats').html("<pre>" + data['stats'] + "</pre>");
+			if (data['error_msg'])
+			{
+				$j('#lotterythingstats').html("A misconfiguration or unexpected situation prevented the lottery from running: " + data['error_msg']);
+			}
+			else
+			{
+				lottery_data = data['lottery_data'];
+				$j('#lotterythingstats').html("<pre>" + data['stats'] + "</pre>");
+			}
 		},
 		error: lotteryErrorHandler,
 		dataType: 'json'
