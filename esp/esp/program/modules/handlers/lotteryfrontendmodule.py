@@ -22,8 +22,14 @@ class LotteryFrontendModule(ProgramModuleObj):
     @main_call
     @needs_admin
     def lottery(self, request, tl, one, two, module, extra, prog):
-         context = {'options': {k: v for k, v in LotteryAssignmentController.default_options.items() if v[1] is not False}}
-         return render_to_response(self.baseDir()+'lottery.html', request, context)
+        #   Check that the lottery module is included
+        students = self.program.students()
+        if 'lotteried_students' not in students and 'twophase_star_students' not in students:
+            return render_to_response(self.baseDir() + 'not_configured.html', request, {'program': prog})
+
+        #   Render control page with lottery options
+        context = {'options': {k: v for k, v in LotteryAssignmentController.default_options.items() if v[1] is not False}}
+        return render_to_response(self.baseDir()+'lottery.html', request, context)
 
     def is_float(self, s):
         try:
