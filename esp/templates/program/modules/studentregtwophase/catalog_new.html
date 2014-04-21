@@ -41,14 +41,26 @@
   <!-- ko foreach: classesArray -->
   <div class="catalog-entry" data-bind="visible: $parent.showClass($data)">
     <div class="catalog-entry-header">
-      <h2 class="catalog-entry-title" data-bind="text: fulltitle"></h2>
+      <h2 class="catalog-entry-title" data-bind="text: fulltitle"></h2>New
       <div class="catalog-entry-teachers" data-bind="foreach: teachers">
         <a data-bind="text: name, attr: { href: '/teach/teachers/'+username+'/bio.html',
                       title: 'The biography of '+name }">
         </a><!-- ko if: $index() != $parent.teachers().length - 1 -->, <!-- /ko -->
+
       </div>
+      {% block catalog-actions %}
+      <div class="pull-right">
+         <span 
+       class="user-box-name" 
+       data-bind="text: id, click: $root.addClass" ></span>
+      <a href="#" data-bind="text: id, click: addClass"></a>
+        <a href="#" data-bind="click: addClass">
+             <h2 class="catalog-entry-title" data-bind="text: id"></h2>
+        </a>
+      </div>
+      {% endblock catalog-actions %}
     </div>
-    {% block class_action %}{% endblock %}
+   
     <div class="catalog-entry-body">
       <div class="catalog-entry-description" data-bind="text: class_info"></div>
       <dl>

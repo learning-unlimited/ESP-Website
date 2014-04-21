@@ -16,6 +16,7 @@ Below is the class listing for {{program.niceName}}. If you have trouble viewing
 {% endblock %}
 
 {% block catalog_sticky %}
+
 <div><h2>{{program.niceName}} Course Catalog</h2></div>
 <hr>
 <div class="sticky-toggle">
@@ -29,7 +30,7 @@ Below is the class listing for {{program.niceName}}. If you have trouble viewing
   <div id="search-spinner">&nbsp;</div>
 </div>
 <div class="filter-box" data-bind="visible: showFilter">
-  <label>Category:</label>
+  <label>Category:</label><input type="text" id="id-extra" value="{{ extra }}" />
   <br>
   {% for column in category_choices %}
   <div class="filter-column">

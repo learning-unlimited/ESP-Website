@@ -1,3 +1,4 @@
+
 //  Compensate for lack of Date.now() in IE8
 Date.now = Date.now || function() { return +new Date; };
 
@@ -59,6 +60,32 @@ var ClassSubject = function (data) {
     // click handler for interested star
     self.toggle_interested = function () {
         self.interested(!self.interested());
+    }
+
+    self.addClass = function (classSubject,event) {
+        //todo -  determine which section to use
+        var learn_url = program_base_url.replace(/^\/json/, '/learn');
+        var url = learn_url + 'ajax_addclass';
+        var data = {
+                csrfmiddlewaretoken: csrf_token(),
+                class_id: classSubject.id,
+                section_id: classSubject.sections()[0].id
+        }
+
+        $j.ajax({
+             type: "post",
+             url: url,
+             contentType: "application/json",
+             data: data,
+             success: function () {
+               alert('success')
+             },
+             complete: function (jqXHR,textStatus) {
+
+               alert(jqXHR.responseText);
+               alert(textStatus);
+             }
+        });
     }
 };
 
