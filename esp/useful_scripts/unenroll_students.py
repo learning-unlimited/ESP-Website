@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """
 Kick students out of their classes (or only next hour's classes, if the 
 --per-hour option is used) if they haven't checked in yet.
