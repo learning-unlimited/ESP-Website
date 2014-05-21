@@ -58,10 +58,10 @@ class TestUserSearchController(TestCase):
 
         #response = self.client.post('/manage/Spark/2013/selectList',post_data)
         controller = UserSearchController()
-        qobject = controller.filter_from_postdata(Program.objects.get(id=88), post_data)
+        qobject = controller.filter_from_postdata(Program.objects.get(id=88), post_data).getList(ESPUser)
 
-        num_users = ESPUser.objects.filter(qobject.get_Q()).count()   
-        print ESPUser.objects.filter(qobject.get_Q()).query
-        assert num_users > 0
+        num_users = qobject.count()   
+        print qobject.query
+        self.assertGreater(num_users, 0)
 
 

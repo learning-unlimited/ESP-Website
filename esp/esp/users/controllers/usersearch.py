@@ -236,12 +236,23 @@ class UserSearchController(object):
                                     
             event_fields = subqry_fieldmap['record__event']
             if event_fields:
-                subquery = (Record
+                #annotation is needed to initiate group by
+                #except that it cause the query to return to columns
+                #so we call values at the end of the chain, however,
+                #that results in multiple group by fields(causing the query to fail)
+                #so, we assign a group by field, to force grouping by user_id
+                subquery = (
+                              Record
                               .objects
-                              .filter(program_id=85,event__in=event_fields)
-                              .values('user_id')
+                              .filter(program=program,event__in=event_fields)
                               .annotate(numusers=Count('user__id'))
-                              .filter(numusers=len(event_fields)))
+                              .filter(numusers=len(event_fields))
+                              .values('user_id')
+                              
+                            )
+
+                subquery.query.group_by = ['user_id']
+                subquery = Q(pk__in=subquery)
 
             for or_list_name in or_keys:
                 user_type = get_recipient_type(or_list_name)
@@ -261,12 +272,14 @@ class UserSearchController(object):
         childset = set(qobject.children)
         qobject.children = list(childset)
 
-        return qobject, subquery
+        if subquery:
+            qobject = qobject & subquery
+        return qobject
 
     def filter_from_postdata(self, program, data):
         """ Wraps the query_from_postdata function above to return a PersistentQueryFilter. """
     
-        query, subquery = self.query_from_postdata(program, data)
+        query = self.query_from_postdata(program, data)
 
         #TODO-determine best location to inject subquery
         #the string subquery should be assigned to .extra of the resultant filter
