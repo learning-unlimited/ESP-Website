@@ -13,6 +13,19 @@
     <br />
     {{ account.description_contents|linebreaksbr }}
     <ul>
+    {% with account.balance_breakdown as breakdown %}
+    
+    {% if not breakdown.0|length_is:0 %}<li>Outbound transfers ({{ breakdown.0|length }})</li><ul>
+    {% for transfer in breakdown.0 %}
+    	<li>Transferred to {{ transfer.target_title }} ({{ transfer.target_name }}): -${{ transfer.amount }}</li>
+    {% endfor %}</ul>{% endif %}
+    
+    {% if not breakdown.1|length_is:0 %}<li>Inbound transfers ({{ breakdown.1|length }})</li><ul>
+    {% for transfer in breakdown.1 %}
+        <li>Transferred from {{ transfer.target_title }} ({{ transfer.target_name }}): +${{ transfer.amount }}</li>
+    {% endfor %}</ul>{% endif %}
+
+    {% endwith %}
         <li>Balance: ${{ account.balance }}</li>
         <li>Value of pending transactions: ${{ account.pending_balance }} (included in balance)</li>
     </ul>
