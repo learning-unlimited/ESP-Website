@@ -25,9 +25,7 @@ class FormstackAppSettings(models.Model):
     # end formstack settings
 
     username_field = models.IntegerField(null=True, blank=True)
-    coreclass1_field = models.IntegerField(null=True, blank=True)
-    coreclass2_field = models.IntegerField(null=True, blank=True)
-    coreclass3_field = models.IntegerField(null=True, blank=True)
+    coreclass_fields = models.CommaSeparatedIntegerField(max_length=80, blank=True, help_text="A list of field ids separated by commas.")
 
     autopopulated_fields = models.TextField(blank=True, help_text="""\
 To autopopulate fields on the form, type "[field id]: [Python
@@ -236,9 +234,9 @@ class FormstackStudentProgramAppManager(models.Manager):
 
         # link class subjects
         choices = {}
-        choices[1] = get_subject(data_dict.get(settings.coreclass1_field))
-        choices[2] = get_subject(data_dict.get(settings.coreclass2_field))
-        choices[3] = get_subject(data_dict.get(settings.coreclass3_field))
+        for index, field in enumerate(settings.coreclass_fields.split(',')):
+            value = data_dict.get(int(field))
+            choices[index + 1] = get_subject(value)
 
         # update app object, or make one if it doesn't exist
         try:

@@ -44,7 +44,7 @@ from esp.application.models import FormstackAppSettings, FormstackStudentProgram
 class FormstackAppSettingsAdmin(admin.ModelAdmin):
     fields = ['module', 'api_key', 'forms_for_api_key',
               'form_id', 'form_fields',
-              'username_field', 'coreclass1_field', 'coreclass2_field', 'coreclass3_field',
+              'username_field', 'coreclass_fields',
               'autopopulated_fields', 'teacher_view_template',
               'finaid_form_id', 'finaid_form_fields',
               'finaid_user_id_field', 'finaid_username_field',
