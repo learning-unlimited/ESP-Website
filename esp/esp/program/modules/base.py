@@ -283,10 +283,23 @@ class ProgramModuleObj(models.Model):
         """ Find module extensions that this program module inherits from, and 
         incorporate those into its attributes. """
         
+        self._ext_map = {}
         if self.program:
             for key, x in self.extensions().items():
                 ext = self.program.getModuleExtension(x, module_id=self.id)
                 setattr(self, key, ext)
+                for attr in dir(ext):
+                    self._ext_map[attr] = key
+
+    def __getattr__(self, attr):
+        # backward compatibility
+        if hasattr(self, '_ext_map') and self._ext_map.has_key(attr):
+            key = self._ext_map[attr]
+            ext = getattr(self, key)
+            import warnings
+            warnings.warn('Direct access of module extension attributes from module objects is deprecated. Use <module>.%s.%s instead.' % (key, attr), DeprecationWarning, stacklevel=2)
+            return getattr(ext, attr)
+        raise AttributeError('%r object has no attribute %r' % (self.__class__, attr))
 
     def deadline_met(self, extension=''):
     
