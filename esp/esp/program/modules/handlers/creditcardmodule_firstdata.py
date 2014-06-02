@@ -169,7 +169,9 @@ class CreditCardModule_FirstData(ProgramModuleObj):
         else:
             context['hostname'] = Site.objects.get_current().domain
         context['institution'] = settings.INSTITUTION_NAME
-        context['storename'] = self.store_id
+        context['storename'] = self.cc_settings.store_id
+        for setting in ['host_payment_form', 'post_url', 'offer_donation']:
+            context[setting] = getattr(self.cc_settings, setting)
         context['support_email'] = settings.DEFAULT_EMAIL_ADDRESSES['support']
         
         return render_to_response(self.baseDir() + 'cardpay.html', request, context)

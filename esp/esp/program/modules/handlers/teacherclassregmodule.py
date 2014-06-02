@@ -89,7 +89,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         
         context['can_edit'] = self.deadline_met('/Classes/Edit')
         context['can_create'] = self.deadline_met('/Classes/Create')
-        context['teacherclsmodule'] = self # ...
+        context['teacherclsmodule'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = (Tag.getProgramTag(key='friendly_times_with_date',program=self.program,default=False) == "True")
         context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='true').lower()
@@ -784,7 +784,7 @@ class TeacherClassRegModule(ProgramModuleObj):
                 # durations when every interface assumes they're identical?
                 current_duration = current_data['duration'] or newclass.sections.all()[0].duration
                 rounded_duration = 0
-                for k, v in self.getDurations() + [(0,'')]:
+                for k, v in self.crmi.getDurations() + [(0,'')]:
                     new_delta = abs( k - current_duration )
                     if old_delta is None or new_delta < old_delta:
                         old_delta = new_delta
@@ -883,6 +883,7 @@ class TeacherClassRegModule(ProgramModuleObj):
         else:
             context['addoredit'] = 'Edit'
 
+        context['open_class_registration'] = self.crmi.open_class_registration
         context['classes'] = {
             0: {'type': 'class', 'link': 'makeaclass'}, 
             1: {'type': self.program.open_class_category.category, 'link': 'makeopenclass'}
