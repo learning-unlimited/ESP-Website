@@ -80,7 +80,7 @@ class TeacherClassRegModule(ProgramModuleObj):
 
     @classmethod
     def extensions(cls):
-        return [module_ext.ClassRegModuleInfo]
+        return {'crmi': module_ext.ClassRegModuleInfo}
 
 
     def prepare(self, context={}):

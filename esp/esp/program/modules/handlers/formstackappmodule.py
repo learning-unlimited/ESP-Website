@@ -60,7 +60,7 @@ class FormstackAppModule(ProgramModuleObj):
 
     @classmethod
     def extensions(cls):
-        return [module_ext.FormstackAppSettings]
+        return {'fsas': module_ext.FormstackAppSettings}
 
     def students(self, QObject = False):
         result = {}

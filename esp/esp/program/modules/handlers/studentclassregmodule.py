@@ -141,7 +141,7 @@ class StudentClassRegModule(ProgramModuleObj):
 
     @classmethod
     def extensions(cls):
-        return [module_ext.StudentClassRegModuleInfo]
+        return {'scrmi': module_ext.StudentClassRegModuleInfo}
 
 
     def students(self, QObject = False):
