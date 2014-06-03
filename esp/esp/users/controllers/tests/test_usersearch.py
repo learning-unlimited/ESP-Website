@@ -27,12 +27,14 @@ import string
 #python manage.py test users.controllers.tests.test_usersearch:TestUserSearchController.test_overlap_bug
 
 from esp.users.controllers.usersearch import UserSearchController
+
+
 class TestUserSearchController(TestCase):
+    controller = UserSearchController()
+    program = Program.objects.get(id=88)#Splash
 
-
-    def test_overlap_bug(self):
-
-        post_data = {
+    def _get_combination_post_data(self,list_a, list_b):
+        return {
             'username': '',
             'checkbox_and_confirmed': '',
             'first_name': '',
@@ -42,7 +44,7 @@ class TestUserSearchController(TestCase):
             'gradyear_max': '',
             'userid': '',
             'zipcode': '',
-            'combo_base_list': 'Student:confirmed',
+            'combo_base_list': '%s:%s'%(list_a, list_b),
             'email': '',
             'states': '',
             'zipdistance': '',
@@ -56,12 +58,45 @@ class TestUserSearchController(TestCase):
         }
 
 
-        #response = self.client.post('/manage/Spark/2013/selectList',post_data)
-        controller = UserSearchController()
-        qobject = controller.filter_from_postdata(Program.objects.get(id=88), post_data).getList(ESPUser)
 
-        num_users = qobject.count()   
-        print qobject.query
-        self.assertGreater(num_users, 0)
+    def test_student_confirmed(self):
+        post_data = self._get_combination_post_data('Student','confirmed')
+        qobject = self.controller.filter_from_postdata(self.program, post_data).getList(ESPUser)
+
+        self.assertGreater(qobject.count(), 0)
 
 
+    def test_teacher_classroom_tables(self):
+        post_data = self._get_combination_post_data('Teacher','teacher_res_150_8')
+        qobject = self.controller.filter_from_postdata(self.program, post_data).getList(ESPUser)
+        self.assertGreater(qobject.count(), 0)
+
+    def test_teacher_classroom_tables_query_from_post(self):
+        post_data = {u'username': u'', 
+                     u'zipdistance_exclude': u'', 
+                     u'first_name': u'', 
+                     u'last_name': u'', 
+                     u'use_checklist': u'0', 
+                     u'gradyear_max': u'', 
+                     u'userid': u'', 
+                     u'school': u'', 
+                     u'combo_base_list': u'Teacher:teacher_res_150_8', 
+                     u'zipcode': u'', 
+                     u'states': u'', 
+                     u'student_sendto_self': u'1', 
+                     u'checkbox_and_teacher_res_152_0': u'', 
+                     u'grade_min': u'', 
+                     u'gradyear_min': u'', 
+                     u'zipdistance': u'',
+                      u'csrfmiddlewaretoken': u'GKk9biBZE2muppi7jcv2OnqQyIehiCuw', 
+                      u'grade_max': u'', u'email': u''}
+
+        query =  self.controller.query_from_postdata(self.program, post_data)
+        print query#need to inspect why this is failing
+        assert False
+        #self.assertGreater(qobject.count(), 0)
+
+    def test_teacher_interview(self):
+        post_data = self._get_combination_post_data('Teacher','interview')
+        qobject = self.controller.filter_from_postdata(self.program, post_data).getList(ESPUser)
+        self.assertGreater(qobject.count(), 0)

@@ -247,11 +247,11 @@ class UserSearchController(object):
                               .filter(program=program,event__in=event_fields)
                               .annotate(numusers=Count('user__id'))
                               .filter(numusers=len(event_fields))
-                              .values('user_id')
+                              .values_list('user_id',flat=True)
                               
                             )
 
-                subquery.query.group_by = ['user_id']
+                subquery.query.group_by = []#leave empty to strip out duplicate group by
                 subquery = Q(pk__in=subquery)
 
             for or_list_name in or_keys:
