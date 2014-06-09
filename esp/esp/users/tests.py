@@ -15,7 +15,7 @@ from esp.program.tests import ProgramFrameworkTest
 from esp.tagdict.models import Tag
 from esp.tests.util import CacheFlushTestCase as TestCase, user_role_setup
 from esp.users.forms.user_reg import ValidHostEmailField
-from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission
+from esp.users.models import User, ESPUser, PasswordRecoveryTicket, UserForwarder, StudentInfo, Permission, Record
 from esp.users.views import make_user_admin
 
 import esp.users.views as views
@@ -510,5 +510,89 @@ class TestChangeRequestView(TestCase):
         msg = mail.outbox[0]
         self.assertEqual(msg.to, [settings.DEFAULT_EMAIL_ADDRESSES['default']])
         self.assertEqual(msg.from_email, settings.SERVER_EMAIL)
-        
-        
+
+class RecordTest(TestCase):
+    def setUp(self):
+        super(RecordTest, self).setUp()
+        self.past     = datetime.datetime(1970, 1, 1)
+        self.future   = datetime.datetime.max
+        self.user     = ESPUser.objects.create(username='RecordTest')
+        self.event    = Record.EVENT_CHOICES[0][0]
+        self.program1 = Program.objects.create(grade_min=7, grade_max=12)
+        self.program2 = Program.objects.create(grade_min=7, grade_max=12)
+
+    def tearDown(self):
+        Record.filter(self.user, self.event, when=self.future).delete()
+        self.user.delete()
+        self.program1.delete()
+        self.program2.delete()
+
+    def runTest(self):
+        # Run the tests for Records with two different programs, and without
+        # a specific program.
+        # If all iterations run successfully, this means that the Record
+        # methods properly filter by program.
+        for program in [None, self.program1, self.program2]:
+            # Aliases so full set of args don't need to be typed each time.
+            def user_completed(when=None, only_today=False):
+                return Record.user_completed(self.user, self.event, program,
+                                             when, only_today)
+            def filter(when=None, only_today=False):
+                return Record.filter(self.user, self.event, program,
+                                     when, only_today)
+            def create(when=None):
+                kwargs = {'event'   : self.event,
+                          'program' : program,
+                          'user'    : self.user}
+                if when is not None:
+                    kwargs['time'] = when
+                return Record.objects.create(**kwargs)
+
+            # Create Record without time, test that it was created for now,
+            # and that the event is complete, both in general and for the
+            # current day.
+            before = datetime.datetime.now()
+            nowRecord = create()
+            after = datetime.datetime.now()
+            self.assertTrue(before <= nowRecord.time <= after)
+            self.assertTrue(user_completed())
+            # Below, we must explicitly pass time, instead of relying on
+            # default.  Otherwise, the test would fail if the date rolled
+            # over while running the test.
+            self.assertTrue(user_completed(nowRecord.time, only_today=True))
+
+            # Clear Records, test that event is incomplete at all times.
+            nowRecord.delete()
+            del nowRecord
+            filter(self.future).delete()
+            self.assertFalse(user_completed())
+            self.assertFalse(user_completed(self.past))
+            self.assertFalse(user_completed(self.future))
+
+            # Create future Record, test that event is incomplete in the
+            # present and past but complete in the future.
+            create(self.future)
+            self.assertFalse(user_completed())
+            self.assertFalse(user_completed(self.past))
+            self.assertTrue(user_completed(self.future))
+
+            # Create past Record, test that event is complete at all times.
+            # Furthermore, the past and the present only recognize this new
+            # Record, whereas the future recognizes both the new and the
+            # previous Record.
+            create(self.past)
+            self.assertTrue(user_completed())
+            self.assertTrue(user_completed(self.past))
+            self.assertTrue(user_completed(self.future))
+            self.assertEqual(1, filter().count())
+            self.assertEqual(1, filter(self.past).count())
+            self.assertEqual(2, filter(self.future).count())
+
+            # Test that event is complete for the past and future days, but
+            # is incomplete for today. Furthermore, when filtering by day,
+            # the future recognizes only one Record instead of two.
+            self.assertTrue(user_completed(self.past, only_today=True))
+            self.assertTrue(user_completed(self.future, only_today=True))
+            self.assertFalse(user_completed(only_today=True))
+            self.assertEqual(1, filter(self.future, only_today=True).count())
+
