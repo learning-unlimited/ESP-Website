@@ -904,8 +904,11 @@ are a teacher of the class"""
         # - Michael P 5/24/2010
         # Changed from 5/1 to 7/31 rollover to as to neither affect registration starts nor occur prior to graduation.
         # Adam S 8/1/2010
+        # Changed from 7/31 to 6/1 rollover so as to be in effect for Summer HSSP registration
+        # We should just make this use the tag instead of changing this all the time...
+        # -lua 2014-06-09
         #if datetime(curyear, 6, 1) > now:
-        if date(curyear, 7, 31) > now:
+        if date(curyear, 6, 1) > now:
             schoolyear = curyear
         else:
             schoolyear = curyear + 1
