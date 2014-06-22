@@ -13,19 +13,32 @@
 {% endblock %}
 
 {% block content %}
-<h1>ESP Accounts and E-mails</h1>
+<h1>ESP Accounts and Emails</h1>
 
 <p>
-If you would not like to receive e-mail from ESP, you can disable your account.  If at any time you would like to start receiving e-mail notifications again, you may return to this page (you will still be able to log in) and re-enable it.
+If you would not like to receive email from ESP, you can disable your account.  If at any time you would like to start receiving email notifications again, you may return to this page (you will still be able to log in) and re-enable it.
 </p>
+
+{% if user.is_active and other_users %}
+<p>
+There are multiple users associated with your email address.  <b>If you disable your account, this will disable all of the accounts with this email address.</b>
+</p>
+{% endif %}
 
 <h2>Your Account Status</h2>
 
 <p>
 <ul>
-<li><b>Account: </b>{{ user.username }} <br />
-<li><b>Current status: </b>{% if user.is_active %}<font color="#0000FF">Active</font>{% else %}<font color="#FF0000">Disabled</font>{% endif %} <br />
-<li><b>Options: </b>{% if user.is_active %}<a href="?disable">Disable Account</a>{% else %}<a href="?enable">Enable Account</a>{% endif %}
+    <li><b>Account: </b>{{ user.username }} </li>
+{% if other_users %}
+    <li><b>Other users with this email address: </b>
+        {% for other_user in other_users %}
+            {{ other_user.username }}{% if not forloop.last %}, {% endif %}
+        {% endfor %}
+    </li>
+{% endif %}
+    <li><b>Current status: </b>{% if user.is_active %}<font color="#0000FF">Active</font>{% else %}<font color="#FF0000">Disabled</font>{% endif %} </li>
+    <li><b>Options: </b>{% if user.is_active %}<a href="?disable">Disable Account</a>{% else %}<a href="?enable">Enable Account</a>{% endif %}</li>
 </ul>
 </p>
 

@@ -166,8 +166,10 @@ def disable_account(request):
     elif 'disable' in request.GET:
         curUser.is_active = False
         curUser.save()
+
+    other_users = ESPUser.objects.filter(email=curUser.email).exclude(id=curUser.id)
         
-    context = {'user': curUser}
+    context = {'user': curUser, 'other_users': other_users}
         
     return render_to_response('users/disable_account.html', request, context)
 
