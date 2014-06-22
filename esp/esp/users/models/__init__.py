@@ -1005,15 +1005,15 @@ are a teacher of the class"""
 
 
 @dispatch.receiver(signals.pre_save, sender=ESPUser,
-                   dispatch_uid='update_mailman_subscriptions')
+                   dispatch_uid='update_email_save')
 def update_email_save(**kwargs):
     kwargs['deleted']=False
     return update_email(**kwargs)
 
 
 @dispatch.receiver(signals.pre_delete, sender=ESPUser,
-                   dispatch_uid='update_email')
-def update_email_save(**kwargs):
+                   dispatch_uid='update_email_delete')
+def update_email_delete(**kwargs):
     kwargs['deleted']=True
     return update_email(**kwargs)
 
@@ -1040,7 +1040,6 @@ def update_email(**kwargs):
       new confirmation email).
     """
     from esp import mailman
-    LIST = 'announcements'
     deleted = kwargs['deleted']
     if deleted:
         # If for some reason we delete an already deactivated user, we'll
@@ -1062,20 +1061,41 @@ def update_email(**kwargs):
             # don't do anything.
             return
 
+
     # Now we have set old_email and new_email; if either is not None, the
     # corresponding old_user or new_user will also exist.  Now actually do
     # things.
+    group_map = {
+            'Student': 'announcements',
+            'Guardian': 'announcements',
+            'Educator': 'announcements',
+            'Teacher': 'teachers',
+    }
     other_users = ESPUser.objects.filter(email=old_email).exclude(id=old_user.id)
     if old_email is None:
-        mailman.add_list_member(LIST, new_user)
+        # We will never get a newly created user here, because we only fire on
+        # *activation*.  So we can use new_user.groups to figure out the lists
+        # to which they should be added.
+        groups = new_user.groups.values_list('name', flat=True)
+        for g in groups:
+            if g in group_map:
+                mailman.add_list_member(group_map[g], new_email)
     elif new_email is None:
         # QuerySet.update() does not call save signals, so this won't be circular.
         other_users.update(is_active=False)
-        mailman.remove_list_member(LIST, old_user)
+        # Only remove them from group-based lists; keep them on program and
+        # class lists.
+        for l in set(group_map.values()):
+            mailman.remove_list_member(l, old_email)
     else:
-        mailman.add_list_member(LIST, new_user)
+        # Transition all their lists, not just the group-based ones.  Rather
+        # than try to guess which lists that is, we can just ask mailman.
+        lists = mailman.lists_containing(old_email)
+        for l in lists:
+            mailman.add_list_member(l, new_email)
         if not other_users.exists():
-            mailman.remove_list_member(LIST, old_user)
+            for l in lists:
+                mailman.remove_list_member(l, old_email)
 
 
 shirt_sizes = ('S', 'M', 'L', 'XL', 'XXL')
