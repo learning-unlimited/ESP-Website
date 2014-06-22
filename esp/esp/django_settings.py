@@ -213,7 +213,6 @@ INSTALLED_APPS = (
     'esp.qsdmedia',
     'esp.resources',
     'esp.gen_media',
-    'esp.dblog',
     'esp.survey',
     'esp.accounting',
     'esp.accounting_core',
