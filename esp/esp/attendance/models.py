@@ -8,6 +8,7 @@ from esp.cal.models import Event, EventType
 from esp.utils.memoize import lru_cache
 
 from datetime import date, time, datetime, timedelta
+from parsedatetime.parsedatetime import Calendar
 
 import re
 
