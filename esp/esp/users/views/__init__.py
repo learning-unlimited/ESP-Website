@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth import login as auth_login, logout as auth_logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.views import login
@@ -169,7 +170,13 @@ def disable_account(request):
 
     other_users = ESPUser.objects.filter(email=curUser.email).exclude(id=curUser.id)
         
-    context = {'user': curUser, 'other_users': other_users}
+    context = {
+            'user': curUser,
+            'other_users': other_users,
+            # Right now, we only deactivate the other users with the same email
+            # address if we are using mailman.
+            'will_deactivate_others': curUser.is_active and other_users and settings.USE_MAILMAN,
+    }
         
     return render_to_response('users/disable_account.html', request, context)
 

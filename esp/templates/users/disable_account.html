@@ -19,7 +19,7 @@
 If you would not like to receive email from ESP, you can disable your account.  If at any time you would like to start receiving email notifications again, you may return to this page (you will still be able to log in) and re-enable it.
 </p>
 
-{% if user.is_active and other_users %}
+{% if will_deactivate_others %}
 <p>
 There are multiple users associated with your email address.  <b>If you disable your account, this will disable all of the accounts with this email address.</b>
 </p>
