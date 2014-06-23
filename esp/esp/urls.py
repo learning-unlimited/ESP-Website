@@ -68,12 +68,6 @@ urlpatterns += patterns('',
 urlpatterns += patterns('',
 (r'^(?P<url>admin($|(.*[^/]$)))', RedirectView.as_view(url='/%(url)s/')),)
 
-#   Short term views
-urlpatterns += patterns('',
-                        (r'^', include('esp.shortterm.urls'),),
-                        )
-
-
 # generic stuff
 urlpatterns += patterns('esp.web.views.main',
                         (r'^error_reporter', 'error_reporter'),
