@@ -215,7 +215,6 @@ INSTALLED_APPS = (
     'esp.accounting',
     'esp.accounting_core',
     'esp.accounting_docs',
-    'esp.shortterm',
     'esp.customforms',
     'esp.utils',    # Not a real app, but, has test cases that the test-case runner needs to find
     'esp.cache',
