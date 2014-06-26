@@ -45,6 +45,8 @@ from esp.middleware import ESPError
 
 from django.conf import settings
 
+from twilio.rest import TwilioRestClient
+
 class GroupTextModule(ProgramModuleObj):
     """ Want to tell all enrolled students about a last-minute lunch location
         change? Want to inform students about a cancelled class? The Group Text
@@ -117,11 +119,6 @@ class GroupTextModule(ProgramModuleObj):
     def sendMessages(self, filterobj, body):
         """ Attempts to send a text message with body to users matching filterobj
             Returns a log of actions which can be displayed to user. """
-
-        try:
-            from twilio.rest import TwilioRestClient
-        except ImportError:
-            raise ESPError(), "Python Twilio API client has not been installed"
 
         users = filterobj.getList(ESPUser)
         try:
