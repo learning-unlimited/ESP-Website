@@ -1,0 +1,20 @@
+{% extends "main.html" %}
+
+{% block title %}Group Texting Portal{% endblock %}
+
+{% block content %}
+
+<h1>Communications Portal</h1>
+<h2>Error</h2>
+
+<p>The SMS provider (Twilio) is not configured properly.  Please contact {{ settings.DEFAULT_EMAIL_ADDRESSES.support }}.  The current settings are:
+<ul>
+<li>TWILIO_ACCOUNT_SID: {{ settings.TWILIO_ACCOUNT_SID }}</li>
+<li>TWILIO_AUTH_TOKEN: {{ settings.TWILIO_AUTH_TOKEN }}</li>
+<li>TWILIO_ACCOUNT_NUMBERS: <ol>{% for num in settings.TWILIO_ACCOUNT_NUMBERS %}<li>{{ num }}</li>{% endfor %}</ol></li>
+</ul>
+</p>
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}

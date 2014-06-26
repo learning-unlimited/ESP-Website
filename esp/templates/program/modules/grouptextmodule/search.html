@@ -1,0 +1,21 @@
+{% extends "users/usersearch/support.html" %}
+
+{% block title %}Group Texting Portal{% endblock %}
+
+{% block subsection_name %}Group Texting Portal{% endblock %}
+
+{% block content %}
+
+<h1>Group Texting Portal</h1>
+
+<p> Welcome to the group texting portal&mdash;your one stop to text the ESP community for your program.</p>
+
+<h2>Step 1:</h2>
+
+<p>Select users to contact with the form below.</p>
+
+{% include "users/usersearch/list_selector.html" %}
+
+{% include "program/modules/admincore/returnlink.html" %}
+
+{% endblock %}
