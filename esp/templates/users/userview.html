@@ -23,6 +23,7 @@
         alt="Picture of {{ user.first_name }} {{ user.last_name }}" class="biophoto" />{% endif %}
     <a id="morphlink" class="sidelink" href="/myesp/morph?morph_user={{profile.user.id}}">Morph into this user</a>
     <a id="onsitelink" class="sidelink" href="/myesp/morph?morph_user={{profile.user.id}}&onsite={{profile.program.id}}">Onsite for {{profile.program.niceName}}</a>
+    <a class="sidelink" href="/admin/users/espuser/{{profile.user.id}}/">View on admin panel</a>
     <form action="/manage/{% if user.is_active %}de{% endif %}activate_user" method="post">{% csrf_token %}
         <input type="hidden" name="user_id" value="{{user.id}}"/>
         <a class="sidelink" onclick="$j(this).parent().submit();return false;" href="">{% if user.is_active %}Deactivate{% else %}Activate{% endif %} user</a>
