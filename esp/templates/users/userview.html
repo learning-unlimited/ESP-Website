@@ -23,6 +23,7 @@
         alt="Picture of {{ user.first_name }} {{ user.last_name }}" class="biophoto" />{% endif %}
     <a id="morphlink" class="sidelink" href="/myesp/morph?morph_user={{profile.user.id}}">Morph into this user</a>
     <a id="onsitelink" class="sidelink" href="/myesp/morph?morph_user={{profile.user.id}}&onsite={{profile.program.id}}">Onsite for {{profile.program.niceName}}</a>
+    <a class="sidelink" href="/admin/users/espuser/{{profile.user.id}}/">View on admin panel</a>
     {% if profile.student_info %}
         <div id="print-student-schedule">
             <h2>
