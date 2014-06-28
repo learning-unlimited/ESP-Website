@@ -8,7 +8,7 @@ import csv
 PROGRAM_NAME = "Splash! 2013"
 DIRECTORY = "/home/shulinye/" #where you want the file saved.
 
-cls = Program.objects.get(name="Splash! 2013").classes()
+cls = Program.objects.get(name=PROGRAM_NAME).classes()
 
 csvwriter = csv.writer(open(DIRECTORY+"oversubscribed.csv", "wb"), delimiter='|')
 
