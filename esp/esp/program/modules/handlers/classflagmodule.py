@@ -85,7 +85,7 @@ class ClassFlagModule(ProgramModuleObj):
         base = ClassSubject.objects.filter(parent_program=self.program)
         time_fmt = "%m/%d/%Y %H:%M"
         t = j['type']
-        v = j['value']
+        v = j.get('value')
         if 'flag' in t:
             lookups = {}
             if 'id' in v:
@@ -113,6 +113,20 @@ class ClassFlagModule(ProgramModuleObj):
             return base.filter(status=v)
         elif t=='not status':
             return base.exclude(status=v)
+        elif 'scheduled' in t:
+            lookup = 'sections__meeting_times__isnull'
+            if 'some sections' in t:
+                # Get classes with sections with meeting times.
+                return base.filter(**{lookup: False})
+            elif 'not all sections' in t:
+                # Get classes with sections with meeting times.
+                return base.filter(**{lookup: True})
+            elif 'all sections' in t:
+                # Exclude classes with sections with no meeting times.
+                return base.exclude(**{lookup: True})
+            elif 'no sections' in t:
+                # Exclude classes with sections with meeting times.
+                return base.exclude(**{lookup: False})
         else:
             # Here v is going to be a list of subqueries.  First, evaluate them.
             subqueries = [self.jsonToQuerySet(i) for i in v]
@@ -130,7 +144,7 @@ class ClassFlagModule(ProgramModuleObj):
     def jsonToEnglish(self, j):
         '''Takes a dict decided from the json sent by the javscript in /manage///classflags/ and converts it to something vaguely human-readable.'''
         t = j['type']
-        v = j['value']
+        v = j.get('value')
         if 'flag' in t:
             if 'id' in v:
                 base = t[:-4]+'the flag "'+ClassFlagType.objects.get(id=v['id']).name+'"'
@@ -144,9 +158,9 @@ class ClassFlagModule(ProgramModuleObj):
                     modifiers.append(i+" "+v[i+'_when']+" "+v[i+'_time'])
             base += ' '+' and '.join(modifiers)
             return base
-        if 'category' in t:
+        elif 'category' in t:
             return t[:-8]+'the category "'+str(ClassCategories.objects.get(id=v))+'"'
-        if 'status' in t:
+        elif 'status' in t:
             statusname = {
                     10: 'Accepted',
                     5: 'Accepted but hidden',
@@ -155,6 +169,8 @@ class ClassFlagModule(ProgramModuleObj):
                     -20: 'Cancelled',
                     }[int(v)]
             return t[:-6]+'the status "'+statusname+'"'
+        elif 'scheduled' in t:
+            return t
         else:
             subqueries = [self.jsonToEnglish(i) for i in v]
             return t+" of ("+', '.join(subqueries)+")"

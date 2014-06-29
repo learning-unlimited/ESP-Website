@@ -7,31 +7,27 @@ function updateNode () {
     var statusSelector = typeSelector.siblings(".fqb-status-list");
     var categorySelector = typeSelector.siblings(".fqb-category-list");
     var ul = typeSelector.siblings("ul");
-    function hideAll () {
-        // Hide all conditionally-displayed selectors.
-        flagSelector.hide();
-        flagDetailsSelector.hide();
-        statusSelector.hide();
-        categorySelector.hide();
-        ul.hide();
-    }
+    // Hide all conditionally-displayed selectors.
+    flagSelector.hide();
+    flagDetailsSelector.hide();
+    statusSelector.hide();
+    categorySelector.hide();
+    ul.hide();
     if (value.indexOf("flag") > -1) {
         // The user has picked a single flag, we need to show the flag selector
-        hideAll();
         flagSelector.show();
         flagDetailsSelector.show();
         flagDetailsSelector.find(".datetime-input").datetimepicker();
     } else if (value.indexOf("status") > -1) {
         // The user has picked a single status, we need to show the status selector
-        hideAll();
         statusSelector.show();
     } else if (value.indexOf("category") > -1) {
         // The user has picked a single category, we need to show the category selector
-        hideAll();
         categorySelector.show();
+    } else if (value.indexOf("scheduled") > -1) {
+        // Scheduled has no options
     } else if (value.length > 0) {
         // The user has picked a subexpression, we need to build it
-        hideAll();
         if (ul.length > 0) {
             // We can just unhide an existing ul
             ul.show();
@@ -40,9 +36,6 @@ function updateNode () {
             var extraUL = $j(".fqb-extra ul");
             extraUL.clone().appendTo(typeSelector.parent());
         }
-    } else {
-        // The user has selected nothing, we need to hide everything
-        hideAll();
     }
 }
 
@@ -94,6 +87,10 @@ function timeUpdate(obj, node, prefix) {
 
 
 function buildSingleObject (node, objectType, value) {
+    if (objectType === "scheduled") {
+        var obj = { type: value };
+        return obj;
+    }
     var objectValue = node.children(".fqb-"+objectType+"-list").val();
     if (objectType === "flag") {
         // Instead of just the flag id, we want to return an object, because we
@@ -138,6 +135,9 @@ function buildObject (node) {
         } else if (value.indexOf("category") > -1) {
             // We have just a single category 
             return buildSingleObject(node, "category", value)
+        } else if (value.indexOf("scheduled") > -1) {
+            // We have just a single scheduling status
+            return buildSingleObject(node, "scheduled", value)
         } else if (value.length > 0) {
             // We have a subexpression -- recurse
             var ul = node.children("ul");
