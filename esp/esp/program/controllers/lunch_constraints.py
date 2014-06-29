@@ -256,7 +256,7 @@ else:
     def generate_all_constraints(self):
         self.clear_existing_constraints()
         for day in self.days:
-            if len(self.days[day]['lunch'] == 0): # no lunch timeblocks
+            if not self.days[day]['lunch']: # no lunch timeblocks
                 continue
             self.get_lunch_subject(day)
             self.get_lunch_sections(day)
