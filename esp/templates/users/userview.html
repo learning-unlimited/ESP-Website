@@ -3,6 +3,8 @@
 {% block title %}User Information{% endblock %}
 
 {% load subsection %}
+{% load modules %}
+
 {% block subsection %}
 {% autoescape off %}{{ "User Information"|subsection }}{% endautoescape %}
 {% endblock %}
@@ -29,6 +31,14 @@
         <a class="sidelink" onclick="$j(this).parent().submit();return false;" href="">{% if user.is_active %}Deactivate{% else %}Activate{% endif %} user</a>
     </form>
     {% if profile.student_info %}
+        {% if profile.program|hasModule:"FormstackMedliabModule" %}
+            <form action="/manage/{{profile.program.getUrlBase}}/medicalbypass" method="post">{% csrf_token %}
+                <input type="hidden" name="target_user" value="{{user.id}}"/>
+                <a class="sidelink" onclick="$j(this).parent().submit();return false;"
+                   href="/manage/{{profile.program.getUrlBase}}/medicalbypass">
+                    Grant medical bypass for {{profile.program.niceName}}</a>
+            </form>
+        {% endif %}
         <div id="print-student-schedule">
             <h2>
                 Student schedule<br/>
