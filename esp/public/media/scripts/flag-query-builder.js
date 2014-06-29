@@ -3,12 +3,14 @@ function updateNode () {
     var typeSelector = $j(this);
     var value = typeSelector.val();
     var flagSelector = typeSelector.siblings(".fqb-flag-list");
+    var flagDetailsSelector = typeSelector.siblings(".fqb-flag-details");
     var statusSelector = typeSelector.siblings(".fqb-status-list");
     var categorySelector = typeSelector.siblings(".fqb-category-list");
     var ul = typeSelector.siblings("ul");
     function hideAll () {
         // Hide all conditionally-displayed selectors.
         flagSelector.hide();
+        flagDetailsSelector.hide();
         statusSelector.hide();
         categorySelector.hide();
         ul.hide();
@@ -17,6 +19,8 @@ function updateNode () {
         // The user has picked a single flag, we need to show the flag selector
         hideAll();
         flagSelector.show();
+        flagDetailsSelector.show();
+        flagDetailsSelector.find(".datetime-input").datetimepicker();
     } else if (value.indexOf("status") > -1) {
         // The user has picked a single status, we need to show the status selector
         hideAll();
@@ -80,9 +84,37 @@ function BuildQueryError(message) {
     this.name = "BuildQueryError";
 }
 
+function timeUpdate(obj, node, prefix) {
+    span = node.find("."+prefix+"time-options");
+    if (span.children(".checkbox").prop("checked")) {
+        obj[prefix + "_when"] = span.children(".fqb-flag-detail-select").val();
+        obj[prefix + "_time"] = span.children(".datetime-input").val();
+    }
+}
+
+
 function buildSingleObject (node, objectType, value) {
     var objectValue = node.children(".fqb-"+objectType+"-list").val();
-    if (objectValue.length > 0) {
+    if (objectType === "flag") {
+        // Instead of just the flag id, we want to return an object, because we
+        // could be doing a more complex constraint.
+        if (objectValue) {
+            objectValue = { id: objectValue };
+        } else {
+            objectValue = {};
+        }
+        var detailDiv = node.children(".fqb-flag-details");
+        timeUpdate(objectValue, node, "modified");
+        timeUpdate(objectValue, node, "created");
+        if ($j.isEmptyObject(objectValue)) {
+            node.addClass("bad-node");
+            throw new BuildQueryError("No flag details.");
+        } else {
+            var obj = { type: value, value: objectValue };
+            return obj;
+        }
+    } else if (objectValue.length) {
+        // objectValue is a nonempty string or a nonempty object.
         var obj = { type: value, value: objectValue };
         return obj;
     } else {

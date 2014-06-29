@@ -6,6 +6,18 @@ select.fqb-type {
     width: 8em;
 }
 
+.fqb-flag-details {
+    padding-left: 7em;
+}
+
+.fqb-flag-detail-select {
+    width: 6em;
+}
+
+.datetime-input {
+    width: 12em;
+}
+
 .bad-node {
     border: 1px solid #ff0000;
 }

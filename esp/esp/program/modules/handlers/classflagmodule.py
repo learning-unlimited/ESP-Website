@@ -34,12 +34,14 @@ Learning Unlimited, Inc.
 from django.db.models.query import Q
 from django.http import HttpResponseBadRequest, HttpResponse
 
+import datetime
 import json
 import operator
 
 from esp.program.modules.base import ProgramModuleObj, main_call, aux_call, needs_admin
 from esp.cache           import cache_function
 from esp.web.util        import render_to_response
+from esp.utils.query_utils import nest_Q
 
 from esp.program.models import ClassSubject, ClassFlag, ClassFlagType, ClassCategories
 from esp.program.forms import ClassFlagForm
@@ -81,13 +83,28 @@ class ClassFlagModule(ProgramModuleObj):
     def jsonToQuerySet(self, j):
         '''Takes a dict decoded from the json sent by the javascript in /manage///classflags/ and converts it to QuerySet.'''
         base = ClassSubject.objects.filter(parent_program=self.program)
-        lookup = 'flags__flag_type'
+        time_fmt = "%m/%d/%Y %H:%M"
         t = j['type']
         v = j['value']
-        if t=='flag':
-            return base.filter(**{lookup: v})
-        elif t=='not flag':
-            return base.exclude(**{lookup: v})
+        if 'flag' in t:
+            lookups = {}
+            if 'id' in v:
+                lookups['flag_type'] = v['id']
+            for i in ['created', 'modified']:
+                when = v.get(i+'_when')
+                lookup = i + '_time'
+                if when == 'before':
+                    lookup += '__lt'
+                elif when == 'after':
+                    lookup += '__gt'
+                if when:
+                    lookups[lookup] = datetime.datetime.strptime(v[i+'_time'], time_fmt)
+            if 'not' in t:
+                # Due to https://code.djangoproject.com/ticket/14645, we have
+                # to write this query a little weirdly.
+                return base.exclude(id__in=ClassFlag.objects.filter(**lookups).values('subject'))
+            else:
+                return base.filter(nest_Q(Q(**lookups), 'flags'))
         elif t=='category':
             return base.filter(category=v)
         elif t=='not category':
@@ -115,7 +132,18 @@ class ClassFlagModule(ProgramModuleObj):
         t = j['type']
         v = j['value']
         if 'flag' in t:
-            return t[:-4]+'the flag "'+ClassFlagType.objects.get(id=v).name+'"'
+            if 'id' in v:
+                base = t[:-4]+'the flag "'+ClassFlagType.objects.get(id=v['id']).name+'"'
+            elif 'not' in t:
+                base = 'no flag'
+            else:
+                base = 'a flag'
+            modifiers = []
+            for i in ['created', 'modified']:
+                if i+'_when' in v:
+                    modifiers.append(i+" "+v[i+'_when']+" "+v[i+'_time'])
+            base += ' '+' and '.join(modifiers)
+            return base
         if 'category' in t:
             return t[:-8]+'the category "'+str(ClassCategories.objects.get(id=v))+'"'
         if 'status' in t:

@@ -34,3 +34,25 @@
     <option value="{{program.open_class_category.id}}">{{program.open_class_category}}</option>
     {% endif %}
 </select>
+<div class="fqb-flag-details" style="display:none;">
+    <span class="modifiedtime-options">
+        <input type="checkbox" class="checkbox" />
+        last modified
+        <select class="fqb-flag-detail-select">
+            <option selected="selected" value="before">before</option>
+            <option value="after">after</option>
+        </select>
+        <input type="text" class="datetime-input" />
+    </span>
+
+    <br/>
+    <span class="createdtime-options">
+        <input type="checkbox" class="checkbox" />
+        created
+        <select class="fqb-flag-detail-select">
+            <option selected="selected" value="before">before</option>
+            <option value="after">after</option>
+        </select>
+        <input type="text" class="datetime-input" />
+    </span>
+</div>
