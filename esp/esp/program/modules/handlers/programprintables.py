@@ -1512,5 +1512,5 @@ Volunteer schedule for %s:
         return response
 
     class Meta:
-        abstract = True
+        proxy = True
 
