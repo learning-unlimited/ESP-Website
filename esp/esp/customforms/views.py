@@ -4,7 +4,7 @@ from django.http import Http404,HttpResponseRedirect
 from django.template import RequestContext
 from django.db import connection
 from django.utils import simplejson as json
-from customforms.models import *
+from esp.customforms.models import *
 from esp.program.models import Program
 from esp.customforms.DynamicModel import DynamicModelHandler as DMH
 from esp.customforms.DynamicForm import FormHandler

@@ -23,14 +23,6 @@ cf_cache._populate()
 for app_name in settings.INSTALLED_APPS:
     if app_name != 'esp.cache_loader':
         __import__(app_name, {}, {}, ['models'])
-    # HACK: Duplicate esp.foo in sys.modules as foo.
-    # This lets console users type "import program.models"
-    # As shorthand for "import esp.program.models".
-    # In the code you should of course still write out the "esp."
-    if app_name.startswith('esp.'):
-        for key, value in sys.modules.items():
-           if key.startswith(app_name):
-               sys.modules[key[4:]] = value
 
 #   Make sure template override cache is registered
 from esp.utils.template import Loader
