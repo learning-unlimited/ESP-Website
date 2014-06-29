@@ -84,12 +84,11 @@ class TeacherClassRegModule(ProgramModuleObj):
 
 
     def prepare(self, context={}):
-        """ prepare returns the context for the main teacherreg page. This will just set the teacherclsmodule as this module,
-            since everything else can be gotten from hooks. """
+        """ prepare returns the context for the main teacherreg page. """
         
         context['can_edit'] = self.deadline_met('/Classes/Edit')
         context['can_create'] = self.deadline_met('/Classes/Create')
-        context['teacherclsmodule'] = self.crmi
+        context['crmi'] = self.crmi
         context['clslist'] = self.clslist(get_current_request().user)
         context['friendly_times_with_date'] = (Tag.getProgramTag(key='friendly_times_with_date',program=self.program,default=False) == "True")
         context['allow_class_import'] = 'false' not in Tag.getTag('allow_class_import', default='true').lower()
