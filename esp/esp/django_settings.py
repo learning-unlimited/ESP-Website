@@ -345,8 +345,6 @@ DEBUG_TOOLBAR_CONFIG = {
     'SHOW_TOOLBAR_CALLBACK': 'esp.settings.custom_show_toolbar',
     'EXTRA_SIGNALS': [
         'esp.cache.signals.cache_deleted',
-        'esp.cache.signals.m2m_added',
-        'esp.cache.signals.m2m_removed',
     ],
     'HIDE_DJANGO_SQL': True,
     'SHOW_TEMPLATE_CONTEXT': True,
