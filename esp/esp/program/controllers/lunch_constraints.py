@@ -63,12 +63,6 @@ class LunchConstraintGenerator(object):
                     self.days[day]['after'].append(timeslot)
                 else:
                     self.days[day]['before'].append(timeslot)
-        deletelist = []
-        for day in self.days:
-            if len(self.days[day]['lunch']) == 0: #we haven't set lunch timeblocks
-                deletelist.append(day)
-        for day in deletelist:
-            del self.days[day]
     
     def clear_existing_constraints(self):
         for constraint in ScheduleConstraint.objects.filter(program=self.program):
@@ -121,8 +115,6 @@ class LunchConstraintGenerator(object):
         category = self.get_lunch_category()
         lunch_subjects = ClassSubject.objects.filter(parent_program__id=self.program.id, category=self.get_lunch_category(), message_for_directors=day.isoformat())
         lunch_subject = None
-        if len(self.days[day]['lunch']) == 0: #if I don't want lunch constraints today
-            return None
         example_timeslot = self.days[day]['lunch'][0]
         timeslot_length = (example_timeslot.end - example_timeslot.start).seconds / 3600.0
         
@@ -153,9 +145,6 @@ class LunchConstraintGenerator(object):
     def get_lunch_sections(self, day):
     
         lunch_subject = self.get_lunch_subject(day)
-
-        if lunch_subject == None: return None #I don't have lunch subjects today!
-
         for timeslot in self.days[day]['lunch']:
             lunch_sections = lunch_subject.sections.filter(meeting_times__id=timeslot.id)
             if lunch_sections.count() == 0:
@@ -267,6 +256,8 @@ else:
     def generate_all_constraints(self):
         self.clear_existing_constraints()
         for day in self.days:
+            if len(self.days[day]['lunch'] == 0): # no lunch timeblocks
+                continue
             self.get_lunch_subject(day)
             self.get_lunch_sections(day)
             self.generate_constraint(day)
