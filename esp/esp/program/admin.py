@@ -247,6 +247,7 @@ admin_site.register(ClassFlagType, ClassFlagTypeAdmin)
 
 class ClassFlagAdmin(admin.ModelAdmin):
     list_display = ('flag_type','subject','comment')
+    readonly_fields = ['modified_by', 'modified_time', 'created_by', 'created_time']
     search_fields = ['flag_type', 'subject__id', 'subject__title', 'subject__parent_program__url', 'comment']
     search_fields.extend([field + LOOKUP_SEP + lookup for field in ['modified_by', 'created_by'] for lookup in ['username', 'first_name', 'last_name', 'id']])
     list_filter = ['subject__parent_program','flag_type']
