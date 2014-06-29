@@ -202,7 +202,9 @@ class ClassFlagModule(ProgramModuleObj):
         else:
             # They've sent a query, let's process it.
             decoded = json.loads(data)
-            queryset = self.jsonToQuerySet(decoded).distinct().order_by('id').prefetch_related('flags', 'flags__flag_type', 'teachers') # The prefetch lets us do basically all of the processing on the template level.
+             # The prefetch lets us do basically all of the processing on the template level.
+            queryset = self.jsonToQuerySet(decoded).distinct().order_by('id').prefetch_related(
+                'flags', 'flags__flag_type', 'teachers', 'category', 'sections')
             english = self.jsonToEnglish(decoded)
             context['queryset']=queryset
             context['english']=english
