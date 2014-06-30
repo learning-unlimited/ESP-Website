@@ -441,6 +441,27 @@ class CacheTests(TestCase):
             with_hashtag1_again = reporter.articles_with_hashtag(hashtag1.label)
         self.assertEqual(with_hashtag1_again, with_hashtag1_new)
 
+        # removing a hashtag should also invalidate
+        article2.hashtags.remove(hashtag2)
+        with self.assertNumQueries(1):
+            with_hashtag2_removed = reporter.articles_with_hashtag(hashtag2.label)
+        self.assertEqual(set(with_hashtag2_removed), set(with_hashtag2))
+        self.assertEqual(len(with_hashtag2_removed), len(with_hashtag2))
+
+        with self.assertNumQueries(0):
+            with_hashtag1_again = reporter.articles_with_hashtag(hashtag1.label)
+        self.assertEqual(with_hashtag1_again, with_hashtag1_new)
+
+        # as should clearing
+        hashtag1.articles.clear()
+        with self.assertNumQueries(1):
+            with_hashtag1_removed = reporter.articles_with_hashtag(hashtag1.label)
+        self.assertEqual(set(with_hashtag1_removed), set())
+
+        with self.assertNumQueries(0):
+            with_hashtag2_again = reporter.articles_with_hashtag(hashtag2.label)
+        self.assertEqual(with_hashtag2_again, with_hashtag2_removed)
+
     def test_depend_on_model(self):
         """
         depend_on_model triggers cache invalidation when any instance
