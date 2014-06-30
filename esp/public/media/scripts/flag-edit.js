@@ -10,7 +10,7 @@ function submitFlagForm (event) {
 
 function addFlag (event) {
     var flagExtra = $j(event.target).parents(".fqr-class").find(".flag-extra").last();
-    flagExtra.clone().attr("id","flag-new").show().insertBefore(flagExtra);
+    flagExtra.clone().show().insertBefore(flagExtra);
 }
 
 function removeFlag (url, id) {

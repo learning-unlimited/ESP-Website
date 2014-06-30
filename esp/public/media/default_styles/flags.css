@@ -67,7 +67,7 @@ select.fqb-type {
     margin-right: auto;
 }
 
-input#flag-submit-new {
+input.flag-submit-new {
     margin-left: auto;
     margin-right: 0px;
 }
