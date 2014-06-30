@@ -1171,6 +1171,10 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lcg = LunchConstraintGenerator(self.program, [lunch_timeslot])
         lcg.generate_all_constraints()
 
+        lunch_sec = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
+        self.failUnless(len(lunch_sec) == 1, "Lunch constraint for one timeblock generated multiple Lunch sections")
+        lunch_sec = lunch_sec[0]
+
         # Run the lottery!
         lotteryController = LotteryAssignmentController(self.program)
         lotteryController.compute_assignments()
@@ -1179,9 +1183,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         # Now go through and make sure that lunch assignments make sense
         for student in self.students:
-            lunch_sec = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
-            self.failUnless(len(lunch_sec) == 1, "Lunch constraint for one timeblock generated multiple Lunch sections")
-            lunch_sec = lunch_sec[0]
             timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times=lunch_sec)
 
             self.failUnless(not lunch_sec.meeting_times.all()[0] in timeslots, "One of the student's registrations overlaps with the lunch block")
@@ -1192,6 +1193,9 @@ class LSRAssignmentTest(ProgramFrameworkTest):
         lcg = LunchConstraintGenerator(self.program, lunch_timeslots)
         lcg.generate_all_constraints()
 
+        lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
+        self.failUnless(len(lunch_secs) == 3, "Incorrect number of lunch sections created: %s" % (len(lunch_secs)))
+
         # Run the lottery!
         lotteryController = LotteryAssignmentController(self.program)
         lotteryController.compute_assignments()
@@ -1200,8 +1204,6 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
         # Now go through and make sure that lunch assignments make sense
         for student in self.students:
-            lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
-            self.failUnless(len(lunch_secs) == 3, "Incorrect number of lunch sections created: %s" % (len(lunch_secs)))
             timeslots = Event.objects.filter(meeting_times__registrations=student).exclude(meeting_times__in=lunch_secs)
 
             lunch_free = False
