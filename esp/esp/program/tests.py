@@ -1188,13 +1188,8 @@ class LSRAssignmentTest(ProgramFrameworkTest):
 
     def testMultipleLunchConstraint(self):
         # First generate 3 lunch timeslots
-        ts_copy = list(self.timeslots)[:]
-        lt1 = random.choice(ts_copy)
-        ts_copy.remove(lt1)
-        lt2 = random.choice(ts_copy)
-        ts_copy.remove(lt2)
-        lt3 = random.choice(ts_copy)
-        lcg = LunchConstraintGenerator(self.program, [lt1, lt2, lt3])
+        lunch_timeslots = random.sample(self.timeslots, 3)
+        lcg = LunchConstraintGenerator(self.program, lunch_timeslots)
         lcg.generate_all_constraints()
 
         # Run the lottery!
@@ -1215,3 +1210,12 @@ class LSRAssignmentTest(ProgramFrameworkTest):
                     lunch_free = True
                     break
             self.failUnless(lunch_free, "No lunch sections free for a student!")
+
+    def testNoLunchConstraint(self):
+        # Make sure LunchConstraintGenerator won't crash with no lunch timeslots
+        # (needed in case a multi-day program has lunch on some days but not others)
+        lcg = LunchConstraintGenerator(self.program, [])
+        lcg.generate_all_constraints()
+
+        lunch_secs = ClassSection.objects.filter(parent_class__category = lcg.get_lunch_category())
+        self.failUnless(len(lunch_secs) == 0, "Lunch constraint for no timeblocks generated Lunch section")
