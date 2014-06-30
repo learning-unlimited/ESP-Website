@@ -30,7 +30,7 @@
         <input type="hidden" name="user_id" value="{{user.id}}"/>
         <a class="sidelink" onclick="$j(this).parent().submit();return false;" href="">{% if user.is_active %}Deactivate{% else %}Activate{% endif %} user</a>
     </form>
-    {% if profile.teacher_info %}
+    {% if profile.teacher_info and profile.program|hasModule:"AvailabilityModule" %}
         <a class="sidelink" href="/manage/{{profile.program.getUrlBase}}/check_availability?user={{user.username}}">
             Check availability for {{profile.program.niceName}}</a>
     {% endif %}
